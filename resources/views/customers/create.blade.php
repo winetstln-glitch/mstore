@@ -36,30 +36,34 @@
                         </div>
 
                         <!-- Address -->
-                        <div>
-                            <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Address') }}</label>
-                            <textarea name="address" id="address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm">{{ old('address') }}</textarea>
+                        <div class="col-12">
+                            <label for="address" class="form-label">{{ __('Address') }}</label>
+                            <textarea name="address" id="address" rows="3" class="form-control @error('address') is-invalid @enderror">{{ old('address') }}</textarea>
                             @error('address')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- Coordinates -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="latitude" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Latitude') }}</label>
-                                <input type="text" name="latitude" id="latitude" value="{{ old('latitude') }}" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm" placeholder="-6.200000">
-                                @error('latitude')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div>
-                                <label for="longitude" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Longitude') }}</label>
-                                <input type="text" name="longitude" id="longitude" value="{{ old('longitude') }}" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm" placeholder="106.816666">
-                                @error('longitude')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
+                        <!-- Location -->
+                        <div class="col-md-6">
+                            <label for="latitude" class="form-label">{{ __('Latitude') }}</label>
+                            <input type="text" name="latitude" id="latitude" value="{{ old('latitude') }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
+                            @error('latitude')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="longitude" class="form-label">{{ __('Longitude') }}</label>
+                            <input type="text" name="longitude" id="longitude" value="{{ old('longitude') }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
+                            @error('longitude')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-text text-muted mb-2">{{ __('Click on the map or drag the marker to update location.') }}</div>
+                            <div id="map-picker" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
                         </div>
                     </div>
 
@@ -160,7 +164,7 @@
                         <div class="col-md-6">
                             <label for="ssid_password" class="form-label">{{ __('SSID Password') }}</label>
                             <div class="input-group">
-                                <input type="text" name="ssid_password" id="ssid_password" value="{{ old('ssid_password', $prefill['ssid_password'] ?? '') }}" class="form-control @error('ssid_password') is-invalid @enderror">
+                                <input type="password" name="ssid_password" id="ssid_password" value="{{ old('ssid_password', $prefill['ssid_password'] ?? '') }}" class="form-control @error('ssid_password') is-invalid @enderror">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('ssid_password')">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
@@ -195,7 +199,12 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+@endpush
+
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
     function togglePasswordVisibility(fieldId) {
         const field = document.getElementById(fieldId);
@@ -211,5 +220,134 @@
             icon.classList.add('fa-eye');
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var defaultLat = -6.800142;
+        var defaultLng = 105.93952;
+        var initialZoom = 15;
+
+        var lat = @json(old('latitude', null));
+        var lng = @json(old('longitude', null));
+
+        if (lat === null) lat = defaultLat;
+        if (lng === null) lng = defaultLng;
+
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+
+        if (isNaN(lat)) lat = defaultLat;
+        if (isNaN(lng)) lng = defaultLng;
+
+        var map = L.map('map-picker').setView([lat, lng], initialZoom);
+
+        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        });
+
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: '&copy; Google Maps'
+        });
+
+        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        });
+
+        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        if (currentTheme === 'dark') {
+            darkLayer.addTo(map);
+        } else {
+            osm.addTo(map);
+        }
+
+        var baseMaps = {
+            "Dark Mode": darkLayer,
+            "Satellite (Google)": googleHybrid,
+            "Street (OSM)": osm
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        window.addEventListener('themeChanged', function(e) {
+            if (e.detail.theme === 'dark') {
+                if (map.hasLayer(osm)) map.removeLayer(osm);
+                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            } else {
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+            }
+        });
+
+        var marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+
+        marker.on('dragend', function(e) {
+            var newLat = e.target.getLatLng().lat;
+            var newLng = e.target.getLatLng().lng;
+            document.getElementById('latitude').value = newLat.toFixed(8);
+            document.getElementById('longitude').value = newLng.toFixed(8);
+        });
+
+        map.on('click', function(e) {
+            var clickLat = e.latlng.lat;
+            var clickLng = e.latlng.lng;
+
+            document.getElementById('latitude').value = clickLat.toFixed(8);
+            document.getElementById('longitude').value = clickLng.toFixed(8);
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+                marker.on('dragend', function(e) {
+                    var dragLat = e.target.getLatLng().lat;
+                    var dragLng = e.target.getLatLng().lng;
+                    document.getElementById('latitude').value = dragLat.toFixed(8);
+                    document.getElementById('longitude').value = dragLng.toFixed(8);
+                });
+            }
+        });
+
+        var odps = @json($odps ?? []);
+        var odpSelect = document.getElementById('odp_id');
+
+        odps.forEach(function(odp) {
+            if (!odp.latitude || !odp.longitude) {
+                return;
+            }
+
+            var odpMarker = L.circleMarker([odp.latitude, odp.longitude], {
+                radius: 6,
+                color: '#0dcaf0',
+                fillColor: '#0dcaf0',
+                fillOpacity: 0.8
+            }).addTo(map);
+
+            var label = odp.name;
+            if (typeof odp.filled !== 'undefined' && typeof odp.capacity !== 'undefined') {
+                label += ' (' + odp.filled + '/' + odp.capacity + ')';
+            }
+            odpMarker.bindPopup(label);
+
+            odpMarker.on('click', function() {
+                document.getElementById('latitude').value = odp.latitude.toFixed(8);
+                document.getElementById('longitude').value = odp.longitude.toFixed(8);
+                marker.setLatLng([odp.latitude, odp.longitude]);
+
+                if (odpSelect) {
+                    for (var i = 0; i < odpSelect.options.length; i++) {
+                        if (parseInt(odpSelect.options[i].value) === odp.id) {
+                            odpSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                map.panTo([odp.latitude, odp.longitude]);
+            });
+        });
+    });
 </script>
 @endpush
