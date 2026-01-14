@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>{{ config('app.name', 'MStore') }} - ArchitectUI</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    @stack('styles')
+
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 60px;
+            --primary-color: #3f6ad8; /* ArchitectUI Blue */
+        }
+        
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background-color: #f0f2f5;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        #sidebar-wrapper {
+            height: 100vh;
+            width: var(--sidebar-width);
+            margin-left: 0;
+            transition: margin 0.25s ease-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            overflow-y: auto;
+            scrollbar-width: thin;
+
+            background: #fff;
+            box-shadow: 7px 0 60px rgba(0,0,0,0.05);
+        }
+
+        #sidebar-wrapper .sidebar-heading {
+            padding: 0 1.5rem;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        #sidebar-wrapper .list-group {
+            width: var(--sidebar-width);
+        }
+
+        .sidebar-item {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            color: #343a40;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-item:hover {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+        }
+
+        .sidebar-item.active {
+            background-color: #e0f3ff;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .sidebar-item i {
+            width: 25px;
+            text-align: center;
+            margin-right: 10px;
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        .sidebar-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-weight: 700;
+            color: #adb5bd;
+            padding: 1.5rem 1.5rem 0.5rem;
+        }
+
+        /* Content Wrapper */
+        #page-content-wrapper {
+            margin-left: var(--sidebar-width);
+            transition: margin 0.25s ease-out;
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .main-header {
+            height: var(--header-height);
+            box-shadow: 0 0.46875rem 2.1875rem rgba(4,9,20,0.03), 0 0.9375rem 1.40625rem rgba(4,9,20,0.03), 0 0.25rem 0.53125rem rgba(4,9,20,0.05), 0 0.125rem 0.1875rem rgba(4,9,20,0.03);
+            background: #fff;
+            padding: 0 1.5rem;
+            z-index: 999;
+        }
+
+        /* Toggled State */
+        body.sb-sidenav-toggled #sidebar-wrapper {
+            margin-left: calc(-1 * var(--sidebar-width));
+        }
+        
+        body.sb-sidenav-toggled #page-content-wrapper {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        /* Dark Mode Overrides */
+        [data-bs-theme="dark"] body {
+            background-color: #111;
+        }
+        
+        [data-bs-theme="dark"] #sidebar-wrapper {
+            background: #1a1d20;
+            box-shadow: 7px 0 60px rgba(0,0,0,0.2);
+            border-right: 1px solid #2c3034;
+        }
+
+        [data-bs-theme="dark"] #sidebar-wrapper .sidebar-heading {
+            border-bottom: 1px solid #2c3034;
+            color: #fff;
+        }
+
+        [data-bs-theme="dark"] .sidebar-item {
+            color: #adb5bd;
+        }
+
+        [data-bs-theme="dark"] .sidebar-item:hover {
+            background-color: #2c3034;
+            color: #fff;
+        }
+
+        [data-bs-theme="dark"] .sidebar-item.active {
+            background-color: rgba(63, 106, 216, 0.2);
+            color: #6da4ff;
+            border-left-color: #6da4ff;
+        }
+
+        [data-bs-theme="dark"] .main-header {
+            background: #1a1d20;
+            border-bottom: 1px solid #2c3034;
+        }
+        
+        /* Global component overrides for legacy classes */
+        [data-bs-theme="dark"] .bg-white { background-color: #1a1d20 !important; }
+        [data-bs-theme="dark"] .bg-light { background-color: #2c3034 !important; }
+        [data-bs-theme="dark"] .text-dark { color: #e9ecef !important; }
+        [data-bs-theme="dark"] .card { background-color: #1a1d20; border-color: #2c3034; }
+        [data-bs-theme="dark"] .card-header { background-color: #1f2327; border-bottom-color: #2c3034; }
+        [data-bs-theme="dark"] .table { color: #dee2e6; }
+        [data-bs-theme="dark"] .table thead { background-color: #1f2327; }
+        [data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: #2a2f33; }
+        [data-bs-theme="dark"] .input-group-text.bg-light { background-color: #2c3034 !important; color: #adb5bd; }
+        [data-bs-theme="dark"] .dropdown-menu { background-color: #1a1d20; border-color: #2c3034; }
+        [data-bs-theme="dark"] .dropdown-item { color: #e9ecef; }
+        [data-bs-theme="dark"] .dropdown-item:hover { background-color: #2c3034; color: #fff; }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            #sidebar-wrapper {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            #page-content-wrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+            body.sb-sidenav-toggled #sidebar-wrapper {
+                margin-left: 0;
+            }
+        }
+    </style>
+    
+    <script>
+        // Check local storage for theme
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme) {
+            document.documentElement.setAttribute('data-bs-theme', storedTheme);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        }
+    </script>
+</head>
+<body>
+
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    <div id="sidebar-wrapper">
+        <div class="sidebar-heading">
+            <i class="fa-solid fa-server me-2"></i> MSTORE.NET
+        </div>
+        <div class="list-group list-group-flush pb-4">
+            @if(
+                Auth::user()->hasPermission('dashboard.view') ||
+                Auth::user()->hasPermission('customer.view') ||
+                Auth::user()->hasPermission('ticket.view')
+            )
+            <div class="sidebar-header">
+                {{ __('Main Menu') }}
+                <span class="visually-hidden">Main Menu</span>
+            </div>
+            @endif
+            
+            @if(Auth::user()->hasPermission('dashboard.view'))
+            <a href="{{ route('dashboard') }}" class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="fa-solid fa-gauge-high"></i> {{ __('Dashboard') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('customer.view'))
+            <a href="{{ route('customers.index') }}" class="sidebar-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users"></i> {{ __('Customers') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('ticket.view'))
+            <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-ticket"></i> {{ __('Tickets') }} <span class="visually-hidden">Tickets</span>
+            </a>
+            @endif
+
+            @if(
+                Auth::user()->hasPermission('genieacs.view') ||
+                Auth::user()->hasPermission('olt.view') ||
+                Auth::user()->hasPermission('map.view')
+            )
+            <div class="sidebar-header">
+                {{ __('Network & Ops') }}
+                <span class="visually-hidden">Network & Ops</span>
+            </div>
+            @endif
+
+            @if(Auth::user()->hasPermission('genieacs.view'))
+            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-satellite-dish"></i> {{ __('Network Monitor') }} <span class="visually-hidden">Network Monitor</span>
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('olt.view'))
+            <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-server"></i> {{ __('OLT Management') }} <span class="visually-hidden">OLT Management</span><span class="visually-hidden">Network & Ops</span>
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('map.view'))
+            <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-map-location-dot"></i> {{ __('Map') }}
+            </a>
+            @endif
+
+            {{-- Installations removed as per request --}}
+            {{-- @if(Auth::user()->hasPermission('installation.view'))
+            <a href="{{ route('installations.index') }}" class="sidebar-item {{ request()->routeIs('installations.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calendar-check"></i> {{ __('Installations') }}
+            </a>
+            @endif --}}
+
+            @if(Auth::user()->hasPermission('technician.view') || Auth::user()->hasPermission('attendance.view') || Auth::user()->hasPermission('setting.view'))
+            <div class="sidebar-header">{{ __('Technician Management') }}</div>
+            @endif
+
+            @if(Auth::user()->hasPermission('technician.view') || Auth::user()->hasPermission('attendance.view'))
+            <a class="sidebar-item {{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#technicianCollapse" role="button" aria-expanded="{{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'true' : 'false' }}" aria-controls="technicianCollapse">
+                <i class="fa-solid fa-helmet-safety"></i> {{ __('Technicians') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'show' : '' }}" id="technicianCollapse">
+                <div class="bg-light ps-3">
+                    @if(Auth::user()->hasPermission('technician.view'))
+                    <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-users-gear"></i> {{ __('Manage Technicians') }}
+                    </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('attendance.view'))
+                    <a href="{{ route('attendance.create') }}" class="sidebar-item {{ request()->routeIs('attendance.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-clock"></i> {{ __('My Attendance') }}
+                    </a>
+                    <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-clipboard-list"></i> {{ __('Recap') }}
+                    </a>
+                    <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-calendar-week"></i> {{ __('Work Schedule (Piket)') }}
+                    </a>
+                    <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-calendar-minus"></i> {{ __('Leave Requests') }}
+                    </a>
+                    @endif
+                </div>
+            </div>
+            @endif
+            
+            @if(Auth::user()->hasPermission('setting.view'))
+            <a class="sidebar-item {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#coordinatorCollapse" role="button" aria-expanded="{{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'true' : 'false' }}" aria-controls="coordinatorCollapse">
+                <i class="fa-solid fa-user-tie"></i> {{ __('Coordinators') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'show' : '' }}" id="coordinatorCollapse">
+                <div class="bg-light ps-3">
+                    <a href="{{ route('coordinators.index') }}" class="sidebar-item {{ request()->routeIs('coordinators.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-tie"></i> {{ __('Manage Coordinators') }}
+                    </a>
+                    <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-money-bill-trend-up"></i> {{ __('Investors') }}
+                    </a>
+                    <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-map"></i> {{ __('Regions') }}
+                    </a>
+                </div>
+            </div>
+            @endif
+            
+            <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-boxes-stacked"></i> {{ __('Inventory') }}
+            </a>
+
+            @if(
+                Auth::user()->hasPermission('finance.view') ||
+                Auth::user()->hasPermission('chat.view') ||
+                Auth::user()->hasPermission('setting.view') ||
+                Auth::user()->hasPermission('user.view') ||
+                Auth::user()->hasPermission('role.view')
+            )
+            <div class="sidebar-header">
+                {{ __('Administration') }} <span class="visually-hidden">Administration</span>
+            </div>
+            @endif
+
+            @if(Auth::user()->hasPermission('finance.view'))
+            <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-wallet"></i> {{ __('Finance') }}
+            </a>
+            @endif
+            
+            @if(Auth::user()->hasPermission('chat.view'))
+            <a href="{{ route('chat.index') }}" class="sidebar-item {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+                <i class="fa-brands fa-whatsapp"></i> {{ __('WhatsApp') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('setting.view'))
+            <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
+                <i class="fa-brands fa-telegram"></i> {{ __('Telegram') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view') || Auth::user()->hasPermission('role.view'))
+            <a class="sidebar-item {{ (request()->routeIs('settings.*') || request()->routeIs('apikeys.*') || request()->routeIs('users.*') || request()->routeIs('roles.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#settingsCollapse" role="button" aria-expanded="{{ (request()->routeIs('settings.*') || request()->routeIs('apikeys.*') || request()->routeIs('users.*') || request()->routeIs('roles.*')) ? 'true' : 'false' }}" aria-controls="settingsCollapse">
+                <i class="fa-solid fa-gears"></i> {{ __('Settings') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ (request()->routeIs('settings.*') || request()->routeIs('apikeys.*') || request()->routeIs('users.*') || request()->routeIs('roles.*')) ? 'show' : '' }}" id="settingsCollapse">
+                <div class="bg-light ps-3">
+                    @if(Auth::user()->hasPermission('setting.view'))
+                    <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-wrench"></i> {{ __('General Settings') }}
+                    </a>
+                    @endif
+                    
+                    @if(Auth::user()->hasPermission('setting.view'))
+                    <a href="{{ route('apikeys.index') }}" class="sidebar-item {{ request()->routeIs('apikeys.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-key"></i> {{ __('API Key Management') }}
+                    </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('user.view'))
+                    <a href="{{ route('users.index') }}" class="sidebar-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-gear"></i> {{ __('Users') }}
+                    </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('role.view'))
+                    <a href="{{ route('roles.index') }}" class="sidebar-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-shield-halved"></i> {{ __('Roles') }}
+                    </a>
+                    @endif
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <nav class="navbar navbar-expand-lg main-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-secondary" id="sidebarToggle">
+                    <i class="fa-solid fa-bars fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <!-- Language Switcher -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-globe"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+                        <li><a class="dropdown-item {{ app()->getLocale() == 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">English</a></li>
+                        <li><a class="dropdown-item {{ app()->getLocale() == 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">Indonesia</a></li>
+                    </ul>
+                </div>
+
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-regular fa-bell"></i>
+                        @if(Auth::user()->unreadNotifications->count() > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ Auth::user()->unreadNotifications->count() }}
+                                <span class="visually-hidden">{{ __('unread messages') }}</span>
+                            </span>
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-0" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                        <li><span class="dropdown-header border-bottom py-2 bg-body-tertiary">{{ __('Notifications') }}</span></li>
+                        @forelse(Auth::user()->unreadNotifications as $notification)
+                            @php
+                                $url = $notification->data['url'] ?? '#';
+                                // Fix for localhost URLs when accessing from IP
+                                if (isset($notification->data['ticket_id'])) {
+                                    $url = route('tickets.show', $notification->data['ticket_id']);
+                                }
+                            @endphp
+                            <li>
+                                <a class="dropdown-item py-2 border-bottom" href="{{ $url }}">
+                                    <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notification' }}</div>
+                                    <div class="small text-muted text-truncate">{{ $notification->data['message'] ?? '' }}</div>
+                                    <div class="small text-muted mt-1" style="font-size: 0.75rem;">{{ $notification->created_at->diffForHumans() }}</div>
+                                </a>
+                            </li>
+                        @empty
+                            <li class="text-center py-3 text-muted small">{{ __('No new notifications') }}</li>
+                        @endforelse
+                        @if(Auth::user()->unreadNotifications->count() > 0)
+                            <li><a class="dropdown-item text-center small text-primary py-2" href="#">{{ __('Mark all as read') }}</a></li>
+                        @endif
+                    </ul>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button class="btn btn-outline-secondary border-0" id="themeToggle">
+                    <i class="fa-solid fa-moon" id="themeIcon"></i>
+                </button>
+
+                <!-- Profile Dropdown -->
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=3f6ad8&color=fff" alt="Avatar" width="32" height="32" class="rounded-circle me-2">
+                        <span class="d-none d-md-inline text-body-emphasis fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
+                        <li><span class="dropdown-header text-uppercase small">{{ __('Account') }}</span></li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profile') }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> {{ __('Logout') }}
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid px-4 py-4">
+            <!-- Flash Messages (Handled by SweetAlert2 now) -->
+            {{-- 
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="fa-solid fa-check-circle me-2"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            --}}
+
+            @yield('content')
+        </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+</div>
+<!-- /#wrapper -->
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // SweetAlert2 Flash Messages
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: "{{ __('Success!') }}",
+            text: "{{ session('success') }}",
+            timer: 3000,
+            showConfirmButton: false
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: "{{ __('Error!') }}",
+            text: "{{ session('error') }}",
+        });
+    @endif
+    
+    // Sidebar Toggle
+    document.getElementById('sidebarToggle').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.body.classList.toggle('sb-sidenav-toggled');
+    });
+
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const htmlElement = document.documentElement;
+
+    function updateThemeIcon(theme) {
+        if (theme === 'dark') {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        } else {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    }
+
+    // Initialize Icon
+    updateThemeIcon(htmlElement.getAttribute('data-bs-theme'));
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        htmlElement.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+
+        // Dispatch custom event for components to react
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
+    });
+</script>
+
+@stack('scripts')
+
+</body>
+</html>
