@@ -23,7 +23,7 @@ A comprehensive system for managing ISP operations, including customer managemen
 
 1.  **Clone the repository**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/winetstln-glitch/mstore.git
     cd mstore
     ```
 
