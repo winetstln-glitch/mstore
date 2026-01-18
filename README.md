@@ -1,5 +1,7 @@
 # MStore - Ticketing & Installation Management System
 
+![CI Status](https://github.com/winetstln-glitch/mstore/actions/workflows/ci.yml/badge.svg)
+
 A comprehensive system for managing ISP operations, including customer management, ticketing (complaints/requests), and installation tracking with role-based access control (Admin, NOC, Technician).
 
 ## Features
