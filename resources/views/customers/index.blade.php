@@ -7,7 +7,19 @@
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-dark">{{ __('Customer Management') }}</h5>
                 <div>
+                    @can('customer.view')
+                    @if(Auth::user()->hasRole('admin'))
+                        <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary btn-sm me-2">
+                            <i class="fa-solid fa-file-export me-1"></i> {{ __('Export Customers') }}
+                        </a>
+                    @endif
+                    @endcan
                     @can('customer.create')
+                    @if(Auth::user()->hasRole('admin'))
+                        <button type="button" class="btn btn-outline-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#importCustomersModal">
+                            <i class="fa-solid fa-file-import me-1"></i> {{ __('Import Customers') }}
+                        </button>
+                    @endif
                     <a href="{{ route('customers.import') }}" class="btn btn-outline-success btn-sm me-2">
                         <i class="fa-solid fa-cloud-arrow-down me-1"></i> {{ __('Import from GenieACS') }}
                     </a>
@@ -48,6 +60,7 @@
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Contact') }}</th>
                                 <th scope="col">{{ __('Service Info') }}</th>
+                                <th scope="col">{{ __('Modem') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
                                 <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
                             </tr>
@@ -76,6 +89,19 @@
                                     <td>
                                         <div>{{ $customer->package }}</div>
                                         <div class="small text-muted">{{ $customer->ip_address }}</div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $ms = $modemStatuses[$customer->id] ?? ['online' => false, 'last_inform' => null];
+                                        @endphp
+                                        @if($ms['online'])
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Online') }}</span>
+                                        @else
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ __('Offline') }}</span>
+                                        @endif
+                                        @if($ms['last_inform'])
+                                            <div class="small text-muted mt-1">{{ __('Last Inform') }}: {{ \Carbon\Carbon::parse($ms['last_inform'])->diffForHumans() }}</div>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($customer->status === 'active')
@@ -132,4 +158,33 @@
         </div>
     </div>
 </div>
+
+@can('customer.create')
+@if(Auth::user()->hasRole('admin'))
+<!-- Import Customers Modal -->
+<div class="modal fade" id="importCustomersModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ __('Import Customers') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="importCustomersForm" action="{{ route('customers.importFile') }}" method="POST" enctype="multipart/form-data">
+          @csrf
+          <div class="mb-3">
+            <label class="form-label">{{ __('Select File (.xlsx, .csv)') }}</label>
+            <input type="file" name="file" class="form-control" accept=".xlsx,.csv" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+        <button type="submit" form="importCustomersForm" class="btn btn-success btn-sm">{{ __('Import') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+@endcan
 @endsection

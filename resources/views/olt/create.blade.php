@@ -34,7 +34,6 @@
                             @enderror
                         </div>
 
-                        <!-- Port -->
                         <div class="col-md-6">
                             <label for="port" class="form-label">{{ __('Port') }}</label>
                             <input type="number" name="port" id="port" value="{{ old('port', 23) }}" class="form-control @error('port') is-invalid @enderror" required>
@@ -44,7 +43,6 @@
                             @enderror
                         </div>
 
-                        <!-- Brand -->
                         <div class="col-md-6">
                             <label for="brand" class="form-label">Brand</label>
                             <select name="brand" id="brand" class="form-select @error('brand') is-invalid @enderror" required>
@@ -72,7 +70,6 @@
                             @enderror
                         </div>
 
-                        <!-- Username -->
                         <div class="col-md-6">
                             <label for="username" class="form-label">{{ __('Username') }}</label>
                             <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-control @error('username') is-invalid @enderror" required>
@@ -81,7 +78,6 @@
                             @enderror
                         </div>
 
-                        <!-- Password -->
                         <div class="col-md-6">
                             <label for="password" class="form-label">{{ __('Password') }}</label>
                             <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" required>
@@ -90,7 +86,22 @@
                             @enderror
                         </div>
 
-                        <!-- Is Active -->
+                        <div class="col-md-6">
+                            <label for="snmp_port" class="form-label">SNMP Port</label>
+                            <input type="number" name="snmp_port" id="snmp_port" value="{{ old('snmp_port', 161) }}" class="form-control @error('snmp_port') is-invalid @enderror">
+                            @error('snmp_port')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="snmp_community" class="form-label">SNMP Community</label>
+                            <input type="text" name="snmp_community" id="snmp_community" value="{{ old('snmp_community') }}" class="form-control @error('snmp_community') is-invalid @enderror">
+                            @error('snmp_community')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-6 d-flex align-items-center pt-4">
                             <div class="form-check form-switch">
                                 <input type="hidden" name="is_active" value="0">

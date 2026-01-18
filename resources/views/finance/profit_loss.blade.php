@@ -4,9 +4,15 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Profit & Loss Statement') }}</h1>
-        <div>
+        <div class="d-flex gap-2">
             <a href="{{ route('finance.index') }}" class="btn btn-secondary">
                 <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to Finance') }}
+            </a>
+            <a href="{{ route('finance.profit_loss.excel', ['month' => request('month')]) }}" class="btn btn-success">
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Download Excel') }}
+            </a>
+            <a href="{{ route('finance.profit_loss.pdf', ['month' => request('month')]) }}" class="btn btn-danger">
+                <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Download PDF') }}
             </a>
             <button onclick="window.print()" class="btn btn-primary">
                 <i class="fa-solid fa-print me-1"></i> {{ __('Print Report') }}
@@ -22,6 +28,40 @@
             </form>
         </div>
         <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card border-left-success h-100">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Revenue') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-left-warning h-100">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Total Cost of Revenue') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">-{{ number_format($totalCOGS, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-left-info h-100">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Gross Profit') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($grossProfit, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-left-primary h-100">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Net Profit') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <!-- Revenue Section -->
@@ -90,9 +130,27 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>{{ __('General Expenses') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($operatingExpenses, 0, ',', '.') }}</td>
+                            <td>{{ __('Server Expense') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($serverExpenses, 0, ',', '.') }}</td>
                         </tr>
+                        <tr>
+                            <td>{{ __('Transport') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($transportExpenses, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Consumption') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($consumptionExpenses, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Repair') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($repairExpenses, 0, ',', '.') }}</td>
+                        </tr>
+                        @if($otherOperatingExpenses != 0)
+                        <tr>
+                            <td>{{ __('Other Operating Expenses') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+                        </tr>
+                        @endif
                     </tbody>
 
                     <!-- Net Profit -->

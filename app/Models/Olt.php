@@ -19,11 +19,15 @@ class Olt extends Model
         'description',
         'latitude',
         'longitude',
+        'snmp_version',
+        'snmp_community',
+        'snmp_port',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'port' => 'integer',
+        'snmp_port' => 'integer',
         'password' => 'encrypted',
     ];
 

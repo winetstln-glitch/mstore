@@ -251,9 +251,9 @@
         var olts = @json($olts) || [];
 
         // Initialize map
-        // Server Location: -6.800142, 105.93952
-        var defaultLat = -6.800142;
-        var defaultLng = 105.93952;
+        // Server Location: -6.800278, 105.939159
+        var defaultLat = -6.800278;
+        var defaultLng = 105.939159;
         var initialZoom = 15; // Adjusted zoom for better initial view of the area
 
         function hasCoord(o) {
@@ -775,10 +775,12 @@
         // Initial line draw
         drawLines();
 
-        // Fit bounds
+        // Fit bounds - Disabled to respect default center/zoom
+        /*
         if (markers.getLayers().length > 0) {
             map.fitBounds(markers.getBounds().pad(0.1));
         }
+        */
 
         // --- Add Mode Logic ---
         var addMode = null; // 'olt', 'odc', 'odp', or null

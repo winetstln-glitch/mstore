@@ -6,6 +6,9 @@
         <h1 class="h3 mb-0 text-gray-800">{{ __('Finance Dashboard') }}</h1>
         <div>
             @if(Auth::user()->hasRole('admin'))
+            <a href="{{ route('finance.manager_report') }}" class="btn btn-warning me-2">
+                <i class="fa-solid fa-user-tie me-1"></i> {{ __('Laporan Keuangan Pengurus') }}
+            </a>
             <a href="{{ route('finance.profit_loss') }}" class="btn btn-info me-2">
                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> {{ __('Profit & Loss Report') }}
             </a>
@@ -149,7 +152,8 @@
                             <th>{{ __('ISP Share') }} (25%)</th>
                             <th>{{ __('Tool Fund') }} (15%)</th>
                             <th>{{ __('Expenses') }}</th>
-                            <th>{{ __('Investor Share') }}</th>
+                            <th>{{ __('Net Balance') }}</th>
+                            <th>{{ __('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -164,6 +168,11 @@
                             <td class="text-end fw-bold {{ $summary->net_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                 {{ number_format($summary->net_balance, 0, ',', '.') }}
                             </td>
+                            <td class="text-center">
+                                <a href="{{ route('finance.coordinator.detail', $summary->id) }}" class="btn btn-sm btn-info text-white" title="{{ __('View Details') }}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -177,6 +186,9 @@
             <div class="d-flex align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary me-3">{{ __('Transactions') }}</h6>
                 @if(Auth::user()->hasRole('admin'))
+                <button type="button" id="toggleSelectMode" class="btn btn-sm btn-outline-secondary me-2">
+                    <i class="fa-solid fa-list-check me-1"></i> {{ __('Select Mode') }}
+                </button>
                 <button type="button" id="bulkDeleteBtn" class="btn btn-sm btn-danger d-none" onclick="submitBulkDelete()">
                     <i class="fa-solid fa-trash me-1"></i> {{ __('Delete Selected') }}
                 </button>
@@ -210,7 +222,7 @@
                     <thead class="table-light">
                         <tr>
                             @if(Auth::user()->hasRole('admin'))
-                            <th class="text-center" width="40">
+                            <th class="text-center select-column d-none" width="40">
                                 <input type="checkbox" id="selectAll" class="form-check-input">
                             </th>
                             @endif
@@ -228,7 +240,7 @@
                         @forelse($transactions as $transaction)
                         <tr>
                             @if(Auth::user()->hasRole('admin'))
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle select-column d-none">
                                 <input type="checkbox" name="ids[]" value="{{ $transaction->id }}" class="form-check-input select-row">
                             </td>
                             @endif
@@ -239,7 +251,16 @@
                                 </span>
                             </td>
                             <td class="align-middle">
-                                <span class="badge bg-secondary text-white">{{ ucfirst(__($transaction->category)) }}</span>
+                                @php
+                                    $categoryLabelKey = match($transaction->category) {
+                                        'Operational' => 'Server Expense',
+                                        'Transport' => 'Transport',
+                                        'Consumption' => 'Consumption',
+                                        'Repair' => 'Repair',
+                                        default => $transaction->category,
+                                    };
+                                @endphp
+                                <span class="badge bg-secondary text-white">{{ ucfirst(__($categoryLabelKey)) }}</span>
                             </td>
                             <td class="align-middle">{{ $transaction->description }}</td>
                             <td class="align-middle">
@@ -253,30 +274,32 @@
                                 {{ $transaction->type == 'income' ? '+' : '-' }} {{ number_format($transaction->amount, 0, ',', '.') }}
                             </td>
                             <td class="align-middle small">{{ $transaction->reference_number }}</td>
-                            <td class="align-middle text-center">
+                            <td class="align-middle text-center row-actions">
                                 @if(Auth::user()->hasRole('admin'))
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1" 
-                                    data-bs-toggle="modal"  
-                                    data-bs-target="#editTransactionModal"
-                                    data-id="{{ $transaction->id }}"
-                                    data-type="{{ $transaction->type }}"
-                                    data-category="{{ $transaction->category }}"
-                                    data-amount="{{ $transaction->amount }}"
-                                    data-date="{{ $transaction->transaction_date->format('Y-m-d') }}"
-                                    data-coordinator="{{ $transaction->coordinator_id }}"
-                                    data-investor="{{ $transaction->investor_id }}"
-                                    data-description="{{ $transaction->description }}"
-                                    data-ref="{{ $transaction->reference_number }}"
-                                    data-action="{{ route('finance.update', $transaction->id) }}">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this transaction?') }}')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="fa-solid fa-trash"></i>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"  
+                                        data-bs-target="#editTransactionModal"
+                                        data-id="{{ $transaction->id }}"
+                                        data-type="{{ $transaction->type }}"
+                                        data-category="{{ $transaction->category }}"
+                                        data-amount="{{ $transaction->amount }}"
+                                        data-date="{{ $transaction->transaction_date->format('Y-m-d') }}"
+                                        data-coordinator="{{ $transaction->coordinator_id }}"
+                                        data-investor="{{ $transaction->investor_id }}"
+                                        data-description="{{ $transaction->description }}"
+                                        data-ref="{{ $transaction->reference_number }}"
+                                        data-action="{{ route('finance.update', $transaction->id) }}">
+                                        <i class="fa-solid fa-pen"></i>
                                     </button>
-                                </form>
+                                    <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this transaction?') }}')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                                 @endif
                             </td>
                         </tr>
@@ -328,7 +351,10 @@
                             </optgroup>
                             <optgroup label="{{ __('Expense') }}">
                                 <option value="Salary">{{ __('Salary') }}</option>
-                                <option value="Operational">{{ __('Operational') }}</option>
+                                <option value="Operational">{{ __('Server Expense') }}</option>
+                                <option value="Transport">{{ __('Transport') }}</option>
+                                <option value="Consumption">{{ __('Consumption') }}</option>
+                                <option value="Repair">{{ __('Repair') }}</option>
                                 <option value="Maintenance">{{ __('Maintenance') }}</option>
                                 <option value="Pembayaran ISP">{{ __('Pembayaran ISP') }}</option>
                                 <option value="Pembelian Alat">{{ __('Pembelian Alat') }}</option>
@@ -409,7 +435,10 @@
                             </optgroup>
                             <optgroup label="{{ __('Expense') }}">
                                 <option value="Salary">{{ __('Salary') }}</option>
-                                <option value="Operational">{{ __('Operational') }}</option>
+                                <option value="Operational">{{ __('Server Expense') }}</option>
+                                <option value="Transport">{{ __('Transport') }}</option>
+                                <option value="Consumption">{{ __('Consumption') }}</option>
+                                <option value="Repair">{{ __('Repair') }}</option>
                                 <option value="Maintenance">{{ __('Maintenance') }}</option>
                                 <option value="Pembayaran ISP">{{ __('Pembayaran ISP') }}</option>
                                 <option value="Pembelian Alat">{{ __('Pembelian Alat') }}</option>
@@ -488,8 +517,11 @@
         const checkboxes = document.querySelectorAll('.select-row');
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
         const bulkDeleteForm = document.getElementById('bulkDeleteForm');
+        const toggleSelectModeBtn = document.getElementById('toggleSelectMode');
+        const selectColumns = document.querySelectorAll('.select-column');
+        const rowActions = document.querySelectorAll('.row-actions');
 
-        function toggleButton() {
+        function updateBulkDeleteVisibility() {
             const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
             if (bulkDeleteBtn) {
                 if (anyChecked) {
@@ -500,17 +532,49 @@
             }
         }
 
-        if(selectAll) {
+        if (toggleSelectModeBtn) {
+            toggleSelectModeBtn.addEventListener('click', function () {
+                const isActive = this.classList.toggle('active');
+
+                selectColumns.forEach(col => {
+                    if (isActive) {
+                        col.classList.remove('d-none');
+                    } else {
+                        col.classList.add('d-none');
+                    }
+                });
+
+                rowActions.forEach(cell => {
+                    if (isActive) {
+                        cell.classList.add('d-none');
+                    } else {
+                        cell.classList.remove('d-none');
+                    }
+                });
+
+                if (!isActive) {
+                    if (selectAll) {
+                        selectAll.checked = false;
+                    }
+                    checkboxes.forEach(cb => {
+                        cb.checked = false;
+                    });
+                    updateBulkDeleteVisibility();
+                }
+            });
+        }
+
+        if (selectAll) {
             selectAll.addEventListener('change', function() {
                 checkboxes.forEach(cb => {
                     cb.checked = selectAll.checked;
                 });
-                toggleButton();
+                updateBulkDeleteVisibility();
             });
         }
 
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', toggleButton);
+            cb.addEventListener('change', updateBulkDeleteVisibility);
         });
 
         window.submitBulkDelete = function() {

@@ -79,6 +79,36 @@
                                             </div>
                                         @elseif($setting->type == 'textarea')
                                             <textarea name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-control" rows="3">{{ $setting->value }}</textarea>
+                                        @elseif($setting->type == 'packages')
+                                            @php
+                                                $packages = json_decode($setting->value, true) ?? [];
+                                                $rows = max(count($packages), 3);
+                                            @endphp
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-sm align-middle mb-0">
+                                                    <thead class="bg-body-tertiary">
+                                                        <tr>
+                                                            <th style="width: 60%">{{ __('Name') }}</th>
+                                                            <th style="width: 40%">{{ __('Price') }}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @for($i = 0; $i < $rows; $i++)
+                                                            @php
+                                                                $pkg = $packages[$i] ?? ['name' => '', 'price' => ''];
+                                                            @endphp
+                                                            <tr>
+                                                                <td>
+                                                                    <input type="text" name="{{ $setting->key }}[{{ $i }}][name]" value="{{ $pkg['name'] }}" class="form-control form-control-sm">
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" name="{{ $setting->key }}[{{ $i }}][price]" value="{{ $pkg['price'] }}" class="form-control form-control-sm" min="0" step="1000">
+                                                                </td>
+                                                            </tr>
+                                                        @endfor
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         @else
                                             <input type="text" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
                                         @endif
@@ -99,4 +129,3 @@
     </div>
 </div>
 @endsection
-

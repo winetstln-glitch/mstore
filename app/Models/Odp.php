@@ -41,4 +41,12 @@ class Odp extends Model
     {
         return $this->hasMany(Customer::class);
     }
+    
+    public function isFull(): bool
+    {
+        if ($this->capacity === null) {
+            return false;
+        }
+        return $this->filled >= $this->capacity;
+    }
 }

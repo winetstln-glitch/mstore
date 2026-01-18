@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Notifications\DatabaseNotification;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -26,8 +27,6 @@ class TicketWebController extends Controller implements HasMiddleware
             new Middleware('permission:ticket.view', only: ['index', 'show']),
             new Middleware('permission:ticket.create', only: ['create', 'store']),
             new Middleware('permission:ticket.edit', only: ['edit']),
-            new Middleware('permission:ticket.edit|ticket.complete', only: ['update']),
-            new Middleware('permission:ticket.complete', only: ['complete']),
             new Middleware('permission:ticket.delete', only: ['destroy']),
         ];
     }
@@ -294,31 +293,24 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Ticket $ticket)
     {
+        $isAdmin = Auth::user()->hasRole('admin');
         $canEdit = Auth::user()->hasPermission('ticket.edit');
-
-        if (! $canEdit) {
-            if (! $ticket->technicians()->whereKey(Auth::id())->exists()) {
-                abort(403);
-            }
-
-            $validated = $request->validate([
-                'status' => 'sometimes|required|in:open,assigned,in_progress,pending,solved,closed',
-                'description' => 'nullable|string',
-                'location' => 'nullable|string',
-            ]);
-        } else {
-            $validated = $request->validate([
-                'technicians' => 'nullable|array',
-                'technicians.*' => 'exists:users,id',
-                'subject' => 'sometimes|required|string|max:255',
-                'priority' => 'sometimes|required|in:low,medium,high',
-                'status' => 'sometimes|required|in:open,assigned,in_progress,pending,solved,closed',
-                'description' => 'nullable|string',
-                'location' => 'nullable|string',
-                'odp_id' => 'nullable|exists:odps,id',
-                'coordinator_id' => 'nullable|exists:coordinators,id',
-            ]);
+        $canComplete = Auth::user()->hasPermission('ticket.complete');
+        $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
+        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
+            abort(403);
         }
+        $validated = $request->validate([
+            'technicians' => 'nullable|array',
+            'technicians.*' => 'exists:users,id',
+            'subject' => 'sometimes|required|string|max:255',
+            'priority' => 'sometimes|required|in:low,medium,high',
+            'status' => 'sometimes|required|in:open,assigned,in_progress,pending,solved,closed',
+            'description' => 'nullable|string',
+            'location' => 'nullable|string',
+            'odp_id' => 'nullable|exists:odps,id',
+            'coordinator_id' => 'nullable|exists:coordinators,id',
+        ]);
 
         $oldStatus = $ticket->status;
         $oldTechnicianIds = $ticket->technicians->pluck('id')->toArray();
@@ -408,9 +400,15 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function complete(Request $request, Ticket $ticket)
     {
+        $isAdmin = Auth::user()->hasRole('admin');
+        $hasPermission = Auth::user()->hasPermission('ticket.complete');
+        $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
+        if (!($isAdmin || $hasPermission || $isAssigned)) {
+            abort(403);
+        }
         $request->validate([
-            'photo_before' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'photo_proof' => 'required|image|mimes:jpeg,png,jpg|max:2048', // This is photo_after
+            'photo_before' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
+            'photo_proof' => 'required|image|mimes:jpeg,png,jpg|max:10240',
             'description' => 'nullable|string',
         ]);
 
@@ -435,8 +433,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'description' => 'Ticket marked as solved with photos.' . ($request->description ? " Note: {$request->description}" : ''),
         ]);
 
-        // Mark related notification as read
-        Auth::user()->unreadNotifications->where('data.ticket_id', $ticket->id)->markAsRead();
+        DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
 
         return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket marked as solved successfully.'));
     }
@@ -446,8 +443,11 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function updateLocation(Request $request, Ticket $ticket)
     {
-        // Check if user has permission (edit or complete)
-        if (!auth()->user()->hasPermission('ticket.edit') && !auth()->user()->hasPermission('ticket.complete')) {
+        $isAdmin = Auth::user()->hasRole('admin');
+        $canEdit = Auth::user()->hasPermission('ticket.edit');
+        $canComplete = Auth::user()->hasPermission('ticket.complete');
+        $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
+        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -483,6 +483,40 @@ class TicketWebController extends Controller implements HasMiddleware
         ]);
 
         return redirect()->route('tickets.show', $ticket)->with('success', __('Location updated successfully.'));
+    }
+
+    public function updateCustomer(Request $request, Ticket $ticket)
+    {
+        $isAdmin = Auth::user()->hasRole('admin');
+        $canEdit = Auth::user()->hasPermission('ticket.edit');
+        $canComplete = Auth::user()->hasPermission('ticket.complete');
+        $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
+        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
+            abort(403);
+        }
+        if ($ticket->type !== 'pasang_baru' || !$ticket->customer) {
+            abort(403);
+        }
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'address' => 'nullable|string',
+            'phone' => 'nullable|string|max:20',
+            'package' => 'nullable|string|max:100',
+            'pppoe_user' => 'nullable|string|max:100',
+            'pppoe_password' => 'nullable|string|max:100',
+            'onu_serial' => 'nullable|string|max:100',
+            'device_model' => 'nullable|string|max:100',
+            'ssid_name' => 'nullable|string|max:100',
+            'ssid_password' => 'nullable|string|max:100',
+        ]);
+        $ticket->customer->update($validated);
+        TicketLog::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => Auth::id(),
+            'action' => 'customer_updated',
+            'description' => 'Customer data updated during installation.',
+        ]);
+        return redirect()->route('tickets.show', $ticket)->with('success', __('Customer updated successfully.'));
     }
 
     /**

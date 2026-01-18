@@ -9,11 +9,10 @@ use Illuminate\Support\Facades\Log;
 class GenieACSService
 {
     protected $baseUrl;
-    protected $timeout = 30; // Increased timeout
+    protected $timeout = 30;
 
     public function __construct()
     {
-        // Fetch the active server from DB, fallback to config/env if not found
         $server = GenieAcsServer::where('is_active', true)->first();
         
         if ($server) {
@@ -21,6 +20,17 @@ class GenieACSService
         } else {
             $this->baseUrl = config('services.genieacs.url', 'http://genieacs:7557');
         }
+    }
+
+    public function useServer(?GenieAcsServer $server): self
+    {
+        if ($server) {
+            $this->baseUrl = rtrim($server->url, '/');
+        } else {
+            $this->baseUrl = config('services.genieacs.url', 'http://genieacs:7557');
+        }
+
+        return $this;
     }
 
     /**

@@ -22,7 +22,7 @@
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                 <span>Capacity</span>
-                                <span class="badge bg-info-subtle text-info border border-info-subtle">{{ $odp->capacity }} Ports</span>
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">{{ $odp->capacity ?? 'Unlimited' }} {{ $odp->capacity ? 'Ports' : '' }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                 <span>Filled</span>

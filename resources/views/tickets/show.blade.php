@@ -73,7 +73,7 @@
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                             <h6 class="fw-bold mb-0">{{ __('Location / Notes') }}</h6>
-                            @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete')))
+                            @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                                 <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editLocationModal">
                                     <i class="fa-solid fa-pen-to-square"></i> {{ __('Edit') }}
                                 </button>
@@ -85,7 +85,7 @@
                             </a>
                         </p>
                     </div>
-                @elseif(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete')))
+                @elseif(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                             <h6 class="fw-bold mb-0">{{ __('Location / Notes') }}</h6>
@@ -135,7 +135,7 @@
                         </div>
                     @endif
 
-                    @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete')))
+                    @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                         <div class="bg-light p-3 rounded border">
                             <h6 class="fw-bold mb-3"><i class="fa-solid fa-check-circle text-success me-1"></i> {{ __('Mark as Completed') }}</h6>
                             <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
@@ -227,6 +227,11 @@
                     </ul>
                     <div class="d-grid mt-3">
                         <a href="{{ route('customers.edit', $ticket->customer) }}" class="btn btn-outline-primary btn-sm">{{ __('View Customer') }}</a>
+                        @if($ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+                        <button type="button" class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
+                            <i class="fa-solid fa-user-pen me-1"></i> {{ __('Edit Customer') }}
+                        </button>
+                        @endif
                     </div>
                 @else
                     <p class="text-body-secondary small mb-0">{{ __('No customer assigned.') }}</p>
@@ -302,8 +307,72 @@
     </div>
 </div>
 
+@if($ticket->customer && $ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCustomerModalLabel">{{ __('Edit Customer') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('tickets.updateCustomer', $ticket) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="cust_name" class="form-label">{{ __('Name') }}</label>
+                            <input type="text" class="form-control" id="cust_name" name="name" value="{{ $ticket->customer->name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_phone" class="form-label">{{ __('Phone') }}</label>
+                            <input type="text" class="form-control" id="cust_phone" name="phone" value="{{ $ticket->customer->phone }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="cust_address" class="form-label">{{ __('Address') }}</label>
+                            <input type="text" class="form-control" id="cust_address" name="address" value="{{ $ticket->customer->address }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_package" class="form-label">{{ __('Package') }}</label>
+                            <input type="text" class="form-control" id="cust_package" name="package" value="{{ $ticket->customer->package }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_onu_serial" class="form-label">{{ __('ONU Serial') }}</label>
+                            <input type="text" class="form-control" id="cust_onu_serial" name="onu_serial" value="{{ $ticket->customer->onu_serial }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_device_model" class="form-label">{{ __('Device Model') }}</label>
+                            <input type="text" class="form-control" id="cust_device_model" name="device_model" value="{{ $ticket->customer->device_model }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_pppoe_user" class="form-label">{{ __('PPPoE User') }}</label>
+                            <input type="text" class="form-control" id="cust_pppoe_user" name="pppoe_user" value="{{ $ticket->customer->pppoe_user }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_pppoe_password" class="form-label">{{ __('PPPoE Password') }}</label>
+                            <input type="text" class="form-control" id="cust_pppoe_password" name="pppoe_password" value="{{ $ticket->customer->pppoe_password }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_ssid_name" class="form-label">{{ __('SSID Name') }}</label>
+                            <input type="text" class="form-control" id="cust_ssid_name" name="ssid_name" value="{{ $ticket->customer->ssid_name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_ssid_password" class="form-label">{{ __('SSID Password') }}</label>
+                            <input type="text" class="form-control" id="cust_ssid_password" name="ssid_password" value="{{ $ticket->customer->ssid_password }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 <!-- Edit Location Modal -->
-@if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete')))
+@if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
 <div class="modal fade" id="editLocationModal" tabindex="-1" aria-labelledby="editLocationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -325,6 +394,10 @@
                         </div>
                         <div class="form-text">{{ __('Click the crosshair button to get your current location.') }}</div>
                     </div>
+                    <div class="mt-3">
+                        <div class="form-text text-muted mb-2">{{ __('Click on the map or drag the marker to update location.') }}</div>
+                        <div id="ticket-map-picker" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
@@ -335,12 +408,15 @@
     </div>
 </div>
 
+
+
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
         const locationInput = document.getElementById('location');
 
-        if (getCurrentLocationBtn) {
+        if (getCurrentLocationBtn && locationInput) {
             getCurrentLocationBtn.addEventListener('click', function() {
                 if (navigator.geolocation) {
                     getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -360,5 +436,6 @@
         }
     });
 </script>
+@endpush
 @endif
 @endsection

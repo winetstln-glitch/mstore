@@ -75,6 +75,9 @@ class TicketController extends Controller
      */
     public function update(Request $request, Ticket $ticket)
     {
+        if (!$request->user() || !$request->user()->hasPermission('ticket.edit')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
         $validated = $request->validate([
             'technician_id' => 'nullable|exists:users,id',
             'subject' => 'sometimes|required|string|max:255',

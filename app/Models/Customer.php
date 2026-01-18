@@ -11,6 +11,11 @@ class Customer extends Model
 
     protected $guarded = ['id'];
 
+    public function package()
+    {
+        return $this->belongsTo(Package::class);
+    }
+
     public function odp()
     {
         return $this->belongsTo(Odp::class);

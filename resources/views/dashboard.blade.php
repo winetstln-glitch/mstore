@@ -11,9 +11,9 @@
                 </h4>
                 <p class="text-body-secondary small mb-0">{{ __('Welcome back, :name!', ['name' => Auth::user()->name]) }}</p>
             </div>
-            <button class="btn btn-primary shadow-sm">
+            <a href="{{ route('finance.index') }}" class="btn btn-primary shadow-sm">
                 <i class="fa-solid fa-plus me-2"></i> {{ __('New Report') }}
-            </button>
+            </a>
         </div>
     </div>
 </div>

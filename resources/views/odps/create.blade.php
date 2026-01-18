@@ -25,7 +25,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="capacity" class="form-label">{{ __('Capacity (Ports)') }}</label>
-                            <input type="number" class="form-control @error('capacity') is-invalid @enderror" id="capacity" name="capacity" value="{{ old('capacity', 8) }}" required min="1">
+                            <input type="number" class="form-control @error('capacity') is-invalid @enderror" id="capacity" name="capacity" value="{{ old('capacity', 8) }}" min="1">
+                            <div class="form-text text-muted">{{ __('Leave empty for unlimited capacity.') }}</div>
                             @error('capacity')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -90,33 +91,45 @@
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
         });
-        var dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: '&copy; Google Maps'
+        });
+
+        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 20,
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         });
-        
-        function setMapLayer(theme) {
-            if (theme === 'dark') {
-                map.removeLayer(osm);
-                dark.addTo(map);
-            } else {
-                map.removeLayer(dark);
-                osm.addTo(map);
-            }
+
+        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        if (currentTheme === 'dark') {
+            darkLayer.addTo(map);
+        } else {
+            osm.addTo(map);
         }
 
-        // Initial set
-        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-        setMapLayer(currentTheme);
+        var baseMaps = {
+            "Dark Mode": darkLayer,
+            "Satellite (Google)": googleHybrid,
+            "Street (OSM)": osm
+        };
+        L.control.layers(baseMaps).addTo(map);
 
-        // Listen for theme changes
         window.addEventListener('themeChanged', function(e) {
-            setMapLayer(e.detail.theme);
+            if (e.detail.theme === 'dark') {
+                if (map.hasLayer(osm)) map.removeLayer(osm);
+                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            } else {
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+            }
         });
 
         var marker;
 
-        // Try to get user location
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
                 var lat = position.coords.latitude;

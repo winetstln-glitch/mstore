@@ -27,19 +27,11 @@ class SidebarMenuTest extends TestCase
         // Check for "Main Menu" header
         $response->assertSee('Main Menu');
 
-        // Check order: Tickets -> Network Monitor -> OLT Management -> Network & Ops
-        // We use assertSeeInOrder to verify the sequence in the HTML
-        $response->assertSeeInOrder([
-            'Tickets',
-            'Network Monitor',
-            'OLT Management',
-            'Network & Ops' // This header appears if admin has tech permissions (admin has all)
-        ]);
-        
-        // Also check Administration comes after
-        $response->assertSeeInOrder([
-            'OLT Management',
-            'Administration'
-        ]);
+        $response->assertSeeInOrder([__('Tickets'), __('Network Management')]);
+        $response->assertSeeInOrder([__('Network Management'), __('Administration')]);
+
+        $response->assertSee(__('Monitoring Genieacs'));
+        $response->assertSee(__('Management Router'));
+        $response->assertSee(__('OLT Management'));
     }
 }

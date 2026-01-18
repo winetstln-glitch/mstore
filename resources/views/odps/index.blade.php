@@ -42,7 +42,7 @@
                                     </td>
                                     <td>
                                         <span class="badge bg-info-subtle text-info border border-info-subtle">
-                                            {{ $odp->capacity }} {{ __('Ports') }}
+                                            {{ $odp->capacity ?? 'Unlimited' }} {{ $odp->capacity ? __('Ports') : '' }}
                                         </span>
                                     </td>
                                     <td>

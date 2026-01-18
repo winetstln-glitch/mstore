@@ -238,6 +238,12 @@
             </a>
             @endif
 
+            @if(Auth::user()->hasPermission('customer.edit'))
+            <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-box-open"></i> {{ __('Packages') }}
+            </a>
+            @endif
+
             @if(Auth::user()->hasPermission('ticket.view'))
             <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-ticket"></i> {{ __('Tickets') }} <span class="visually-hidden">Tickets</span>
@@ -246,30 +252,45 @@
 
             @if(
                 Auth::user()->hasPermission('genieacs.view') ||
+                Auth::user()->hasPermission('router.view') ||
                 Auth::user()->hasPermission('olt.view') ||
-                Auth::user()->hasPermission('map.view')
+                Auth::user()->hasPermission('map.view') ||
+                Auth::user()->hasPermission('odp.view') ||
+                Auth::user()->hasPermission('odc.view')
             )
             <div class="sidebar-header">
-                {{ __('Network & Ops') }}
-                <span class="visually-hidden">Network & Ops</span>
+                {{ __('Network Management') }}
+                <span class="visually-hidden">Network Management</span>
             </div>
             @endif
 
             @if(Auth::user()->hasPermission('genieacs.view'))
             <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-satellite-dish"></i> {{ __('Network Monitor') }} <span class="visually-hidden">Network Monitor</span>
+                <i class="fa-solid fa-satellite-dish"></i> {{ __('Monitoring Genieacs') }}
+            </a>
+            @endif
+            
+            @if(Auth::user()->hasPermission('router.view'))
+            <a href="{{ route('routers.index') }}" class="sidebar-item {{ request()->routeIs('routers.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-shield-alt"></i> {{ __('Management Router') }}
             </a>
             @endif
 
             @if(Auth::user()->hasPermission('olt.view'))
             <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-server"></i> {{ __('OLT Management') }} <span class="visually-hidden">OLT Management</span><span class="visually-hidden">Network & Ops</span>
+                <i class="fa-solid fa-server"></i> {{ __('OLT Management') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('odp.view'))
+            <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-network-wired"></i> {{ __('ODP Management') }}
             </a>
             @endif
 
             @if(Auth::user()->hasPermission('map.view'))
             <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-map-location-dot"></i> {{ __('Map') }}
+                <i class="fa-solid fa-map-location-dot"></i> {{ __('Network Map') }}
             </a>
             @endif
 
@@ -283,31 +304,37 @@
             @if(Auth::user()->hasPermission('technician.view') || Auth::user()->hasPermission('attendance.view') || Auth::user()->hasPermission('setting.view'))
             <div class="sidebar-header">{{ __('Technician Management') }}</div>
             @endif
-
-            @if(Auth::user()->hasPermission('technician.view') || Auth::user()->hasPermission('attendance.view'))
-            <a class="sidebar-item {{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#technicianCollapse" role="button" aria-expanded="{{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'true' : 'false' }}" aria-controls="technicianCollapse">
-                <i class="fa-solid fa-helmet-safety"></i> {{ __('Technicians') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            
+            @if(Auth::user()->hasPermission('technician.view'))
+            <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-gear"></i> {{ __('Manage Technicians') }}
             </a>
-            <div class="collapse {{ (request()->routeIs('technicians.*') || request()->routeIs('attendance.*')) ? 'show' : '' }}" id="technicianCollapse">
+            @endif
+
+            @if(Auth::user()->hasPermission('attendance.view') || Auth::user()->hasPermission('setting.view'))
+            <a class="sidebar-item {{ (request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#attendanceCollapse" role="button" aria-expanded="{{ (request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="attendanceCollapse">
+                <i class="fa-solid fa-clock"></i> {{ __('Attendance System') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ (request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="attendanceCollapse">
                 <div class="bg-light ps-3">
-                    @if(Auth::user()->hasPermission('technician.view'))
-                    <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-users-gear"></i> {{ __('Manage Technicians') }}
+                    @if(Auth::user()->hasPermission('attendance.view'))
+                    <a href="{{ route('attendance.create') }}" class="sidebar-item {{ request()->routeIs('attendance.create') ? 'active' : '' }}">
+                        <i class="fa-solid fa-fingerprint"></i> {{ __('My Attendance') }}
+                    </a>
+                    <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-list-check"></i> {{ __('Recap') }}
+                    </a>
+                    <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-calendar-week"></i> {{ __('Work Schedule') }}
+                    </a>
+                    <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-envelope-open-text"></i> {{ __('Leave Requests') }}
                     </a>
                     @endif
 
-                    @if(Auth::user()->hasPermission('attendance.view'))
-                    <a href="{{ route('attendance.create') }}" class="sidebar-item {{ request()->routeIs('attendance.create') ? 'active' : '' }}">
-                        <i class="fa-solid fa-clock"></i> {{ __('My Attendance') }}
-                    </a>
-                    <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.index') ? 'active' : '' }}">
-                        <i class="fa-solid fa-clipboard-list"></i> {{ __('Recap') }}
-                    </a>
-                    <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-calendar-week"></i> {{ __('Work Schedule (Piket)') }}
-                    </a>
-                    <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-calendar-minus"></i> {{ __('Leave Requests') }}
+                    @if(Auth::user()->hasPermission('setting.view'))
+                    <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-sliders"></i> {{ __('Attendance Settings') }}
                     </a>
                     @endif
                 </div>
@@ -438,15 +465,8 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-0" style="width: 300px; max-height: 400px; overflow-y: auto;">
                         <li><span class="dropdown-header border-bottom py-2 bg-body-tertiary">{{ __('Notifications') }}</span></li>
                         @forelse(Auth::user()->unreadNotifications as $notification)
-                            @php
-                                $url = $notification->data['url'] ?? '#';
-                                // Fix for localhost URLs when accessing from IP
-                                if (isset($notification->data['ticket_id'])) {
-                                    $url = route('tickets.show', $notification->data['ticket_id']);
-                                }
-                            @endphp
                             <li>
-                                <a class="dropdown-item py-2 border-bottom" href="{{ $url }}">
+                                <a class="dropdown-item py-2 border-bottom" href="{{ route('notifications.redirect', $notification->id) }}">
                                     <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notification' }}</div>
                                     <div class="small text-muted text-truncate">{{ $notification->data['message'] ?? '' }}</div>
                                     <div class="small text-muted mt-1" style="font-size: 0.75rem;">{{ $notification->created_at->diffForHumans() }}</div>
@@ -456,7 +476,14 @@
                             <li class="text-center py-3 text-muted small">{{ __('No new notifications') }}</li>
                         @endforelse
                         @if(Auth::user()->unreadNotifications->count() > 0)
-                            <li><a class="dropdown-item text-center small text-primary py-2" href="#">{{ __('Mark all as read') }}</a></li>
+                            <li>
+                                <form method="POST" action="{{ route('notifications.markAllAsRead') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-center small text-primary py-2 w-100 bg-transparent border-0">
+                                        {{ __('Mark all as read') }}
+                                    </button>
+                                </form>
+                            </li>
                         @endif
                     </ul>
                 </div>

@@ -19,8 +19,12 @@ class OltService
             case 'cdata':
             case 'c-data':
                 return new CDataDriver();
+            case 'vsol':
+            case 'zte':
+            case 'huawei':
+                return new HsgqDriver();
             default:
-                throw new Exception("Driver for brand {$brand} not implemented.");
+                return new HsgqDriver();
         }
     }
 

@@ -11,15 +11,89 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use OpenSpout\Writer\XLSX\Writer;
+use OpenSpout\Common\Entity\Row;
 
 class FinanceController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:finance.view', only: ['index', 'show']),
+            new Middleware('permission:finance.view', only: ['index', 'show', 'coordinatorDetail', 'downloadCoordinatorPdf', 'profitLoss', 'downloadProfitLossPdf', 'downloadProfitLossExcel', 'managerReport', 'downloadManagerReportPdf', 'downloadManagerReportExcel']),
             new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'storeCoordinatorIncome']),
         ];
+    }
+
+    public function coordinatorDetail(Coordinator $coordinator, Request $request)
+    {
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+        $query = Transaction::where('coordinator_id', $coordinator->id)
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        $transactions = $query->get();
+
+        // Calculate Summaries matching the index logic
+        $grossRevenue = $transactions->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->sum('amount');
+
+        $commission = $transactions->where('category', 'Coordinator Commission')->sum('amount');
+        $ispShare = $transactions->where('category', 'ISP Payment')->sum('amount');
+        $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
+        
+        // Other Expenses (excluding automatically generated ones and fund usages)
+        $expenses = $transactions->where('type', 'expense')
+            ->whereNotIn('category', ['Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Pembayaran ISP', 'Pembelian Alat'])
+            ->sum('amount');
+
+        $netBalance = $grossRevenue - $commission - $ispShare - $toolFund - $expenses;
+
+        return view('finance.coordinator_detail', compact(
+            'coordinator', 'transactions', 'grossRevenue', 'commission', 
+            'ispShare', 'toolFund', 'expenses', 'netBalance', 
+            'startDate', 'endDate'
+        ));
+    }
+
+    public function downloadCoordinatorPdf(Coordinator $coordinator, Request $request)
+    {
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+        $query = Transaction::where('coordinator_id', $coordinator->id)
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->orderBy('transaction_date', 'asc'); // ASC for report usually
+
+        $transactions = $query->get();
+
+        // Calculate Summaries
+        $grossRevenue = $transactions->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->sum('amount');
+
+        $commission = $transactions->where('category', 'Coordinator Commission')->sum('amount');
+        $ispShare = $transactions->where('category', 'ISP Payment')->sum('amount');
+        $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
+        
+        $expenses = $transactions->where('type', 'expense')
+            ->whereNotIn('category', ['Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Pembayaran ISP', 'Pembelian Alat'])
+            ->sum('amount');
+
+        $netBalance = $grossRevenue - $commission - $ispShare - $toolFund - $expenses;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.coordinator_pdf', compact(
+            'coordinator', 'transactions', 'grossRevenue', 'commission', 
+            'ispShare', 'toolFund', 'expenses', 'netBalance', 
+            'startDate', 'endDate'
+        ));
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Laporan_Keuangan_' . str_replace(' ', '_', $coordinator->name) . '_' . $startDate . '_sd_' . $endDate . '.pdf', ['Attachment' => false]);
     }
 
     public function update(Request $request, Transaction $transaction)
@@ -406,6 +480,7 @@ class FinanceController extends Controller implements HasMiddleware
             $netBalance = $grossRevenue - $commission - $ispShare - $toolFund - $expenses;
 
             $coordinatorSummaries[] = (object) [
+                'id' => $coordinator->id,
                 'name' => $coordinator->name,
                 'gross_revenue' => $grossRevenue,
                 'commission' => $commission,
@@ -429,20 +504,15 @@ class FinanceController extends Controller implements HasMiddleware
         return view('finance.index', compact('transactions', 'totalIncome', 'totalExpense', 'balance', 'coordinators', 'coordinatorSummaries', 'totalIspShare', 'totalToolFund', 'investors', 'totalInvestorFunds', 'totalGeneralExpenses', 'totalCompanyGrossShare'));
     }
 
-    public function profitLoss(Request $request)
+    private function buildProfitLossData(?string $month): array
     {
-        if (!Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
-
         $query = Transaction::query();
         
-        if ($request->has('month') && $request->month) {
-            $query->whereMonth('transaction_date', date('m', strtotime($request->month)))
-                  ->whereYear('transaction_date', date('Y', strtotime($request->month)));
+        if ($month) {
+            $query->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
         }
 
-        // 1. Revenue
         $memberIncome = (clone $query)->where('category', 'Member Income')->sum('amount');
         $voucherIncome = (clone $query)->where('category', 'Voucher Income')->sum('amount');
         $otherIncome = (clone $query)->where('type', 'income')
@@ -451,29 +521,239 @@ class FinanceController extends Controller implements HasMiddleware
         
         $totalRevenue = $memberIncome + $voucherIncome + $otherIncome;
 
-        // 2. Variable Costs (COGS)
         $coordCommission = (clone $query)->where('category', 'Coordinator Commission')->sum('amount');
         $ispPayment = (clone $query)->where('category', 'ISP Payment')->sum('amount');
         $toolFund = (clone $query)->where('category', 'Tool Fund')->sum('amount');
         
         $totalCOGS = $coordCommission + $ispPayment + $toolFund;
 
-        // 3. Gross Profit
         $grossProfit = $totalRevenue - $totalCOGS;
 
-        // 4. Operating Expenses
         $operatingExpenses = (clone $query)->where('type', 'expense')
             ->whereNotIn('category', ['Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Pembayaran ISP', 'Pembelian Alat'])
             ->sum('amount');
 
-        // 5. Net Profit
+        $serverExpenses = (clone $query)->where('type', 'expense')->where('category', 'Operational')->sum('amount');
+        $transportExpenses = (clone $query)->where('type', 'expense')->where('category', 'Transport')->sum('amount');
+        $consumptionExpenses = (clone $query)->where('type', 'expense')->where('category', 'Consumption')->sum('amount');
+        $repairExpenses = (clone $query)->where('type', 'expense')->where('category', 'Repair')->sum('amount');
+
+        $knownOperatingExpenses = $serverExpenses + $transportExpenses + $consumptionExpenses + $repairExpenses;
+        $otherOperatingExpenses = $operatingExpenses - $knownOperatingExpenses;
+
         $netProfit = $grossProfit - $operatingExpenses;
 
-        return view('finance.profit_loss', compact(
-            'memberIncome', 'voucherIncome', 'otherIncome', 'totalRevenue',
-            'coordCommission', 'ispPayment', 'toolFund', 'totalCOGS',
-            'grossProfit', 'operatingExpenses', 'netProfit'
-        ));
+        return [
+            'memberIncome' => $memberIncome,
+            'voucherIncome' => $voucherIncome,
+            'otherIncome' => $otherIncome,
+            'totalRevenue' => $totalRevenue,
+            'coordCommission' => $coordCommission,
+            'ispPayment' => $ispPayment,
+            'toolFund' => $toolFund,
+            'totalCOGS' => $totalCOGS,
+            'grossProfit' => $grossProfit,
+            'operatingExpenses' => $operatingExpenses,
+            'serverExpenses' => $serverExpenses,
+            'transportExpenses' => $transportExpenses,
+            'consumptionExpenses' => $consumptionExpenses,
+            'repairExpenses' => $repairExpenses,
+            'otherOperatingExpenses' => $otherOperatingExpenses,
+            'netProfit' => $netProfit,
+        ];
+    }
+
+    private function buildManagerReportData(?string $month): array
+    {
+        $query = Transaction::whereNotNull('coordinator_id');
+        
+        if ($month) {
+            $query->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+        }
+
+        $memberIncome = (clone $query)->where('type', 'income')->where('category', 'Member Income')->sum('amount');
+        $voucherIncome = (clone $query)->where('type', 'income')->where('category', 'Voucher Income')->sum('amount');
+        $totalRevenue = $memberIncome + $voucherIncome;
+
+        $coordCommissionActual = (clone $query)->where('category', 'Coordinator Commission')->sum('amount');
+        if ($coordCommissionActual > 0) {
+            $coordCommission = $coordCommissionActual;
+        } else {
+            $coordRate = Setting::getValue('commission_coordinator_percent', 15);
+            $coordCommission = $totalRevenue * ($coordRate / 100);
+        }
+
+        $afterCommission = $totalRevenue - $coordCommission;
+
+        $serverExpenses = (clone $query)->where('type', 'expense')->where('category', 'Operational')->sum('amount');
+        $transportExpenses = (clone $query)->where('type', 'expense')->where('category', 'Transport')->sum('amount');
+        $consumptionExpenses = (clone $query)->where('type', 'expense')->where('category', 'Consumption')->sum('amount');
+        $repairExpenses = (clone $query)->where('type', 'expense')->where('category', 'Repair')->sum('amount');
+
+        $operatingExpenses = $transportExpenses + $consumptionExpenses + $repairExpenses;
+
+        $depositToCompany = $afterCommission - $operatingExpenses;
+
+        return [
+            'memberIncome' => $memberIncome,
+            'voucherIncome' => $voucherIncome,
+            'totalRevenue' => $totalRevenue,
+            'coordCommission' => $coordCommission,
+            'afterCommission' => $afterCommission,
+            'operatingExpenses' => $operatingExpenses,
+            'transportExpenses' => $transportExpenses,
+            'consumptionExpenses' => $consumptionExpenses,
+            'repairExpenses' => $repairExpenses,
+            'depositToCompany' => $depositToCompany,
+        ];
+    }
+
+    public function profitLoss(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildProfitLossData($month);
+
+        return view('finance.profit_loss', array_merge($data, ['month' => $month]));
+    }
+
+    public function managerReport(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildManagerReportData($month);
+
+        return view('finance.manager_report', array_merge($data, ['month' => $month]));
+    }
+
+    public function downloadManagerReportPdf(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildManagerReportData($month);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.manager_report_pdf', array_merge($data, ['month' => $month]));
+        
+        $pdf->setPaper('a4', 'portrait');
+        
+        $fileName = 'Laporan_Keuangan_Pengurus';
+        if ($month) {
+            $fileName .= '_' . date('Y_m', strtotime($month));
+        }
+        $fileName .= '.pdf';
+        
+        return $pdf->stream($fileName, ['Attachment' => false]);
+    }
+
+    public function downloadManagerReportExcel(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildManagerReportData($month);
+
+        $fileName = 'laporan_pengurus';
+        if ($month) {
+            $fileName .= '_' . date('Y_m', strtotime($month));
+        }
+        $fileName .= '.xlsx';
+
+        return response()->streamDownload(function () use ($data) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Item',
+                'Amount',
+            ]));
+
+            $writer->addRow(Row::fromValues(['Pendapatan Member', $data['memberIncome']]));
+            $writer->addRow(Row::fromValues(['Pendapatan Voucher', $data['voucherIncome']]));
+            $writer->addRow(Row::fromValues(['Total Pendapatan', $data['totalRevenue']]));
+            $writer->addRow(Row::fromValues(['Komisi Pengurus', -1 * $data['coordCommission']]));
+            $writer->addRow(Row::fromValues(['Sisa Setelah Komisi', $data['afterCommission']]));
+            $writer->addRow(Row::fromValues(['Pengeluaran Transportasi', -1 * $data['transportExpenses']]));
+            $writer->addRow(Row::fromValues(['Pengeluaran Konsumsi', -1 * $data['consumptionExpenses']]));
+            $writer->addRow(Row::fromValues(['Pengeluaran Perbaikan', -1 * $data['repairExpenses']]));
+            $writer->addRow(Row::fromValues(['Total Pengeluaran Pengurus', -1 * $data['operatingExpenses']]));
+            $writer->addRow(Row::fromValues(['Total Sisa Disetor ke Perusahaan', $data['depositToCompany']]));
+
+            $writer->close();
+        }, $fileName);
+    }
+
+    public function downloadProfitLossPdf(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildProfitLossData($month);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.profit_loss', array_merge($data, ['month' => $month]));
+        
+        $pdf->setPaper('a4', 'portrait');
+        
+        $fileName = 'Laporan_Laba_Rugi';
+        if ($month) {
+            $fileName .= '_' . date('Y_m', strtotime($month));
+        }
+        $fileName .= '.pdf';
+        
+        return $pdf->stream($fileName, ['Attachment' => false]);
+    }
+
+    public function downloadProfitLossExcel(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $month = $request->input('month');
+        $data = $this->buildProfitLossData($month);
+
+        $fileName = 'profit_loss';
+        if ($month) {
+            $fileName .= '_' . date('Y_m', strtotime($month));
+        }
+        $fileName .= '.xlsx';
+
+        return response()->streamDownload(function () use ($data) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Item',
+                'Amount',
+            ]));
+
+            $writer->addRow(Row::fromValues(['Member Income', $data['memberIncome']]));
+            $writer->addRow(Row::fromValues(['Voucher Income', $data['voucherIncome']]));
+            $writer->addRow(Row::fromValues(['Other Income', $data['otherIncome']]));
+            $writer->addRow(Row::fromValues(['Total Revenue', $data['totalRevenue']]));
+            $writer->addRow(Row::fromValues(['Coordinator Commission', -1 * $data['coordCommission']]));
+            $writer->addRow(Row::fromValues(['ISP Payment', -1 * $data['ispPayment']]));
+            $writer->addRow(Row::fromValues(['Tool Fund', -1 * $data['toolFund']]));
+            $writer->addRow(Row::fromValues(['Total Cost of Revenue', -1 * $data['totalCOGS']]));
+            $writer->addRow(Row::fromValues(['Gross Profit', $data['grossProfit']]));
+            $writer->addRow(Row::fromValues(['Operating Expenses', -1 * $data['operatingExpenses']]));
+            $writer->addRow(Row::fromValues(['Net Profit', $data['netProfit']]));
+
+            $writer->close();
+        }, $fileName);
     }
 
     public function store(Request $request)

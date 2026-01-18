@@ -16,23 +16,46 @@
                         @csrf
                         
                         <div class="mb-4">
-                            <label for="inventory_item_id" class="form-label">{{ __('Select Item') }}</label>
-                            <select name="inventory_item_id" id="inventory_item_id" class="form-select" required>
-                                <option value="">{{ __('Choose an item...') }}</option>
-                                @foreach($items as $item)
-                                    <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
-                                        {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="quantity" class="form-label">{{ __('Quantity') }}</label>
-                            <div class="input-group">
-                                <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
-                                <span class="input-group-text" id="unit-display">pcs</span>
+                            <label class="form-label">{{ __('Select Items') }}</label>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ __('Item') }}</th>
+                                            <th style="width: 180px;">{{ __('Quantity') }}</th>
+                                            <th style="width: 80px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="items-body">
+                                        <tr class="item-row">
+                                            <td>
+                                                <select name="items[0][inventory_item_id]" class="form-select item-select" required>
+                                                    <option value="">{{ __('Choose an item...') }}</option>
+                                                    @foreach($items as $item)
+                                                        <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
+                                                            {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input type="number" name="items[0][quantity]" class="form-control quantity-input" min="1" required>
+                                                    <span class="input-group-text unit-display">pcs</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-danger btn-sm remove-item-row">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
+                            <button type="button" id="add-item-row" class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-plus me-1"></i> {{ __('Add Item') }}
+                            </button>
                         </div>
 
                         <div class="mb-4">
@@ -82,11 +105,74 @@
 
 @push('scripts')
 <script>
-    document.getElementById('inventory_item_id').addEventListener('change', function() {
-        var option = this.options[this.selectedIndex];
+    function updateUnit(select) {
+        var row = select.closest('.item-row');
+        var option = select.options[select.selectedIndex];
         var unit = option.getAttribute('data-unit') || 'pcs';
-        document.getElementById('unit-display').textContent = unit;
+        var span = row.querySelector('.unit-display');
+        if (span) {
+            span.textContent = unit;
+        }
+    }
+
+    function refreshRemoveButtons() {
+        var rows = document.querySelectorAll('#items-body .item-row');
+        rows.forEach(function(row, index) {
+            var btn = row.querySelector('.remove-item-row');
+            if (btn) {
+                btn.disabled = rows.length === 1;
+            }
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-select')) {
+            updateUnit(e.target);
+        }
     });
+
+    document.getElementById('add-item-row').addEventListener('click', function() {
+        var body = document.getElementById('items-body');
+        var rows = body.querySelectorAll('.item-row');
+        var lastRow = rows[rows.length - 1];
+        var newIndex = rows.length;
+        var clone = lastRow.cloneNode(true);
+
+        clone.querySelectorAll('select, input').forEach(function(el) {
+            if (el.name && el.name.indexOf('items[') === 0) {
+                el.name = el.name.replace(/items\[\d+\]/, 'items[' + newIndex + ']');
+                if (el.tagName === 'INPUT') {
+                    el.value = '';
+                }
+                if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0;
+                }
+            }
+        });
+
+        var span = clone.querySelector('.unit-display');
+        if (span) {
+            span.textContent = 'pcs';
+        }
+
+        body.appendChild(clone);
+        refreshRemoveButtons();
+    });
+
+    document.getElementById('items-body').addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-item-row') || e.target.closest('.remove-item-row')) {
+            var btn = e.target.classList.contains('remove-item-row') ? e.target : e.target.closest('.remove-item-row');
+            var row = btn.closest('.item-row');
+            var body = document.getElementById('items-body');
+            var rows = body.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                row.remove();
+                refreshRemoveButtons();
+            }
+        }
+    });
+
+    refreshRemoveButtons();
 </script>
 @endpush
 @endsection

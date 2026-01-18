@@ -4,8 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Olt;
+use App\Models\Odp;
+use App\Models\Setting;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
+use OpenSpout\Writer\XLSX\Writer;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\XLSX\Reader as XLSXReader;
+use OpenSpout\Reader\CSV\Reader as CSVReader;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -22,8 +30,8 @@ class CustomerWebController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:customer.view', only: ['index', 'show', 'import']),
-            new Middleware('permission:customer.create', only: ['create', 'store']),
+            new Middleware('permission:customer.view', only: ['index', 'show', 'import', 'export']),
+            new Middleware('permission:customer.create', only: ['create', 'store', 'importFile']),
             new Middleware('permission:customer.edit', only: ['edit', 'update']),
             new Middleware('permission:customer.delete', only: ['destroy']),
         ];
@@ -50,8 +58,251 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         $customers = $query->latest()->paginate(10)->withQueryString();
+        
+        $modemStatuses = [];
+        foreach ($customers as $c) {
+            if (!empty($c->onu_serial)) {
+                try {
+                    $status = $this->genieService->getDeviceStatus($c->onu_serial);
+                    $modemStatuses[$c->id] = [
+                        'online' => (bool)($status['online'] ?? false),
+                        'last_inform' => $status['last_inform'] ?? null,
+                        'id' => $status['id'] ?? null,
+                    ];
+                } catch (\Exception $e) {
+                    $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
+                }
+            } else {
+                $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
+            }
+        }
 
-        return view('customers.index', compact('customers'));
+        return view('customers.index', compact('customers', 'modemStatuses'));
+    }
+
+    public function export(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $query = Customer::query();
+
+        if ($request->has('search') && $request->input('search') != '') {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status') && $request->input('status') != '') {
+            $query->where('status', $request->input('status'));
+        }
+
+        $customers = $query->orderBy('name')->get();
+
+        return response()->streamDownload(function () use ($customers) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'id',
+                'name',
+                'address',
+                'phone',
+                'package',
+                'ip_address',
+                'vlan',
+                'odp',
+                'status',
+                'pppoe_user',
+                'pppoe_password',
+                'onu_serial',
+                'device_model',
+                'ssid_name',
+                'ssid_password',
+                'latitude',
+                'longitude',
+            ]));
+
+            foreach ($customers as $customer) {
+                $writer->addRow(Row::fromValues([
+                    $customer->id,
+                    $customer->name,
+                    $customer->address,
+                    $customer->phone,
+                    $customer->package,
+                    $customer->ip_address,
+                    $customer->vlan,
+                    $customer->odp,
+                    $customer->status,
+                    $customer->pppoe_user,
+                    $customer->pppoe_password,
+                    $customer->onu_serial,
+                    $customer->device_model,
+                    $customer->ssid_name,
+                    $customer->ssid_password,
+                    $customer->latitude,
+                    $customer->longitude,
+                ]));
+            }
+
+            $writer->close();
+        }, 'customers_' . now()->format('Y-m-d_His') . '.xlsx');
+    }
+
+    public function importFile(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,csv|max:20480',
+        ]);
+
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if ($extension === 'csv') {
+            $reader = new CSVReader();
+        } else {
+            $reader = new XLSXReader();
+        }
+
+        $reader->open($file->getRealPath());
+
+        $header = null;
+        $created = 0;
+        $updated = 0;
+        $invalid = 0;
+        $missingHeader = false;
+        $rowNumber = 0;
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $cells = $row->getCells();
+                $values = [];
+                $rowNumber++;
+
+                foreach ($cells as $cell) {
+                    $values[] = $cell->getValue();
+                }
+
+                if ($header === null) {
+                    $header = array_map(function ($value) {
+                        return strtolower(trim((string) $value));
+                    }, $values);
+                    if (!in_array('name', $header, true)) {
+                        $missingHeader = true;
+                        break;
+                    }
+                    continue;
+                }
+
+                $isEmpty = true;
+                foreach ($values as $value) {
+                    if ($value !== null && $value !== '') {
+                        $isEmpty = false;
+                        break;
+                    }
+                }
+                if ($isEmpty) {
+                    continue;
+                }
+
+                $data = [];
+
+                $map = [
+                    'id' => 'id',
+                    'name' => 'name',
+                    'address' => 'address',
+                    'phone' => 'phone',
+                    'package' => 'package',
+                    'ip_address' => 'ip_address',
+                    'vlan' => 'vlan',
+                    'odp' => 'odp',
+                    'status' => 'status',
+                    'pppoe_user' => 'pppoe_user',
+                    'pppoe_password' => 'pppoe_password',
+                    'onu_serial' => 'onu_serial',
+                    'device_model' => 'device_model',
+                    'ssid_name' => 'ssid_name',
+                    'ssid_password' => 'ssid_password',
+                    'latitude' => 'latitude',
+                    'longitude' => 'longitude',
+                ];
+
+                $rowId = null;
+
+                foreach ($map as $column => $field) {
+                    $index = array_search($column, $header, true);
+                    if ($index !== false && array_key_exists($index, $values)) {
+                        $value = $values[$index];
+                        if ($column === 'id') {
+                            $rowId = $value !== null && $value !== '' ? (int) $value : null;
+                        } elseif (in_array($column, ['latitude', 'longitude'], true)) {
+                            if ($value === null || $value === '' || !is_numeric($value)) {
+                                $data[$field] = null;
+                            } else {
+                                $data[$field] = (float) $value;
+                            }
+                        } elseif ($column === 'pppoe_user') {
+                            if ($value === null || $value === '') {
+                                $data[$field] = null;
+                            } else {
+                                $data[$field] = (string) $value;
+                            }
+                        } else {
+                            $data[$field] = $value !== null ? (string) $value : null;
+                        }
+                    }
+                }
+
+                if (!isset($data['name']) || $data['name'] === null || $data['name'] === '') {
+                    $invalid++;
+                    continue;
+                }
+
+                if (isset($data['status']) && $data['status'] !== null && $data['status'] !== '') {
+                    $status = strtolower($data['status']);
+                    if (!in_array($status, ['active', 'suspend', 'terminated'], true)) {
+                        $data['status'] = 'active';
+                    } else {
+                        $data['status'] = $status;
+                    }
+                } else {
+                    $data['status'] = 'active';
+                }
+
+                if ($rowId) {
+                    $customer = Customer::find($rowId);
+                    if ($customer) {
+                        $customer->update($data);
+                        $updated++;
+                        continue;
+                    }
+                }
+
+                Customer::create($data);
+                $created++;
+            }
+        }
+
+        $reader->close();
+
+        if ($missingHeader) {
+            return redirect()->route('customers.index')->withErrors([
+                'error' => __('Invalid file format. Required column: name.')
+            ]);
+        }
+
+        return redirect()->route('customers.index')->with('success', __('Imported :created new customers, updated :updated customers.', [
+            'created' => $created,
+            'updated' => $updated,
+        ]))->with('warning', $invalid > 0 ? __('Skipped :count rows due to missing/invalid name.', ['count' => $invalid]) : null);
     }
 
     /**
@@ -150,7 +401,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             $onuDevices = [];
         }
 
-        return view('customers.create', compact('prefill', 'odps', 'olts', 'onuDevices'));
+        $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
+
+        return view('customers.create', compact('prefill', 'odps', 'olts', 'onuDevices', 'packages'));
     }
 
     /**
@@ -162,7 +415,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
-            'package' => 'nullable|string|max:100',
+            'package_id' => 'nullable|exists:packages,id',
             'ip_address' => 'nullable|ip',
             'vlan' => 'nullable|string|max:20',
             'odp' => 'nullable|string|max:50',
@@ -179,16 +432,33 @@ class CustomerWebController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
         ]);
 
-        // If ODP ID is selected, we can also sync the 'odp' string column for now if needed, or just rely on ID
+        if (!empty($validated['package_id'])) {
+            $pkg = \App\Models\Package::find($validated['package_id']);
+            if ($pkg) {
+                $validated['package'] = $pkg->name;
+            }
+        }
+
         if (!empty($validated['odp_id'])) {
-            $odp = \App\Models\Odp::find($validated['odp_id']);
+            $odp = Odp::find($validated['odp_id']);
+            if ($odp && $odp->isFull()) {
+                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
+            }
             if ($odp) {
                 $validated['odp'] = $odp->name;
             }
         }
 
         try {
-            Customer::create($validated);
+            DB::transaction(function () use ($validated) {
+                $customer = Customer::create($validated);
+                if (!empty($validated['odp_id'])) {
+                    $odp = Odp::find($validated['odp_id']);
+                    if ($odp) {
+                        $odp->increment('filled');
+                    }
+                }
+            });
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error creating customer: ' . $e->getMessage());
             return back()->withInput()->withErrors(['error' => __('Failed to create customer: :message', ['message' => $e->getMessage()])]);
@@ -205,14 +475,17 @@ class CustomerWebController extends Controller implements HasMiddleware
         $customer->load(['tickets', 'installations', 'olt', 'odp']);
 
         $genieDeviceId = null;
+        $modemStatus = ['online' => false, 'last_inform' => null];
         if ($customer->onu_serial) {
             $status = $this->genieService->getDeviceStatus($customer->onu_serial);
             if (isset($status['id'])) {
                 $genieDeviceId = $status['id'];
             }
+            $modemStatus['online'] = (bool)($status['online'] ?? false);
+            $modemStatus['last_inform'] = $status['last_inform'] ?? null;
         }
 
-        return view('customers.show', compact('customer', 'genieDeviceId'));
+        return view('customers.show', compact('customer', 'genieDeviceId', 'modemStatus'));
     }
 
     /**
@@ -236,7 +509,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             $onuDevices = [];
         }
 
-        return view('customers.edit', compact('customer', 'odps', 'olts', 'onuDevices'));
+        $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
+
+        return view('customers.edit', compact('customer', 'odps', 'olts', 'onuDevices', 'packages'));
     }
 
     /**
@@ -248,6 +523,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
+            'package_id' => 'nullable|exists:packages,id',
             'package' => 'nullable|string|max:100',
             'ip_address' => 'nullable|ip',
             'vlan' => 'nullable|string|max:20',
@@ -265,14 +541,42 @@ class CustomerWebController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
         ]);
 
-        if (!empty($validated['odp_id'])) {
-            $odp = \App\Models\Odp::find($validated['odp_id']);
-            if ($odp) {
-                $validated['odp'] = $odp->name;
+        if (!empty($validated['package_id'])) {
+            $pkg = \App\Models\Package::find($validated['package_id']);
+            if ($pkg) {
+                $validated['package'] = $pkg->name;
             }
         }
 
-        $customer->update($validated);
+        $oldOdpId = $customer->odp_id;
+        if (!empty($validated['odp_id'])) {
+            $newOdp = Odp::find($validated['odp_id']);
+            if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
+                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
+            }
+            if ($newOdp) {
+                $validated['odp'] = $newOdp->name;
+            }
+        }
+
+        DB::transaction(function () use ($customer, $validated, $oldOdpId) {
+            $customer->update($validated);
+            $newOdpId = $customer->odp_id;
+            if ($oldOdpId !== $newOdpId) {
+                if ($oldOdpId) {
+                    $oldOdp = Odp::find($oldOdpId);
+                    if ($oldOdp) {
+                        $oldOdp->decrement('filled');
+                    }
+                }
+                if ($newOdpId) {
+                    $newOdp = Odp::find($newOdpId);
+                    if ($newOdp) {
+                        $newOdp->increment('filled');
+                    }
+                }
+            }
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -290,7 +594,16 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function destroy(Customer $customer)
     {
-        $customer->delete();
+        DB::transaction(function () use ($customer) {
+            $odpId = $customer->odp_id;
+            $customer->delete();
+            if ($odpId) {
+                $odp = Odp::find($odpId);
+                if ($odp) {
+                    $odp->decrement('filled');
+                }
+            }
+        });
         return redirect()->route('customers.index')->with('success', __('Customer deleted successfully.'));
     }
 }

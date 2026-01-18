@@ -14,11 +14,13 @@ use App\Http\Controllers\OnuController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\TechnicianAttendanceController;
 use App\Http\Controllers\TicketWebController;
+use App\Http\Controllers\RouterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\InvestorController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Locale Switcher
@@ -42,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 
+    Route::get('notifications/{notification}', [NotificationController::class, 'redirect'])->name('notifications.redirect');
+    Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+
     // Role Management
     Route::resource('roles', RoleController::class);
     
@@ -58,11 +63,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('settings/apikeys/{apiKey}', [\App\Http\Controllers\ApiKeyController::class, 'destroy'])->name('apikeys.destroy');
     Route::post('settings/apikeys/{apiKey}/toggle', [\App\Http\Controllers\ApiKeyController::class, 'toggle'])->name('apikeys.toggle');
 
+    Route::get('customers/export', [CustomerWebController::class, 'export'])->name('customers.export');
+    Route::post('customers/import-file', [CustomerWebController::class, 'importFile'])->name('customers.importFile');
     Route::get('customers/import', [CustomerWebController::class, 'import'])->name('customers.import');
     Route::resource('customers', CustomerWebController::class);
     
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');
     Route::patch('tickets/{ticket}/location', [TicketWebController::class, 'updateLocation'])->name('tickets.updateLocation');
+    Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');
     Route::resource('tickets', TicketWebController::class);
     
     // Route::resource('installations', InstallationWebController::class); // Removed
@@ -89,11 +97,26 @@ Route::middleware('auth')->group(function () {
     Route::post('olt/{olt}/onus/sync', [OnuController::class, 'sync'])->name('olt.onus.sync');
     Route::resource('olt', OLTController::class);
 
+    Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
+    Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
+    Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
+    Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
+    Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
+    Route::resource('routers', RouterController::class);
+
     // Business & Operations
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
+    Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
+    Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
+    Route::get('finance/manager-report', [FinanceController::class, 'managerReport'])->name('finance.manager_report');
+    Route::get('finance/manager-report/pdf', [FinanceController::class, 'downloadManagerReportPdf'])->name('finance.manager_report.pdf');
+    Route::get('finance/manager-report/excel', [FinanceController::class, 'downloadManagerReportExcel'])->name('finance.manager_report.excel');
+    Route::get('finance/coordinator/{coordinator}', [FinanceController::class, 'coordinatorDetail'])->name('finance.coordinator.detail');
+    Route::get('finance/coordinator/{coordinator}/pdf', [FinanceController::class, 'downloadCoordinatorPdf'])->name('finance.coordinator.pdf');
     Route::delete('finance/bulk-destroy', [FinanceController::class, 'bulkDestroy'])->name('finance.bulkDestroy');
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
     Route::resource('map', MapController::class);
+    Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);

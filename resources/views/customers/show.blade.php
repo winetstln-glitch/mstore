@@ -92,6 +92,18 @@
 
                                     <dt class="col-sm-4">{{ __('SSID Password') }}</dt>
                                     <dd class="col-sm-8 font-monospace">{{ $customer->ssid_password ?? 'N/A' }}</dd>
+                                    
+                                    <dt class="col-sm-4 border-top pt-2 mt-2">{{ __('Modem Status') }}</dt>
+                                    <dd class="col-sm-8 border-top pt-2 mt-2">
+                                        @if(($modemStatus['online'] ?? false) === true)
+                                            <span class="badge text-bg-success">{{ __('Online') }}</span>
+                                        @else
+                                            <span class="badge text-bg-danger">{{ __('Offline') }}</span>
+                                        @endif
+                                        @if(!empty($modemStatus['last_inform']))
+                                            <div class="small text-muted mt-1">{{ __('Last Inform') }}: {{ \Carbon\Carbon::parse($modemStatus['last_inform'])->diffForHumans() }}</div>
+                                        @endif
+                                    </dd>
                                 </dl>
                             </div>
                         </div>

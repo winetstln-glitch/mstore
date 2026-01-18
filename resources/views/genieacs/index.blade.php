@@ -8,7 +8,11 @@
                 <div>
                     <h5 class="mb-0 fw-bold">{{ __('Network Monitor (GenieACS)') }}</h5>
                     <div class="mt-2">
-                        @if(isset($activeServer))
+                        @if(isset($modeAll) && $modeAll)
+                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                <i class="fa-solid fa-circle-nodes fa-xs me-1"></i> {{ __('Connected to: All Servers') }}
+                            </span>
+                        @elseif(isset($activeServer))
                             <span class="badge bg-success-subtle text-success border border-success-subtle">
                                 <i class="fa-solid fa-circle fa-xs me-1"></i> {{ __('Connected to:') }} {{ $activeServer->name }}
                             </span>
@@ -25,22 +29,59 @@
             </div>
 
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3">
                         <h6 class="fw-bold mb-0">{{ __('Connected Devices (TR-069)') }}</h6>
                         <span class="badge bg-primary rounded-pill">{{ $totalDevices ?? count($devices) }} {{ __('Total') }}</span>
-                        <div class="text-muted small d-flex align-items-center bg-light px-2 py-1 rounded">
-                            <i class="fa-solid fa-clock-rotate-left me-2"></i>
-                            <span id="autoRefreshTimer">{{ __('Next refresh:') }} 0:10</span>
-                        </div>
                     </div>
-                    <small class="text-muted">{{ __('Showing latest 50 devices') }}</small>
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                        @if(isset($servers) && $servers->count())
+                            @php
+                                $selectedServerId = $currentServerId ?? request('server_id');
+                            @endphp
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="small text-muted">{{ __('Server') }}</span>
+                                <select id="serverSelect" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="all" {{ $selectedServerId === 'all' ? 'selected' : '' }}>{{ __('All Servers') }}</option>
+                                    @foreach($servers as $server)
+                                        <option value="{{ $server->id }}" {{ (string) $selectedServerId === (string) $server->id ? 'selected' : '' }}>
+                                            {{ $server->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                        <div class="input-group input-group-sm" style="max-width: 260px;">
+                            <span class="input-group-text bg-body-secondary border-end-0">
+                                <i class="fa-solid fa-search text-body-secondary"></i>
+                            </span>
+                            <input type="text"
+                                   id="deviceSearch"
+                                   class="form-control border-start-0 ps-1"
+                                   placeholder="{{ __('Search ID, SN, PPPoE, IP...') }}">
+                        </div>
+                        @php
+                            $currentPerPage = request('per_page', $perPage ?? 50);
+                        @endphp
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted">{{ __('Per page') }}</span>
+                            <select id="perPageSelect" class="form-select form-select-sm" style="width: auto;">
+                                <option value="20" {{ (string)$currentPerPage === '20' ? 'selected' : '' }}>20</option>
+                                <option value="50" {{ (string)$currentPerPage === '50' ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ (string)$currentPerPage === '100' ? 'selected' : '' }}>100</option>
+                                <option value="all" {{ (string)$currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshButton">
+                            <i class="fa-solid fa-rotate-right me-1"></i> {{ __('Refresh') }}
+                        </button>
+                    </div>
                 </div>
 
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle">
+                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable">
                         <thead class="table-light text-nowrap">
                             <tr>
                                 <th scope="col" class="text-center" width="1%">{{ __('Status') }}</th>
@@ -124,6 +165,11 @@
                                             <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="modal" data-bs-target="#editAliasModal{{ md5($id) }}">
                                                 <i class="fa-solid fa-pen fa-xs"></i>
                                             </button>
+                                            @if(isset($device['_mstore_server_name']))
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle ms-2">
+                                                    {{ $device['_mstore_server_name'] }}
+                                                </span>
+                                            @endif
                                         </div>
                                         
                                         <div class="modal fade" id="editAliasModal{{ md5($id) }}" tabindex="-1" aria-hidden="true">
@@ -234,22 +280,49 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let timeLeft = 10; // 10 seconds
-        const timerDisplay = document.getElementById('autoRefreshTimer');
-        
-        const countdown = setInterval(function() {
-            timeLeft--;
-            
-            if (timeLeft <= 0) {
-                clearInterval(countdown);
-                timerDisplay.innerText = '{{ __('Refreshing...') }}';
+        const searchInput = document.getElementById('deviceSearch');
+        const table = document.getElementById('genieacsDevicesTable');
+        const refreshButton = document.getElementById('refreshButton');
+        const perPageSelect = document.getElementById('perPageSelect');
+        const serverSelect = document.getElementById('serverSelect');
+
+        if (searchInput && table) {
+            const tbody = table.querySelector('tbody');
+            const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+
+            searchInput.addEventListener('input', function () {
+                const term = this.value.toLowerCase();
+
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = term === '' || text.includes(term) ? '' : 'none';
+                });
+            });
+        }
+
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function () {
                 window.location.reload();
-            } else {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerDisplay.innerText = `{{ __('Next refresh:') }} ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-            }
-        }, 1000);
+            });
+        }
+
+        if (perPageSelect) {
+            perPageSelect.addEventListener('change', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.set('per_page', this.value);
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            });
+        }
+
+        if (serverSelect) {
+            serverSelect.addEventListener('change', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.set('server_id', this.value);
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            });
+        }
     });
 </script>
 @endpush

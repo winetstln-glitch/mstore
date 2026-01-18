@@ -80,7 +80,14 @@ class OLTController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'snmp_port' => 'nullable|integer',
+            'snmp_community' => 'nullable|string|max:255',
+            'snmp_version' => 'nullable|string|max:10',
         ]);
+
+        [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
+        $validated['host'] = $host;
+        $validated['port'] = $port;
 
         Olt::create($validated);
 
@@ -114,7 +121,14 @@ class OLTController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'snmp_port' => 'nullable|integer',
+            'snmp_community' => 'nullable|string|max:255',
+            'snmp_version' => 'nullable|string|max:10',
         ]);
+
+        [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
+        $validated['host'] = $host;
+        $validated['port'] = $port;
 
         if (empty($validated['password'])) {
             unset($validated['password']);
@@ -226,8 +240,7 @@ class OLTController extends Controller implements HasMiddleware
         }
 
         // Scenario 2: Test manually provided credentials (Preferred for Create/Edit Page)
-        $host = $request->host;
-        $port = $request->port;
+        [$host, $port] = $this->normalizeHostPort($request->host, $request->port);
 
         if ($request->filled(['username', 'password', 'brand'])) {
             try {
@@ -269,5 +282,23 @@ class OLTController extends Controller implements HasMiddleware
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
         }
+    }
+
+    protected function normalizeHostPort($host, $port): array
+    {
+        $normalizedHost = trim((string) $host);
+        $normalizedPort = $port;
+
+        if (strpos($normalizedHost, ':') !== false) {
+            $parts = explode(':', $normalizedHost);
+            $maybePort = array_pop($parts);
+
+            if (is_numeric($maybePort)) {
+                $normalizedHost = implode(':', $parts);
+                $normalizedPort = (int) $maybePort;
+            }
+        }
+
+        return [$normalizedHost, $normalizedPort];
     }
 }

@@ -69,11 +69,17 @@
 
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
                     <div class="row g-3 mb-4">
-                        <!-- Package -->
                         <div class="col-md-6">
-                            <label for="package" class="form-label">{{ __('Package') }}</label>
-                            <input type="text" name="package" id="package" value="{{ old('package') }}" class="form-control @error('package') is-invalid @enderror">
-                            @error('package')
+                            <label for="package_id" class="form-label">{{ __('Package') }}</label>
+                            <select name="package_id" id="package_id" class="form-select @error('package_id') is-invalid @enderror">
+                                <option value="">{{ __('Select package') }}</option>
+                                @foreach($packages as $pkg)
+                                    <option value="{{ $pkg->id }}" {{ old('package_id') == $pkg->id ? 'selected' : '' }}>
+                                        {{ $pkg->name }} @if($pkg->price) - {{ number_format($pkg->price, 0, ',', '.') }} @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('package_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -118,8 +124,8 @@
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
                                 @foreach($odps as $odp)
-                                    <option value="{{ $odp->id }}" {{ old('odp_id') == $odp->id ? 'selected' : '' }}>
-                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity }})
+                                    <option value="{{ $odp->id }}" {{ old('odp_id') == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? 'disabled' : '' }}>
+                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Full' : '' }}
                                     </option>
                                 @endforeach
                             </select>

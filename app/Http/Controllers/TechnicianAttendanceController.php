@@ -109,7 +109,7 @@ class TechnicianAttendanceController extends Controller
         });
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('technicians.attendance.pdf', compact('summary', 'request'));
-        return $pdf->download('rekap_teknisi_' . now()->format('Y-m-d_His') . '.pdf');
+        return $pdf->stream('rekap_teknisi_' . now()->format('Y-m-d_His') . '.pdf', ['Attachment' => false]);
     }
 
     public function exportExcel(Request $request)
@@ -358,7 +358,7 @@ class TechnicianAttendanceController extends Controller
         }
 
         $request->validate([
-            'photo' => 'required|image|max:5120', // 5MB
+            'photo' => 'required|image|max:10240',
             'latitude' => 'nullable',
             'longitude' => 'nullable',
         ]);
@@ -423,7 +423,7 @@ class TechnicianAttendanceController extends Controller
         $attendance = TechnicianAttendance::where('user_id', Auth::id())->findOrFail($id);
         
         $request->validate([
-            'photo' => 'required|image|max:5120',
+            'photo' => 'required|image|max:10240',
             'latitude' => 'nullable',
             'longitude' => 'nullable',
         ]);

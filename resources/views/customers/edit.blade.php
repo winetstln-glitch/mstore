@@ -69,11 +69,17 @@
 
                     <h6 class="fw-bold text-muted text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
                     <div class="row g-3 mb-4">
-                        <!-- Package -->
                         <div class="col-md-6">
-                            <label for="package" class="form-label">{{ __('Package') }}</label>
-                            <input type="text" name="package" id="package" value="{{ old('package', $customer->package) }}" class="form-control @error('package') is-invalid @enderror">
-                            @error('package')
+                            <label for="package_id" class="form-label">{{ __('Package') }}</label>
+                            <select name="package_id" id="package_id" class="form-select @error('package_id') is-invalid @enderror">
+                                <option value="">{{ __('Select package') }}</option>
+                                @foreach($packages as $pkg)
+                                    <option value="{{ $pkg->id }}" {{ old('package_id', $customer->package_id) == $pkg->id ? 'selected' : '' }}>
+                                        {{ $pkg->name }} @if($pkg->price) - {{ number_format($pkg->price, 0, ',', '.') }} @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('package_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -102,8 +108,8 @@
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
                                 @foreach($odps as $odp)
-                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }}>
-                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity }})
+                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? 'disabled' : '' }}>
+                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Full' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -195,11 +201,9 @@
         var lng = {{ $customer->longitude ?? 106.816666 }};
         var zoom = 15;
 
-        // Ensure lat/lng are numbers
         lat = parseFloat(lat);
         lng = parseFloat(lng);
-        
-        // If invalid, default to Jakarta
+
         if (isNaN(lat)) lat = -6.200000;
         if (isNaN(lng)) lng = 106.816666;
 
@@ -209,28 +213,41 @@
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
         });
-        var dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: '&copy; Google Maps'
+        });
+
+        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 20,
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         });
-        
-        function setMapLayer(theme) {
-            if (theme === 'dark') {
-                map.removeLayer(osm);
-                dark.addTo(map);
-            } else {
-                map.removeLayer(dark);
-                osm.addTo(map);
-            }
+
+        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        if (currentTheme === 'dark') {
+            darkLayer.addTo(map);
+        } else {
+            osm.addTo(map);
         }
 
-        // Initial set
-        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-        setMapLayer(currentTheme);
+        var baseMaps = {
+            "Dark Mode": darkLayer,
+            "Satellite (Google)": googleHybrid,
+            "Street (OSM)": osm
+        };
+        L.control.layers(baseMaps).addTo(map);
 
-        // Listen for theme changes
         window.addEventListener('themeChanged', function(e) {
-            setMapLayer(e.detail.theme);
+            if (e.detail.theme === 'dark') {
+                if (map.hasLayer(osm)) map.removeLayer(osm);
+                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            } else {
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+            }
         });
 
         var marker = L.marker([lat, lng], {draggable: true}).addTo(map);

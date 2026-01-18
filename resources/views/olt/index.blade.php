@@ -106,3 +106,86 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var oltIds = @json($olts->pluck('id'));
+
+        oltIds.forEach(function (id) {
+            var badge = document.getElementById('status-' + id);
+            if (!badge) {
+                return;
+            }
+
+            fetch('{{ url('olt') }}/' + id + '/check-status')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    var status = data.status || 'offline';
+                    var message = data.message || status;
+
+                    badge.textContent = message;
+
+                    badge.classList.remove(
+                        'bg-secondary-subtle',
+                        'text-secondary',
+                        'border-secondary-subtle',
+                        'bg-success-subtle',
+                        'text-success',
+                        'border-success-subtle',
+                        'bg-danger-subtle',
+                        'text-danger',
+                        'border-danger-subtle'
+                    );
+
+                    if (status === 'online') {
+                        badge.classList.add('bg-success-subtle', 'text-success', 'border-success-subtle');
+                    } else {
+                        badge.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle');
+                    }
+                })
+                .catch(function () {
+                    badge.textContent = 'Error';
+                    badge.classList.remove(
+                        'bg-secondary-subtle',
+                        'text-secondary',
+                        'border-secondary-subtle'
+                    );
+                    badge.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle');
+                });
+        });
+    });
+
+    function testConnection(id) {
+        var btn = event.target.closest('button');
+        var originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Testing...';
+        btn.disabled = true;
+
+        fetch('{{ route('olt.test_connection') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data.success) {
+                alert('Connection Successful: ' + data.message);
+            } else {
+                alert('Connection Failed: ' + data.message);
+            }
+        })
+        .catch(function (error) {
+            alert('Error: ' + error.message);
+        })
+        .finally(function () {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        });
+    }
+</script>
+@endpush

@@ -37,28 +37,97 @@ class GenieACSController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $perPage = 50;
+        $perPageInput = $request->input('per_page', 50);
+
+        if ($perPageInput === 'all') {
+            $perPage = null;
+        } else {
+            $perPage = in_array((int) $perPageInput, [20, 50, 100]) ? (int) $perPageInput : 50;
+        }
+
         $page = $request->input('page', 1);
-        $skip = ($page - 1) * $perPage;
 
-        // Fetch data with pagination
-        $devicesArray = $this->genieService->getDevices($perPage, $skip);
-        $totalDevices = $this->genieService->getTotalDevices();
-        
-        // Create manual paginator
-        $devices = new LengthAwarePaginator(
-            $devicesArray,
-            $totalDevices,
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        $servers = GenieAcsServer::orderBy('name')->get();
+        $serverId = $request->input('server_id');
+        $modeAll = $serverId === 'all';
 
-        $activeServer = GenieAcsServer::where('is_active', true)->first();
-        
+        $activeServer = null;
+
+        if ($modeAll) {
+            $devicesArray = [];
+
+            foreach ($servers as $server) {
+                $this->genieService->useServer($server);
+                $serverDevices = $this->genieService->getDevices(500, 0);
+
+                foreach ($serverDevices as &$device) {
+                    $device['_mstore_server_id'] = $server->id;
+                    $device['_mstore_server_name'] = $server->name;
+                }
+
+                $devicesArray = array_merge($devicesArray, $serverDevices);
+            }
+
+            $totalDevices = count($devicesArray);
+
+            if ($perPage === null) {
+                $perPageEffective = max(1, $totalDevices);
+            } else {
+                $perPageEffective = $perPage;
+            }
+
+            $offset = ($page - 1) * $perPageEffective;
+            $itemsForPage = array_slice($devicesArray, $offset, $perPageEffective);
+
+            $devices = new LengthAwarePaginator(
+                $itemsForPage,
+                $totalDevices,
+                $perPageEffective,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            if ($serverId) {
+                $activeServer = $servers->firstWhere('id', (int) $serverId);
+            }
+
+            if (!$activeServer) {
+                $activeServer = $servers->firstWhere('is_active', true) ?? $servers->first();
+            }
+
+            if ($activeServer) {
+                $this->genieService->useServer($activeServer);
+            }
+
+            $skip = $perPage ? ($page - 1) * $perPage : 0;
+
+            $devicesArray = $this->genieService->getDevices($perPage, $skip);
+            $totalDevices = $perPage ? $this->genieService->getTotalDevices() : count($devicesArray);
+
+            if ($perPage) {
+                $devices = new LengthAwarePaginator(
+                    $devicesArray,
+                    $totalDevices,
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                $perPageAll = max(1, $totalDevices);
+                $devices = new LengthAwarePaginator(
+                    $devicesArray,
+                    $totalDevices,
+                    $perPageAll,
+                    1,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            }
+        }
+
         $aliases = GenieAcsDeviceSetting::pluck('alias', 'device_id');
+        $currentServerId = $modeAll ? 'all' : ($activeServer ? $activeServer->id : null);
         
-        return view('genieacs.index', compact('devices', 'totalDevices', 'activeServer', 'aliases'));
+        return view('genieacs.index', compact('devices', 'totalDevices', 'activeServer', 'aliases', 'perPage', 'servers', 'currentServerId', 'modeAll'));
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Transaction;
+use App\Models\Package;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,12 +34,17 @@ class BillingService
         $dueDay = $customer->billing_cycle_date ?? 10;
         $dueDate = Carbon::createFromDate($year, $month, $dueDay);
         
-        // Get package price (assuming simple string 'Name - Price' or just stored elsewhere)
-        // For now, assuming a fixed logic or field. Let's assume 'package' string contains price or we have a mapping.
-        // Simplified: extracting numbers from package string or default to 100000
         $price = 100000; 
-        if (preg_match('/(\d+)/', str_replace('.', '', $customer->package), $matches)) {
-            $price = $matches[1];
+        if ($customer->package_id) {
+            $pkg = Package::find($customer->package_id);
+            if ($pkg) {
+                $price = (int)$pkg->price;
+            }
+        }
+        if ($price === 100000 && $customer->package) {
+            if (preg_match('/(\d+)/', str_replace('.', '', $customer->package), $matches)) {
+                $price = (int)$matches[1];
+            }
         }
 
         $invoice = Invoice::create([

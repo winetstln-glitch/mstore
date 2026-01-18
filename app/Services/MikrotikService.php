@@ -244,6 +244,18 @@ class MikrotikService
         }
     }
 
+    public function getPppoeActiveList()
+    {
+        if (!$this->client) return [];
+        try {
+            $query = new Query('/ppp/active/print');
+            $query->where('service', 'pppoe');
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
     /**
      * Get Hotspot Active Count
      */
@@ -255,6 +267,72 @@ class MikrotikService
             return count($this->client->query($query)->read());
         } catch (Exception $e) {
             return 0;
+        }
+    }
+
+    public function getHotspotActiveList()
+    {
+        if (!$this->client) return [];
+        try {
+            $query = new Query('/ip/hotspot/active/print');
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function disconnectHotspotById(string $id): bool
+    {
+        if (!$this->client) return false;
+
+        try {
+            $query = new Query('/ip/hotspot/active/remove');
+            $query->equal('.id', $id);
+            $this->client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error("Mikrotik Hotspot Disconnect Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getInterfacesTrafficSnapshot(int $limit = 4)
+    {
+        if (!$this->client) return [];
+
+        try {
+            $query = new Query('/interface/print');
+            $interfaces = $this->client->query($query)->read();
+
+            $result = [];
+            $count = 0;
+
+            foreach ($interfaces as $interface) {
+                if (!is_array($interface) || empty($interface['name'])) {
+                    continue;
+                }
+
+                if (isset($interface['disabled']) && $interface['disabled'] === 'true') {
+                    continue;
+                }
+
+                $traffic = $this->getInterfaceTraffic($interface['name']);
+
+                $result[] = [
+                    'name' => $interface['name'],
+                    'rx' => isset($traffic['rx-bits-per-second']) ? (int) $traffic['rx-bits-per-second'] : 0,
+                    'tx' => isset($traffic['tx-bits-per-second']) ? (int) $traffic['tx-bits-per-second'] : 0,
+                ];
+
+                $count++;
+                if ($count >= $limit) {
+                    break;
+                }
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            return [];
         }
     }
 }

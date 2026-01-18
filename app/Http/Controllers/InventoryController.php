@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Coordinator;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,35 +38,122 @@ class InventoryController extends Controller
 
     public function storePickup(Request $request)
     {
-        $request->validate([
-            'inventory_item_id' => 'required|exists:inventory_items,id',
-            'quantity' => 'required|integer|min:1',
-            'usage' => 'required|string|in:New Installation,Replacement',
-            'proof_image' => 'required|image|max:2048', // 2MB max
-            'description' => 'nullable|string',
-            'coordinator_id' => 'nullable|exists:coordinators,id',
-        ]);
-
-        $path = $request->file('proof_image')->store('inventory_proofs', 'public');
-
-        $finalDescription = '[' . __($request->usage) . '] ' . ($request->description ?? '');
-
-        DB::transaction(function () use ($request, $path, $finalDescription) {
-            // Create Transaction
-            InventoryTransaction::create([
-                'user_id' => Auth::id(),
-                'coordinator_id' => $request->coordinator_id,
-                'inventory_item_id' => $request->inventory_item_id,
-                'type' => 'out',
-                'quantity' => $request->quantity,
-                'proof_image' => $path,
-                'description' => $finalDescription,
+        if ($request->has('items')) {
+            $data = $request->validate([
+                'items' => 'required|array|min:1',
+                'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+                'items.*.quantity' => 'required|integer|min:1',
+                'usage' => 'required|string|in:New Installation,Replacement',
+                'proof_image' => 'required|image|max:10240',
+                'description' => 'nullable|string',
+                'coordinator_id' => 'nullable|exists:coordinators,id',
             ]);
 
-            // Update Stock
-            $item = InventoryItem::find($request->inventory_item_id);
-            $item->decrement('stock', $request->quantity);
-        });
+            $path = $request->file('proof_image')->store('inventory_proofs', 'public');
+
+            $finalDescription = '[' . __($data['usage']) . '] ' . ($data['description'] ?? '');
+
+            DB::transaction(function () use ($data, $path, $finalDescription) {
+                $totals = [];
+                foreach ($data['items'] as $row) {
+                    $itemId = $row['inventory_item_id'];
+                    $qty = $row['quantity'];
+                    if (!isset($totals[$itemId])) {
+                        $totals[$itemId] = 0;
+                    }
+                    $totals[$itemId] += $qty;
+                }
+
+                foreach ($totals as $itemId => $qty) {
+                    $item = InventoryItem::find($itemId);
+                    if (!$item || $item->stock < $qty) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'items' => [__('Not enough stock available.')],
+                        ]);
+                    }
+                }
+
+                foreach ($data['items'] as $row) {
+                    $item = InventoryItem::find($row['inventory_item_id']);
+
+                    $inventoryTransaction = InventoryTransaction::create([
+                        'user_id' => Auth::id(),
+                        'coordinator_id' => $data['coordinator_id'] ?? null,
+                        'inventory_item_id' => $row['inventory_item_id'],
+                        'type' => 'out',
+                        'quantity' => $row['quantity'],
+                        'proof_image' => $path,
+                        'description' => $finalDescription,
+                    ]);
+
+                    if ($item) {
+                        $item->decrement('stock', $row['quantity']);
+
+                        if (!empty($data['coordinator_id']) && $item->price > 0) {
+                            Transaction::create([
+                                'user_id' => Auth::id(),
+                                'coordinator_id' => $data['coordinator_id'],
+                                'type' => 'expense',
+                                'category' => 'Pengeluaran Pengurus',
+                                'amount' => $item->price * $row['quantity'],
+                                'transaction_date' => now()->toDateString(),
+                                'description' => 'Pengurus mengambil ' . $row['quantity'] . ' ' . $item->unit . ' ' . $item->name,
+                                'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+                            ]);
+                        }
+                    }
+                }
+            });
+        } else {
+            $request->validate([
+                'inventory_item_id' => 'required|exists:inventory_items,id',
+                'quantity' => 'required|integer|min:1',
+                'usage' => 'required|string|in:New Installation,Replacement',
+                'proof_image' => 'required|image|max:10240',
+                'description' => 'nullable|string',
+                'coordinator_id' => 'nullable|exists:coordinators,id',
+            ]);
+
+            $path = $request->file('proof_image')->store('inventory_proofs', 'public');
+
+            $finalDescription = '[' . __($request->usage) . '] ' . ($request->description ?? '');
+
+            DB::transaction(function () use ($request, $path, $finalDescription) {
+                $item = InventoryItem::find($request->inventory_item_id);
+                if ($item && $item->stock < $request->quantity) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'quantity' => __('Not enough stock available.'),
+                    ]);
+                }
+
+                $inventoryTransaction = InventoryTransaction::create([
+                    'user_id' => Auth::id(),
+                    'coordinator_id' => $request->coordinator_id,
+                    'inventory_item_id' => $request->inventory_item_id,
+                    'type' => 'out',
+                    'quantity' => $request->quantity,
+                    'proof_image' => $path,
+                    'description' => $finalDescription,
+                ]);
+
+                if ($item) {
+                    $item->decrement('stock', $request->quantity);
+
+                    if ($request->coordinator_id && $item->price > 0) {
+                        Transaction::create([
+                            'user_id' => Auth::id(),
+                            'coordinator_id' => $request->coordinator_id,
+                            'type' => 'expense',
+                            'category' => 'Pengeluaran Pengurus',
+                            'amount' => $item->price * $request->quantity,
+                            'transaction_date' => now()->toDateString(),
+                            'description' => 'Pengurus mengambil ' . $request->quantity . ' ' . $item->unit . ' ' . $item->name,
+                            'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+                        ]);
+                    }
+                }
+            });
+        }
 
         return redirect()->route('inventory.index')->with('success', __('Pickup recorded successfully.'));
     }
@@ -109,6 +197,16 @@ class InventoryController extends Controller
                 'quantity' => $newQuantity,
                 'description' => $request->description,
             ]);
+
+            if ($transaction->coordinator_id && $item && $item->price > 0) {
+                $finance = Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)->first();
+                if ($finance) {
+                    $finance->update([
+                        'amount' => $item->price * $newQuantity,
+                        'description' => 'Pengurus mengambil ' . $newQuantity . ' ' . $item->unit . ' ' . $item->name,
+                    ]);
+                }
+            }
         });
 
         return redirect()->back()->with('success', __('Pickup updated successfully.'));
@@ -126,6 +224,8 @@ class InventoryController extends Controller
             
             // Delete transaction
             $transaction->delete();
+
+            Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)->delete();
         });
 
         return redirect()->back()->with('success', __('Pickup deleted successfully.'));
@@ -146,7 +246,21 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        InventoryItem::create($validated);
+        DB::transaction(function () use ($validated) {
+            $item = InventoryItem::create($validated);
+
+            if ($item->stock > 0 && $item->price > 0) {
+                Transaction::create([
+                    'user_id' => Auth::id(),
+                    'type' => 'expense',
+                    'category' => 'Pembelian Alat',
+                    'amount' => $item->stock * $item->price,
+                    'transaction_date' => now()->toDateString(),
+                    'description' => 'Pembelian awal stok ' . $item->stock . ' ' . $item->unit . ' ' . $item->name,
+                    'reference_number' => 'INV-IN-' . $item->id,
+                ]);
+            }
+        });
 
         return redirect()->back()->with('success', __('Item added successfully.'));
     }
@@ -166,7 +280,26 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $item->update($validated);
+        DB::transaction(function () use ($validated, $item) {
+            $oldStock = $item->stock;
+
+            $item->update($validated);
+
+            $newStock = $item->stock;
+            $diff = $newStock - $oldStock;
+
+            if ($diff > 0 && $item->price > 0) {
+                Transaction::create([
+                    'user_id' => Auth::id(),
+                    'type' => 'expense',
+                    'category' => 'Pembelian Alat',
+                    'amount' => $diff * $item->price,
+                    'transaction_date' => now()->toDateString(),
+                    'description' => 'Penambahan stok ' . $diff . ' ' . $item->unit . ' ' . $item->name,
+                    'reference_number' => 'INV-IN-ITEM-' . $item->id . '-' . now()->format('YmdHis'),
+                ]);
+            }
+        });
 
         return redirect()->back()->with('success', __('Item updated successfully.'));
     }

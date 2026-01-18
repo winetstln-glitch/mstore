@@ -25,8 +25,9 @@ class SettingController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        // Exclude 'telegram' group from general settings
+        // Exclude 'telegram' group and 'subscription_packages' from general settings
         $settings = Setting::where('group', '!=', 'telegram')
+            ->where('key', '!=', 'subscription_packages')
             ->orderBy('group')
             ->orderBy('id')
             ->get()

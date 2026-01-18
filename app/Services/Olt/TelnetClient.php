@@ -2,200 +2,153 @@
 
 namespace App\Services\Olt;
 
-use Illuminate\Support\Facades\Log;
-
 class TelnetClient
 {
-    private $socket;
-    private $buffer = '';
-    private $prompt;
-    private $errno;
-    private $errstr;
-    private $timeout = 10;
-    private $debug = true; // Enabled for troubleshooting
+    protected $socket;
+    protected array $prompt = ['#', '>', '$'];
+    protected string $buffer = '';
 
-    public function connect($host, $port = 23, $timeout = 10)
+    public function connect(string $host, int $port = 23, int $timeout = 10): void
     {
-        $this->timeout = $timeout;
-        $this->socket = @fsockopen($host, $port, $this->errno, $this->errstr, $this->timeout);
-
+        $this->socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
         if (!$this->socket) {
-            throw new \Exception("Connection failed: {$this->errstr} ({$this->errno})");
+            throw new \Exception("Telnet connect failed: {$errstr} ({$errno})");
         }
 
-        stream_set_timeout($this->socket, $this->timeout);
-        
-        // Initial negotiation or banner might come in immediately
-        // We don't read it here, we let waitPrompt or login handle it
-        return true;
+        stream_set_blocking($this->socket, true);
+        stream_set_timeout($this->socket, $timeout);
     }
 
-    public function login($username, $password, $usernamePrompts = ['Login:', 'Username:', 'user:'], $passwordPrompts = ['Password:', 'Pass:'])
+    public function setPrompt(array $prompts): void
     {
-        // Normalize prompts to arrays
-        if (!is_array($usernamePrompts)) $usernamePrompts = [$usernamePrompts];
-        if (!is_array($passwordPrompts)) $passwordPrompts = [$passwordPrompts];
+        $this->prompt = $prompts;
+    }
 
-        $buffer = '';
-        $maxRetries = 3;
-        $found = false;
+    public function login(string $username, string $password, array $userPrompts, array $passPrompts): void
+    {
+        $this->waitForAnyPrompt($userPrompts);
+        $this->write($username);
+        $this->waitForAnyPrompt($passPrompts);
+        $this->write($password);
+        $this->waitPrompt($this->prompt);
+    }
 
-        // Try to get username prompt with wake-up retries
-        for ($i = 0; $i < $maxRetries; $i++) {
-            try {
-                // Send a newline to wake up the OLT
-                $this->write('');
-                
-                // Wait for a short time for the prompt
-                // Use a short timeout for wake-up attempts, but last attempt uses full timeout
-                $attemptTimeout = ($i == $maxRetries - 1) ? $this->timeout : 3; 
-                
-                $buffer = $this->waitPrompt($usernamePrompts, $attemptTimeout);
-                $found = true;
+    public function waitPrompt(array $prompts): string
+    {
+        return $this->waitForAnyPrompt($prompts);
+    }
+
+    protected function waitForAnyPrompt(array $prompts): string
+    {
+        $this->buffer = '';
+        $maxLength = 1024 * 1024;
+
+        while (!feof($this->socket)) {
+            $char = fgetc($this->socket);
+            if ($char === false) {
                 break;
-            } catch (\Exception $e) {
-                // If it's a timeout, we retry sending newline
-                if ($i == $maxRetries - 1) {
-                    throw $e; // Rethrow last error
+            }
+
+            if (ord($char) === 255) {
+                $this->handleIac();
+                continue;
+            }
+
+            $this->buffer .= $char;
+
+            if (str_contains($this->buffer, '--More--')) {
+                fwrite($this->socket, ' ');
+            }
+
+            if (strlen($this->buffer) >= $maxLength) {
+                break;
+            }
+
+            foreach ($prompts as $prompt) {
+                if ($prompt !== '' && str_ends_with($this->buffer, $prompt)) {
+                    return $this->buffer;
                 }
-                // Otherwise continue loop to retry
-                if ($this->debug) Log::info("Telnet Login Wakeup Retry " . ($i+1));
             }
         }
 
-        if ($this->debug) Log::info("Telnet Login Banner: " . $buffer);
-        
-        $this->write($username);
-
-        // Wait for any of the password prompts
-        $buffer = $this->waitPrompt($passwordPrompts);
-        
-        $this->write($password);
-
-        return true;
+        return $this->buffer;
     }
 
-    public function setPrompt($prompt)
+    protected function handleIac(): void
     {
-        $this->prompt = $prompt;
+        $cmd = fgetc($this->socket);
+        if ($cmd === false) {
+            return;
+        }
+
+        $cmdOrd = ord($cmd);
+
+        if ($cmdOrd >= 251 && $cmdOrd <= 254) {
+            $opt = fgetc($this->socket);
+            if ($opt === false) {
+                return;
+            }
+
+            $optOrd = ord($opt);
+            $supported = [1, 3];
+
+            if ($cmdOrd === 251) {
+                if (in_array($optOrd, $supported, true)) {
+                    fwrite($this->socket, chr(255) . chr(253) . chr($optOrd));
+                } else {
+                    fwrite($this->socket, chr(255) . chr(254) . chr($optOrd));
+                }
+            } elseif ($cmdOrd === 253) {
+                if (in_array($optOrd, $supported, true)) {
+                    fwrite($this->socket, chr(255) . chr(251) . chr($optOrd));
+                } else {
+                    fwrite($this->socket, chr(255) . chr(252) . chr($optOrd));
+                }
+            } else {
+                fwrite($this->socket, chr(255) . chr(252) . chr($optOrd));
+            }
+
+            return;
+        }
+
+        if ($cmdOrd === 250) {
+            while (!feof($this->socket)) {
+                $ch = fgetc($this->socket);
+                if ($ch === false) {
+                    break;
+                }
+
+                if (ord($ch) === 255) {
+                    $next = fgetc($this->socket);
+                    if ($next !== false && ord($next) === 240) {
+                        break;
+                    }
+                }
+            }
+        }
     }
 
-    public function exec($command)
+    public function write(string $buffer): void
+    {
+        if (!$this->socket) {
+            throw new \Exception('Not connected');
+        }
+
+        $buffer .= "\r\n";
+        fwrite($this->socket, $buffer);
+    }
+
+    public function exec(string $command): string
     {
         $this->write($command);
         return $this->waitPrompt($this->prompt);
     }
 
-    public function write($buffer)
-    {
-        if (!$this->socket) {
-            throw new \Exception("Not connected");
-        }
-
-        // Add newline
-        $buffer .= "\r\n";
-        fwrite($this->socket, $buffer);
-    }
-
-    public function waitPrompt($prompts)
-    {
-        if (!$this->socket) {
-            throw new \Exception("Not connected");
-        }
-
-        if (!is_array($prompts)) {
-            $prompts = [$prompts];
-        }
-
-        $buffer = '';
-        $startTime = time();
-
-        while (!feof($this->socket)) {
-            if (time() - $startTime > $this->timeout) {
-                if ($this->debug) Log::error("Telnet Timeout. Buffer content: " . $buffer);
-                // Truncate buffer for message to avoid huge error strings
-                $safeBuffer = strlen($buffer) > 200 ? substr($buffer, -200) . '...' : $buffer;
-                $safeBuffer = addslashes($safeBuffer); // Escape for safety
-                throw new \Exception("Telnet timeout waiting for prompt: " . implode(', ', $prompts) . ". Buffer received: '" . $safeBuffer . "'");
-            }
-
-            $char = fgetc($this->socket);
-            
-            // Check for timeout in stream metadata
-            $info = stream_get_meta_data($this->socket);
-            if ($info['timed_out']) {
-                 // Truncate buffer for message to avoid huge error strings
-                 $safeBuffer = strlen($buffer) > 200 ? substr($buffer, -200) . '...' : $buffer;
-                 $safeBuffer = addslashes($safeBuffer); // Escape for safety
-                 throw new \Exception("Connection timed out. Buffer received: '" . $safeBuffer . "'");
-            }
-
-            if ($char === false) {
-                break;
-            }
-
-            // Handle Telnet Negotiation (IAC)
-            if (ord($char) == 255) {
-                $cmd = fgetc($this->socket);
-                $cmdOrd = ord($cmd);
-                
-                // DO (253), DONT (254), WILL (251), WONT (252) -> 3 bytes
-                if ($cmdOrd >= 251 && $cmdOrd <= 254) {
-                    $opt = fgetc($this->socket);
-                    // Optionally log: Log::info("Telnet Negotiation: IAC $cmdOrd " . ord($opt));
-                } 
-                // SB (Subnegotiation) - Variable length
-                elseif ($cmdOrd == 250) {
-                     // Read until IAC SE (255 240)
-                     while(!feof($this->socket)) {
-                         $subChar = fgetc($this->socket);
-                         if (ord($subChar) == 255) {
-                             $next = fgetc($this->socket);
-                             if (ord($next) == 240) { // SE
-                                 break;
-                             }
-                         }
-                     }
-                }
-                // Other 2-byte commands are consumed by reading $cmd
-                continue;
-            }
-
-            $buffer .= $char;
-
-            // Check against all possible prompts
-            // We check if the trimmed buffer ends with the prompt (ignoring trailing spaces)
-            // Or if the prompt is explicitly found at the end
-            $trimmedBuffer = trim($buffer);
-            foreach ($prompts as $prompt) {
-                if ($prompt === null) continue;
-                
-                // Exact match at end
-                if (substr($buffer, -strlen($prompt)) === $prompt) {
-                    return $buffer;
-                }
-                
-                // Loose match: buffer ends with prompt (ignoring whitespace)
-                // e.g. "Login: " -> matches "Login:"
-                if (str_ends_with(trim($buffer), trim($prompt))) {
-                    return $buffer;
-                }
-            }
-        }
-
-        return $buffer;
-    }
-
-    public function disconnect()
+    public function disconnect(): void
     {
         if ($this->socket) {
             fclose($this->socket);
             $this->socket = null;
         }
-    }
-    
-    public function getBuffer()
-    {
-        return $this->buffer;
     }
 }

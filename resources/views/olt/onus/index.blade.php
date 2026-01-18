@@ -37,19 +37,35 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="ps-3">{{ __('Status') }}</th>
-                                <th scope="col">{{ __('Interface') }}</th>
-                                <th scope="col">{{ __('Name') }}</th>
-                                <th scope="col">{{ __('Serial Number') }}</th>
-                                <th scope="col">{{ __('MAC Address') }}</th>
-                                <th scope="col">{{ __('Signal') }}</th>
-                                <th scope="col">{{ __('Distance') }}</th>
+                                <th scope="col" class="ps-3">ID</th>
+                                <th scope="col">{{ __('Customer Name') }}</th>
+                                <th scope="col">MAC / SN</th>
+                                <th scope="col">{{ __('Status') }}</th>
+                                <th scope="col">Rx Power</th>
+                                <th scope="col">Down Reason</th>
+                                <th scope="col">Uptime</th>
+                                <th scope="col" class="text-end">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($onus as $onu)
                                 <tr>
-                                    <td class="ps-3">
+                                    <td class="ps-3 text-muted small">
+                                        {{ $onu->interface ?? ('#' . $onu->id) }}
+                                    </td>
+                                    <td class="fw-medium text-body">
+                                        {{ $onu->name ?? '-' }}
+                                    </td>
+                                    <td class="text-muted small font-monospace">
+                                        @if($onu->mac_address)
+                                            {{ $onu->mac_address }}
+                                        @elseif($onu->serial_number)
+                                            {{ $onu->serial_number }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="text-body">
                                         @php
                                             $statusClass = match($onu->status) {
                                                 'online' => 'bg-success-subtle text-success border-success-subtle',
@@ -58,26 +74,93 @@
                                                 default => 'bg-secondary-subtle text-secondary border-secondary-subtle'
                                             };
                                             $statusLabel = match($onu->status) {
-                                                'online' => __('Online'),
+                                                'online' => 'Up',
                                                 'los' => __('LOS'),
                                                 'power_fail' => __('Power Fail'),
-                                                default => __('Offline')
+                                                default => 'Down'
                                             };
                                         @endphp
                                         <span class="badge border {{ $statusClass }}">
                                             {{ $statusLabel }}
                                         </span>
                                     </td>
-                                    <td class="text-body">{{ $onu->interface }}</td>
-                                    <td class="fw-medium text-body">{{ $onu->name ?? '-' }}</td>
-                                    <td class="text-muted small font-monospace">{{ $onu->serial_number }}</td>
-                                    <td class="text-muted small font-monospace">{{ $onu->mac_address ?? '-' }}</td>
-                                    <td class="text-body">{{ $onu->signal ?? '-' }}</td>
-                                    <td class="text-body">{{ $onu->distance ? $onu->distance . 'm' : '-' }}</td>
+                                    <td class="text-body">
+                                        @php
+                                            $signalValue = null;
+                                            if ($onu->signal !== null && $onu->signal !== '') {
+                                                $signalValue = is_numeric($onu->signal) ? (float) $onu->signal : null;
+                                            }
+                                            $rxClass = 'text-muted';
+                                            if ($signalValue !== null) {
+                                                if ($signalValue <= -27) {
+                                                    $rxClass = 'text-danger';
+                                                } elseif ($signalValue <= -23) {
+                                                    $rxClass = 'text-warning';
+                                                } else {
+                                                    $rxClass = 'text-success';
+                                                }
+                                            }
+                                        @endphp
+                                        @if($signalValue === null)
+                                            <span class="text-muted">-</span>
+                                        @else
+                                            <span class="{{ $rxClass }}">
+                                                <i class="fa-solid fa-signal me-1"></i>{{ number_format($signalValue, 4) }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="text-body">
+                                        @php
+                                            $reasonLabel = $onu->status === 'online' ? 'Normal' : 'Unknown';
+                                            $reasonClass = $onu->status === 'online'
+                                                ? 'text-success'
+                                                : 'text-muted';
+                                        @endphp
+                                        <span class="{{ $reasonClass }}">
+                                            <i class="fa-regular fa-circle-dot me-1"></i>{{ $reasonLabel }}
+                                        </span>
+                                    </td>
+                                    <td class="text-body">
+                                        @php
+                                            $uptimeText = '-';
+                                            if ($onu->status === 'online' && $onu->updated_at) {
+                                                $diff = now()->diff($onu->updated_at);
+                                                $days = $diff->days;
+                                                $hours = $diff->h;
+                                                $minutes = $diff->i;
+                                                $parts = [];
+                                                if ($days > 0) {
+                                                    $parts[] = $days . 'd';
+                                                }
+                                                if ($hours > 0 || $days > 0) {
+                                                    $parts[] = $hours . 'j';
+                                                }
+                                                $parts[] = $minutes . 'm';
+                                                $uptimeText = implode(' ', $parts);
+                                            }
+                                        @endphp
+                                        {{ $uptimeText }}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fa-solid fa-power-off"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                                <i class="fa-solid fa-eye-slash"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" disabled>
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5 text-body-secondary">
+                                    <td colspan="8" class="text-center py-5 text-body-secondary">
                                         <div class="mb-2"><i class="fa-solid fa-network-wired fa-2x opacity-25"></i></div>
                                         {{ __('No ONUs found. Click "Sync from OLT" to fetch devices.') }}
                                     </td>

@@ -127,7 +127,31 @@ class CDataDriver implements OltDriverInterface
         return $this->getOnusTelnet();
     }
     
-    // ... Telnet methods remain the same ...
+    protected function getOnusTelnet()
+    {
+        $commands = [
+            'show epon onu-information',
+            'show epon onu state',
+            'show epon onu all',
+            'show gpon onu-information',
+            'show gpon onu state',
+            'show gpon onu all',
+            'show onu all',
+        ];
+
+        $output = '';
+        foreach ($commands as $cmd) {
+            try {
+                $result = $this->client->exec($cmd);
+                if (!str_contains(strtolower($result), 'unknown') && !str_contains(strtolower($result), 'error')) {
+                    $output .= "\n" . $result;
+                }
+            } catch (\Exception $e) {
+            }
+        }
+
+        return $this->parseOnuOutput($output);
+    }
 
     protected function getOnusHttp()
     {
