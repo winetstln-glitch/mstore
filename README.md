@@ -180,6 +180,62 @@ Lalu buka `http://localhost:8000` di browser.
 
 ---
 
+## Panduan Update (Pembaruan Sistem)
+
+Jika Anda sudah memiliki instalasi MStore yang berjalan dan ingin memperbaruinya ke versi terbaru dari GitHub, ikuti langkah-langkah berikut:
+
+### 1. Backup (Sangat Disarankan)
+Sebelum melakukan update, pastikan untuk mem-backup database dan file `.env` Anda.
+
+-   **Backup Database**: Gunakan `mysqldump` atau fitur Export di phpMyAdmin.
+-   **Backup File**: Salin file `.env` dan folder `storage/app/public` (jika ada file upload penting) ke lokasi aman.
+
+### 2. Tarik Pembaruan Terbaru
+Masuk ke direktori project Anda dan tarik perubahan terbaru dari GitHub.
+
+```bash
+cd /path/to/mstore
+git pull origin main
+```
+
+### 3. Perbarui Dependensi
+Jika ada perubahan pada library, Anda perlu memperbaruinya.
+
+```bash
+composer install --optimize-autoloader --no-dev
+npm install
+npm run build
+```
+
+### 4. Jalankan Migrasi Database
+Jika ada perubahan struktur database, jalankan migrasi.
+
+```bash
+php artisan migrate
+```
+> **Catatan**: Jangan gunakan `migrate:fresh` kecuali Anda ingin menghapus semua data!
+
+### 5. Bersihkan Cache
+Pastikan konfigurasi dan cache aplikasi diperbarui.
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### 6. Restart Service (Opsional)
+Jika Anda menggunakan queue worker atau supervisor, restart service tersebut.
+
+```bash
+php artisan queue:restart
+# atau jika menggunakan supervisor
+sudo supervisorctl restart all
+```
+
+---
+
 ## Panduan Penggunaan
 
 ### Login Default
