@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Dashboard'))
+
 @section('content')
 <div class="row mb-4">
     <div class="col-12">
@@ -130,7 +132,7 @@
     </div>
 </div>
 
-<div class="row g-4">
+<div class="row g-4 mb-4">
     <!-- Recent Tickets -->
     <div class="col-lg-8">
         <!-- Monthly Recap Section -->
@@ -179,7 +181,7 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ __('Recent Support Tickets') }}</h6>
                 <a href="{{ route('tickets.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('View All') }}</a>

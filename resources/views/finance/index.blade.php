@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Finance Dashboard'))
+
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">

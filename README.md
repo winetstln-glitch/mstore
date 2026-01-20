@@ -1,53 +1,156 @@
-# MStore - Ticketing & Installation Management System
+# MStore - ISP Management System
 
-![CI Status](https://github.com/winetstln-glitch/mstore/actions/workflows/ci.yml/badge.svg)
+Sistem manajemen komprehensif untuk operasional ISP, termasuk manajemen pelanggan, tiket (keluhan/permintaan), pelacakan instalasi, manajemen inventaris, dan keuangan dengan kontrol akses berbasis peran (Admin, NOC, Teknisi, Finance, dll).
 
-A comprehensive system for managing ISP operations, including customer management, ticketing (complaints/requests), and installation tracking with role-based access control (Admin, NOC, Technician).
+![MStore Dashboard](public/img/logo.png)
 
-## Features
+## Fitur Utama
 
--   **Role-Based Access Control (RBAC)**: Admin, NOC, Technician, Customer roles.
--   **Customer Management**: CRUD operations for customer data.
--   **Ticketing System**: Log, assign, and track support tickets.
--   **Installation Management**: Track new installations from registration to completion.
--   **Dashboards**:
-    -   **Admin**: Overview of operations, recent activity, and quick actions.
-    -   **Technician**: Mobile-friendly dashboard to view assigned tickets and installations.
+-   **Manajemen Pelanggan**: Data pelanggan, paket langganan, dan status layanan.
+-   **Sistem Tiket**: Pelaporan gangguan, penugasan teknisi, dan pelacakan status.
+-   **Manajemen Instalasi**: Jadwal pasang baru dan pemantauan progres.
+-   **Manajemen Aset (OLT/ODP/ODC)**: Pemetaan dan manajemen perangkat jaringan.
+-   **Keuangan**: Laporan pendapatan, komisi, dan pengeluaran.
+-   **Manajemen Stok**: Inventaris perangkat (ONT, Kabel, dll).
+-   **Peta Jaringan**: Visualisasi lokasi pelanggan dan infrastruktur (ODP/ODC).
 
-## Requirements
+## Persyaratan Sistem
 
--   PHP 8.1 or higher
--   Composer
--   MySQL
--   Node.js & NPM (for frontend assets)
+-   **PHP**: Versi 8.1 atau lebih tinggi
+-   **Database**: MySQL / MariaDB
+-   **Web Server**: Apache / Nginx
+-   **Composer**: Manajer dependensi PHP
+-   **Node.js & NPM**: Untuk manajemen aset frontend
 
-## Installation
+---
 
-1.  **Clone the repository**
+## Panduan Instalasi di Linux (Ubuntu/Debian)
+
+Berikut adalah langkah-langkah instalasi untuk server berbasis Linux.
+
+### 1. Persiapan Server
+Pastikan sistem operasi diperbarui dan paket yang diperlukan terinstal.
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install apache2 mysql-server php php-mysql php-xml php-curl php-zip php-mbstring php-gd unzip git curl -y
+```
+
+### 2. Instalasi Composer
+```bash
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
+
+### 3. Clone Repository
+Masuk ke direktori web root (biasanya `/var/www/html`) dan clone repository ini.
+
+```bash
+cd /var/www/html
+git clone https://github.com/winetstln-glitch/mstore.git
+cd mstore
+```
+
+### 4. Instalasi Dependensi
+```bash
+composer install --optimize-autoloader --no-dev
+npm install
+npm run build
+```
+
+### 5. Konfigurasi Environment
+Salin file konfigurasi dan sesuaikan dengan database Anda.
+
+```bash
+cp .env.example .env
+nano .env
+```
+Sesuaikan bagian berikut:
+```env
+DB_DATABASE=mstore
+DB_USERNAME=user_database_anda
+DB_PASSWORD=password_database_anda
+APP_URL=http://ip-server-atau-domain-anda
+```
+
+### 6. Generate Key & Setup Database
+```bash
+php artisan key:generate
+php artisan storage:link
+php artisan migrate:fresh --seed
+```
+
+### 7. Pengaturan Izin Folder
+Pastikan Apache memiliki akses ke folder storage.
+```bash
+sudo chown -R www-data:www-data /var/www/html/mstore
+sudo chmod -R 775 /var/www/html/mstore/storage
+sudo chmod -R 775 /var/www/html/mstore/bootstrap/cache
+```
+
+### 8. Konfigurasi Virtual Host (Opsional tapi Disarankan)
+Buat file konfigurasi Apache baru: `sudo nano /etc/apache2/sites-available/mstore.conf`
+
+```apache
+<VirtualHost *:80>
+    ServerName domain-anda.com
+    DocumentRoot /var/www/html/mstore/public
+
+    <Directory /var/www/html/mstore/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+```
+Aktifkan situs dan rewrite module:
+```bash
+sudo a2ensite mstore.conf
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+```
+
+---
+
+## Panduan Instalasi di Windows (XAMPP)
+
+Berikut adalah langkah-langkah instalasi menggunakan XAMPP di Windows.
+
+### 1. Persiapan
+-   Download dan install [XAMPP](https://www.apachefriends.org/index.html) (pilih versi dengan PHP 8.1+).
+-   Download dan install [Composer](https://getcomposer.org/download/).
+-   Download dan install [Node.js](https://nodejs.org/).
+-   Pastikan layanan Apache dan MySQL sudah berjalan di XAMPP Control Panel.
+
+### 2. Download Source Code
+-   Buka terminal (PowerShell atau Git Bash).
+-   Masuk ke folder `htdocs` XAMPP (biasanya `C:\xampp\htdocs`).
+-   Clone repository:
     ```bash
     git clone https://github.com/winetstln-glitch/mstore.git
-    cd mstore
     ```
+-   Atau download ZIP dari GitHub dan ekstrak ke `C:\xampp\htdocs\mstore`.
 
-2.  **Install PHP dependencies**
-    ```bash
-    composer install
-    ```
+### 3. Instalasi Dependensi
+Buka terminal di dalam folder project (`C:\xampp\htdocs\mstore`) dan jalankan:
 
-3.  **Install Frontend dependencies**
-    ```bash
-    npm install
-    npm run build
-    ```
+```bash
+composer install
+npm install
+npm run build
+```
 
-4.  **Environment Setup**
-    Copy the example env file and configure your database credentials:
-    ```bash
-    cp .env.example .env
-    php artisan key:generate
-    ```
-    Update `.env` with your database details:
-    ```
+### 4. Konfigurasi Database
+-   Buka phpMyAdmin (`http://localhost/phpmyadmin`).
+-   Buat database baru dengan nama `mstore`.
+
+### 5. Konfigurasi Environment
+-   Salin file `.env.example` menjadi `.env`.
+-   Buka file `.env` dengan text editor (Notepad/VS Code).
+-   Pastikan konfigurasi database sesuai:
+    ```env
     DB_CONNECTION=mysql
     DB_HOST=127.0.0.1
     DB_PORT=3306
@@ -56,34 +159,57 @@ A comprehensive system for managing ISP operations, including customer managemen
     DB_PASSWORD=
     ```
 
-5.  **Database Migration & Seeding**
-    Run migrations and seed the database with initial roles and users:
-    ```bash
-    php artisan migrate:fresh --seed
-    ```
+### 6. Setup Aplikasi
+Kembali ke terminal di folder project, jalankan perintah berikut secara berurutan:
 
-## Usage
+```bash
+php artisan key:generate
+php artisan storage:link
+php artisan migrate:fresh --seed
+```
 
-### Default Accounts
+### 7. Menjalankan Aplikasi
+Jika Anda tidak membuat Virtual Host, Anda bisa mengakses aplikasi melalui browser di:
+`http://localhost/mstore/public`
 
-| Role       | Email               | Password |
-| :--------- | :------------------ | :------- |
-| Administrator | `admin@mstore.local` | `password` |
-| NOC        | `noc@mstore.local`   | `password` |
-| Technician | `tech1@mstore.local` | `password` |
-
-### Running the Application
-
-Start the local development server:
+Atau gunakan built-in server Laravel:
 ```bash
 php artisan serve
 ```
+Lalu buka `http://localhost:8000` di browser.
 
-Access the application at `http://localhost:8000`.
+---
 
-## Testing
+## Panduan Penggunaan
 
-Run the test suite to ensure everything is working correctly:
-```bash
-php artisan test
-```
+### Login Default
+Setelah melakukan seeding database (`php artisan migrate:fresh --seed`), akun berikut tersedia untuk digunakan:
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Administrator** | `admin@mstore.local` | `password` |
+| **NOC** | `noc@mstore.local` | `password` |
+| **Teknisi** | `tech1@mstore.local` | `password` |
+| **Finance** | `finance@mstore.local` | `password` |
+
+### Langkah Awal
+1.  **Login** sebagai Administrator.
+2.  Masuk ke menu **Settings** untuk mengatur konfigurasi dasar aplikasi.
+3.  Buat **Region** (Wilayah) operasional.
+4.  Tambahkan data **ODC** dan **ODP** di menu Maps atau Network.
+5.  Mulai tambahkan **Pelanggan** baru.
+
+### Troubleshooting Umum
+
+-   **Error 500 / Blank Page**:
+    -   Cek permission folder `storage` dan `bootstrap/cache`.
+    -   Pastikan file `.env` sudah ada dan terisi benar.
+    -   Jalankan `php artisan config:clear` dan `php artisan cache:clear`.
+
+-   **Gambar/Aset tidak muncul**:
+    -   Jalankan `php artisan storage:link`.
+    -   Pastikan `APP_URL` di `.env` sesuai dengan URL akses Anda.
+
+-   **Database Error**:
+    -   Pastikan service MySQL berjalan.
+    -   Cek kredensial di `.env`.

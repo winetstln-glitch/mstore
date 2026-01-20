@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Router Management'))
+
 @push('styles')
 <style>
 .content-header {

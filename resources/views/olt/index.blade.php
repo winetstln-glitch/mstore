@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('OLT Management'))
+
 @section('content')
 <div class="row">
     <div class="col-12">

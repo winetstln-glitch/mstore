@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'MStore') }} - ArchitectUI</title>
+    <title>@yield('title', config('app.name', 'MStore'))</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -108,8 +108,6 @@
         #page-content-wrapper {
             margin-left: var(--sidebar-width);
             transition: margin 0.25s ease-out;
-            width: calc(100% - var(--sidebar-width));
-            min-height: 100vh;
         }
 
         /* Navbar */
@@ -128,60 +126,123 @@
         
         body.sb-sidenav-toggled #page-content-wrapper {
             margin-left: 0;
-            width: 100%;
         }
 
-        /* Dark Mode Overrides */
+        /* Dark Mode Overrides - Cyberpunk/Deep Purple Theme */
         [data-bs-theme="dark"] body {
-            background-color: #111;
+            background-color: #110f24; /* Deep Navy/Purple Background */
+            color: #e0e0e0;
         }
         
         [data-bs-theme="dark"] #sidebar-wrapper {
-            background: #1a1d20;
-            box-shadow: 7px 0 60px rgba(0,0,0,0.2);
-            border-right: 1px solid #2c3034;
+            background: #1f1b36; /* Dark Purple Sidebar */
+            box-shadow: 7px 0 60px rgba(0,0,0,0.3);
+            border-right: 1px solid #3a3469;
         }
 
         [data-bs-theme="dark"] #sidebar-wrapper .sidebar-heading {
-            border-bottom: 1px solid #2c3034;
+            border-bottom: 1px solid #3a3469;
             color: #fff;
+            background: #1a172e;
         }
 
         [data-bs-theme="dark"] .sidebar-item {
-            color: #adb5bd;
+            color: #b0b8c4;
         }
 
         [data-bs-theme="dark"] .sidebar-item:hover {
-            background-color: #2c3034;
+            background-color: #383061;
             color: #fff;
         }
 
         [data-bs-theme="dark"] .sidebar-item.active {
-            background-color: rgba(63, 106, 216, 0.2);
-            color: #6da4ff;
-            border-left-color: #6da4ff;
+            background-color: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            border-left-color: #818cf8;
         }
 
         [data-bs-theme="dark"] .main-header {
-            background: #1a1d20;
-            border-bottom: 1px solid #2c3034;
+            background: #1f1b36;
+            border-bottom: 1px solid #3a3469;
         }
         
-        /* Global component overrides for legacy classes */
-        [data-bs-theme="dark"] .bg-white { background-color: #1a1d20 !important; }
-        [data-bs-theme="dark"] .bg-light { background-color: #2c3034 !important; }
-        [data-bs-theme="dark"] .text-dark { color: #e9ecef !important; }
-        [data-bs-theme="dark"] .card { background-color: #1a1d20; border-color: #2c3034; }
-        [data-bs-theme="dark"] .card-header { background-color: #1f2327; border-bottom-color: #2c3034; }
-        [data-bs-theme="dark"] .table { color: #dee2e6; }
-        [data-bs-theme="dark"] .table thead { background-color: #1f2327; }
-        [data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: #2a2f33; }
-        [data-bs-theme="dark"] .input-group-text.bg-light { background-color: #2c3034 !important; color: #adb5bd; }
-        [data-bs-theme="dark"] .dropdown-menu { background-color: #1a1d20; border-color: #2c3034; }
-        [data-bs-theme="dark"] .dropdown-item { color: #e9ecef; }
-        [data-bs-theme="dark"] .dropdown-item:hover { background-color: #2c3034; color: #fff; }
+        /* Global component overrides */
+        [data-bs-theme="dark"] .bg-white { background-color: #1f1b36 !important; }
+        [data-bs-theme="dark"] .bg-light { background-color: #29244a !important; }
+        [data-bs-theme="dark"] .text-dark { color: #e0e0e0 !important; }
+        [data-bs-theme="dark"] .text-muted { color: #9ca3af !important; }
+        
+        [data-bs-theme="dark"] .card { 
+            background-color: #1f1b36; 
+            border-color: #3a3469; 
+        }
+        [data-bs-theme="dark"] .card-header { 
+            background-color: #262145; 
+            border-bottom-color: #3a3469; 
+            color: #fff;
+        }
+        
+        [data-bs-theme="dark"] .table { 
+            color: #e0e0e0; 
+            --bs-table-color: #e0e0e0; 
+            --bs-table-bg: transparent; 
+        }
+        [data-bs-theme="dark"] .table thead { background-color: #262145; }
+        [data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: #2d2852; }
+        [data-bs-theme="dark"] .table td, [data-bs-theme="dark"] .table th { border-color: #3a3469; }
 
-        /* Responsive */
+        [data-bs-theme="dark"] .input-group-text.bg-light { 
+            background-color: #29244a !important; 
+            border-color: #3a3469; 
+            color: #b0b8c4; 
+        }
+        [data-bs-theme="dark"] .dropdown-menu { background-color: #1f1b36; border-color: #3a3469; }
+        [data-bs-theme="dark"] .dropdown-item { color: #e0e0e0; }
+        [data-bs-theme="dark"] .dropdown-item:hover { background-color: #383061; color: #fff; }
+        
+        /* Form Controls in Dark Mode */
+        [data-bs-theme="dark"] .form-control, 
+        [data-bs-theme="dark"] .form-select {
+            background-color: #17142b;
+            border-color: #3a3469;
+            color: #e0e0e0;
+        }
+        [data-bs-theme="dark"] .form-control:focus, 
+        [data-bs-theme="dark"] .form-select:focus {
+            background-color: #17142b;
+            border-color: #818cf8;
+            color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+        }
+        [data-bs-theme="dark"] .form-control::placeholder {
+            color: #6b7280;
+        }
+
+        /* Border Overrides */
+        [data-bs-theme="dark"] .border { border-color: #3a3469 !important; }
+        [data-bs-theme="dark"] .border-top { border-top-color: #3a3469 !important; }
+        [data-bs-theme="dark"] .border-bottom { border-bottom-color: #3a3469 !important; }
+        [data-bs-theme="dark"] .border-start { border-start-color: #3a3469 !important; }
+        [data-bs-theme="dark"] .border-end { border-end-color: #3a3469 !important; }
+
+        /* Leaflet Map Dark Mode Overrides */
+        [data-bs-theme="dark"] .leaflet-popup-content-wrapper,
+        [data-bs-theme="dark"] .leaflet-popup-tip {
+            background-color: #1f1b36;
+            color: #e0e0e0;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.5);
+        }
+        [data-bs-theme="dark"] .leaflet-popup-content {
+            color: #e9ecef;
+        }
+        [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
+            color: #adb5bd;
+        }
+        [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover {
+            color: #fff;
+        }
+  
+          /* Responsive */
         @media (max-width: 992px) {
             #sidebar-wrapper {
                 margin-left: calc(-1 * var(--sidebar-width));
@@ -208,7 +269,7 @@
 </head>
 <body>
 
-<div class="d-flex" id="wrapper">
+<div id="wrapper">
     <!-- Sidebar -->
     <div id="sidebar-wrapper">
         <div class="sidebar-heading">
@@ -434,11 +495,14 @@
             </div>
             @endif
         </div>
+        <div class="sidebar-footer text-center py-2 text-muted small">
+            {{ config('app.version') }}
+        </div>
     </div>
     <!-- /#sidebar-wrapper -->
 
     <!-- Page Content -->
-    <div id="page-content-wrapper">
+    <div id="page-content-wrapper" class="d-flex flex-column min-vh-100">
         <nav class="navbar navbar-expand-lg main-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <button class="btn btn-link text-secondary" id="sidebarToggle">
@@ -523,7 +587,7 @@
             </div>
         </nav>
 
-        <div class="container-fluid px-4 py-4">
+        <div class="container-fluid px-4 py-4 pb-5 flex-grow-1">
             <!-- Flash Messages (Handled by SweetAlert2 now) -->
             {{-- 
             @if(session('success'))
@@ -543,6 +607,13 @@
 
             @yield('content')
         </div>
+        <footer class="py-3 bg-light mt-auto border-top" style="z-index: 10; position: relative;">
+            <div class="container-fluid px-4">
+                <div class="d-flex align-items-center justify-content-center small">
+                    <div class="text-muted">Copyright {{ date('Y') }} &copy; ds-winets.id <span class="mx-1">&middot;</span> {{ config('app.version') }}</div>
+                </div>
+            </div>
+        </footer>
     </div>
     <!-- /#page-content-wrapper -->
 </div>

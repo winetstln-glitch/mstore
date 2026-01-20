@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('API Key Management'))
+
 @section('content')
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Map'))
+
 @section('content')
 
     <div class="row">
@@ -33,7 +35,7 @@
                         </div>
                     </div>
 
-                    <div id="map" style="height: 600px; width: 100%; border-radius: 8px; border: 1px solid #ddd; cursor: default;"></div>
+                    <div id="map" class="border" style="height: 1000px; width: 100%; border-radius: 8px; cursor: default;"></div>
                 </div>
             </div>
         </div>
