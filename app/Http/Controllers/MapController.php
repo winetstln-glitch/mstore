@@ -49,34 +49,59 @@ class MapController extends Controller implements HasMiddleware
         // Fetch Customers with coordinates
         $customers = Customer::whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->get(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id']);
+            ->get(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package']);
 
         // Fetch GenieACS devices to get live status
         // We fetch a larger limit to cover active devices. In production, this should be paginated or optimized.
         $devices = $this->genieService->getDevices(300); 
         
         // Map GenieACS data to customers
-        $onlineSerials = [];
+        $genieData = [];
         foreach ($devices as $device) {
             $serial = $device['_deviceId']['_SerialNumber'] ?? null;
             $lastInform = $device['_lastInform'] ?? null;
             
-            if ($serial && $lastInform) {
-                // Consider online if lastInform is within 5 minutes (300 seconds)
-                // Note: Timezone handling might be needed. GenieACS returns ISO8601.
-                $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
-                if ($diff < 300) {
-                    $onlineSerials[] = $serial;
+            if ($serial) {
+                // Extract RX Power
+                // Handle different potential structures of the value (direct or object with _value)
+                $rxPower = $device['VirtualParameters']['RXPower'] ?? null;
+                if (is_array($rxPower) && isset($rxPower['_value'])) {
+                    $rxPower = $rxPower['_value'];
                 }
+                
+                // Extract PPPoE Username (as potential "Full Name" from GenieACS)
+                $pppoeUser = $device['VirtualParameters']['pppoeUsername'] ?? null;
+                 if (is_array($pppoeUser) && isset($pppoeUser['_value'])) {
+                    $pppoeUser = $pppoeUser['_value'];
+                }
+
+                // Check online status
+                $isOnline = false;
+                if ($lastInform) {
+                    $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
+                    if ($diff < 300) {
+                        $isOnline = true;
+                    }
+                }
+
+                $genieData[$serial] = [
+                    'is_online' => $isOnline,
+                    'rx_power' => $rxPower,
+                    'genie_name' => $pppoeUser
+                ];
             }
         }
 
         // Attach online status to customers
-        $customers->transform(function ($customer) use ($onlineSerials) {
-            if ($customer->onu_serial && in_array($customer->onu_serial, $onlineSerials)) {
-                $customer->is_online = true;
+        $customers->transform(function ($customer) use ($genieData) {
+            if ($customer->onu_serial && isset($genieData[$customer->onu_serial])) {
+                $customer->is_online = $genieData[$customer->onu_serial]['is_online'];
+                $customer->rx_power = $genieData[$customer->onu_serial]['rx_power'];
+                $customer->genie_name = $genieData[$customer->onu_serial]['genie_name'];
             } else {
                 $customer->is_online = false;
+                $customer->rx_power = null;
+                $customer->genie_name = null;
             }
             return $customer;
         });

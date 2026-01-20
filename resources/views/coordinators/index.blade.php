@@ -19,6 +19,7 @@
                                 <th class="ps-4 py-3">{{ __('Name') }}</th>
                                 <th class="py-3">{{ __('User Account') }}</th>
                                 <th class="py-3">{{ __('Region') }}</th>
+                                <th class="py-3">{{ __('Router Server') }}</th>
                                 <th class="py-3">{{ __('Phone Number') }}</th>
                                 <th class="py-3">{{ __('Address') }}</th>
                                 <th class="pe-4 py-3 text-end">{{ __('Actions') }}</th>
@@ -41,6 +42,15 @@
                                         @if($coordinator->region)
                                             <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">
                                                 {{ $coordinator->region->name }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted fst-italic">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($coordinator->router)
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">
+                                                {{ $coordinator->router->name }}
                                             </span>
                                         @else
                                             <span class="text-muted fst-italic">-</span>

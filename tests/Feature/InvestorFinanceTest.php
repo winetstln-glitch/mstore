@@ -108,36 +108,94 @@ class InvestorFinanceTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        // Scenario:
-        // Income: 100,000
-        // Coord (15%): 15,000 -> Rem1: 85,000
-        // ISP (25% of Rem1): 21,250 -> Rem2: 63,750
-        // Tool (15% of Rem2): 9,562.5 -> Rem3: 54,187.5
-        // Investor (50% of Rem3): 27,093.75
+        // Add a second investor to trigger Cash Fund Deduction (5%)
+        Investor::create([
+            'coordinator_id' => $this->coordinator->id,
+            'name' => 'Second Investor',
+            'phone' => '987654321',
+        ]);
 
         $response = $this->post(route('finance.store'), [
             'type' => 'income',
             'category' => 'Member Income',
-            'amount' => 100000,
+            'amount' => 125000000,
             'transaction_date' => now()->toDateString(),
+            'description' => 'Test Income',
             'coordinator_id' => $this->coordinator->id,
-            'investor_id' => $this->investor->id, // Explicitly selecting investor
-            'description' => 'Profit Share Test',
+            'investor_id' => $this->investor->id,
         ]);
 
-        $response->assertStatus(302);
+        $response->assertRedirect(route('finance.index'));
 
-        // Verify Allocations
-        $this->assertDatabaseHas('transactions', ['category' => 'Coordinator Commission', 'amount' => 15000]);
-        $this->assertDatabaseHas('transactions', ['category' => 'ISP Payment', 'amount' => 21250]);
-        $this->assertDatabaseHas('transactions', ['category' => 'Tool Fund', 'amount' => 9562.5]);
-        
-        // Verify Investor Share
+        // Calculation Check:
+        // Gross: 125,000,000
+        // Coord (15%): 18,750,000 -> Rem1: 106,250,000
+        // ISP (25%): 26,562,500 -> Rem2: 79,687,500
+        // Tool (15%): 11,953,125 -> Rem3: 67,734,375
+        // Since InvestorCount > 1:
+        // Investor Cash (5% of Rem3): 3,386,718.75
+        // Rem4: 64,347,656.25
+        // Investor Share (100% of Rem4): 64,347,656.25
+
+        // Verify Investor Cash Fund (5% of Total Rem3)
+        $this->assertDatabaseHas('transactions', [
+            'category' => 'Investor Cash Fund',
+            'amount' => 3386718.75, // 5% of Rem3
+            'coordinator_id' => $this->coordinator->id,
+            'investor_id' => null, // Should not be linked to investor
+            'type' => 'expense'
+        ]);
+
+        // Verify Investor Profit Share
         $this->assertDatabaseHas('transactions', [
             'category' => 'Investor Profit Share',
-            'amount' => 27093.75,
+            'amount' => 64347656.25,
             'investor_id' => $this->investor->id,
+        ]);
+    }
+
+    public function test_single_investor_has_cash_fund_deduction()
+    {
+        $this->actingAs($this->user);
+
+        // Ensure only one investor exists for this coordinator (created in setUp)
+
+        $response = $this->post(route('finance.store'), [
+            'type' => 'income',
+            'category' => 'Member Income',
+            'amount' => 10000000, // 10 Million
+            'transaction_date' => now()->toDateString(),
+            'description' => 'Single Investor Income',
+            'coordinator_id' => $this->coordinator->id,
+            'investor_id' => $this->investor->id,
+        ]);
+
+        $response->assertRedirect(route('finance.index'));
+
+        // Calculation Check:
+        // Gross: 10,000,000
+        // Coord (15%): 1,500,000 -> Rem1: 8,500,000
+        // ISP (25%): 2,125,000 -> Rem2: 6,375,000
+        // Tool (15%): 956,250 -> Rem3: 5,418,750
+        // Investor Count == 1 BUT Cash Fund still applies (5%)
+        // Cash Fund = 5% of 5,418,750 = 270,937.5
+        // Rem4 = 5,147,812.5
+        // Investor Share (100% of Rem4): 5,147,812.5
+
+        // Verify Investor Cash Fund EXISTS
+        $this->assertDatabaseHas('transactions', [
+            'category' => 'Investor Cash Fund',
+            'amount' => 270937.5,
+            'coordinator_id' => $this->coordinator->id,
+            'investor_id' => null,
             'type' => 'expense'
+        ]);
+
+        // Verify Investor Profit Share
+        $this->assertDatabaseHas('transactions', [
+            'category' => 'Investor Profit Share',
+            'amount' => 5147812.5,
+            'investor_id' => $this->investor->id,
         ]);
     }
 }

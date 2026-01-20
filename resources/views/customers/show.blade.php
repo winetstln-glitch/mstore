@@ -8,10 +8,10 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ __('Customer Details') }}</h5>
                     <div class="btn-group">
-                        @if(isset($genieDeviceId))
-                            @can('genieacs.view')
-                            <a href="{{ route('genieacs.show', $genieDeviceId) }}" class="btn btn-info btn-sm text-white" target="_blank">
-                                <i class="fa-solid fa-server"></i> {{ __('Manage Device') }}
+                        @if($customer->onu_serial)
+                            @can('customer.edit')
+                            <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white">
+                                <i class="fa-solid fa-sliders"></i> {{ __('Device Settings') }}
                             </a>
                             @endcan
                         @endif

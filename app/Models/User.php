@@ -61,6 +61,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    public function coordinator(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Coordinator::class);
+    }
+
     public function assignedTickets(): BelongsToMany
     {
         return $this->belongsToMany(Ticket::class, 'ticket_user');

@@ -41,12 +41,23 @@
                                         <div class="small text-muted">{{ $olt->description }}</div>
                                     </td>
                                     <td>
-                                        <div>{{ $olt->host }}:{{ $olt->port }}</div>
-                                        <button onclick="testConnection({{ $olt->id }})" class="btn btn-link btn-sm p-0 text-decoration-none">Test Login</button>
+                                        @php
+                                            $scheme = request()->isSecure() ? 'https' : 'http';
+                                            $url = $scheme . '://' . $olt->host;
+                                            if ($olt->port && !in_array($olt->port, [80, 443])) {
+                                                $url .= ':' . $olt->port;
+                                            }
+                                        @endphp
+                                        <div>
+                                            <a href="{{ $url }}" target="_blank" class="text-decoration-none">
+                                                {{ $olt->host }}@if($olt->port):{{ $olt->port }}@endif
+                                            </a>
+                                        </div>
+                                        <button onclick="testConnection({{ $olt->id }})" class="btn btn-link btn-sm p-0 text-decoration-none">{{ __('Test Connection') }}</button>
                                     </td>
                                     <td>
                                         <span id="status-{{ $olt->id }}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                            Checking...
+                                            {{ __('Checking...') }}
                                         </span>
                                     </td>
                                     <td>
@@ -59,28 +70,28 @@
                                     </td>
                                     <td>
                                         <span class="badge {{ $olt->is_active ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle' }} border">
-                                            {{ $olt->is_active ? 'Active' : 'Inactive' }}
+                                            {{ $olt->is_active ? __('Active') : __('Inactive') }}
                                         </span>
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
                                             @if(Auth::user()->hasPermission('olt.view'))
-                                            <a href="{{ route('olt.onus.index', $olt) }}" class="btn btn-sm btn-outline-success" title="ONUs">
+                                            <a href="{{ route('olt.onus.index', $olt) }}" class="btn btn-sm btn-outline-success" title="{{ __('ONU Management') }}">
                                                 <i class="fa-solid fa-network-wired"></i>
                                             </a>
                                             @endif
                                             
                                             @if(Auth::user()->hasPermission('olt.edit'))
-                                            <a href="{{ route('olt.edit', $olt) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <a href="{{ route('olt.edit', $olt) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
                                             @endif
                                             
                                             @if(Auth::user()->hasPermission('olt.delete'))
-                                            <form action="{{ route('olt.destroy', $olt) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this OLT?');">
+                                            <form action="{{ route('olt.destroy', $olt) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this OLT?') }}');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
@@ -145,7 +156,7 @@
                     }
                 })
                 .catch(function () {
-                    badge.textContent = 'Error';
+                    badge.textContent = '{{ __('Error') }}';
                     badge.classList.remove(
                         'bg-secondary-subtle',
                         'text-secondary',
@@ -159,7 +170,7 @@
     function testConnection(id) {
         var btn = event.target.closest('button');
         var originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Testing...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> {{ __('Testing...') }}';
         btn.disabled = true;
 
         fetch('{{ route('olt.test_connection') }}', {
@@ -174,13 +185,13 @@
         .then(function (response) { return response.json(); })
         .then(function (data) {
             if (data.success) {
-                alert('Connection Successful: ' + data.message);
+                alert('{{ __('Connection Successful') }}: ' + data.message);
             } else {
-                alert('Connection Failed: ' + data.message);
+                alert('{{ __('Connection Failed') }}: ' + data.message);
             }
         })
         .catch(function (error) {
-            alert('Error: ' + error.message);
+            alert('{{ __('Error') }}: ' + error.message);
         })
         .finally(function () {
             btn.innerHTML = originalHtml;

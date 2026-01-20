@@ -54,6 +54,7 @@ class RegionController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+            'abbreviation' => 'nullable|string|max:10',
             'description' => 'nullable|string',
         ]);
 

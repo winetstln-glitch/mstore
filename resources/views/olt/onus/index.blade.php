@@ -39,11 +39,11 @@
                             <tr>
                                 <th scope="col" class="ps-3">ID</th>
                                 <th scope="col">{{ __('Customer Name') }}</th>
-                                <th scope="col">MAC / SN</th>
+                                <th scope="col">{{ __('MAC Address') }} / SN</th>
                                 <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col">Rx Power</th>
-                                <th scope="col">Down Reason</th>
-                                <th scope="col">Uptime</th>
+                                <th scope="col">{{ __('Rx Power') }}</th>
+                                <th scope="col">{{ __('Down Reason') }}</th>
+                                <th scope="col">{{ __('Uptime') }}</th>
                                 <th scope="col" class="text-end">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
@@ -74,10 +74,10 @@
                                                 default => 'bg-secondary-subtle text-secondary border-secondary-subtle'
                                             };
                                             $statusLabel = match($onu->status) {
-                                                'online' => 'Up',
+                                                'online' => __('Online'),
                                                 'los' => __('LOS'),
                                                 'power_fail' => __('Power Fail'),
-                                                default => 'Down'
+                                                default => __('Offline')
                                             };
                                         @endphp
                                         <span class="badge border {{ $statusClass }}">
@@ -111,7 +111,7 @@
                                     </td>
                                     <td class="text-body">
                                         @php
-                                            $reasonLabel = $onu->status === 'online' ? 'Normal' : 'Unknown';
+                                            $reasonLabel = $onu->status === 'online' ? __('Normal') : __('Unknown');
                                             $reasonClass = $onu->status === 'online'
                                                 ? 'text-success'
                                                 : 'text-muted';

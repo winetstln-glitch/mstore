@@ -3,19 +3,19 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Keuangan Pengurus') }}</h1>
+        <h1 class="h3 mb-0 text-gray-800">{{ __('Neraca Awal') }}</h1>
         <div class="d-flex gap-2">
             <a href="{{ route('finance.index') }}" class="btn btn-secondary">
-                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to Finance') }}
+                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali ke Keuangan') }}
             </a>
             <a href="{{ route('finance.manager_report.excel', ['month' => request('month')]) }}" class="btn btn-success">
-                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Download Excel') }}
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Unduh Excel') }}
             </a>
             <a href="{{ route('finance.manager_report.pdf', ['month' => request('month')]) }}" class="btn btn-danger">
-                <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Download PDF') }}
+                <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Unduh PDF') }}
             </a>
             <button onclick="window.print()" class="btn btn-primary">
-                <i class="fa-solid fa-print me-1"></i> {{ __('Print Report') }}
+                <i class="fa-solid fa-print me-1"></i> {{ __('Cetak Laporan') }}
             </button>
         </div>
     </div>
@@ -59,7 +59,7 @@
                 <div class="col-md-4 mb-3">
                     <div class="card border-left-info h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Komisi Pengurus (±15%)') }}</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Komisi Pengurus (±' . $coordRate . '%)') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">-{{ number_format($coordCommission, 0, ',', '.') }}</div>
                         </div>
                     </div>
@@ -109,7 +109,7 @@
                             <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
-                            <td>{{ __('Komisi Pengurus (±15%)') }}</td>
+                            <td>{{ __('Komisi Pengurus (±' . $coordRate . '%)') }}</td>
                             <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="fw-bold">

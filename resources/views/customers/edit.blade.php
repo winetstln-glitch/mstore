@@ -6,9 +6,16 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Edit Customer') }}: {{ $customer->name }}</h5>
-                <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
-                </a>
+                <div>
+                    @if($customer->onu_serial)
+                    <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white me-2">
+                        <i class="fa-solid fa-sliders"></i> {{ __('Device Settings') }}
+                    </a>
+                    @endif
+                    <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
+                    </a>
+                </div>
             </div>
 
             <div class="card-body p-4">
@@ -98,6 +105,15 @@
                             <label for="vlan" class="form-label">VLAN</label>
                             <input type="text" name="vlan" id="vlan" value="{{ old('vlan', $customer->vlan) }}" class="form-control @error('vlan') is-invalid @enderror">
                             @error('vlan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- WAN MAC -->
+                        <div class="col-md-6">
+                            <label for="wan_mac" class="form-label">{{ __('WAN MAC Address') }}</label>
+                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac', $customer->wan_mac) }}" class="form-control @error('wan_mac') is-invalid @enderror">
+                            @error('wan_mac')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -294,5 +310,26 @@
             icon.classList.add('fa-eye');
         }
     }
+
+    // Auto-populate from GenieACS
+    document.getElementById('onu_serial').addEventListener('change', function() {
+        var serial = this.value;
+        if (serial) {
+            fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial))
+                .then(response => {
+                    if (!response.ok) throw new Error('Device not found');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.ip_address) document.getElementById('ip_address').value = data.ip_address;
+                    if (data.vlan) document.getElementById('vlan').value = data.vlan;
+                    if (data.wan_mac) document.getElementById('wan_mac').value = data.wan_mac;
+                    if (data.device_model) document.getElementById('device_model').value = data.device_model;
+                    if (data.ssid_name) document.getElementById('ssid_name').value = data.ssid_name;
+                    if (data.ssid_password) document.getElementById('ssid_password').value = data.ssid_password;
+                })
+                .catch(error => console.log('GenieACS Auto-populate:', error));
+        }
+    });
 </script>
 @endpush

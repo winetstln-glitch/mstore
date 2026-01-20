@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Router;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Auth;
 use App\Services\MikrotikService;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -66,6 +67,13 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function index()
     {
+        $user = Auth::user();
+
+        // If user is not admin and is a coordinator with an assigned router, redirect to details directly
+        if (!$user->hasRole('admin') && $user->coordinator && $user->coordinator->router_id) {
+            return redirect()->route('routers.sessions', $user->coordinator->router_id);
+        }
+
         $routers = Router::latest()->paginate(10);
         return view('routers.index', compact('routers'));
     }

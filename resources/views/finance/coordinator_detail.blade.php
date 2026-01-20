@@ -44,7 +44,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Revenue') }}</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Pendapatan') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($grossRevenue, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -55,17 +55,14 @@
             </div>
         </div>
 
-        <!-- Net Balance -->
+        <!-- Commission -->
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Net Balance') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netBalance, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fa-solid fa-wallet fa-2x text-gray-300"></i>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Komisi Pengurus') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($commission, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -78,7 +75,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">{{ __('Total Expenses') }}</div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">{{ __('Pengeluaran Pengurus') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($expenses, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -88,41 +85,35 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row mb-4">
-        <!-- Allocations -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
+        <!-- Investor Cash -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Commission') }} (15%)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($commission, 0, ',', '.') }}</div>
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Uang Kas') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($investorCash, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa-solid fa-piggy-bank fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
+
+        <!-- Remaining Balance -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('ISP Share') }} (25%)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($ispShare, 0, ',', '.') }}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Sisa Disetor') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netBalance, 0, ',', '.') }}</div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Tool Fund') }} (15%)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($toolFund, 0, ',', '.') }}</div>
+                        <div class="col-auto">
+                            <i class="fa-solid fa-wallet fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>

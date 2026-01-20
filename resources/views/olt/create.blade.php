@@ -1,3 +1,105 @@
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+@endpush
+
+@push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var mapElement = document.getElementById('olt-map');
+        if (!mapElement) return;
+
+        var defaultLat = -6.800142;
+        var defaultLng = 105.93952;
+        var initialZoom = 15;
+
+        var lat = parseFloat(document.getElementById('latitude').value || defaultLat);
+        var lng = parseFloat(document.getElementById('longitude').value || defaultLng);
+
+        if (isNaN(lat)) lat = defaultLat;
+        if (isNaN(lng)) lng = defaultLng;
+
+        var map = L.map('olt-map').setView([lat, lng], initialZoom);
+
+        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        });
+
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: '&copy; Google Maps'
+        });
+
+        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        });
+
+        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        if (currentTheme === 'dark') {
+            darkLayer.addTo(map);
+        } else {
+            osm.addTo(map);
+        }
+
+        var baseMaps = {
+            "Dark Mode": darkLayer,
+            "Satellite (Google)": googleHybrid,
+            "Street (OSM)": osm
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        window.addEventListener('themeChanged', function(e) {
+            if (e.detail.theme === 'dark') {
+                if (map.hasLayer(osm)) map.removeLayer(osm);
+                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            } else {
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+            }
+        });
+
+        var marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+
+        function setInputs(latVal, lngVal) {
+            document.getElementById('latitude').value = latVal.toFixed(8);
+            document.getElementById('longitude').value = lngVal.toFixed(8);
+        }
+
+        marker.on('dragend', function(e) {
+            var newLat = e.target.getLatLng().lat;
+            var newLng = e.target.getLatLng().lng;
+            setInputs(newLat, newLng);
+        });
+
+        map.on('click', function(e) {
+            var clickLat = e.latlng.lat;
+            var clickLng = e.latlng.lng;
+            setInputs(clickLat, clickLng);
+            marker.setLatLng(e.latlng);
+        });
+
+        var btnPick = document.getElementById('btnPickOnMap');
+        if (btnPick) {
+            btnPick.addEventListener('click', function() {
+                map.invalidateSize();
+                if (document.getElementById('latitude').value && document.getElementById('longitude').value) {
+                    var latVal = parseFloat(document.getElementById('latitude').value);
+                    var lngVal = parseFloat(document.getElementById('longitude').value);
+                    if (!isNaN(latVal) && !isNaN(lngVal)) {
+                        map.setView([latVal, lngVal], 16);
+                        marker.setLatLng([latVal, lngVal]);
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush
+
 @extends('layouts.app')
 
 @section('content')
@@ -16,7 +118,6 @@
                     @csrf
 
                     <div class="row g-3 mb-4">
-                        <!-- Name -->
                         <div class="col-md-6">
                             <label for="name" class="form-label">{{ __('OLT Name') }}</label>
                             <input type="text" name="name" id="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" required>
@@ -25,7 +126,6 @@
                             @enderror
                         </div>
 
-                        <!-- Host -->
                         <div class="col-md-6">
                             <label for="host" class="form-label">{{ __('Host / IP Address') }}</label>
                             <input type="text" name="host" id="host" value="{{ old('host') }}" class="form-control @error('host') is-invalid @enderror" required>
@@ -44,7 +144,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="brand" class="form-label">Brand</label>
+                            <label for="brand" class="form-label">{{ __('Brand') }}</label>
                             <select name="brand" id="brand" class="form-select @error('brand') is-invalid @enderror" required>
                                 <option value="zte" {{ old('brand') == 'zte' ? 'selected' : '' }}>ZTE</option>
                                 <option value="huawei" {{ old('brand') == 'huawei' ? 'selected' : '' }}>Huawei</option>
@@ -57,7 +157,6 @@
                             @enderror
                         </div>
 
-                        <!-- Type -->
                         <div class="col-md-6">
                             <label for="type" class="form-label">{{ __('Type') }}</label>
                             <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required>
@@ -114,9 +213,33 @@
                         </div>
                     </div>
 
+                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Location & Coordinates') }}</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="latitude" class="form-label">{{ __('Latitude') }}</label>
+                            <input type="text" id="latitude" name="latitude" value="{{ old('latitude') }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
+                            @error('latitude')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="longitude" class="form-label">{{ __('Longitude') }}</label>
+                            <input type="text" id="longitude" name="longitude" value="{{ old('longitude') }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
+                            @error('longitude')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-text text-muted mb-2">{{ __('Click on the map or drag the marker to update location.') }}</div>
+                            <div id="olt-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd; overflow: hidden;"></div>
+                        </div>
+                    </div>
+
                     <!-- Description -->
                     <div class="mb-4">
-                        <label for="description" class="form-label">Description</label>
+                        <label for="description" class="form-label">{{ __('Description') }}</label>
                         <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -125,15 +248,11 @@
 
                     <div class="d-flex justify-content-end gap-2 border-top pt-4">
                         <button type="button" onclick="testConnection()" class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-plug me-1"></i> Test Connection
+                            <i class="fa-solid fa-plug me-1"></i> {{ __('Test Connection') }}
                         </button>
-                        <button type="submit" class="btn btn-primary px-4">Save OLT</button>
+                        <button type="submit" class="btn btn-primary px-4">{{ __('Save OLT') }}</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
     function testConnection() {
@@ -149,7 +268,7 @@
         const brand = document.getElementById('brand').value;
 
         if (!host || !port) {
-            alert('Please fill Host and Port fields.');
+            alert('{{ __('Please fill Host and Port fields.') }}');
             btn.innerHTML = originalText;
             btn.disabled = false;
             return;

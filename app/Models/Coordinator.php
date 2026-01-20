@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coordinator extends Model
 {
-    protected $fillable = ['user_id', 'name', 'phone', 'address', 'region_id'];
+    protected $fillable = ['user_id', 'name', 'phone', 'address', 'region_id', 'router_id'];
 
     public function user(): BelongsTo
     {
@@ -18,6 +18,11 @@ class Coordinator extends Model
     public function region(): BelongsTo
     {
         return $this->belongsTo(Region::class);
+    }
+
+    public function router(): BelongsTo
+    {
+        return $this->belongsTo(Router::class);
     }
 
     public function tickets(): HasMany

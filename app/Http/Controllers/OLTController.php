@@ -110,13 +110,13 @@ class OLTController extends Controller implements HasMiddleware
     public function update(Request $request, Olt $olt)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'host' => 'required|string|max:255',
-            'port' => 'required|integer',
-            'username' => 'required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
+            'host' => 'sometimes|required|string|max:255',
+            'port' => 'sometimes|required|integer',
+            'username' => 'sometimes|required|string|max:255',
             'password' => 'nullable|string|max:255', // Password optional on update
-            'type' => 'required|string|in:epon,gpon,xpon',
-            'brand' => 'required|string|in:zte,huawei,hsgq,vsol,cdata',
+            'type' => 'sometimes|required|string|in:epon,gpon,xpon',
+            'brand' => 'sometimes|required|string|in:zte,huawei,hsgq,vsol,cdata',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'description' => 'nullable|string',
@@ -126,9 +126,11 @@ class OLTController extends Controller implements HasMiddleware
             'snmp_version' => 'nullable|string|max:10',
         ]);
 
-        [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
-        $validated['host'] = $host;
-        $validated['port'] = $port;
+        if (isset($validated['host']) && isset($validated['port'])) {
+            [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
+            $validated['host'] = $host;
+            $validated['port'] = $port;
+        }
 
         if (empty($validated['password'])) {
             unset($validated['password']);

@@ -51,6 +51,22 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="router_id" class="form-label">{{ __('Router Server') }}</label>
+                        <select class="form-select @error('router_id') is-invalid @enderror" id="router_id" name="router_id">
+                            <option value="">{{ __('Select Router Server') }}</option>
+                            @foreach($routers as $router)
+                                <option value="{{ $router->id }}" {{ old('router_id') == $router->id ? 'selected' : '' }}>
+                                    {{ $router->name }} ({{ $router->host }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text text-muted">{{ __('Assign a specific router server to this coordinator (Optional).') }}</div>
+                        @error('router_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label for="phone" class="form-label">{{ __('Phone (Optional)') }}</label>
                         <input type="text" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}">
                         @error('phone')

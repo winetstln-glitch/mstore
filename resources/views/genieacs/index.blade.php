@@ -85,6 +85,7 @@
                         <thead class="table-light text-nowrap">
                             <tr>
                                 <th scope="col" class="text-center" width="1%">{{ __('Status') }}</th>
+                                <th scope="col" class="text-center">{{ __('Action') }}</th>
                                 <th scope="col">ID</th>
                                 <th scope="col">{{ __('SN ONT') }}</th>
                                 <th scope="col">SSID</th>
@@ -100,7 +101,6 @@
                                 <th scope="col">{{ __('Product Class') }}</th>
                                 <th scope="col">{{ __('Reg Time') }}</th>
                                 <th scope="col">Komunikasi Terakhir</th>
-                                <th scope="col" class="text-center">{{ __('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,6 +109,7 @@
                                     $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
                                     $isOnline = (time() - $lastInform) < 300;
                                     $id = $device['_id'];
+                                    $serverIdForDevice = $device['_mstore_server_id'] ?? $currentServerId;
                                     
                                     // Helper to get value safely
                                     $get = function($key) use ($device) {
@@ -152,9 +153,17 @@
                                     <td class="text-center">
                                         <i class="fa-solid fa-circle {{ $isOnline ? 'text-success' : 'text-danger' }}" title="{{ $isOnline ? __('Online') : __('Offline') }}"></i>
                                     </td>
+                                    <td class="text-center">
+                                        <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Summon (Refresh)">
+                                                <i class="fa-solid fa-bolt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <a href="{{ route('genieacs.show', $id) }}" class="fw-bold text-decoration-none me-2">
+                                            <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="fw-bold text-decoration-none me-2">
                                                 @if(isset($aliases[$id]) && $aliases[$id])
                                                     {{ $aliases[$id] }}
                                                     <small class="text-muted d-block fw-normal" style="font-size: 0.7em">{{ $pppoeUser !== '-' ? $pppoeUser : $id }}</small>
@@ -202,7 +211,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <a href="{{ route('genieacs.show', $id) }}" class="text-decoration-none text-dark">
+        <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="text-decoration-none text-dark">
                                             {{ $sn }}
                                         </a>
                                     </td>
@@ -244,14 +253,6 @@
                                     <td>{{ $regTime }}</td>
                                     <td>
                                         <small>{{ $lastInformStr }}</small>
-                                    </td>
-                                    <td class="text-center">
-                                        <form action="{{ route('genieacs.refresh', $id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Summon (Refresh)">
-                                                <i class="fa-solid fa-bolt"></i>
-                                            </button>
-                                        </form>
                                     </td>
                                 </tr>
                             @empty

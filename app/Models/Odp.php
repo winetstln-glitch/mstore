@@ -19,6 +19,7 @@ class Odp extends Model
         'filled',
         'description',
         'region_id',
+        'kampung',
     ];
 
     /**

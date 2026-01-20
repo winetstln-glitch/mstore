@@ -18,6 +18,50 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label for="odc_id" class="form-label">{{ __('ODC Origin') }}</label>
+                            <select class="form-select @error('odc_id') is-invalid @enderror" id="odc_id" name="odc_id" required>
+                                <option value="">{{ __('Select ODC') }}</option>
+                                @foreach($odcs as $odc)
+                                    <option value="{{ $odc->id }}" {{ old('odc_id', $odp->odc_id) == $odc->id ? 'selected' : '' }}>{{ $odc->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('odc_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="region_id" class="form-label">{{ __('Region (Desa)') }}</label>
+                            <select class="form-select @error('region_id') is-invalid @enderror" id="region_id" name="region_id" required>
+                                <option value="">{{ __('Select Region') }}</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ old('region_id', $odp->region_id) == $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="kampung" class="form-label">{{ __('Kampung / Area') }}</label>
+                            <input type="text" class="form-control @error('kampung') is-invalid @enderror" id="kampung" name="kampung" value="{{ old('kampung', $odp->kampung) }}" required placeholder="{{ __('e.g. CIBADAK') }}">
+                            @error('kampung')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="color" class="form-label">{{ __('Color') }}</label>
+                            <input type="text" class="form-control @error('color') is-invalid @enderror" id="color" name="color" value="{{ old('color', $odp->color) }}" required placeholder="{{ __('e.g. BLUE') }}">
+                            @error('color')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="name" class="form-label">{{ __('ODP Name') }}</label>
                             <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $odp->name) }}" required>
                             @error('name')

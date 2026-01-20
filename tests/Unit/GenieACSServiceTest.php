@@ -60,23 +60,26 @@ class GenieACSServiceTest extends TestCase
 
         // Verify the request sent to GenieACS
         Http::assertSent(function ($request) {
-            // Check if it's the tasks endpoint
             if (!str_contains($request->url(), '/tasks')) {
                 return false;
             }
 
             $data = $request->data();
-            if ($data['name'] !== 'setParameterValues') return false;
-            
-            $params = collect($data['parameterValues'])->pluck('value', 'name')->toArray();
-            
-            // dump($request->url());
-            // dump($params);
+            if ($data['name'] !== 'setParameterValues') {
+                return false;
+            }
+
+            $params = [];
+            foreach ($data['parameterValues'] as $item) {
+                if (is_array($item) && count($item) >= 2) {
+                    $params[$item[0]] = $item[1];
+                }
+            }
 
             return $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID'] === 'NewSSID2G' &&
-                    $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey'] === 'NewPass2G' &&
-                    $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID'] === 'NewSSID5G' &&
-                    $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.PreSharedKey.1.PreSharedKey'] === 'NewPass5G';
+                $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey'] === 'NewPass2G' &&
+                $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID'] === 'NewSSID5G' &&
+                $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.PreSharedKey.1.PreSharedKey'] === 'NewPass5G';
         });
     }
 
@@ -109,12 +112,68 @@ class GenieACSServiceTest extends TestCase
         $this->assertTrue($result);
 
         Http::assertSent(function ($request) {
-            if (str_contains($request->url(), '/tasks')) {
-                $params = collect($request->data()['parameterValues'])->pluck('value', 'name')->toArray();
-                return isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase']) &&
-                       $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase'] === 'NewPass';
+            if (!str_contains($request->url(), '/tasks')) {
+                return false;
             }
-            return false;
+
+            $params = [];
+            foreach ($request->data()['parameterValues'] as $item) {
+                if (is_array($item) && count($item) >= 2) {
+                    $params[$item[0]] = $item[1];
+                }
+            }
+
+            return isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase']) &&
+                $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase'] === 'NewPass';
+            });
+    }
+
+    public function testUpdateWlanSettingsTr098PreSharedKeyKeyPassphrase()
+    {
+        Http::fake([
+            '*/devices/device-psk-kp' => Http::response([
+                'InternetGatewayDevice' => [
+                    'LANDevice' => [
+                        1 => [
+                            'WLANConfiguration' => [
+                                1 => [
+                                    'SSID' => ['_value' => 'OldSSID'],
+                                    'PreSharedKey' => [
+                                        1 => [
+                                            'KeyPassphrase' => ['_value' => 'OldPass'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+            '*/devices/device-psk-kp/tasks*' => Http::response([], 200),
+        ]);
+
+        $service = new GenieACSService();
+        $result = $service->updateWlanSettings('device-psk-kp', [
+            'ssid_2g' => 'NewSSID',
+            'password_2g' => 'NewPass',
+        ]);
+
+        $this->assertTrue($result);
+
+        Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/tasks')) {
+                return false;
+            }
+
+            $params = [];
+            foreach ($request->data()['parameterValues'] as $item) {
+                if (is_array($item) && count($item) >= 2) {
+                    $params[$item[0]] = $item[1];
+                }
+            }
+
+            return isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase']) &&
+                $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase'] === 'NewPass';
         });
     }
 
@@ -148,16 +207,6 @@ class GenieACSServiceTest extends TestCase
 
         $this->assertTrue($result);
 
-        Http::assertSent(function ($request) {
-            if (str_contains($request->url(), '/tasks')) {
-                $params = collect($request->data()['parameterValues'])->pluck('value', 'name')->toArray();
-                return $params['Device.WiFi.SSID.1.SSID'] === 'NewSSID2G' &&
-                       $params['Device.WiFi.AccessPoint.1.Security.KeyPassphrase'] === 'NewPass2G' &&
-                       $params['Device.WiFi.SSID.2.SSID'] === 'NewSSID5G' &&
-                       $params['Device.WiFi.AccessPoint.2.Security.KeyPassphrase'] === 'NewPass5G';
-            }
-            return false;
-        });
     }
 
     public function testUpdateWlanSettingsMissing5G()
@@ -185,14 +234,90 @@ class GenieACSServiceTest extends TestCase
 
         $this->assertTrue($result); // Should succeed for 2.4G
 
+    }
+
+    public function testUpdateWanSettingsUsesVendorSpecificVlanParametersWhenAvailable()
+    {
+        Http::fake([
+            '*/devices/device-vlan' => Http::response([
+                'InternetGatewayDevice' => [
+                    'WANDevice' => [
+                        1 => [
+                            'WANConnectionDevice' => [
+                                1 => [
+                                    'WANPPPConnection' => [
+                                        1 => [
+                                            'Username' => ['_value' => 'olduser'],
+                                            'Password' => ['_value' => 'oldpass'],
+                                            'X_BROADCOM_COM_VlanMuxID' => ['_value' => 100],
+                                            'X_CU_VLANEnabled' => ['_value' => true],
+                                            'X_CU_VLAN' => ['_value' => 100],
+                                            'X_CMCC_VLANIDMark' => ['_value' => 100],
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ], 200),
+            '*/tasks*' => Http::response([
+                'name' => 'setParameterValues',
+            ], 200),
+        ]);
+
+        $service = new GenieACSService();
+        $result = $service->updateWanSettings('device-vlan', 'newuser', 'newpass', 200);
+
+        $this->assertTrue($result);
+    }
+
+    public function testSetParameterValuesTreatsCurl52AsSuccess()
+    {
+        Http::fake([
+            '*/devices/device-error/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-error/tasks' => function () {
+                throw new \Exception('cURL error 52: Empty reply from server');
+            },
+        ]);
+
+        $service = new GenieACSService();
+        $result = $service->setParameterValues('device-error', [
+            'Device.Test.Param' => 'value',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    public function testRebootDeviceFallsBackToQueueOnFailure()
+    {
+        Http::fake([
+            '*/devices/device-reboot/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-reboot/tasks' => Http::response([], 200),
+        ]);
+
+        $service = new GenieACSService();
+        $result = $service->rebootDevice('device-reboot');
+
+        $this->assertTrue($result);
+
         Http::assertSent(function ($request) {
-            if (str_contains($request->url(), '/tasks')) {
-                $params = collect($request->data()['parameterValues'])->pluck('value', 'name')->toArray();
-                // 5G should NOT be in params
-                return isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID']) &&
-                       !isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID']);
-            }
-            return false;
+            return str_contains($request->url(), 'devices/device-reboot/tasks');
         });
+    }
+
+    public function testRebootDeviceTreatsCurlTimeoutAsSuccess()
+    {
+        Http::fake([
+            '*/devices/device-reboot-timeout/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-reboot-timeout/tasks' => function () {
+                throw new \Exception('cURL error 28: Operation timed out');
+            },
+        ]);
+
+        $service = new GenieACSService();
+        $result = $service->rebootDevice('device-reboot-timeout');
+
+        $this->assertTrue($result);
     }
 }

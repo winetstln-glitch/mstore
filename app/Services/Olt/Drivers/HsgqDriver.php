@@ -181,16 +181,29 @@ class HsgqDriver implements OltDriverInterface
         }
 
         if ($this->mode === 'http') {
+            $httpOnus = [];
             try {
-                $onus = $this->getOnusHttp();
-                if (!empty($onus)) {
-                    return $onus;
+                $httpOnus = $this->getOnusHttp();
+                if (!empty($httpOnus)) {
+                    return $httpOnus;
                 }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning("HSGQ HTTP ONU fetch failed: {$e->getMessage()}");
             }
 
-            \Illuminate\Support\Facades\Log::warning("HSGQ HTTP mode active but no ONU data found. Skipping telnet fallback.");
+            \Illuminate\Support\Facades\Log::warning("HSGQ HTTP mode active but no ONU data found. Trying telnet fallback on port 23.");
+
+            try {
+                $telnetOnus = $this->getOnusTelnetFallback();
+                if (!empty($telnetOnus)) {
+                    \Illuminate\Support\Facades\Log::info("HSGQ Telnet fallback returned " . count($telnetOnus) . " ONUs.");
+                    return $telnetOnus;
+                }
+                \Illuminate\Support\Facades\Log::warning("HSGQ Telnet fallback returned 0 ONUs.");
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("HSGQ Telnet fallback failed: {$e->getMessage()}");
+            }
+
             return [];
         }
 
@@ -292,6 +305,19 @@ class HsgqDriver implements OltDriverInterface
             'show onu status',
             'show onu all',
         ];
+
+        $customCommands = env('HSGQ_ONU_TELNET_COMMANDS');
+        if ($customCommands) {
+            $decoded = json_decode($customCommands, true);
+            if (is_array($decoded)) {
+                $commands = array_values(array_filter(array_map('trim', $decoded)));
+            } else {
+                $parts = array_filter(array_map('trim', explode(',', $customCommands)));
+                if (!empty($parts)) {
+                    $commands = $parts;
+                }
+            }
+        }
         
         $output = '';
         foreach ($commands as $cmd) {

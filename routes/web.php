@@ -66,6 +66,10 @@ Route::middleware('auth')->group(function () {
     Route::get('customers/export', [CustomerWebController::class, 'export'])->name('customers.export');
     Route::post('customers/import-file', [CustomerWebController::class, 'importFile'])->name('customers.importFile');
     Route::get('customers/import', [CustomerWebController::class, 'import'])->name('customers.import');
+    Route::get('customers/genie-device', [CustomerWebController::class, 'getGenieDevice'])->name('customers.genie_device');
+    Route::get('customers/{customer}/settings', [CustomerWebController::class, 'settings'])->name('customers.settings');
+    Route::post('customers/{customer}/settings/wan', [CustomerWebController::class, 'updateWan'])->name('customers.settings.wan');
+    Route::post('customers/{customer}/settings/wlan', [CustomerWebController::class, 'updateWlan'])->name('customers.settings.wlan');
     Route::resource('customers', CustomerWebController::class);
     
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');
@@ -108,6 +112,10 @@ Route::middleware('auth')->group(function () {
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
+    
+    Route::get('finance/income-breakdown/pdf', [FinanceController::class, 'downloadIncomeBreakdownPdf'])->name('finance.income_breakdown.pdf');
+    Route::get('finance/investor-share/pdf', [FinanceController::class, 'downloadInvestorSharePdf'])->name('finance.investor_share.pdf');
+
     Route::get('finance/manager-report', [FinanceController::class, 'managerReport'])->name('finance.manager_report');
     Route::get('finance/manager-report/pdf', [FinanceController::class, 'downloadManagerReportPdf'])->name('finance.manager_report.pdf');
     Route::get('finance/manager-report/excel', [FinanceController::class, 'downloadManagerReportExcel'])->name('finance.manager_report.excel');
@@ -117,6 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
     Route::resource('map', MapController::class);
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
+    Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);

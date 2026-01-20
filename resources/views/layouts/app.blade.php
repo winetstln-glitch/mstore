@@ -212,7 +212,8 @@
     <!-- Sidebar -->
     <div id="sidebar-wrapper">
         <div class="sidebar-heading">
-            <i class="fa-solid fa-server me-2"></i> MSTORE.NET
+            <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" style="max-height: 40px;" class="me-2">
+            <span>MSTORE.NET</span>
         </div>
         <div class="list-group list-group-flush pb-4">
             @if(
@@ -222,7 +223,7 @@
             )
             <div class="sidebar-header">
                 {{ __('Main Menu') }}
-                <span class="visually-hidden">Main Menu</span>
+                <span class="visually-hidden">{{ __('Main Menu') }}</span>
             </div>
             @endif
             
@@ -246,7 +247,7 @@
 
             @if(Auth::user()->hasPermission('ticket.view'))
             <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-ticket"></i> {{ __('Tickets') }} <span class="visually-hidden">Tickets</span>
+                <i class="fa-solid fa-ticket"></i> {{ __('Tickets') }} <span class="visually-hidden">{{ __('Tickets') }}</span>
             </a>
             @endif
 
@@ -260,7 +261,7 @@
             )
             <div class="sidebar-header">
                 {{ __('Network Management') }}
-                <span class="visually-hidden">Network Management</span>
+                <span class="visually-hidden">{{ __('Network Management') }}</span>
             </div>
             @endif
 
@@ -279,6 +280,12 @@
             @if(Auth::user()->hasPermission('olt.view'))
             <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-server"></i> {{ __('OLT Management') }}
+            </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('odc.view'))
+            <a href="{{ route('odcs.index') }}" class="sidebar-item {{ request()->routeIs('odcs.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-box-archive"></i> {{ __('ODC Management') }}
             </a>
             @endif
 
@@ -372,7 +379,7 @@
                 Auth::user()->hasPermission('role.view')
             )
             <div class="sidebar-header">
-                {{ __('Administration') }} <span class="visually-hidden">Administration</span>
+                {{ __('Administration') }} <span class="visually-hidden">{{ __('Administration') }}</span>
             </div>
             @endif
 

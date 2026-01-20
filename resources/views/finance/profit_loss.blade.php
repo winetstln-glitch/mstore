@@ -63,14 +63,17 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-striped">
-                    <!-- Revenue Section -->
+                <table class="table table-bordered table-sm">
                     <thead class="bg-light">
                         <tr>
-                            <th colspan="2" class="text-uppercase text-primary">{{ __('Revenue (Pendapatan)') }}</th>
+                            <th>{{ __('Description') }}</th>
+                            <th class="text-end">{{ __('Amount') }}</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <tr class="table-light fw-bold">
+                            <td colspan="2" class="text-uppercase text-primary">{{ __('Revenue (Pendapatan)') }}</td>
+                        </tr>
                         <tr>
                             <td>{{ __('Member Income') }}</td>
                             <td class="text-end">{{ number_format($memberIncome, 0, ',', '.') }}</td>
@@ -87,15 +90,14 @@
                             <td>{{ __('Total Revenue') }}</td>
                             <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                         </tr>
-                    </tbody>
 
-                    <!-- COGS Section -->
-                    <thead class="bg-light">
                         <tr>
-                            <th colspan="2" class="text-uppercase text-warning">{{ __('Cost of Revenue (Beban Pokok Pendapatan)') }}</th>
+                            <td colspan="2"></td>
                         </tr>
-                    </thead>
-                    <tbody>
+
+                        <tr class="table-light fw-bold">
+                            <td colspan="2" class="text-uppercase text-warning">{{ __('Cost of Revenue (Beban Pokok Pendapatan)') }}</td>
+                        </tr>
                         <tr>
                             <td>{{ __('Coordinator Commission') }}</td>
                             <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
@@ -112,23 +114,23 @@
                             <td>{{ __('Total Cost of Revenue') }}</td>
                             <td class="text-end text-danger">-{{ number_format($totalCOGS, 0, ',', '.') }}</td>
                         </tr>
-                    </tbody>
 
-                    <!-- Gross Profit -->
-                    <thead class="bg-secondary text-white">
                         <tr>
-                            <th>{{ __('Gross Profit (Laba Kotor)') }}</th>
-                            <th class="text-end">{{ number_format($grossProfit, 0, ',', '.') }}</th>
+                            <td colspan="2"></td>
                         </tr>
-                    </thead>
 
-                    <!-- Operating Expenses -->
-                    <thead class="bg-light">
-                        <tr>
-                            <th colspan="2" class="text-uppercase text-danger">{{ __('Operating Expenses (Biaya Operasional)') }}</th>
+                        <tr class="table-secondary text-white fw-bold">
+                            <td>{{ __('Gross Profit (Laba Kotor)') }}</td>
+                            <td class="text-end">{{ number_format($grossProfit, 0, ',', '.') }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
+
+                        <tr>
+                            <td colspan="2"></td>
+                        </tr>
+
+                        <tr class="table-light fw-bold">
+                            <td colspan="2" class="text-uppercase text-danger">{{ __('Operating Expenses (Biaya Operasional)') }}</td>
+                        </tr>
                         <tr>
                             <td>{{ __('Server Expense') }}</td>
                             <td class="text-end text-danger">-{{ number_format($serverExpenses, 0, ',', '.') }}</td>
@@ -151,15 +153,24 @@
                             <td class="text-end text-danger">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
                         </tr>
                         @endif
-                    </tbody>
 
-                    <!-- Net Profit -->
-                    <thead class="bg-primary text-white">
                         <tr>
-                            <th class="h5 mb-0">{{ __('Net Profit (Laba Bersih / Investor Share)') }}</th>
-                            <th class="text-end h5 mb-0">{{ number_format($netProfit, 0, ',', '.') }}</th>
+                            <td colspan="2"></td>
                         </tr>
-                    </thead>
+
+                        <tr class="table-primary text-white fw-bold">
+                            <td>{{ __('Net Profit (Laba Bersih / Investor Share)') }}</td>
+                            <td class="text-end">{{ number_format($netProfit, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Investor Cash Reserve') }} ({{ $investorCashPercent }}%)</td>
+                            <td class="text-end text-danger">-{{ number_format($investorCashReserve, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr class="fw-bold table-primary">
+                            <td>{{ __('Investor Share After Cash') }}</td>
+                            <td class="text-end">{{ number_format($investorShareAfterCash, 0, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>

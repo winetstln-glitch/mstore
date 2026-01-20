@@ -150,8 +150,18 @@ class GenieACSController extends Controller implements HasMiddleware
     /**
      * Device Details: Show tabs for WAN, WLAN, etc.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        } else {
+            $serverId = null;
+        }
+
         $device = $this->genieService->getDeviceDetails($id);
         
         if (!$device) {
@@ -172,15 +182,36 @@ class GenieACSController extends Controller implements HasMiddleware
         // Get all ODPs and Regions for the dropdowns
         $odps = Odp::with('region')->orderBy('name')->get();
         $regions = Region::orderBy('name')->get();
+
+        // Advanced Settings
+        $wanConnections = $this->genieService->getWanConnections($id, $device);
+        $selectedWanPath = $request->query('wan_path');
+        $wanSettings = $this->genieService->getWanSettings($id, $selectedWanPath, $device);
         
-        return view('genieacs.show', compact('device', 'id', 'config', 'parameters', 'deviceIp', 'customer', 'odps', 'regions'));
+        $wlanSettings1 = $this->genieService->getWlanSettings($id, 1, $device);
+        $wlanSettings2 = $this->genieService->getWlanSettings($id, 2, $device);
+        $wlanSettings3 = $this->genieService->getWlanSettings($id, 3, $device);
+        $wlanSettings4 = $this->genieService->getWlanSettings($id, 4, $device);
+        
+        return view('genieacs.show', compact(
+            'device', 'id', 'config', 'parameters', 'deviceIp', 'customer', 'odps', 'regions', 'serverId',
+            'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4'
+        ));
     }
 
     /**
      * Refresh Device (Summon)
      */
-    public function refresh($id)
+    public function refresh(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
         $success = $this->genieService->refreshObject($id);
         if ($success) {
             return back()->with('success', 'Summon (Connection Request) sent to device.');
@@ -191,8 +222,16 @@ class GenieACSController extends Controller implements HasMiddleware
     /**
      * Reboot Device
      */
-    public function reboot($id)
+    public function reboot(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
         $success = $this->genieService->rebootDevice($id);
         if ($success) {
             return back()->with('success', 'Reboot command sent to device.');
@@ -205,6 +244,14 @@ class GenieACSController extends Controller implements HasMiddleware
      */
     public function ping(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
         $request->validate([
             'host' => 'required|string|ipv4'
         ]);
@@ -222,18 +269,36 @@ class GenieACSController extends Controller implements HasMiddleware
      */
     public function updateWan(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
+        // Validate Advanced Fields
         $request->validate([
-            'pppoe_user' => 'required|string',
-            'pppoe_password' => 'required|string',
-            'vlan_id' => 'nullable|integer',
+            'conn_name' => 'nullable|string',
+            'username' => 'nullable|string',
+            'password' => 'nullable|string',
+            'vlan' => 'nullable|string',
+            'service' => 'nullable|string',
+            'conn_type' => 'nullable|string',
         ]);
 
-        $success = $this->genieService->updateWanSettings(
-            $id, 
-            $request->pppoe_user, 
-            $request->pppoe_password, 
-            $request->vlan_id
-        );
+        $data = $request->only([
+            'enable', 'conn_name', 'vlan', 'conn_type', 'service', 
+            'username', 'password', 'nat', 'lan_bind'
+        ]);
+
+        // Convert checkbox to boolean
+        $data['enable'] = $request->has('enable');
+        $data['nat'] = $request->has('nat');
+
+        $path = $request->input('wan_path');
+
+        $success = $this->genieService->updateWanAdvanced($id, $data, $path);
 
         if ($success) {
             return back()->with('success', __('WAN settings update queued.'));
@@ -246,21 +311,33 @@ class GenieACSController extends Controller implements HasMiddleware
      */
     public function updateWlan(Request $request, $id)
     {
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
         $request->validate([
-            'ssid_2g' => 'nullable|string',
-            'password_2g' => 'nullable|string|min:8',
-            'ssid_5g' => 'nullable|string',
-            'password_5g' => 'nullable|string|min:8',
+            'ssid' => 'nullable|string|max:32',
+            'password' => 'nullable|string|max:63',
+            'index' => 'required|integer|min:1|max:4',
         ]);
 
-        $data = $request->only(['ssid_2g', 'password_2g', 'ssid_5g', 'password_5g']);
+        $index = $request->input('index', 1);
+        $data = $request->only(['ssid', 'password', 'security', 'channel', 'power']);
 
-        $success = $this->genieService->updateWlanSettings($id, $data);
+        // Checkbox
+        $data['enable'] = $request->has('enable');
+        $data['auto_channel'] = $request->has('auto_channel');
+
+        $success = $this->genieService->updateWlanAdvanced($id, $data, $index);
 
         if ($success) {
-            return back()->with('success', 'WiFi settings update queued.');
+            return back()->with('success', __('WiFi settings update queued for SSID ' . $index));
         }
-        return back()->with('error', 'Failed to update WiFi settings. Device might be offline or model unsupported.');
+        return back()->with('error', __('Failed to update WiFi settings. Device might be offline or model unsupported.'));
     }
 
     /**

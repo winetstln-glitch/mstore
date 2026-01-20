@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Odp;
+use App\Models\Region;
+use App\Models\Odc;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -33,7 +35,9 @@ class OdpController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        return view('odps.create');
+        $regions = Region::all();
+        $odcs = Odc::all();
+        return view('odps.create', compact('regions', 'odcs'));
     }
 
     /**
@@ -42,17 +46,27 @@ class OdpController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:odps',
+            'name' => 'nullable|string|max:255|unique:odps',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'capacity' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
-            'region_id' => 'nullable|exists:regions,id',
-            'odc_id' => 'nullable|exists:odcs,id',
-            'color' => 'nullable|string|max:20',
+            'region_id' => 'required|exists:regions,id',
+            'odc_id' => 'required|exists:odcs,id',
+            'color' => 'required|string|max:20',
+            'kampung' => 'required|string|max:255',
+            'odp_area' => 'nullable|string|max:10',
+            'odp_cable' => 'nullable|string|max:10',
         ]);
 
-        $odp = Odp::create($validated);
+        if (empty($validated['name'])) {
+            $validated['name'] = $this->generateOdpName($validated);
+        }
+
+        // Remove virtual fields before creation
+        $data = collect($validated)->except(['odp_area', 'odp_cable'])->toArray();
+
+        $odp = Odp::create($data);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -63,6 +77,66 @@ class OdpController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('odps.index')->with('success', __('ODP created successfully.'));
+    }
+
+    public function getNextSequence(Odc $odc)
+    {
+        $sequence = $this->calculateSequence($odc->id);
+        return response()->json(['sequence' => $sequence]);
+    }
+
+    private function calculateSequence($odcId)
+    {
+        $maxSequence = 0;
+        $existingOdps = Odp::where('odc_id', $odcId)->get();
+        
+        foreach ($existingOdps as $existingOdp) {
+            // Assume format .../{SEQ}
+            $parts = explode('/', $existingOdp->name);
+            if (count($parts) > 1) {
+                $seq = intval(end($parts));
+                if ($seq > $maxSequence) {
+                    $maxSequence = $seq;
+                }
+            }
+        }
+        
+        $count = $maxSequence + 1;
+        return str_pad($count, 2, '0', STR_PAD_LEFT);
+    }
+
+    private function generateOdpName($data)
+    {
+        // Area: Take first 2 characters from Input Area (fallback to ODC if not provided, though inputs are preferred now)
+        $areaRaw = isset($data['odp_area']) ? $data['odp_area'] : '';
+        if (empty($areaRaw)) {
+             // Fallback to ODC Area if input is missing (backward compatibility or safety)
+             $odc = Odc::find($data['odc_id']);
+             $areaRaw = $odc->area;
+        }
+        $areaRaw = strtoupper(preg_replace('/\s+/', '', $areaRaw));
+        $area = substr($areaRaw, 0, 2);
+
+        // Cable: 2 digits from Input Cable (fallback to ODC)
+        $cableRaw = isset($data['odp_cable']) ? $data['odp_cable'] : '';
+        if (empty($cableRaw)) {
+             if (!isset($odc)) $odc = Odc::find($data['odc_id']);
+             $cableRaw = $odc->cable_no;
+        }
+        $cableRaw = preg_replace('/[^0-9]/', '', $cableRaw);
+        $cable = str_pad($cableRaw, 2, '0', STR_PAD_LEFT);
+
+        // Color: Take first 1 character from Input Color
+        // Note: $data['color'] is from the request input
+        $colorRaw = strtoupper(preg_replace('/\s+/', '', $data['color']));
+        $color = substr($colorRaw, 0, 1);
+
+        // Sequence: Find max existing sequence for this ODC to prevent duplicates on delete
+        $sequence = $this->calculateSequence($data['odc_id']);
+
+        // Format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]
+        // Example: ODP-CI-01-L/01
+        return "ODP-{$area}-{$cable}-{$color}/{$sequence}";
     }
 
     /**
@@ -84,7 +158,9 @@ class OdpController extends Controller implements HasMiddleware
      */
     public function edit(Odp $odp)
     {
-        return view('odps.edit', compact('odp'));
+        $regions = Region::all();
+        $odcs = Odc::all();
+        return view('odps.edit', compact('odp', 'regions', 'odcs'));
     }
 
     /**
@@ -93,14 +169,15 @@ class OdpController extends Controller implements HasMiddleware
     public function update(Request $request, Odp $odp)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:odps,name,' . $odp->id,
+            'name' => 'sometimes|required|string|max:255|unique:odps,name,' . $odp->id,
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
-            'region_id' => 'nullable|exists:regions,id',
-            'odc_id' => 'nullable|exists:odcs,id',
-            'color' => 'nullable|string|max:20',
+            'region_id' => 'sometimes|required|exists:regions,id',
+            'odc_id' => 'sometimes|required|exists:odcs,id',
+            'color' => 'sometimes|required|string|max:20',
+            'kampung' => 'sometimes|required|string|max:255',
         ]);
 
         $odp->update($validated);

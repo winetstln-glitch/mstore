@@ -102,26 +102,26 @@
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-header bg-light fw-bold">
-                                <i class="fa-solid fa-bolt me-2 text-muted"></i> Management Actions
+                                <i class="fa-solid fa-bolt me-2 text-muted"></i> {{ __('Management Actions') }}
                             </div>
                             <div class="card-body">
                                 <div class="d-grid gap-2">
                                     <a href="{{ route('olt.onus.index', $olt) }}" class="btn btn-outline-primary text-start">
-                                        <i class="fa-solid fa-list me-2"></i> View All ONUs List
-                                        <small class="d-block text-muted">Manage, search, and edit individual ONUs</small>
+                                        <i class="fa-solid fa-list me-2"></i> {{ __('View All ONUs List') }}
+                                        <small class="d-block text-muted">{{ __('Manage, search, and edit individual ONUs') }}</small>
                                     </a>
                                     
                                     <form action="{{ route('olt.onus.sync', $olt) }}" method="POST" class="d-block">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-success text-start w-100">
-                                            <i class="fa-solid fa-sync me-2"></i> Sync ONUs from Device
-                                            <small class="d-block text-muted">Fetch latest connected devices and status</small>
+                                            <i class="fa-solid fa-sync me-2"></i> {{ __('Sync ONUs from Device') }}
+                                            <small class="d-block text-muted">{{ __('Fetch latest connected devices and status') }}</small>
                                         </button>
                                     </form>
 
                                     <button disabled class="btn btn-outline-secondary text-start">
-                                        <i class="fa-solid fa-terminal me-2"></i> Remote Terminal (Coming Soon)
-                                        <small class="d-block text-muted">Direct Telnet/SSH access via web</small>
+                                        <i class="fa-solid fa-terminal me-2"></i> {{ __('Remote Terminal (Coming Soon)') }}
+                                        <small class="d-block text-muted">{{ __('Direct Telnet/SSH access via web') }}</small>
                                     </button>
                                 </div>
                             </div>
@@ -165,7 +165,7 @@
     function testConnection() {
         const btn = event.target.closest('button');
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Testing...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> {{ __('Testing...') }}';
         btn.disabled = true;
 
         fetch('{{ route('olt.test_connection') }}', {

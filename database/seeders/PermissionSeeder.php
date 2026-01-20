@@ -76,6 +76,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'olt.delete', 'label' => 'Delete OLT', 'group' => 'OLT Management'],
             ['name' => 'olt.test_connection', 'label' => 'Test Connection', 'group' => 'OLT Management'],
 
+            // Router Management
+            ['name' => 'router.view', 'label' => 'View Routers', 'group' => 'Router Management'],
+            ['name' => 'router.create', 'label' => 'Create Router', 'group' => 'Router Management'],
+            ['name' => 'router.edit', 'label' => 'Edit Router', 'group' => 'Router Management'],
+            ['name' => 'router.delete', 'label' => 'Delete Router', 'group' => 'Router Management'],
+
             // Finance
             ['name' => 'finance.view', 'label' => 'View Finance', 'group' => 'Finance'],
             ['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance'],

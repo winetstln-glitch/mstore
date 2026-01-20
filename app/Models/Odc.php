@@ -14,6 +14,10 @@ class Odc extends Model
     protected $fillable = [
         'name',
         'olt_id',
+        'pon_port',
+        'area',
+        'color',
+        'cable_no',
         'latitude',
         'longitude',
         'capacity',

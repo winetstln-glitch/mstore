@@ -28,7 +28,9 @@
                             @forelse ($servers as $server)
                                 <tr>
                                     <td class="ps-3">
-                                        <span class="fw-bold">{{ $server->name }}</span>
+                                        <a href="{{ route('genieacs.index', ['server_id' => $server->id]) }}" class="fw-bold text-decoration-none">
+                                            {{ $server->name }}
+                                        </a>
                                     </td>
                                     <td>
                                         <a href="{{ $server->url }}" target="_blank" class="text-decoration-none">

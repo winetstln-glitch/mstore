@@ -60,22 +60,23 @@ class CustomerWebController extends Controller implements HasMiddleware
         $customers = $query->latest()->paginate(10)->withQueryString();
         
         $modemStatuses = [];
-        foreach ($customers as $c) {
-            if (!empty($c->onu_serial)) {
-                try {
-                    $status = $this->genieService->getDeviceStatus($c->onu_serial);
-                    $modemStatuses[$c->id] = [
-                        'online' => (bool)($status['online'] ?? false),
-                        'last_inform' => $status['last_inform'] ?? null,
-                        'id' => $status['id'] ?? null,
-                    ];
-                } catch (\Exception $e) {
-                    $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
-                }
-            } else {
-                $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
-            }
-        }
+        // Optimized: Disable auto-fetch status to improve performance
+        // foreach ($customers as $c) {
+        //     if (!empty($c->onu_serial)) {
+        //         try {
+        //             $status = $this->genieService->getDeviceStatus($c->onu_serial);
+        //             $modemStatuses[$c->id] = [
+        //                 'online' => (bool)($status['online'] ?? false),
+        //                 'last_inform' => $status['last_inform'] ?? null,
+        //                 'id' => $status['id'] ?? null,
+        //             ];
+        //         } catch (\Exception $e) {
+        //             $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
+        //         }
+        //     } else {
+        //         $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
+        //     }
+        // }
 
         return view('customers.index', compact('customers', 'modemStatuses'));
     }
@@ -373,6 +374,68 @@ class CustomerWebController extends Controller implements HasMiddleware
     }
 
     /**
+     * Get GenieACS Device Details by Serial
+     */
+    public function getGenieDevice(Request $request)
+    {
+        $serial = $request->query('serial');
+        if (!$serial) {
+            return response()->json(['error' => 'Serial number required'], 400);
+        }
+
+        $device = $this->genieService->findDeviceBySerial($serial);
+        
+        if (!$device) {
+            return response()->json(['error' => 'Device not found'], 404);
+        }
+
+        $getValue = function($node) {
+            if (is_array($node)) {
+                return $node['_value'] ?? '';
+            }
+            return (string) $node;
+        };
+
+        // Extract fields
+        $ipNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress'] 
+                 ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress'] 
+                 ?? '';
+        $ip = $getValue($ipNode);
+
+        $vlanNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['X_HW_VLAN'] 
+                 ?? '';
+        $vlan = $getValue($vlanNode);
+
+        $wanMacNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['MACAddress'] 
+                 ?? '';
+        $wanMac = $getValue($wanMacNode);
+
+        $modelNode = $device['_deviceId']['_ProductClass'] 
+                 ?? ($device['Device']['DeviceInfo']['ModelName']['_value'] ?? 'Unknown');
+        
+        $ssidNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['SSID']
+                 ?? $device['Device']['WiFi']['SSID'][1]['SSID']
+                 ?? '';
+        $ssid = $getValue($ssidNode);
+
+        $passNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['PreSharedKey'][1]['KeyPassphrase']
+                 ?? $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['PreSharedKey'][1]['PreSharedKey']
+                 ?? $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['KeyPassphrase']
+                 ?? $device['Device']['WiFi']['AccessPoint'][1]['Security']['KeyPassphrase']
+                 ?? '';
+        $wifiPass = $getValue($passNode);
+
+        return response()->json([
+            'ip_address' => $ip,
+            'vlan' => $vlan,
+            'wan_mac' => $wanMac,
+            'device_model' => $modelNode,
+            'ssid_name' => $ssid,
+            'ssid_password' => $wifiPass,
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create(Request $request)
@@ -425,6 +488,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'pppoe_user' => 'nullable|string|unique:customers,pppoe_user',
             'pppoe_password' => 'nullable|string',
             'onu_serial' => 'nullable|string',
+            'wan_mac' => 'nullable|string|max:20',
             'device_model' => 'nullable|string|max:100',
             'ssid_name' => 'nullable|string|max:100',
             'ssid_password' => 'nullable|string|max:100',
@@ -520,7 +584,7 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function update(Request $request, Customer $customer)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'package_id' => 'nullable|exists:packages,id',
@@ -530,10 +594,11 @@ class CustomerWebController extends Controller implements HasMiddleware
             'odp' => 'nullable|string|max:50',
             'odp_id' => 'nullable|exists:odps,id',
             'olt_id' => 'nullable|exists:olts,id',
-            'status' => 'required|in:active,suspend,terminated',
+            'status' => 'sometimes|required|in:active,suspend,terminated',
             'pppoe_user' => 'nullable|string|unique:customers,pppoe_user,' . $customer->id,
             'pppoe_password' => 'nullable|string',
             'onu_serial' => 'nullable|string',
+            'wan_mac' => 'nullable|string|max:20',
             'device_model' => 'nullable|string|max:100',
             'ssid_name' => 'nullable|string|max:100',
             'ssid_password' => 'nullable|string|max:100',
@@ -605,5 +670,75 @@ class CustomerWebController extends Controller implements HasMiddleware
             }
         });
         return redirect()->route('customers.index')->with('success', __('Customer deleted successfully.'));
+    }
+
+    public function settings(Request $request, Customer $customer)
+    {
+        if (!$customer->onu_serial) {
+            return redirect()->back()->withErrors(['error' => __('Customer has no ONU Serial assigned.')]);
+        }
+
+        // Find device ID
+        $status = $this->genieService->getDeviceStatus($customer->onu_serial);
+        if (!isset($status['id'])) {
+            return redirect()->back()->withErrors(['error' => __('Device not found in GenieACS.')]);
+        }
+        $deviceId = $status['id'];
+
+        // Optimize: Fetch device details once
+        $deviceData = $this->genieService->getDeviceDetails($deviceId);
+
+        $wanConnections = $this->genieService->getWanConnections($deviceId, $deviceData);
+        $selectedWanPath = $request->query('wan_path');
+        $wanSettings = $this->genieService->getWanSettings($deviceId, $selectedWanPath, $deviceData);
+        
+        $wlanSettings1 = $this->genieService->getWlanSettings($deviceId, 1, $deviceData);
+        $wlanSettings2 = $this->genieService->getWlanSettings($deviceId, 2, $deviceData);
+        $wlanSettings3 = $this->genieService->getWlanSettings($deviceId, 3, $deviceData);
+        $wlanSettings4 = $this->genieService->getWlanSettings($deviceId, 4, $deviceData);
+
+        return view('customers.settings', compact('customer', 'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4', 'deviceId'));
+    }
+
+    public function updateWan(Request $request, Customer $customer)
+    {
+        $deviceId = $request->input('device_id');
+        if (!$deviceId) return back()->withErrors(['error' => 'Device ID missing']);
+
+        $data = $request->only(['enable', 'conn_name', 'vlan', 'conn_type', 'service', 'username', 'password', 'nat', 'lan_bind']);
+        
+        $data['enable'] = $request->has('enable');
+        $data['nat'] = $request->has('nat');
+        
+        $path = $request->input('wan_path');
+
+        if ($this->genieService->updateWanAdvanced($deviceId, $data, $path)) {
+            return redirect()->back()->with('success', __('WAN Settings updated successfully.'));
+        }
+        return redirect()->back()->withErrors(['error' => __('Failed to update WAN Settings.')]);
+    }
+
+    public function updateWlan(Request $request, Customer $customer)
+    {
+        $deviceId = $request->input('device_id');
+        if (!$deviceId) return back()->withErrors(['error' => 'Device ID missing']);
+
+        $index = $request->input('index', 1);
+        $data = $request->only(['enable', 'ssid', 'password', 'security', 'channel', 'auto_channel', 'power']);
+        
+        $data['enable'] = $request->has('enable');
+        $data['auto_channel'] = $request->has('auto_channel');
+
+        if ($this->genieService->updateWlanAdvanced($deviceId, $data, $index)) {
+             // Only update local DB if it's the primary SSID (Index 1)
+             if ($index == 1) {
+                 $customer->update([
+                     'ssid_name' => $data['ssid'],
+                     'ssid_password' => $data['password']
+                 ]);
+             }
+            return redirect()->back()->with('success', __('WLAN Settings (SSID ' . $index . ') updated successfully.'));
+        }
+        return redirect()->back()->withErrors(['error' => __('Failed to update WLAN Settings.')]);
     }
 }

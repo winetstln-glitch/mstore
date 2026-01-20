@@ -17,11 +17,72 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="name" class="form-label">{{ __('ODP Name') }}</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required placeholder="{{ __('e.g. ODP-DIST-01') }}">
-                            @error('name')
+                            <label for="odc_id" class="form-label">{{ __('ODC Origin') }}</label>
+                            <select class="form-select @error('odc_id') is-invalid @enderror" id="odc_id" name="odc_id" required>
+                                <option value="">{{ __('Select ODC') }}</option>
+                                @foreach($odcs as $odc)
+                                    <option value="{{ $odc->id }}" {{ old('odc_id') == $odc->id ? 'selected' : '' }}>
+                                        {{ $odc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('odc_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="region_id" class="form-label">{{ __('Region (Desa)') }}</label>
+                            <select class="form-select @error('region_id') is-invalid @enderror" id="region_id" name="region_id" required>
+                                <option value="">{{ __('Select Region') }}</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" data-abbr="{{ $region->abbreviation ?? strtoupper(substr($region->name, 0, 3)) }}" {{ old('region_id') == $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="odp_area" class="form-label">{{ __('ODP Area Code') }}</label>
+                            <input type="text" class="form-control @error('odp_area') is-invalid @enderror" id="odp_area" name="odp_area" value="{{ old('odp_area') }}" placeholder="{{ __('e.g. CI') }}">
+                            @error('odp_area')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="odp_cable" class="form-label">{{ __('ODP Cable No') }}</label>
+                            <input type="text" class="form-control @error('odp_cable') is-invalid @enderror" id="odp_cable" name="odp_cable" value="{{ old('odp_cable') }}" placeholder="{{ __('e.g. 01') }}">
+                            @error('odp_cable')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="kampung" class="form-label">{{ __('Kampung / Area') }}</label>
+                            <input type="text" class="form-control @error('kampung') is-invalid @enderror" id="kampung" name="kampung" value="{{ old('kampung') }}" required placeholder="{{ __('e.g. CIBADAK') }}">
+                            @error('kampung')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="color" class="form-label">{{ __('Color') }}</label>
+                            <input type="text" class="form-control @error('color') is-invalid @enderror" id="color" name="color" value="{{ old('color') }}" required placeholder="{{ __('e.g. BLUE') }}">
+                            @error('color')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">{{ __('ODP Name (Auto-generated)') }}</label>
+                            <input type="text" class="form-control bg-light" id="name" name="name" value="{{ old('name') }}" readonly placeholder="{{ __('Auto-generated on save') }}">
+                            <div class="form-text">{{ __('Format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]') }}</div>
                         </div>
                         <div class="col-md-6">
                             <label for="capacity" class="form-label">{{ __('Capacity (Ports)') }}</label>
@@ -81,6 +142,66 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Name Auto-generation Preview
+        const odcSelect = document.getElementById('odc_id');
+        const regionSelect = document.getElementById('region_id');
+        const areaInput = document.getElementById('odp_area');
+        const cableInput = document.getElementById('odp_cable');
+        const colorInput = document.getElementById('color');
+        const nameInput = document.getElementById('name');
+        
+        let currentSequence = '[SEQ]';
+        const nextSequenceUrl = "{{ route('odps.next_sequence', 'ODC_ID') }}";
+
+        function fetchSequence(odcId) {
+            if (!odcId) {
+                currentSequence = '[SEQ]';
+                updateNamePreview();
+                return;
+            }
+            
+            const url = nextSequenceUrl.replace('ODC_ID', odcId);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    currentSequence = data.sequence;
+                    updateNamePreview();
+                })
+                .catch(error => {
+                    console.error('Error fetching sequence:', error);
+                    currentSequence = '[SEQ]';
+                    updateNamePreview();
+                });
+        }
+
+        function updateNamePreview() {
+            // Area: 2 chars
+            let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').substring(0, 2).toUpperCase() : '[AREA]';
+
+            // Cable: 2 digits
+            let cableVal = cableInput.value ? cableInput.value.replace(/[^0-9]/g, '').padStart(2, '0') : '[CABLE]';
+
+            // Color: 1 char
+            let colorVal = colorInput.value ? colorInput.value.replace(/\s+/g, '').substring(0, 1).toUpperCase() : '[COLOR]';
+
+            // Format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]
+            nameInput.value = `ODP-${areaVal}-${cableVal}-${colorVal}/${currentSequence}`;
+        }
+
+        areaInput.addEventListener('input', updateNamePreview);
+        cableInput.addEventListener('input', updateNamePreview);
+        colorInput.addEventListener('input', updateNamePreview);
+        
+        odcSelect.addEventListener('change', function() {
+             fetchSequence(this.value);
+        });
+        
+        // Initial fetch if ODC is selected (e.g. old input)
+        if (odcSelect.value) {
+            fetchSequence(odcSelect.value);
+        }
+
         var defaultLat = -6.2088;
         var defaultLng = 106.8456;
         var zoom = 13;

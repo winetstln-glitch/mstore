@@ -49,7 +49,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Select an OLT to place on the map:</p>
+                <p>{{ __('Select an OLT to place on the map:') }}</p>
                 <form id="oltForm">
                     <input type="hidden" id="olt_lat" name="latitude">
                     <input type="hidden" id="olt_lng" name="longitude">
@@ -86,27 +86,47 @@
                 <form id="odcForm">
                     <input type="hidden" id="odc_id" name="id">
                     <div class="mb-3">
-                        <label for="odc_name" class="form-label">Name</label>
+                        <label for="odc_name" class="form-label">{{ __('ODC Name') }}</label>
                         <input type="text" class="form-control" id="odc_name" name="name" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odc_lat" class="form-label">Latitude</label>
+                            <label for="odc_pon_port" class="form-label">{{ __('PON Port') }}</label>
+                            <input type="text" class="form-control" id="odc_pon_port" name="pon_port" required placeholder="e.g. 01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="odc_area" class="form-label">{{ __('Area') }}</label>
+                            <input type="text" class="form-control" id="odc_area" name="area" required placeholder="e.g. CI">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="odc_color" class="form-label">{{ __('Color') }}</label>
+                            <input type="text" class="form-control" id="odc_color" name="color" required placeholder="e.g. L">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="odc_cable_no" class="form-label">{{ __('Cable No') }}</label>
+                            <input type="text" class="form-control" id="odc_cable_no" name="cable_no" required placeholder="e.g. 01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="odc_lat" class="form-label">{{ __('Latitude') }}</label>
                             <input type="number" step="any" class="form-control" id="odc_lat" name="latitude" required readonly>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="odc_lng" class="form-label">Longitude</label>
+                            <label for="odc_lng" class="form-label">{{ __('Longitude') }}</label>
                             <input type="number" step="any" class="form-control" id="odc_lng" name="longitude" required readonly>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="odc_capacity" class="form-label">Capacity</label>
+                        <label for="odc_capacity" class="form-label">{{ __('Capacity') }}</label>
                         <input type="number" class="form-control" id="odc_capacity" name="capacity" value="48" required>
                     </div>
                     <div class="mb-3">
-                        <label for="odc_olt" class="form-label">OLT</label>
+                        <label for="odc_olt" class="form-label">{{ __('OLT') }}</label>
                         <select class="form-select" id="odc_olt" name="olt_id" required>
-                            <option value="">Select OLT</option>
+                            <option value="">{{ __('Select OLT') }}</option>
                             @foreach($olts as $olt)
                                 <option value="{{ $olt->id }}">{{ $olt->name }}</option>
                             @endforeach
@@ -131,43 +151,47 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="odpModalLabel">Add ODP</h5>
+                <h5 class="modal-title" id="odpModalLabel">{{ __('Add ODP') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="odpForm">
                     <input type="hidden" id="odp_id" name="id">
                     <div class="mb-3">
-                        <label for="odp_name" class="form-label">Name</label>
+                        <label for="odp_name" class="form-label">{{ __('ODP Name') }}</label>
                         <input type="text" class="form-control" id="odp_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="odp_kampung" class="form-label">{{ __('Kampung') }}</label>
+                        <input type="text" class="form-control" id="odp_kampung" name="kampung" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odp_lat" class="form-label">Latitude</label>
+                            <label for="odp_lat" class="form-label">{{ __('Latitude') }}</label>
                             <input type="number" step="any" class="form-control" id="odp_lat" name="latitude" required readonly>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="odp_lng" class="form-label">Longitude</label>
+                            <label for="odp_lng" class="form-label">{{ __('Longitude') }}</label>
                             <input type="number" step="any" class="form-control" id="odp_lng" name="longitude" required readonly>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_capacity" class="form-label">Capacity</label>
+                        <label for="odp_capacity" class="form-label">{{ __('Capacity') }}</label>
                         <input type="number" class="form-control" id="odp_capacity" name="capacity" value="8" required>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_region" class="form-label">Region</label>
+                        <label for="odp_region" class="form-label">{{ __('Region') }}</label>
                         <select class="form-select" id="odp_region" name="region_id">
-                            <option value="">Select Region</option>
+                            <option value="">{{ __('Select Region') }}</option>
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}">{{ $region->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_odc" class="form-label">Uplink ODC</label>
+                        <label for="odp_odc" class="form-label">{{ __('Uplink ODC') }}</label>
                         <select class="form-select" id="odp_odc" name="odc_id">
-                            <option value="">Select ODC</option>
+                            <option value="">{{ __('Select ODC') }}</option>
                             @foreach($odcs as $odc)
                                 <option value="{{ $odc->id }}">{{ $odc->name }}</option>
                             @endforeach
@@ -476,7 +500,7 @@
 
         // Update Location
         function updateLocation(type, id, lat, lng, oldLat, oldLng, marker) {
-            if (!confirm('Update location to new coordinates?')) {
+            if (!confirm('{{ __('Update location to new coordinates?') }}')) {
                 marker.setLatLng([oldLat, oldLng]);
                 drawLines(); // Revert lines if needed
                 return;
@@ -489,42 +513,15 @@
                 _method: 'PUT'
             };
 
-            // Populate required fields based on type
+            // Set URL based on type
             if (type === 'olt') {
                 url = `/olt/${id}`;
-                var item = olts.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.host = item.host;
-                    data.port = item.port;
-                    data.username = item.username;
-                    data.type = item.type;
-                    data.brand = item.brand;
-                }
             } else if (type === 'odc') {
                 url = `/odcs/${id}`;
-                var item = odcs.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.capacity = item.capacity;
-                    data.olt_id = item.olt_id;
-                    // Add other fields if necessary
-                }
             } else if (type === 'odp') {
                 url = `/odps/${id}`;
-                var item = odps.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.capacity = item.capacity;
-                    // data.region_id = item.region_id; // Nullable but good to send if exists
-                }
             } else if (type === 'customer') {
                 url = `/customers/${id}`;
-                var item = customers.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.status = item.status;
-                }
             }
 
             fetch(url, {
@@ -568,20 +565,20 @@
                         if (item) { item.latitude = lat; item.longitude = lng; }
                     }
                     drawLines(); // Redraw lines with new position
-                    alert('Location updated!');
+                    alert('{{ __('Location updated!') }}');
                 } else {
                     var msg = result.message || JSON.stringify(result);
                     if (result.errors) {
                         msg += '\n' + JSON.stringify(result.errors);
                     }
-                    alert('Error updating location: ' + msg);
+                    alert('{{ __('Error updating location:') }} ' + msg);
                     marker.setLatLng([oldLat, oldLng]);
                     drawLines();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error updating location: ' + error.message);
+                alert('{{ __('Error updating location:') }} ' + error.message);
                 marker.setLatLng([oldLat, oldLng]);
                 drawLines();
             });
@@ -619,7 +616,7 @@
                 editLink.className = 'btn btn-sm btn-primary text-white mt-2';
                 editLink.style.fontSize = '0.8rem';
                 editLink.style.padding = '2px 6px';
-                editLink.innerText = 'Edit OLT';
+                editLink.innerText = '{{ __('Edit OLT') }}';
                 popupContent.appendChild(editLink);
 
                 var deleteBtn = document.createElement('button');
@@ -654,14 +651,32 @@
         // Draw ODCs
         odcs.forEach(function(odc) {
             if (odc.latitude && odc.longitude) {
+                var oltName = 'N/A';
+                if (odc.olt_id) {
+                    var olt = olts.find(o => o.id == odc.olt_id);
+                    if (olt) oltName = olt.name;
+                }
+
                 var popupContent = document.createElement('div');
-                popupContent.innerHTML = `<strong>ODC: ${odc.name}</strong><br>Cap: ${odc.capacity}<br>`;
+                popupContent.innerHTML = `
+                    <div style="min-width: 200px;">
+                        <h6 class="mb-2">ODC: ${odc.name}</h6>
+                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
+                            <tr><td class="p-0 text-muted">Capacity:</td><td class="p-0 text-end">${odc.capacity}</td></tr>
+                            <tr><td class="p-0 text-muted">OLT:</td><td class="p-0 text-end">${oltName}</td></tr>
+                            <tr><td class="p-0 text-muted">PON Port:</td><td class="p-0 text-end">${odc.pon_port || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odc.area || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Color:</td><td class="p-0 text-end">${odc.color || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Cable No:</td><td class="p-0 text-end">${odc.cable_no || '-'}</td></tr>
+                        </table>
+                        <div class="text-muted small mb-2" style="font-style: italic;">${odc.description || ''}</div>
+                    </div>`;
                 
                 var editBtn = document.createElement('button');
                 editBtn.className = 'btn btn-sm btn-primary mt-2';
                 editBtn.style.fontSize = '0.8rem';
                 editBtn.style.padding = '2px 6px';
-                editBtn.innerText = 'Edit ODC';
+                editBtn.innerText = '{{ __('Edit ODC') }}';
                 editBtn.onclick = function() { editOdc(odc.id); };
                 popupContent.appendChild(editBtn);
 
@@ -697,14 +712,30 @@
         // Draw ODPs
         odps.forEach(function(odp) {
             if (odp.latitude && odp.longitude) {
+                var odcName = 'N/A';
+                if (odp.odc_id) {
+                    var odc = odcs.find(o => o.id == odp.odc_id);
+                    if (odc) odcName = odc.name;
+                }
+
                 var popupContent = document.createElement('div');
-                popupContent.innerHTML = `<strong>ODP: ${odp.name}</strong><br>Cap: ${odp.capacity}<br>`;
+                popupContent.innerHTML = `
+                    <div style="min-width: 200px;">
+                        <h6 class="mb-2">ODP: ${odp.name}</h6>
+                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
+                            <tr><td class="p-0 text-muted">Capacity:</td><td class="p-0 text-end">${odp.filled || 0}/${odp.capacity}</td></tr>
+                            <tr><td class="p-0 text-muted">ODC:</td><td class="p-0 text-end">${odcName}</td></tr>
+                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odp.kampung || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Color:</td><td class="p-0 text-end">${odp.color || '-'}</td></tr>
+                        </table>
+                        <div class="text-muted small mb-2" style="font-style: italic;">${odp.description || ''}</div>
+                    </div>`;
                 
                 var editBtn = document.createElement('button');
                 editBtn.className = 'btn btn-sm btn-primary mt-2';
                 editBtn.style.fontSize = '0.8rem';
                 editBtn.style.padding = '2px 6px';
-                editBtn.innerText = 'Edit ODP';
+                editBtn.innerText = '{{ __('Edit ODP') }}';
                 editBtn.onclick = function() { editOdp(odp.id); };
                 popupContent.appendChild(editBtn);
 
@@ -741,6 +772,17 @@
         customers.forEach(function(customer) {
             var isOnline = customer.is_online; // Assumed passed from controller
             var iconType = isOnline ? 'online' : 'offline';
+            var rxPower = customer.rx_power ? customer.rx_power + ' dBm' : 'N/A';
+            var genieName = customer.genie_name || '-';
+
+            // Find ODP name
+            var odpName = 'N/A';
+            if (customer.odp_id) {
+                var odp = odps.find(o => o.id == customer.odp_id);
+                if (odp) odpName = odp.name;
+            } else if (customer.odp) {
+                odpName = customer.odp.name || customer.odp; 
+            }
             
             var marker = L.marker([customer.latitude, customer.longitude], {
                 icon: createIcon(iconType),
@@ -748,13 +790,26 @@
             })
             .addTo(markers)
             .bindPopup(
-                `<strong>${customer.name}</strong><br>` +
-                `${customer.address || 'No address'}<br>` +
-                `<span class="badge ${isOnline ? 'bg-success' : 'bg-danger'}">${isOnline ? 'Online' : 'Offline'}</span><br>` +
+                `<div style="min-width: 200px;">` +
+                `<h6 class="mb-2">${customer.name}</h6>` +
+                `<div class="mb-2">` +
+                `<span class="badge ${isOnline ? 'bg-success' : 'bg-danger'} me-1">${isOnline ? 'Online' : 'Offline'}</span>` +
+                `<span class="badge bg-secondary">${customer.status}</span>` +
+                `</div>` +
+                `<table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">` +
+                `<tr><td class="p-0 text-muted">ID:</td><td class="p-0 text-end">${customer.id}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Address:</td><td class="p-0 text-end text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Phone:</td><td class="p-0 text-end">${customer.phone || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Package:</td><td class="p-0 text-end">${customer.package || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">ODP:</td><td class="p-0 text-end">${odpName}</td></tr>` +
+                `<tr><td class="p-0 text-muted">SN:</td><td class="p-0 text-end font-monospace small">${customer.onu_serial || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Genie Name:</td><td class="p-0 text-end">${genieName}</td></tr>` +
+                `<tr><td class="p-0 text-muted">RX Power:</td><td class="p-0 text-end fw-bold">${rxPower}</td></tr>` +
+                `</table>` +
                 `<div class="d-flex gap-2 mt-2">` +
                 `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white" style="font-size: 0.8rem; padding: 2px 6px;">Details</a>` +
                 `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-primary text-white" style="font-size: 0.8rem; padding: 2px 6px;">Edit</a>` +
-                `</div>`
+                `</div></div>`
             );
 
             var oldLat = customer.latitude;
@@ -830,7 +885,7 @@
                 document.getElementById('odc_id').value = ''; // Clear ID for new
                 document.getElementById('odc_lat').value = lat;
                 document.getElementById('odc_lng').value = lng;
-                document.getElementById('odcModalLabel').innerText = 'Add ODC'; // Set title
+                document.getElementById('odcModalLabel').innerText = '{{ __('Add ODC') }}'; // Set title
                 var odcModal = new bootstrap.Modal(document.getElementById('odcModal'));
                 odcModal.show();
             } else if (addMode === 'odp') {
@@ -838,7 +893,7 @@
                 document.getElementById('odp_id').value = ''; // Clear ID for new
                 document.getElementById('odp_lat').value = lat;
                 document.getElementById('odp_lng').value = lng;
-                document.getElementById('odpModalLabel').innerText = 'Add ODP'; // Set title
+                document.getElementById('odpModalLabel').innerText = '{{ __('Add ODP') }}'; // Set title
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
             }
@@ -858,7 +913,13 @@
                 document.getElementById('odc_olt').value = odc.olt_id;
                 document.getElementById('odc_description').value = odc.description || '';
                 
-                document.getElementById('odcModalLabel').innerText = 'Edit ODC';
+                // New Fields
+                document.getElementById('odc_pon_port').value = odc.pon_port || '';
+                document.getElementById('odc_area').value = odc.area || '';
+                document.getElementById('odc_color').value = odc.color || '';
+                document.getElementById('odc_cable_no').value = odc.cable_no || '';
+
+                document.getElementById('odcModalLabel').innerText = '{{ __('Edit ODC') }}';
                 var odcModal = new bootstrap.Modal(document.getElementById('odcModal'));
                 odcModal.show();
             }
@@ -876,8 +937,11 @@
                 document.getElementById('odp_odc').value = odp.odc_id;
                 document.getElementById('odp_color').value = odp.color || '#fd7e14';
                 document.getElementById('odp_description').value = odp.description || '';
+                
+                // New Fields
+                document.getElementById('odp_kampung').value = odp.kampung || '';
 
-                document.getElementById('odpModalLabel').innerText = 'Edit ODP';
+                document.getElementById('odpModalLabel').innerText = '{{ __('Edit ODP') }}';
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
             }
@@ -889,7 +953,7 @@
         document.getElementById('saveOltBtn').addEventListener('click', function() {
             var id = document.getElementById('olt_select').value;
             if (!id) {
-                alert('Please select an OLT');
+                alert('{{ __('Please select an OLT') }}');
                 return;
             }
 
@@ -898,7 +962,7 @@
             var item = olts.find(i => i.id == id);
             
             if (!item) {
-                 alert('OLT not found');
+                 alert('{{ __('OLT not found') }}');
                  return;
             }
 
@@ -930,12 +994,12 @@
                 if (data.success || data.id) {
                     location.reload();
                 } else {
-                    alert('Error placing OLT: ' + (data.message || JSON.stringify(data)));
+                    alert('{{ __('Error placing OLT:') }} ' + (data.message || JSON.stringify(data)));
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving.');
+                alert('{{ __('An error occurred while saving.') }}');
             });
         });
 
@@ -960,12 +1024,12 @@
                 if (data.success || data.id) { // Some controllers return full object
                     location.reload();
                 } else {
-                    alert('Error saving ODC: ' + (data.message || JSON.stringify(data)));
+                    alert('{{ __('Error saving ODC:') }} ' + (data.message || JSON.stringify(data)));
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving.');
+                alert('{{ __('An error occurred while saving.') }}');
             });
         });
 
@@ -990,12 +1054,12 @@
                 if (data.success || data.id) {
                     location.reload();
                 } else {
-                    alert('Error saving ODP: ' + (data.message || JSON.stringify(data)));
+                    alert('{{ __('Error saving ODP:') }} ' + (data.message || JSON.stringify(data)));
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while saving.');
+                alert('{{ __('An error occurred while saving.') }}');
             });
         });
 

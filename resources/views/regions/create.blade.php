@@ -19,6 +19,15 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="abbreviation" class="form-label">{{ __('Abbreviation (Optional)') }}</label>
+                        <input type="text" class="form-control @error('abbreviation') is-invalid @enderror" id="abbreviation" name="abbreviation" value="{{ old('abbreviation') }}" placeholder="e.g. CIB">
+                        <div class="form-text text-muted">{{ __('Used for ODP Code generation. Defaults to first 3 letters of name.') }}</div>
+                        @error('abbreviation')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="mb-4">
                         <label for="description" class="form-label">{{ __('Description (Optional)') }}</label>
                         <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description') }}</textarea>

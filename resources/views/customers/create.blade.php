@@ -102,6 +102,15 @@
                             @enderror
                         </div>
 
+                        <!-- WAN MAC -->
+                        <div class="col-md-6">
+                            <label for="wan_mac" class="form-label">{{ __('WAN MAC Address') }}</label>
+                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac') }}" class="form-control @error('wan_mac') is-invalid @enderror">
+                            @error('wan_mac')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- OLT -->
                         <div class="col-md-6">
                             <label for="olt_id" class="form-label">{{ __('OLT Server') }}</label>
@@ -226,6 +235,28 @@
             icon.classList.add('fa-eye');
         }
     }
+
+    // Auto-populate from GenieACS
+    document.getElementById('onu_serial').addEventListener('change', function() {
+        var serial = this.value;
+        if (serial) {
+            // Show loading state if needed, or just fetch
+            fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial))
+                .then(response => {
+                    if (!response.ok) throw new Error('Device not found');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.ip_address) document.getElementById('ip_address').value = data.ip_address;
+                    if (data.vlan) document.getElementById('vlan').value = data.vlan;
+                    if (data.wan_mac) document.getElementById('wan_mac').value = data.wan_mac;
+                    if (data.device_model) document.getElementById('device_model').value = data.device_model;
+                    if (data.ssid_name) document.getElementById('ssid_name').value = data.ssid_name;
+                    if (data.ssid_password) document.getElementById('ssid_password').value = data.ssid_password;
+                })
+                .catch(error => console.log('GenieACS Auto-populate:', error));
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         var defaultLat = -6.800142;

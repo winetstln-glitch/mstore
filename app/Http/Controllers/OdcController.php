@@ -14,8 +14,8 @@ class OdcController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:odc.view', only: ['index', 'show']),
-            new Middleware('permission:odc.create', only: ['store']),
-            new Middleware('permission:odc.edit', only: ['update']),
+            new Middleware('permission:odc.create', only: ['create', 'store']),
+            new Middleware('permission:odc.edit', only: ['edit', 'update']),
             new Middleware('permission:odc.delete', only: ['destroy']),
         ];
     }
@@ -25,10 +25,17 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        // Usually handled by MapController for visualization, 
-        // but we might want a list view later.
-        $odcs = Odc::with('olt')->get();
-        return response()->json($odcs);
+        $odcs = Odc::with('olt')->latest()->paginate(10);
+        return view('odcs.index', compact('odcs'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        $olts = Olt::all();
+        return view('odcs.create', compact('olts'));
     }
 
     /**
@@ -37,17 +44,29 @@ class OdcController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255|unique:odcs',
             'olt_id' => 'required|exists:olts,id',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
+            'pon_port' => 'required|string',
+            'area' => 'required|string',
+            'color' => 'required|string',
+            'cable_no' => 'required|string',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
         ]);
 
+        if (empty($validated['name'])) {
+            $validated['name'] = $this->generateOdcName($validated);
+        }
+
         $odc = Odc::create($validated);
 
-        return response()->json(['success' => true, 'data' => $odc]);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $odc]);
+        }
+
+        return redirect()->route('odcs.index')->with('success', __('ODC created successfully.'));
     }
 
     /**
@@ -55,7 +74,19 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function show(Odc $odc)
     {
-        return response()->json($odc);
+        if (request()->wantsJson()) {
+            return response()->json($odc);
+        }
+        return view('odcs.show', compact('odc'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Odc $odc)
+    {
+        $olts = Olt::all();
+        return view('odcs.edit', compact('odc', 'olts'));
     }
 
     /**
@@ -64,17 +95,31 @@ class OdcController extends Controller implements HasMiddleware
     public function update(Request $request, Odc $odc)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'olt_id' => 'required|exists:olts,id',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'capacity' => 'required|integer|min:0',
+            'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,' . $odc->id,
+            'olt_id' => 'sometimes|required|exists:olts,id',
+            'pon_port' => 'sometimes|required|string',
+            'area' => 'sometimes|required|string',
+            'color' => 'sometimes|required|string',
+            'cable_no' => 'sometimes|required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'capacity' => 'sometimes|required|integer|min:0',
             'description' => 'nullable|string',
         ]);
 
+        if (array_key_exists('name', $validated) && empty($validated['name'])) {
+            // Merge with existing data to ensure all fields for name generation are present
+            $dataForName = array_merge($odc->toArray(), $validated);
+            $validated['name'] = $this->generateOdcName($dataForName);
+        }
+
         $odc->update($validated);
 
-        return response()->json(['success' => true, 'data' => $odc]);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $odc]);
+        }
+
+        return redirect()->route('odcs.index')->with('success', __('ODC updated successfully.'));
     }
 
     /**
@@ -83,6 +128,35 @@ class OdcController extends Controller implements HasMiddleware
     public function destroy(Odc $odc)
     {
         $odc->delete();
-        return response()->json(['success' => true]);
+        
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route('odcs.index')->with('success', __('ODC deleted successfully.'));
+    }
+
+    private function generateOdcName($data)
+    {
+        // Format: ODC-[PORT]-[AREA_2]-[COLOR_1]-[CABLE]
+        // Example: ODC-01-CI-L-01
+        
+        // PON Port: PON 01 -> 01
+        $ponRaw = preg_replace('/[^0-9]/', '', $data['pon_port']);
+        $pon = str_pad($ponRaw, 2, '0', STR_PAD_LEFT);
+
+        // Area: Take first 2 characters
+        $areaRaw = strtoupper(preg_replace('/\s+/', '', $data['area']));
+        $area = substr($areaRaw, 0, 2);
+
+        // Color: Take first 1 character
+        $colorRaw = strtoupper(preg_replace('/\s+/', '', $data['color']));
+        $color = substr($colorRaw, 0, 1);
+
+        // Cable: 01 -> 01
+        $cableRaw = preg_replace('/[^0-9]/', '', $data['cable_no']);
+        $cable = str_pad($cableRaw, 2, '0', STR_PAD_LEFT);
+        
+        return "ODC-{$pon}-{$area}-{$color}-{$cable}";
     }
 }

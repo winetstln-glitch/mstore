@@ -91,17 +91,14 @@
                                         <div class="small text-muted">{{ $customer->ip_address }}</div>
                                     </td>
                                     <td>
-                                        @php
-                                            $ms = $modemStatuses[$customer->id] ?? ['online' => false, 'last_inform' => null];
-                                        @endphp
-                                        @if($ms['online'])
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Online') }}</span>
-                                        @else
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ __('Offline') }}</span>
-                                        @endif
-                                        @if($ms['last_inform'])
-                                            <div class="small text-muted mt-1">{{ __('Last Inform') }}: {{ \Carbon\Carbon::parse($ms['last_inform'])->diffForHumans() }}</div>
-                                        @endif
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ $customer->onu_serial ?? '-' }}</span>
+                                            @if($customer->onu_serial)
+                                                <a href="{{ route('customers.settings', $customer->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('Check Status') }}">
+                                                    <i class="fa-solid fa-stethoscope"></i>
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>
                                         @if($customer->status === 'active')
