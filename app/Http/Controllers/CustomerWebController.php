@@ -176,117 +176,134 @@ class CustomerWebController extends Controller implements HasMiddleware
             abort(403);
         }
 
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,csv|max:20480',
-        ]);
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,csv|max:20480',
+            ]);
 
-        $file = $request->file('file');
-        $extension = strtolower($file->getClientOriginalExtension());
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
 
-        if ($extension === 'csv') {
-            $reader = new CSVReader();
-        } else {
-            $reader = new XLSXReader();
-        }
+            if ($extension === 'csv') {
+                $reader = new CSVReader();
+            } else {
+                $reader = new XLSXReader();
+            }
 
-        $reader->open($file->getRealPath());
+            $reader->open($file->getRealPath());
 
-        $header = null;
-        $created = 0;
-        $updated = 0;
-        $invalid = 0;
-        $missingHeader = false;
-        $rowNumber = 0;
+            $header = null;
+            $created = 0;
+            $updated = 0;
+            $invalid = 0;
+            $missingHeader = false;
+            $rowNumber = 0;
 
-        foreach ($reader->getSheetIterator() as $sheet) {
-            foreach ($sheet->getRowIterator() as $row) {
-                $cells = $row->getCells();
-                $values = [];
-                $rowNumber++;
+            foreach ($reader->getSheetIterator() as $sheet) {
+                foreach ($sheet->getRowIterator() as $row) {
+                    $cells = $row->getCells();
+                    $values = [];
+                    $rowNumber++;
 
-                foreach ($cells as $cell) {
-                    $values[] = $cell->getValue();
-                }
-
-                if ($header === null) {
-                    $header = array_map(function ($value) {
-                        return strtolower(trim((string) $value));
-                    }, $values);
-                    if (!in_array('name', $header, true)) {
-                        $missingHeader = true;
-                        break;
+                    foreach ($cells as $cell) {
+                        $values[] = $cell->getValue();
                     }
-                    continue;
-                }
 
-                // Adjust values array to match header length
-                if (count($values) > count($header)) {
-                    $values = array_slice($values, 0, count($header));
-                } elseif (count($values) < count($header)) {
-                    $values = array_pad($values, count($header), null);
-                }
+                    if ($header === null) {
+                        $header = array_map(function ($value) {
+                            return strtolower(trim((string) $value));
+                        }, $values);
+                        if (!in_array('name', $header, true)) {
+                            $missingHeader = true;
+                            break;
+                        }
+                        continue;
+                    }
 
-                $row = array_combine($header, $values);
+                    // Adjust values array to match header length
+                    if (count($values) > count($header)) {
+                        $values = array_slice($values, 0, count($header));
+                    } elseif (count($values) < count($header)) {
+                        $values = array_pad($values, count($header), null);
+                    }
 
-                if (empty($row['name'])) {
-                    $invalid++;
-                    continue;
-                }
+                    $row = array_combine($header, $values);
 
-                // Check for existing customer by ID, Name, or Phone to update
-                $existingCustomer = null;
-                if (!empty($row['id'])) {
-                    $existingCustomer = Customer::find($row['id']);
-                } elseif (!empty($row['name'])) {
-                     $existingCustomer = Customer::where('name', $row['name'])->first();
-                }
+                    if (empty($row['name'])) {
+                        $invalid++;
+                        continue;
+                    }
 
-                $data = [
-                    'name' => $row['name'],
-                    'address' => $row['address'] ?? null,
-                    'phone' => $row['phone'] ?? null,
-                    'package' => $row['package'] ?? null,
-                    'ip_address' => $row['ip_address'] ?? null,
-                    'vlan' => $row['vlan'] ?? null,
-                    'odp' => $row['odp'] ?? null,
-                    'status' => strtolower($row['status'] ?? 'active'),
-                    'pppoe_user' => $row['pppoe_user'] ?? null,
-                    'pppoe_password' => $row['pppoe_password'] ?? null,
-                    'onu_serial' => $row['onu_serial'] ?? null,
-                    'device_model' => $row['device_model'] ?? null,
-                    'ssid_name' => $row['ssid_name'] ?? null,
-                    'ssid_password' => $row['ssid_password'] ?? null,
-                    'latitude' => $row['latitude'] ?? null,
-                    'longitude' => $row['longitude'] ?? null,
-                ];
+                    // Helper to get value or null
+                    $getValue = function($key) use ($row) {
+                        $val = $row[$key] ?? null;
+                        if (is_string($val)) {
+                            $val = trim($val);
+                        }
+                        return $val === '' ? null : $val;
+                    };
 
-                // If status is empty or invalid, default to active
-                if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
-                    $data['status'] = 'active';
-                }
+                    // Check for existing customer by ID, Name, or Phone to update
+                    $existingCustomer = null;
+                    if (!empty($row['id'])) {
+                        $existingCustomer = Customer::find($row['id']);
+                    } elseif (!empty($row['name'])) {
+                         $existingCustomer = Customer::where('name', $row['name'])->first();
+                    }
 
-                if ($existingCustomer) {
-                    $existingCustomer->update($data);
-                    $updated++;
-                } else {
-                    Customer::create($data);
-                    $created++;
+                    $data = [
+                        'name' => $row['name'], // Name is required, checked above
+                        'address' => $getValue('address'),
+                        'phone' => $getValue('phone'),
+                        'package' => $getValue('package'),
+                        'ip_address' => $getValue('ip_address'),
+                        'vlan' => $getValue('vlan'),
+                        'odp' => $getValue('odp'),
+                        'status' => strtolower($getValue('status') ?? 'active'),
+                        'pppoe_user' => $getValue('pppoe_user'),
+                        'pppoe_password' => $getValue('pppoe_password'),
+                        'onu_serial' => $getValue('onu_serial'),
+                        'device_model' => $getValue('device_model'),
+                        'ssid_name' => $getValue('ssid_name'),
+                        'ssid_password' => $getValue('ssid_password'),
+                        'latitude' => $getValue('latitude'),
+                        'longitude' => $getValue('longitude'),
+                    ];
+
+                    // If status is empty or invalid, default to active
+                    if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
+                        $data['status'] = 'active';
+                    }
+
+                    if ($existingCustomer) {
+                        $existingCustomer->update($data);
+                        $updated++;
+                    } else {
+                        Customer::create($data);
+                        $created++;
+                    }
                 }
             }
-        }
 
-        $reader->close();
+            $reader->close();
 
-        if ($missingHeader) {
+            if ($missingHeader) {
+                return redirect()->route('customers.index')->withErrors([
+                    'error' => __('Invalid file format. Required column: name.')
+                ]);
+            }
+
+            return redirect()->route('customers.index')->with('success', __('Imported :created new customers, updated :updated customers.', [
+                'created' => $created,
+                'updated' => $updated,
+            ]))->with('warning', $invalid > 0 ? __('Skipped :count rows due to missing/invalid name.', ['count' => $invalid]) : null);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Import Failed: ' . $e->getMessage());
             return redirect()->route('customers.index')->withErrors([
-                'error' => __('Invalid file format. Required column: name.')
+                'error' => __('Import failed: :message', ['message' => $e->getMessage()])
             ]);
         }
-
-        return redirect()->route('customers.index')->with('success', __('Imported :created new customers, updated :updated customers.', [
-            'created' => $created,
-            'updated' => $updated,
-        ]))->with('warning', $invalid > 0 ? __('Skipped :count rows due to missing/invalid name.', ['count' => $invalid]) : null);
     }
 
     /**
