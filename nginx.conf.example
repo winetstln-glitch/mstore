@@ -1,0 +1,51 @@
+server {
+    listen 80;
+    server_name nms.winets.my.id;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name nms.winets.my.id;
+
+    # PENTING: Pastikan ini mengarah ke folder public project Anda
+    root /var/www/mstore/public;
+    
+    index index.php index.html index.htm;
+
+    # Log files
+    access_log /var/log/nginx/mstore_access.log;
+    error_log /var/log/nginx/mstore_error.log;
+
+    # Konfigurasi SSL (Otomatis diatur oleh Certbot, tapi ini referensinya)
+    # ssl_certificate /etc/letsencrypt/live/nms.winets.my.id/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/nms.winets.my.id/privkey.pem;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Konfigurasi PHP-FPM
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        
+        # Sesuaikan versi PHP Anda di sini (contoh: php8.1-fpm, php8.2-fpm, atau php8.3-fpm)
+        # Cek versi dengan perintah: php -v
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock; 
+        
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    # Upload Size Limit (Untuk upload foto teknisi/inventory)
+    client_max_body_size 64M;
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
