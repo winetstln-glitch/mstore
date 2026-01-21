@@ -28,7 +28,13 @@
                 </div>
                 <div>
                     <a href="{{ route('attendance.create') }}" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-fingerprint me-1"></i> {{ __('Clock In/Out') }}
+                        @if(!$todayAttendance)
+                            <i class="fa-solid fa-sign-in-alt"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
+                        @elseif(!$todayAttendance->clock_out)
+                            <i class="fa-solid fa-sign-out-alt"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock Out') }}</span>
+                        @else
+                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Attendance') }}</span>
+                        @endif
                     </a>
                 </div>
             </div>
