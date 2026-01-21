@@ -433,6 +433,10 @@
             </a>
             @endif
 
+            <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ request()->routeIs('calculator.pon') ? 'active' : '' }}">
+                <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
+            </a>
+
             {{-- Installations removed as per request --}}
             {{-- @if(Auth::user()->hasPermission('installation.view'))
             <a href="{{ route('installations.index') }}" class="sidebar-item {{ request()->routeIs('installations.*') ? 'active' : '' }}">

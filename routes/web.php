@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CustomerWebController;
 use App\Http\Controllers\DashboardController;
@@ -124,6 +125,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('finance/bulk-destroy', [FinanceController::class, 'bulkDestroy'])->name('finance.bulkDestroy');
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
     Route::resource('map', MapController::class);
+    
+    // Tools
+    Route::get('/calculator/pon', [CalculatorController::class, 'index'])->name('calculator.pon');
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
