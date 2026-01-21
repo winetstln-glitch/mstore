@@ -257,6 +257,74 @@
             body.sb-sidenav-toggled #page-content-wrapper {
                 margin-left: var(--sidebar-width);
             }
+            
+            /* Mobile Form Improvements */
+            .form-control, .form-select, .btn {
+                min-height: 46px; /* Larger touch target */
+                font-size: 16px; /* Prevent iOS zoom */
+            }
+
+            .input-group .btn {
+                z-index: 0; /* Fix overlap issues */
+            }
+
+            /* Select2 Mobile Fixes */
+            .select2-container .select2-selection--single,
+            .select2-container .select2-selection--multiple {
+                min-height: 46px !important;
+                font-size: 16px !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+            
+            .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+                line-height: 46px !important;
+                padding-left: 12px !important;
+                color: #333;
+            }
+
+            .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+                height: 44px !important;
+                top: 1px !important;
+            }
+
+            .select2-container--bootstrap-5 .select2-dropdown .select2-results__option {
+                padding: 10px 12px; /* Larger tap area for options */
+                font-size: 15px;
+            }
+
+            /* Stack buttons on mobile */
+            form .d-flex.justify-content-end {
+                flex-direction: column-reverse;
+                gap: 10px;
+                width: 100%;
+            }
+
+            form .d-flex.justify-content-end .btn {
+                width: 100%;
+                margin: 0 !important;
+            }
+            
+            /* Dark Mode Select2 Override */
+            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+                background-color: #17142b !important;
+                border-color: #3a3469 !important;
+                color: #e0e0e0 !important;
+            }
+            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered {
+                color: #e0e0e0 !important;
+            }
+            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+                background-color: #1f1b36 !important;
+                border-color: #3a3469 !important;
+            }
+            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+                color: #e0e0e0 !important;
+            }
+            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
+                background-color: #383061 !important;
+            }
+        }
         }
     </style>
     
