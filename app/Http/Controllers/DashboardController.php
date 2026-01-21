@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\Installation;
 use App\Models\TechnicianAttendance;
@@ -52,6 +53,36 @@ class DashboardController extends Controller
             'tickets_today' => Ticket::whereDate('created_at', today())->count(),
             'pending_installations' => Installation::whereIn('status', ['registered', 'survey', 'approved'])->count(),
         ];
+
+        // Filter Dashboard Stats for Coordinator
+        if (!$user->hasRole('admin')) {
+            $coordinator = Coordinator::where('user_id', $user->id)->first();
+            if ($coordinator && $coordinator->region_id) {
+                // Filter Customers
+                $customerQuery = Customer::whereHas('odp', function($q) use ($coordinator) {
+                    $q->where('region_id', $coordinator->region_id);
+                });
+                
+                $stats['total_customers'] = $customerQuery->count();
+                $stats['new_customers_this_month'] = $customerQuery->where('created_at', '>=', now()->startOfMonth())->count();
+                
+                // Filter Tickets (Linked to Customer in Region)
+                $ticketQuery = Ticket::whereHas('customer.odp', function($q) use ($coordinator) {
+                    $q->where('region_id', $coordinator->region_id);
+                });
+
+                $stats['open_tickets'] = $ticketQuery->clone()->where('status', 'open')->count();
+                $stats['tickets_today'] = $ticketQuery->clone()->whereDate('created_at', today())->count();
+                
+                // Filter Installations (Linked to Customer in Region)
+                // Assuming installation has customer_id or similar
+                $installationQuery = Installation::whereHas('customer.odp', function($q) use ($coordinator) {
+                    $q->where('region_id', $coordinator->region_id);
+                });
+                
+                $stats['pending_installations'] = $installationQuery->whereIn('status', ['registered', 'survey', 'approved'])->count();
+            }
+        }
 
         $recentTickets = Ticket::with(['customer', 'technicians'])
             ->where('status', '!=', 'closed')

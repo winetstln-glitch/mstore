@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Olt;
 use App\Models\Odp;
+use App\Models\Coordinator;
 use App\Models\Setting;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
@@ -43,6 +44,16 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Customer::query();
+
+        // Filter for Coordinator (Pengurus)
+        if (!Auth::user()->hasRole('admin')) {
+            $coordinator = Coordinator::where('user_id', Auth::id())->first();
+            if ($coordinator && $coordinator->region_id) {
+                $query->whereHas('odp', function($q) use ($coordinator) {
+                    $q->where('region_id', $coordinator->region_id);
+                });
+            }
+        }
 
         if ($request->has('search') && $request->input('search') != '') {
             $search = $request->input('search');
