@@ -22,6 +22,13 @@ npm run build
 echo "Running database migrations..."
 php artisan migrate --force
 
+# 3.1 Run Seeders (Safe updates)
+echo "Running seeders..."
+php artisan db:seed --class=PermissionSeeder --force
+php artisan db:seed --class=RoleSeeder --force
+php artisan db:seed --class=PackageSeeder --force
+php artisan db:seed --class=SettingSeeder --force
+
 # 4. Clear and Cache Config
 echo "Clearing and caching configuration..."
 php artisan optimize:clear

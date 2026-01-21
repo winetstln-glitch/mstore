@@ -87,7 +87,18 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            Setting::updateOrCreate(['key' => $setting['key']], $setting);
+            $existing = Setting::where('key', $setting['key'])->first();
+            
+            if ($existing) {
+                // Update metadata only, preserve value
+                $existing->update([
+                    'group' => $setting['group'],
+                    'type' => $setting['type'],
+                    'label' => $setting['label'],
+                ]);
+            } else {
+                Setting::create($setting);
+            }
         }
     }
 }
