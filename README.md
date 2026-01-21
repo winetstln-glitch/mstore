@@ -236,6 +236,63 @@ sudo supervisorctl restart all
 
 ---
 
+## Panduan Konfigurasi HTTPS (SSL)
+
+Untuk mengamankan koneksi server Anda dengan HTTPS menggunakan sertifikat SSL gratis dari Let's Encrypt, ikuti langkah-langkah berikut (khusus server Linux Ubuntu/Debian dengan Apache).
+
+### 1. Instalasi Certbot
+Pastikan Anda sudah login sebagai root atau user dengan akses sudo.
+
+```bash
+sudo apt update
+sudo apt install certbot python3-certbot-apache -y
+```
+
+### 2. Dapatkan Sertifikat SSL
+Jalankan perintah berikut untuk mendapatkan sertifikat dan mengonfigurasi Apache secara otomatis.
+
+```bash
+sudo certbot --apache
+```
+
+Ikuti instruksi di layar:
+1.  Masukkan alamat email Anda (untuk notifikasi renewal).
+2.  Setujui Terms of Service (ketik `Y`).
+3.  Pilih apakah ingin membagikan email ke EFF (opsional).
+4.  Pilih domain yang ingin dipasangi SSL (misal: `1` untuk domain-anda.com).
+
+### 3. Verifikasi Auto-Renewal
+Sertifikat Let's Encrypt berlaku selama 90 hari. Certbot biasanya menambahkan timer untuk renewal otomatis. Verifikasi dengan perintah:
+
+```bash
+sudo systemctl status certbot.timer
+```
+
+Anda juga bisa melakukan simulasi renewal untuk memastikan semuanya berjalan lancar:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+### 4. Update Konfigurasi Aplikasi
+Setelah HTTPS aktif, update file `.env` agar aplikasi menggunakan `https://`.
+
+```bash
+nano /var/www/html/mstore/.env
+```
+Ubah `APP_URL`:
+```env
+APP_URL=https://domain-anda.com
+```
+
+Bersihkan cache konfigurasi:
+```bash
+php artisan config:clear
+php artisan config:cache
+```
+
+---
+
 ## Panduan Penggunaan
 
 ### Login Default
