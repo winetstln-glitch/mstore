@@ -40,4 +40,14 @@ php artisan view:cache
 # echo "Restarting queue..."
 # php artisan queue:restart
 
+# 6. Reload PHP-FPM (Auto-detect)
+echo "Reloading PHP-FPM..."
+if systemctl list-units --full -all | grep -q "php.*-fpm.service"; then
+    # Reload all found php-fpm services
+    systemctl reload $(systemctl list-units --full -all | grep -o "php.*-fpm.service" | head -n 1)
+    echo "PHP-FPM reloaded."
+else
+    echo "PHP-FPM service not found. Skipping reload."
+fi
+
 echo "Deployment completed successfully!"
