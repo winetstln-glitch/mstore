@@ -195,108 +195,133 @@ class CustomerWebController extends Controller implements HasMiddleware
             $header = null;
             $created = 0;
             $updated = 0;
-            $invalid = 0;
-            $missingHeader = false;
+            $skipped = 0;
+            $failed = 0;
+            $errors = [];
             $rowNumber = 0;
 
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $row) {
-                    $cells = $row->getCells();
-                    $values = [];
                     $rowNumber++;
+                    try {
+                        $cells = $row->getCells();
+                        $values = [];
 
-                    foreach ($cells as $cell) {
-                        $values[] = $cell->getValue();
-                    }
-
-                    if ($header === null) {
-                        $header = array_map(function ($value) {
-                            return strtolower(trim((string) $value));
-                        }, $values);
-                        if (!in_array('name', $header, true)) {
-                            $missingHeader = true;
-                            break;
+                        foreach ($cells as $cell) {
+                            $values[] = $cell->getValue();
                         }
-                        continue;
-                    }
 
-                    // Adjust values array to match header length
-                    if (count($values) > count($header)) {
-                        $values = array_slice($values, 0, count($header));
-                    } elseif (count($values) < count($header)) {
-                        $values = array_pad($values, count($header), null);
-                    }
-
-                    $row = array_combine($header, $values);
-
-                    if (empty($row['name'])) {
-                        $invalid++;
-                        continue;
-                    }
-
-                    // Helper to get value or null
-                    $getValue = function($key) use ($row) {
-                        $val = $row[$key] ?? null;
-                        if (is_string($val)) {
-                            $val = trim($val);
+                        if ($header === null) {
+                            $header = array_map(function ($value) {
+                                return strtolower(trim((string) $value));
+                            }, $values);
+                            if (!in_array('name', $header, true)) {
+                                throw new \Exception("Missing 'name' column in header.");
+                            }
+                            continue;
                         }
-                        return $val === '' ? null : $val;
-                    };
 
-                    // Check for existing customer by ID, Name, or Phone to update
-                    $existingCustomer = null;
-                    if (!empty($row['id'])) {
-                        $existingCustomer = Customer::find($row['id']);
-                    } elseif (!empty($row['name'])) {
-                         $existingCustomer = Customer::where('name', $row['name'])->first();
-                    }
+                        // Adjust values array to match header length
+                        if (count($values) > count($header)) {
+                            $values = array_slice($values, 0, count($header));
+                        } elseif (count($values) < count($header)) {
+                            $values = array_pad($values, count($header), null);
+                        }
 
-                    $data = [
-                        'name' => $row['name'], // Name is required, checked above
-                        'address' => $getValue('address'),
-                        'phone' => $getValue('phone'),
-                        'package' => $getValue('package'),
-                        'ip_address' => $getValue('ip_address'),
-                        'vlan' => $getValue('vlan'),
-                        'odp' => $getValue('odp'),
-                        'status' => strtolower($getValue('status') ?? 'active'),
-                        'pppoe_user' => $getValue('pppoe_user'),
-                        'pppoe_password' => $getValue('pppoe_password'),
-                        'onu_serial' => $getValue('onu_serial'),
-                        'device_model' => $getValue('device_model'),
-                        'ssid_name' => $getValue('ssid_name'),
-                        'ssid_password' => $getValue('ssid_password'),
-                        'latitude' => $getValue('latitude'),
-                        'longitude' => $getValue('longitude'),
-                    ];
+                        $rowMap = array_combine($header, $values);
 
-                    // If status is empty or invalid, default to active
-                    if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
-                        $data['status'] = 'active';
-                    }
+                        if (empty($rowMap['name'])) {
+                            $skipped++;
+                            continue;
+                        }
 
-                    if ($existingCustomer) {
-                        $existingCustomer->update($data);
-                        $updated++;
-                    } else {
-                        Customer::create($data);
-                        $created++;
+                        // Helper to get value or null
+                        $getValue = function($key) use ($rowMap) {
+                            $val = $rowMap[$key] ?? null;
+                            if (is_string($val)) {
+                                $val = trim($val);
+                            }
+                            return $val === '' ? null : $val;
+                        };
+
+                        // Check for existing customer by ID, Name, or Phone to update
+                        $existingCustomer = null;
+                        if (!empty($rowMap['id'])) {
+                            $existingCustomer = Customer::find($rowMap['id']);
+                        } elseif (!empty($rowMap['name'])) {
+                             $existingCustomer = Customer::where('name', $rowMap['name'])->first();
+                        }
+
+                        $data = [
+                            'name' => $rowMap['name'], // Name is required, checked above
+                            'address' => $getValue('address'),
+                            'phone' => $getValue('phone'),
+                            'package' => $getValue('package'),
+                            'ip_address' => $getValue('ip_address'),
+                            'vlan' => $getValue('vlan'),
+                            'odp' => $getValue('odp'),
+                            'status' => strtolower($getValue('status') ?? 'active'),
+                            'pppoe_user' => $getValue('pppoe_user'),
+                            'pppoe_password' => $getValue('pppoe_password'),
+                            'onu_serial' => $getValue('onu_serial'),
+                            'device_model' => $getValue('device_model'),
+                            'ssid_name' => $getValue('ssid_name'),
+                            'ssid_password' => $getValue('ssid_password'),
+                            'latitude' => $getValue('latitude'),
+                            'longitude' => $getValue('longitude'),
+                        ];
+
+                        // If status is empty or invalid, default to active
+                        if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
+                            $data['status'] = 'active';
+                        }
+                        
+                        // Check Unique Constraints manually to avoid SQL crash
+                        if ($data['pppoe_user']) {
+                            $conflict = Customer::where('pppoe_user', $data['pppoe_user'])
+                                ->when($existingCustomer, function($q) use ($existingCustomer) {
+                                    $q->where('id', '!=', $existingCustomer->id);
+                                })->exists();
+                            if ($conflict) {
+                                // Option: Skip this field or Skip row? 
+                                // Let's skip the field but import the user, adding a warning note?
+                                // Or better: Fail the row so user knows to fix it.
+                                throw new \Exception("PPPoE User '{$data['pppoe_user']}' already exists.");
+                            }
+                        }
+
+                        if ($existingCustomer) {
+                            $existingCustomer->update($data);
+                            $updated++;
+                        } else {
+                            Customer::create($data);
+                            $created++;
+                        }
+                    } catch (\Throwable $e) {
+                        $failed++;
+                        // Keep only first 10 errors to avoid huge session data
+                        if (count($errors) < 10) {
+                            $errors[] = "Row $rowNumber: " . $e->getMessage();
+                        } elseif (count($errors) == 10) {
+                            $errors[] = "... and more errors.";
+                        }
                     }
                 }
             }
 
             $reader->close();
 
-            if ($missingHeader) {
-                return redirect()->route('customers.index')->withErrors([
-                    'error' => __('Invalid file format. Required column: name.')
-                ]);
-            }
+            $message = __('Imported: :created created, :updated updated.', ['created' => $created, 'updated' => $updated]);
+            if ($skipped > 0) $message .= " " . __('Skipped :count rows (empty name).', ['count' => $skipped]);
+            if ($failed > 0) $message .= " " . __('Failed :count rows.', ['count' => $failed]);
 
-            return redirect()->route('customers.index')->with('success', __('Imported :created new customers, updated :updated customers.', [
-                'created' => $created,
-                'updated' => $updated,
-            ]))->with('warning', $invalid > 0 ? __('Skipped :count rows due to missing/invalid name.', ['count' => $invalid]) : null);
+            $redirect = redirect()->route('customers.index')->with('success', $message);
+            
+            if (!empty($errors)) {
+                $redirect->withErrors(['import_errors' => $errors]);
+            }
+            
+            return $redirect;
 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Import Failed: ' . $e->getMessage());
