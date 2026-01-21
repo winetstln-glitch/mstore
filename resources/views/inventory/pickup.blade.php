@@ -176,3 +176,60 @@
 </script>
 @endpush
 @endsection
+
+@push('styles')
+<style>
+    @media (max-width: 768px) {
+        /* Transform table into cards for mobile */
+        #items-body tr {
+            display: block;
+            background: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        #items-body td {
+            display: block;
+            width: 100% !important;
+            padding: 0.5rem 0;
+            border: none;
+        }
+
+        /* Hide table header */
+        .table thead {
+            display: none;
+        }
+
+        /* Adjust inputs */
+        .item-select {
+            margin-bottom: 0.5rem;
+            padding: 0.75rem; /* Larger touch area */
+        }
+
+        .quantity-input {
+            height: 46px;
+        }
+        
+        .unit-display {
+            line-height: 32px;
+        }
+
+        /* Delete button full width */
+        .remove-item-row {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .remove-item-row::after {
+            content: "Remove Item";
+        }
+    }
+</style>
+@endpush

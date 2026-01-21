@@ -9,11 +9,11 @@
                 <div>
                     @if(Auth::user()->hasRole('admin'))
                     <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                        <i class="fa-solid fa-plus me-1"></i> {{ __('Add New Item') }}
+                        <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-md-inline">{{ __('Add New Item') }}</span>
                     </button>
                     @endif
                     <a href="{{ route('inventory.pickup') }}" class="btn btn-primary">
-                        <i class="fa-solid fa-box-open me-1"></i> {{ __('Pickup Item') }}
+                        <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-md-inline">{{ __('Pickup Item') }}</span>
                     </a>
                 </div>
             </div>
