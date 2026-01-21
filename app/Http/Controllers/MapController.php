@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Odc;
 use App\Models\Odp;
+use App\Models\Htb;
 use App\Models\Olt;
 use App\Models\Region;
 use App\Services\GenieACSService;
@@ -42,6 +43,9 @@ class MapController extends Controller implements HasMiddleware
 
         // Fetch ODPs
         $odps = Odp::all();
+
+        // Fetch HTBs
+        $htbs = Htb::with(['parent', 'odp'])->get();
 
         // Fetch Regions
         $regions = Region::orderBy('name')->get();
@@ -106,7 +110,7 @@ class MapController extends Controller implements HasMiddleware
             return $customer;
         });
 
-        return view('map.index', compact('customers', 'odps', 'odcs', 'olts', 'regions'));
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions'));
     }
 
     /**

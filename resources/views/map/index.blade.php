@@ -20,6 +20,9 @@
                             <button type="button" class="btn-shadow btn btn-success btn-sm" id="btnAddOdpMode">
                                 <i class="fa fa-plus me-1"></i> {{ __('Add ODP') }}
                             </button>
+                            <button type="button" class="btn-shadow btn btn-primary btn-sm" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
+                                <i class="fa fa-plus me-1"></i> {{ __('Add HTB') }}
+                            </button>
                             <button type="button" class="btn-shadow btn btn-danger btn-sm d-none" id="btnCancelAdd">
                                 <i class="fa fa-times me-1"></i> {{ __('Cancel Add') }}
                             </button>
@@ -229,6 +232,69 @@
         </div>
     </div>
 </div>
+<!-- HTB Modal -->
+<div class="modal fade" id="htbModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="htbModalLabel">{{ __('Add HTB') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="htbForm">
+                    <input type="hidden" id="htb_id" name="id">
+                    <div class="mb-3">
+                        <label for="htb_name" class="form-label">{{ __('HTB Name') }}</label>
+                        <input type="text" class="form-control" id="htb_name" name="name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="htb_lat" class="form-label">{{ __('Latitude') }}</label>
+                            <input type="number" step="any" class="form-control" id="htb_lat" name="latitude" required readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="htb_lng" class="form-label">{{ __('Longitude') }}</label>
+                            <input type="number" step="any" class="form-control" id="htb_lng" name="longitude" required readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="htb_uplink_type" class="form-label">{{ __('Uplink Type') }}</label>
+                        <select class="form-select" id="htb_uplink_type" name="uplink_type" required>
+                            <option value="odp">ODP</option>
+                            <option value="htb">Parent HTB</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="htb_odp_group">
+                        <label for="htb_odp" class="form-label">{{ __('Uplink ODP') }}</label>
+                        <select class="form-select" id="htb_odp" name="odp_id">
+                            <option value="">{{ __('Select ODP') }}</option>
+                            @foreach($odps as $odp)
+                                <option value="{{ $odp->id }}">{{ $odp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="htb_parent_group">
+                        <label for="htb_parent" class="form-label">{{ __('Parent HTB') }}</label>
+                        <select class="form-select" id="htb_parent" name="parent_htb_id">
+                            <option value="">{{ __('Select Parent HTB') }}</option>
+                            @foreach($htbs as $htb)
+                                <option value="{{ $htb->id }}">{{ $htb->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="htb_description" class="form-label">{{ __('Description') }}</label>
+                        <textarea class="form-control" id="htb_description" name="description"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-primary" id="saveHtbBtn">{{ __('Save HTB') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -248,6 +314,7 @@
     .icon-olt { color: #6f42c1; border-color: #6f42c1; }
     .icon-odc { color: #fd7e14; border-color: #fd7e14; }
     .icon-odp { color: #0dcaf0; border-color: #0dcaf0; }
+    .icon-htb { color: #6610f2; border-color: #6610f2; }
     .icon-customer-online { color: #198754; border-color: #198754; }
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
 
@@ -273,6 +340,7 @@
         // Data from Controller
         var customers = @json($customers) || [];
         var odps = @json($odps) || [];
+        var htbs = @json($htbs) || [];
         var odcs = @json($odcs) || [];
         var olts = @json($olts) || [];
 
@@ -385,6 +453,36 @@
                 }
             });
 
+            // HTB Connections (ODP -> HTB or HTB -> HTB)
+            htbs.forEach(function(htb) {
+                if (htb.latitude && htb.longitude) {
+                    // Connect to ODP
+                    if (htb.odp_id) {
+                        var uplinkOdp = odps.find(o => o.id == htb.odp_id);
+                        if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
+                            L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [htb.latitude, htb.longitude]], {
+                                color: '#6610f2', // Purple for HTB
+                                weight: 3,
+                                opacity: 0.8,
+                                dashArray: '5, 5'
+                            }).addTo(lines);
+                        }
+                    } 
+                    // Connect to Parent HTB
+                    else if (htb.parent_htb_id) {
+                        var parentHtb = htbs.find(h => h.id == htb.parent_htb_id);
+                        if (parentHtb && parentHtb.latitude && parentHtb.longitude) {
+                            L.polyline([[parentHtb.latitude, parentHtb.longitude], [htb.latitude, htb.longitude]], {
+                                color: '#6610f2',
+                                weight: 3,
+                                opacity: 0.8,
+                                dashArray: '5, 5'
+                            }).addTo(lines);
+                        }
+                    }
+                }
+            });
+
             // ODP -> Customer
             customers.forEach(function(customer) {
                 if (customer.latitude && customer.longitude) {
@@ -444,6 +542,15 @@
                     data.color = item.color;
                     data.description = item.description;
                 }
+            } else if (type === 'htb') {
+                url = `/htbs/${id}`;
+                var item = htbs.find(i => i.id == id);
+                if (item) {
+                    data.name = item.name;
+                    data.odp_id = item.odp_id;
+                    data.parent_htb_id = item.parent_htb_id;
+                    data.description = item.description;
+                }
             }
 
             fetch(url, {
@@ -480,6 +587,9 @@
                         if (item) { item.latitude = null; item.longitude = null; }
                     } else if (type === 'odp') {
                         var item = odps.find(i => i.id == id);
+                        if (item) { item.latitude = null; item.longitude = null; }
+                    } else if (type === 'htb') {
+                        var item = htbs.find(i => i.id == id);
                         if (item) { item.latitude = null; item.longitude = null; }
                     }
                     
@@ -522,6 +632,8 @@
                 url = `/odcs/${id}`;
             } else if (type === 'odp') {
                 url = `/odps/${id}`;
+            } else if (type === 'htb') {
+                url = `/htbs/${id}`;
             } else if (type === 'customer') {
                 url = `/customers/${id}`;
             }
@@ -562,6 +674,9 @@
                     } else if (type === 'odp') {
                         var item = odps.find(i => i.id == id);
                         if (item) { item.latitude = lat; item.longitude = lng; }
+                    } else if (type === 'htb') {
+                        var item = htbs.find(i => i.id == id);
+                        if (item) { item.latitude = lat; item.longitude = lng; }
                     } else if (type === 'customer') {
                         var item = customers.find(i => i.id == id);
                         if (item) { item.latitude = lat; item.longitude = lng; }
@@ -595,6 +710,7 @@
             if (type === 'olt') { iconClass = 'fa-server'; colorClass = 'icon-olt'; size = 40; }
             else if (type === 'odc') { iconClass = 'fa-hdd'; colorClass = 'icon-odc'; size = 36; }
             else if (type === 'odp') { iconClass = 'fa-box'; colorClass = 'icon-odp'; size = 32; }
+            else if (type === 'htb') { iconClass = 'fa-sitemap'; colorClass = 'icon-htb'; size = 30; }
             else if (type === 'online') { iconClass = 'fa-wifi'; colorClass = 'icon-customer-online'; size = 26; }
             else { iconClass = 'fa-user-slash'; colorClass = 'icon-customer-offline'; size = 26; }
 
@@ -770,6 +886,66 @@
             }
         });
 
+        // Draw HTBs
+        htbs.forEach(function(htb) {
+            if (htb.latitude && htb.longitude) {
+                var uplinkName = 'N/A';
+                if (htb.odp_id) {
+                    var odp = odps.find(o => o.id == htb.odp_id);
+                    if (odp) uplinkName = 'ODP: ' + odp.name;
+                } else if (htb.parent_htb_id) {
+                    var parent = htbs.find(h => h.id == htb.parent_htb_id);
+                    if (parent) uplinkName = 'HTB: ' + parent.name;
+                }
+
+                var popupContent = document.createElement('div');
+                popupContent.innerHTML = `
+                    <div style="min-width: 200px;">
+                        <h6 class="mb-2">HTB: ${htb.name}</h6>
+                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
+                            <tr><td class="p-0 text-muted">Uplink:</td><td class="p-0 text-end">${uplinkName}</td></tr>
+                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${htb.odp && htb.odp.kampung ? htb.odp.kampung : '-'}</td></tr>
+                        </table>
+                        <div class="text-muted small mb-2" style="font-style: italic;">${htb.description || ''}</div>
+                    </div>`;
+                
+                var editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-sm btn-primary mt-2';
+                editBtn.style.fontSize = '0.8rem';
+                editBtn.style.padding = '2px 6px';
+                editBtn.innerText = '{{ __('Edit HTB') }}';
+                editBtn.onclick = function() { editHtb(htb.id); };
+                popupContent.appendChild(editBtn);
+
+                var deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.innerText = 'Hapus Lokasi';
+                deleteBtn.onclick = function() { deleteLocation('htb', htb.id, marker); };
+                popupContent.appendChild(deleteBtn);
+
+                var marker = L.marker([htb.latitude, htb.longitude], {
+                    icon: createIcon('htb'),
+                    draggable: true
+                }).bindPopup(popupContent).addTo(markers);
+
+                var oldLat = htb.latitude;
+                var oldLng = htb.longitude;
+
+                marker.on('dragstart', function(e) {
+                    oldLat = e.target.getLatLng().lat;
+                    oldLng = e.target.getLatLng().lng;
+                });
+
+                marker.on('dragend', function(e) {
+                    var newLat = e.target.getLatLng().lat;
+                    var newLng = e.target.getLatLng().lng;
+                    updateLocation('htb', htb.id, newLat, newLng, oldLat, oldLng, marker);
+                });
+            }
+        });
+
         // Draw Customers
         customers.forEach(function(customer) {
             var isOnline = customer.is_online; // Assumed passed from controller
@@ -844,6 +1020,7 @@
         var btnAddOlt = document.getElementById('btnAddOltMode');
         var btnAddOdc = document.getElementById('btnAddOdcMode');
         var btnAddOdp = document.getElementById('btnAddOdpMode');
+        var btnAddHtb = document.getElementById('btnAddHtbMode');
         var btnCancel = document.getElementById('btnCancelAdd');
         var mapContainer = document.getElementById('map');
 
@@ -855,18 +1032,21 @@
                 btnAddOlt.disabled = true;
                 btnAddOdc.disabled = true;
                 btnAddOdp.disabled = true;
+                btnAddHtb.disabled = true;
             } else {
                 mapContainer.style.cursor = 'default';
                 btnCancel.classList.add('d-none');
                 btnAddOlt.disabled = false;
                 btnAddOdc.disabled = false;
                 btnAddOdp.disabled = false;
+                btnAddHtb.disabled = false;
             }
         }
 
         btnAddOlt.addEventListener('click', function() { setMode('olt'); });
         btnAddOdc.addEventListener('click', function() { setMode('odc'); });
         btnAddOdp.addEventListener('click', function() { setMode('odp'); });
+        btnAddHtb.addEventListener('click', function() { setMode('htb'); });
         btnCancel.addEventListener('click', function() { setMode(null); });
 
         map.on('click', function(e) {
@@ -898,6 +1078,20 @@
                 document.getElementById('odpModalLabel').innerText = '{{ __('Add ODP') }}'; // Set title
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
+            } else if (addMode === 'htb') {
+                document.getElementById('htbForm').reset();
+                document.getElementById('htb_id').value = '';
+                document.getElementById('htb_lat').value = lat;
+                document.getElementById('htb_lng').value = lng;
+                document.getElementById('htbModalLabel').innerText = '{{ __('Add HTB') }}';
+                
+                // Reset uplink type logic
+                document.getElementById('htb_uplink_type').value = 'odp';
+                document.getElementById('htb_odp_group').classList.remove('d-none');
+                document.getElementById('htb_parent_group').classList.add('d-none');
+                
+                var htbModal = new bootstrap.Modal(document.getElementById('htbModal'));
+                htbModal.show();
             }
             
             setMode(null); // Reset mode after click
@@ -946,6 +1140,36 @@
                 document.getElementById('odpModalLabel').innerText = '{{ __('Edit ODP') }}';
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
+            }
+        };
+
+        window.editHtb = function(id) {
+            var htb = htbs.find(h => h.id == id);
+            if (htb) {
+                document.getElementById('htb_id').value = htb.id;
+                document.getElementById('htb_name').value = htb.name;
+                document.getElementById('htb_lat').value = htb.latitude;
+                document.getElementById('htb_lng').value = htb.longitude;
+                document.getElementById('htb_description').value = htb.description || '';
+
+                // Handle uplink
+                if (htb.parent_htb_id) {
+                    document.getElementById('htb_uplink_type').value = 'htb';
+                    document.getElementById('htb_odp_group').classList.add('d-none');
+                    document.getElementById('htb_parent_group').classList.remove('d-none');
+                    document.getElementById('htb_parent').value = htb.parent_htb_id;
+                    document.getElementById('htb_odp').value = '';
+                } else {
+                    document.getElementById('htb_uplink_type').value = 'odp';
+                    document.getElementById('htb_odp_group').classList.remove('d-none');
+                    document.getElementById('htb_parent_group').classList.add('d-none');
+                    document.getElementById('htb_odp').value = htb.odp_id;
+                    document.getElementById('htb_parent').value = '';
+                }
+
+                document.getElementById('htbModalLabel').innerText = '{{ __('Edit HTB') }}';
+                var htbModal = new bootstrap.Modal(document.getElementById('htbModal'));
+                htbModal.show();
             }
         };
 
@@ -1057,6 +1281,53 @@
                     location.reload();
                 } else {
                     alert('{{ __('Error saving ODP:') }} ' + (data.message || JSON.stringify(data)));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('{{ __('An error occurred while saving.') }}');
+            });
+        });
+
+        document.getElementById('htb_uplink_type').addEventListener('change', function() {
+            if (this.value === 'odp') {
+                document.getElementById('htb_odp_group').classList.remove('d-none');
+                document.getElementById('htb_parent_group').classList.add('d-none');
+            } else {
+                document.getElementById('htb_odp_group').classList.add('d-none');
+                document.getElementById('htb_parent_group').classList.remove('d-none');
+            }
+        });
+
+        document.getElementById('saveHtbBtn').addEventListener('click', function() {
+            var id = document.getElementById('htb_id').value;
+            var url = id ? `/htbs/${id}` : '/htbs';
+            var method = id ? 'PUT' : 'POST';
+            var formData = new FormData(document.getElementById('htbForm'));
+            var data = Object.fromEntries(formData.entries());
+
+            // Handle uplink logic for submission
+            if (data.uplink_type === 'odp') {
+                data.parent_htb_id = '';
+            } else {
+                data.odp_id = '';
+            }
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success || data.id) {
+                    location.reload();
+                } else {
+                    alert('{{ __('Error saving HTB:') }} ' + (data.message || JSON.stringify(data)));
                 }
             })
             .catch(error => {
