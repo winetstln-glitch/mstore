@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
+    Route::resource('htbs', \App\Http\Controllers\HtbController::class);
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);
     Route::resource('coordinators', \App\Http\Controllers\CoordinatorController::class);

@@ -28,9 +28,10 @@ class AppServiceProvider extends ServiceProvider
 
         try {
             if (Schema::hasTable('permissions')) {
-                $permissions = Cache::remember('all_permissions', 3600, function () {
-                    return Permission::get();
-                });
+                // $permissions = Cache::remember('all_permissions', 3600, function () {
+                //     return Permission::get();
+                // });
+                $permissions = Permission::get();
 
                 $permissions->map(function ($permission) {
                     Gate::define($permission->name, function ($user) use ($permission) {

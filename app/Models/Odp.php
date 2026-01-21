@@ -42,6 +42,11 @@ class Odp extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    public function htbs()
+    {
+        return $this->hasMany(Htb::class);
+    }
     
     public function isFull(): bool
     {

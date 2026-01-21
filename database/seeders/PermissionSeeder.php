@@ -69,6 +69,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'odp.edit', 'label' => 'Edit ODP', 'group' => 'ODP Management'],
             ['name' => 'odp.delete', 'label' => 'Delete ODP', 'group' => 'ODP Management'],
 
+            // HTB Management
+            ['name' => 'htb.view', 'label' => 'View HTBs', 'group' => 'HTB Management'],
+            ['name' => 'htb.create', 'label' => 'Create HTB', 'group' => 'HTB Management'],
+            ['name' => 'htb.edit', 'label' => 'Edit HTB', 'group' => 'HTB Management'],
+            ['name' => 'htb.delete', 'label' => 'Delete HTB', 'group' => 'HTB Management'],
+
             // OLT Management
             ['name' => 'olt.view', 'label' => 'View OLTs', 'group' => 'OLT Management'],
             ['name' => 'olt.create', 'label' => 'Create OLT', 'group' => 'OLT Management'],

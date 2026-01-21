@@ -427,6 +427,12 @@
             </a>
             @endif
 
+            @if(Auth::user()->hasPermission('htb.view'))
+            <a href="{{ route('htbs.index') }}" class="sidebar-item {{ request()->routeIs('htbs.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-sitemap"></i> {{ __('HTB Management') }}
+            </a>
+            @endif
+
             @if(Auth::user()->hasPermission('map.view'))
             <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-map-location-dot"></i> {{ __('Network Map') }}

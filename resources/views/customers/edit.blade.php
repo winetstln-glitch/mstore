@@ -124,12 +124,28 @@
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
                                 @foreach($odps as $odp)
-                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? 'disabled' : '' }}>
+                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity && $customer->odp_id != $odp->id) ? 'disabled' : '' }}>
                                         {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Full' : '' }}
                                     </option>
                                 @endforeach
                             </select>
                             @error('odp_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- HTB -->
+                        <div class="col-md-6">
+                            <label for="htb_id" class="form-label">{{ __('HTB Connection') }}</label>
+                            <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror">
+                                <option value="">-- {{ __('Select HTB') }} --</option>
+                                @foreach($htbs as $htb)
+                                    <option value="{{ $htb->id }}" {{ old('htb_id', $customer->htb_id) == $htb->id ? 'selected' : '' }} {{ ($htb->id != $customer->htb_id && $htb->capacity !== null && $htb->filled >= $htb->capacity) ? 'disabled' : '' }}>
+                                        {{ $htb->name }} {{ $htb->parent ? '(via ' . $htb->parent->name . ')' : '' }} ({{ $htb->filled }}/{{ $htb->capacity ?? '∞' }}){{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? ' - Full' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('htb_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -212,7 +228,35 @@
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    function toggleConnectionType() {
+        const type = document.querySelector('input[name="connection_type"]:checked').value;
+        const odpGroup = document.getElementById('odp_select_group');
+        const htbGroup = document.getElementById('htb_select_group');
+        const odpSelect = document.getElementById('odp_id');
+        const htbSelect = document.getElementById('htb_id');
+
+        if (type === 'odp') {
+            odpGroup.classList.remove('d-none');
+            htbGroup.classList.add('d-none');
+            odpSelect.disabled = false;
+            htbSelect.disabled = true;
+            // Clear HTB selection if changing type (optional, but good for UX)
+            // But for edit, we might want to preserve it if user toggles back and forth without saving
+            // For now, let's just disable.
+            if (htbSelect.value) {
+                // htbSelect.value = ""; // Don't clear on edit, just disable
+            }
+        } else {
+            odpGroup.classList.add('d-none');
+            htbGroup.classList.remove('d-none');
+            odpSelect.disabled = true;
+            htbSelect.disabled = false;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        toggleConnectionType();
+
         var lat = {{ $customer->latitude ?? -6.200000 }};
         var lng = {{ $customer->longitude ?? 106.816666 }};
         var zoom = 15;

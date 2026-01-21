@@ -127,8 +127,23 @@
                             @enderror
                         </div>
 
+                        <!-- Connection Type -->
+                        <div class="col-12">
+                            <label class="form-label d-block">{{ __('Connection Type') }}</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="conn_odp" value="odp" {{ old('connection_type', 'odp') == 'odp' ? 'checked' : '' }} onchange="toggleConnectionType()">
+                                    <label class="form-check-label" for="conn_odp">{{ __('Direct ODP') }}</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="conn_htb" value="htb" {{ old('connection_type') == 'htb' ? 'checked' : '' }} onchange="toggleConnectionType()">
+                                    <label class="form-check-label" for="conn_htb">{{ __('Via HTB') }}</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- ODP -->
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="odp_select_group">
                             <label for="odp_id" class="form-label">{{ __('ODP Connection') }}</label>
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
@@ -139,6 +154,22 @@
                                 @endforeach
                             </select>
                             @error('odp_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- HTB -->
+                        <div class="col-md-6 d-none" id="htb_select_group">
+                            <label for="htb_id" class="form-label">{{ __('HTB Connection') }}</label>
+                            <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror" disabled>
+                                <option value="">-- {{ __('Select HTB') }} --</option>
+                                @foreach($htbs as $htb)
+                                    <option value="{{ $htb->id }}" {{ old('htb_id') == $htb->id ? 'selected' : '' }} {{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? 'disabled' : '' }}>
+                                        {{ $htb->name }} {{ $htb->parent ? '(via ' . $htb->parent->name . ')' : '' }} ({{ $htb->filled }}/{{ $htb->capacity ?? '∞' }}){{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? ' - Full' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('htb_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

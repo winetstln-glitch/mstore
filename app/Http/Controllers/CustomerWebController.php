@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Olt;
 use App\Models\Odp;
+use App\Models\Htb;
 use App\Models\Coordinator;
 use App\Models\Setting;
 use App\Services\GenieACSService;
@@ -68,6 +69,10 @@ class CustomerWebController extends Controller implements HasMiddleware
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->has('htb_id') && $request->input('htb_id') != '') {
+            $query->where('htb_id', $request->input('htb_id'));
+        }
+
         $perPage = $request->input('per_page', 10);
         if ($perPage === 'all') {
             $customers = $query->latest()->paginate(10000)->withQueryString();
@@ -94,7 +99,9 @@ class CustomerWebController extends Controller implements HasMiddleware
         //     }
         // }
 
-        return view('customers.index', compact('customers', 'modemStatuses'));
+        $htbs = Htb::orderBy('name')->get();
+
+        return view('customers.index', compact('customers', 'modemStatuses', 'htbs'));
     }
 
     public function export(Request $request)
@@ -133,6 +140,7 @@ class CustomerWebController extends Controller implements HasMiddleware
                 'ip_address',
                 'vlan',
                 'odp',
+                'htb',
                 'status',
                 'pppoe_user',
                 'pppoe_password',
@@ -154,6 +162,7 @@ class CustomerWebController extends Controller implements HasMiddleware
                     $customer->ip_address,
                     $customer->vlan,
                     $customer->odp,
+                    $customer->htb->name ?? null,
                     $customer->status,
                     $customer->pppoe_user,
                     $customer->pppoe_password,
@@ -252,6 +261,28 @@ class CustomerWebController extends Controller implements HasMiddleware
                              $existingCustomer = Customer::where('name', $rowMap['name'])->first();
                         }
 
+                        // Resolve Relations
+                        $odpId = null;
+                        $odpName = $getValue('odp');
+                        if ($odpName) {
+                            $foundOdp = Odp::where('name', $odpName)->first();
+                            if ($foundOdp) {
+                                $odpId = $foundOdp->id;
+                            }
+                        }
+
+                        $htbId = null;
+                        $htbName = $getValue('htb');
+                        if ($htbName) {
+                            $foundHtb = Htb::with('odp')->where('name', $htbName)->first();
+                            if ($foundHtb) {
+                                $htbId = $foundHtb->id;
+                                // If HTB is found, it overrides ODP selection for connection logic
+                                $odpId = $foundHtb->odp_id;
+                                $odpName = $foundHtb->odp->name ?? $odpName;
+                            }
+                        }
+
                         $data = [
                             'name' => $rowMap['name'], // Name is required, checked above
                             'address' => $getValue('address'),
@@ -259,7 +290,9 @@ class CustomerWebController extends Controller implements HasMiddleware
                             'package' => $getValue('package'),
                             'ip_address' => $getValue('ip_address'),
                             'vlan' => $getValue('vlan'),
-                            'odp' => $getValue('odp'),
+                            'odp' => $odpName,
+                            'odp_id' => $odpId,
+                            'htb_id' => $htbId,
                             'status' => strtolower($getValue('status') ?? 'active'),
                             'pppoe_user' => $getValue('pppoe_user'),
                             'pppoe_password' => $getValue('pppoe_password'),
@@ -474,6 +507,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'ssid_password' => $request->query('ssid_password'),
         ];
         $odps = \App\Models\Odp::all();
+        $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
         $olts = \App\Models\Olt::where('is_active', true)->get();
 
         // Fetch GenieACS devices
@@ -491,7 +525,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.create', compact('prefill', 'odps', 'olts', 'onuDevices', 'packages'));
+        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages'));
     }
 
     /**
@@ -508,6 +542,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'vlan' => 'nullable|string|max:20',
             'odp' => 'nullable|string|max:50',
             'odp_id' => 'nullable|exists:odps,id',
+            'htb_id' => 'nullable|exists:htbs,id',
             'olt_id' => 'nullable|exists:olts,id',
             'status' => 'required|in:active,suspend,terminated',
             'pppoe_user' => 'nullable|string|unique:customers,pppoe_user',
@@ -528,10 +563,22 @@ class CustomerWebController extends Controller implements HasMiddleware
             }
         }
 
+        if (!empty($validated['htb_id'])) {
+            $htb = Htb::with('odp')->find($validated['htb_id']);
+            if ($htb) {
+                if ($htb->isFull()) {
+                    return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
+                }
+                // Auto-assign ODP from HTB
+                $validated['odp_id'] = $htb->odp_id;
+                $validated['odp'] = $htb->odp->name;
+            }
+        }
+
         if (!empty($validated['odp_id'])) {
             $odp = Odp::find($validated['odp_id']);
             if ($odp && $odp->isFull()) {
-                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
+                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP (or HTB parent ODP) is full.')]);
             }
             if ($odp) {
                 $validated['odp'] = $odp->name;
@@ -539,15 +586,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         try {
-            DB::transaction(function () use ($validated) {
-                $customer = Customer::create($validated);
-                if (!empty($validated['odp_id'])) {
-                    $odp = Odp::find($validated['odp_id']);
-                    if ($odp) {
-                        $odp->increment('filled');
-                    }
-                }
-            });
+            Customer::create($validated);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error creating customer: ' . $e->getMessage());
             return back()->withInput()->withErrors(['error' => __('Failed to create customer: :message', ['message' => $e->getMessage()])]);
@@ -561,7 +600,7 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function show(Customer $customer)
     {
-        $customer->load(['tickets', 'installations', 'olt', 'odp']);
+        $customer->load(['tickets', 'installations', 'olt', 'odp', 'htb']);
 
         $genieDeviceId = null;
         $modemStatus = ['online' => false, 'last_inform' => null];
@@ -583,6 +622,7 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function edit(Customer $customer)
     {
         $odps = \App\Models\Odp::all();
+        $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
         $olts = \App\Models\Olt::where('is_active', true)->get();
         
         // Fetch GenieACS devices
@@ -600,7 +640,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.edit', compact('customer', 'odps', 'olts', 'onuDevices', 'packages'));
+        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages'));
     }
 
     /**
@@ -618,6 +658,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'vlan' => 'nullable|string|max:20',
             'odp' => 'nullable|string|max:50',
             'odp_id' => 'nullable|exists:odps,id',
+            'htb_id' => 'nullable|exists:htbs,id',
             'olt_id' => 'nullable|exists:olts,id',
             'status' => 'sometimes|required|in:active,suspend,terminated',
             'pppoe_user' => 'nullable|string|unique:customers,pppoe_user,' . $customer->id,
@@ -639,34 +680,47 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         $oldOdpId = $customer->odp_id;
-        if (!empty($validated['odp_id'])) {
-            $newOdp = Odp::find($validated['odp_id']);
-            if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
-                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
-            }
-            if ($newOdp) {
-                $validated['odp'] = $newOdp->name;
+        $oldHtbId = $customer->htb_id;
+
+        // Handle HTB/ODP logic based on which input was provided (enabled)
+        if ($request->has('htb_id')) {
+             // "Via HTB" mode
+             if (!empty($validated['htb_id'])) {
+                $newHtb = Htb::with('odp')->find($validated['htb_id']);
+                if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
+                    return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
+                }
+                if ($newHtb) {
+                    $validated['odp_id'] = $newHtb->odp_id;
+                    $validated['odp'] = $newHtb->odp->name ?? null;
+                }
+             } else {
+                 // HTB cleared
+                 $validated['htb_id'] = null;
+                 $validated['odp_id'] = null;
+                 $validated['odp'] = null;
+             }
+        } elseif ($request->has('odp_id')) {
+            // "Direct ODP" mode
+            $validated['htb_id'] = null; // Explicitly clear HTB
+            
+            if (!empty($validated['odp_id'])) {
+                // Only validate ODP capacity if connecting directly (no HTB)
+                $newOdp = Odp::find($validated['odp_id']);
+                if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
+                    return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
+                }
+                if ($newOdp) {
+                    $validated['odp'] = $newOdp->name;
+                }
+            } else {
+                // ODP cleared
+                $validated['odp_id'] = null;
+                $validated['odp'] = null;
             }
         }
 
-        DB::transaction(function () use ($customer, $validated, $oldOdpId) {
-            $customer->update($validated);
-            $newOdpId = $customer->odp_id;
-            if ($oldOdpId !== $newOdpId) {
-                if ($oldOdpId) {
-                    $oldOdp = Odp::find($oldOdpId);
-                    if ($oldOdp) {
-                        $oldOdp->decrement('filled');
-                    }
-                }
-                if ($newOdpId) {
-                    $newOdp = Odp::find($newOdpId);
-                    if ($newOdp) {
-                        $newOdp->increment('filled');
-                    }
-                }
-            }
-        });
+        $customer->update($validated);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -684,16 +738,7 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function destroy(Customer $customer)
     {
-        DB::transaction(function () use ($customer) {
-            $odpId = $customer->odp_id;
-            $customer->delete();
-            if ($odpId) {
-                $odp = Odp::find($odpId);
-                if ($odp) {
-                    $odp->decrement('filled');
-                }
-            }
-        });
+        $customer->delete();
         return redirect()->route('customers.index')->with('success', __('Customer deleted successfully.'));
     }
 
@@ -774,7 +819,11 @@ class CustomerWebController extends Controller implements HasMiddleware
             return redirect()->back()->with('error', 'No customers selected.');
         }
 
-        Customer::whereIn('id', $ids)->delete();
+        $customers = Customer::whereIn('id', $ids)->get();
+        foreach ($customers as $customer) {
+            $customer->delete();
+        }
+        
         return redirect()->back()->with('success', count($ids) . ' customers deleted successfully.');
     }
 }

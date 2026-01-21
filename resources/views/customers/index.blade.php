@@ -44,13 +44,13 @@
             <div class="card-body">
                 <!-- Search and Filter -->
                 <form method="GET" action="{{ route('customers.index') }}" class="row g-3 mb-4">
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-4 col-lg-3">
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
-                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search name, phone, or address...') }}">
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search...') }}">
                         </div>
                     </div>
-                    <div class="col-md-4 col-lg-3">
+                    <div class="col-md-3 col-lg-2">
                         <select name="status" class="form-select" onchange="this.form.submit()">
                             <option value="">{{ __('All Status') }}</option>
                             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
@@ -59,6 +59,14 @@
                         </select>
                     </div>
                     <div class="col-md-3 col-lg-2">
+                        <select name="htb_id" class="form-select" onchange="this.form.submit()">
+                            <option value="">{{ __('All HTB') }}</option>
+                            @foreach($htbs as $htb)
+                                <option value="{{ $htb->id }}" {{ request('htb_id') == $htb->id ? 'selected' : '' }}>{{ $htb->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-lg-2">
                         <select name="per_page" class="form-select" onchange="this.form.submit()">
                             <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 {{ __('per page') }}</option>
                             <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 {{ __('per page') }}</option>

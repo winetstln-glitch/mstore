@@ -42,6 +42,7 @@ class RoleSeeder extends Seeder
                     'OLT Management',
                     'ODC Management',
                     'ODP Management',
+                    'HTB Management',
                     'PPPoE Management',
                     'Radius',
                     'Map',
