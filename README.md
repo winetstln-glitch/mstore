@@ -293,6 +293,50 @@ php artisan config:cache
 
 ---
 
+## Solusi Error Upload (413 Request Entity Too Large)
+
+Jika Anda mengalami error `413 Request Entity Too Large` saat mengupload foto (terutama dari HP), itu berarti konfigurasi server membatasi ukuran file upload. Berikut cara memperbaikinya:
+
+### 1. Konfigurasi Nginx
+Edit file konfigurasi Nginx server block Anda (biasanya di `/etc/nginx/sites-available/mstore.conf` atau `/etc/nginx/sites-available/default`).
+
+Tambahkan baris `client_max_body_size` di dalam blok `server`:
+
+```nginx
+server {
+    ...
+    client_max_body_size 64M;
+    ...
+}
+```
+> **Catatan**: Disarankan menggunakan `64M` untuk mengakomodasi file foto resolusi tinggi dan import data.
+
+Setelah itu, cek konfigurasi dan restart Nginx:
+```bash
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 2. Konfigurasi PHP
+Anda juga perlu memastikan PHP mengizinkan upload file besar. Edit file `php.ini` (lokasi tergantung versi PHP, misal `/etc/php/8.2/fpm/php.ini` atau `/etc/php/8.2/apache2/php.ini`).
+
+Cari dan ubah nilai berikut:
+```ini
+upload_max_filesize = 64M
+post_max_size = 64M
+```
+
+Setelah itu, restart PHP-FPM atau Apache:
+```bash
+# Jika menggunakan Nginx + PHP-FPM
+sudo systemctl restart php8.2-fpm  # Sesuaikan dengan versi PHP Anda (misal 8.1, 8.2, 8.3)
+
+# Jika menggunakan Apache
+sudo systemctl restart apache2
+```
+
+---
+
 ## Panduan Penggunaan
 
 ### Login Default
