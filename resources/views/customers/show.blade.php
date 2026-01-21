@@ -5,9 +5,9 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">{{ __('Customer Details') }}</h5>
-                    <div class="btn-group">
+                    <div class="btn-group flex-wrap gap-2">
                         @if($customer->onu_serial)
                             @can('customer.edit')
                             <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white">

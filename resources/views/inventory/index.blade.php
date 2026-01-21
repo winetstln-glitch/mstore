@@ -4,7 +4,7 @@
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h1 class="h3 mb-0 text-gray-800">{{ __('Inventory Management') }}</h1>
                 <div>
                     @if(Auth::user()->hasRole('admin'))

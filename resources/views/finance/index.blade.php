@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Finance Dashboard') }}</h1>
-        <div>
+        <div class="d-flex flex-wrap gap-2">
             @if(Auth::user()->hasRole('admin'))
-            <a href="{{ route('finance.manager_report') }}" class="btn btn-warning me-2">
+            <a href="{{ route('finance.manager_report') }}" class="btn btn-warning">
                 <i class="fa-solid fa-user-tie me-1"></i> {{ __('Neraca Awal') }}
             </a>
-            <a href="{{ route('finance.profit_loss') }}" class="btn btn-info me-2">
+            <a href="{{ route('finance.profit_loss') }}" class="btn btn-info">
                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> {{ __('Profit & Loss Report') }}
             </a>
             @endif

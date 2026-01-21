@@ -10,22 +10,82 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use OpenSpout\Writer\XLSX\Writer;
+use OpenSpout\Common\Entity\Row;
 
 class UserController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:user.view', only: ['index']),
+            new Middleware('permission:user.view', only: ['index', 'export']),
             new Middleware('permission:user.create', only: ['create', 'store']),
             new Middleware('permission:user.edit', only: ['edit', 'update']),
             new Middleware('permission:user.delete', only: ['destroy']),
         ];
     }
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('role')->latest()->paginate(10);
+        $query = User::with('role')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->paginate(10)->withQueryString();
         return view('users.index', compact('users'));
+    }
+
+    public function export(Request $request)
+    {
+        $query = User::with('role')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->get();
+
+        return response()->streamDownload(function () use ($users) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                    'ID',
+                    'Name',
+                    'Email',
+                    'Password',
+                    'Role',
+                    'Phone',
+                    'Daily Salary',
+                    'Status',
+                    'Created At',
+                ]));
+
+                foreach ($users as $user) {
+                    $writer->addRow(Row::fromValues([
+                        $user->id,
+                        $user->name,
+                        $user->email,
+                        $user->password,
+                        $user->role ? $user->role->label : 'No Role',
+                        $user->phone,
+                        $user->daily_salary,
+                        $user->is_active ? 'Active' : 'Inactive',
+                        $user->created_at->format('Y-m-d H:i:s'),
+                    ]));
+                }
+
+            $writer->close();
+        }, 'users-' . date('Y-m-d-His') . '.xlsx');
     }
 
     public function create()

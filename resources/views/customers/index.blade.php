@@ -6,9 +6,9 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-dark">{{ __('Customer Management') }}</h5>
-                <div>
+                <div class="d-flex flex-wrap gap-2">
                     @can('customer.view')
                     @if(Auth::user()->hasRole('admin'))
                         <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary btn-sm me-2">

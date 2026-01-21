@@ -6,10 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800"><i class="fa-solid fa-calculator me-2"></i> {{ __('Kalkulator PON (Link Budget)') }}</h1>
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('Dashboard') }}</a></li>
-            <li class="breadcrumb-item active">{{ __('Kalkulator PON') }}</li>
-        </ol>
+        
     </div>
 
     <div class="row">

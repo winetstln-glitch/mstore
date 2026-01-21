@@ -525,11 +525,7 @@
             </a>
             @endif
             
-            @if(Auth::user()->hasPermission('chat.view'))
-            <a href="{{ route('chat.index') }}" class="sidebar-item {{ request()->routeIs('chat.*') ? 'active' : '' }}">
-                <i class="fa-brands fa-whatsapp"></i> {{ __('WhatsApp') }}
-            </a>
-            @endif
+
 
             @if(Auth::user()->hasPermission('setting.view'))
             <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
@@ -725,6 +721,14 @@
         e.preventDefault();
         document.body.classList.toggle('sb-sidenav-toggled');
     });
+
+    // Close Sidebar when clicking overlay (Mobile)
+    const overlay = document.getElementById('sidebar-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            document.body.classList.remove('sb-sidenav-toggled');
+        });
+    }
 
     // Theme Toggle Logic
     const themeToggle = document.getElementById('themeToggle');

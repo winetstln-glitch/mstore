@@ -35,16 +35,45 @@ class CoordinatorController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'region_id' => 'required|exists:regions,id',
-            'user_id' => 'nullable|exists:users,id',
             'router_id' => 'nullable|exists:routers,id',
-        ]);
+            'user_option' => 'sometimes|in:existing,new',
+        ];
 
-        Coordinator::create($request->all());
+        if ($request->input('user_option') === 'new') {
+            $rules['email'] = 'required|string|email|max:255|unique:users';
+            $rules['password'] = 'required|string|min:8';
+        } else {
+            $rules['user_id'] = 'nullable|exists:users,id';
+        }
+
+        $validated = $request->validate($rules);
+        
+        $userId = $request->user_id;
+
+        if ($request->input('user_option') === 'new') {
+            $role = Role::where('name', 'coordinator')->first();
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role_id' => $role ? $role->id : null,
+            ]);
+            $userId = $user->id;
+        }
+
+        Coordinator::create([
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+            'address' => $validated['address'],
+            'region_id' => $validated['region_id'],
+            'user_id' => $userId,
+            'router_id' => $validated['router_id'],
+        ]);
 
         return redirect()->route('coordinators.index')->with('success', 'Coordinator created successfully.');
     }

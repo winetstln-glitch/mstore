@@ -20,20 +20,83 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="user_id" class="form-label">{{ __('User Account') }}</label>
-                        <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
-                            <option value="">{{ __('Select User') }}</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }} ({{ $user->email }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <div class="form-text text-muted">{{ __('Link this coordinator to a system user account for login access.') }}</div>
-                        @error('user_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <label class="form-label fw-bold">{{ __('User Account') }}</label>
+                        <div class="d-flex gap-3 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_option" id="option_existing" value="existing" checked onchange="toggleUserOption()">
+                                <label class="form-check-label" for="option_existing">
+                                    {{ __('Select Existing User') }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_option" id="option_new" value="new" onchange="toggleUserOption()">
+                                <label class="form-check-label" for="option_new">
+                                    {{ __('Create New User') }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Existing User Select -->
+                        <div id="existing_user_section">
+                            <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
+                                <option value="">{{ __('Select User') }}</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
+                                        {{ $user->name }} ({{ $user->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text text-muted">{{ __('Link this coordinator to an existing system user account.') }}</div>
+                            @error('user_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- New User Form -->
+                        <div id="new_user_section" style="display: none;">
+                            <div class="card bg-light border-0 p-3">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">{{ __('Email Address') }} <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">{{ __('Password') }} <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
+                                    @error('password')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <script>
+                        function toggleUserOption() {
+                            const isNew = document.getElementById('option_new').checked;
+                            const existingSection = document.getElementById('existing_user_section');
+                            const newSection = document.getElementById('new_user_section');
+                            
+                            if (isNew) {
+                                existingSection.style.display = 'none';
+                                newSection.style.display = 'block';
+                                document.getElementById('user_id').value = ''; // Reset selection
+                            } else {
+                                existingSection.style.display = 'block';
+                                newSection.style.display = 'none';
+                            }
+                        }
+                        
+                        // Run on load to handle validation errors state
+                        document.addEventListener('DOMContentLoaded', function() {
+                            if("{{ old('user_option') }}" === "new" || "{{ $errors->has('email') || $errors->has('password') }}") {
+                                document.getElementById('option_new').checked = true;
+                                toggleUserOption();
+                            }
+                        });
+                    </script>
 
                     <div class="mb-3">
                         <label for="region_id" class="form-label">{{ __('Region') }}</label>

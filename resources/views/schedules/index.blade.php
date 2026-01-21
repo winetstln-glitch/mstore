@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Technician Schedule (Piket)') }}</h1>
         <div class="d-flex gap-2">
             <form action="{{ route('schedules.index') }}" method="GET" class="d-flex gap-2">

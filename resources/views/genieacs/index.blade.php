@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-info">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h5 class="mb-0 fw-bold">{{ __('Network Monitor (GenieACS)') }}</h5>
                     <div class="mt-2">

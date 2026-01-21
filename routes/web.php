@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('roles', RoleController::class);
     
     // User Management
+    Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class);
 
     // Settings

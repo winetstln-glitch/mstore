@@ -9,6 +9,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 .content-header-title {
     font-size: 1.5rem;
