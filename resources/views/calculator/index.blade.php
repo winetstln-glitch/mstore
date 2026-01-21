@@ -224,19 +224,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add Splitter
-    addSplitterBtn.addEventListener('click', function() {
+    window.addSplitter = function(ratio = 0) {
         const row = document.createElement('div');
         row.className = 'row g-3 mb-2 splitter-row';
         row.innerHTML = `
             <div class="col-md-8">
                 <select class="form-select splitter-select">
-                    <option value="0">Tidak Ada Splitter</option>
-                    <option value="3.7">1:2 (3.7 dB)</option>
-                    <option value="7.3">1:4 (7.3 dB)</option>
-                    <option value="10.5">1:8 (10.5 dB)</option>
-                    <option value="13.7">1:16 (13.7 dB)</option>
-                    <option value="17.1">1:32 (17.1 dB)</option>
-                    <option value="20.5">1:64 (20.5 dB)</option>
+                    <option value="0" ${ratio == 0 ? 'selected' : ''}>Tidak Ada Splitter</option>
+                    <option value="3.7" ${ratio == 3.7 ? 'selected' : ''}>1:2 (3.7 dB)</option>
+                    <option value="7.3" ${ratio == 7.3 ? 'selected' : ''}>1:4 (7.3 dB)</option>
+                    <option value="10.5" ${ratio == 10.5 ? 'selected' : ''}>1:8 (10.5 dB)</option>
+                    <option value="13.7" ${ratio == 13.7 ? 'selected' : ''}>1:16 (13.7 dB)</option>
+                    <option value="17.1" ${ratio == 17.1 ? 'selected' : ''}>1:32 (17.1 dB)</option>
+                    <option value="20.5" ${ratio == 20.5 ? 'selected' : ''}>1:64 (20.5 dB)</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -253,7 +253,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         calculate();
-    });
+    }
+
+    addSplitterBtn.addEventListener('click', () => addSplitter(0));
+
+    // Load Preset Function
+    window.loadPreset = function(odc, odp) {
+        // Reset Form
+        document.getElementById('tx_power').value = 5; // Default Standard
+        document.getElementById('connectors').value = 4;
+        document.getElementById('splices').value = 4; // 2 OLT-ODC, 2 ODC-ODP
+        document.getElementById('distance').value = 5; // Estimasi rata-rata 5km
+        
+        // Clear existing splitters
+        splitterContainer.innerHTML = '';
+
+        // Add ODC Splitter
+        let odcloss = 0;
+        if(odc == 16) odcloss = 13.7;
+        if(odc == 32) odcloss = 17.1;
+        addSplitter(odcloss);
+
+        // Add ODP Splitter
+        let odploss = 0;
+        if(odp == 4) odploss = 7.3;
+        if(odp == 8) odploss = 10.5;
+        addSplitter(odploss);
+
+        // Notify User
+        Swal.fire({
+            icon: 'success',
+            title: 'Standarisasi Dimuat',
+            text: `Skenario ODC 1:${odc} + ODP 1:${odp} telah diterapkan.`,
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        calculate();
+    }
 
     // Main Calculation Function
     function calculate() {
