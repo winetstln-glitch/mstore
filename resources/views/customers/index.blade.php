@@ -9,6 +9,15 @@
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-dark">{{ __('Customer Management') }}</h5>
                 <div class="d-flex flex-wrap gap-2">
+                    @can('customer.delete')
+                    <button type="button" class="btn btn-danger btn-sm d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
+                        <i class="fa-solid fa-trash me-1"></i> {{ __('Delete Selected') }} (<span id="selectedCount">0</span>)
+                    </button>
+                    <form id="bulkDeleteForm" action="{{ route('customers.bulkDestroy') }}" method="POST" class="d-none">
+                        @csrf
+                        @method('DELETE')
+                    </form>
+                    @endcan
                     @can('customer.view')
                     @if(Auth::user()->hasRole('admin'))
                         <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary btn-sm me-2">
@@ -59,7 +68,14 @@
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="ps-3">{{ __('Name') }}</th>
+                                @can('customer.delete')
+                                <th scope="col" style="width: 40px;" class="ps-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                    </div>
+                                </th>
+                                @endcan
+                                <th scope="col" class="@cannot('customer.delete') ps-3 @endcannot">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Contact') }}</th>
                                 <th scope="col">{{ __('Service Info') }}</th>
                                 <th scope="col">{{ __('Modem') }}</th>
@@ -70,7 +86,14 @@
                         <tbody>
                             @forelse($customers as $customer)
                                 <tr>
+                                    @can('customer.delete')
                                     <td class="ps-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input customer-checkbox" type="checkbox" value="{{ $customer->id }}">
+                                        </div>
+                                    </td>
+                                    @endcan
+                                    <td class="@cannot('customer.delete') ps-3 @endcannot">
                                         <div class="fw-bold">{{ $customer->name }}</div>
                                         <div class="small text-muted">
                                             {{ Str::limit($customer->address, 30) }}
@@ -137,7 +160,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-body-secondary">
+                                    <td colspan="7" class="text-center py-5 text-body-secondary">
                                 <div class="mb-2"><i class="fa-solid fa-users-slash fa-2x opacity-25"></i></div>
                                 {{ __('No customers found.') }}
                             </td>
@@ -186,4 +209,60 @@
 </div>
 @endif
 @endcan
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.customer-checkbox');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const selectedCount = document.getElementById('selectedCount');
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateBulkDeleteBtn();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkDeleteBtn);
+        });
+
+        function updateBulkDeleteBtn() {
+            const selected = document.querySelectorAll('.customer-checkbox:checked');
+            selectedCount.textContent = selected.length;
+            
+            if (selected.length > 0) {
+                bulkDeleteBtn.classList.remove('d-none');
+            } else {
+                bulkDeleteBtn.classList.add('d-none');
+            }
+        }
+
+        window.confirmBulkDelete = function() {
+            const selected = document.querySelectorAll('.customer-checkbox:checked');
+            if (selected.length === 0) return;
+
+            if (confirm('{{ __("Are you sure you want to delete selected customers?") }}')) {
+                const ids = Array.from(selected).map(cb => cb.value);
+                
+                const form = document.getElementById('bulkDeleteForm');
+                // Remove old hidden inputs if any (except token and method)
+                const oldInputs = form.querySelectorAll('input[name="ids[]"]');
+                oldInputs.forEach(input => input.remove());
+                
+                // Add new hidden inputs
+                ids.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+                
+                form.submit();
+            }
+        };
+    });
+</script>
 @endsection

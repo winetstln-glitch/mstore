@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::get('customers/{customer}/settings', [CustomerWebController::class, 'settings'])->name('customers.settings');
     Route::post('customers/{customer}/settings/wan', [CustomerWebController::class, 'updateWan'])->name('customers.settings.wan');
     Route::post('customers/{customer}/settings/wlan', [CustomerWebController::class, 'updateWlan'])->name('customers.settings.wlan');
+    Route::delete('customers/bulk-destroy', [CustomerWebController::class, 'bulkDestroy'])->name('customers.bulkDestroy');
     Route::resource('customers', CustomerWebController::class);
     
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');

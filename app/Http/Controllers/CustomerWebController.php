@@ -214,92 +214,59 @@ class CustomerWebController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                $isEmpty = true;
-                foreach ($values as $value) {
-                    if ($value !== null && $value !== '') {
-                        $isEmpty = false;
-                        break;
-                    }
-                }
-                if ($isEmpty) {
-                    continue;
+                // Adjust values array to match header length
+                if (count($values) > count($header)) {
+                    $values = array_slice($values, 0, count($header));
+                } elseif (count($values) < count($header)) {
+                    $values = array_pad($values, count($header), null);
                 }
 
-                $data = [];
+                $row = array_combine($header, $values);
 
-                $map = [
-                    'id' => 'id',
-                    'name' => 'name',
-                    'address' => 'address',
-                    'phone' => 'phone',
-                    'package' => 'package',
-                    'ip_address' => 'ip_address',
-                    'vlan' => 'vlan',
-                    'odp' => 'odp',
-                    'status' => 'status',
-                    'pppoe_user' => 'pppoe_user',
-                    'pppoe_password' => 'pppoe_password',
-                    'onu_serial' => 'onu_serial',
-                    'device_model' => 'device_model',
-                    'ssid_name' => 'ssid_name',
-                    'ssid_password' => 'ssid_password',
-                    'latitude' => 'latitude',
-                    'longitude' => 'longitude',
-                ];
-
-                $rowId = null;
-
-                foreach ($map as $column => $field) {
-                    $index = array_search($column, $header, true);
-                    if ($index !== false && array_key_exists($index, $values)) {
-                        $value = $values[$index];
-                        if ($column === 'id') {
-                            $rowId = $value !== null && $value !== '' ? (int) $value : null;
-                        } elseif (in_array($column, ['latitude', 'longitude'], true)) {
-                            if ($value === null || $value === '' || !is_numeric($value)) {
-                                $data[$field] = null;
-                            } else {
-                                $data[$field] = (float) $value;
-                            }
-                        } elseif ($column === 'pppoe_user') {
-                            if ($value === null || $value === '') {
-                                $data[$field] = null;
-                            } else {
-                                $data[$field] = (string) $value;
-                            }
-                        } else {
-                            $data[$field] = $value !== null ? (string) $value : null;
-                        }
-                    }
-                }
-
-                if (!isset($data['name']) || $data['name'] === null || $data['name'] === '') {
+                if (empty($row['name'])) {
                     $invalid++;
                     continue;
                 }
 
-                if (isset($data['status']) && $data['status'] !== null && $data['status'] !== '') {
-                    $status = strtolower($data['status']);
-                    if (!in_array($status, ['active', 'suspend', 'terminated'], true)) {
-                        $data['status'] = 'active';
-                    } else {
-                        $data['status'] = $status;
-                    }
-                } else {
+                // Check for existing customer by ID, Name, or Phone to update
+                $existingCustomer = null;
+                if (!empty($row['id'])) {
+                    $existingCustomer = Customer::find($row['id']);
+                } elseif (!empty($row['name'])) {
+                     $existingCustomer = Customer::where('name', $row['name'])->first();
+                }
+
+                $data = [
+                    'name' => $row['name'],
+                    'address' => $row['address'] ?? null,
+                    'phone' => $row['phone'] ?? null,
+                    'package' => $row['package'] ?? null,
+                    'ip_address' => $row['ip_address'] ?? null,
+                    'vlan' => $row['vlan'] ?? null,
+                    'odp' => $row['odp'] ?? null,
+                    'status' => strtolower($row['status'] ?? 'active'),
+                    'pppoe_user' => $row['pppoe_user'] ?? null,
+                    'pppoe_password' => $row['pppoe_password'] ?? null,
+                    'onu_serial' => $row['onu_serial'] ?? null,
+                    'device_model' => $row['device_model'] ?? null,
+                    'ssid_name' => $row['ssid_name'] ?? null,
+                    'ssid_password' => $row['ssid_password'] ?? null,
+                    'latitude' => $row['latitude'] ?? null,
+                    'longitude' => $row['longitude'] ?? null,
+                ];
+
+                // If status is empty or invalid, default to active
+                if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
                     $data['status'] = 'active';
                 }
 
-                if ($rowId) {
-                    $customer = Customer::find($rowId);
-                    if ($customer) {
-                        $customer->update($data);
-                        $updated++;
-                        continue;
-                    }
+                if ($existingCustomer) {
+                    $existingCustomer->update($data);
+                    $updated++;
+                } else {
+                    Customer::create($data);
+                    $created++;
                 }
-
-                Customer::create($data);
-                $created++;
             }
         }
 
@@ -751,5 +718,16 @@ class CustomerWebController extends Controller implements HasMiddleware
             return redirect()->back()->with('success', __('WLAN Settings (SSID ' . $index . ') updated successfully.'));
         }
         return redirect()->back()->withErrors(['error' => __('Failed to update WLAN Settings.')]);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'No customers selected.');
+        }
+
+        Customer::whereIn('id', $ids)->delete();
+        return redirect()->back()->with('success', count($ids) . ' customers deleted successfully.');
     }
 }
