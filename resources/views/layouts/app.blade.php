@@ -254,6 +254,9 @@
             body.sb-sidenav-toggled #sidebar-wrapper {
                 margin-left: 0;
             }
+            body.sb-sidenav-toggled #page-content-wrapper {
+                margin-left: var(--sidebar-width);
+            }
         }
     </style>
     
