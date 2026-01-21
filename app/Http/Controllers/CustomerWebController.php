@@ -68,7 +68,12 @@ class CustomerWebController extends Controller implements HasMiddleware
             $query->where('status', $request->input('status'));
         }
 
-        $customers = $query->latest()->paginate(10)->withQueryString();
+        $perPage = $request->input('per_page', 10);
+        if ($perPage === 'all') {
+            $customers = $query->latest()->paginate(10000)->withQueryString();
+        } else {
+            $customers = $query->latest()->paginate((int)$perPage)->withQueryString();
+        }
         
         $modemStatuses = [];
         // Optimized: Disable auto-fetch status to improve performance

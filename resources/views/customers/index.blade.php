@@ -51,11 +51,19 @@
                         </div>
                     </div>
                     <div class="col-md-4 col-lg-3">
-                        <select name="status" class="form-select">
+                        <select name="status" class="form-select" onchange="this.form.submit()">
                             <option value="">{{ __('All Status') }}</option>
                             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
                             <option value="suspend" {{ request('status') == 'suspend' ? 'selected' : '' }}>{{ __('Suspend') }}</option>
                             <option value="terminated" {{ request('status') == 'terminated' ? 'selected' : '' }}>{{ __('Terminated') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-lg-2">
+                        <select name="per_page" class="form-select" onchange="this.form.submit()">
+                            <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 {{ __('per page') }}</option>
+                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 {{ __('per page') }}</option>
+                            <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 {{ __('per page') }}</option>
+                            <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>{{ __('Show All') }}</option>
                         </select>
                     </div>
                     <div class="col-md-2">
