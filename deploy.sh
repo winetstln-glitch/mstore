@@ -29,6 +29,10 @@ php artisan db:seed --class=RoleSeeder --force
 php artisan db:seed --class=PackageSeeder --force
 php artisan db:seed --class=SettingSeeder --force
 
+# 3.2 Storage Link
+echo "Linking storage directory..."
+php artisan storage:link
+
 # 4. Clear and Cache Config
 echo "Clearing and caching configuration..."
 php artisan optimize:clear

@@ -185,6 +185,10 @@ class CustomerWebController extends Controller implements HasMiddleware
             abort(403);
         }
 
+        // Increase limits for large imports
+        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+
         try {
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,csv|max:20480',
