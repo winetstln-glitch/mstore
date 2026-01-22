@@ -142,8 +142,10 @@
             let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').toUpperCase() : '';
             let area = areaVal ? areaVal.substring(0, 2) : '[AREA]';
 
-            let colorVal = colorInput.value ? colorInput.value.replace(/\s+/g, '').toUpperCase() : '';
-            let color = colorVal ? colorVal.substring(0, 1) : '[WARNA]';
+            // Get selected option's data-code for color abbreviation
+            let selectedOption = colorInput.options[colorInput.selectedIndex];
+            let colorCode = selectedOption && selectedOption.getAttribute('data-code') ? selectedOption.getAttribute('data-code') : '';
+            let color = colorCode ? colorCode : '[WARNA]';
 
             let cableVal = cableInput.value ? cableInput.value.replace(/[^0-9]/g, '') : '';
             let cable = cableVal ? cableVal.padStart(2, '0') : '[KABEL]';
@@ -153,7 +155,7 @@
 
         ponInput.addEventListener('input', updateNamePreview);
         areaInput.addEventListener('input', updateNamePreview);
-        colorInput.addEventListener('input', updateNamePreview);
+        colorInput.addEventListener('change', updateNamePreview); // Changed to change event for select
         cableInput.addEventListener('input', updateNamePreview);
 
         var defaultLat = {{ $odc->latitude ?? -6.2088 }};

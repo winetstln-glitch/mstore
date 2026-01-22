@@ -46,8 +46,22 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="color" class="form-label">{{ __('Color') }}</label>
-                            <input type="text" class="form-control @error('color') is-invalid @enderror" id="color" name="color" value="{{ old('color') }}" required placeholder="e.g. BLUE">
+                            <label for="color" class="form-label">{{ __('Tube / Fiber Color') }}</label>
+                            <select class="form-select @error('color') is-invalid @enderror" id="color" name="color" required>
+                                <option value="">{{ __('Select Color') }}</option>
+                                <option value="BLUE" {{ old('color') == 'BLUE' ? 'selected' : '' }} data-code="B">Blue (Biru)</option>
+                                <option value="ORANGE" {{ old('color') == 'ORANGE' ? 'selected' : '' }} data-code="O">Orange (Oranye)</option>
+                                <option value="GREEN" {{ old('color') == 'GREEN' ? 'selected' : '' }} data-code="G">Green (Hijau)</option>
+                                <option value="BROWN" {{ old('color') == 'BROWN' ? 'selected' : '' }} data-code="C">Brown (Coklat)</option>
+                                <option value="SLATE" {{ old('color') == 'SLATE' ? 'selected' : '' }} data-code="S">Slate (Abu-abu)</option>
+                                <option value="WHITE" {{ old('color') == 'WHITE' ? 'selected' : '' }} data-code="P">White (Putih)</option>
+                                <option value="RED" {{ old('color') == 'RED' ? 'selected' : '' }} data-code="M">Red (Merah)</option>
+                                <option value="BLACK" {{ old('color') == 'BLACK' ? 'selected' : '' }} data-code="H">Black (Hitam)</option>
+                                <option value="YELLOW" {{ old('color') == 'YELLOW' ? 'selected' : '' }} data-code="K">Yellow (Kuning)</option>
+                                <option value="VIOLET" {{ old('color') == 'VIOLET' ? 'selected' : '' }} data-code="U">Violet (Ungu)</option>
+                                <option value="ROSE" {{ old('color') == 'ROSE' ? 'selected' : '' }} data-code="P">Rose (Pink)</option>
+                                <option value="AQUA" {{ old('color') == 'AQUA' ? 'selected' : '' }} data-code="T">Aqua (Tosca)</option>
+                            </select>
                             @error('color')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -141,8 +155,10 @@
             let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').toUpperCase() : '';
             let area = areaVal ? areaVal.substring(0, 2) : '[AREA]';
 
-            let colorVal = colorInput.value ? colorInput.value.replace(/\s+/g, '').toUpperCase() : '';
-            let color = colorVal ? colorVal.substring(0, 1) : '[WARNA]';
+            // Get selected option's data-code for color abbreviation
+            let selectedOption = colorInput.options[colorInput.selectedIndex];
+            let colorCode = selectedOption && selectedOption.getAttribute('data-code') ? selectedOption.getAttribute('data-code') : '';
+            let color = colorCode ? colorCode : '[WARNA]';
 
             let cableVal = cableInput.value ? cableInput.value.replace(/[^0-9]/g, '') : '';
             let cable = cableVal ? cableVal.padStart(2, '0') : '[KABEL]';
@@ -152,7 +168,7 @@
 
         ponInput.addEventListener('input', updateNamePreview);
         areaInput.addEventListener('input', updateNamePreview);
-        colorInput.addEventListener('input', updateNamePreview);
+        colorInput.addEventListener('change', updateNamePreview); // Changed to change event for select
         cableInput.addEventListener('input', updateNamePreview);
 
         var defaultLat = -6.2088;

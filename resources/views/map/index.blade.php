@@ -106,8 +106,22 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odc_color" class="form-label">{{ __('Color') }}</label>
-                            <input type="text" class="form-control" id="odc_color" name="color" required placeholder="e.g. L">
+                            <label for="odc_color" class="form-label">{{ __('Tube / Fiber Color') }}</label>
+                            <select class="form-select" id="odc_color" name="color" required>
+                                <option value="">{{ __('Select Color') }}</option>
+                                <option value="BLUE" data-code="B">Blue (Biru)</option>
+                                <option value="ORANGE" data-code="O">Orange (Oranye)</option>
+                                <option value="GREEN" data-code="G">Green (Hijau)</option>
+                                <option value="BROWN" data-code="C">Brown (Coklat)</option>
+                                <option value="SLATE" data-code="S">Slate (Abu-abu)</option>
+                                <option value="WHITE" data-code="P">White (Putih)</option>
+                                <option value="RED" data-code="M">Red (Merah)</option>
+                                <option value="BLACK" data-code="H">Black (Hitam)</option>
+                                <option value="YELLOW" data-code="K">Yellow (Kuning)</option>
+                                <option value="VIOLET" data-code="U">Violet (Ungu)</option>
+                                <option value="ROSE" data-code="P">Rose (Pink)</option>
+                                <option value="AQUA" data-code="T">Aqua (Tosca)</option>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="odc_cable_no" class="form-label">{{ __('Cable No') }}</label>
@@ -420,6 +434,22 @@
         var lines = L.featureGroup().addTo(map);
         var markerMap = {}; // Store markers for easy access
 
+        // Color Mapping for Cables
+        const colorMap = {
+            'BLUE': 'blue', 'BIRU': 'blue',
+            'ORANGE': 'orange', 'ORANYE': 'orange',
+            'GREEN': 'green', 'HIJAU': 'green',
+            'BROWN': 'brown', 'COKLAT': 'brown',
+            'SLATE': 'slategray', 'ABU-ABU': 'gray', 'ABU': 'gray',
+            'WHITE': 'white', 'PUTIH': 'white',
+            'RED': 'red', 'MERAH': 'red',
+            'BLACK': 'black', 'HITAM': 'black',
+            'YELLOW': 'yellow', 'KUNING': 'yellow',
+            'VIOLET': 'violet', 'UNGU': 'purple',
+            'ROSE': 'pink', 'MERAH MUDA': 'pink',
+            'AQUA': 'aqua', 'TOSCA': 'turquoise'
+        };
+
         // Redraw lines function
         function drawLines() {
             lines.clearLayers();
@@ -429,8 +459,10 @@
                 if (odc.latitude && odc.longitude) {
                     var uplinkOlt = olts.find(o => o.id == odc.olt_id);
                     if (uplinkOlt && uplinkOlt.latitude && uplinkOlt.longitude) {
+                        var colorKey = (odc.color || '').toUpperCase();
+                        var lineColor = colorMap[colorKey] || odc.color || '#6f42c1';
                         L.polyline([[uplinkOlt.latitude, uplinkOlt.longitude], [odc.latitude, odc.longitude]], {
-                            color: '#6f42c1',
+                            color: lineColor,
                             weight: 4,
                             opacity: 0.7,
                             dashArray: '10, 5'
@@ -444,8 +476,10 @@
                 if (odp.latitude && odp.longitude) {
                     var uplinkOdc = odcs.find(o => o.id == odp.odc_id);
                     if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
+                        var colorKey = (odp.color || '').toUpperCase();
+                        var lineColor = colorMap[colorKey] || odp.color || '#fd7e14';
                         L.polyline([[uplinkOdc.latitude, uplinkOdc.longitude], [odp.latitude, odp.longitude]], {
-                            color: odp.color || '#fd7e14',
+                            color: lineColor,
                             weight: 3,
                             opacity: 0.8
                         }).addTo(lines);
