@@ -6,16 +6,46 @@ use App\Models\Coordinator;
 use App\Models\Investor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Barryvdh\DomPDF\Facade\Pdf;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
-class InvestorController extends Controller
+class InvestorController extends Controller implements HasMiddleware
 {
-    public function index()
+    public static function middleware(): array
     {
-        $query = Investor::with('coordinator')
-            ->withSum('incomeTransactions', 'amount')
-            ->withSum('expenseTransactions', 'amount');
+        return [
+            new Middleware('permission:investor.view', only: ['index', 'show', 'exportPdf', 'exportExcel']),
+            new Middleware('permission:investor.create', only: ['create', 'store']),
+            new Middleware('permission:investor.edit', only: ['edit', 'update']),
+            new Middleware('permission:investor.delete', only: ['destroy']),
+        ];
+    }
 
-        if (!Auth::user()->hasRole('admin')) {
+    public function index(Request $request)
+    {
+        $query = Investor::with('coordinator');
+
+        $month = $request->input('month');
+
+        if ($month) {
+            $query->withSum(['incomeTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+
+            $query->withSum(['expenseTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+        } else {
+            $query->withSum('incomeTransactions', 'amount')
+                  ->withSum('expenseTransactions', 'amount');
+        }
+
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator) {
                 $query->where('coordinator_id', $coordinator->id);
@@ -29,7 +59,7 @@ class InvestorController extends Controller
     public function create()
     {
         $coordinators = [];
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $coordinators = Coordinator::all();
             $existingInvestors = Investor::orderBy('name')->get();
         } else {
@@ -77,7 +107,7 @@ class InvestorController extends Controller
 
     public function show(Investor $investor)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
              $coordinator = Coordinator::where('user_id', Auth::id())->first();
              if (!$coordinator || $investor->coordinator_id !== $coordinator->id) {
                  abort(403);
@@ -95,7 +125,7 @@ class InvestorController extends Controller
 
     public function edit(Investor $investor)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
              $coordinator = Coordinator::where('user_id', Auth::id())->first();
              if (!$coordinator || $investor->coordinator_id !== $coordinator->id) {
                  abort(403);
@@ -103,7 +133,7 @@ class InvestorController extends Controller
         }
 
         $coordinators = [];
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $coordinators = Coordinator::all();
         } else {
             $coordinators = Coordinator::where('user_id', Auth::id())->get();
@@ -113,7 +143,7 @@ class InvestorController extends Controller
 
     public function update(Request $request, Investor $investor)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
              $coordinator = Coordinator::where('user_id', Auth::id())->first();
              if (!$coordinator || $investor->coordinator_id !== $coordinator->id) {
                  abort(403);
@@ -134,7 +164,7 @@ class InvestorController extends Controller
 
     public function destroy(Investor $investor)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
              $coordinator = Coordinator::where('user_id', Auth::id())->first();
              if (!$coordinator || $investor->coordinator_id !== $coordinator->id) {
                  abort(403);
@@ -148,5 +178,99 @@ class InvestorController extends Controller
         $investor->delete();
 
         return redirect()->route('investors.index')->with('success', 'Investor deleted successfully.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Investor::with('coordinator');
+
+        $month = $request->input('month');
+
+        if ($month) {
+            $query->withSum(['incomeTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+
+            $query->withSum(['expenseTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+        } else {
+            $query->withSum('incomeTransactions', 'amount')
+                  ->withSum('expenseTransactions', 'amount');
+        }
+
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            $coordinator = Coordinator::where('user_id', Auth::id())->first();
+            if ($coordinator) {
+                $query->where('coordinator_id', $coordinator->id);
+            }
+        }
+
+        $investors = $query->latest()->get();
+
+        $pdf = Pdf::loadView('investors.pdf', compact('investors', 'month'));
+        return $pdf->download('investors' . ($month ? '_' . $month : '') . '.pdf');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = Investor::with('coordinator');
+
+        $month = $request->input('month');
+
+        if ($month) {
+            $query->withSum(['incomeTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+
+            $query->withSum(['expenseTransactions' => function ($q) use ($month) {
+                $q->whereMonth('transaction_date', date('m', strtotime($month)))
+                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            }], 'amount');
+        } else {
+            $query->withSum('incomeTransactions', 'amount')
+                  ->withSum('expenseTransactions', 'amount');
+        }
+
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            $coordinator = Coordinator::where('user_id', Auth::id())->first();
+            if ($coordinator) {
+                $query->where('coordinator_id', $coordinator->id);
+            }
+        }
+
+        $investors = $query->latest()->get();
+
+        return response()->streamDownload(function () use ($investors) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Name',
+                'Coordinator',
+                'Phone',
+                'Total Investment',
+                'Net Balance',
+            ]));
+
+            foreach ($investors as $investor) {
+                $totalInvestment = $investor->income_transactions_sum_amount ?? 0;
+                $totalExpense = $investor->expense_transactions_sum_amount ?? 0;
+                $netBalance = $totalInvestment - $totalExpense;
+
+                $writer->addRow(Row::fromValues([
+                    $investor->name,
+                    $investor->coordinator->name ?? '-',
+                    $investor->phone ?? '-',
+                    number_format($totalInvestment, 0, ',', '.'),
+                    number_format($netBalance, 0, ',', '.'),
+                ]));
+            }
+
+            $writer->close();
+        }, 'investors' . ($month ? '_' . $month : '') . '.xlsx');
     }
 }

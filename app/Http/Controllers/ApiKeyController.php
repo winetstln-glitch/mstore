@@ -5,9 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\ApiKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ApiKeyController extends Controller
+class ApiKeyController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:apikey.view', only: ['index']),
+            new Middleware('permission:apikey.manage', only: ['store', 'destroy', 'toggle']),
+        ];
+    }
+
     public function index()
     {
         $keys = ApiKey::latest()->paginate(10);

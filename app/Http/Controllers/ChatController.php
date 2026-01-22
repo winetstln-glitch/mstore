@@ -3,9 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ChatController extends Controller
+class ChatController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat.view', only: ['index', 'show']),
+            new Middleware('permission:chat.manage', only: ['create', 'store', 'edit', 'update', 'destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

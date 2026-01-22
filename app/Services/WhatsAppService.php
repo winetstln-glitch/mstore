@@ -36,14 +36,27 @@ class WhatsAppService
             'updated_at' => now(),
         ]);
 
-        // 2. Send to API (Example using a generic POST structure)
+        // 2. Send to API
         if ($this->baseUrl && $this->apiKey) {
             try {
-                $response = Http::post($this->baseUrl . '/send-message', [
-                    'api_key' => $this->apiKey,
-                    'phone' => $phone,
-                    'message' => $message,
-                ]);
+                // Detect if using Fonnte (Popular Indonesian Provider)
+                if (str_contains($this->baseUrl, 'fonnte.com')) {
+                    $response = Http::withHeaders([
+                        'Authorization' => $this->apiKey,
+                    ])->post($this->baseUrl . '/send', [
+                        'target' => $phone,
+                        'message' => $message,
+                        'countryCode' => '62', // Optional, default to Indonesia
+                    ]);
+                } 
+                // Default / Generic API
+                else {
+                    $response = Http::post($this->baseUrl . '/send-message', [
+                        'api_key' => $this->apiKey,
+                        'phone' => $phone,
+                        'message' => $message,
+                    ]);
+                }
 
                 DB::table('notification_logs')->where('id', $logId)->update([
                     'status' => $response->successful() ? 'sent' : 'failed',
@@ -57,12 +70,17 @@ class WhatsAppService
                     'status' => 'failed',
                     'response' => $e->getMessage()
                 ]);
-                return false;
+                throw $e; // Re-throw to let caller know
             }
+        } else {
+            $errorMsg = "WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env";
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => 'failed',
+                'response' => $errorMsg
+            ]);
+            throw new \Exception($errorMsg);
         }
-
-        // If no API configured, just leave as pending (or mark sent if simulating)
-        return true;
     }
 
     public function sendInvoice(Customer $customer, $invoice)

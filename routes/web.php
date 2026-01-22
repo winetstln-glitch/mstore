@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', CustomerWebController::class);
     
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');
+    Route::post('tickets/{ticket}/notify', [TicketWebController::class, 'sendNotification'])->name('tickets.notify');
     Route::patch('tickets/{ticket}/location', [TicketWebController::class, 'updateLocation'])->name('tickets.updateLocation');
     Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');
     Route::resource('tickets', TicketWebController::class);
@@ -89,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::post('attendance/recap-finance', [TechnicianAttendanceController::class, 'recapToFinance'])->name('attendance.recap_finance');
     Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual');
     Route::delete('attendance/bulk-destroy', [TechnicianAttendanceController::class, 'bulkDestroy'])->name('attendance.bulkDestroy');
+    Route::post('attendance/{attendance}/notify', [TechnicianAttendanceController::class, 'sendNotification'])->name('attendance.notify');
     Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);
 
     // Schedules & Leaves
@@ -137,6 +139,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);
     Route::resource('coordinators', \App\Http\Controllers\CoordinatorController::class);
+    Route::get('investors/export/pdf', [InvestorController::class, 'exportPdf'])->name('investors.export.pdf');
+    Route::get('investors/export/excel', [InvestorController::class, 'exportExcel'])->name('investors.export.excel');
     Route::resource('investors', InvestorController::class);
     Route::resource('chat', ChatController::class);
     
@@ -144,6 +148,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');
     Route::post('/telegram/update', [\App\Http\Controllers\TelegramController::class, 'update'])->name('telegram.update');
     Route::post('/telegram/test', [\App\Http\Controllers\TelegramController::class, 'test'])->name('telegram.test');
+
+    // WhatsApp Settings
+    Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
+    Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
+    Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
+
 
     // Inventory
     Route::get('/inventory', [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index');

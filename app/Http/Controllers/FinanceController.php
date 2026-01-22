@@ -26,7 +26,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadIncomeBreakdownPdf()
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -86,7 +86,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadInvestorSharePdf(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -709,7 +709,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function bulkDestroy(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -742,7 +742,7 @@ class FinanceController extends Controller implements HasMiddleware
         $query = Transaction::with(['user', 'coordinator'])->latest('transaction_date');
 
         $userCoordinator = null;
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $userCoordinator = Coordinator::where('user_id', Auth::id())->first();
             
             if ($userCoordinator) {
@@ -773,7 +773,7 @@ class FinanceController extends Controller implements HasMiddleware
         
         // Calculate totals based on user role
         $totalsQuery = Transaction::query();
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             if ($userCoordinator) {
                 $totalsQuery->where('coordinator_id', $userCoordinator->id);
             } else {
@@ -830,7 +830,7 @@ class FinanceController extends Controller implements HasMiddleware
         $totalInvestorFunds = $investorCapital - $investorWithdrawals;
 
         $monthlyIncome = collect();
-        if (!Auth::user()->hasRole('admin') && $userCoordinator) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance') && $userCoordinator) {
             $monthlyIncome = Transaction::selectRaw('strftime("%Y-%m", transaction_date) as ym, SUM(amount) as total')
                 ->where('coordinator_id', $userCoordinator->id)
                 ->where('type', 'income')
@@ -840,7 +840,7 @@ class FinanceController extends Controller implements HasMiddleware
                 ->get();
         }
 
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $coordinators = Coordinator::all();
         } else {
             $coordinators = Coordinator::where('user_id', Auth::id())->get();
@@ -994,7 +994,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         // Fetch Investors
         $investors = [];
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $investors = \App\Models\Investor::all();
         } else {
             if ($userCoordinator) {
@@ -1143,7 +1143,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function profitLoss(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -1155,7 +1155,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function managerReport(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -1250,7 +1250,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadManagerReportPdf(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -1578,7 +1578,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadProfitLossExcel(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 

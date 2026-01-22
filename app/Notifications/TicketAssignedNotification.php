@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Setting;
 use App\Models\Ticket;
 use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\Channels\TelegramChannel;
@@ -43,14 +44,26 @@ class TicketAssignedNotification extends Notification
         $customerName = $this->ticket->customer->name ?? 'Unknown';
         $location = $this->ticket->location ?? '-';
 
-        return "*TUGAS BARU (TICKET ASSIGNED)*\n\n" .
-               "Halo {$notifiable->name},\n" .
-               "Anda telah ditugaskan untuk tiket berikut:\n\n" .
-               "🎫 *No Tiket:* {$this->ticket->ticket_number}\n" .
-               "📝 *Subject:* {$this->ticket->subject}\n" .
-               "👤 *Customer:* {$customerName}\n" .
-               "📍 *Lokasi:* {$location}\n\n" .
-               "Segera proses tiket ini melalui link berikut:\n{$url}";
+        // Fetch template from settings or use default
+        $template = Setting::where('key', 'whatsapp_ticket_template')->value('value');
+
+        if (!$template) {
+            return "*TUGAS BARU (TICKET ASSIGNED)*\n\n" .
+                   "Halo {$notifiable->name},\n" .
+                   "Anda telah ditugaskan untuk tiket berikut:\n\n" .
+                   "🎫 *No Tiket:* {$this->ticket->ticket_number}\n" .
+                   "📝 *Subject:* {$this->ticket->subject}\n" .
+                   "👤 *Customer:* {$customerName}\n" .
+                   "📍 *Lokasi:* {$location}\n\n" .
+                   "Segera proses tiket ini melalui link berikut:\n{$url}";
+        }
+
+        // Replace placeholders
+        return str_replace(
+            ['{technician_name}', '{ticket_number}', '{subject}', '{customer_name}', '{location}', '{url}'],
+            [$notifiable->name, $this->ticket->ticket_number, $this->ticket->subject, $customerName, $location, $url],
+            $template
+        );
     }
 
     public function toTelegram(object $notifiable)

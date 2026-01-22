@@ -10,8 +10,19 @@ use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Auth;
 
-class TechnicianScheduleController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class TechnicianScheduleController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:schedule.view', only: ['index']),
+            new Middleware('permission:schedule.manage', only: ['updatePeriod', 'store']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $year = $request->input('year', now()->year);
@@ -22,7 +33,7 @@ class TechnicianScheduleController extends Controller
             $q->where('name', 'technician');
         });
 
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -45,7 +56,7 @@ class TechnicianScheduleController extends Controller
 
     public function updatePeriod(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
@@ -72,7 +83,7 @@ class TechnicianScheduleController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 

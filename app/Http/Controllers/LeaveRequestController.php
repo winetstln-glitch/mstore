@@ -8,14 +8,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
-class LeaveRequestController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class LeaveRequestController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:leave.view', only: ['index']),
+            new Middleware('permission:leave.create', only: ['store']),
+            new Middleware('permission:leave.manage', only: ['update', 'destroy']), // Assuming these methods might exist or be added
+        ];
+    }
+
     public function index()
     {
         $user = Auth::user();
         $query = LeaveRequest::query()->with('user')->orderBy('created_at', 'desc');
 
-        if (!$user->hasPermission('leave.manage')) {
+        if (!$user->hasPermission('leave.manage') && !$user->hasRole('admin')) {
             $query->where('user_id', $user->id);
         }
 
@@ -31,7 +43,7 @@ class LeaveRequestController extends Controller
         $endOfMonth = Carbon::now()->endOfMonth();
         
         $usedDays = 0;
-        if (!$user->hasPermission('leave.manage')) {
+        if (!$user->hasPermission('leave.manage') && !$user->hasRole('admin')) {
             $monthRequests = LeaveRequest::where('user_id', $user->id)
                 ->where('status', 'approved')
                 ->where(function($q) use ($startOfMonth, $endOfMonth) {

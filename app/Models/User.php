@@ -30,6 +30,7 @@ class User extends Authenticatable
         'telegram_chat_id',
         'is_active',
         'daily_salary',
+        'avatar',
     ];
 
     /**

@@ -10,23 +10,48 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class InventoryController extends Controller
+class InventoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:inventory.view', only: ['index']),
+            new Middleware('permission:inventory.manage', only: ['storeItem', 'updateItem', 'destroyItem', 'updatePickup', 'destroyPickup']),
+            new Middleware('permission:inventory.pickup', only: ['createPickup', 'storePickup']),
+        ];
+    }
+
     public function index()
     {
         $items = InventoryItem::all();
+
+        // Dashboard Stats
+        $totalStockValue = $items->sum(function($item) {
+            return $item->stock * $item->price;
+        });
+        $totalItems = $items->count();
+        
+        // Total Pembelian (Purchases) - Expense 'Pembelian Alat'
+        $totalPurchases = Transaction::where('category', 'Pembelian Alat')->sum('amount');
+        
+        // Total Penjualan/Pemakaian (Sales) - Expense 'Pengeluaran Pengurus' linked to Inventory
+        $totalSales = Transaction::where('category', 'Pengeluaran Pengurus')
+            ->where('reference_number', 'like', 'INV-OUT-%')
+            ->sum('amount');
         
         $query = InventoryTransaction::with(['user', 'item', 'coordinator'])
             ->where('type', 'out');
 
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         }
 
         $transactions = $query->latest()->paginate(10);
 
-        return view('inventory.index', compact('items', 'transactions'));
+        return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalSales'));
     }
 
     public function createPickup()
@@ -160,7 +185,7 @@ class InventoryController extends Controller
 
     public function updatePickup(Request $request, InventoryTransaction $transaction)
     {
-        if (Auth::id() !== $transaction->user_id && !Auth::user()->hasRole('admin')) {
+        if (Auth::id() !== $transaction->user_id && !Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -214,7 +239,7 @@ class InventoryController extends Controller
 
     public function destroyPickup(InventoryTransaction $transaction)
     {
-        if (Auth::id() !== $transaction->user_id && !Auth::user()->hasRole('admin')) {
+        if (Auth::id() !== $transaction->user_id && !Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -233,8 +258,8 @@ class InventoryController extends Controller
     
     public function storeItem(Request $request)
     {
-        // Simple authorization check for admin
-        if (!Auth::user()->hasRole('admin')) {
+        // Authorization check
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -267,8 +292,8 @@ class InventoryController extends Controller
 
     public function updateItem(Request $request, InventoryItem $item)
     {
-        // Simple authorization check for admin
-        if (!Auth::user()->hasRole('admin')) {
+        // Authorization check
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -306,8 +331,8 @@ class InventoryController extends Controller
 
     public function destroyItem(InventoryItem $item)
     {
-        // Simple authorization check for admin
-        if (!Auth::user()->hasRole('admin')) {
+        // Authorization check
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 

@@ -4,9 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Region;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RegionController extends Controller
+class RegionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:region.view', only: ['index']),
+            new Middleware('permission:region.create', only: ['create', 'store']),
+            new Middleware('permission:region.edit', only: ['edit', 'update']),
+            new Middleware('permission:region.delete', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

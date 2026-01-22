@@ -153,13 +153,21 @@
                                     </td>
                                     @if(Auth::user()->hasRole('admin'))
                                     <td class="text-end pe-3">
-                                        <form method="POST" action="{{ route('attendance.destroy', $attendance->id) }}" onsubmit="return confirm('{{ __('Are you sure you want to delete this record?') }}')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                <i class="fa-regular fa-trash-can"></i>
-                                            </button>
-                                        </form>
+                                        <div class="d-inline-flex gap-1">
+                                            <form method="POST" action="{{ route('attendance.notify', $attendance) }}">
+                                                @csrf
+                                                <button type="submit" class="btn btn-success text-white btn-sm" title="{{ __('Send WhatsApp Notification') }}" onclick="return confirm('{{ __('Send WhatsApp notification?') }}')">
+                                                    <i class="fa-brands fa-whatsapp me-1"></i> {{ __('Notify') }}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('attendance.destroy', $attendance->id) }}" onsubmit="return confirm('{{ __('Are you sure you want to delete this record?') }}')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('Delete') }}">
+                                                    <i class="fa-regular fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                     @endif
                                 </tr>

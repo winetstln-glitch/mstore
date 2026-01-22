@@ -29,9 +29,22 @@
                         </div>
                     @endif
 
-                    <form method="post" action="{{ route('profile.update') }}">
+                    <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data">
                         @csrf
                         @method('patch')
+
+                        <div class="mb-3">
+                            <label for="avatar" class="form-label fw-bold">{{ __('Profile Photo') }}</label>
+                            @if($user->avatar)
+                                <div class="mb-2">
+                                    <img src="{{ asset('storage/' . $user->avatar) }}" alt="Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                                </div>
+                            @endif
+                            <input id="avatar" name="avatar" type="file" class="form-control @error('avatar') is-invalid @enderror" accept="image/*">
+                            @error('avatar')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <div class="mb-3">
                             <label for="name" class="form-label fw-bold">{{ __('Name') }}</label>

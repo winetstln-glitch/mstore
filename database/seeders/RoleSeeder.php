@@ -20,6 +20,7 @@ class RoleSeeder extends Seeder
             ['name' => 'technician', 'label' => 'Technician'],
             ['name' => 'coordinator', 'label' => 'Coordinator'],
             ['name' => 'customer', 'label' => 'Customer'],
+            ['name' => 'finance', 'label' => 'Finance Staff'],
         ];
 
         foreach ($roles as $roleData) {
@@ -46,7 +47,9 @@ class RoleSeeder extends Seeder
                     'PPPoE Management',
                     'Radius',
                     'Map',
-                    'Network Monitor'
+                    'Network Monitor',
+                    'Profile',
+                    'Notification'
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'technician') {
@@ -64,6 +67,13 @@ class RoleSeeder extends Seeder
                     'odp.view',
                     'odp.edit',
                     'odc.edit',
+                    'leave.view',
+                    'leave.create',
+                    'schedule.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'coordinator') {
@@ -73,8 +83,36 @@ class RoleSeeder extends Seeder
                     'inventory.view',
                     'inventory.pickup',
                     'map.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
                 ])->get();
                 $role->permissions()->sync($permissions);
+            } elseif ($role->name === 'finance') {
+                // Finance Staff permissions
+                // Get all permissions for groups: Finance, Investor Management, Package Management, Profile, Notification
+                $groupPermissions = Permission::whereIn('group', [
+                    'Finance',
+                    'Investor Management',
+                    'Package Management',
+                    'Profile',
+                    'Notification'
+                ])->get();
+
+                $specificPermissions = Permission::whereIn('name', [
+                    'dashboard.view',
+                    'attendance.view', // Optional: if they need to see attendance for payroll
+                    'attendance.report',
+                    'inventory.view',
+                    'inventory.manage',
+                    'inventory.pickup',
+                    'customer.view',
+                    'coordinator.view',
+                    'region.view',
+                ])->get();
+
+                $role->permissions()->sync($groupPermissions->merge($specificPermissions));
             }
         }
     }

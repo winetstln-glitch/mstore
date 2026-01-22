@@ -12,6 +12,14 @@
                         <p class="text-muted small mb-0">Ticket #{{ $ticket->ticket_number }}</p>
                     </div>
                     <div class="btn-group">
+                        @if(Auth::user()->hasRole('admin'))
+                        <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-success text-white btn-sm" onclick="return confirm('{{ __('Send WhatsApp notification to all assigned technicians?') }}')">
+                                <i class="fa-brands fa-whatsapp me-1"></i> {{ __('Notify') }}
+                            </button>
+                        </form>
+                        @endif
                         @can('ticket.edit')
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-warning text-white btn-sm">
                             <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit') }}

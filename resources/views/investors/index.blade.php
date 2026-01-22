@@ -6,7 +6,18 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ __('Investors') }}</h2>
-        <a href="{{ route('investors.create') }}" class="btn btn-primary">{{ __('Add Investor') }}</a>
+        <div class="d-flex gap-2">
+            <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center">
+                <input type="month" name="month" class="form-control me-2" value="{{ request('month') }}" onchange="this.form.submit()">
+            </form>
+            <a href="{{ route('investors.export.excel', ['month' => request('month')]) }}" class="btn btn-success">
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
+            </a>
+            <a href="{{ route('investors.export.pdf', ['month' => request('month')]) }}" class="btn btn-danger">
+                <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Export PDF') }}
+            </a>
+            <a href="{{ route('investors.create') }}" class="btn btn-primary">{{ __('Add Investor') }}</a>
+        </div>
     </div>
 
     @if (session('success'))

@@ -520,6 +520,68 @@ class TicketWebController extends Controller implements HasMiddleware
     }
 
     /**
+     * Manually send WhatsApp notification to assigned technicians.
+     */
+    public function sendNotification(Ticket $ticket, \App\Services\WhatsAppService $whatsappService)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        if ($ticket->technicians->isEmpty()) {
+            return back()->with('error', __('No technicians assigned to this ticket.'));
+        }
+
+        $successCount = 0;
+        $failCount = 0;
+        $errors = [];
+
+        $notification = new TicketAssignedNotification($ticket);
+
+        foreach ($ticket->technicians as $technician) {
+            try {
+                // Use notification class to generate message consistency
+                $message = $notification->toWhatsApp($technician);
+
+                if (empty($technician->phone)) {
+                    $failCount++;
+                    $errors[] = "Technician {$technician->name} has no phone number.";
+                    continue;
+                }
+
+                // Send directly via service to get immediate feedback
+                // sendMessage throws exception if config missing or API error
+                $whatsappService->sendMessage($technician->phone, $message, 'ticket_assignment', null);
+                
+                $successCount++;
+
+            } catch (\Exception $e) {
+                $failCount++;
+                // Clean up error message for user display
+                $msg = $e->getMessage();
+                if (str_contains($msg, 'Configuration missing')) {
+                    $msg = 'WhatsApp Configuration Missing (.env)';
+                }
+                $errors[] = $msg;
+                
+                \Log::error("Failed to send manual notification to user {$technician->id}: " . $e->getMessage());
+            }
+        }
+
+        if ($successCount == 0 && $failCount > 0) {
+            return back()->with('error', __('Failed to send notifications. Errors: ') . implode(', ', array_unique($errors)));
+        } elseif ($failCount > 0) {
+            return back()->with('warning', __('Sent to :success technicians, but failed for :fail. Errors: :errors', [
+                'success' => $successCount, 
+                'fail' => $failCount,
+                'errors' => implode(', ', array_unique($errors))
+            ]));
+        }
+
+        return back()->with('success', __('Notification sent to assigned technicians via WhatsApp.'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Ticket $ticket)

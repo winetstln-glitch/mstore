@@ -7,9 +7,21 @@ use App\Models\Region;
 use App\Models\User;
 use App\Models\Router;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class CoordinatorController extends Controller
+class CoordinatorController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:coordinator.view', only: ['index']),
+            new Middleware('permission:coordinator.create', only: ['create', 'store']),
+            new Middleware('permission:coordinator.edit', only: ['edit', 'update']),
+            new Middleware('permission:coordinator.delete', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

@@ -8,9 +8,11 @@
         <div class="card shadow-sm border-0 border-top border-4 border-danger">
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Ticket Management') }}</h5>
+                @if(Auth::user()->hasPermission('ticket.create'))
                 <a href="{{ route('tickets.create') }}" class="btn btn-primary btn-sm">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Create Ticket') }}
                 </a>
+                @endif
             </div>
 
             <div class="card-body">
@@ -116,6 +118,14 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
+                                            @if(Auth::user()->hasRole('admin'))
+                                            <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Send WhatsApp notification to assigned technicians?') }}');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success text-white" title="{{ __('Notify Technicians') }}">
+                                                    <i class="fa-brands fa-whatsapp"></i>
+                                                </button>
+                                            </form>
+                                            @endif
                                             <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>

@@ -11,8 +11,18 @@ use Illuminate\Support\Facades\Storage;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
 
-class TechnicianAttendanceController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class TechnicianAttendanceController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:attendance.view', only: ['index', 'exportPdf']),
+        ];
+    }
+
     /**
      * Display a listing of the resource (Admin Rekap).
      */
@@ -29,7 +39,7 @@ class TechnicianAttendanceController extends Controller
                   ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -56,7 +66,7 @@ class TechnicianAttendanceController extends Controller
             $q->whereIn('name', ['technician', 'admin']);
         });
 
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -78,7 +88,9 @@ class TechnicianAttendanceController extends Controller
                   ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if ($request->filled('user_id')) {
+        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
+            $query->where('user_id', Auth::id());
+        } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 
@@ -291,6 +303,30 @@ class TechnicianAttendanceController extends Controller
         return back()->with('success', __('Salary expense of :amount has been recorded in Finance.', ['amount' => number_format($totalAmount, 0, ',', '.')]));
     }
 
+    public function sendNotification(TechnicianAttendance $attendance)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $user = $attendance->user;
+        if (!$user || !$user->phone) {
+            return back()->with('error', __('User does not have a phone number.'));
+        }
+
+        $clockIn = $attendance->clock_in->format('H:i');
+        $clockOut = $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-';
+        $status = ucfirst($attendance->status);
+        $date = $attendance->clock_in->translatedFormat('d F Y');
+
+        $message = "Halo {$user->name},\n\nBerikut detail absensi Anda:\n📅 Tanggal: {$date}\n⏰ Masuk: {$clockIn}\n⏰ Pulang: {$clockOut}\n📊 Status: {$status}\n\nTerima kasih.";
+
+        $wa = new WhatsAppService();
+        $wa->sendMessage($user->phone, $message, 'attendance_notification');
+
+        return back()->with('success', __('Notification sent via WhatsApp.'));
+    }
+
     public function storeManual(Request $request)
     {
         if (!Auth::user()->hasRole('admin')) {
@@ -337,8 +373,9 @@ class TechnicianAttendanceController extends Controller
         $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
+        $faceVerificationEnabled = Setting::getValue('attendance_face_verification', '0');
 
-        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
+        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled'));
     }
 
     /**

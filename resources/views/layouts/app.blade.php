@@ -371,7 +371,7 @@
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('customer.edit'))
+            @if(Auth::user()->hasPermission('package.view'))
             <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-box-open"></i> {{ __('Packages') }}
             </a>
@@ -439,9 +439,11 @@
             </a>
             @endif
 
+            @if(Auth::user()->hasPermission('calculator.view'))
             <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ request()->routeIs('calculator.pon') ? 'active' : '' }}">
                 <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
             </a>
+            @endif
 
             {{-- Installations removed as per request --}}
             {{-- @if(Auth::user()->hasPermission('installation.view'))
@@ -490,28 +492,42 @@
             </div>
             @endif
             
-            @if(Auth::user()->hasPermission('setting.view'))
-            <a class="sidebar-item {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#coordinatorCollapse" role="button" aria-expanded="{{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'true' : 'false' }}" aria-controls="coordinatorCollapse">
+            @if(
+                Auth::user()->hasPermission('coordinator.view') ||
+                Auth::user()->hasPermission('investor.view') ||
+                Auth::user()->hasPermission('region.view')
+            )
+            <a class="sidebar-item {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*') || request()->routeIs('investors.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#coordinatorCollapse" role="button" aria-expanded="{{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*') || request()->routeIs('investors.*')) ? 'true' : 'false' }}" aria-controls="coordinatorCollapse">
                 <i class="fa-solid fa-user-tie"></i> {{ __('Coordinators') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*')) ? 'show' : '' }}" id="coordinatorCollapse">
+            <div class="collapse {{ (request()->routeIs('coordinators.*') || request()->routeIs('regions.*') || request()->routeIs('investors.*')) ? 'show' : '' }}" id="coordinatorCollapse">
                 <div class="bg-light ps-3">
+                    @if(Auth::user()->hasPermission('coordinator.view'))
                     <a href="{{ route('coordinators.index') }}" class="sidebar-item {{ request()->routeIs('coordinators.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-user-tie"></i> {{ __('Manage Coordinators') }}
                     </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('investor.view'))
                     <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-money-bill-trend-up"></i> {{ __('Investors') }}
                     </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('region.view'))
                     <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-map"></i> {{ __('Regions') }}
                     </a>
+                    @endif
                 </div>
             </div>
             @endif
             
+            @if(Auth::user()->hasPermission('inventory.view'))
             <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-boxes-stacked"></i> {{ __('Inventory') }}
             </a>
+            @endif
 
             @if(
                 Auth::user()->hasPermission('finance.view') ||
@@ -537,6 +553,9 @@
             <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
                 <i class="fa-brands fa-telegram"></i> {{ __('Telegram') }}
             </a>
+            <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
+                <i class="fa-brands fa-whatsapp"></i> {{ __('WhatsApp') }}
+            </a>
             @endif
 
             @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view') || Auth::user()->hasPermission('role.view'))
@@ -551,7 +570,7 @@
                     </a>
                     @endif
                     
-                    @if(Auth::user()->hasPermission('setting.view'))
+                    @if(Auth::user()->hasPermission('apikey.view'))
                     <a href="{{ route('apikeys.index') }}" class="sidebar-item {{ request()->routeIs('apikeys.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-key"></i> {{ __('API Key Management') }}
                     </a>
@@ -649,7 +668,9 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
                         <li><span class="dropdown-header text-uppercase small">{{ __('Account') }}</span></li>
+                        @if(Auth::user()->hasPermission('profile.view'))
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profile') }}</a></li>
+                        @endif
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">

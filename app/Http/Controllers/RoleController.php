@@ -84,16 +84,10 @@ class RoleController extends Controller implements HasMiddleware
         ]);
 
         // Don't update name for admin role to prevent system lockout
-        if ($role->name !== 'admin') {
-            $role->update([
-                'name' => Str::slug($validated['label']),
-                'label' => $validated['label'],
-            ]);
-        } else {
-            $role->update([
-                'label' => $validated['label'],
-            ]);
-        }
+        // For all roles, we only update the label, not the internal name (slug) to maintain consistency
+        $role->update([
+            'label' => $validated['label'],
+        ]);
 
         if (isset($validated['permissions'])) {
             $role->permissions()->sync($validated['permissions']);

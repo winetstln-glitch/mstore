@@ -94,14 +94,32 @@ class PermissionSeeder extends Seeder
 
             // Map
             ['name' => 'map.view', 'label' => 'View Map', 'group' => 'Map'],
+            ['name' => 'map.manage', 'label' => 'Manage Map', 'group' => 'Map'],
+
+            // Leave Management
+            ['name' => 'leave.view', 'label' => 'View Leave Requests', 'group' => 'Leave Management'],
+            ['name' => 'leave.create', 'label' => 'Create Leave Request', 'group' => 'Leave Management'],
+            ['name' => 'leave.manage', 'label' => 'Manage Leave Requests', 'group' => 'Leave Management'],
+
+            // Schedule Management
+            ['name' => 'schedule.view', 'label' => 'View Schedules', 'group' => 'Schedule Management'],
+            ['name' => 'schedule.manage', 'label' => 'Manage Schedules', 'group' => 'Schedule Management'],
 
             // Settings
             ['name' => 'setting.view', 'label' => 'View Settings', 'group' => 'Settings'],
             ['name' => 'setting.update', 'label' => 'Update Settings', 'group' => 'Settings'],
 
+            // API Keys
+            ['name' => 'apikey.view', 'label' => 'View API Keys', 'group' => 'Settings'],
+            ['name' => 'apikey.manage', 'label' => 'Manage API Keys', 'group' => 'Settings'],
+
             // WhatsApp
             ['name' => 'chat.view', 'label' => 'View WhatsApp', 'group' => 'WhatsApp'],
             ['name' => 'chat.manage', 'label' => 'Manage WhatsApp', 'group' => 'WhatsApp'],
+
+            // Telegram
+            ['name' => 'telegram.view', 'label' => 'View Telegram', 'group' => 'Telegram'],
+            ['name' => 'telegram.manage', 'label' => 'Manage Telegram', 'group' => 'Telegram'],
 
             // GenieACS
             ['name' => 'genieacs.view', 'label' => 'View GenieACS', 'group' => 'Network Monitor'],
@@ -115,6 +133,41 @@ class PermissionSeeder extends Seeder
             ['name' => 'inventory.view', 'label' => 'View Inventory', 'group' => 'Inventory'],
             ['name' => 'inventory.manage', 'label' => 'Manage Inventory', 'group' => 'Inventory'],
             ['name' => 'inventory.pickup', 'label' => 'Pickup Inventory', 'group' => 'Inventory'],
+
+            // Coordinator Management
+            ['name' => 'coordinator.view', 'label' => 'View Coordinators', 'group' => 'Coordinator Management'],
+            ['name' => 'coordinator.create', 'label' => 'Create Coordinator', 'group' => 'Coordinator Management'],
+            ['name' => 'coordinator.edit', 'label' => 'Edit Coordinator', 'group' => 'Coordinator Management'],
+            ['name' => 'coordinator.delete', 'label' => 'Delete Coordinator', 'group' => 'Coordinator Management'],
+
+            // Investor Management
+            ['name' => 'investor.view', 'label' => 'View Investors', 'group' => 'Investor Management'],
+            ['name' => 'investor.create', 'label' => 'Create Investor', 'group' => 'Investor Management'],
+            ['name' => 'investor.edit', 'label' => 'Edit Investor', 'group' => 'Investor Management'],
+            ['name' => 'investor.delete', 'label' => 'Delete Investor', 'group' => 'Investor Management'],
+
+            // Region Management
+            ['name' => 'region.view', 'label' => 'View Regions', 'group' => 'Region Management'],
+            ['name' => 'region.create', 'label' => 'Create Region', 'group' => 'Region Management'],
+            ['name' => 'region.edit', 'label' => 'Edit Region', 'group' => 'Region Management'],
+            ['name' => 'region.delete', 'label' => 'Delete Region', 'group' => 'Region Management'],
+
+            // Package Management
+            ['name' => 'package.view', 'label' => 'View Packages', 'group' => 'Package Management'],
+            ['name' => 'package.create', 'label' => 'Create Package', 'group' => 'Package Management'],
+            ['name' => 'package.edit', 'label' => 'Edit Package', 'group' => 'Package Management'],
+            ['name' => 'package.delete', 'label' => 'Delete Package', 'group' => 'Package Management'],
+
+            // Tools
+            ['name' => 'calculator.view', 'label' => 'View Calculator PON', 'group' => 'Tools'],
+
+            // Profile
+            ['name' => 'profile.view', 'label' => 'View Profile', 'group' => 'Profile'],
+            ['name' => 'profile.update', 'label' => 'Update Profile', 'group' => 'Profile'],
+
+            // Notification
+            ['name' => 'notification.view', 'label' => 'View Notifications', 'group' => 'Notification'],
+            ['name' => 'notification.manage', 'label' => 'Manage Notifications', 'group' => 'Notification'],
         ];
 
         $permissionNames = collect($permissions)->pluck('name')->toArray();

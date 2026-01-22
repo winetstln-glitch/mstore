@@ -12,8 +12,10 @@ class PackageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:customer.view', only: ['index']),
-            new Middleware('permission:customer.edit', only: ['create', 'store', 'edit', 'update', 'destroy']),
+            new Middleware('permission:package.view', only: ['index']),
+            new Middleware('permission:package.create', only: ['create', 'store']),
+            new Middleware('permission:package.edit', only: ['edit', 'update']),
+            new Middleware('permission:package.delete', only: ['destroy']),
         ];
     }
 
