@@ -12,6 +12,11 @@ class InventoryItem extends Model
 
     protected $fillable = [
         'name',
+        'category',
+        'type_group',
+        'type',
+        'brand',
+        'model',
         'description',
         'unit',
         'stock',
@@ -21,5 +26,10 @@ class InventoryItem extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
     }
 }

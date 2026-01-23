@@ -528,8 +528,28 @@
             @endif
             
             @if(Auth::user()->hasPermission('inventory.view'))
-            <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-boxes-stacked"></i> {{ __('Inventory') }}
+            <div class="sidebar-header">
+                {{ __('Inventory Management') }}
+            </div>
+            
+            <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="sidebar-item {{ request('type_group') == 'material' ? 'active' : '' }}">
+                <i class="fa-solid fa-server"></i> {{ __('Materials & Devices') }}
+            </a>
+            
+            <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="sidebar-item {{ request('type_group') == 'tool' ? 'active' : '' }}">
+                <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Tools & Assets') }}
+            </a>
+
+            @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+            <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') && !request()->has('type_group') ? 'active' : '' }}">
+                <i class="fa-solid fa-list"></i> {{ __('All Inventory Items') }}
+            </a>
+            @endif
+            @endif
+
+            @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin'))
+            <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
+                <i class="fa-solid fa-toolbox"></i> {{ __('My Assets & Tools') }}
             </a>
             @endif
 
@@ -667,7 +687,7 @@
                 <!-- Profile Dropdown -->
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=3f6ad8&color=fff" alt="Avatar" width="32" height="32" class="rounded-circle me-2">
+                        <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'User') . '&background=3f6ad8&color=fff' }}" alt="Avatar" width="32" height="32" class="rounded-circle me-2" style="object-fit: cover;">
                         <span class="d-none d-md-inline text-body-emphasis fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">

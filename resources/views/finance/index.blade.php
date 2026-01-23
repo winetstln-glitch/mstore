@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Finance Dashboard') }}</h1>
         <div class="d-flex flex-wrap gap-2">
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <a href="{{ route('finance.manager_report') }}" class="btn btn-warning">
                 <i class="fa-solid fa-user-tie me-1"></i> {{ __('Neraca Awal') }}
             </a>
@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    @if(Auth::user()->hasRole('admin'))
+    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
         <div class="row">
             <!-- Total Income -->
             <div class="col-xl-3 col-md-6 mb-4">
@@ -277,7 +277,7 @@
         @endif
     @endif
 
-    @if(Auth::user()->hasRole('admin'))
+    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Bagi Hasil Investor per Koordinator') }}</h6>
@@ -367,7 +367,7 @@
     </div>
     @endif
 
-    @if(Auth::user()->hasRole('admin'))
+    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                 <div class="d-flex align-items-center">

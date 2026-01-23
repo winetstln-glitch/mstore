@@ -156,6 +156,10 @@ Route::middleware('auth')->group(function () {
 
 
     // Inventory
+    Route::get('/inventory/export/pdf', [\App\Http\Controllers\InventoryController::class, 'exportPdf'])->name('inventory.export.pdf');
+    Route::get('/inventory/export/excel', [\App\Http\Controllers\InventoryController::class, 'exportExcel'])->name('inventory.export.excel');
+    Route::get('/inventory/import/template', [\App\Http\Controllers\InventoryController::class, 'downloadTemplate'])->name('inventory.import.template');
+    Route::post('/inventory/import', [\App\Http\Controllers\InventoryController::class, 'importExcel'])->name('inventory.import');
     Route::get('/inventory', [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index');
     Route::post('/inventory/item', [\App\Http\Controllers\InventoryController::class, 'storeItem'])->name('inventory.store');
     Route::put('/inventory/item/{item}', [\App\Http\Controllers\InventoryController::class, 'updateItem'])->name('inventory.update');
@@ -164,6 +168,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/pickup', [\App\Http\Controllers\InventoryController::class, 'storePickup'])->name('inventory.store-pickup');
     Route::put('/inventory/pickup/{transaction}', [\App\Http\Controllers\InventoryController::class, 'updatePickup'])->name('inventory.pickup.update');
     Route::delete('/inventory/pickup/{transaction}', [\App\Http\Controllers\InventoryController::class, 'destroyPickup'])->name('inventory.pickup.destroy');
+
+    // Inventory Assets
+    Route::get('/my-assets', [\App\Http\Controllers\AssetController::class, 'myAssets'])->name('inventory.my_assets');
+    Route::get('/inventory/item/{item}/assets', [\App\Http\Controllers\AssetController::class, 'index'])->name('inventory.assets.index');
+    Route::post('/inventory/item/{item}/assets', [\App\Http\Controllers\AssetController::class, 'store'])->name('inventory.assets.store');
+    Route::put('/inventory/assets/{asset}', [\App\Http\Controllers\AssetController::class, 'update'])->name('inventory.assets.update');
+    Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
+    Route::delete('/inventory/assets/{asset}', [\App\Http\Controllers\AssetController::class, 'destroy'])->name('inventory.assets.destroy');
+    Route::get('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'assign'])->name('inventory.assets.assign'); // GET for form
+    Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
+    Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
     // GenieACS / Network Monitor Routes
     Route::prefix('genieacs')->name('genieacs.')->group(function () {

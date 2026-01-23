@@ -74,6 +74,7 @@ class RoleSeeder extends Seeder
                     'profile.update',
                     'notification.view',
                     'notification.manage',
+                    'inventory.view', // Added Inventory View
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'coordinator') {
@@ -87,32 +88,64 @@ class RoleSeeder extends Seeder
                     'profile.update',
                     'notification.view',
                     'notification.manage',
+                    'finance.view',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'finance') {
                 // Finance Staff permissions
-                // Get all permissions for groups: Finance, Investor Management, Package Management, Profile, Notification
-                $groupPermissions = Permission::whereIn('group', [
+                // Grant access to all major operational modules for visibility (Audit/Reporting)
+                // and full management for Finance-specific modules.
+                
+                // 1. Full Management Access
+                $manageGroups = [
                     'Finance',
                     'Investor Management',
-                    'Package Management',
+                    'Package Management', 
+                    'Inventory',
                     'Profile',
                     'Notification'
-                ])->get();
+                ];
+                $managePermissions = Permission::whereIn('group', $manageGroups)->get();
 
-                $specificPermissions = Permission::whereIn('name', [
+                // 2. View Only Access (for Menu visibility and Audit)
+                $viewPermissionNames = [
+                    // Core
                     'dashboard.view',
-                    'attendance.view', // Optional: if they need to see attendance for payroll
-                    'attendance.report',
-                    'inventory.view',
-                    'inventory.manage',
-                    'inventory.pickup',
+                    
+                    // Operations
                     'customer.view',
+                    'ticket.view',
+                    'installation.view',
+                    'technician.view',
                     'coordinator.view',
                     'region.view',
-                ])->get();
+                    
+                    // HR / Payroll
+                    'attendance.view',
+                    'attendance.report',
+                    'leave.view',
+                    'schedule.view',
+                    
+                    // Network Assets (for Asset Tracking/Audit)
+                    'map.view',
+                    'olt.view',
+                    'odc.view',
+                    'odp.view',
+                    'htb.view',
+                    'router.view',
+                    'genieacs.view',
+                    
+                    // Communications & Tools
+                    'chat.view',     // WhatsApp
+                    'telegram.view', // Telegram
+                    'calculator.view',
+                    
+                    // Settings (View only)
+                    'setting.view',
+                ];
+                $viewPermissions = Permission::whereIn('name', $viewPermissionNames)->get();
 
-                $role->permissions()->sync($groupPermissions->merge($specificPermissions));
+                $role->permissions()->sync($managePermissions->merge($viewPermissions));
             }
         }
     }

@@ -38,19 +38,66 @@ class ProfileController extends Controller implements HasMiddleware
     {
         $user = Auth::user();
 
-        $validated = $request->validate([
+        // Check if we have a base64 avatar
+        $hasBase64 = $request->filled('avatar_base64');
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'avatar' => ['nullable', 'image', 'max:2048'],
-        ]);
+            'avatar_base64' => ['nullable', 'string'],
+        ];
 
-        if ($request->hasFile('avatar')) {
+        // Only apply image validation if NO base64 provided AND a file IS uploaded
+        if (!$hasBase64 && $request->hasFile('avatar')) {
+            $rules['avatar'] = ['nullable', 'image', 'max:2048'];
+        } else {
+            $rules['avatar'] = ['nullable']; // Allow empty/string if base64 is present
+        }
+
+        $validated = $request->validate($rules);
+
+        // Handle Base64 Upload (from Cropper)
+        if ($request->filled('avatar_base64')) {
+            // Delete old avatar if exists
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $base64_image = $request->input('avatar_base64');
+            
+            // Extract the base64 data (remove "data:image/jpeg;base64," part)
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $type)) {
+                $base64_image = substr($base64_image, strpos($base64_image, ',') + 1);
+                $type = strtolower($type[1]); // jpg, png, gif
+
+                if (!in_array($type, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    return back()->withErrors(['avatar' => 'Invalid image type.']);
+                }
+
+                $base64_image = base64_decode($base64_image);
+
+                if ($base64_image === false) {
+                     return back()->withErrors(['avatar' => 'Base64 decode failed.']);
+                }
+
+                $filename = 'avatars/' . uniqid() . '.' . $type;
+                Storage::disk('public')->put($filename, $base64_image);
+                
+                $validated['avatar'] = $filename;
+                // Remove avatar_base64 from validated array as it's not a column
+                unset($validated['avatar_base64']);
+            }
+        } 
+        // Handle Standard File Upload (Fallback)
+        elseif ($request->hasFile('avatar')) {
             // Delete old avatar if exists
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
             $path = $request->file('avatar')->store('avatars', 'public');
             $validated['avatar'] = $path;
+        } else {
+             unset($validated['avatar_base64']);
         }
 
         $user->update($validated);

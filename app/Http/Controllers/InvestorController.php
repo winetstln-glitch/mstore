@@ -211,7 +211,7 @@ class InvestorController extends Controller implements HasMiddleware
         $investors = $query->latest()->get();
 
         $pdf = Pdf::loadView('investors.pdf', compact('investors', 'month'));
-        return $pdf->download('investors' . ($month ? '_' . $month : '') . '.pdf');
+        return $pdf->stream('investors' . ($month ? '_' . $month : '') . '.pdf', ['Attachment' => false]);
     }
 
     public function exportExcel(Request $request)

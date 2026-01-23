@@ -81,7 +81,7 @@ class FinanceController extends Controller implements HasMiddleware
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.income_breakdown_pdf', compact('incomeBreakdowns', 'coordRate', 'ispRate', 'toolRate', 'investorCashRate', 'managerRate'));
         $pdf->setPaper('a4', 'landscape');
         
-        return $pdf->download('income_breakdown.pdf');
+        return $pdf->stream('income_breakdown.pdf', ['Attachment' => false]);
     }
 
     public function downloadInvestorSharePdf(Request $request)
@@ -182,7 +182,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.investor_share_pdf', compact('coordinatorSummaries', 'investorDetailsByCoordinator'));
         
-        return $pdf->download('investor_share_per_coordinator.pdf');
+        return $pdf->stream('investor_share_per_coordinator.pdf', ['Attachment' => false]);
     }
 
     public function coordinatorDetail(Coordinator $coordinator, Request $request)
@@ -318,7 +318,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function update(Request $request, Transaction $transaction)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -905,7 +905,7 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         $investorDetailsByCoordinator = [];
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $investorRows = DB::table('transactions')
                 ->join('investors', 'transactions.investor_id', '=', 'investors.id')
                 ->select(
@@ -939,7 +939,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         // Fetch Income Breakdown Details for Admin Dashboard
         $incomeBreakdowns = [];
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $recentIncomes = Transaction::where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
                 ->with('coordinator')
@@ -1359,7 +1359,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadManagerReportExcel(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -1532,7 +1532,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadProfitLossPdf(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 

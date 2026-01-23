@@ -5,9 +5,40 @@
     <div class="row justify-content-center">
         <div class="col-lg-12">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <h1 class="h3 mb-0 text-gray-800">{{ __('Inventory Management') }}</h1>
-                <div>
+                <h1 class="h3 mb-0 text-gray-800">
+                    @if(request('type_group') == 'tool')
+                        {{ __('Tools & Assets Inventory') }}
+                    @elseif(request('type_group') == 'material')
+                        {{ __('Materials & Devices Inventory') }}
+                    @else
+                        {{ __('Inventory Management') }}
+                    @endif
+                </h1>
+                <div class="d-flex gap-2">
                     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+                    <div class="dropdown me-2">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-filter me-1"></i> {{ request('category') ? ucfirst(request('category')) : __('All Categories') }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}">{{ __('All Categories') }}</a></li>
+                            @foreach($categories as $cat)
+                                <li><a class="dropdown-item" href="{{ route('inventory.index', ['category' => $cat, 'type_group' => request('type_group')]) }}">{{ ucfirst($cat) }}</a></li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-file-export me-1"></i> {{ __('Export/Import') }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ route('inventory.export.excel') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Export Excel') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ route('inventory.export.pdf') }}" target="_blank"><i class="fa-solid fa-file-pdf me-2 text-danger"></i> {{ __('Export PDF') }}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal"><i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Import Excel') }}</a></li>
+                        </ul>
+                    </div>
                     <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
                         <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-md-inline">{{ __('Add New Item') }}</span>
                     </button>
@@ -91,6 +122,67 @@
             </div>
             @endif
 
+            <!-- My Assigned Assets (For Technicians/Coordinators) -->
+            @if(isset($myAssets) && $myAssets->count() > 0)
+            <div class="card shadow-sm border-0 mb-4 border-left-info">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assigned Assets / Tools') }}</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 py-3">{{ __('Asset Name') }}</th>
+                                    <th>{{ __('Serial Number') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th>{{ __('Condition') }}</th>
+                                    <th>{{ __('Assignment Note') }}</th>
+                                    <th class="text-end pe-4">{{ __('Action') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($myAssets as $asset)
+                                    <tr>
+                                        <td class="ps-4 fw-bold">
+                                            {{ $asset->item->name }}
+                                            <div class="small text-muted">{{ $asset->asset_code }}</div>
+                                        </td>
+                                        <td>{{ $asset->serial_number }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ __('Deployed (To You)') }}</span>
+                                        </td>
+                                        <td>
+                                            @if($asset->condition == 'good')
+                                                <span class="badge bg-success">{{ __('Good') }}</span>
+                                            @else
+                                                <span class="badge bg-danger">{{ __('Damaged') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(isset($asset->meta_data['assignment_note']))
+                                                <i class="fa-solid fa-quote-left text-muted me-1"></i> {{ $asset->meta_data['assignment_note'] }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Items List -->
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <div class="card shadow-sm border-0 mb-4">
@@ -103,7 +195,8 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Name') }}</th>
-                                    <th class="py-3">{{ __('Description') }}</th>
+                                    <th class="py-3">{{ __('Category') }}</th>
+                                    <th class="py-3">{{ __('Brand/Model') }}</th>
                                     <th class="py-3">{{ __('Stock') }}</th>
                                     <th class="py-3">{{ __('Unit') }}</th>
                                     <th class="pe-4 py-3 text-end" style="width: 150px;">{{ __('Actions') }}</th>
@@ -112,8 +205,22 @@
                             <tbody>
                                 @forelse($items as $item)
                                     <tr>
-                                        <td class="ps-4 fw-medium">{{ $item->name }}</td>
-                                        <td>{{ $item->description ?: '-' }}</td>
+                                        <td class="ps-4 fw-medium">
+                                            {{ $item->name }}
+                                            <div class="small text-muted">{{ Str::limit($item->description, 30) ?: '-' }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ ucfirst($item->category) }}</span>
+                                            @if($item->type)
+                                                <div class="small text-muted">{{ ucfirst($item->type) }}</div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            {{ $item->brand ?: '-' }}
+                                            @if($item->model)
+                                                <div class="small text-muted">{{ $item->model }}</div>
+                                            @endif
+                                        </td>
                                         <td>
                                             <span class="badge {{ $item->stock > 10 ? 'bg-success' : 'bg-danger' }} rounded-pill">
                                                 {{ $item->stock }}
@@ -121,11 +228,18 @@
                                         </td>
                                         <td>{{ $item->unit }}</td>
                                         <td class="pe-4 text-end">
+                                            <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info me-1" title="{{ __('Manage Assets') }}">
+                                                <i class="fa-solid fa-barcode"></i>
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-primary me-1" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#editItemModal"
                                                 data-id="{{ $item->id }}"
                                                 data-name="{{ $item->name }}"
+                                                data-category="{{ $item->category }}"
+                                                data-type="{{ $item->type }}"
+                                                data-brand="{{ $item->brand }}"
+                                                data-model="{{ $item->model }}"
                                                 data-unit="{{ $item->unit }}"
                                                 data-stock="{{ $item->stock }}"
                                                 data-price="{{ $item->price }}"
@@ -254,6 +368,42 @@
                         <input type="text" name="name" class="form-control" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">{{ __('Type Group') }}</label>
+                        <select name="type_group" class="form-select" required>
+                            <option value="material" {{ request('type_group') == 'material' ? 'selected' : '' }}>{{ __('Material / Device (Consumable)') }}</option>
+                            <option value="tool" {{ request('type_group') == 'tool' ? 'selected' : '' }}>{{ __('Tool / Asset (Returnable)') }}</option>
+                        </select>
+                        <div class="form-text small text-muted">
+                            {{ __('Select "Material" for consumables/devices given to customers. Select "Tool" for equipment used by technicians.') }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Category') }}</label>
+                            <select name="category" class="form-select" required>
+                                <option value="device">Device (Perangkat Aktif)</option>
+                                <option value="fiber">Fiber (Material Pasif)</option>
+                                <option value="tool">Tool (Alat Kerja)</option>
+                                <option value="vehicle">Vehicle (Kendaraan)</option>
+                                <option value="general">General (Umum)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Type') }}</label>
+                            <input type="text" name="type" class="form-control" placeholder="e.g. Router, Cable">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Brand') }}</label>
+                            <input type="text" name="brand" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Model') }}</label>
+                            <input type="text" name="model" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">{{ __('Unit') }}</label>
                         <input type="text" name="unit" class="form-control" placeholder="e.g. pcs, meter, roll" required>
                     </div>
@@ -293,6 +443,39 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('Item Name') }}</label>
                         <input type="text" name="name" id="editName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Type Group') }}</label>
+                        <select name="type_group" id="editTypeGroup" class="form-select" required>
+                            <option value="material">{{ __('Material / Device (Consumable)') }}</option>
+                            <option value="tool">{{ __('Tool / Asset (Returnable)') }}</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Category') }}</label>
+                            <select name="category" id="editCategory" class="form-select" required>
+                                <option value="device">Device (Perangkat Aktif)</option>
+                                <option value="fiber">Fiber (Material Pasif)</option>
+                                <option value="tool">Tool (Alat Kerja)</option>
+                                <option value="vehicle">Vehicle (Kendaraan)</option>
+                                <option value="general">General (Umum)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Type') }}</label>
+                            <input type="text" name="type" id="editType" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Brand') }}</label>
+                            <input type="text" name="brand" id="editBrand" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Model') }}</label>
+                            <input type="text" name="model" id="editModel" class="form-control">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Unit') }}</label>
@@ -356,6 +539,38 @@
     </div>
 </div>
 
+<!-- Import Item Modal -->
+<div class="modal fade" id="importItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form action="{{ route('inventory.import') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Import Items') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <small>{{ __('Please use the template file to import items.') }}</small>
+                        <br>
+                        <a href="{{ route('inventory.import.template') }}" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="fa-solid fa-download me-1"></i> {{ __('Download Template') }}
+                        </a>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Excel File') }}</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx, .xls" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Import') }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var editItemModal = document.getElementById('editItemModal');
@@ -363,6 +578,11 @@
             var button = event.relatedTarget;
             var action = button.getAttribute('data-action');
             var name = button.getAttribute('data-name');
+            var category = button.getAttribute('data-category');
+            var typeGroup = button.getAttribute('data-type_group');
+            var type = button.getAttribute('data-type');
+            var brand = button.getAttribute('data-brand');
+            var model = button.getAttribute('data-model');
             var unit = button.getAttribute('data-unit');
             var stock = button.getAttribute('data-stock');
             var price = button.getAttribute('data-price');
@@ -372,6 +592,13 @@
             form.action = action;
             
             editItemModal.querySelector('#editName').value = name;
+            editItemModal.querySelector('#editCategory').value = category;
+            if(typeGroup) {
+                editItemModal.querySelector('#editTypeGroup').value = typeGroup;
+            }
+            editItemModal.querySelector('#editType').value = type;
+            editItemModal.querySelector('#editBrand').value = brand;
+            editItemModal.querySelector('#editModel').value = model;
             editItemModal.querySelector('#editUnit').value = unit;
             editItemModal.querySelector('#editStock').value = stock;
             editItemModal.querySelector('#editPrice').value = price;
