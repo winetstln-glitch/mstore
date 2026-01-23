@@ -536,8 +536,17 @@
                 <i class="fa-solid fa-server"></i> {{ __('Materials & Devices') }}
             </a>
             
+            @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+            <div class="sidebar-header">
+                {{ __('Inventory Management') }}
+            </div>
+
             <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="sidebar-item {{ request('type_group') == 'tool' ? 'active' : '' }}">
                 <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Tools & Assets') }}
+            </a>
+
+            <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="sidebar-item {{ request('type_group') == 'material' ? 'active' : '' }}">
+                <i class="fa-solid fa-microchip"></i> {{ __('Devices & Materials') }}
             </a>
 
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
