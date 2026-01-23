@@ -66,6 +66,12 @@ class InventoryController extends Controller implements HasMiddleware
         $query = InventoryTransaction::with(['user', 'item', 'coordinator'])
             ->where('type', 'out');
 
+        if ($request->has('type_group') && $request->type_group != '') {
+            $query->whereHas('item', function($q) use ($request) {
+                $q->where('type_group', $request->type_group);
+            });
+        }
+
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         }

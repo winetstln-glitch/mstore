@@ -296,6 +296,7 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Date') }}</th>
+                                    <th class="py-3">{{ __('Type') }}</th>
                                     <th class="py-3">{{ __('User') }}</th>
                                     <th class="py-3">{{ __('Item') }}</th>
                                     <th class="py-3">{{ __('Quantity') }}</th>
@@ -308,6 +309,13 @@
                                 @forelse($transactions as $transaction)
                                     <tr>
                                         <td class="ps-4">{{ $transaction->created_at->format('d M Y H:i') }}</td>
+                                        <td>
+                                            @if($transaction->item->type_group == 'tool')
+                                                <span class="badge bg-primary"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Tool') }}</span>
+                                            @else
+                                                <span class="badge bg-secondary"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $transaction->user->name }}</td>
                                         <td>{{ $transaction->item->name }}</td>
                                         <td class="fw-bold text-danger">-{{ $transaction->quantity }} {{ $transaction->item->unit }}</td>
