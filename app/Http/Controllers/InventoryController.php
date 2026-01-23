@@ -42,6 +42,9 @@ class InventoryController extends Controller implements HasMiddleware
             $query->where('type_group', $request->type_group);
         }
 
+        // Default sorting: Tools first, then Materials, then by Name
+        $query->orderBy('type_group', 'desc')->orderBy('name', 'asc');
+
         $items = $query->get();
         $categories = InventoryItem::select('category')->distinct()->pluck('category');
 

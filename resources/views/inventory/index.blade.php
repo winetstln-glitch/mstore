@@ -200,7 +200,8 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="ps-4 py-3">{{ __('Name') }}</th>
+                                    <th class="ps-4 py-3">{{ __('Type') }}</th>
+                                    <th class="py-3">{{ __('Name') }}</th>
                                     <th class="py-3">{{ __('Category') }}</th>
                                     <th class="py-3">{{ __('Brand/Model') }}</th>
                                     <th class="py-3">{{ __('Stock') }}</th>
@@ -211,12 +212,19 @@
                             <tbody>
                                 @forelse($items as $item)
                                     <tr>
-                                        <td class="ps-4 fw-medium">
+                                        <td class="ps-4">
+                                            @if($item->type_group == 'tool')
+                                                <span class="badge bg-primary"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Tool') }}</span>
+                                            @else
+                                                <span class="badge bg-secondary"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="fw-medium">
                                             {{ $item->name }}
                                             <div class="small text-muted">{{ Str::limit($item->description, 30) ?: '-' }}</div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">{{ ucfirst($item->category) }}</span>
+                                            <span class="badge bg-light text-dark border">{{ ucfirst($item->category) }}</span>
                                             @if($item->type)
                                                 <div class="small text-muted">{{ ucfirst($item->type) }}</div>
                                             @endif
