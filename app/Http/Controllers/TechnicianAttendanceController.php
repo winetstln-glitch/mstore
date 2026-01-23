@@ -42,7 +42,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                   ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -69,7 +69,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $q->whereIn('name', ['technician', 'admin']);
         });
 
-        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -91,7 +91,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                   ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasPermission('attendance.report') && !Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -140,7 +140,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                   ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);

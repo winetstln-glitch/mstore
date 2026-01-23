@@ -187,6 +187,12 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function coordinatorDetail(Coordinator $coordinator, Request $request)
     {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            if ($coordinator->user_id !== Auth::id()) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
 
@@ -243,6 +249,12 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadCoordinatorPdf(Coordinator $coordinator, Request $request)
     {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            if ($coordinator->user_id !== Auth::id()) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
 

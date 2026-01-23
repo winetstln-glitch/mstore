@@ -16,8 +16,16 @@
                     @csrf
                     
                     <div class="mb-4">
-                        <label for="label" class="form-label fw-bold">{{ __('Role Name (Label)') }}</label>
-                        <input type="text" id="label" name="label" class="form-control" placeholder="{{ __('e.g. Sales Manager') }}" required>
+                        <label for="label_select" class="form-label fw-bold">{{ __('Role Name (Label)') }}</label>
+                        <select id="label_select" class="form-select mb-2">
+                            <option value="">{{ __('Select Role Template') }}</option>
+                            @foreach($standardPermissions as $roleName => $perms)
+                                <option value="{{ $roleName }}">{{ $roleName }}</option>
+                            @endforeach
+                            <option value="Custom">{{ __('Custom / Other') }}</option>
+                        </select>
+                        
+                        <input type="text" id="label" name="label" class="form-control d-none" placeholder="{{ __('Enter Custom Role Name') }}">
                         <div class="form-text">{{ __('System name (slug) will be generated automatically.') }}</div>
                     </div>
 
@@ -70,5 +78,50 @@
             checkbox.checked = source.checked;
         });
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const standardPermissions = @json($standardPermissions);
+        const labelSelect = document.getElementById('label_select');
+        const labelInput = document.getElementById('label');
+
+        if (labelSelect) {
+            labelSelect.addEventListener('change', function() {
+                const selectedRole = this.value;
+                
+                if (selectedRole === 'Custom') {
+                    labelInput.classList.remove('d-none');
+                    labelInput.value = '';
+                    labelInput.focus();
+                    // Optional: Clear permissions? No, maybe they want to start from previous selection.
+                } else {
+                    labelInput.classList.add('d-none');
+                    labelInput.value = selectedRole;
+                    
+                    if (selectedRole && standardPermissions[selectedRole]) {
+                        // Uncheck all first
+                        document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
+                        document.querySelectorAll('.group-checkbox').forEach(cb => cb.checked = false);
+                        
+                        // Check relevant ones
+                        const ids = standardPermissions[selectedRole];
+                        ids.forEach(id => {
+                            const cb = document.getElementById('perm_' + id);
+                            if (cb) cb.checked = true;
+                        });
+                        
+                        // Update group checkboxes
+                        document.querySelectorAll('.permission-group').forEach(group => {
+                            const checkboxes = group.querySelectorAll('.permission-checkbox');
+                            const groupCheckbox = group.querySelector('.group-checkbox');
+                            if (checkboxes.length > 0 && groupCheckbox) {
+                                const allChecked = Array.from(checkboxes).every(c => c.checked);
+                                groupCheckbox.checked = allChecked;
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    });
 </script>
 @endsection

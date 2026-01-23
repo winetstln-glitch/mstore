@@ -17,8 +17,17 @@
                     @method('PUT')
                     
                     <div class="mb-4">
-                        <label for="label" class="form-label fw-bold">{{ __('Role Name (Label)') }}</label>
-                        <input type="text" id="label" name="label" value="{{ old('label', $role->label) }}" class="form-control" required>
+                        <label for="label_select" class="form-label fw-bold">{{ __('Role Name (Label)') }}</label>
+                        <select id="label_select" class="form-select mb-2">
+                            <option value="">{{ __('Select Role Name') }}</option>
+                            @foreach($standardPermissions as $roleName => $perms)
+                                <option value="{{ $roleName }}" {{ $role->label == $roleName ? 'selected' : '' }}>{{ $roleName }}</option>
+                            @endforeach
+                            <option value="Custom" {{ !array_key_exists($role->label, $standardPermissions) ? 'selected' : '' }}>{{ __('Custom / Other') }}</option>
+                        </select>
+                        
+                        <input type="text" id="label" name="label" class="form-control {{ array_key_exists($role->label, $standardPermissions) ? 'd-none' : '' }}" value="{{ $role->label }}">
+
                         @if($role->name === 'admin')
                             <div class="form-text text-warning">{{ __('Note: Admin system name cannot be changed.') }}</div>
                         @endif
@@ -94,6 +103,54 @@
                 groupCheckbox.checked = allChecked;
             }
         });
+
+        // Auto-select permissions based on Role Label
+        const standardPermissions = @json($standardPermissions);
+        const labelSelect = document.getElementById('label_select');
+        const labelInput = document.getElementById('label');
+
+        if (labelSelect) {
+            labelSelect.addEventListener('change', function() {
+                const selectedRole = this.value;
+                
+                if (selectedRole === 'Custom') {
+                    labelInput.classList.remove('d-none');
+                    // Clear value if it was a standard role
+                    if (standardPermissions[labelInput.value]) {
+                        labelInput.value = '';
+                    }
+                    labelInput.focus();
+                } else {
+                    labelInput.classList.add('d-none');
+                    labelInput.value = selectedRole;
+                    
+                    if (selectedRole && standardPermissions[selectedRole]) {
+                        if (confirm("{{ __('Applying this role template will reset current permissions. Continue?') }}")) {
+                            // Uncheck all first
+                            document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
+                            document.querySelectorAll('.group-checkbox').forEach(cb => cb.checked = false);
+                            
+                            // Check relevant ones
+                            const ids = standardPermissions[selectedRole];
+                            ids.forEach(id => {
+                                const cb = document.getElementById('perm_' + id);
+                                if (cb) cb.checked = true;
+                            });
+                            
+                            // Update group checkboxes
+                            document.querySelectorAll('.permission-group').forEach(group => {
+                                const checkboxes = group.querySelectorAll('.permission-checkbox');
+                                const groupCheckbox = group.querySelector('.group-checkbox');
+                                if (checkboxes.length > 0 && groupCheckbox) {
+                                    const allChecked = Array.from(checkboxes).every(c => c.checked);
+                                    groupCheckbox.checked = allChecked;
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        }
     });
 </script>
 @endsection

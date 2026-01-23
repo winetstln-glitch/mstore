@@ -29,14 +29,62 @@ class RoleController extends Controller implements HasMiddleware
         return view('roles.index', compact('roles'));
     }
 
+    private function getStandardPermissions()
+    {
+        $allPermissions = Permission::all();
+        
+        $nocGroups = [
+            'Dashboard', 'Customer Management', 'Ticket Management', 'Router Management', 
+            'OLT Management', 'ODC Management', 'ODP Management', 'HTB Management', 
+            'PPPoE Management', 'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification'
+        ];
+
+        $technicianNames = [
+            'dashboard.view', 'ticket.view', 'ticket.edit', 'installation.view', 'installation.edit',
+            'attendance.view', 'attendance.create', 'attendance.report', 'map.view', 
+            'odp.view', 'odp.edit', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view', 
+            'profile.view', 'profile.update', 'notification.view', 'notification.manage',
+            'inventory.view', 'inventory.pickup'
+        ];
+
+        $coordinatorNames = [
+            'dashboard.view', 'inventory.view', 'inventory.pickup', 'map.view', 
+            'profile.view', 'profile.update', 'notification.view', 'notification.manage', 
+            'finance.view'
+        ];
+        
+        // Finance: Full Management for some, View for others
+        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification'];
+        $financeViewNames = [
+            'dashboard.view', 'customer.view', 'ticket.view', 'installation.view', 
+            'technician.view', 'coordinator.view', 'region.view', 'attendance.view', 
+            'attendance.report', 'leave.view', 'schedule.view', 'map.view', 'olt.view', 
+            'odc.view', 'odp.view', 'htb.view', 'router.view', 'genieacs.view', 
+            'chat.view', 'telegram.view', 'calculator.view', 'setting.view'
+        ];
+
+        return [
+            'Administrator' => $allPermissions->pluck('id')->values()->toArray(),
+            'Network Operations Center' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
+            'Technician' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
+            'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
+            'Finance Staff' => $allPermissions->filter(function($perm) use ($financeManageGroups, $financeViewNames) {
+                return in_array($perm->group, $financeManageGroups) || in_array($perm->name, $financeViewNames);
+            })->pluck('id')->values()->toArray(),
+            'Customer' => [],
+        ];
+    }
+
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
         $permissions = Permission::all()->groupBy('group');
-        return view('roles.create', compact('permissions'));
+        $standardPermissions = $this->getStandardPermissions();
+        return view('roles.create', compact('permissions', 'standardPermissions'));
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -68,8 +116,9 @@ class RoleController extends Controller implements HasMiddleware
     {
         $permissions = Permission::all()->groupBy('group');
         $rolePermissions = $role->permissions->pluck('id')->toArray();
+        $standardPermissions = $this->getStandardPermissions();
         
-        return view('roles.edit', compact('role', 'permissions', 'rolePermissions'));
+        return view('roles.edit', compact('role', 'permissions', 'rolePermissions', 'standardPermissions'));
     }
 
     /**

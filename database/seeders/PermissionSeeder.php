@@ -132,9 +132,9 @@ class PermissionSeeder extends Seeder
             ['name' => 'genieacs_server.delete', 'label' => 'Delete GenieACS Server', 'group' => 'Network Monitor'],
 
             // Inventory
-            ['name' => 'inventory.view', 'label' => 'View Inventory', 'group' => 'Inventory'],
-            ['name' => 'inventory.manage', 'label' => 'Manage Inventory', 'group' => 'Inventory'],
-            ['name' => 'inventory.pickup', 'label' => 'Pickup Inventory', 'group' => 'Inventory'],
+            ['name' => 'inventory.view', 'label' => 'View Inventory', 'group' => 'Inventory (Alat & Material)'],
+            ['name' => 'inventory.manage', 'label' => 'Manage Inventory', 'group' => 'Inventory (Alat & Material)'],
+            ['name' => 'inventory.pickup', 'label' => 'Pickup Inventory', 'group' => 'Inventory (Alat & Material)'],
 
             // Coordinator Management
             ['name' => 'coordinator.view', 'label' => 'View Coordinators', 'group' => 'Coordinator Management'],
@@ -160,8 +160,8 @@ class PermissionSeeder extends Seeder
             ['name' => 'package.edit', 'label' => 'Edit Package', 'group' => 'Package Management'],
             ['name' => 'package.delete', 'label' => 'Delete Package', 'group' => 'Package Management'],
 
-            // Tools
-            ['name' => 'calculator.view', 'label' => 'View Calculator PON', 'group' => 'Tools'],
+            // Tools (Utilities)
+            ['name' => 'calculator.view', 'label' => 'View Calculator PON', 'group' => 'Utilities'],
 
             // Profile
             ['name' => 'profile.view', 'label' => 'View Profile', 'group' => 'Profile'],
