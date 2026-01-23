@@ -94,7 +94,7 @@ class InventoryController extends Controller implements HasMiddleware
 
     public function createPickup()
     {
-        $items = InventoryItem::all();
+        $items = InventoryItem::orderBy('type_group', 'desc')->orderBy('name')->get();
         $coordinators = Coordinator::orderBy('name')->get();
         return view('inventory.pickup', compact('items', 'coordinators'));
     }

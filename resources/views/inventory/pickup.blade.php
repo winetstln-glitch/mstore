@@ -31,10 +31,14 @@
                                             <td>
                                                 <select name="items[0][inventory_item_id]" class="form-select item-select" required>
                                                     <option value="">{{ __('Choose an item...') }}</option>
-                                                    @foreach($items as $item)
-                                                        <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
-                                                            {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
-                                                        </option>
+                                                    @foreach($items->groupBy('type_group') as $group => $groupedItems)
+                                                        <optgroup label="{{ ucfirst($group) }}">
+                                                            @foreach($groupedItems as $item)
+                                                                <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
+                                                                    {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
                                                     @endforeach
                                                 </select>
                                             </td>
