@@ -766,6 +766,14 @@
             text: "{{ session('error') }}",
         });
     @endif
+
+    @if(session('warning'))
+        Swal.fire({
+            icon: 'warning',
+            title: "{{ __('Warning!') }}",
+            text: "{{ session('warning') }}",
+        });
+    @endif
     
     // Sidebar Toggle
     document.getElementById('sidebarToggle').addEventListener('click', function(e) {

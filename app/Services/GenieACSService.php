@@ -267,7 +267,7 @@ class GenieACSService
                 ]);
 
             if ($response->successful()) {
-                return true;
+                return 2; // Immediate Success
             }
             Log::warning("GenieACS Refresh Immediate Failed: " . $response->body());
         } catch (\Exception $e) {
@@ -284,18 +284,18 @@ class GenieACSService
                 ]);
 
             if ($response->successful()) {
-                return true;
+                return 1; // Queued Success
             }
             Log::error("GenieACS Refresh Queue Failed: " . $response->body());
             
             // Check for cURL 52 (Empty Reply) which sometimes happens on success
-            return false;
+            return 0;
         } catch (\Exception $e) {
             Log::error("GenieACS Refresh Queue Error: " . $e->getMessage());
             if (str_contains($e->getMessage(), 'cURL error 52')) {
-                return true;
+                return 1; // Assumed Queued Success
             }
-            return false;
+            return 0;
         }
     }
 

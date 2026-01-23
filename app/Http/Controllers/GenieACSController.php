@@ -212,11 +212,17 @@ class GenieACSController extends Controller implements HasMiddleware
             }
         }
 
-        $success = $this->genieService->refreshObject($id);
-        if ($success) {
-            return back()->with('success', 'Summon (Connection Request) sent to device.');
+        $status = $this->genieService->refreshObject($id);
+
+        if ($status === 2) {
+            // Wait a few seconds to allow GenieACS to update the LastInform timestamp
+            sleep(3);
+            return back()->with('success', __('Device Connected & Refreshed Successfully.'));
+        } elseif ($status === 1) {
+            return back()->with('warning', __('Command Queued. Device appears offline/unreachable. Task will run when device reconnects.'));
         }
-        return back()->with('error', 'Failed to summon device.');
+
+        return back()->with('error', __('Failed to summon device.'));
     }
 
     /**
