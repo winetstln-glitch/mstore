@@ -527,15 +527,6 @@
             </div>
             @endif
             
-            @if(Auth::user()->hasPermission('inventory.view'))
-            <div class="sidebar-header">
-                {{ __('Inventory Management') }}
-            </div>
-            
-            <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="sidebar-item {{ request('type_group') == 'material' ? 'active' : '' }}">
-                <i class="fa-solid fa-server"></i> {{ __('Materials & Devices') }}
-            </a>
-            
             @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <div class="sidebar-header">
                 {{ __('Inventory Management') }}
