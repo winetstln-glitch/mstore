@@ -85,10 +85,10 @@
                             <div class="alert alert-info mt-2">
                                 <small>
                                     <i class="fa-solid fa-circle-info me-1"></i>
-                                    <strong>{{ __('Important Note:') }}</strong><br>
+                                    <strong>{{ __('Catatan Penting:') }}</strong><br>
                                     <ul>
-                                        <li><strong>{{ __('For Technicians (Personal Use):') }}</strong> {{ __('Leave "Coordinator" field BLANK. The tool/asset will be assigned to YOU personally in "My Assigned Assets".') }}</li>
-                                        <li><strong>{{ __('For Coordinators/Stock:') }}</strong> {{ __('Select a Coordinator ONLY if this item is for team stock or project inventory managed by that coordinator.') }}</li>
+                                        <li><strong>{{ __('Untuk Teknisi (Pemakaian Pribadi):') }}</strong> {{ __('Biarkan kolom "Coordinator" KOSONG. Alat/aset akan tercatat sebagai milik ANDA pribadi di menu "My Assigned Assets".') }}</li>
+                                        <li><strong>{{ __('Untuk Koordinator/Stok Tim:') }}</strong> {{ __('Pilih nama Koordinator HANYA jika barang ini untuk stok tim atau inventaris proyek yang dikelola koordinator tersebut.') }}</li>
                                     </ul>
                                 </small>
                             </div>
