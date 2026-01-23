@@ -254,6 +254,7 @@
                                                 data-id="{{ $item->id }}"
                                                 data-name="{{ $item->name }}"
                                                 data-category="{{ $item->category }}"
+                                                data-type_group="{{ $item->type_group }}"
                                                 data-type="{{ $item->type }}"
                                                 data-brand="{{ $item->brand }}"
                                                 data-model="{{ $item->model }}"

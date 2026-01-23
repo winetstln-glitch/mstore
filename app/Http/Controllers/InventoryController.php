@@ -439,10 +439,15 @@ class InventoryController extends Controller implements HasMiddleware
                 $cells = $row->getCells();
                 if (count($cells) < 9) continue;
 
+                $category = $cells[1]->getValue();
+                // Auto-detect type_group based on category if possible
+                $typeGroup = strtolower($category) === 'tool' || strtolower($category) === 'vehicle' ? 'tool' : 'material';
+
                 InventoryItem::updateOrCreate(
                     ['name' => $cells[0]->getValue()],
                     [
-                        'category' => $cells[1]->getValue(),
+                        'category' => $category,
+                        'type_group' => $typeGroup,
                         'type' => $cells[2]->getValue(),
                         'brand' => $cells[3]->getValue(),
                         'model' => $cells[4]->getValue(),
