@@ -82,6 +82,16 @@
                                 @endforeach
                             </select>
                             <div class="form-text">{{ __('Select the coordinator this pickup is associated with (if any).') }}</div>
+                            <div class="alert alert-info mt-2">
+                                <small>
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    <strong>{{ __('Important Note:') }}</strong><br>
+                                    <ul>
+                                        <li><strong>{{ __('For Technicians (Personal Use):') }}</strong> {{ __('Leave "Coordinator" field BLANK. The tool/asset will be assigned to YOU personally in "My Assigned Assets".') }}</li>
+                                        <li><strong>{{ __('For Coordinators/Stock:') }}</strong> {{ __('Select a Coordinator ONLY if this item is for team stock or project inventory managed by that coordinator.') }}</li>
+                                    </ul>
+                                </small>
+                            </div>
                         </div>
 
                         <div class="mb-4">
