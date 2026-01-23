@@ -189,6 +189,8 @@ class InventoryController extends Controller implements HasMiddleware
                                     'condition' => 'good',
                                     'holder_type' => $holderType,
                                     'holder_id' => $holderId,
+                                    'latitude' => $data['latitude'] ?? null,
+                                    'longitude' => $data['longitude'] ?? null,
                                     'purchase_date' => now(),
                                     'meta_data' => ['source_transaction_id' => $inventoryTransaction->id],
                                 ]);

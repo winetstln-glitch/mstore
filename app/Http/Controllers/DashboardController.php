@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asset;
 use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\Installation;
+use App\Models\InventoryItem;
 use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -126,6 +130,52 @@ class DashboardController extends Controller implements HasMiddleware
             ];
         }
 
-        return view('dashboard', compact('stats', 'recentTickets', 'upcomingInstallations', 'ticketRecap', 'todayAttendance'));
+        // Inventory & Assets Data
+        $inventoryItems = InventoryItem::orderBy('stock', 'asc')->take(5)->get();
+        $totalInventoryValue = InventoryItem::sum(DB::raw('stock * price'));
+        
+        $deployedAssets = Asset::with(['item', 'holder'])
+            ->where('status', 'deployed')
+            ->whereIn('holder_type', ['App\Models\User', 'App\Models\Coordinator'])
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // Financial Chart Data
+        $financialData = [
+            'labels' => [],
+            'income' => [],
+            'expense' => []
+        ];
+        
+        // Fetch Income Data (Collection-based grouping for DB compatibility)
+        $incomeData = Transaction::where('type', 'income')
+            ->whereYear('transaction_date', now()->year)
+            ->get()
+            ->groupBy(function($transaction) {
+                return $transaction->transaction_date->format('n'); // Group by month number (1-12)
+            })
+            ->map(function ($transactions) {
+                return $transactions->sum('amount');
+            });
+            
+        // Fetch Expense Data
+        $expenseData = Transaction::where('type', 'expense')
+            ->whereYear('transaction_date', now()->year)
+            ->get()
+            ->groupBy(function($transaction) {
+                return $transaction->transaction_date->format('n'); // Group by month number (1-12)
+            })
+            ->map(function ($transactions) {
+                return $transactions->sum('amount');
+            });
+
+        for ($i = 1; $i <= 12; $i++) {
+            $financialData['labels'][] = \Carbon\Carbon::create(null, $i, 1)->format('F');
+            $financialData['income'][] = $incomeData->get($i, 0);
+            $financialData['expense'][] = $expenseData->get($i, 0);
+        }
+
+        return view('dashboard', compact('stats', 'recentTickets', 'upcomingInstallations', 'ticketRecap', 'todayAttendance', 'inventoryItems', 'totalInventoryValue', 'financialData', 'deployedAssets'));
     }
 }

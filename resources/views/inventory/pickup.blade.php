@@ -14,6 +14,13 @@
                 <div class="card-body">
                     <form action="{{ route('inventory.store-pickup') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+                        <input type="hidden" name="latitude" id="latitude">
+                        <input type="hidden" name="longitude" id="longitude">
+
+                        <div id="location-status" class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="fa-solid fa-location-crosshairs me-2"></i>
+                            <div>{{ __('Mendeteksi lokasi Anda...') }}</div>
+                        </div>
                         
                         <div class="mb-4">
                             <label class="form-label">{{ __('Select Items') }}</label>
@@ -119,6 +126,57 @@
 
 @push('scripts')
 <script>
+    // Geolocation Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const statusDiv = document.getElementById('location-status');
+        const statusText = statusDiv.querySelector('div');
+        const submitBtn = document.querySelector('button[type="submit"]');
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    latInput.value = position.coords.latitude;
+                    lngInput.value = position.coords.longitude;
+                    
+                    statusDiv.classList.remove('alert-warning');
+                    statusDiv.classList.add('alert-success');
+                    statusText.innerHTML = '<strong>{{ __("Lokasi Terkunci:") }}</strong> ' + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6);
+                },
+                function(error) {
+                    let errorMsg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = "{{ __('Izin lokasi ditolak. Mohon aktifkan izin lokasi browser Anda untuk mencatat lokasi pengambilan.') }}";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = "{{ __('Informasi lokasi tidak tersedia.') }}";
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = "{{ __('Waktu permintaan lokasi habis.') }}";
+                            break;
+                        default:
+                            errorMsg = "{{ __('Terjadi kesalahan saat mengambil lokasi.') }}";
+                            break;
+                    }
+                    statusDiv.classList.remove('alert-warning');
+                    statusDiv.classList.add('alert-danger');
+                    statusText.textContent = errorMsg;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            statusDiv.classList.remove('alert-warning');
+            statusDiv.classList.add('alert-danger');
+            statusText.textContent = "{{ __('Browser Anda tidak mendukung Geolocation.') }}";
+        }
+    });
+
     function updateUnit(select) {
         var row = select.closest('.item-row');
         var option = select.options[select.selectedIndex];

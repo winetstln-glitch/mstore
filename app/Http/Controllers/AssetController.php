@@ -71,9 +71,15 @@ class AssetController extends Controller implements HasMiddleware
             'serial_number' => 'nullable|unique:assets,serial_number,' . $asset->id,
             'condition' => 'required|in:good,damaged',
             'status' => 'required|in:in_stock,deployed,maintenance,broken,lost',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
         ]);
 
         $asset->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'asset' => $asset]);
+        }
 
         return redirect()->back()->with('success', __('Asset updated successfully.'));
     }

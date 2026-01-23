@@ -18,6 +18,8 @@ class InventoryTransaction extends Model
         'quantity',
         'proof_image',
         'description',
+        'latitude',
+        'longitude',
     ];
 
     public function user(): BelongsTo

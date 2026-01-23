@@ -3,22 +3,6 @@
 @section('title', __('Dashboard'))
 
 @section('content')
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4 class="mb-0 fw-bold text-body-emphasis">
-                    {{ __('Dashboard Overview') }}
-                    <span class="visually-hidden">Dashboard Overview</span>
-                </h4>
-                <p class="text-body-secondary small mb-0">{{ __('Welcome back, :name!', ['name' => Auth::user()->name]) }}</p>
-            </div>
-            <a href="{{ route('finance.index') }}" class="btn btn-primary shadow-sm">
-                <i class="fa-solid fa-plus me-2"></i> {{ __('New Report') }}
-            </a>
-        </div>
-    </div>
-</div>
 
 @if(Auth::user()->hasPermission('attendance.view'))
 <div class="row mb-4">
@@ -45,7 +29,7 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{{ route('attendance.create') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ route('attendance.create') }}" class="btn btn-primary">
                         @if(!$todayAttendance)
                             <i class="fa-solid fa-sign-in-alt"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
                         @elseif(!$todayAttendance->clock_out)
@@ -132,6 +116,86 @@
                 <div class="small text-success">
                     <i class="fa-solid fa-check me-1"></i>
                     <span>{{ __('Operational') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory & Finance Section -->
+<div class="row g-4 mb-4">
+    <!-- Inventory Summary -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 py-3">
+                <h6 class="mb-0 fw-bold">{{ __('Stok Barang') }}</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-4">
+                    <div class="text-center w-50 border-end">
+                        <h3 class="fw-bold text-primary mb-0">{{ $inventoryItems->count() }}</h3>
+                        <small class="text-muted">{{ __('Items') }}</small>
+                    </div>
+                    <div class="text-center w-50">
+                        <h4 class="fw-bold text-success mb-0">{{ number_format($totalInventoryValue, 0, ',', '.') }}</h4>
+                        <small class="text-muted">{{ __('Total Value') }}</small>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ __('Item') }}</th>
+                                <th class="text-end">{{ __('Stock') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($inventoryItems as $item)
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light rounded p-1 me-2">
+                                            @if($item->type_group == 'tool')
+                                                <i class="fa-solid fa-screwdriver-wrench text-warning"></i>
+                                            @else
+                                                <i class="fa-solid fa-box text-info"></i>
+                                            @endif
+                                        </div>
+                                        <span class="small fw-medium">{{ Str::limit($item->name, 20) }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge {{ $item->stock < 5 ? 'bg-danger' : 'bg-success' }}">{{ $item->stock }}</span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ route('inventory.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('View All Inventory') }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Chart -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Pendapatan & Pengeluaran') }} ({{ date('Y') }})</h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        {{ __('This Year') }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item active" href="#">{{ __('This Year') }}</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="financialChart"></canvas>
                 </div>
             </div>
         </div>
@@ -285,4 +349,135 @@
         </div>
     </div>
 </div>
+
+<!-- Deployed Tools Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3">
+                <h6 class="mb-0 fw-bold">{{ __('Alat yang Dipakai Teknisi & Pengurus') }}</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-body-tertiary">
+                        <tr>
+                            <th class="ps-4">{{ __('Asset Code') }}</th>
+                            <th>{{ __('Item Name') }}</th>
+                            <th>{{ __('Holder') }}</th>
+                            <th>{{ __('Role') }}</th>
+                            <th>{{ __('Status') }}</th>
+                            <th>{{ __('Condition') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($deployedAssets as $asset)
+                        <tr>
+                            <td class="ps-4 font-monospace small">{{ $asset->asset_code }}</td>
+                            <td class="fw-medium">{{ $asset->item->name ?? '-' }}</td>
+                            <td>
+                                @if($asset->holder)
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                            {{ substr($asset->holder->name, 0, 1) }}
+                                        </div>
+                                        <span>{{ $asset->holder->name }}</span>
+                                    </div>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($asset->holder_type == 'App\Models\User')
+                                    <span class="badge bg-info-subtle text-info">{{ __('Technician') }}</span>
+                                @elseif($asset->holder_type == 'App\Models\Coordinator')
+                                    <span class="badge bg-warning-subtle text-warning">{{ __('Coordinator') }}</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ __('Unknown') }}</span>
+                                @endif
+                            </td>
+                            <td><span class="badge bg-success">{{ ucfirst($asset->status) }}</span></td>
+                            <td>{{ ucfirst($asset->condition) }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">{{ __('No tools currently deployed to staff.') }}</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('financialChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($financialData['labels']),
+                datasets: [
+                    {
+                        label: '{{ __("Pendapatan") }}',
+                        data: @json($financialData['income']),
+                        backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                    },
+                    {
+                        label: '{{ __("Pengeluaran") }}',
+                        data: @json($financialData['expense']),
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumSignificantDigits: 3 }).format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+@endpush

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Asset;
 use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Htb;
@@ -110,7 +111,13 @@ class MapController extends Controller implements HasMiddleware
             return $customer;
         });
 
-        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions'));
+        // Fetch Assets (Tools) with location
+        $assets = Asset::with(['item', 'holder'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets'));
     }
 
     /**
@@ -151,6 +158,36 @@ class MapController extends Controller implements HasMiddleware
     public function update(Request $request, string $id)
     {
         //
+    }
+
+    /**
+     * Update the location of a resource.
+     */
+    public function updateLocation(Request $request, $type, $id)
+    {
+        $request->validate([
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
+        ]);
+
+        $model = null;
+        switch ($type) {
+            case 'olt': $model = Olt::find($id); break;
+            case 'odc': $model = Odc::find($id); break;
+            case 'odp': $model = Odp::find($id); break;
+            case 'htb': $model = Htb::find($id); break;
+            case 'customer': $model = Customer::find($id); break;
+            case 'asset': $model = Asset::find($id); break;
+        }
+
+        if ($model) {
+            $model->latitude = $request->latitude;
+            $model->longitude = $request->longitude;
+            $model->save();
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
     }
 
     /**

@@ -15,6 +15,8 @@ class Asset extends Model
         'mac_address',
         'status',
         'condition',
+        'latitude',
+        'longitude',
         'holder_type',
         'holder_id',
         'meta_data',

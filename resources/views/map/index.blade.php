@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Map'))
+@section('title', __('Peta'))
 
 @section('content')
 
@@ -10,29 +10,29 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
-                            <h5 class="card-title d-inline-block me-3">{{ __('Distribution Map') }}</h5>
+                            <h5 class="card-title d-inline-block me-3">{{ __('Peta Distribusi') }}</h5>
                             <button type="button" class="btn-shadow btn btn-primary btn-sm" id="btnAddOltMode">
-                                <i class="fa fa-server me-1"></i> {{ __('Add OLT') }}
+                                <i class="fa fa-server me-1"></i> {{ __('Tambah OLT') }}
                             </button>
                             <button type="button" class="btn-shadow btn btn-warning text-dark btn-sm" id="btnAddOdcMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Add ODC') }}
+                                <i class="fa fa-plus me-1"></i> {{ __('Tambah ODC') }}
                             </button>
                             <button type="button" class="btn-shadow btn btn-success btn-sm" id="btnAddOdpMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Add ODP') }}
+                                <i class="fa fa-plus me-1"></i> {{ __('Tambah ODP') }}
                             </button>
                             <button type="button" class="btn-shadow btn btn-primary btn-sm" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Add HTB') }}
+                                <i class="fa fa-plus me-1"></i> {{ __('Tambah HTB') }}
                             </button>
                             <button type="button" class="btn-shadow btn btn-danger btn-sm d-none" id="btnCancelAdd">
-                                <i class="fa fa-times me-1"></i> {{ __('Cancel Add') }}
+                                <i class="fa fa-times me-1"></i> {{ __('Batal Tambah') }}
                             </button>
                         </div>
                         <div class="d-flex align-items-center gap-2">
 
-                            <button type="button" class="btn-shadow btn btn-info btn-sm" onclick="location.reload()" title="{{ __('Refresh') }}">
+                            <button type="button" class="btn-shadow btn btn-info btn-sm" onclick="location.reload()" title="{{ __('Segarkan') }}">
                                 <i class="fa fa-refresh"></i>
                             </button>
-                            <button type="button" class="btn-shadow btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Fullscreen') }}">
+                            <button type="button" class="btn-shadow btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
                                 <i class="fa fa-expand"></i>
                             </button>
                         </div>
@@ -50,21 +50,21 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="oltModalLabel">{{ __('Place OLT') }}</h5>
+                <h5 class="modal-title" id="oltModalLabel">{{ __('Tempatkan OLT') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>{{ __('Select an OLT to place on the map:') }}</p>
+                <p>{{ __('Pilih OLT untuk ditempatkan di peta:') }}</p>
                 <form id="oltForm">
                     <input type="hidden" id="olt_lat" name="latitude">
                     <input type="hidden" id="olt_lng" name="longitude">
                     <div class="mb-3">
                         <label for="olt_select" class="form-label">OLT</label>
                         <select class="form-select" id="olt_select" name="olt_id" required>
-                            <option value="">Select OLT</option>
+                            <option value="">{{ __('Pilih OLT') }}</option>
                             @foreach($olts as $olt)
                                 <option value="{{ $olt->id }}" data-has-coord="{{ $olt->latitude ? 'true' : 'false' }}">
-                                    {{ $olt->name }} ({{ $olt->host }}) {{ $olt->latitude ? '[Mapped]' : '' }}
+                                    {{ $olt->name }} ({{ $olt->host }}) {{ $olt->latitude ? '[Terkunci]' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -72,8 +72,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary" id="saveOltBtn">{{ __('Place OLT') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                <button type="button" class="btn btn-primary" id="saveOltBtn">{{ __('Tempatkan OLT') }}</button>
             </div>
         </div>
     </div>
@@ -84,19 +84,19 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="odcModalLabel">{{ __('Add ODC') }}</h5>
+                <h5 class="modal-title" id="odcModalLabel">{{ __('Tambah ODC') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="odcForm">
                     <input type="hidden" id="odc_id" name="id">
                     <div class="mb-3">
-                        <label for="odc_name" class="form-label">{{ __('ODC Name') }}</label>
+                        <label for="odc_name" class="form-label">{{ __('Nama ODC') }}</label>
                         <input type="text" class="form-control" id="odc_name" name="name" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odc_pon_port" class="form-label">{{ __('PON Port') }}</label>
+                            <label for="odc_pon_port" class="form-label">{{ __('Port PON') }}</label>
                             <input type="text" class="form-control" id="odc_pon_port" name="pon_port" required placeholder="e.g. 01">
                         </div>
                         <div class="col-md-6 mb-3">
@@ -106,9 +106,9 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odc_color" class="form-label">{{ __('Tube / Fiber Color') }}</label>
+                            <label for="odc_color" class="form-label">{{ __('Warna Tube / Fiber') }}</label>
                             <select class="form-select" id="odc_color" name="color" required>
-                                <option value="">{{ __('Select Color') }}</option>
+                                <option value="">{{ __('Pilih Warna') }}</option>
                                 <option value="BLUE" data-code="B">Blue (Biru)</option>
                                 <option value="ORANGE" data-code="O">Orange (Oranye)</option>
                                 <option value="GREEN" data-code="G">Green (Hijau)</option>
@@ -124,42 +124,42 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="odc_cable_no" class="form-label">{{ __('Cable No') }}</label>
+                            <label for="odc_cable_no" class="form-label">{{ __('No Kabel') }}</label>
                             <input type="text" class="form-control" id="odc_cable_no" name="cable_no" required placeholder="e.g. 01">
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odc_lat" class="form-label">{{ __('Latitude') }}</label>
+                            <label for="odc_lat" class="form-label">{{ __('Lintang') }}</label>
                             <input type="number" step="any" class="form-control" id="odc_lat" name="latitude" required readonly>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="odc_lng" class="form-label">{{ __('Longitude') }}</label>
+                            <label for="odc_lng" class="form-label">{{ __('Bujur') }}</label>
                             <input type="number" step="any" class="form-control" id="odc_lng" name="longitude" required readonly>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="odc_capacity" class="form-label">{{ __('Capacity') }}</label>
+                        <label for="odc_capacity" class="form-label">{{ __('Kapasitas') }}</label>
                         <input type="number" class="form-control" id="odc_capacity" name="capacity" value="48" required>
                     </div>
                     <div class="mb-3">
                         <label for="odc_olt" class="form-label">{{ __('OLT') }}</label>
                         <select class="form-select" id="odc_olt" name="olt_id" required>
-                            <option value="">{{ __('Select OLT') }}</option>
+                            <option value="">{{ __('Pilih OLT') }}</option>
                             @foreach($olts as $olt)
                                 <option value="{{ $olt->id }}">{{ $olt->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="odc_description" class="form-label">{{ __('Description') }}</label>
+                        <label for="odc_description" class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea class="form-control" id="odc_description" name="description"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary" id="saveOdcBtn">{{ __('Save ODC') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                <button type="button" class="btn btn-primary" id="saveOdcBtn">{{ __('Simpan ODC') }}</button>
             </div>
         </div>
     </div>
@@ -170,14 +170,14 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="odpModalLabel">{{ __('Add ODP') }}</h5>
+                <h5 class="modal-title" id="odpModalLabel">{{ __('Tambah ODP') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="odpForm">
                     <input type="hidden" id="odp_id" name="id">
                     <div class="mb-3">
-                        <label for="odp_name" class="form-label">{{ __('ODP Name') }}</label>
+                        <label for="odp_name" class="form-label">{{ __('Nama ODP') }}</label>
                         <input type="text" class="form-control" id="odp_name" name="name" required>
                     </div>
                     <div class="mb-3">
@@ -186,22 +186,22 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="odp_lat" class="form-label">{{ __('Latitude') }}</label>
+                            <label for="odp_lat" class="form-label">{{ __('Lintang') }}</label>
                             <input type="number" step="any" class="form-control" id="odp_lat" name="latitude" required readonly>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="odp_lng" class="form-label">{{ __('Longitude') }}</label>
+                            <label for="odp_lng" class="form-label">{{ __('Bujur') }}</label>
                             <input type="number" step="any" class="form-control" id="odp_lng" name="longitude" required readonly>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_capacity" class="form-label">{{ __('Capacity') }}</label>
+                        <label for="odp_capacity" class="form-label">{{ __('Kapasitas') }}</label>
                         <input type="number" class="form-control" id="odp_capacity" name="capacity" value="8" required>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_region" class="form-label">{{ __('Region') }}</label>
+                        <label for="odp_region" class="form-label">{{ __('Wilayah') }}</label>
                         <select class="form-select" id="odp_region" name="region_id">
-                            <option value="">{{ __('Select Region') }}</option>
+                            <option value="">{{ __('Pilih Wilayah') }}</option>
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}">{{ $region->name }}</option>
                             @endforeach
@@ -210,14 +210,14 @@
                     <div class="mb-3">
                         <label for="odp_odc" class="form-label">{{ __('Uplink ODC') }}</label>
                         <select class="form-select" id="odp_odc" name="odc_id">
-                            <option value="">{{ __('Select ODC') }}</option>
+                            <option value="">{{ __('Pilih ODC') }}</option>
                             @foreach($odcs as $odc)
                                 <option value="{{ $odc->id }}">{{ $odc->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_color" class="form-label">{{ __('Uplink Color') }}</label>
+                        <label for="odp_color" class="form-label">{{ __('Warna Uplink') }}</label>
                         <select class="form-select" id="odp_color" name="color">
                             <option value="#0000FF" style="color: blue;">Blue (Biru)</option>
                             <option value="#FFA500" style="color: orange;">Orange (Oranye)</option>
@@ -234,14 +234,14 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="odp_description" class="form-label">{{ __('Description') }}</label>
+                        <label for="odp_description" class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea class="form-control" id="odp_description" name="description"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary" id="saveOdpBtn">{{ __('Save ODP') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                <button type="button" class="btn btn-primary" id="saveOdpBtn">{{ __('Simpan ODP') }}</button>
             </div>
         </div>
     </div>
@@ -251,28 +251,28 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="htbModalLabel">{{ __('Add HTB') }}</h5>
+                <h5 class="modal-title" id="htbModalLabel">{{ __('Tambah HTB') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="htbForm">
                     <input type="hidden" id="htb_id" name="id">
                     <div class="mb-3">
-                        <label for="htb_name" class="form-label">{{ __('HTB Name') }}</label>
+                        <label for="htb_name" class="form-label">{{ __('Nama HTB') }}</label>
                         <input type="text" class="form-control" id="htb_name" name="name" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="htb_lat" class="form-label">{{ __('Latitude') }}</label>
+                            <label for="htb_lat" class="form-label">{{ __('Lintang') }}</label>
                             <input type="number" step="any" class="form-control" id="htb_lat" name="latitude" required readonly>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="htb_lng" class="form-label">{{ __('Longitude') }}</label>
+                            <label for="htb_lng" class="form-label">{{ __('Bujur') }}</label>
                             <input type="number" step="any" class="form-control" id="htb_lng" name="longitude" required readonly>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="htb_uplink_type" class="form-label">{{ __('Uplink Type') }}</label>
+                        <label for="htb_uplink_type" class="form-label">{{ __('Tipe Uplink') }}</label>
                         <select class="form-select" id="htb_uplink_type" name="uplink_type" required>
                             <option value="odp">ODP</option>
                             <option value="htb">Parent HTB</option>
@@ -281,30 +281,30 @@
                     <div class="mb-3" id="htb_odp_group">
                         <label for="htb_odp" class="form-label">{{ __('Uplink ODP') }}</label>
                         <select class="form-select" id="htb_odp" name="odp_id">
-                            <option value="">{{ __('Select ODP') }}</option>
+                            <option value="">{{ __('Pilih ODP') }}</option>
                             @foreach($odps as $odp)
                                 <option value="{{ $odp->id }}">{{ $odp->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3 d-none" id="htb_parent_group">
-                        <label for="htb_parent" class="form-label">{{ __('Parent HTB') }}</label>
+                        <label for="htb_parent" class="form-label">{{ __('Induk HTB') }}</label>
                         <select class="form-select" id="htb_parent" name="parent_htb_id">
-                            <option value="">{{ __('Select Parent HTB') }}</option>
+                            <option value="">{{ __('Pilih Induk HTB') }}</option>
                             @foreach($htbs as $htb)
                                 <option value="{{ $htb->id }}">{{ $htb->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="htb_description" class="form-label">{{ __('Description') }}</label>
+                        <label for="htb_description" class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea class="form-control" id="htb_description" name="description"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-primary" id="saveHtbBtn">{{ __('Save HTB') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                <button type="button" class="btn btn-primary" id="saveHtbBtn">{{ __('Simpan HTB') }}</button>
             </div>
         </div>
     </div>
@@ -331,6 +331,7 @@
     .icon-htb { color: #6610f2; border-color: #6610f2; }
     .icon-customer-online { color: #198754; border-color: #198754; }
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
+    .icon-asset { color: #d63384; border-color: #d63384; }
 
     /* Animation for online lines */
     .connection-online {
@@ -357,6 +358,7 @@
         var htbs = @json($htbs) || [];
         var odcs = @json($odcs) || [];
         var olts = @json($olts) || [];
+        var assets = @json($assets) || [];
 
         // Initialize map
         // Server Location: -6.800278, 105.939159
@@ -539,53 +541,8 @@
                 return;
             }
 
-            var url = '';
+            var url = `/map/location/${type}/${id}`;
             var data = { latitude: null, longitude: null, _method: 'PUT' };
-
-            if (type === 'olt') {
-                url = `/olt/${id}`; // Note: Route is singular /olt/{id} usually, check routes list if unsure. Usually resource is olts?
-                // Wait, Controller route name is olt.index, olt.update. URL is usually /olt/{id} or /olts/{id}
-                // Let's assume /olt based on edit link above `/olt/${olt.id}/edit`
-                var item = olts.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.host = item.host;
-                    data.port = item.port;
-                    data.username = item.username;
-                    data.type = item.type;
-                    data.brand = item.brand;
-                    // Password not needed if nullable on update
-                }
-            } else if (type === 'odc') {
-                url = `/odcs/${id}`;
-                var item = odcs.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.capacity = item.capacity;
-                    data.olt_id = item.olt_id;
-                    data.description = item.description;
-                }
-            } else if (type === 'odp') {
-                url = `/odps/${id}`;
-                var item = odps.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.capacity = item.capacity;
-                    data.region_id = item.region_id;
-                    data.odc_id = item.odc_id;
-                    data.color = item.color;
-                    data.description = item.description;
-                }
-            } else if (type === 'htb') {
-                url = `/htbs/${id}`;
-                var item = htbs.find(i => i.id == id);
-                if (item) {
-                    data.name = item.name;
-                    data.odp_id = item.odp_id;
-                    data.parent_htb_id = item.parent_htb_id;
-                    data.description = item.description;
-                }
-            }
 
             fetch(url, {
                 method: 'POST',
@@ -625,6 +582,9 @@
                     } else if (type === 'htb') {
                         var item = htbs.find(i => i.id == id);
                         if (item) { item.latitude = null; item.longitude = null; }
+                    } else if (type === 'asset') {
+                        var item = assets.find(i => i.id == id);
+                        if (item) { item.latitude = null; item.longitude = null; }
                     }
                     
                     map.removeLayer(marker);
@@ -646,31 +606,18 @@
 
         // Update Location
         function updateLocation(type, id, lat, lng, oldLat, oldLng, marker) {
-            if (!confirm('{{ __('Update location to new coordinates?') }}')) {
+            if (!confirm('{{ __('Perbarui lokasi ke koordinat baru?') }}')) {
                 marker.setLatLng([oldLat, oldLng]);
                 drawLines(); // Revert lines if needed
                 return;
             }
 
-            var url = '';
+            var url = `/map/location/${type}/${id}`;
             var data = {
                 latitude: lat,
                 longitude: lng,
                 _method: 'PUT'
             };
-
-            // Set URL based on type
-            if (type === 'olt') {
-                url = `/olt/${id}`;
-            } else if (type === 'odc') {
-                url = `/odcs/${id}`;
-            } else if (type === 'odp') {
-                url = `/odps/${id}`;
-            } else if (type === 'htb') {
-                url = `/htbs/${id}`;
-            } else if (type === 'customer') {
-                url = `/customers/${id}`;
-            }
 
             fetch(url, {
                 method: 'POST', // POST with _method=PUT
@@ -714,22 +661,25 @@
                     } else if (type === 'customer') {
                         var item = customers.find(i => i.id == id);
                         if (item) { item.latitude = lat; item.longitude = lng; }
+                    } else if (type === 'asset') {
+                        var item = assets.find(i => i.id == id);
+                        if (item) { item.latitude = lat; item.longitude = lng; }
                     }
                     drawLines(); // Redraw lines with new position
-                    alert('{{ __('Location updated!') }}');
+                    alert('{{ __('Lokasi berhasil diperbarui!') }}');
                 } else {
                     var msg = result.message || JSON.stringify(result);
                     if (result.errors) {
                         msg += '\n' + JSON.stringify(result.errors);
                     }
-                    alert('{{ __('Error updating location:') }} ' + msg);
+                    alert('{{ __('Gagal memperbarui lokasi:') }} ' + msg);
                     marker.setLatLng([oldLat, oldLng]);
                     drawLines();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('{{ __('Error updating location:') }} ' + error.message);
+                alert('{{ __('Gagal memperbarui lokasi:') }} ' + error.message);
                 marker.setLatLng([oldLat, oldLng]);
                 drawLines();
             });
@@ -745,6 +695,7 @@
             else if (type === 'odc') { iconClass = 'fa-hdd'; colorClass = 'icon-odc'; size = 36; }
             else if (type === 'odp') { iconClass = 'fa-box'; colorClass = 'icon-odp'; size = 32; }
             else if (type === 'htb') { iconClass = 'fa-sitemap'; colorClass = 'icon-htb'; size = 30; }
+            else if (type === 'asset') { iconClass = 'fa-tools'; colorClass = 'icon-asset'; size = 28; }
             else if (type === 'online') { iconClass = 'fa-wifi'; colorClass = 'icon-customer-online'; size = 26; }
             else { iconClass = 'fa-user-slash'; colorClass = 'icon-customer-offline'; size = 26; }
 
@@ -814,12 +765,12 @@
                     <div style="min-width: 200px;">
                         <h6 class="mb-2">ODC: ${odc.name}</h6>
                         <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Capacity:</td><td class="p-0 text-end">${odc.capacity}</td></tr>
+                            <tr><td class="p-0 text-muted">Kapasitas:</td><td class="p-0 text-end">${odc.capacity}</td></tr>
                             <tr><td class="p-0 text-muted">OLT:</td><td class="p-0 text-end">${oltName}</td></tr>
-                            <tr><td class="p-0 text-muted">PON Port:</td><td class="p-0 text-end">${odc.pon_port || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Port PON:</td><td class="p-0 text-end">${odc.pon_port || '-'}</td></tr>
                             <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odc.area || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Color:</td><td class="p-0 text-end">${odc.color || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Cable No:</td><td class="p-0 text-end">${odc.cable_no || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Warna:</td><td class="p-0 text-end">${odc.color || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">No Kabel:</td><td class="p-0 text-end">${odc.cable_no || '-'}</td></tr>
                         </table>
                         <div class="text-muted small mb-2" style="font-style: italic;">${odc.description || ''}</div>
                     </div>`;
@@ -875,10 +826,10 @@
                     <div style="min-width: 200px;">
                         <h6 class="mb-2">ODP: ${odp.name}</h6>
                         <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Capacity:</td><td class="p-0 text-end">${odp.filled || 0}/${odp.capacity}</td></tr>
+                            <tr><td class="p-0 text-muted">Kapasitas:</td><td class="p-0 text-end">${odp.filled || 0}/${odp.capacity}</td></tr>
                             <tr><td class="p-0 text-muted">ODC:</td><td class="p-0 text-end">${odcName}</td></tr>
                             <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odp.kampung || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Color:</td><td class="p-0 text-end">${odp.color || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Warna:</td><td class="p-0 text-end">${odp.color || '-'}</td></tr>
                         </table>
                         <div class="text-muted small mb-2" style="font-style: italic;">${odp.description || ''}</div>
                     </div>`;
@@ -980,6 +931,63 @@
             }
         });
 
+        // Draw Assets
+        assets.forEach(function(asset) {
+            if (asset.latitude && asset.longitude) {
+                var itemName = asset.item ? asset.item.name : 'Unknown Item';
+                var holderName = asset.holder ? asset.holder.name : 'Unknown Holder';
+                var status = asset.status || 'N/A';
+                
+                var popupContent = document.createElement('div');
+                popupContent.innerHTML = `
+                    <div style="min-width: 200px;">
+                        <h6 class="mb-2">Aset: ${itemName}</h6>
+                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
+                            <tr><td class="p-0 text-muted">Pemegang:</td><td class="p-0 text-end fw-bold">${holderName}</td></tr>
+                            <tr><td class="p-0 text-muted">Status:</td><td class="p-0 text-end">${status}</td></tr>
+                            <tr><td class="p-0 text-muted">Kondisi:</td><td class="p-0 text-end">${asset.condition || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Serial:</td><td class="p-0 text-end small">${asset.serial_number || '-'}</td></tr>
+                        </table>
+                        <div class="text-muted small mb-2" style="font-style: italic;">${asset.description || ''}</div>
+                    </div>`;
+                
+                var editLink = document.createElement('a');
+                editLink.href = `/inventory/assets/${asset.id}/edit`; // Assumed route
+                editLink.className = 'btn btn-sm btn-primary mt-2 text-white';
+                editLink.style.fontSize = '0.8rem';
+                editLink.style.padding = '2px 6px';
+                editLink.innerText = '{{ __('Edit Aset') }}';
+                popupContent.appendChild(editLink);
+
+                var deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.innerText = 'Hapus Lokasi';
+                deleteBtn.onclick = function() { deleteLocation('asset', asset.id, marker); };
+                popupContent.appendChild(deleteBtn);
+
+                var marker = L.marker([asset.latitude, asset.longitude], {
+                    icon: createIcon('asset'),
+                    draggable: true
+                }).bindPopup(popupContent).addTo(markers);
+
+                var oldLat = asset.latitude;
+                var oldLng = asset.longitude;
+
+                marker.on('dragstart', function(e) {
+                    oldLat = e.target.getLatLng().lat;
+                    oldLng = e.target.getLatLng().lng;
+                });
+
+                marker.on('dragend', function(e) {
+                    var newLat = e.target.getLatLng().lat;
+                    var newLng = e.target.getLatLng().lng;
+                    updateLocation('asset', asset.id, newLat, newLng, oldLat, oldLng, marker);
+                });
+            }
+        });
+
         // Draw Customers
         customers.forEach(function(customer) {
             var isOnline = customer.is_online; // Assumed passed from controller
@@ -1010,16 +1018,16 @@
                 `</div>` +
                 `<table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">` +
                 `<tr><td class="p-0 text-muted">ID:</td><td class="p-0 text-end">${customer.id}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Address:</td><td class="p-0 text-end text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Phone:</td><td class="p-0 text-end">${customer.phone || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Package:</td><td class="p-0 text-end">${customer.package || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Alamat:</td><td class="p-0 text-end text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Telepon:</td><td class="p-0 text-end">${customer.phone || '-'}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Paket:</td><td class="p-0 text-end">${customer.package || '-'}</td></tr>` +
                 `<tr><td class="p-0 text-muted">ODP:</td><td class="p-0 text-end">${odpName}</td></tr>` +
                 `<tr><td class="p-0 text-muted">SN:</td><td class="p-0 text-end font-monospace small">${customer.onu_serial || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Genie Name:</td><td class="p-0 text-end">${genieName}</td></tr>` +
-                `<tr><td class="p-0 text-muted">RX Power:</td><td class="p-0 text-end fw-bold">${rxPower}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Nama Genie:</td><td class="p-0 text-end">${genieName}</td></tr>` +
+                `<tr><td class="p-0 text-muted">Daya RX:</td><td class="p-0 text-end fw-bold">${rxPower}</td></tr>` +
                 `</table>` +
                 `<div class="d-flex gap-2 mt-2">` +
-                `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white" style="font-size: 0.8rem; padding: 2px 6px;">Details</a>` +
+                `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white" style="font-size: 0.8rem; padding: 2px 6px;">Detail</a>` +
                 `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-primary text-white" style="font-size: 0.8rem; padding: 2px 6px;">Edit</a>` +
                 `</div></div>`
             );
@@ -1101,7 +1109,7 @@
                 document.getElementById('odc_id').value = ''; // Clear ID for new
                 document.getElementById('odc_lat').value = lat;
                 document.getElementById('odc_lng').value = lng;
-                document.getElementById('odcModalLabel').innerText = '{{ __('Add ODC') }}'; // Set title
+                document.getElementById('odcModalLabel').innerText = '{{ __('Tambah ODC') }}'; // Set title
                 var odcModal = new bootstrap.Modal(document.getElementById('odcModal'));
                 odcModal.show();
             } else if (addMode === 'odp') {
@@ -1109,7 +1117,7 @@
                 document.getElementById('odp_id').value = ''; // Clear ID for new
                 document.getElementById('odp_lat').value = lat;
                 document.getElementById('odp_lng').value = lng;
-                document.getElementById('odpModalLabel').innerText = '{{ __('Add ODP') }}'; // Set title
+                document.getElementById('odpModalLabel').innerText = '{{ __('Tambah ODP') }}'; // Set title
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
             } else if (addMode === 'htb') {
@@ -1117,7 +1125,7 @@
                 document.getElementById('htb_id').value = '';
                 document.getElementById('htb_lat').value = lat;
                 document.getElementById('htb_lng').value = lng;
-                document.getElementById('htbModalLabel').innerText = '{{ __('Add HTB') }}';
+                document.getElementById('htbModalLabel').innerText = '{{ __('Tambah HTB') }}';
                 
                 // Reset uplink type logic
                 document.getElementById('htb_uplink_type').value = 'odp';

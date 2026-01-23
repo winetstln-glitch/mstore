@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
     Route::get('finance/coordinator/{coordinator}/pdf', [FinanceController::class, 'downloadCoordinatorPdf'])->name('finance.coordinator.pdf');
     Route::delete('finance/bulk-destroy', [FinanceController::class, 'bulkDestroy'])->name('finance.bulkDestroy');
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
+    
+    Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])->name('map.update_location');
     Route::resource('map', MapController::class);
     
     // Tools
