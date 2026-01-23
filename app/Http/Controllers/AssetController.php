@@ -144,6 +144,9 @@ class AssetController extends Controller implements HasMiddleware
             'meta_data' => array_merge($asset->meta_data ?? [], ['returned_at' => now()->toDateTimeString(), 'returned_by' => Auth::id()]),
         ]);
 
+        // Increment inventory stock
+        $asset->item->increment('stock');
+
         return redirect()->back()->with('success', __('Asset returned to stock.'));
     }
 
