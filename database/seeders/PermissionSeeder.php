@@ -55,6 +55,8 @@ class PermissionSeeder extends Seeder
             // Attendance
             ['name' => 'attendance.view', 'label' => 'View Attendance', 'group' => 'Attendance'],
             ['name' => 'attendance.create', 'label' => 'Clock In/Out', 'group' => 'Attendance'],
+            ['name' => 'attendance.edit', 'label' => 'Edit Attendance', 'group' => 'Attendance'],
+            ['name' => 'attendance.delete', 'label' => 'Delete Attendance', 'group' => 'Attendance'],
             ['name' => 'attendance.report', 'label' => 'View Attendance Report', 'group' => 'Attendance'],
 
             // ODC Management

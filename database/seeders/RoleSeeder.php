@@ -74,7 +74,8 @@ class RoleSeeder extends Seeder
                     'profile.update',
                     'notification.view',
                     'notification.manage',
-                    'inventory.view', // Added Inventory View
+                    'inventory.view',
+                    'inventory.pickup', // Added Inventory Pickup
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'coordinator') {

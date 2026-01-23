@@ -56,58 +56,57 @@ class DashboardController extends Controller implements HasMiddleware
             return view('technician.dashboard', compact('stats', 'activeTickets', 'pendingInstallations', 'todayAttendance'));
         }
 
-        $stats = [
-            'total_customers' => Customer::count(),
-            'new_customers_this_month' => Customer::where('created_at', '>=', now()->startOfMonth())->count(),
-            'open_tickets' => Ticket::where('status', 'open')->count(),
-            'tickets_today' => Ticket::whereDate('created_at', today())->count(),
-            'pending_installations' => Installation::whereIn('status', ['registered', 'survey', 'approved'])->count(),
-        ];
+        // Base Queries for Dashboard Logic (Coordinator / Admin / Finance)
+        $customerQuery = Customer::query();
+        $ticketQuery = Ticket::query();
+        $installationQuery = Installation::query();
 
-        // Filter Dashboard Stats for Coordinator
-        if (!$user->hasRole('admin')) {
+        // Filter Logic: Exclude Admin and Finance Staff from filtering
+        if (!$user->hasRole('admin') && !$user->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', $user->id)->first();
             if ($coordinator && $coordinator->region_id) {
-                // Filter Customers
-                $customerQuery = Customer::whereHas('odp', function($q) use ($coordinator) {
+                // Filter Customers by Region
+                $customerQuery->whereHas('odp', function($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
                 
-                $stats['total_customers'] = $customerQuery->count();
-                $stats['new_customers_this_month'] = $customerQuery->where('created_at', '>=', now()->startOfMonth())->count();
-                
                 // Filter Tickets (Linked to Customer in Region)
-                $ticketQuery = Ticket::whereHas('customer.odp', function($q) use ($coordinator) {
+                $ticketQuery->whereHas('customer.odp', function($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
 
-                $stats['open_tickets'] = $ticketQuery->clone()->where('status', 'open')->count();
-                $stats['tickets_today'] = $ticketQuery->clone()->whereDate('created_at', today())->count();
-                
                 // Filter Installations (Linked to Customer in Region)
-                // Assuming installation has customer_id or similar
-                $installationQuery = Installation::whereHas('customer.odp', function($q) use ($coordinator) {
+                $installationQuery->whereHas('customer.odp', function($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
-                
-                $stats['pending_installations'] = $installationQuery->whereIn('status', ['registered', 'survey', 'approved'])->count();
             }
         }
 
-        $recentTickets = Ticket::with(['customer', 'technicians'])
+        $stats = [
+            'total_customers' => $customerQuery->count(),
+            'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', now()->startOfMonth())->count(),
+            'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
+            'tickets_today' => $ticketQuery->clone()->whereDate('created_at', today())->count(),
+            'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
+        ];
+
+        $recentTickets = $ticketQuery->clone()
+            ->with(['customer', 'technicians'])
             ->where('status', '!=', 'closed')
             ->latest()
             ->take(5)
             ->get();
 
-        $upcomingInstallations = Installation::with(['customer', 'technician'])
+        $upcomingInstallations = $installationQuery->clone()
+            ->with(['customer', 'technician'])
             ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
             ->orderBy('plan_date', 'asc')
             ->take(5)
             ->get();
 
         // Monthly Ticket Recap (Current Year)
-        $monthlyTickets = Ticket::whereYear('created_at', now()->year)
+        $monthlyTickets = $ticketQuery->clone()
+            ->whereYear('created_at', now()->year)
             ->get()
             ->groupBy(function($ticket) {
                 return $ticket->created_at->format('m');

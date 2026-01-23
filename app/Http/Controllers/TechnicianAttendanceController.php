@@ -19,7 +19,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:attendance.view', only: ['index', 'exportPdf']),
+            new Middleware('permission:attendance.view', only: ['index', 'exportPdf', 'exportExcel']),
+            new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut']),
+            new Middleware('permission:attendance.edit', only: ['update', 'edit']),
+            new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
         ];
     }
 
