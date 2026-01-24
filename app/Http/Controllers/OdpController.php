@@ -220,4 +220,42 @@ class OdpController extends Controller implements HasMiddleware
 
         return redirect()->route('odps.index')->with('success', __('ODP deleted successfully.'));
     }
+
+    public function exportExcel()
+    {
+        $odps = Odp::with(['odc', 'region'])->latest()->get();
+
+        return response()->streamDownload(function () use ($odps) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Name',
+                'ODC',
+                'Region',
+                'Kampung',
+                'Color',
+                'Latitude',
+                'Longitude',
+                'Capacity',
+                'Description',
+            ]));
+
+            foreach ($odps as $odp) {
+                $writer->addRow(Row::fromValues([
+                    $odp->name,
+                    $odp->odc->name ?? '-',
+                    $odp->region->name ?? '-',
+                    $odp->kampung,
+                    $odp->color,
+                    $odp->latitude,
+                    $odp->longitude,
+                    $odp->capacity,
+                    $odp->description,
+                ]));
+            }
+
+            $writer->close();
+        }, 'odps_' . date('Y-m-d_H-i-s') . '.xlsx');
+    }
 }
