@@ -33,4 +33,9 @@ class Odc extends Model
     {
         return $this->hasMany(Odp::class);
     }
+
+    public function getAreaCodeAttribute(): ?string
+    {
+        return $this->area ? strtoupper(substr($this->area, 0, 3)) : null;
+    }
 }

@@ -26,7 +26,7 @@ class OdpController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $odps = Odp::latest()->paginate(10);
+        $odps = Odp::with('odc')->latest()->paginate(10);
         return view('odps.index', compact('odps'));
     }
 

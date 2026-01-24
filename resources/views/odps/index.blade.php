@@ -23,6 +23,7 @@
                         <thead class="bg-body-tertiary">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
+                                <th scope="col">{{ __('Area Code') }}</th>
                                 <th scope="col">{{ __('Location (Lat, Long)') }}</th>
                                 <th scope="col">{{ __('Capacity') }}</th>
                                 <th scope="col">{{ __('Filled') }}</th>
@@ -32,15 +33,17 @@
                         <tbody>
                             @forelse($odps as $odp)
                                 <tr>
-                                    <td class="ps-3">
-                                        <div class="fw-bold">{{ $odp->name }}</div>
-                                        <div class="small text-muted">{{ $odp->description }}</div>
-                                    </td>
+                                    <td class="ps-3 fw-medium">{{ $odp->name }}</td>
+                                    <td>{{ $odp->odc->area_code ?? '-' }}</td>
                                     <td>
-                                        <div>{{ $odp->latitude }}, {{ $odp->longitude }}</div>
-                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $odp->latitude }},{{ $odp->longitude }}" target="_blank" class="small text-decoration-none">
-                                            <i class="fa-solid fa-map-pin me-1"></i> {{ __('View on Maps') }}
-                                        </a>
+                                        @if($odp->latitude && $odp->longitude)
+                                            <a href="https://www.google.com/maps/search/?api=1&query={{ $odp->latitude }},{{ $odp->longitude }}" target="_blank" class="text-decoration-none">
+                                                <i class="fa-solid fa-location-dot text-danger me-1"></i>
+                                                {{ number_format($odp->latitude, 6) }}, {{ number_format($odp->longitude, 6) }}
+                                            </a>
+                                        @else
+                                            <span class="text-muted"><i class="fa-solid fa-ban me-1"></i> {{ __('Not set') }}</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge bg-info-subtle text-info border border-info-subtle">
@@ -72,7 +75,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="fa-solid fa-info-circle me-1"></i> {{ __('No ODPs found.') }}
                                     </td>
                                 </tr>
