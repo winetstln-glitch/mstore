@@ -97,6 +97,12 @@
                             </div>
                             <div class="col-md-6 col-lg-3">
                                 <div class="p-3 bg-body-tertiary rounded border">
+                                    <small class="text-body-secondary d-block mb-1">{{ __('MAC Address') }}</small>
+                                    <span class="fw-bold fs-5">{{ $device['VirtualParameters']['MacAddress']['_value'] ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['MACAddress']['_value'] ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="p-3 bg-body-tertiary rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('IP Address') }}</small>
                                     <div class="d-flex align-items-center">
                                         <span class="fw-bold fs-5 me-2">{{ $deviceIp ?? '-' }}</span>
@@ -192,6 +198,25 @@
                                     <label class="form-label">{{ __('LAN Binding') }}</label>
                                     <input type="text" class="form-control" name="lan_bind" value="{{ $wanSettings['lan_bind'] ?? '' }}">
                                 </div>
+
+                                @if(isset($wanSettings['bindings']) && !empty($wanSettings['bindings']))
+                                    <div class="col-12 mt-3">
+                                        <label class="form-label fw-bold">{{ __('Detailed Bindings (Huawei)') }}</label>
+                                        <div class="row g-2">
+                                            @foreach($wanSettings['bindings'] as $key => $val)
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="bindings[{{ $key }}]" id="bind_{{ $key }}" value="1" {{ $val ? 'checked' : '' }} disabled>
+                                                        <label class="form-check-label" for="bind_{{ $key }}">
+                                                            {{ $key }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="form-text text-muted">{{ __('Bindings are currently read-only in this view.') }}</div>
+                                    </div>
+                                @endif
 
                                 <div class="col-12 mt-4">
                                     <button type="submit" class="btn btn-primary">

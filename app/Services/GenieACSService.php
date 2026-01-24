@@ -496,6 +496,10 @@ class GenieACSService
         if (!$device) return null;
 
         // 1. Try VirtualParameters (Custom scripts often put real IP here)
+        if (isset($device['VirtualParameters']['pppIP']['_value']) && filter_var($device['VirtualParameters']['pppIP']['_value'], FILTER_VALIDATE_IP)) {
+            return $device['VirtualParameters']['pppIP']['_value'];
+        }
+        
         if (isset($device['VirtualParameters']['pppoeIP']['_value']) && filter_var($device['VirtualParameters']['pppoeIP']['_value'], FILTER_VALIDATE_IP)) {
             return $device['VirtualParameters']['pppoeIP']['_value'];
         }
@@ -1086,6 +1090,7 @@ class GenieACSService
             'password' => '',
             'nat' => false,
             'lan_bind' => '',
+            'bindings' => [], // For detailed Huawei bindings
             'status' => '',
             'path' => '',
         ];
@@ -1120,10 +1125,26 @@ class GenieACSService
                 $settings['conn_name'] = $this->getValue($conn['Name'] ?? '');
                 $settings['vlan'] = $this->getValue($conn['X_HW_VLAN'] ?? ($conn['X_BROADCOM_COM_VlanMuxID'] ?? ''));
                 $settings['conn_type'] = $this->getValue($conn['ConnectionType'] ?? '');
-                $settings['service'] = $this->getValue($conn['X_HW_ServiceList'] ?? '');
+                $settings['service'] = $this->getValue($conn['X_HW_SERVICELIST'] ?? $conn['X_HW_ServiceList'] ?? '');
                 $settings['username'] = $this->getValue($conn['Username'] ?? '');
                 $settings['password'] = $this->getValue($conn['Password'] ?? ''); 
                 $settings['nat'] = filter_var($this->getValue($conn['NATEnabled'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                
+                // Detailed Bindings
+                if (isset($conn['X_HW_LANBIND'])) {
+                    $binds = $conn['X_HW_LANBIND'];
+                    $settings['bindings'] = [
+                        'Lan1' => filter_var($this->getValue($binds['Lan1Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'Lan2' => filter_var($this->getValue($binds['Lan2Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'Lan3' => filter_var($this->getValue($binds['Lan3Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'Lan4' => filter_var($this->getValue($binds['Lan4Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'SSID1' => filter_var($this->getValue($binds['SSID1Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'SSID2' => filter_var($this->getValue($binds['SSID2Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'SSID3' => filter_var($this->getValue($binds['SSID3Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                        'SSID4' => filter_var($this->getValue($binds['SSID4Enable'] ?? false), FILTER_VALIDATE_BOOLEAN),
+                    ];
+                }
+
                 $settings['lan_bind'] = $this->getValue($conn['X_HW_LANBinding'] ?? '');
                 $settings['status'] = $this->getValue($conn['ConnectionStatus'] ?? '');
             }
