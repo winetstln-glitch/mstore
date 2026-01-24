@@ -530,9 +530,10 @@ class GenieACSService
 
         // Attempt 1: Immediate execution (connection_request)
         try {
-            // Use a short timeout (5s) for the immediate attempt
-            $response = Http::timeout(5)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=3000&connection_request", [
+            // Use a longer timeout (10s) for the immediate attempt to accommodate slower networks
+            // Increase GenieACS timeout to 8000ms (8s)
+            $response = Http::timeout(10)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
                     'name' => 'refreshObject',
                     'objectName' => $objectName
                 ]);
@@ -578,9 +579,9 @@ class GenieACSService
         $encodedId = urlencode($deviceId);
 
         try {
-            // Use a short timeout (5s) for the immediate attempt
-            $response = Http::timeout(5)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=3000&connection_request", [
+            // Use a longer timeout (10s) for the immediate attempt
+            $response = Http::timeout(10)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
                     'name' => 'reboot'
                 ]);
 
@@ -624,8 +625,8 @@ class GenieACSService
     {
         try {
             $encodedId = urlencode($deviceId);
-            $response = Http::timeout($this->timeout)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=3000&connection_request", [
+            $response = Http::timeout(10)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
                     'name' => 'factoryReset'
                 ]);
 
@@ -659,9 +660,9 @@ class GenieACSService
 
         // Attempt 1: Immediate execution (connection_request)
         try {
-            // Use a short timeout (5s) for the immediate attempt to avoid hanging if device is offline
-            $response = Http::timeout(5)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=3000&connection_request", [
+            // Use a longer timeout (10s) for the immediate attempt
+            $response = Http::timeout(10)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
                     'name' => 'setParameterValues',
                     'parameterValues' => $parameterValues
                 ]);

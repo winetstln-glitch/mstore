@@ -222,7 +222,7 @@ class GenieACSController extends Controller implements HasMiddleware
             sleep(3);
             return back()->with('success', __('Device Connected & Refreshed Successfully.'));
         } elseif ($status === 1) {
-            return back()->with('warning', __('Command Queued. Device appears offline/unreachable. Task will run when device reconnects.'));
+            return back()->with('warning', __('Command Queued. Device did not respond immediately (Timeout). Task will run when device reconnects.'));
         }
 
         return back()->with('error', __('Failed to summon device.'));
