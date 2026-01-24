@@ -101,9 +101,15 @@ class InventoryController extends Controller implements HasMiddleware
         return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalSales', 'categories', 'myAssets'));
     }
 
-    public function createPickup()
+    public function createPickup(Request $request)
     {
-        $items = InventoryItem::orderBy('type_group', 'desc')->orderBy('name')->get();
+        $query = InventoryItem::query();
+
+        if ($request->has('type_group') && in_array($request->type_group, ['tool', 'material'])) {
+            $query->where('type_group', $request->type_group);
+        }
+
+        $items = $query->orderBy('type_group', 'desc')->orderBy('name')->get();
         $coordinators = Coordinator::orderBy('name')->get();
         return view('inventory.pickup', compact('items', 'coordinators'));
     }

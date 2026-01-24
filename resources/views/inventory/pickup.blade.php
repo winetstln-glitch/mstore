@@ -6,8 +6,16 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Pickup Item') }}</h6>
-                    <a href="{{ route('inventory.index') }}" class="btn btn-sm btn-outline-secondary">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        @if(request('type_group') == 'tool')
+                            {{ __('Pickup Tool & Asset') }}
+                        @elseif(request('type_group') == 'material')
+                            {{ __('Pickup Material') }}
+                        @else
+                            {{ __('Pickup Item') }}
+                        @endif
+                    </h6>
+                    <a href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}" class="btn btn-sm btn-outline-secondary">
                         <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
                     </a>
                 </div>

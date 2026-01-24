@@ -52,7 +52,7 @@
                     <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning me-2">
                         <i class="fa-solid fa-rotate-left me-1"></i> <span class="d-none d-md-inline">{{ __('Return Tool') }}</span>
                     </a>
-                    <a href="{{ route('inventory.pickup') }}" class="btn btn-primary">
+                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary">
                         <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-md-inline">{{ __('Pickup Item') }}</span>
                     </a>
                 </div>
