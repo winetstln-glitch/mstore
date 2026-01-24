@@ -701,7 +701,7 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function destroy(Transaction $transaction)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
