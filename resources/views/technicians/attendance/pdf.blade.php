@@ -81,6 +81,18 @@
                     <td style="border: none; padding: 5px 2px;">Gaji Harian</td>
                     <td style="border: none; padding: 5px 2px;" class="text-right">Rp {{ number_format($data['daily_salary'], 0, ',', '.') }}</td>
                 </tr>
+                @if($data['total_bonus'] > 0)
+                <tr style="border: none;">
+                    <td style="border: none; padding: 5px 2px; color: green;">+ Bonus</td>
+                    <td style="border: none; padding: 5px 2px; color: green;" class="text-right">Rp {{ number_format($data['total_bonus'], 0, ',', '.') }}</td>
+                </tr>
+                @endif
+                @if($data['total_kasbon'] > 0)
+                <tr style="border: none;">
+                    <td style="border: none; padding: 5px 2px; color: red;">- Potongan Kasbon</td>
+                    <td style="border: none; padding: 5px 2px; color: red;" class="text-right">Rp {{ number_format($data['total_kasbon'], 0, ',', '.') }}</td>
+                </tr>
+                @endif
                 <tr style="border-top: 2px solid #ccc;">
                     <td style="border: none; padding: 5px 2px; font-weight: bold; font-size: 1.1em;">Total Gaji</td>
                     <td style="border: none; padding: 5px 2px; font-weight: bold; font-size: 1.1em;" class="text-right">Rp {{ number_format($data['total_salary'], 0, ',', '.') }}</td>

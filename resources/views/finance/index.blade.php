@@ -149,14 +149,14 @@
                     <table class="table table-bordered table-sm" width="100%" cellspacing="0">
                         <thead>
                             <tr>
-                                <th>{{ __('Coordinator') }}</th>
-                                <th>{{ __('Total Revenue') }}</th>
-                                <th>{{ __('Commission') }}</th>
-                                <th>{{ __('ISP Share') }}</th>
-                                <th>{{ __('Tools Cost') }}</th>
-                                <th>{{ __('Expenses') }}</th>
-                                <th>{{ __('Remaining Balance') }}</th>
-                                <th>{{ __('Action') }}</th>
+                                <th>{{ __('Koordinator') }}</th>
+                                <th>{{ __('Total Pendapatan') }}</th>
+                                <th>{{ __('Komisi') }}</th>
+                                <th>{{ __('Dana ISP') }}</th>
+                                <th>{{ __('Dana Alat') }}</th>
+                                <th>{{ __('Pengeluaran') }}</th>
+                                <th>{{ __('Sisa Saldo') }}</th>
+                                <th>{{ __('Aksi') }}</th>
                             </tr>
                         </thead>
                         <tbody>

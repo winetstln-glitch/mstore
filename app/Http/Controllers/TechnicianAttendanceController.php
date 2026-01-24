@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TechnicianAttendance;
 use App\Models\Setting;
 use App\Models\Transaction;
+use App\Models\SalaryAdjustment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -99,8 +100,24 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->oldest('clock_in')->get();
 
+        // Fetch Adjustments
+        $adjustmentsQuery = SalaryAdjustment::query();
+        if ($request->filled('date')) {
+            $adjustmentsQuery->whereDate('date', $request->date);
+        }
+        if ($request->filled('month')) {
+            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
+                             ->whereYear('date', date('Y', strtotime($request->month)));
+        }
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            $adjustmentsQuery->where('user_id', Auth::id());
+        } elseif ($request->filled('user_id')) {
+            $adjustmentsQuery->where('user_id', $request->user_id);
+        }
+        $allAdjustments = $adjustmentsQuery->get()->groupBy('user_id');
+
         // Summary by Technician
-        $summary = $attendances->groupBy('user_id')->map(function ($items) {
+        $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
             $user = $items->first()->user;
             
             // Calculate status counts
@@ -112,14 +129,22 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $paidDays = $presentCount + $leaveCount;
             $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
             
+            // Adjustments
+            $userAdjustments = $allAdjustments->get($user->id, collect());
+            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
+            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
+
             return [
                 'user' => $user,
                 'present_count' => $presentCount,
                 'leave_count' => $leaveCount,
                 'paid_days' => $paidDays,
                 'daily_salary' => $dailySalary,
-                'total_salary' => $paidDays * $dailySalary,
-                'dates' => $items
+                'total_bonus' => $totalBonus,
+                'total_kasbon' => $totalKasbon,
+                'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
+                'dates' => $items,
+                'adjustments' => $userAdjustments
             ];
         });
 
@@ -148,8 +173,24 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->oldest('clock_in')->get();
 
+        // Fetch Adjustments
+        $adjustmentsQuery = SalaryAdjustment::query();
+        if ($request->filled('date')) {
+            $adjustmentsQuery->whereDate('date', $request->date);
+        }
+        if ($request->filled('month')) {
+            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
+                             ->whereYear('date', date('Y', strtotime($request->month)));
+        }
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            $adjustmentsQuery->where('user_id', Auth::id());
+        } elseif ($request->filled('user_id')) {
+            $adjustmentsQuery->where('user_id', $request->user_id);
+        }
+        $allAdjustments = $adjustmentsQuery->get()->groupBy('user_id');
+
         // Summary by Technician
-        $summary = $attendances->groupBy('user_id')->map(function ($items) {
+        $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
             $user = $items->first()->user;
             
             // Calculate status counts
@@ -159,13 +200,20 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $paidDays = $presentCount + $leaveCount;
             $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
             
+            // Adjustments
+            $userAdjustments = $allAdjustments->get($user->id, collect());
+            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
+            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
+
             return [
                 'user' => $user,
                 'present_count' => $presentCount,
                 'leave_count' => $leaveCount,
                 'paid_days' => $paidDays,
                 'daily_salary' => $dailySalary,
-                'total_salary' => $paidDays * $dailySalary,
+                'total_bonus' => $totalBonus,
+                'total_kasbon' => $totalKasbon,
+                'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
                 'dates' => $items
             ];
         });
@@ -183,6 +231,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'Total Cuti/Izin/Sakit', 
                 'Total Hari Dibayar', 
                 'Gaji Harian', 
+                'Total Bonus',
+                'Total Kasbon',
                 'Total Gaji'
             ]));
 
@@ -193,6 +243,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                     $data['leave_count'],
                     $data['paid_days'],
                     $data['daily_salary'],
+                    $data['total_bonus'],
+                    $data['total_kasbon'],
                     $data['total_salary']
                 ]));
             }
@@ -250,30 +302,56 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->oldest('clock_in')->get();
 
-        if ($attendances->isEmpty()) {
-            return back()->with('error', __('No attendance records found for the selected period.'));
+        // Fetch Pending Adjustments
+        $adjustmentsQuery = SalaryAdjustment::where('status', 'pending');
+        if ($request->filled('date')) {
+            $adjustmentsQuery->whereDate('date', $request->date);
+        }
+        if ($request->filled('month')) {
+            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
+                             ->whereYear('date', date('Y', strtotime($request->month)));
+        }
+        if ($request->filled('user_id')) {
+            $adjustmentsQuery->where('user_id', $request->user_id);
+        }
+        $pendingAdjustments = $adjustmentsQuery->get();
+        $adjustmentsByUser = $pendingAdjustments->groupBy('user_id');
+
+        if ($attendances->isEmpty() && $pendingAdjustments->isEmpty()) {
+            return back()->with('error', __('No attendance records or pending adjustments found for the selected period.'));
         }
 
         // Summary by Technician
-        $summary = $attendances->groupBy('user_id')->map(function ($items) {
-            $user = $items->first()->user;
-            
-            // Calculate status counts
-            $presentCount = $items->whereIn('status', ['present', 'late'])->count();
-            $leaveCount = $items->whereIn('status', ['leave', 'permit', 'sick'])->count();
-            
-            $paidDays = $presentCount + $leaveCount;
-            $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
-            
-            return [
-                'total_salary' => $paidDays * $dailySalary,
-            ];
-        });
+        // We need to handle users who have adjustments but NO attendance.
+        // So we merge user IDs from both.
+        $userIds = $attendances->pluck('user_id')->merge($pendingAdjustments->pluck('user_id'))->unique();
 
-        $totalAmount = $summary->sum('total_salary');
+        $totalAmount = 0;
+
+        foreach ($userIds as $userId) {
+            $userItems = $attendances->where('user_id', $userId);
+            $userAdjustments = $adjustmentsByUser->get($userId, collect());
+
+            // Attendance Salary
+            $attendanceSalary = 0;
+            if ($userItems->isNotEmpty()) {
+                $user = $userItems->first()->user;
+                $presentCount = $userItems->whereIn('status', ['present', 'late'])->count();
+                $leaveCount = $userItems->whereIn('status', ['leave', 'permit', 'sick'])->count();
+                $paidDays = $presentCount + $leaveCount;
+                $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
+                $attendanceSalary = $paidDays * $dailySalary;
+            }
+
+            // Adjustments
+            $bonus = $userAdjustments->where('type', 'bonus')->sum('amount');
+            $kasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
+
+            $totalAmount += ($attendanceSalary + $bonus - $kasbon);
+        }
 
         if ($totalAmount <= 0) {
-            return back()->with('error', __('Total salary amount is zero. No transaction created.'));
+            return back()->with('error', __('Total salary amount is zero or negative. No transaction created.'));
         }
 
         // Create Description
@@ -302,6 +380,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'description' => $description,
             'transaction_date' => now(),
         ]);
+
+        // Mark adjustments as processed
+        if ($pendingAdjustments->isNotEmpty()) {
+            SalaryAdjustment::whereIn('id', $pendingAdjustments->pluck('id'))->update(['status' => 'processed']);
+        }
 
         return back()->with('success', __('Salary expense of :amount has been recorded in Finance.', ['amount' => number_format($totalAmount, 0, ',', '.')]));
     }

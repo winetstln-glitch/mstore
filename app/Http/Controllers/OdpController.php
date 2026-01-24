@@ -26,10 +26,26 @@ class OdpController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $odps = Odp::with('odc')->latest()->paginate(10);
-        return view('odps.index', compact('odps'));
+        $query = Odp::with(['odc', 'region']);
+
+        if ($request->filled('region_id')) {
+            $query->where('region_id', $request->region_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('kampung', 'like', "%{$search}%");
+            });
+        }
+
+        $odps = $query->latest()->paginate(10);
+        $regions = Region::orderBy('name')->get();
+        
+        return view('odps.index', compact('odps', 'regions'));
     }
 
     /**

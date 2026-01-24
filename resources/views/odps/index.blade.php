@@ -8,17 +8,33 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODP Management') }}</h5>
-                <div>
-                    @if(Auth::user()->hasPermission('odp.view'))
-                    <a href="{{ route('odps.export.excel') }}" class="btn btn-success btn-sm">
-                        <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('map.manage'))
-                    <a href="{{ route('odps.create') }}" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-plus me-1"></i> {{ __('Add ODP') }}
-                    </a>
-                    @endif
+                
+                <div class="d-flex gap-2">
+                    <form action="{{ route('odps.index') }}" method="GET" class="d-flex gap-2">
+                        <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
+                            <option value="">{{ __('All Regions') }}</option>
+                            @foreach($regions as $region)
+                                <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                        <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </form>
+
+                    <div>
+                        @if(Auth::user()->hasPermission('odp.view'))
+                        <a href="{{ route('odps.export.excel') }}" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('map.manage'))
+                        <a href="{{ route('odps.create') }}" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-plus me-1"></i> {{ __('Add') }}
+                        </a>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -30,6 +46,7 @@
                         <thead class="bg-body-tertiary">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
+                                <th scope="col">{{ __('Region') }}</th>
                                 <th scope="col">{{ __('Area') }}</th>
                                 <th scope="col">{{ __('Location (Lat, Long)') }}</th>
                                 <th scope="col">{{ __('Capacity') }}</th>
@@ -41,6 +58,7 @@
                             @forelse($odps as $odp)
                                 <tr>
                                     <td class="ps-3 fw-medium">{{ $odp->name }}</td>
+                                    <td>{{ $odp->region->name ?? '-' }}</td>
                                     <td>{{ $odp->kampung ?? '-' }}</td>
                                     <td>
                                         @if($odp->latitude && $odp->longitude)
@@ -82,7 +100,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
+                                    <td colspan="7" class="text-center py-4 text-muted">
                                         <i class="fa-solid fa-info-circle me-1"></i> {{ __('No ODPs found.') }}
                                     </td>
                                 </tr>

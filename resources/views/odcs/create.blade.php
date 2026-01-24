@@ -17,6 +17,18 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label for="region_id" class="form-label">{{ __('Region') }}</label>
+                            <select class="form-select @error('region_id') is-invalid @enderror" id="region_id" name="region_id">
+                                <option value="">{{ __('Select Region') }}</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ old('region_id') == $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
                             <label for="olt_id" class="form-label">{{ __('OLT') }}</label>
                             <select class="form-select @error('olt_id') is-invalid @enderror" id="olt_id" name="olt_id" required>
                                 <option value="">{{ __('Select OLT') }}</option>
@@ -28,6 +40,9 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="pon_port" class="form-label">{{ __('PON Port') }}</label>
                             <input type="text" class="form-control @error('pon_port') is-invalid @enderror" id="pon_port" name="pon_port" value="{{ old('pon_port') }}" required placeholder="e.g. PON01">
@@ -35,9 +50,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
-
-                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="area" class="form-label">{{ __('Area') }}</label>
                             <input type="text" class="form-control @error('area') is-invalid @enderror" id="area" name="area" value="{{ old('area') }}" required placeholder="e.g. CIBADAK">
@@ -45,6 +57,8 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="color" class="form-label">{{ __('Tube / Fiber Color') }}</label>
                             <select class="form-select @error('color') is-invalid @enderror" id="color" name="color" required>
@@ -66,9 +80,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
-
-                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="cable_no" class="form-label">{{ __('Cable No') }}</label>
                             <input type="text" class="form-control @error('cable_no') is-invalid @enderror" id="cable_no" name="cable_no" value="{{ old('cable_no') }}" required placeholder="e.g. 01">
@@ -76,6 +87,9 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="capacity" class="form-label">{{ __('Capacity (Ports)') }}</label>
                             <input type="number" class="form-control @error('capacity') is-invalid @enderror" id="capacity" name="capacity" value="{{ old('capacity', 144) }}" min="0" required>

@@ -24,6 +24,9 @@
                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal">
                             <i class="fa-solid fa-plus"></i> {{ __('Add') }}
                         </button>
+                        <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal" data-bs-target="#salaryAdjustmentModal">
+                            <i class="fa-solid fa-money-bill-transfer"></i> {{ __('Bonus/Kasbon') }}
+                        </button>
                         @endif
                         <a href="{{ route('attendance.pdf', request()->all()) }}" class="btn btn-danger btn-sm" target="_blank">
                             <i class="fa-solid fa-file-pdf"></i> {{ __('PDF') }}
@@ -231,6 +234,55 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary">{{ __('Save Record') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Salary Adjustment Modal -->
+<div class="modal fade" id="salaryAdjustmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">{{ __('Add Bonus / Kasbon') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('salary-adjustments.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('User') }}</label>
+                        <select name="user_id" class="form-select" required>
+                            <option value="">{{ __('Select User') }}</option>
+                            @foreach($technicians as $tech)
+                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('Type') }}</label>
+                        <select name="type" class="form-select" required>
+                            <option value="bonus">{{ __('Bonus') }}</option>
+                            <option value="kasbon">{{ __('Kasbon (Debt)') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('Amount') }}</label>
+                        <input type="number" name="amount" class="form-control" required min="0" step="1000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('Date') }}</label>
+                        <input type="date" name="date" class="form-control" required value="{{ date('Y-m-d') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('Description') }}</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
                 </div>
             </form>
         </div>

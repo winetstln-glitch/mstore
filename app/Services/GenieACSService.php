@@ -61,6 +61,8 @@ class GenieACSService
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations',
+                'InternetGatewayDevice.LANDevice.1.Hosts.Host',
+                'Device.Hosts.Host',
                 'VirtualParameters.activedevices',
                 'VirtualParameters.getdeviceuptime',
                 'DeviceID.ProductClass',

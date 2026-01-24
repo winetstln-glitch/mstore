@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Odc;
 use App\Models\Olt;
+use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -25,10 +26,26 @@ class OdcController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $odcs = Odc::with('olt')->latest()->paginate(10);
-        return view('odcs.index', compact('odcs'));
+        $query = Odc::with(['olt', 'region']);
+
+        if ($request->filled('region_id')) {
+            $query->where('region_id', $request->region_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('area', 'like', "%{$search}%");
+            });
+        }
+
+        $odcs = $query->latest()->paginate(10);
+        $regions = Region::orderBy('name')->get();
+
+        return view('odcs.index', compact('odcs', 'regions'));
     }
 
     /**
@@ -37,7 +54,8 @@ class OdcController extends Controller implements HasMiddleware
     public function create()
     {
         $olts = Olt::all();
-        return view('odcs.create', compact('olts'));
+        $regions = Region::orderBy('name')->get();
+        return view('odcs.create', compact('olts', 'regions'));
     }
 
     /**
@@ -48,6 +66,7 @@ class OdcController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'nullable|string|max:255|unique:odcs',
             'olt_id' => 'required|exists:olts,id',
+            'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'required|string',
             'area' => 'required|string',
             'color' => 'required|string',
@@ -88,7 +107,8 @@ class OdcController extends Controller implements HasMiddleware
     public function edit(Odc $odc)
     {
         $olts = Olt::all();
-        return view('odcs.edit', compact('odc', 'olts'));
+        $regions = Region::orderBy('name')->get();
+        return view('odcs.edit', compact('odc', 'olts', 'regions'));
     }
 
     /**
@@ -99,6 +119,7 @@ class OdcController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,' . $odc->id,
             'olt_id' => 'sometimes|required|exists:olts,id',
+            'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'sometimes|required|string',
             'area' => 'sometimes|required|string',
             'color' => 'sometimes|required|string',
@@ -151,6 +172,7 @@ class OdcController extends Controller implements HasMiddleware
             $writer->addRow(Row::fromValues([
                 'Name',
                 'OLT',
+                'Region',
                 'PON Port',
                 'Area',
                 'Color',
@@ -161,11 +183,12 @@ class OdcController extends Controller implements HasMiddleware
                 'Description',
             ]));
 
-            Odc::with('olt')->latest()->chunk(200, function ($odcs) use ($writer) {
+            Odc::with(['olt', 'region'])->latest()->chunk(200, function ($odcs) use ($writer) {
                 foreach ($odcs as $odc) {
                     $writer->addRow(Row::fromValues([
                         $odc->name,
                         $odc->olt?->name ?? '-',
+                        $odc->region?->name ?? '-',
                         $odc->pon_port,
                         $odc->area,
                         $odc->color,

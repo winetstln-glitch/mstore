@@ -85,6 +85,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('technicians', TechnicianController::class);
     
     // Technician Attendance
+    Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
+    Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
     Route::get('attendance/pdf', [TechnicianAttendanceController::class, 'exportPdf'])->name('attendance.pdf');
     Route::get('attendance/excel', [TechnicianAttendanceController::class, 'exportExcel'])->name('attendance.excel');
     Route::post('attendance/recap-finance', [TechnicianAttendanceController::class, 'recapToFinance'])->name('attendance.recap_finance');

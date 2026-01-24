@@ -131,11 +131,11 @@
                 <table class="table table-bordered table-hover" width="100%" cellspacing="0">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('Date') }}</th>
-                            <th>{{ __('Type') }}</th>
-                            <th>{{ __('Category') }}</th>
-                            <th>{{ __('Description') }}</th>
-                            <th class="text-end">{{ __('Amount') }}</th>
+                            <th>{{ __('Tanggal') }}</th>
+                            <th>{{ __('Tipe') }}</th>
+                            <th>{{ __('Kategori') }}</th>
+                            <th>{{ __('Deskripsi') }}</th>
+                            <th class="text-end">{{ __('Jumlah') }}</th>
                         </tr>
                     </thead>
                     <tbody>

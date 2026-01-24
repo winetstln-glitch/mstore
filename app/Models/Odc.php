@@ -14,6 +14,7 @@ class Odc extends Model
     protected $fillable = [
         'name',
         'olt_id',
+        'region_id',
         'pon_port',
         'area',
         'color',
@@ -23,6 +24,11 @@ class Odc extends Model
         'capacity',
         'description',
     ];
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
 
     public function olt(): BelongsTo
     {

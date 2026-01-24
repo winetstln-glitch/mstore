@@ -55,7 +55,11 @@ class MapController extends Controller implements HasMiddleware
         $olts = Olt::all();
 
         // Fetch ODCs
-        $odcs = Odc::all();
+        $odcQuery = Odc::query();
+        if ($regionId) {
+            $odcQuery->where('region_id', $regionId);
+        }
+        $odcs = $odcQuery->get();
 
         // Fetch ODPs
         $odpQuery = Odp::query();

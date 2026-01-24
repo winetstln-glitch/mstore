@@ -33,7 +33,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3">
-                        <h6 class="fw-bold mb-0">{{ __('Connected Devices (TR-069)') }}</h6>
+                        <h6 class="fw-bold mb-0">{{ __('Perangkat Terhubung (TR-069)') }}</h6>
                         <span class="badge bg-primary rounded-pill">{{ $totalDevices ?? count($devices) }} {{ __('Total') }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
@@ -91,7 +91,7 @@
                                 <th scope="col">ID</th>
                                 <th scope="col">{{ __('SN ONT') }}</th>
                                 <th scope="col">SSID</th>
-                                <th scope="col" class="text-center">{{ __('Active') }}</th>
+                                <th scope="col" class="text-center">{{ __('Perangkat Terhubung') }}</th>
                                 <th scope="col" class="text-center">Hotspot</th>
                                 <th scope="col" class="text-center">RX</th>
                                 <th scope="col" class="text-center">Temp</th>
@@ -134,7 +134,30 @@
                                     if ($sn === '-') $sn = data_get($device, '_deviceId._SerialNumber') ?? '-';
 
                                     $ssid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID');
-                                    $active = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                    // $active = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                    
+                                    // Logic for Connected Devices (MACs)
+                                    $hosts = data_get($device, 'InternetGatewayDevice.LANDevice.1.Hosts.Host');
+                                    if (!$hosts) {
+                                        $hosts = data_get($device, 'Device.Hosts.Host');
+                                    }
+                                    $connectedMacs = [];
+                                    if ($hosts && is_array($hosts)) {
+                                        foreach ($hosts as $host) {
+                                            $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
+                                            // Check if active (handle string 'true', '1', or boolean)
+                                            if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
+                                                $macVal = data_get($host, 'MACAddress._value') ?? data_get($host, 'MACAddress') ?? data_get($host, 'PhysAddress._value') ?? data_get($host, 'PhysAddress');
+                                                if ($macVal) {
+                                                    $connectedMacs[] = $macVal;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // Fallback to TotalAssociations if no hosts found but count exists
+                                    $wifiCount = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                    $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
+
                                     $hotspot = $get('VirtualParameters.activedevices');
                                     $rx = $get('VirtualParameters.RXPower');
                                     $temp = $get('VirtualParameters.gettemp');
@@ -218,7 +241,20 @@
                                         </a>
                                     </td>
                                     <td>{{ $ssid }}</td>
-                                    <td class="text-center">{{ $active }}</td>
+                                    <td class="text-center">
+                                        @if(isset($displayCount) && $displayCount > 0)
+                                            <span class="badge bg-success mb-1">{{ $displayCount }}</span>
+                                            @if(isset($connectedMacs) && count($connectedMacs) > 0)
+                                                <div class="d-flex flex-column gap-1">
+                                                    @foreach($connectedMacs as $mac)
+                                                        <span class="badge bg-light text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;">{{ $mac }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">{{ $hotspot }}</td>
                                     <td class="text-center">
                                         @if($rx !== '-')
