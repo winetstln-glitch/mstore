@@ -36,7 +36,7 @@ class GenieACSService
     /**
      * Get list of devices (simplified projection)
      */
-    public function getDevices($limit = 50, $skip = 0)
+    public function getDevices($limit = 50, $skip = 0, $search = null)
     {
         try {
             // Updated projection based on user request including VirtualParameters
@@ -77,6 +77,17 @@ class GenieACSService
                 'projection' => $projection,
                 'sort' => '{"_lastInform":-1}',
             ];
+
+            if ($search) {
+                $searchQuery = [
+                    '$or' => [
+                        ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
+                        ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
+                    ]
+                ];
+                $queryParams['query'] = json_encode($searchQuery);
+            }
 
             if ($limit !== null) {
                 $queryParams['limit'] = $limit;

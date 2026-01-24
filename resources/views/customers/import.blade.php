@@ -12,9 +12,25 @@
             </div>
 
             <div class="card-body p-4">
+                <form action="{{ route('customers.import') }}" method="GET" class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Search by Serial Number, PPPoE Username, or Product Class..." value="{{ $search ?? '' }}">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        @if(request('search'))
+                            <a href="{{ route('customers.import') }}" class="btn btn-outline-secondary">Clear</a>
+                        @endif
+                    </div>
+                </form>
+
                 @if($newDevices->isEmpty())
                     <div class="alert alert-info shadow-sm border-0">
-                        <i class="fa-solid fa-circle-info me-2"></i> No new devices found to import. All devices in GenieACS are already linked to customers.
+                        <i class="fa-solid fa-circle-info me-2"></i> 
+                        @if(request('search'))
+                            No new devices found matching "<strong>{{ request('search') }}</strong>". They might already be imported or do not exist.
+                        @else
+                            No new devices found to import. All devices in GenieACS are already linked to customers.
+                        @endif
                     </div>
                 @else
                     <div class="alert alert-light border shadow-sm mb-4">

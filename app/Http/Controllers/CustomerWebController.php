@@ -371,10 +371,12 @@ class CustomerWebController extends Controller implements HasMiddleware
     /**
      * Show Import Form
      */
-    public function import()
+    public function import(Request $request)
     {
+        $search = $request->query('search');
+
         // 1. Get all devices from GenieACS
-        $devices = $this->genieService->getDevices(100); 
+        $devices = $this->genieService->getDevices(100, 0, $search); 
 
         // 2. Get existing ONU Serials
         $existingSerials = Customer::whereNotNull('onu_serial')->pluck('onu_serial')->toArray();
@@ -432,7 +434,7 @@ class CustomerWebController extends Controller implements HasMiddleware
              ];
         });
 
-        return view('customers.import', compact('newDevices'));
+        return view('customers.import', compact('newDevices', 'search'));
     }
 
     /**
