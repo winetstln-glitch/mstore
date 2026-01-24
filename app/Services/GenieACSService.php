@@ -22,6 +22,162 @@ class GenieACSService
         }
     }
 
+    /**
+     * Get WiFi Connected Clients
+     */
+    public function getWifiClients($deviceId, $device = null)
+    {
+        if (!$device) {
+            $device = $this->getDeviceDetails($deviceId);
+        }
+        if (!$device) return [];
+
+        $clients = [];
+
+        // TR-098
+        if (isset($device['InternetGatewayDevice'])) {
+            $wlanConfigs = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'] ?? [];
+            foreach ($wlanConfigs as $index => $config) {
+                if (!is_numeric($index)) continue;
+                
+                $ssidClients = [];
+                $associatedDevices = $config['AssociatedDevice'] ?? [];
+                
+                foreach ($associatedDevices as $key => $client) {
+                    if (!is_numeric($key)) continue;
+                    
+                    $mac = $this->getValue($client['AssociatedDeviceMACAddress'] ?? $client['MACAddress'] ?? '');
+                    if (!$mac) continue;
+
+                    // Try to resolve hostname from Hosts table if available
+                    $hostname = '';
+                    
+                    $rssi = $this->getValue($client['X_Huawei_RSSI'] ?? $client['SignalStrength'] ?? $client['RSSI'] ?? '');
+                    
+                    $ssidClients[] = [
+                        'mac' => $mac,
+                        'ip' => $this->getValue($client['AssociatedDeviceIPAddress'] ?? $client['IPAddress'] ?? ''),
+                        'rssi' => $rssi,
+                        'mode' => 'on', // Placeholder or extract from Standard
+                        'description' => $hostname, 
+                        'status' => $this->getValue($client['Active'] ?? true) ? 'on' : 'off',
+                    ];
+                }
+                
+                $clients[$index] = $ssidClients;
+            }
+        }
+        // TR-181
+        elseif (isset($device['Device']['WiFi']['AccessPoint'])) {
+            $accessPoints = $device['Device']['WiFi']['AccessPoint'] ?? [];
+            foreach ($accessPoints as $index => $ap) {
+                if (!is_numeric($index)) continue;
+
+                $ssidClients = [];
+                $associatedDevices = $ap['AssociatedDevice'] ?? [];
+
+                foreach ($associatedDevices as $key => $client) {
+                    if (!is_numeric($key)) continue;
+
+                    $mac = $this->getValue($client['MACAddress'] ?? '');
+                    if (!$mac) continue;
+
+                    $rssi = $this->getValue($client['SignalStrength'] ?? $client['RSSI'] ?? '');
+
+                    $ssidClients[] = [
+                        'mac' => $mac,
+                        'ip' => $this->getValue($client['IPAddress'] ?? ''), // Might be missing in TR-181 AssociatedDevice
+                        'rssi' => $rssi,
+                        'mode' => 'on',
+                        'description' => '',
+                        'status' => $this->getValue($client['Active'] ?? true) ? 'on' : 'off',
+                    ];
+                }
+                $clients[$index] = $ssidClients;
+            }
+        }
+
+        return $clients;
+    }
+
+    /**
+     * Get WLAN Settings for Advanced View
+     */
+    public function getWlanSettings($deviceId, $index = 1, $device = null)
+    {
+        if (!$device) {
+            $device = $this->getDeviceDetails($deviceId);
+        }
+        if (!$device) return null;
+
+        $settings = [
+            'enable' => false,
+            'ssid' => '',
+            'password' => '',
+            'security' => '',
+            'channel' => '',
+            'auto_channel' => false,
+            'power' => '',
+            'bssid' => '',
+            'connected_devices' => 0,
+        ];
+
+        // TR-098
+        if (isset($device['InternetGatewayDevice'])) {
+            $wlan = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][$index] ?? null;
+            
+            if ($wlan) {
+                $settings['enable'] = filter_var($this->getValue($wlan['Enable'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $settings['ssid'] = $this->getValue($wlan['SSID'] ?? '');
+                
+                if (isset($wlan['PreSharedKey'][1]['KeyPassphrase'])) {
+                    $settings['password'] = $this->getValue($wlan['PreSharedKey'][1]['KeyPassphrase']);
+                } elseif (isset($wlan['KeyPassphrase'])) {
+                    $settings['password'] = $this->getValue($wlan['KeyPassphrase']);
+                } else {
+                    $settings['password'] = $this->getValue($wlan['PreSharedKey'][1]['PreSharedKey'] ?? '');
+                }
+
+                $settings['security'] = $this->getValue($wlan['BeaconType'] ?? '');
+                $settings['channel'] = $this->getValue($wlan['Channel'] ?? '');
+                $settings['auto_channel'] = filter_var($this->getValue($wlan['AutoChannelEnable'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $settings['power'] = $this->getValue($wlan['TransmitPower'] ?? '');
+                $settings['bssid'] = $this->getValue($wlan['BSSID'] ?? '');
+                $settings['connected_devices'] = $this->getValue($wlan['TotalAssociations'] ?? 0);
+            }
+        }
+        // TR-181
+        elseif (isset($device['Device'])) {
+            $ssidObj = $device['Device']['WiFi']['SSID'][$index] ?? null;
+            $apObj = $device['Device']['WiFi']['AccessPoint'][$index] ?? null;
+            
+            if ($ssidObj) {
+                $settings['enable'] = filter_var($this->getValue($ssidObj['Enable'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $settings['ssid'] = $this->getValue($ssidObj['SSID'] ?? '');
+                $settings['bssid'] = $this->getValue($ssidObj['BSSID'] ?? $ssidObj['MACAddress'] ?? '');
+            }
+            
+            if ($apObj) {
+                if (isset($apObj['Security'])) {
+                    $settings['password'] = $this->getValue($apObj['Security']['KeyPassphrase'] ?? '');
+                    $settings['security'] = $this->getValue($apObj['Security']['ModeEnabled'] ?? '');
+                }
+                $settings['connected_devices'] = $this->getValue($apObj['AssociatedDeviceNumberOfEntries'] ?? 0);
+            }
+            
+            // Channel/Radio info usually in Device.WiFi.Radio.{i}
+            // For simplicity, we skip radio mapping for now or assume 1-to-1 mapping if indices match
+            if (isset($device['Device']['WiFi']['Radio'][$index])) {
+                $radio = $device['Device']['WiFi']['Radio'][$index];
+                $settings['channel'] = $this->getValue($radio['Channel'] ?? '');
+                $settings['auto_channel'] = filter_var($this->getValue($radio['AutoChannelEnable'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $settings['power'] = $this->getValue($radio['TransmitPower'] ?? '');
+            }
+        }
+
+        return $settings;
+    }
+
     public function useServer(?GenieAcsServer $server): self
     {
         if ($server) {

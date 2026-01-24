@@ -54,6 +54,11 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab" aria-controls="clients" aria-selected="false">
+                            <i class="fa-solid fa-users me-1"></i> {{ __('WiFi Clients') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold" id="diag-tab" data-bs-toggle="tab" data-bs-target="#diag" type="button" role="tab" aria-controls="diag" aria-selected="false">
                             <i class="fa-solid fa-stethoscope me-1"></i> {{ __('Diagnostics') }}
                         </button>

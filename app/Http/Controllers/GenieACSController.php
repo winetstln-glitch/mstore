@@ -192,10 +192,13 @@ class GenieACSController extends Controller implements HasMiddleware
         $wlanSettings2 = $this->genieService->getWlanSettings($id, 2, $device);
         $wlanSettings3 = $this->genieService->getWlanSettings($id, 3, $device);
         $wlanSettings4 = $this->genieService->getWlanSettings($id, 4, $device);
+
+        $wifiClients = $this->genieService->getWifiClients($id, $device);
         
         return view('genieacs.show', compact(
             'device', 'id', 'config', 'parameters', 'deviceIp', 'customer', 'odps', 'regions', 'serverId',
-            'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4'
+            'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4',
+            'wifiClients'
         ));
     }
 
