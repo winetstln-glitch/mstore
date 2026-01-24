@@ -140,9 +140,11 @@ class OdcController extends Controller implements HasMiddleware
 
     public function exportExcel()
     {
-        $odcs = Odc::with('olt')->latest()->get();
+        return response()->streamDownload(function () {
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
 
-        return response()->streamDownload(function () use ($odcs) {
             $writer = new Writer();
             $writer->openToFile('php://output');
 
@@ -159,20 +161,22 @@ class OdcController extends Controller implements HasMiddleware
                 'Description',
             ]));
 
-            foreach ($odcs as $odc) {
-                $writer->addRow(Row::fromValues([
-                    $odc->name,
-                    $odc->olt?->name ?? '-',
-                    $odc->pon_port,
-                    $odc->area,
-                    $odc->color,
-                    $odc->cable_no,
-                    $odc->latitude,
-                    $odc->longitude,
-                    $odc->capacity,
-                    $odc->description,
-                ]));
-            }
+            Odc::with('olt')->latest()->chunk(200, function ($odcs) use ($writer) {
+                foreach ($odcs as $odc) {
+                    $writer->addRow(Row::fromValues([
+                        $odc->name,
+                        $odc->olt?->name ?? '-',
+                        $odc->pon_port,
+                        $odc->area,
+                        $odc->color,
+                        $odc->cable_no,
+                        $odc->latitude,
+                        $odc->longitude,
+                        $odc->capacity,
+                        $odc->description,
+                    ]));
+                }
+            });
 
             $writer->close();
         }, 'odcs_' . date('Y-m-d_H-i-s') . '.xlsx');
