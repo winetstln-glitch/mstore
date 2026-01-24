@@ -162,7 +162,7 @@ class OdcController extends Controller implements HasMiddleware
             foreach ($odcs as $odc) {
                 $writer->addRow(Row::fromValues([
                     $odc->name,
-                    $odc->olt->name ?? '-',
+                    $odc->olt?->name ?? '-',
                     $odc->pon_port,
                     $odc->area,
                     $odc->color,

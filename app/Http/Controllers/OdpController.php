@@ -244,8 +244,8 @@ class OdpController extends Controller implements HasMiddleware
             foreach ($odps as $odp) {
                 $writer->addRow(Row::fromValues([
                     $odp->name,
-                    $odp->odc->name ?? '-',
-                    $odp->region->name ?? '-',
+                    $odp->odc?->name ?? '-',
+                    $odp->region?->name ?? '-',
                     $odp->kampung,
                     $odp->color,
                     $odp->latitude,
