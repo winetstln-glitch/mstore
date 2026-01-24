@@ -257,9 +257,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         toggleConnectionType();
 
-        var lat = {{ $customer->latitude ?? -6.200000 }};
-        var lng = {{ $customer->longitude ?? 106.816666 }};
+        var lat = @json(old('latitude', $customer->latitude));
+        var lng = @json(old('longitude', $customer->longitude));
         var zoom = 15;
+
+        // Handle null, empty string, or non-numeric values
+        if (lat === null || lat === '') lat = -6.200000;
+        if (lng === null || lng === '') lng = 106.816666;
 
         lat = parseFloat(lat);
         lng = parseFloat(lng);
