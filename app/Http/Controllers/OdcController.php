@@ -145,9 +145,18 @@ class OdcController extends Controller implements HasMiddleware
         $ponRaw = preg_replace('/[^0-9]/', '', $data['pon_port']);
         $pon = str_pad($ponRaw, 2, '0', STR_PAD_LEFT);
 
-        // Area: Take first 2 characters
+        // Area: Take First, Middle, and Last characters
         $areaRaw = strtoupper(preg_replace('/\s+/', '', $data['area']));
-        $area = substr($areaRaw, 0, 2);
+        $length = strlen($areaRaw);
+        if ($length <= 3) {
+            $area = $areaRaw;
+        } else {
+            $first = substr($areaRaw, 0, 1);
+            $last = substr($areaRaw, -1);
+            $middleIndex = floor($length / 2);
+            $middle = substr($areaRaw, $middleIndex, 1);
+            $area = $first . $middle . $last;
+        }
 
         // Color: Take first 1 character
         $colorRaw = strtoupper(preg_replace('/\s+/', '', $data['color']));

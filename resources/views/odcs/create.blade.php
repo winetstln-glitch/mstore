@@ -153,7 +153,17 @@
             let pon = ponVal ? ponVal.padStart(2, '0') : '[PON]';
 
             let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').toUpperCase() : '';
-            let area = areaVal ? areaVal.substring(0, 2) : '[AREA]';
+            let area = '[AREA]';
+            if (areaVal) {
+                if (areaVal.length > 3) {
+                    let first = areaVal.charAt(0);
+                    let last = areaVal.charAt(areaVal.length - 1);
+                    let middle = areaVal.charAt(Math.floor(areaVal.length / 2));
+                    area = first + middle + last;
+                } else {
+                    area = areaVal;
+                }
+            }
 
             // Get selected option's data-code for color abbreviation
             let selectedOption = colorInput.options[colorInput.selectedIndex];

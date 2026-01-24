@@ -47,7 +47,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="odp_area" class="form-label">{{ __('ODP Area Code') }}</label>
-                            <input type="text" class="form-control @error('odp_area') is-invalid @enderror" id="odp_area" name="odp_area" value="{{ old('odp_area') }}" placeholder="{{ __('e.g. CI') }}">
+                            <input type="text" class="form-control @error('odp_area') is-invalid @enderror" id="odp_area" name="odp_area" value="{{ old('odp_area') }}" placeholder="{{ __('e.g. CIB') }}">
                             @error('odp_area')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -176,8 +176,16 @@
         }
 
         function updateNamePreview() {
-            // Area: 2 chars
-            let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').substring(0, 2).toUpperCase() : '[AREA]';
+            // Area: First + Middle + Last
+            let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').toUpperCase() : '';
+            if (areaVal.length > 3) {
+                let first = areaVal.charAt(0);
+                let last = areaVal.charAt(areaVal.length - 1);
+                let middle = areaVal.charAt(Math.floor(areaVal.length / 2));
+                areaVal = first + middle + last;
+            } else if (areaVal.length === 0) {
+                areaVal = '[AREA]';
+            }
 
             // Cable: 2 digits
             let cableVal = cableInput.value ? cableInput.value.replace(/[^0-9]/g, '').padStart(2, '0') : '[CABLE]';
