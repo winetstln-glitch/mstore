@@ -56,7 +56,7 @@ class GenieACSService
                     
                     $ssidClients[] = [
                         'mac' => $mac,
-                        'ip' => $this->getValue($client['AssociatedDeviceIPAddress'] ?? $client['IPAddress'] ?? ''),
+                        'ip' => $this->getValue($client['AssociatedDeviceIPAddress'] ?? $client['IPAddress'] ?? $client['X_Huawei_IPAddress'] ?? ''),
                         'rssi' => $rssi,
                         'mode' => 'on', // Placeholder or extract from Standard
                         'description' => $hostname, 
@@ -458,6 +458,7 @@ class GenieACSService
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey',
+                'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AssociatedDevice',
                 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
                 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress',
                 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_HW_VLAN',

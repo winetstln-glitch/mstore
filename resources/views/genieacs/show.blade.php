@@ -328,6 +328,72 @@
                         </div>
                     </div>
 
+                    <!-- WiFi Clients Tab -->
+                    <div class="tab-pane fade" id="clients" role="tabpanel" aria-labelledby="clients-tab">
+                        <h5 class="fw-bold mb-4">{{ __('WiFi Clients Information') }}</h5>
+                        
+                        @if(empty($wifiClients))
+                            <div class="alert alert-info">
+                                <i class="fa-solid fa-info-circle me-2"></i> {{ __('No WiFi clients detected or device is offline.') }}
+                            </div>
+                        @else
+                            @foreach($wifiClients as $ssidIndex => $clients)
+                                <div class="card mb-4 border-0 shadow-sm">
+                                    <div class="card-header bg-body-tertiary fw-bold">
+                                        SSID {{ $ssidIndex }}
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0 align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>{{ __('RSSI') }}</th>
+                                                        <th>{{ __('Mode') }}</th>
+                                                        <th>{{ __('Descriptions') }}</th>
+                                                        <th>{{ __('IP Address') }}</th>
+                                                        <th>{{ __('MAC Address') }}</th>
+                                                        <th>{{ __('Status') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @forelse($clients as $client)
+                                                        <tr>
+                                                            <td>{{ $client['rssi'] }}</td>
+                                                            <td>{{ $client['mode'] }}</td>
+                                                            <td>{{ $client['description'] ?: '-' }}</td>
+                                                            <td>
+                                                                {{ $client['ip'] ?: '-' }}
+                                                                @if($client['ip'])
+                                                                    <a href="http://{{ $client['ip'] }}" target="_blank" class="text-decoration-none ms-1 text-muted small">
+                                                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                                                    </a>
+                                                                @endif
+                                                            </td>
+                                                            <td class="font-monospace">{{ $client['mac'] ?: '-' }}</td>
+                                                            <td>
+                                                                @if($client['status'] == 'on')
+                                                                    <span class="badge bg-success">Online</span>
+                                                                @else
+                                                                    <span class="badge bg-secondary">Offline</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr>
+                                                            <td colspan="6" class="text-center text-muted py-3">
+                                                                {{ __('No clients connected to this SSID.') }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+
                     <!-- Diagnostics Tab -->
                     <div class="tab-pane fade" id="diag" role="tabpanel" aria-labelledby="diag-tab">
                         <h5 class="fw-bold mb-4">{{ __('Diagnostics') }}</h5>
