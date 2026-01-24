@@ -267,77 +267,92 @@
         if (isNaN(lat)) lat = -6.200000;
         if (isNaN(lng)) lng = 106.816666;
 
-        var map = L.map('map-picker').setView([lat, lng], zoom);
-
-        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-        });
-
-        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 22,
-            subdomains: ['mt0','mt1','mt2','mt3'],
-            attribution: '&copy; Google Maps'
-        });
-
-        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 20,
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-        });
-
-        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-        if (currentTheme === 'dark') {
-            darkLayer.addTo(map);
-        } else {
-            osm.addTo(map);
+        var mapContainer = document.getElementById('map-picker');
+        if (!mapContainer) {
+            console.error("Map container not found!");
+            return;
         }
 
-        var baseMaps = {
-            "Dark Mode": darkLayer,
-            "Satellite (Google)": googleHybrid,
-            "Street (OSM)": osm
-        };
-        L.control.layers(baseMaps).addTo(map);
+        try {
+            var map = L.map('map-picker').setView([lat, lng], zoom);
 
-        window.addEventListener('themeChanged', function(e) {
-            if (e.detail.theme === 'dark') {
-                if (map.hasLayer(osm)) map.removeLayer(osm);
-                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
-                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            });
+
+            var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 22,
+                attribution: '&copy; Google Maps'
+            });
+
+            var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            });
+
+            var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            if (currentTheme === 'dark') {
+                darkLayer.addTo(map);
             } else {
-                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
-                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+                osm.addTo(map);
             }
-        });
 
-        var marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            var baseMaps = {
+                "Dark Mode": darkLayer,
+                "Satellite (Google)": googleHybrid,
+                "Street (OSM)": osm
+            };
+            L.control.layers(baseMaps).addTo(map);
 
-        marker.on('dragend', function(e) {
-            var lat = e.target.getLatLng().lat;
-            var lng = e.target.getLatLng().lng;
-            document.getElementById('latitude').value = lat.toFixed(8);
-            document.getElementById('longitude').value = lng.toFixed(8);
-        });
+            // Fix map rendering issues in tabs/modals
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 500);
 
-        map.on('click', function(e) {
-            var lat = e.latlng.lat;
-            var lng = e.latlng.lng;
+            window.addEventListener('themeChanged', function(e) {
+                if (e.detail.theme === 'dark') {
+                    if (map.hasLayer(osm)) map.removeLayer(osm);
+                    if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                    if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+                } else {
+                    if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                    if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+                }
+            });
 
-            document.getElementById('latitude').value = lat.toFixed(8);
-            document.getElementById('longitude').value = lng.toFixed(8);
+            var marker = L.marker([lat, lng], {draggable: true}).addTo(map);
 
-            if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng, {draggable: true}).addTo(map);
-                marker.on('dragend', function(e) {
-                    var lat = e.target.getLatLng().lat;
-                    var lng = e.target.getLatLng().lng;
-                    document.getElementById('latitude').value = lat.toFixed(8);
-                    document.getElementById('longitude').value = lng.toFixed(8);
-                });
-            }
-        });
+            marker.on('dragend', function(e) {
+                var lat = e.target.getLatLng().lat;
+                var lng = e.target.getLatLng().lng;
+                document.getElementById('latitude').value = lat.toFixed(8);
+                document.getElementById('longitude').value = lng.toFixed(8);
+            });
+
+            map.on('click', function(e) {
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+
+                document.getElementById('latitude').value = lat.toFixed(8);
+                document.getElementById('longitude').value = lng.toFixed(8);
+
+                if (marker) {
+                    marker.setLatLng(e.latlng);
+                } else {
+                    marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+                    marker.on('dragend', function(e) {
+                        var lat = e.target.getLatLng().lat;
+                        var lng = e.target.getLatLng().lng;
+                        document.getElementById('latitude').value = lat.toFixed(8);
+                        document.getElementById('longitude').value = lng.toFixed(8);
+                    });
+                }
+            });
+        } catch (error) {
+            console.error("Error initializing map:", error);
+            mapContainer.innerHTML = '<div class="alert alert-danger">Failed to load map. Please check console for details.</div>';
+        }
     });
 
     function togglePasswordVisibility(fieldId) {
