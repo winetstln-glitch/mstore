@@ -115,7 +115,7 @@ class OdpController extends Controller implements HasMiddleware
              $areaRaw = $odc->area;
         }
         $areaRaw = strtoupper(preg_replace('/\s+/', '', $areaRaw));
-        $area = substr($areaRaw, 0, 2);
+        $area = substr($areaRaw, 0, 3);
 
         // Cable: 2 digits from Input Cable (fallback to ODC)
         $cableRaw = isset($data['odp_cable']) ? $data['odp_cable'] : '';

@@ -23,7 +23,7 @@
                         <thead class="bg-body-tertiary">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
-                                <th scope="col">{{ __('Area Code') }}</th>
+                                <th scope="col">{{ __('Area') }}</th>
                                 <th scope="col">{{ __('Location (Lat, Long)') }}</th>
                                 <th scope="col">{{ __('Capacity') }}</th>
                                 <th scope="col">{{ __('Filled') }}</th>
@@ -34,7 +34,7 @@
                             @forelse($odps as $odp)
                                 <tr>
                                     <td class="ps-3 fw-medium">{{ $odp->name }}</td>
-                                    <td>{{ $odp->odc->area_code ?? '-' }}</td>
+                                    <td>{{ $odp->odc->area ?? '-' }}</td>
                                     <td>
                                         @if($odp->latitude && $odp->longitude)
                                             <a href="https://www.google.com/maps/search/?api=1&query={{ $odp->latitude }},{{ $odp->longitude }}" target="_blank" class="text-decoration-none">
