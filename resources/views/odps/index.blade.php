@@ -34,7 +34,7 @@
                             @forelse($odps as $odp)
                                 <tr>
                                     <td class="ps-3 fw-medium">{{ $odp->name }}</td>
-                                    <td>{{ $odp->odc->area ?? '-' }}</td>
+                                    <td>{{ $odp->kampung ?? '-' }}</td>
                                     <td>
                                         @if($odp->latitude && $odp->longitude)
                                             <a href="https://www.google.com/maps/search/?api=1&query={{ $odp->latitude }},{{ $odp->longitude }}" target="_blank" class="text-decoration-none">
