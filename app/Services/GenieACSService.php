@@ -66,6 +66,57 @@ class GenieACSService
                 
                 $clients[$index] = $ssidClients;
             }
+
+            // Fallback: Check Hosts table
+            $hosts = $device['InternetGatewayDevice']['LANDevice'][1]['Hosts']['Host'] ?? [];
+            foreach ($hosts as $key => $host) {
+                if (!is_numeric($key)) continue;
+                
+                $active = $this->getValue($host['Active'] ?? 'false');
+                $isActive = ($active === 'true' || $active === true || $active === '1' || $active === 1);
+                if (!$isActive) continue;
+
+                $mac = $this->getValue($host['MACAddress'] ?? $host['PhysAddress'] ?? '');
+                if (!$mac) continue;
+                
+                $l2Ref = $this->getValue($host['Layer2Interface'] ?? '');
+                $type = $this->getValue($host['InterfaceType'] ?? '');
+                
+                $index = 0;
+                if (strpos($l2Ref, 'WLANConfiguration.1') !== false) $index = 1;
+                elseif (strpos($l2Ref, 'WLANConfiguration.2') !== false) $index = 2;
+                elseif (strpos($l2Ref, 'WLANConfiguration.3') !== false) $index = 3;
+                elseif (strpos($l2Ref, 'WLANConfiguration.4') !== false) $index = 4;
+                
+                if ($index === 0) {
+                    if (stripos($type, '802.11') !== false || stripos($type, 'Wireless') !== false) {
+                        $index = 1; 
+                    } else {
+                        continue; 
+                    }
+                }
+
+                if (!isset($clients[$index])) $clients[$index] = [];
+                
+                $exists = false;
+                foreach ($clients[$index] as $c) {
+                    if ($c['mac'] === $mac) {
+                        $exists = true; 
+                        break;
+                    }
+                }
+                
+                if (!$exists) {
+                    $clients[$index][] = [
+                        'mac' => $mac,
+                        'ip' => $this->getValue($host['IPAddress'] ?? ''),
+                        'rssi' => '-',
+                        'mode' => 'on',
+                        'description' => $this->getValue($host['HostName'] ?? ''),
+                        'status' => 'on',
+                    ];
+                }
+            }
         }
         // TR-181
         elseif (isset($device['Device']['WiFi']['AccessPoint'])) {
@@ -86,7 +137,7 @@ class GenieACSService
 
                     $ssidClients[] = [
                         'mac' => $mac,
-                        'ip' => $this->getValue($client['IPAddress'] ?? ''), // Might be missing in TR-181 AssociatedDevice
+                        'ip' => $this->getValue($client['IPAddress'] ?? ''), 
                         'rssi' => $rssi,
                         'mode' => 'on',
                         'description' => '',
@@ -94,6 +145,57 @@ class GenieACSService
                     ];
                 }
                 $clients[$index] = $ssidClients;
+            }
+
+            // Fallback: Check Hosts table for TR-181
+            $hosts = $device['Device']['Hosts']['Host'] ?? [];
+            foreach ($hosts as $key => $host) {
+                if (!is_numeric($key)) continue;
+                
+                $active = $this->getValue($host['Active'] ?? 'false');
+                $isActive = ($active === 'true' || $active === true || $active === '1' || $active === 1);
+                if (!$isActive) continue;
+
+                $mac = $this->getValue($host['MACAddress'] ?? $host['PhysAddress'] ?? '');
+                if (!$mac) continue;
+                
+                $l2Ref = $this->getValue($host['Layer2Interface'] ?? '');
+                $type = $this->getValue($host['InterfaceType'] ?? '');
+                
+                $index = 0;
+                if (strpos($l2Ref, 'SSID.1') !== false || strpos($l2Ref, 'AccessPoint.1') !== false) $index = 1;
+                elseif (strpos($l2Ref, 'SSID.2') !== false || strpos($l2Ref, 'AccessPoint.2') !== false) $index = 2;
+                elseif (strpos($l2Ref, 'SSID.3') !== false || strpos($l2Ref, 'AccessPoint.3') !== false) $index = 3;
+                elseif (strpos($l2Ref, 'SSID.4') !== false || strpos($l2Ref, 'AccessPoint.4') !== false) $index = 4;
+                
+                if ($index === 0) {
+                    if (stripos($type, '802.11') !== false || stripos($type, 'Wireless') !== false) {
+                        $index = 1; 
+                    } else {
+                        continue; 
+                    }
+                }
+
+                if (!isset($clients[$index])) $clients[$index] = [];
+                
+                $exists = false;
+                foreach ($clients[$index] as $c) {
+                    if ($c['mac'] === $mac) {
+                        $exists = true; 
+                        break;
+                    }
+                }
+                
+                if (!$exists) {
+                    $clients[$index][] = [
+                        'mac' => $mac,
+                        'ip' => $this->getValue($host['IPAddress'] ?? ''),
+                        'rssi' => '-',
+                        'mode' => 'on',
+                        'description' => $this->getValue($host['HostName'] ?? ''),
+                        'status' => 'on',
+                    ];
+                }
             }
         }
 
