@@ -228,34 +228,8 @@
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-    function toggleConnectionType() {
-        const type = document.querySelector('input[name="connection_type"]:checked').value;
-        const odpGroup = document.getElementById('odp_select_group');
-        const htbGroup = document.getElementById('htb_select_group');
-        const odpSelect = document.getElementById('odp_id');
-        const htbSelect = document.getElementById('htb_id');
-
-        if (type === 'odp') {
-            odpGroup.classList.remove('d-none');
-            htbGroup.classList.add('d-none');
-            odpSelect.disabled = false;
-            htbSelect.disabled = true;
-            // Clear HTB selection if changing type (optional, but good for UX)
-            // But for edit, we might want to preserve it if user toggles back and forth without saving
-            // For now, let's just disable.
-            if (htbSelect.value) {
-                // htbSelect.value = ""; // Don't clear on edit, just disable
-            }
-        } else {
-            odpGroup.classList.add('d-none');
-            htbGroup.classList.remove('d-none');
-            odpSelect.disabled = true;
-            htbSelect.disabled = false;
-        }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        toggleConnectionType();
+        // toggleConnectionType(); // Function removed as elements do not exist in edit form
 
         var lat = @json(old('latitude', $customer->latitude));
         var lng = @json(old('longitude', $customer->longitude));
