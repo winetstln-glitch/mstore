@@ -11,6 +11,18 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
                             <h5 class="card-title d-inline-block me-3">{{ __('Peta Distribusi') }}</h5>
+                            @if(isset($isAdmin) && $isAdmin)
+                            <div class="d-inline-block me-2">
+                                <select class="form-select form-select-sm" id="areaFilter" style="width: auto; display: inline-block;">
+                                    <option value="">{{ __('Semua Area') }}</option>
+                                    @foreach($coordinators as $coord)
+                                        @if($coord->region)
+                                            <option value="{{ $coord->region_id }}">{{ $coord->region->name }} ({{ $coord->name }})</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
                             <button type="button" class="btn-shadow btn btn-primary btn-sm" id="btnAddOltMode">
                                 <i class="fa fa-server me-1"></i> {{ __('Tambah OLT') }}
                             </button>
@@ -435,6 +447,41 @@
         var markers = L.featureGroup().addTo(map);
         var lines = L.featureGroup().addTo(map);
         var markerMap = {}; // Store markers for easy access
+        var allMarkerObjs = []; // Store all marker objects for filtering
+
+        // Helper for visibility
+        function isVisible(item, type) {
+            var areaFilter = document.getElementById('areaFilter');
+            var selectedRegionId = areaFilter ? areaFilter.value : "";
+            
+            if (selectedRegionId === "") return true;
+            
+            // Infrastructure always visible
+            if (['olt', 'odc', 'asset'].includes(type)) return true;
+
+            if (type === 'odp') return item.region_id == selectedRegionId;
+            if (type === 'htb') {
+                return item.odp && item.odp.region_id == selectedRegionId;
+            }
+            if (type === 'customer') {
+                if (!item.odp) return false;
+                return item.odp.region_id == selectedRegionId;
+            }
+            
+            return true;
+        }
+
+        function updateMapVisibility() {
+            markers.clearLayers();
+            
+            allMarkerObjs.forEach(function(obj) {
+                if (isVisible(obj.data, obj.type)) {
+                    obj.marker.addTo(markers);
+                }
+            });
+            
+            drawLines();
+        }
 
         // Color Mapping for Cables
         const colorMap = {
@@ -475,7 +522,7 @@
 
             // ODC -> ODP
             odps.forEach(function(odp) {
-                if (odp.latitude && odp.longitude) {
+                if (isVisible(odp, 'odp') && odp.latitude && odp.longitude) {
                     var uplinkOdc = odcs.find(o => o.id == odp.odc_id);
                     if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
                         var colorKey = (odp.color || '').toUpperCase();
@@ -491,7 +538,7 @@
 
             // HTB Connections (ODP -> HTB or HTB -> HTB)
             htbs.forEach(function(htb) {
-                if (htb.latitude && htb.longitude) {
+                if (isVisible(htb, 'htb') && htb.latitude && htb.longitude) {
                     // Connect to ODP
                     if (htb.odp_id) {
                         var uplinkOdp = odps.find(o => o.id == htb.odp_id);
@@ -521,7 +568,7 @@
 
             // ODP -> Customer
             customers.forEach(function(customer) {
-                if (customer.latitude && customer.longitude) {
+                if (isVisible(customer, 'customer') && customer.latitude && customer.longitude) {
                     var isOnline = customer.is_online;
                     var uplinkOdp = odps.find(o => o.id == customer.odp_id);
                     if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
@@ -735,6 +782,8 @@
                     draggable: true
                 }).bindPopup(popupContent).addTo(markers);
 
+                allMarkerObjs.push({ marker: marker, type: 'olt', data: olt });
+
                 var oldLat = olt.latitude;
                 var oldLng = olt.longitude;
 
@@ -796,6 +845,8 @@
                     draggable: true
                 }).bindPopup(popupContent).addTo(markers);
 
+                allMarkerObjs.push({ marker: marker, type: 'odc', data: odc });
+
                 var oldLat = odc.latitude;
                 var oldLng = odc.longitude;
 
@@ -854,6 +905,8 @@
                     icon: createIcon('odp'),
                     draggable: true
                 }).bindPopup(popupContent).addTo(markers);
+
+                allMarkerObjs.push({ marker: marker, type: 'odp', data: odp });
 
                 var oldLat = odp.latitude;
                 var oldLng = odp.longitude;
@@ -915,6 +968,8 @@
                     draggable: true
                 }).bindPopup(popupContent).addTo(markers);
 
+                allMarkerObjs.push({ marker: marker, type: 'htb', data: htb });
+
                 var oldLat = htb.latitude;
                 var oldLng = htb.longitude;
 
@@ -971,6 +1026,8 @@
                     icon: createIcon('asset'),
                     draggable: true
                 }).bindPopup(popupContent).addTo(markers);
+
+                allMarkerObjs.push({ marker: marker, type: 'asset', data: asset });
 
                 var oldLat = asset.latitude;
                 var oldLng = asset.longitude;
@@ -1032,6 +1089,8 @@
                 `</div></div>`
             );
 
+            allMarkerObjs.push({ marker: marker, type: 'customer', data: customer });
+
             var oldLat = customer.latitude;
             var oldLng = customer.longitude;
 
@@ -1047,8 +1106,16 @@
             });
         });
 
-        // Initial line draw
-        drawLines();
+        // Filter Listener
+        var areaFilter = document.getElementById('areaFilter');
+        if (areaFilter) {
+            areaFilter.addEventListener('change', function() {
+                updateMapVisibility();
+            });
+        }
+
+        // Initial Map Update
+        updateMapVisibility();
 
         // Fit bounds - Disabled to respect default center/zoom
         /*

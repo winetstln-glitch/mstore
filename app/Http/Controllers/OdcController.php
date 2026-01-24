@@ -127,13 +127,53 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function destroy(Odc $odc)
     {
-        $odc->delete();
-        
-        if (request()->wantsJson()) {
-            return response()->json(['success' => true]);
+        if ($odc->odps()->exists()) {
+            return back()->with('error', __('Cannot delete ODC because it has associated ODPs.'));
         }
 
+        $odc->delete();
+
         return redirect()->route('odcs.index')->with('success', __('ODC deleted successfully.'));
+    }
+
+    public function exportExcel()
+    {
+        $odcs = Odc::with('olt')->latest()->get();
+
+        return response()->streamDownload(function () use ($odcs) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Name',
+                'OLT',
+                'PON Port',
+                'Area',
+                'Color',
+                'Cable No',
+                'Latitude',
+                'Longitude',
+                'Capacity',
+                'Description',
+            ]));
+
+            foreach ($odcs as $odc) {
+                $writer->addRow(Row::fromValues([
+                    $odc->name,
+                    $odc->olt->name ?? '-',
+                    $odc->pon_port,
+                    $odc->area,
+                    $odc->color,
+                    $odc->cable_no,
+                    $odc->latitude,
+                    $odc->longitude,
+                    $odc->capacity,
+                    $odc->description,
+                ]));
+            }
+
+            $writer->close();
+        }, 'odcs_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
 
     private function generateOdcName($data)

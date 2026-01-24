@@ -14,7 +14,7 @@ class OdpController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:odp.view', only: ['index', 'show']),
+            new Middleware('permission:odp.view', only: ['index', 'show', 'exportExcel']),
             new Middleware('permission:odp.create', only: ['create', 'store']),
             new Middleware('permission:odp.edit', only: ['edit', 'update']),
             new Middleware('permission:odp.delete', only: ['destroy']),

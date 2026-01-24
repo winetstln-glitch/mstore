@@ -688,42 +688,39 @@ class CustomerWebController extends Controller implements HasMiddleware
         $oldOdpId = $customer->odp_id;
         $oldHtbId = $customer->htb_id;
 
-        // Handle HTB/ODP logic based on which input was provided (enabled)
-        if ($request->has('htb_id')) {
-             // "Via HTB" mode
-             if (!empty($validated['htb_id'])) {
-                $newHtb = Htb::with('odp')->find($validated['htb_id']);
-                if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
-                    return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
-                }
-                if ($newHtb) {
-                    $validated['odp_id'] = $newHtb->odp_id;
-                    $validated['odp'] = $newHtb->odp->name ?? null;
-                }
-             } else {
-                 // HTB cleared
-                 $validated['htb_id'] = null;
-                 $validated['odp_id'] = null;
-                 $validated['odp'] = null;
-             }
-        } elseif ($request->has('odp_id')) {
-            // "Direct ODP" mode
-            $validated['htb_id'] = null; // Explicitly clear HTB
-            
-            if (!empty($validated['odp_id'])) {
-                // Only validate ODP capacity if connecting directly (no HTB)
-                $newOdp = Odp::find($validated['odp_id']);
-                if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
-                    return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
-                }
-                if ($newOdp) {
-                    $validated['odp'] = $newOdp->name;
-                }
-            } else {
-                // ODP cleared
-                $validated['odp_id'] = null;
-                $validated['odp'] = null;
+        // Handle HTB/ODP logic
+        // We prioritize HTB selection if provided. If HTB is empty, we check ODP selection.
+        
+        $newHtbId = $validated['htb_id'] ?? null;
+        $newOdpId = $validated['odp_id'] ?? null;
+
+        if (!empty($newHtbId)) {
+            // "Via HTB" mode
+            $newHtb = Htb::with('odp')->find($newHtbId);
+            if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
+                return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
             }
+            if ($newHtb) {
+                $validated['odp_id'] = $newHtb->odp_id;
+                $validated['odp'] = $newHtb->odp->name ?? null;
+            }
+        } elseif (!empty($newOdpId)) {
+            // "Direct ODP" mode (HTB is empty)
+            $validated['htb_id'] = null; // Ensure HTB is cleared
+            
+            // Only validate ODP capacity if connecting directly (no HTB)
+            $newOdp = Odp::find($newOdpId);
+            if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
+                return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
+            }
+            if ($newOdp) {
+                $validated['odp'] = $newOdp->name;
+            }
+        } else {
+            // Both cleared
+            $validated['htb_id'] = null;
+            $validated['odp_id'] = null;
+            $validated['odp'] = null;
         }
 
         $customer->update($validated);

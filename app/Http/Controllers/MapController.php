@@ -36,6 +36,21 @@ class MapController extends Controller implements HasMiddleware
      */
     public function index()
     {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        
+        $coordinators = [];
+        $regionId = null;
+
+        if ($isAdmin) {
+             $coordinators = \App\Models\Coordinator::with('region')->get();
+        } else {
+             $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
+             if ($coordinator) {
+                 $regionId = $coordinator->region_id;
+             }
+        }
+
         // Fetch OLTs
         $olts = Olt::all();
 
@@ -43,18 +58,37 @@ class MapController extends Controller implements HasMiddleware
         $odcs = Odc::all();
 
         // Fetch ODPs
-        $odps = Odp::all();
+        $odpQuery = Odp::query();
+        if ($regionId) {
+            $odpQuery->where('region_id', $regionId);
+        }
+        $odps = $odpQuery->get();
 
         // Fetch HTBs
-        $htbs = Htb::with(['parent', 'odp'])->get();
+        $htbQuery = Htb::with(['parent', 'odp']);
+        if ($regionId) {
+            $htbQuery->whereHas('odp', function($q) use ($regionId) {
+                $q->where('region_id', $regionId);
+            });
+        }
+        $htbs = $htbQuery->get();
 
         // Fetch Regions
         $regions = Region::orderBy('name')->get();
 
         // Fetch Customers with coordinates
-        $customers = Customer::whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->get(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package']);
+        $customerQuery = Customer::whereNotNull('latitude')
+            ->whereNotNull('longitude');
+
+        if ($regionId) {
+            $customerQuery->whereHas('odp', function($q) use ($regionId) {
+                $q->where('region_id', $regionId);
+            });
+        }
+
+        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package'])
+            ->with('odp:id,region_id')
+            ->get();
 
         // Fetch GenieACS devices to get live status
         // We fetch a larger limit to cover active devices. In production, this should be paginated or optimized.
@@ -117,7 +151,7 @@ class MapController extends Controller implements HasMiddleware
             ->whereNotNull('longitude')
             ->get();
 
-        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets'));
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin'));
     }
 
     /**

@@ -75,7 +75,7 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <label for="name" class="form-label">{{ __('ODC Name (Auto-generated)') }}</label>
-                            <input type="text" class="form-control bg-light" id="name" name="name" value="{{ old('name', $odc->name) }}" readonly placeholder="{{ __('Auto-generated: ODC-[PON]-[AREA]-[COLOR]-[CABLE]') }}">
+                            <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $odc->name) }}" placeholder="{{ __('Auto-generated: ODC-[PON]-[AREA]-[COLOR]-[CABLE]') }}">
                             <div class="form-text">{{ __('Format: ODC PON AREA WARNA KABEL') }}</div>
                         </div>
                     </div>
@@ -153,10 +153,12 @@
             nameInput.value = `ODC-${pon}-${area}-${color}-${cable}`;
         }
 
+        /*
         ponInput.addEventListener('input', updateNamePreview);
         areaInput.addEventListener('input', updateNamePreview);
         colorInput.addEventListener('change', updateNamePreview); // Changed to change event for select
         cableInput.addEventListener('input', updateNamePreview);
+        */
 
         var defaultLat = {{ $odc->latitude ?? -6.2088 }};
         var defaultLng = {{ $odc->longitude ?? 106.8456 }};

@@ -8,11 +8,18 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODP Management') }}</h5>
-                @if(Auth::user()->hasPermission('map.manage'))
-                <a href="{{ route('odps.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Add ODP') }}
-                </a>
-                @endif
+                <div>
+                    @if(Auth::user()->hasPermission('odp.view'))
+                    <a href="{{ route('odps.export.excel') }}" class="btn btn-success btn-sm">
+                        <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('map.manage'))
+                    <a href="{{ route('odps.create') }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-plus me-1"></i> {{ __('Add ODP') }}
+                    </a>
+                    @endif
+                </div>
             </div>
 
             <div class="card-body">

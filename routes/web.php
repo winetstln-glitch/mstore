@@ -136,8 +136,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/calculator/pon', [CalculatorController::class, 'index'])->name('calculator.pon');
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
+    Route::get('odps/export/excel', [\App\Http\Controllers\OdpController::class, 'exportExcel'])->name('odps.export.excel');
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
     Route::resource('htbs', \App\Http\Controllers\HtbController::class);
+    Route::get('odcs/export/excel', [\App\Http\Controllers\OdcController::class, 'exportExcel'])->name('odcs.export.excel');
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);
     Route::resource('coordinators', \App\Http\Controllers\CoordinatorController::class);
