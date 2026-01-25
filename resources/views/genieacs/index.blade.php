@@ -253,8 +253,10 @@
                                                     <span class="text-muted">-</span>
                                                 @endif
                                             </div>
-                                            <button type="button" class="btn btn-link btn-sm p-0 ms-2" 
-                                                    onclick="openAssignOdpModal('{{ $sn }}', '{{ $pppoeUser }}', '{{ $device['odp_id'] ?? '' }}', '{{ $device['odp_name'] ?? '-' }}')"
+                                            <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-assign-odp" 
+                                                    data-sn="{{ $sn }}"
+                                                    data-pppoe="{{ $pppoeUser }}"
+                                                    data-odp-id="{{ $device['odp_id'] ?? '' }}"
                                                     title="{{ __('Assign/Change ODP') }}">
                                                 <i class="fa-solid fa-pencil text-warning"></i>
                                             </button>
@@ -379,29 +381,32 @@
 
     @push('scripts')
     <script>
-        function openAssignOdpModal(sn, pppoe, odpId, odpName) {
-            document.getElementById('modalOdpSn').value = sn;
-            document.getElementById('modalOdpPppoe').value = pppoe;
-            
-            // Set ODP Select
-            var odpSelect = document.getElementById('modalOdpSelect');
-            odpSelect.value = odpId;
-            
-            // Trigger change for Select2 if used, or standard select
-            if ($(odpSelect).hasClass('select2-hidden-accessible')) {
-                $(odpSelect).trigger('change');
-            }
-            
-            var modal = new bootstrap.Modal(document.getElementById('assignOdpModal'));
-            modal.show();
-        }
-
         $(document).ready(function() {
             // Initialize Select2 for ODP inside Modal
             $('.select2-modal').select2({
                 dropdownParent: $('#assignOdpModal'),
                 theme: 'bootstrap-5',
                 placeholder: 'Select ODP'
+            });
+
+            // Handle Assign ODP Click
+            $(document).on('click', '.btn-assign-odp', function() {
+                var sn = $(this).data('sn');
+                var pppoe = $(this).data('pppoe');
+                var odpId = $(this).data('odp-id');
+                
+                $('#modalOdpSn').val(sn);
+                $('#modalOdpPppoe').val(pppoe);
+                
+                // Set ODP Select
+                var odpSelect = $('#modalOdpSelect');
+                odpSelect.val(odpId).trigger('change');
+                
+                var modalEl = document.getElementById('assignOdpModal');
+                // Use window.bootstrap if available, fallback to global bootstrap
+                var bs = window.bootstrap || bootstrap;
+                var modal = bs.Modal.getInstance(modalEl) || new bs.Modal(modalEl);
+                modal.show();
             });
         });
     </script>
