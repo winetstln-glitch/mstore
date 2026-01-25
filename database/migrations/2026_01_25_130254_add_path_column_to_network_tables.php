@@ -11,12 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $tables = ['odcs', 'odps', 'htbs', 'customers'];
+        $tables = [
+            'odcs' => 'description',
+            'odps' => 'description',
+            'htbs' => 'description',
+            'customers' => 'updated_at'
+        ];
 
-        foreach ($tables as $tableName) {
-            Schema::table($tableName, function (Blueprint $table) {
-                $table->json('path')->nullable()->after('description');
-            });
+        foreach ($tables as $tableName => $afterColumn) {
+            if (Schema::hasTable($tableName) && !Schema::hasColumn($tableName, 'path')) {
+                Schema::table($tableName, function (Blueprint $table) use ($tableName, $afterColumn) {
+                    if (Schema::hasColumn($tableName, $afterColumn)) {
+                        $table->json('path')->nullable()->after($afterColumn);
+                    } else {
+                        $table->json('path')->nullable();
+                    }
+                });
+            }
         }
     }
 
@@ -28,9 +39,11 @@ return new class extends Migration
         $tables = ['odcs', 'odps', 'htbs', 'customers'];
 
         foreach ($tables as $tableName) {
-            Schema::table($tableName, function (Blueprint $table) {
-                $table->dropColumn('path');
-            });
+            if (Schema::hasTable($tableName) && Schema::hasColumn($tableName, 'path')) {
+                Schema::table($tableName, function (Blueprint $table) {
+                    $table->dropColumn('path');
+                });
+            }
         }
     }
 };
