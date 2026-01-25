@@ -194,6 +194,7 @@ Route::middleware('auth')->group(function () {
         
         Route::get('/', [GenieACSController::class, 'index'])->name('index');
         Route::get('/device/{id}', [GenieACSController::class, 'show'])->name('show'); // Changed param to avoid conflict if any, though {id} is safe
+        Route::post('/assign-odp', [GenieACSController::class, 'assignOdp'])->name('assign_odp');
         Route::post('/device/{id}/refresh', [GenieACSController::class, 'refresh'])->name('refresh');
         Route::post('/device/{id}/reboot', [GenieACSController::class, 'reboot'])->name('reboot');
         Route::post('/device/{id}/ping', [GenieACSController::class, 'ping'])->name('ping');

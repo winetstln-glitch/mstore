@@ -144,12 +144,12 @@ class GenieACSController extends Controller implements HasMiddleware
                 
                 $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'username_pppoe', 'ont_sn']);
                 foreach ($customers as $customer) {
-                    $odpName = $customer->odp ? $customer->odp->name : '-';
+                    $odpData = $customer->odp ? ['name' => $customer->odp->name, 'id' => $customer->odp->id] : ['name' => '-', 'id' => null];
                     if ($customer->username_pppoe) {
-                        $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpName;
+                        $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpData;
                     }
                     if ($customer->ont_sn) {
-                         $customerMap['sn'][$customer->ont_sn] = $odpName;
+                         $customerMap['sn'][$customer->ont_sn] = $odpData;
                     }
                 }
             }

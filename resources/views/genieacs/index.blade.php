@@ -245,11 +245,20 @@
                                         </a>
                                     </td>
                                     <td>
-                                        @if(($device['odp_name'] ?? '-') !== '-')
-                                            <span class="badge bg-info text-dark border border-info-subtle">{{ $device['odp_name'] }}</span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                @if(($device['odp_name'] ?? '-') !== '-')
+                                                    <span class="badge bg-info text-dark border border-info-subtle">{{ $device['odp_name'] }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </div>
+                                            <button type="button" class="btn btn-link btn-sm p-0 ms-2" 
+                                                    onclick="openAssignOdpModal('{{ $sn }}', '{{ $pppoeUser }}', '{{ $device['odp_id'] ?? '' }}', '{{ $device['odp_name'] ?? '-' }}')"
+                                                    title="{{ __('Assign/Change ODP') }}">
+                                                <i class="fa-solid fa-pencil text-warning"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td>{{ $ssid }}</td>
                                     <td class="text-center">
@@ -325,6 +334,78 @@
         </div>
     </div>
 </div>
+
+    <!-- Assign ODP Modal -->
+    <div class="modal fade" id="assignOdpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('genieacs.assign_odp') }}" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('Assign/Change ODP') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Device SN') }}</label>
+                            <input type="text" class="form-control" name="sn" id="modalOdpSn" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('PPPoE Username') }}</label>
+                            <input type="text" class="form-control" name="pppoe" id="modalOdpPppoe" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Select ODP') }}</label>
+                            <select class="form-select select2-modal" name="odp_id" id="modalOdpSelect" required style="width: 100%;">
+                                <option value="">{{ __('Select ODP...') }}</option>
+                                @foreach($odps as $odp)
+                                    <option value="{{ $odp->id }}">{{ $odp->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="alert alert-info small">
+                            <i class="fa-solid fa-info-circle me-1"></i>
+                            {{ __('This will update the Customer record in MStore linked to this SN/PPPoE.') }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        function openAssignOdpModal(sn, pppoe, odpId, odpName) {
+            document.getElementById('modalOdpSn').value = sn;
+            document.getElementById('modalOdpPppoe').value = pppoe;
+            
+            // Set ODP Select
+            var odpSelect = document.getElementById('modalOdpSelect');
+            odpSelect.value = odpId;
+            
+            // Trigger change for Select2 if used, or standard select
+            if ($(odpSelect).hasClass('select2-hidden-accessible')) {
+                $(odpSelect).trigger('change');
+            }
+            
+            var modal = new bootstrap.Modal(document.getElementById('assignOdpModal'));
+            modal.show();
+        }
+
+        $(document).ready(function() {
+            // Initialize Select2 for ODP inside Modal
+            $('.select2-modal').select2({
+                dropdownParent: $('#assignOdpModal'),
+                theme: 'bootstrap-5',
+                placeholder: 'Select ODP'
+            });
+        });
+    </script>
+    @endpush
 @endsection
 
 @push('scripts')
