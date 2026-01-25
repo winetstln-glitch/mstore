@@ -160,26 +160,57 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($devices) {
             $devices->getCollection()->transform(function ($device) use ($customerMap) {
                 $odpName = '-';
+                $odpId = null;
                 
                 // Try matching by PPPoE Username
                 $pppoe = data_get($device, 'VirtualParameters.pppoeUsername._value');
                 if ($pppoe && is_string($pppoe) && isset($customerMap['pppoe'][strtolower($pppoe)])) {
-                    $odpName = $customerMap['pppoe'][strtolower($pppoe)];
+                    $odpName = $customerMap['pppoe'][strtolower($pppoe)]['name'];
+                    $odpId = $customerMap['pppoe'][strtolower($pppoe)]['id'];
                 } 
                 // Try matching by Serial Number
                 else {
                     $sn = data_get($device, '_deviceId._SerialNumber');
                     if ($sn && is_string($sn) && isset($customerMap['sn'][$sn])) {
-                         $odpName = $customerMap['sn'][$sn];
+                         $odpName = $customerMap['sn'][$sn]['name'];
+                         $odpId = $customerMap['sn'][$sn]['id'];
                     }
                 }
     
                 $device['odp_name'] = $odpName;
+                $device['odp_id'] = $odpId;
                 return $device;
             });
         }
 
-        return view('genieacs.index', compact('devices', 'servers', 'activeServer', 'modeAll'));
+        $odps = Odp::select('id', 'name')->orderBy('name')->get();
+
+        return view('genieacs.index', compact('devices', 'servers', 'activeServer', 'modeAll', 'odps'));
+    }
+
+    public function assignOdp(Request $request)
+    {
+        $request->validate([
+            'sn' => 'required|string',
+            'odp_id' => 'required|exists:odps,id',
+        ]);
+
+        $customer = Customer::where('ont_sn', $request->sn)->first();
+
+        if (!$customer) {
+            // Try matching by PPPoE if SN fails
+            if ($request->pppoe) {
+                $customer = Customer::where('username_pppoe', $request->pppoe)->first();
+            }
+        }
+
+        if ($customer) {
+            $customer->odp_id = $request->odp_id;
+            $customer->save();
+            return back()->with('success', __('ODP assigned successfully to customer.'));
+        }
+
+        return back()->with('error', __('Customer with this SN/PPPoE not found. Please register the customer first.'));
     }
 
     /**
