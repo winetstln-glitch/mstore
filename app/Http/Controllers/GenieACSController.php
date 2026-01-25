@@ -56,17 +56,27 @@ class GenieACSController extends Controller implements HasMiddleware
 
         if ($modeAll) {
             $devicesArray = [];
+            $errors = [];
 
             foreach ($servers as $server) {
-                $this->genieService->useServer($server);
-                $serverDevices = $this->genieService->getDevices(500, 0);
-
-                foreach ($serverDevices as &$device) {
-                    $device['_mstore_server_id'] = $server->id;
-                    $device['_mstore_server_name'] = $server->name;
+                try {
+                    $this->genieService->useServer($server);
+                    $serverDevices = $this->genieService->getDevices(500, 0);
+    
+                    foreach ($serverDevices as &$device) {
+                        $device['_mstore_server_id'] = $server->id;
+                        $device['_mstore_server_name'] = $server->name;
+                    }
+    
+                    $devicesArray = array_merge($devicesArray, $serverDevices);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("GenieACS Server {$server->name} Error: " . $e->getMessage());
+                    $errors[] = "{$server->name}: Connection Failed";
                 }
+            }
 
-                $devicesArray = array_merge($devicesArray, $serverDevices);
+            if (!empty($errors)) {
+                $request->session()->flash('error', 'GenieACS Errors: ' . implode(', ', $errors));
             }
 
             $totalDevices = count($devicesArray);
@@ -106,16 +116,22 @@ class GenieACSController extends Controller implements HasMiddleware
             if (!$activeServer && $servers->isEmpty()) {
                  $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
             } else {
-                $devicesList = $this->genieService->getDevices($perPage, ($page - 1) * $perPage, $query);
-                $total = $this->genieService->getTotalDevices($query);
-    
-                $devices = new LengthAwarePaginator(
-                    $devicesList,
-                    $total,
-                    $perPage,
-                    $page,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
+                try {
+                    $devicesList = $this->genieService->getDevices($perPage, ($page - 1) * $perPage, $query);
+                    $total = $this->genieService->getTotalDevices($query);
+        
+                    $devices = new LengthAwarePaginator(
+                        $devicesList,
+                        $total,
+                        $perPage,
+                        $page,
+                        ['path' => $request->url(), 'query' => $request->query()]
+                    );
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('GenieACS Fetch Error: ' . $e->getMessage());
+                    $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
+                    $request->session()->flash('error', 'GenieACS Connection Failed: ' . $e->getMessage());
+                }
             }
         }
 
