@@ -107,6 +107,9 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $currentServerId = $activeServer ? $activeServer->id : null;
+                            @endphp
                             @forelse ($devices as $device)
                                 @php
                                     $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
