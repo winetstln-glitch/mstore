@@ -137,14 +137,14 @@ class GenieACSController extends Controller implements HasMiddleware
                 $odpName = '-';
                 
                 // Try matching by PPPoE Username
-                $pppoe = $device['VirtualParameters']['pppoeUsername']['_value'] ?? null;
-                if ($pppoe && isset($customerMap['pppoe'][strtolower($pppoe)])) {
+                $pppoe = data_get($device, 'VirtualParameters.pppoeUsername._value');
+                if ($pppoe && is_string($pppoe) && isset($customerMap['pppoe'][strtolower($pppoe)])) {
                     $odpName = $customerMap['pppoe'][strtolower($pppoe)];
                 } 
                 // Try matching by Serial Number
-                elseif (isset($device['_deviceId']['_SerialNumber'])) {
-                    $sn = $device['_deviceId']['_SerialNumber'];
-                    if (isset($customerMap['sn'][$sn])) {
+                else {
+                    $sn = data_get($device, '_deviceId._SerialNumber');
+                    if ($sn && isset($customerMap['sn'][$sn])) {
                          $odpName = $customerMap['sn'][$sn];
                     }
                 }
