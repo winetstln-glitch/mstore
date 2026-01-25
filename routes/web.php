@@ -132,6 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
     
     Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])->name('map.update_location');
+    Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])->name('map.update_path');
     Route::resource('map', MapController::class);
     
     // Tools

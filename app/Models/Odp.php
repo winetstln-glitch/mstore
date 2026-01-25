@@ -20,6 +20,11 @@ class Odp extends Model
         'description',
         'region_id',
         'kampung',
+        'path',
+    ];
+
+    protected $casts = [
+        'path' => 'array',
     ];
 
     /**

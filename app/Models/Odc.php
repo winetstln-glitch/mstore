@@ -23,6 +23,11 @@ class Odc extends Model
         'longitude',
         'capacity',
         'description',
+        'path',
+    ];
+
+    protected $casts = [
+        'path' => 'array',
     ];
 
     public function region(): BelongsTo

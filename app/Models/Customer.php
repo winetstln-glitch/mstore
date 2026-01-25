@@ -75,6 +75,10 @@ class Customer extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'path' => 'array',
+    ];
+
     public function package()
     {
         return $this->belongsTo(Package::class);

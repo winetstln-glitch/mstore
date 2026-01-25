@@ -90,7 +90,7 @@ class MapController extends Controller implements HasMiddleware
             });
         }
 
-        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package'])
+        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package', 'path'])
             ->with('odp:id,region_id')
             ->get();
 
@@ -221,6 +221,33 @@ class MapController extends Controller implements HasMiddleware
         if ($model) {
             $model->latitude = $request->latitude;
             $model->longitude = $request->longitude;
+            $model->save();
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+    }
+
+    /**
+     * Update the path of a resource.
+     */
+    public function updatePath(Request $request, $type, $id)
+    {
+        $request->validate([
+            'path' => 'nullable|array',
+        ]);
+
+        $model = null;
+        switch ($type) {
+            case 'olt': $model = Olt::find($id); break;
+            case 'odc': $model = Odc::find($id); break;
+            case 'odp': $model = Odp::find($id); break;
+            case 'htb': $model = Htb::find($id); break;
+            case 'customer': $model = Customer::find($id); break;
+        }
+
+        if ($model) {
+            $model->path = $request->path;
             $model->save();
             return response()->json(['success' => true]);
         }

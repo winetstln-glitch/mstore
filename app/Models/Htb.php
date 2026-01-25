@@ -112,6 +112,11 @@ class Htb extends Model
         'filled',
         'description',
         'color',
+        'path',
+    ];
+
+    protected $casts = [
+        'path' => 'array',
     ];
 
     public function odp()

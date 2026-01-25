@@ -35,6 +35,9 @@
                             <button type="button" class="btn-shadow btn btn-primary btn-sm" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
                                 <i class="fa fa-plus me-1"></i> {{ __('Tambah HTB') }}
                             </button>
+                            <button type="button" class="btn-shadow btn btn-secondary btn-sm" id="btnEditPathsMode">
+                                <i class="fa fa-pencil me-1"></i> {{ __('Edit Jalur') }}
+                            </button>
                             <button type="button" class="btn-shadow btn btn-danger btn-sm d-none" id="btnCancelAdd">
                                 <i class="fa fa-times me-1"></i> {{ __('Batal Tambah') }}
                             </button>
@@ -361,6 +364,8 @@
 @push('scripts')
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Leaflet Editable -->
+<script src="https://unpkg.com/leaflet-editable@1.2.0/src/Leaflet.Editable.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -396,7 +401,9 @@
         }
         */
 
-        var map = L.map('map').setView([defaultLat, defaultLng], initialZoom);
+        var map = L.map('map', {
+            editable: true // Enable Leaflet.Editable
+        }).setView([defaultLat, defaultLng], initialZoom);
 
         var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -499,68 +506,77 @@
             'AQUA': 'aqua', 'TOSCA': 'turquoise'
         };
 
+        var isPathEditing = false;
+
         // Redraw lines function
         function drawLines() {
             lines.clearLayers();
 
+            function addLine(points, color, weight, opacity, dashArray, className, type, id) {
+                if (!points || points.length < 2) return;
+                var polyline = L.polyline(points, {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray,
+                    className: className
+                });
+                polyline.data = { type: type, id: id };
+                polyline.addTo(lines);
+                if (isPathEditing) polyline.enableEdit();
+            }
+
             // OLT -> ODC
             odcs.forEach(function(odc) {
-                if (odc.latitude && odc.longitude) {
+                var colorKey = (odc.color || '').toUpperCase();
+                var lineColor = colorMap[colorKey] || odc.color || '#6f42c1';
+                
+                if (odc.path && Array.isArray(odc.path) && odc.path.length > 0) {
+                     addLine(odc.path, lineColor, 4, 0.7, '10, 5', '', 'odc', odc.id);
+                } else if (odc.latitude && odc.longitude) {
                     var uplinkOlt = olts.find(o => o.id == odc.olt_id);
                     if (uplinkOlt && uplinkOlt.latitude && uplinkOlt.longitude) {
-                        var colorKey = (odc.color || '').toUpperCase();
-                        var lineColor = colorMap[colorKey] || odc.color || '#6f42c1';
-                        L.polyline([[uplinkOlt.latitude, uplinkOlt.longitude], [odc.latitude, odc.longitude]], {
-                            color: lineColor,
-                            weight: 4,
-                            opacity: 0.7,
-                            dashArray: '10, 5'
-                        }).addTo(lines);
+                        addLine([[uplinkOlt.latitude, uplinkOlt.longitude], [odc.latitude, odc.longitude]], lineColor, 4, 0.7, '10, 5', '', 'odc', odc.id);
                     }
                 }
             });
 
             // ODC -> ODP
             odps.forEach(function(odp) {
-                if (isVisible(odp, 'odp') && odp.latitude && odp.longitude) {
-                    var uplinkOdc = odcs.find(o => o.id == odp.odc_id);
-                    if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
-                        var colorKey = (odp.color || '').toUpperCase();
-                        var lineColor = colorMap[colorKey] || odp.color || '#fd7e14';
-                        L.polyline([[uplinkOdc.latitude, uplinkOdc.longitude], [odp.latitude, odp.longitude]], {
-                            color: lineColor,
-                            weight: 3,
-                            opacity: 0.8
-                        }).addTo(lines);
+                if (isVisible(odp, 'odp')) {
+                    var colorKey = (odp.color || '').toUpperCase();
+                    var lineColor = colorMap[colorKey] || odp.color || '#fd7e14';
+                    
+                    if (odp.path && Array.isArray(odp.path) && odp.path.length > 0) {
+                        addLine(odp.path, lineColor, 3, 0.8, null, '', 'odp', odp.id);
+                    } else if (odp.latitude && odp.longitude) {
+                        var uplinkOdc = odcs.find(o => o.id == odp.odc_id);
+                        if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
+                            addLine([[uplinkOdc.latitude, uplinkOdc.longitude], [odp.latitude, odp.longitude]], lineColor, 3, 0.8, null, '', 'odp', odp.id);
+                        }
                     }
                 }
             });
 
             // HTB Connections (ODP -> HTB or HTB -> HTB)
             htbs.forEach(function(htb) {
-                if (isVisible(htb, 'htb') && htb.latitude && htb.longitude) {
-                    // Connect to ODP
-                    if (htb.odp_id) {
-                        var uplinkOdp = odps.find(o => o.id == htb.odp_id);
-                        if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
-                            L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [htb.latitude, htb.longitude]], {
-                                color: '#6610f2', // Purple for HTB
-                                weight: 3,
-                                opacity: 0.8,
-                                dashArray: '5, 5'
-                            }).addTo(lines);
-                        }
-                    } 
-                    // Connect to Parent HTB
-                    else if (htb.parent_htb_id) {
-                        var parentHtb = htbs.find(h => h.id == htb.parent_htb_id);
-                        if (parentHtb && parentHtb.latitude && parentHtb.longitude) {
-                            L.polyline([[parentHtb.latitude, parentHtb.longitude], [htb.latitude, htb.longitude]], {
-                                color: '#6610f2',
-                                weight: 3,
-                                opacity: 0.8,
-                                dashArray: '5, 5'
-                            }).addTo(lines);
+                if (isVisible(htb, 'htb')) {
+                    if (htb.path && Array.isArray(htb.path) && htb.path.length > 0) {
+                        addLine(htb.path, '#6610f2', 3, 0.8, '5, 5', '', 'htb', htb.id);
+                    } else if (htb.latitude && htb.longitude) {
+                        // Connect to ODP
+                        if (htb.odp_id) {
+                            var uplinkOdp = odps.find(o => o.id == htb.odp_id);
+                            if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
+                                addLine([[uplinkOdp.latitude, uplinkOdp.longitude], [htb.latitude, htb.longitude]], '#6610f2', 3, 0.8, '5, 5', '', 'htb', htb.id);
+                            }
+                        } 
+                        // Connect to Parent HTB
+                        else if (htb.parent_htb_id) {
+                            var parentHtb = htbs.find(h => h.id == htb.parent_htb_id);
+                            if (parentHtb && parentHtb.latitude && parentHtb.longitude) {
+                                addLine([[parentHtb.latitude, parentHtb.longitude], [htb.latitude, htb.longitude]], '#6610f2', 3, 0.8, '5, 5', '', 'htb', htb.id);
+                            }
                         }
                     }
                 }
@@ -568,19 +584,87 @@
 
             // ODP -> Customer
             customers.forEach(function(customer) {
-                if (isVisible(customer, 'customer') && customer.latitude && customer.longitude) {
+                if (isVisible(customer, 'customer')) {
                     var isOnline = customer.is_online;
-                    var uplinkOdp = odps.find(o => o.id == customer.odp_id);
-                    if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
-                        L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [customer.latitude, customer.longitude]], {
-                            color: '#0000FF',
-                            weight: isOnline ? 6 : 4,
-                            opacity: isOnline ? 1.0 : 0.8,
-                            className: isOnline ? 'connection-online' : ''
-                        }).addTo(lines);
+                    var className = isOnline ? 'connection-online' : '';
+                    var weight = isOnline ? 6 : 4;
+                    var opacity = isOnline ? 1.0 : 0.8;
+                    
+                    if (customer.path && Array.isArray(customer.path) && customer.path.length > 0) {
+                        addLine(customer.path, '#0000FF', weight, opacity, null, className, 'customer', customer.id);
+                    } else if (customer.latitude && customer.longitude) {
+                        var uplinkOdp = odps.find(o => o.id == customer.odp_id);
+                        if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
+                            addLine([[uplinkOdp.latitude, uplinkOdp.longitude], [customer.latitude, customer.longitude]], '#0000FF', weight, opacity, null, className, 'customer', customer.id);
+                        }
                     }
                 }
             });
+        }
+
+        // --- Edit Path Logic ---
+        var btnEditPaths = document.getElementById('btnEditPathsMode');
+        
+        btnEditPaths.addEventListener('click', function() {
+            isPathEditing = !isPathEditing;
+            
+            if (isPathEditing) {
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-warning');
+                this.innerHTML = '<i class="fa fa-save me-1"></i> {{ __('Selesai Edit') }}';
+                
+                lines.eachLayer(function(layer) {
+                    layer.enableEdit();
+                });
+            } else {
+                this.classList.remove('btn-warning');
+                this.classList.add('btn-secondary');
+                this.innerHTML = '<i class="fa fa-pencil me-1"></i> {{ __('Edit Jalur') }}';
+                
+                lines.eachLayer(function(layer) {
+                    layer.disableEdit();
+                });
+            }
+        });
+
+        map.on('editable:vertex:dragend editable:vertex:deleted editable:vertex:new', function(e) {
+            var layer = e.layer;
+            if (layer && layer.data && layer.data.type) {
+                savePath(layer.data.type, layer.data.id, layer.getLatLngs());
+            }
+        });
+        
+        function savePath(type, id, latlngs) {
+            var pathData = latlngs.map(ll => [ll.lat, ll.lng]);
+            
+            fetch(`/map/path/${type}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ path: pathData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    if (type === 'odc') {
+                        var item = odcs.find(i => i.id == id);
+                        if(item) item.path = pathData;
+                    } else if (type === 'odp') {
+                        var item = odps.find(i => i.id == id);
+                        if(item) item.path = pathData;
+                    } else if (type === 'htb') {
+                        var item = htbs.find(i => i.id == id);
+                        if(item) item.path = pathData;
+                    } else if (type === 'customer') {
+                        var item = customers.find(i => i.id == id);
+                        if(item) item.path = pathData;
+                    }
+                }
+            })
+            .catch(console.error);
         }
 
         function deleteLocation(type, id, marker) {
