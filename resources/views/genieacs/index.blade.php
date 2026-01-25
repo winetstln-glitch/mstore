@@ -240,6 +240,13 @@
                                             {{ $sn }}
                                         </a>
                                     </td>
+                                    <td>
+                                        @if(($device['odp_name'] ?? '-') !== '-')
+                                            <span class="badge bg-info text-dark border border-info-subtle">{{ $device['odp_name'] }}</span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td>{{ $ssid }}</td>
                                     <td class="text-center">
                                         @if(isset($displayCount) && $displayCount > 0)

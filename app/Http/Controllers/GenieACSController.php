@@ -52,6 +52,7 @@ class GenieACSController extends Controller implements HasMiddleware
         $modeAll = $serverId === 'all';
 
         $activeServer = null;
+        $devices = null; // Initialize variable
 
         if ($modeAll) {
             $devicesArray = [];
@@ -99,35 +100,61 @@ class GenieACSController extends Controller implements HasMiddleware
                 $this->genieService->useServer($activeServer);
             }
 
-            $skip = $perPage ? ($page - 1) * $perPage : 0;
+            $query = $request->input('q');
 
-            $devicesArray = $this->genieService->getDevices($perPage, $skip);
-            $totalDevices = $perPage ? $this->genieService->getTotalDevices() : count($devicesArray);
-
-            if ($perPage) {
+            // Handle case where no servers exist
+            if (!$activeServer && $servers->isEmpty()) {
+                 $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
+            } else {
+                $devicesList = $this->genieService->getDevices($perPage, ($page - 1) * $perPage, $query);
+                $total = $this->genieService->getTotalDevices($query);
+    
                 $devices = new LengthAwarePaginator(
-                    $devicesArray,
-                    $totalDevices,
+                    $devicesList,
+                    $total,
                     $perPage,
                     $page,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
-            } else {
-                $perPageAll = max(1, $totalDevices);
-                $devices = new LengthAwarePaginator(
-                    $devicesArray,
-                    $totalDevices,
-                    $perPageAll,
-                    1,
                     ['path' => $request->url(), 'query' => $request->query()]
                 );
             }
         }
 
-        $aliases = GenieAcsDeviceSetting::pluck('alias', 'device_id');
-        $currentServerId = $modeAll ? 'all' : ($activeServer ? $activeServer->id : null);
-        
-        return view('genieacs.index', compact('devices', 'totalDevices', 'activeServer', 'aliases', 'perPage', 'servers', 'currentServerId', 'modeAll'));
+        // --- ODP Matching Logic ---
+        $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'username_pppoe', 'ont_sn']);
+        $customerMap = [];
+        foreach ($customers as $customer) {
+            $odpName = $customer->odp ? $customer->odp->name : '-';
+            if ($customer->username_pppoe) {
+                $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpName;
+            }
+            if ($customer->ont_sn) {
+                 $customerMap['sn'][$customer->ont_sn] = $odpName;
+            }
+        }
+
+        if ($devices) {
+            $devices->getCollection()->transform(function ($device) use ($customerMap) {
+                $odpName = '-';
+                
+                // Try matching by PPPoE Username
+                $pppoe = $device['VirtualParameters']['pppoeUsername']['_value'] ?? null;
+                if ($pppoe && isset($customerMap['pppoe'][strtolower($pppoe)])) {
+                    $odpName = $customerMap['pppoe'][strtolower($pppoe)];
+                } 
+                // Try matching by Serial Number
+                elseif (isset($device['_deviceId']['_SerialNumber'])) {
+                    $sn = $device['_deviceId']['_SerialNumber'];
+                    if (isset($customerMap['sn'][$sn])) {
+                         $odpName = $customerMap['sn'][$sn];
+                    }
+                }
+    
+                $device['odp_name'] = $odpName;
+                return $device;
+            });
+        }
+
+        return view('genieacs.index', compact('devices', 'servers', 'activeServer', 'modeAll'));
     }
 
     /**
@@ -222,7 +249,7 @@ class GenieACSController extends Controller implements HasMiddleware
             sleep(3);
             return back()->with('success', __('Device Connected & Refreshed Successfully.'));
         } elseif ($status === 1) {
-            return back()->with('warning', __('Command Queued. Device did not respond immediately (Timeout). Task will run when device reconnects.'));
+            return back()->with('warning', __('Command Queued. Device is online but busy. Task will run shortly.'));
         }
 
         return back()->with('error', __('Failed to summon device.'));

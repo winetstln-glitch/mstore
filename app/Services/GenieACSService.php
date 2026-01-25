@@ -535,10 +535,10 @@ class GenieACSService
 
         // Attempt 1: Immediate execution (connection_request)
         try {
-            // Use a longer timeout (10s) for the immediate attempt to accommodate slower networks
-            // Increase GenieACS timeout to 8000ms (8s)
-            $response = Http::timeout(10)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
+            // Use a longer timeout (25s) for the immediate attempt to accommodate slower networks
+            // Increase GenieACS timeout to 20000ms (20s)
+            $response = Http::timeout(25)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=20000&connection_request", [
                     'name' => 'refreshObject',
                     'objectName' => $objectName
                 ]);
