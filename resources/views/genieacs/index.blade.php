@@ -90,6 +90,7 @@
                                 <th scope="col" class="text-center">{{ __('Action') }}</th>
                                 <th scope="col">ID</th>
                                 <th scope="col">{{ __('SN ONT') }}</th>
+                                <th scope="col">ODP</th>
                                 <th scope="col">SSID</th>
                                 <th scope="col" class="text-center">{{ __('Perangkat Terhubung') }}</th>
                                 <th scope="col" class="text-center">Hotspot</th>

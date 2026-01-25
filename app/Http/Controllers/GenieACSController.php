@@ -120,16 +120,25 @@ class GenieACSController extends Controller implements HasMiddleware
         }
 
         // --- ODP Matching Logic ---
-        $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'username_pppoe', 'ont_sn']);
-        $customerMap = [];
-        foreach ($customers as $customer) {
-            $odpName = $customer->odp ? $customer->odp->name : '-';
-            if ($customer->username_pppoe) {
-                $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpName;
+        $customerMap = ['pppoe' => [], 'sn' => []];
+        try {
+            // Ensure columns exist to prevent 500 error if migration missing
+            if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'odp_id') && 
+                \Illuminate\Support\Facades\Schema::hasColumn('customers', 'username_pppoe')) {
+                
+                $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'username_pppoe', 'ont_sn']);
+                foreach ($customers as $customer) {
+                    $odpName = $customer->odp ? $customer->odp->name : '-';
+                    if ($customer->username_pppoe) {
+                        $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpName;
+                    }
+                    if ($customer->ont_sn) {
+                         $customerMap['sn'][$customer->ont_sn] = $odpName;
+                    }
+                }
             }
-            if ($customer->ont_sn) {
-                 $customerMap['sn'][$customer->ont_sn] = $odpName;
-            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('GenieACS ODP Logic Error: ' . $e->getMessage());
         }
 
         if ($devices) {
@@ -144,7 +153,7 @@ class GenieACSController extends Controller implements HasMiddleware
                 // Try matching by Serial Number
                 else {
                     $sn = data_get($device, '_deviceId._SerialNumber');
-                    if ($sn && isset($customerMap['sn'][$sn])) {
+                    if ($sn && is_string($sn) && isset($customerMap['sn'][$sn])) {
                          $odpName = $customerMap['sn'][$sn];
                     }
                 }
