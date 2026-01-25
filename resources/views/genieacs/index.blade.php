@@ -74,6 +74,14 @@
                                 <option value="all" {{ (string)$currentPerPage === 'all' ? 'selected' : '' }}>All</option>
                             </select>
                         </div>
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="btnViewList" title="{{ __('List View') }}">
+                                <i class="fa-solid fa-list"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnViewGrid" title="{{ __('Grid View') }}">
+                                <i class="fa-solid fa-grip"></i>
+                            </button>
+                        </div>
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshButton">
                             <i class="fa-solid fa-rotate-right me-1"></i> {{ __('Refresh') }}
                         </button>
@@ -82,7 +90,7 @@
 
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
-                <div class="table-responsive">
+                <div class="table-responsive" id="listViewContainer">
                     <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable">
                         <thead class="table-light text-nowrap">
                             <tr>
@@ -329,6 +337,176 @@
                     </table>
                 </div>
                 
+                <!-- Grid View Container -->
+                <div id="gridViewContainer" class="d-none">
+                    <div class="row g-3">
+                        @forelse ($devices as $device)
+                            @php
+                                $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
+                                $isOnline = (time() - $lastInform) < 300;
+                                $id = $device['_id'];
+                                $serverIdForDevice = $device['_mstore_server_id'] ?? $currentServerId;
+                                
+                                // Helper to get value safely
+                                $get = function($key) use ($device) {
+                                    $val = data_get($device, $key . '._value');
+                                    if ($val === null) {
+                                        $val = data_get($device, $key);
+                                    }
+                                    
+                                    if (is_array($val)) {
+                                        return isset($val['_value']) && is_scalar($val['_value']) ? (string)$val['_value'] : '-';
+                                    }
+                                    
+                                    return $val !== null ? (string)$val : '-';
+                                };
+
+                                // Mapping fields
+                                $pppoeUser = $get('VirtualParameters.pppoeUsername');
+                                $sn = $get('VirtualParameters.getSerialNumber');
+                                // Fallback for SN if VP missing
+                                if ($sn === '-') $sn = data_get($device, '_deviceId._SerialNumber') ?? '-';
+
+                                $ssid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID');
+                                
+                                // Logic for Connected Devices (MACs)
+                                $hosts = data_get($device, 'InternetGatewayDevice.LANDevice.1.Hosts.Host');
+                                if (!$hosts) {
+                                    $hosts = data_get($device, 'Device.Hosts.Host');
+                                }
+                                $connectedMacs = [];
+                                if ($hosts && is_array($hosts)) {
+                                    foreach ($hosts as $host) {
+                                        $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
+                                        if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
+                                            $macVal = data_get($host, 'MACAddress._value') ?? data_get($host, 'MACAddress') ?? data_get($host, 'PhysAddress._value') ?? data_get($host, 'PhysAddress');
+                                            if ($macVal) {
+                                                $connectedMacs[] = $macVal;
+                                            }
+                                        }
+                                    }
+                                }
+                                // Fallback to TotalAssociations if no hosts found but count exists
+                                $wifiCount = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
+
+                                $hotspot = $get('VirtualParameters.activedevices');
+                                $rx = $get('VirtualParameters.RXPower');
+                                $temp = $get('VirtualParameters.gettemp');
+                                $uptime = $get('VirtualParameters.getdeviceuptime');
+                                $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                $ipWan = $get('VirtualParameters.IPTR069');
+                                
+                                $productClass = $get('DeviceID.ProductClass');
+                                if ($productClass === '-') $productClass = data_get($device, '_deviceId._ProductClass') ?? '-';
+
+                                // Format Last Inform
+                                $lastInformStr = $device['_lastInform'] ? \Carbon\Carbon::parse($device['_lastInform'])->format('Y-m-d H:i:s') : '-';
+                            @endphp
+                            <div class="col-md-6 col-lg-4 col-xxl-3">
+                                <div class="card h-100 border shadow-sm">
+                                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                            <i class="fa-solid fa-circle {{ $isOnline ? 'text-success' : 'text-danger' }} fa-xs" title="{{ $isOnline ? __('Online') : __('Offline') }}"></i>
+                                            <div class="d-flex flex-column overflow-hidden">
+                                                <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="fw-bold text-decoration-none text-truncate text-dark small">
+                                                    @if(isset($aliases[$id]) && $aliases[$id])
+                                                        {{ $aliases[$id] }}
+                                                    @else
+                                                        {{ $pppoeUser !== '-' ? $pppoeUser : $id }}
+                                                    @endif
+                                                </a>
+                                                <small class="text-muted text-truncate" style="font-size: 0.7em;">{{ $sn }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li>
+                                                    <a class="dropdown-item small" href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}">
+                                                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> {{ __('Detail') }}
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item small">
+                                                            <i class="fa-solid fa-bolt me-2 text-warning"></i> {{ __('Summon') }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item small" data-bs-toggle="modal" data-bs-target="#editAliasModal{{ md5($id) }}">
+                                                        <i class="fa-solid fa-pen me-2 text-secondary"></i> {{ __('Edit Alias') }}
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-body py-2 small">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">ODP</span>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    @if(($device['odp_name'] ?? '-') !== '-')
+                                                        <span class="badge bg-info text-dark border border-info-subtle text-truncate" style="max-width: 80px;">{{ $device['odp_name'] }}</span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                    <button type="button" class="btn btn-link btn-sm p-0 btn-assign-odp" 
+                                                            data-sn="{{ $sn }}"
+                                                            data-pppoe="{{ $pppoeUser }}"
+                                                            data-odp-id="{{ $device['odp_id'] ?? '' }}">
+                                                        <i class="fa-solid fa-pencil text-warning fa-xs"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">Signal (RX)</span>
+                                                @if($rx !== '-')
+                                                    <span class="badge {{ floatval($rx) < -27 ? 'text-bg-danger' : 'text-bg-success' }}">
+                                                        {{ $rx }}
+                                                    </span>
+                                                @else
+                                                    -
+                                                @endif
+                                            </div>
+                                            <div class="col-12">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address</span>
+                                                @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
+                                                    <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none">
+                                                        {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                                    </a>
+                                                @else
+                                                    {{ $ipPppoe }}
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center small text-muted">
+                                        <div title="{{ __('Connected Devices') }}">
+                                            <i class="fa-solid fa-wifi me-1"></i> {{ $displayCount }}
+                                        </div>
+                                        <div title="{{ __('Uptime') }}">
+                                            <i class="fa-solid fa-clock me-1"></i> {{ $uptime }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12 text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fa-solid fa-network-wired fa-3x mb-3"></i>
+                                    <p class="mb-0">{{ __('No devices found.') }}</p>
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+                
                 <div class="d-flex justify-content-center mt-4">
                     {{ $devices->links() }}
                 </div>
@@ -407,6 +585,43 @@
                 var bs = window.bootstrap || bootstrap;
                 var modal = bs.Modal.getInstance(modalEl) || new bs.Modal(modalEl);
                 modal.show();
+            });
+
+            // View Mode Toggle Logic
+            const listViewBtn = $('#btnViewList');
+            const gridViewBtn = $('#btnViewGrid');
+            const listViewContainer = $('#listViewContainer');
+            const gridViewContainer = $('#gridViewContainer');
+            
+            // Function to set view mode
+            function setViewMode(mode) {
+                if (mode === 'grid') {
+                    listViewContainer.addClass('d-none');
+                    gridViewContainer.removeClass('d-none');
+                    listViewBtn.removeClass('active');
+                    gridViewBtn.addClass('active');
+                } else {
+                    gridViewContainer.addClass('d-none');
+                    listViewContainer.removeClass('d-none');
+                    gridViewBtn.removeClass('active');
+                    listViewBtn.addClass('active');
+                }
+                localStorage.setItem('genieacsViewMode', mode);
+            }
+
+            // Load saved preference
+            const savedMode = localStorage.getItem('genieacsViewMode');
+            if (savedMode) {
+                setViewMode(savedMode);
+            }
+
+            // Event Listeners
+            listViewBtn.on('click', function() {
+                setViewMode('list');
+            });
+
+            gridViewBtn.on('click', function() {
+                setViewMode('grid');
             });
         });
     </script>
