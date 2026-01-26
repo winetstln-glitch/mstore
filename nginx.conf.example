@@ -34,13 +34,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Konfigurasi PHP-FPM
+    # EKSEKUSI PHP via PHP-FPM (Bukan Port 8000)
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         
-        # Sesuaikan versi PHP Anda di sini (contoh: php8.1-fpm, php8.2-fpm, atau php8.3-fpm)
-        # Cek versi dengan perintah: php -v
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock; 
+        # PENTING: Cek versi PHP Anda dengan 'ls /var/run/php/'
+        # Menggunakan php8.2-fpm.sock sesuai output server Anda
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
         
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
