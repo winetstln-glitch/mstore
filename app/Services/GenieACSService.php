@@ -121,76 +121,7 @@ class GenieACSService
         }
     }
 
-    /**
-     * Factory Reset Device
-     */
-    public function factoryReset(string $deviceId)
-    {
-        try {
-            $encodedId = urlencode($deviceId);
-            $response = $this->request()
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
-                    'name' => 'factoryReset'
-                ]);
 
-            if ($response->successful()) {
-                return $response->json();
-            }
-            Log::error("GenieACS Reset Failed: " . $response->body());
-            return null;
-        } catch (\Exception $e) {
-            Log::error("GenieACS Reset Error: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Compatibility: Set Parameter Values (Key-Value)
-     * Converts simple ['path' => 'value'] to GenieACS task format
-     */
-    public function setParameterValues($deviceId, array $keyValueParams)
-    {
-        $params = [];
-        foreach ($keyValueParams as $key => $value) {
-            $params[] = [$key, (string)$value]; // Default to string, GenieACS usually infers or accepts string
-        }
-        
-        return $this->setParameters($deviceId, $params);
-    }
-
-    /**
-     * Compatibility: Reboot Device
-     */
-    public function rebootDevice($deviceId)
-    {
-        return $this->reboot($deviceId);
-    }
-
-    /**
-     * Refresh Object (Summon/Refresh)
-     */
-    public function refreshObject($deviceId)
-    {
-        try {
-            $encodedId = urlencode($deviceId);
-            $response = $this->request()
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
-                    'name' => 'refreshObject',
-                    'objectName' => ''
-                ]);
-
-            if ($response->successful()) {
-                return 2; // Success
-            }
-            if ($response->status() === 202) {
-                return 1; // Queued
-            }
-            return 0; // Failed
-        } catch (\Exception $e) {
-            Log::error("GenieACS Refresh Error: " . $e->getMessage());
-            return 0;
-        }
-    }
 
     /**
      * Get WiFi Connected Clients
