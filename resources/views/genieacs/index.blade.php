@@ -376,6 +376,11 @@
                                 }
                                 $connectedMacs = [];
                                 if ($hosts && is_array($hosts)) {
+                                    // Handle single host case (associative array)
+                                    if (isset($hosts['Active']) || isset($hosts['PhysAddress']) || isset($hosts['MACAddress']) || isset($hosts['HostName'])) {
+                                        $hosts = [$hosts];
+                                    }
+
                                     foreach ($hosts as $host) {
                                         $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
                                         if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
@@ -396,6 +401,17 @@
                                 $uptime = $get('VirtualParameters.getdeviceuptime');
                                 $ipPppoe = $get('VirtualParameters.pppoeIP');
                                 $ipWan = $get('VirtualParameters.IPTR069');
+
+                                // Get Device MACs (ONU, WLAN/SSID)
+                                $macOnu = $get('VirtualParameters.PonMac');
+                                if ($macOnu === '-') $macOnu = $get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress');
+                                
+                                $macSsid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID');
+                                if ($macSsid === '-') $macSsid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddress');
+
+                                $deviceMacs = [];
+                                if ($macOnu !== '-') $deviceMacs['ONU'] = $macOnu;
+                                if ($macSsid !== '-') $deviceMacs['SSID'] = $macSsid;
                                 
                                 $productClass = $get('DeviceID.ProductClass');
                                 if ($productClass === '-') $productClass = data_get($device, '_deviceId._ProductClass') ?? '-';
@@ -475,13 +491,35 @@
                                                 @endif
                                             </div>
                                             <div class="col-12">
-                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address</span>
-                                                @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
-                                                    <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none">
-                                                        {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
-                                                    </a>
-                                                @else
-                                                    {{ $ipPppoe }}
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (PPPoE / WAN)</span>
+                                                <div class="d-flex flex-column">
+                                                    @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
+                                                        <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none small">
+                                                            {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                                        </a>
+                                                    @else
+                                                        <span class="small">{{ $ipPppoe }}</span>
+                                                    @endif
+
+                                                    @if($ipWan !== '-' && $ipWan !== $ipPppoe)
+                                                        @if(filter_var($ipWan, FILTER_VALIDATE_IP))
+                                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none small text-muted">
+                                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs"></i>
+                                                            </a>
+                                                        @else
+                                                            <span class="small text-muted">{{ $ipWan }}</span>
+                                                        @endif
+                                                    @endif
+                                                </div>
+
+                                                @if(isset($deviceMacs) && count($deviceMacs) > 0)
+                                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                                        @foreach($deviceMacs as $label => $mac)
+                                                            <span class="badge bg-light text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;" title="{{ $label }}">
+                                                                {{ $mac }}
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
                                                 @endif
                                             </div>
                                         </div>
@@ -560,6 +598,13 @@
     @push('scripts')
     <script>
         $(document).ready(function() {
+            // CSRF Token Setup for AJAX
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             // Initialize Select2 for ODP inside Modal
             $('.select2-modal').select2({
                 dropdownParent: $('#assignOdpModal'),
@@ -640,14 +685,27 @@
         if (searchInput && table) {
             const tbody = table.querySelector('tbody');
             const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+            const gridContainer = document.getElementById('gridViewContainer');
 
             searchInput.addEventListener('input', function () {
                 const term = this.value.toLowerCase();
 
+                // Filter Table Rows
                 rows.forEach(row => {
                     const text = row.textContent.toLowerCase();
                     row.style.display = term === '' || text.includes(term) ? '' : 'none';
                 });
+
+                // Filter Grid Items
+                if (gridContainer) {
+                    const cards = Array.from(gridContainer.querySelectorAll('.row > div'));
+                    cards.forEach(card => {
+                        if (card.className.includes('col-')) {
+                            const text = card.textContent.toLowerCase();
+                            card.style.display = term === '' || text.includes(term) ? '' : 'none';
+                        }
+                    });
+                }
             });
         }
 

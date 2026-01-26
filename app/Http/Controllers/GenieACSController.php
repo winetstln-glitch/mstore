@@ -117,13 +117,18 @@ class GenieACSController extends Controller implements HasMiddleware
                  $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
             } else {
                 try {
-                    $devicesList = $this->genieService->getDevices($perPage, ($page - 1) * $perPage, $query);
+                    $limit = $perPage;
+                    $offset = $perPage ? ($page - 1) * $perPage : 0;
+
+                    $devicesList = $this->genieService->getDevices($limit, $offset, $query);
                     $total = $this->genieService->getTotalDevices($query);
         
+                    $perPageEffective = $perPage ?: ($total > 0 ? $total : 1);
+
                     $devices = new LengthAwarePaginator(
                         $devicesList,
                         $total,
-                        $perPage,
+                        $perPageEffective,
                         $page,
                         ['path' => $request->url(), 'query' => $request->query()]
                     );
@@ -140,13 +145,13 @@ class GenieACSController extends Controller implements HasMiddleware
         try {
             // Ensure columns exist to prevent 500 error if migration missing
             if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'odp_id') && 
-                \Illuminate\Support\Facades\Schema::hasColumn('customers', 'username_pppoe')) {
+                \Illuminate\Support\Facades\Schema::hasColumn('customers', 'pppoe_user')) {
                 
-                $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'username_pppoe', 'ont_sn']);
+                $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'pppoe_user', 'ont_sn']);
                 foreach ($customers as $customer) {
                     $odpData = $customer->odp ? ['name' => $customer->odp->name, 'id' => $customer->odp->id] : ['name' => '-', 'id' => null];
-                    if ($customer->username_pppoe) {
-                        $customerMap['pppoe'][strtolower($customer->username_pppoe)] = $odpData;
+                    if ($customer->pppoe_user) {
+                        $customerMap['pppoe'][strtolower($customer->pppoe_user)] = $odpData;
                     }
                     if ($customer->ont_sn) {
                          $customerMap['sn'][$customer->ont_sn] = $odpData;
@@ -195,12 +200,18 @@ class GenieACSController extends Controller implements HasMiddleware
             'odp_id' => 'required|exists:odps,id',
         ]);
 
+        // Try matching by SN
         $customer = Customer::where('ont_sn', $request->sn)->first();
 
         if (!$customer) {
-            // Try matching by PPPoE if SN fails
+            // Try matching by PPPoE (Case Insensitive)
             if ($request->pppoe) {
-                $customer = Customer::where('username_pppoe', $request->pppoe)->first();
+                $customer = Customer::where('pppoe_user', $request->pppoe)->first();
+                
+                if (!$customer) {
+                     // Try case insensitive search for PPPoE
+                      $customer = Customer::whereRaw('LOWER(pppoe_user) = ?', [strtolower($request->pppoe)])->first();
+                }
             }
         }
 

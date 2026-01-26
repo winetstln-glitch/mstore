@@ -111,6 +111,24 @@
                             @enderror
                         </div>
 
+                        <!-- PPPoE Username -->
+                        <div class="col-md-6">
+                            <label for="pppoe_user" class="form-label">{{ __('PPPoE Username') }}</label>
+                            <input type="text" name="pppoe_user" id="pppoe_user" value="{{ old('pppoe_user', $prefill['pppoe_user'] ?? '') }}" class="form-control @error('pppoe_user') is-invalid @enderror">
+                            @error('pppoe_user')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- PPPoE Password -->
+                        <div class="col-md-6">
+                            <label for="pppoe_password" class="form-label">{{ __('PPPoE Password') }}</label>
+                            <input type="text" name="pppoe_password" id="pppoe_password" value="{{ old('pppoe_password') }}" class="form-control @error('pppoe_password') is-invalid @enderror">
+                            @error('pppoe_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- OLT -->
                         <div class="col-md-6">
                             <label for="olt_id" class="form-label">{{ __('OLT Server') }}</label>

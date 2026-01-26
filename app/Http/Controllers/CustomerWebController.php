@@ -511,6 +511,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'device_model' => $request->query('device_model'),
             'ssid_name' => $request->query('ssid_name'),
             'ssid_password' => $request->query('ssid_password'),
+            'pppoe_user' => $request->query('pppoe_user'),
         ];
         $odps = \App\Models\Odp::all();
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();

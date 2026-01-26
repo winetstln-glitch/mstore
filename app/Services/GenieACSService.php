@@ -23,6 +23,176 @@ class GenieACSService
     }
 
     /**
+     * Standardized HTTP Request Helper
+     */
+    protected function request()
+    {
+        return Http::timeout($this->timeout)
+            ->acceptJson()
+            ->contentType('application/json');
+    }
+
+    /**
+     * Set Parameters (Provisioning)
+     * $params example: [['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', 'user', 'xsd:string']]
+     */
+    public function setParameters(string $deviceId, array $params)
+    {
+        try {
+            // Encode ID if needed, but usually NBI accepts raw ID in path
+            $encodedId = urlencode($deviceId);
+            
+            $response = $this->request()
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
+                    'name' => 'setParameterValues',
+                    'parameterValues' => $params
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            Log::error("GenieACS SetParams Failed: " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("GenieACS SetParams Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Add Tags to Device
+     */
+    public function addTags(string $deviceId, array $tags)
+    {
+        try {
+            $encodedId = urlencode($deviceId);
+            $response = $this->request()
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tags", $tags); // Body is just array of strings
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            Log::error("GenieACS AddTags Failed: " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("GenieACS AddTags Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Remove Tags from Device
+     */
+    public function removeTags(string $deviceId, array $tags)
+    {
+        try {
+            $encodedId = urlencode($deviceId);
+            foreach ($tags as $tag) {
+                // DELETE /devices/{id}/tags/{tag}
+                $this->request()->delete("{$this->baseUrl}/devices/{$encodedId}/tags/{$tag}");
+            }
+            return true;
+        } catch (\Exception $e) {
+            Log::error("GenieACS RemoveTags Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Reboot Device
+     */
+    public function reboot(string $deviceId)
+    {
+        try {
+            $encodedId = urlencode($deviceId);
+            $response = $this->request()
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
+                    'name' => 'reboot'
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            Log::error("GenieACS Reboot Failed: " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("GenieACS Reboot Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Factory Reset Device
+     */
+    public function factoryReset(string $deviceId)
+    {
+        try {
+            $encodedId = urlencode($deviceId);
+            $response = $this->request()
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
+                    'name' => 'factoryReset'
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            Log::error("GenieACS Reset Failed: " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("GenieACS Reset Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Compatibility: Set Parameter Values (Key-Value)
+     * Converts simple ['path' => 'value'] to GenieACS task format
+     */
+    public function setParameterValues($deviceId, array $keyValueParams)
+    {
+        $params = [];
+        foreach ($keyValueParams as $key => $value) {
+            $params[] = [$key, (string)$value]; // Default to string, GenieACS usually infers or accepts string
+        }
+        
+        return $this->setParameters($deviceId, $params);
+    }
+
+    /**
+     * Compatibility: Reboot Device
+     */
+    public function rebootDevice($deviceId)
+    {
+        return $this->reboot($deviceId);
+    }
+
+    /**
+     * Refresh Object (Summon/Refresh)
+     */
+    public function refreshObject($deviceId)
+    {
+        try {
+            $encodedId = urlencode($deviceId);
+            $response = $this->request()
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
+                    'name' => 'refreshObject',
+                    'objectName' => ''
+                ]);
+
+            if ($response->successful()) {
+                return 2; // Success
+            }
+            if ($response->status() === 202) {
+                return 1; // Queued
+            }
+            return 0; // Failed
+        } catch (\Exception $e) {
+            Log::error("GenieACS Refresh Error: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Get WiFi Connected Clients
      */
     public function getWifiClients($deviceId, $device = null)
@@ -316,6 +486,8 @@ class GenieACSService
                 'VirtualParameters.PonMac',
                 'VirtualParameters.getSerialNumber',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID',
+                'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID',
+                'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddress',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations',
@@ -374,15 +546,28 @@ class GenieACSService
     /**
      * Get total device count
      */
-    public function getTotalDevices()
+    public function getTotalDevices($search = null)
     {
         try {
+            $queryParams = [
+                'projection' => '_id',
+                'limit' => 1
+            ];
+
+            if ($search) {
+                $searchQuery = [
+                    '$or' => [
+                        ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
+                        ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
+                    ]
+                ];
+                $queryParams['query'] = json_encode($searchQuery);
+            }
+
             // Try to get count from headers first with minimal data
             $response = Http::timeout($this->timeout)
-                ->get("{$this->baseUrl}/devices", [
-                    'projection' => '_id',
-                    'limit' => 1
-                ]);
+                ->get("{$this->baseUrl}/devices", $queryParams);
 
             if ($response->successful()) {
                 if ($response->header('Total')) {
@@ -390,11 +575,9 @@ class GenieACSService
                 }
                 
                 // Fallback: Fetch all IDs (up to 2000) to count manually
+                $queryParams['limit'] = 2000;
                 $response = Http::timeout($this->timeout)
-                    ->get("{$this->baseUrl}/devices", [
-                        'projection' => '_id',
-                        'limit' => 2000
-                    ]);
+                    ->get("{$this->baseUrl}/devices", $queryParams);
                     
                 if ($response->successful()) {
                     return count($response->json());
