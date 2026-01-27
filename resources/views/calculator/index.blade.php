@@ -28,7 +28,7 @@
                                         <input type="number" step="0.1" class="form-control" id="tx_power" value="3" required>
                                         <span class="input-group-text">dBm</span>
                                     </div>
-                                    <div class="form-text">Biasanya +3 sampai +7 dBm untuk SFP C+</div>
+                                    <div class="form-text">Biasanya +3 sampai +8 dBm untuk SFP C+</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="wavelength" class="form-label">Panjang Gelombang</label>

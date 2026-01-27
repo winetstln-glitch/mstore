@@ -48,7 +48,7 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                    {{ __('Total Expenses') }}</div>
+                                    {{ __('Total Pengeluaran') }}</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalExpense, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
@@ -66,7 +66,7 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                    {{ __('Company Balance') }}</div>
+                                    {{ __('Saldo Perusahaan') }}</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($balance, 0, ',', '.') }}</div>
                                 <small class="text-muted" title="{{ __('Gross Share') }} - {{ __('General Expenses') }}">
                                     {{ number_format($totalCompanyGrossShare, 0, ',', '.') }} - {{ number_format($totalGeneralExpenses, 0, ',', '.') }}
@@ -87,7 +87,7 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
-                                    {{ __('Investor Funds') }}</div>
+                                    {{ __('Dana Peralatan') }}</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
@@ -108,7 +108,7 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                    {{ __('ISP Share Fund') }} ({{ $ispRate }}%)</div>
+                                    {{ __('Pembayaran ISP') }} ({{ $ispRate }}%)</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalIspShare, 0, ',', '.') }}</div>
                                 <small class="text-muted">{{ __('Total Accumulated Allocation') }}</small>
                             </div>
@@ -127,7 +127,7 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                    {{ __('Tool Fund') }} ({{ $toolRate }}%)</div>
+                                    {{ __('Dana Peralatan') }} ({{ $toolRate }}%)</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalToolFund, 0, ',', '.') }}</div>
                                 <small class="text-muted">{{ __('Total Accumulated Allocation') }}</small>
                             </div>
@@ -149,9 +149,9 @@
                     <table class="table table-bordered table-sm" width="100%" cellspacing="0">
                         <thead>
                             <tr>
-                                <th>{{ __('Koordinator') }}</th>
+                                <th>{{ __('Pengurus') }}</th>
                                 <th>{{ __('Total Pendapatan') }}</th>
-                                <th>{{ __('Komisi') }}</th>
+                                <th>{{ __('Komisi Pengurus') }}</th>
                                 <th>{{ __('Dana ISP') }}</th>
                                 <th>{{ __('Dana Alat') }}</th>
                                 <th>{{ __('Pengeluaran') }}</th>

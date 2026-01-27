@@ -333,7 +333,7 @@
                 background-color: #383061 !important;
             }
         }
-        }
+        
     </style>
     
     <script>
@@ -577,14 +577,7 @@
             
 
 
-            @if(Auth::user()->hasPermission('setting.view'))
-            <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
-                <i class="fa-brands fa-telegram"></i> {{ __('Telegram') }}
-            </a>
-            <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
-                <i class="fa-brands fa-whatsapp"></i> {{ __('WhatsApp') }}
-            </a>
-            @endif
+         
 
             @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view') || Auth::user()->hasPermission('role.view'))
             <a class="sidebar-item {{ (request()->routeIs('settings.*') || request()->routeIs('apikeys.*') || request()->routeIs('users.*') || request()->routeIs('roles.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#settingsCollapse" role="button" aria-expanded="{{ (request()->routeIs('settings.*') || request()->routeIs('apikeys.*') || request()->routeIs('users.*') || request()->routeIs('roles.*')) ? 'true' : 'false' }}" aria-controls="settingsCollapse">
@@ -614,6 +607,14 @@
                     <a href="{{ route('roles.index') }}" class="sidebar-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-shield-halved"></i> {{ __('Roles') }}
                     </a>
+                       @if(Auth::user()->hasPermission('setting.view'))
+            <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
+                <i class="fa-brands fa-telegram"></i> {{ __('Telegram') }}
+            </a>
+            <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
+                <i class="fa-brands fa-whatsapp"></i> {{ __('WhatsApp') }}
+            </a>
+            @endif
                     @endif
                 </div>
             </div>

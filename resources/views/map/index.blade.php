@@ -345,15 +345,31 @@
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
     .icon-asset { color: #d63384; border-color: #d63384; }
 
-    /* Animation for online lines */
+    /* Animation for online lines (Flowing Gradient & Glow) */
     .connection-online {
-        stroke-dasharray: 10, 10;
-        animation: dash 1s linear infinite;
+        stroke: #36dd62ff; /* Cyan Neon Color */
+        stroke-dasharray: 12, 12;
+        filter: drop-shadow(0 0 5px rgba(36, 191, 77, 0.8)); /* Glow Effect */
+        animation: flow 1.0s linear infinite; /* Faster, smoother flow */
     }
-    @keyframes dash {
-        to {
-            stroke-dashoffset: -20;
-        }
+
+    /* Gradient simulation via animation */
+    @keyframes flow {
+        0% { stroke-dashoffset: 24; }
+        100% { stroke-dashoffset: 0; }
+    }
+
+    /* Shining Arrow Icon */
+    .arrow-glow {
+        color: #00f2ff;
+        font-size: 16px;
+        text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
+        animation: pulse-shine 1.5s infinite alternate;
+    }
+
+    @keyframes pulse-shine {
+        0% { opacity: 0.7; text-shadow: 0 0 5px #00f2ff; }
+        100% { opacity: 1; text-shadow: 0 0 10px #00f2ff, 0 0 20px #fff; }
     }
 </style>
 @endpush
@@ -376,7 +392,7 @@
         // Server Location: -6.800278, 105.939159
         var defaultLat = -6.800278;
         var defaultLng = 105.939159;
-        var initialZoom = 15; // Adjusted zoom for better initial view of the area
+        var initialZoom = 20; // Adjusted zoom for better initial view of the area
 
         function hasCoord(o) {
             return o && typeof o.latitude !== 'undefined' && typeof o.longitude !== 'undefined' && o.latitude !== null && o.longitude !== null;
@@ -572,12 +588,35 @@
                     var isOnline = customer.is_online;
                     var uplinkOdp = odps.find(o => o.id == customer.odp_id);
                     if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
-                        L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [customer.latitude, customer.longitude]], {
-                            color: '#0000FF',
-                            weight: isOnline ? 6 : 4,
-                            opacity: isOnline ? 1.0 : 0.8,
-                            className: isOnline ? 'connection-online' : ''
-                        }).addTo(lines);
+                        
+                        var lineOptions = {};
+                        if (isOnline) {
+                            lineOptions = {
+                                color: '#00f2ff', // Cyan Neon
+                                weight: 4,
+                                opacity: 1.0,
+                                className: 'connection-online'
+                            };
+                        } else {
+                            lineOptions = {
+                                color: '#dc3545', // Red
+                                weight: 3,
+                                opacity: 0.6,
+                                dashArray: '5, 10' // Red Dashed
+                            };
+                        }
+
+                        var poly = L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [customer.latitude, customer.longitude]], lineOptions).addTo(lines);
+                        
+                        // Optional Data Flow Label (Shining Arrow)
+                        if (isOnline) {
+                            poly.bindTooltip("<span class='arrow-glow'>➤</span>", {
+                                permanent: true, 
+                                direction: 'center', 
+                                className: 'bg-transparent border-0',
+                                opacity: 1.0
+                            });
+                        }
                     }
                 }
             });
