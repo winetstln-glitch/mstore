@@ -397,7 +397,8 @@
                 Auth::user()->hasPermission('olt.view') ||
                 Auth::user()->hasPermission('map.view') ||
                 Auth::user()->hasPermission('odp.view') ||
-                Auth::user()->hasPermission('odc.view')
+                Auth::user()->hasPermission('odc.view') ||
+                Auth::user()->hasPermission('htb.view')
             )
             <div class="sidebar-header">
                 {{ __('Network Management') }}
@@ -423,28 +424,38 @@
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('odc.view'))
-            <a href="{{ route('odcs.index') }}" class="sidebar-item {{ request()->routeIs('odcs.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-box-archive"></i> {{ __('ODC Management') }}
+            @if(Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('htb.view') || Auth::user()->hasPermission('map.view'))
+            <a class="sidebar-item {{ (request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('map.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkCollapse" role="button" aria-expanded="{{ (request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('map.*')) ? 'true' : 'false' }}" aria-controls="networkCollapse">
+                <i class="fa-solid fa-sitemap"></i> {{ __('Management MAP') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            @endif
+            <div class="collapse {{ (request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('map.*')) ? 'show' : '' }}" id="networkCollapse">
+                <div class="bg-light ps-3">
+                    @if(Auth::user()->hasPermission('map.view'))
+                    <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-map-location-dot"></i> {{ __('Peta Jaringan') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('odc.view'))
+                    <a href="{{ route('odcs.index') }}" class="sidebar-item {{ request()->routeIs('odcs.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-box-archive"></i> {{ __('ODC Management') }}
+                    </a>
+                    @endif
 
-            @if(Auth::user()->hasPermission('odp.view'))
-            <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-network-wired"></i> {{ __('ODP Management') }}
-            </a>
-            @endif
+                    @if(Auth::user()->hasPermission('odp.view'))
+                    <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-network-wired"></i> {{ __('ODP Management') }}
+                    </a>
+                    @endif
 
-            @if(Auth::user()->hasPermission('htb.view'))
-            <a href="{{ route('htbs.index') }}" class="sidebar-item {{ request()->routeIs('htbs.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-sitemap"></i> {{ __('HTB Management') }}
-            </a>
-            @endif
+                    @if(Auth::user()->hasPermission('htb.view'))
+                    <a href="{{ route('htbs.index') }}" class="sidebar-item {{ request()->routeIs('htbs.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-server"></i> {{ __('HTB Management') }}
+                    </a>
+                    @endif
 
-            @if(Auth::user()->hasPermission('map.view'))
-            <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-map-location-dot"></i> {{ __('Network Map') }}
-            </a>
+                    
+                </div>
+            </div>
             @endif
 
             @if(Auth::user()->hasPermission('calculator.view'))
@@ -532,29 +543,32 @@
             @endif
             
             @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-            <div class="sidebar-header">
-                {{ __('Inventory Management') }}
+            <a class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}" data-bs-toggle="collapse" href="#inventoryCollapse" role="button" aria-expanded="{{ request()->routeIs('inventory.*') ? 'true' : 'false' }}" aria-controls="inventoryCollapse">
+                <i class="fa-solid fa-boxes-stacked"></i> {{ __('Inventory & Assets') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ request()->routeIs('inventory.*') ? 'show' : '' }}" id="inventoryCollapse">
+                <div class="bg-light ps-3">
+                    <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="sidebar-item {{ request('type_group') == 'tool' ? 'active' : '' }}">
+                        <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Tools & Assets') }}
+                    </a>
+
+                    <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="sidebar-item {{ request('type_group') == 'material' ? 'active' : '' }}">
+                        <i class="fa-solid fa-microchip"></i> {{ __('Devices & Materials') }}
+                    </a>
+
+                    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+                    <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') && !request()->has('type_group') ? 'active' : '' }}">
+                        <i class="fa-solid fa-list"></i> {{ __('All Inventory Items') }}
+                    </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin'))
+                    <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
+                        <i class="fa-solid fa-toolbox"></i> {{ __('My Assets & Tools') }}
+                    </a>
+                    @endif
+                </div>
             </div>
-
-            <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="sidebar-item {{ request('type_group') == 'tool' ? 'active' : '' }}">
-                <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Tools & Assets') }}
-            </a>
-
-            <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="sidebar-item {{ request('type_group') == 'material' ? 'active' : '' }}">
-                <i class="fa-solid fa-microchip"></i> {{ __('Devices & Materials') }}
-            </a>
-
-            @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-            <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') && !request()->has('type_group') ? 'active' : '' }}">
-                <i class="fa-solid fa-list"></i> {{ __('All Inventory Items') }}
-            </a>
-            @endif
-            @endif
-
-            @if(Auth::user()->hasPermission('inventory.view') || Auth::user()->hasRole('admin'))
-            <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
-                <i class="fa-solid fa-toolbox"></i> {{ __('My Assets & Tools') }}
-            </a>
             @endif
 
             @if(
@@ -620,9 +634,7 @@
             </div>
             @endif
         </div>
-        <div class="sidebar-footer text-center py-2 text-muted small">
-            {{ config('app.version') }}
-        </div>
+      
     </div>
     <!-- /#sidebar-wrapper -->
 

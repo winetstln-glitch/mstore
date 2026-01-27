@@ -133,6 +133,8 @@ Route::middleware('auth')->group(function () {
     
     Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])->name('map.update_location');
     Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])->name('map.update_path');
+    Route::post('map/connections/save', [\App\Http\Controllers\MapConnectionController::class, 'save'])->name('map.connections.save');
+    Route::get('map/connections', [\App\Http\Controllers\MapConnectionController::class, 'index'])->name('map.connections.index');
     Route::resource('map', MapController::class);
     
     // Tools

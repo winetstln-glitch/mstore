@@ -47,6 +47,9 @@
                             <button type="button" class="btn-shadow btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
                                 <i class="fa fa-expand"></i>
                             </button>
+                            <button type="button" class="btn-shadow btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
+                                <i class="fa fa-pencil"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -326,6 +329,7 @@
 @push('styles')
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.min.js"></script>
 
 <style>
     .custom-icon {
@@ -347,9 +351,9 @@
 
     /* Animation for online lines (Flowing Gradient & Glow) */
     .connection-online {
-        stroke: #36dd62ff; /* Cyan Neon Color */
+        stroke: #00f2ff; /* Cyan Neon Color */
         stroke-dasharray: 12, 12;
-        filter: drop-shadow(0 0 5px rgba(36, 191, 77, 0.8)); /* Glow Effect */
+        filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.8)); /* Glow Effect */
         animation: flow 1.0s linear infinite; /* Faster, smoother flow */
     }
 
@@ -373,7 +377,6 @@
     }
 </style>
 @endpush
-
 @push('scripts')
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -387,6 +390,7 @@
         var odcs = @json($odcs) || [];
         var olts = @json($olts) || [];
         var assets = @json($assets) || [];
+        var coordinatorRegionId = @json($coordinatorRegionId ?? null);
 
         // Initialize map
         // Server Location: -6.800278, 105.939159
@@ -462,13 +466,20 @@
         // Feature Groups for bounds
         var markers = L.featureGroup().addTo(map);
         var lines = L.featureGroup().addTo(map);
+        var editLayer = L.featureGroup().addTo(map);
         var markerMap = {}; // Store markers for easy access
         var allMarkerObjs = []; // Store all marker objects for filtering
+        window.arrowIntervals = []; // Track moving arrow intervals
+        var editMode = false;
+        var waypoints = {};
 
         // Helper for visibility
         function isVisible(item, type) {
             var areaFilter = document.getElementById('areaFilter');
             var selectedRegionId = areaFilter ? areaFilter.value : "";
+            if (selectedRegionId === "" && coordinatorRegionId) {
+                selectedRegionId = String(coordinatorRegionId);
+            }
             
             if (selectedRegionId === "") return true;
             
@@ -515,9 +526,181 @@
             'AQUA': 'aqua', 'TOSCA': 'turquoise'
         };
 
+        function getConnectionKey(fromType, fromId, toType, toId) {
+            return `${fromType}_${fromId}__${toType}_${toId}`;
+        }
+
+        function parseConnectionKey(key) {
+            var parts = key.split('__');
+            var fromParts = parts[0].split('_');
+            var toParts = parts[1].split('_');
+            return {
+                fromType: fromParts[0],
+                fromId: fromParts[1],
+                toType: toParts[0],
+                toId: toParts[1]
+            };
+        }
+
+        function saveConnectionByKey(key) {
+            var meta = parseConnectionKey(key);
+            // Fix type names if needed
+            var toType = meta.toType === 'cust' ? 'customer' : meta.toType;
+            
+            var points = (waypoints[key] || []).map(function(p) {
+                return { lat: p.lat, lng: p.lng };
+            });
+
+            fetch('{{ route("map.connections.save") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    from_type: meta.fromType,
+                    from_id: meta.fromId,
+                    to_type: toType,
+                    to_id: meta.toId,
+                    waypoints: points
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) console.error('Failed to save waypoints', data);
+            })
+            .catch(err => console.error('Error saving waypoints', err));
+        }
+
+        function addWaypointMarker(key, latlng) {
+            if (!waypoints[key]) waypoints[key] = [];
+            
+            // Create marker first
+            var icon = L.divIcon({ html: "<span style='color:#00f2ff; font-size: 16px; text-shadow: 0 0 3px black;'>●</span>", className: 'bg-transparent border-0', iconSize: [16,16], iconAnchor: [8,8] });
+            var m = L.marker(latlng, { draggable: true, icon: icon }).addTo(editLayer);
+            
+            // Add to data structure
+            var pointData = { lat: latlng.lat, lng: latlng.lng, _m: m };
+            waypoints[key].push(pointData);
+
+            m.on('drag', function(e) {
+                pointData.lat = e.latlng.lat;
+                pointData.lng = e.latlng.lng;
+                // Redraw lines immediately for smooth drag
+                // But full redraw might be heavy. For now, it's fine.
+                drawLines(true); // pass true to skip clearing edit markers to avoid flickering? No, clearing is needed.
+            });
+            
+            m.on('dragend', function() { 
+                drawLines(); 
+                saveConnectionByKey(key);
+            });
+            
+            m.on('click', function(e) {
+                L.DomEvent.stopPropagation(e); // Prevent line click
+            });
+
+            m.on('dblclick', function(e){
+                L.DomEvent.stopPropagation(e);
+                waypoints[key] = (waypoints[key] || []).filter(function(p){ return p._m !== m; });
+                editLayer.removeLayer(m);
+                drawLines();
+                saveConnectionByKey(key);
+            });
+            
+            saveConnectionByKey(key);
+        }
+
+        function clearEditMarkers() {
+            // We only clear markers if we are re-initializing. 
+            // If we are just dragging, we want to keep them.
+            // But drawLines calls this. 
+            // We need to re-add them if they exist in waypoints[key] but not on map?
+            // Actually, existing logic re-clears and we lose reference if we are not careful.
+            // The existing logic: `addWaypointMarker` adds to `editLayer`. `drawLines` clears `editLayer`.
+            // This means every `drawLines` call REMOVES all edit handles.
+            // This is bad for "drag" event.
+            // We should Separate drawing lines from drawing edit handles.
+            editLayer.clearLayers();
+        }
+
+        // We need to restore edit markers after clear
+        function restoreEditMarkers() {
+            if (!editMode) return;
+            Object.keys(waypoints).forEach(function(key) {
+                (waypoints[key] || []).forEach(function(p) {
+                    var icon = L.divIcon({ html: "<span style='color:#00f2ff; font-size: 16px; text-shadow: 0 0 3px black;'>●</span>", className: 'bg-transparent border-0', iconSize: [16,16], iconAnchor: [8,8] });
+                    var m = L.marker([p.lat, p.lng], { draggable: true, icon: icon }).addTo(editLayer);
+                    p._m = m; // Update reference
+
+                    m.on('drag', function(e) {
+                        p.lat = e.latlng.lat;
+                        p.lng = e.latlng.lng;
+                        drawLines(true); // Pass flag to avoid clearing edit markers?
+                    });
+                    m.on('dragend', function() { 
+                        drawLines(); 
+                        saveConnectionByKey(key);
+                    });
+                    m.on('click', function(e) { L.DomEvent.stopPropagation(e); });
+                    m.on('dblclick', function(e){
+                        L.DomEvent.stopPropagation(e);
+                        waypoints[key] = waypoints[key].filter(function(wp){ return wp !== p; });
+                        editLayer.removeLayer(m);
+                        drawLines();
+                        saveConnectionByKey(key);
+                    });
+                });
+            });
+        }
+
+        document.getElementById('btnEditLines').addEventListener('click', function() {
+            editMode = !editMode;
+            this.classList.toggle('btn-warning', !editMode);
+            this.classList.toggle('btn-success', editMode);
+            drawLines();
+        });
+
+        function loadConnections() {
+            fetch('{{ route("map.connections.index") }}')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(conn => {
+                    // Reconstruct key
+                    // conn.to_type might be 'customer' but key expects 'cust'? 
+                    // Let's standardize on 'cust' for customer in key if that was previous convention, 
+                    // OR switch to 'customer'. 
+                    // Previous code used 'odp_' + odpId + '__cust_' + customerId
+                    // Let's stick to 'cust' for customer to match existing pattern if we want minimal change, 
+                    // BUT 'customer' is cleaner.
+                    // Let's use 'customer' everywhere.
+                    
+                    var toType = conn.to_type === 'customer' ? 'cust' : conn.to_type;
+                    var key = getConnectionKey(conn.from_type, conn.from_id, toType, conn.to_id);
+                    
+                    if (conn.waypoints && Array.isArray(conn.waypoints)) {
+                        waypoints[key] = conn.waypoints.map(p => ({ lat: p.lat, lng: p.lng }));
+                    }
+                });
+                drawLines();
+            })
+            .catch(err => console.error('Error loading connections', err));
+        }
+
         // Redraw lines function
-        function drawLines() {
+        function drawLines(skipClearEdit) {
             lines.clearLayers();
+            if (window.arrowIntervals && window.arrowIntervals.length) {
+                window.arrowIntervals.forEach(function(id){ try { clearInterval(id); } catch(e){} });
+                window.arrowIntervals = [];
+            }
+            
+            // If skipClearEdit is true (during drag), we don't clear editLayer.
+            // But actually, we need to re-render lines. 
+            // If we don't clear editLayer, we don't need to restore them.
+            if (!skipClearEdit) {
+                editLayer.clearLayers();
+            }
 
             // OLT -> ODC
             odcs.forEach(function(odc) {
@@ -526,12 +709,25 @@
                     if (uplinkOlt && uplinkOlt.latitude && uplinkOlt.longitude) {
                         var colorKey = (odc.color || '').toUpperCase();
                         var lineColor = colorMap[colorKey] || odc.color || '#6f42c1';
-                        L.polyline([[uplinkOlt.latitude, uplinkOlt.longitude], [odc.latitude, odc.longitude]], {
+                        
+                        var key = getConnectionKey('olt', uplinkOlt.id, 'odc', odc.id);
+                        var pathPoints = [[uplinkOlt.latitude, uplinkOlt.longitude]];
+                        (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                        pathPoints.push([odc.latitude, odc.longitude]);
+
+                        var poly = L.polyline(pathPoints, {
                             color: lineColor,
                             weight: 4,
                             opacity: 0.7,
                             dashArray: '10, 5'
                         }).addTo(lines);
+
+                        if (editMode) {
+                            poly.on('click', function(e) {
+                                addWaypointMarker(key, e.latlng);
+                                drawLines(); // This will save implicitly inside addWaypointMarker logic? No, addWaypoint calls save.
+                            });
+                        }
                     }
                 }
             });
@@ -543,40 +739,77 @@
                     if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
                         var colorKey = (odp.color || '').toUpperCase();
                         var lineColor = colorMap[colorKey] || odp.color || '#fd7e14';
-                        L.polyline([[uplinkOdc.latitude, uplinkOdc.longitude], [odp.latitude, odp.longitude]], {
+                        
+                        var key = getConnectionKey('odc', uplinkOdc.id, 'odp', odp.id);
+                        var pathPoints = [[uplinkOdc.latitude, uplinkOdc.longitude]];
+                        (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                        pathPoints.push([odp.latitude, odp.longitude]);
+
+                        var poly = L.polyline(pathPoints, {
                             color: lineColor,
                             weight: 3,
                             opacity: 0.8
                         }).addTo(lines);
+
+                        if (editMode) {
+                            poly.on('click', function(e) {
+                                addWaypointMarker(key, e.latlng);
+                                drawLines();
+                            });
+                        }
                     }
                 }
             });
 
-            // HTB Connections (ODP -> HTB or HTB -> HTB)
+            // HTB Connections
             htbs.forEach(function(htb) {
                 if (isVisible(htb, 'htb') && htb.latitude && htb.longitude) {
                     // Connect to ODP
                     if (htb.odp_id) {
                         var uplinkOdp = odps.find(o => o.id == htb.odp_id);
                         if (uplinkOdp && uplinkOdp.latitude && uplinkOdp.longitude) {
-                            L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [htb.latitude, htb.longitude]], {
-                                color: '#6610f2', // Purple for HTB
+                            var key = getConnectionKey('odp', uplinkOdp.id, 'htb', htb.id);
+                            var pathPoints = [[uplinkOdp.latitude, uplinkOdp.longitude]];
+                            (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                            pathPoints.push([htb.latitude, htb.longitude]);
+
+                            var poly = L.polyline(pathPoints, {
+                                color: '#6610f2',
                                 weight: 3,
                                 opacity: 0.8,
                                 dashArray: '5, 5'
                             }).addTo(lines);
+
+                            if (editMode) {
+                                poly.on('click', function(e) {
+                                    addWaypointMarker(key, e.latlng);
+                                    drawLines();
+                                });
+                            }
                         }
                     } 
                     // Connect to Parent HTB
                     else if (htb.parent_htb_id) {
                         var parentHtb = htbs.find(h => h.id == htb.parent_htb_id);
                         if (parentHtb && parentHtb.latitude && parentHtb.longitude) {
-                            L.polyline([[parentHtb.latitude, parentHtb.longitude], [htb.latitude, htb.longitude]], {
+                            var key = getConnectionKey('htb', parentHtb.id, 'htb', htb.id);
+                            var pathPoints = [[parentHtb.latitude, parentHtb.longitude]];
+                            (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                            pathPoints.push([htb.latitude, htb.longitude]);
+
+                            var poly = L.polyline(pathPoints, {
                                 color: '#6610f2',
                                 weight: 3,
                                 opacity: 0.8,
                                 dashArray: '5, 5'
                             }).addTo(lines);
+
+                            if (editMode) {
+                                poly.on('click', function(e) {
+                                    addWaypointMarker(key, e.latlng);
+                                    drawLines();
+                                });
+                            }
                         }
                     }
                 }
@@ -606,21 +839,59 @@
                             };
                         }
 
-                        var poly = L.polyline([[uplinkOdp.latitude, uplinkOdp.longitude], [customer.latitude, customer.longitude]], lineOptions).addTo(lines);
+                        var key = getConnectionKey('odp', uplinkOdp.id, 'cust', customer.id);
+                        var pathPoints = [[uplinkOdp.latitude, uplinkOdp.longitude]];
+                        (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                        pathPoints.push([customer.latitude, customer.longitude]);
                         
-                        // Optional Data Flow Label (Shining Arrow)
-                        if (isOnline) {
-                            poly.bindTooltip("<span class='arrow-glow'>➤</span>", {
-                                permanent: true, 
-                                direction: 'center', 
-                                className: 'bg-transparent border-0',
-                                opacity: 1.0
+                        var poly = L.polyline(pathPoints, lineOptions).addTo(lines);
+                        if (editMode) {
+                            poly.on('click', function(e) {
+                                addWaypointMarker(key, e.latlng);
+                                drawLines();
                             });
+                        }
+                        
+                        // Moving Arrow Icon along the online connection
+                        if (isOnline) {
+                            var points = pathPoints.map(function(pt){ return L.latLng(pt[0], pt[1]); });
+                            var arrowIcon = L.divIcon({
+                                html: "<span class='arrow-glow'>➤</span>",
+                                className: 'bg-transparent border-0',
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            });
+                            var arrowMarker = L.marker(points[0], { icon: arrowIcon, interactive: false }).addTo(lines);
+                            var t = 0;
+                            var stepMs = 30;
+                            var durationMs = 3000;
+                            var delta = stepMs / durationMs;
+                            var intervalId = setInterval(function() {
+                                t += delta;
+                                if (t >= 1) t = 0;
+                                var totalSegments = points.length - 1;
+                                var segPos = t * totalSegments;
+                                var segIndex = Math.min(totalSegments - 1, Math.floor(segPos));
+                                var localT = segPos - segIndex;
+                                var A = points[segIndex];
+                                var B = points[segIndex + 1];
+                                var lat = A.lat + (B.lat - A.lat) * localT;
+                                var lng = A.lng + (B.lng - A.lng) * localT;
+                                arrowMarker.setLatLng([lat, lng]);
+                            }, stepMs);
+                            window.arrowIntervals.push(intervalId);
                         }
                     }
                 }
             });
+            
+            if (!skipClearEdit) {
+                restoreEditMarkers();
+            }
         }
+        
+        // Initial load
+        loadConnections();
 
         function deleteLocation(type, id, marker) {
             if (!confirm('Apakah Anda yakin ingin menghapus titik koordinat ini?')) {
