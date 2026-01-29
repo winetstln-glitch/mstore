@@ -64,7 +64,7 @@
 
                     @php
                         $categories = [
-                            'System' => ['Dashboard', 'Profile', 'Notification', 'Role Management', 'User Management', 'Settings', 'Utilities', 'WhatsApp', 'Telegram'],
+                            'System' => ['Dashboard', 'Profile', 'Notification', 'Role Management', 'User Management', 'Settings', 'Utilities', 'WhatsApp', 'Telegram', 'Guide'],
                             'Operations' => ['Customer Management', 'Ticket Management', 'Installation Management', 'Technician Management', 'Attendance', 'Leave Management', 'Schedule Management', 'Coordinator Management', 'Region Management'],
                             'Network' => ['Map', 'OLT Management', 'ODC Management', 'ODP Management', 'HTB Management', 'Router Management', 'PPPoE', 'PPPoE Management', 'Hotspot', 'Network Monitor', 'Radius'],
                             'Finance & Store' => ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'ATK Cashier', 'Car Wash'],

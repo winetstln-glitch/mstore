@@ -36,7 +36,7 @@ class RoleController extends Controller implements HasMiddleware
         $nocGroups = [
             'Dashboard', 'Customer Management', 'Ticket Management', 'Router Management', 
             'OLT Management', 'ODC Management', 'ODP Management', 'HTB Management', 
-            'PPPoE', 'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification'
+            'PPPoE', 'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification', 'Guide'
         ];
 
         $technicianNames = [
@@ -44,24 +44,24 @@ class RoleController extends Controller implements HasMiddleware
             'attendance.view', 'attendance.create', 'attendance.report', 'map.view', 
             'odp.view', 'odp.edit', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view', 
             'profile.view', 'profile.update', 'notification.view', 'notification.manage',
-            'inventory.view', 'inventory.pickup'
+            'inventory.view', 'inventory.pickup', 'asset.view_mine', 'guide.view'
         ];
 
         $coordinatorNames = [
             'dashboard.view', 'inventory.view', 'inventory.pickup', 'map.view', 
             'profile.view', 'profile.update', 'notification.view', 'notification.manage', 
-            'finance.view', 'pppoe.view', 'pppoe.manage', 'hotspot.view', 'hotspot.manage'
+            'finance.view', 'pppoe.view', 'pppoe.manage', 'hotspot.view', 'hotspot.manage', 'guide.view'
         ];
         
         // Finance: Full Management for some, View for others
-        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification', 'ATK Cashier'];
+        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification', 'ATK Cashier', 'Guide'];
         $financeViewNames = [
             'dashboard.view', 'customer.view', 'ticket.view', 'installation.view', 
             'technician.view', 'coordinator.view', 'region.view', 'attendance.view', 
             'attendance.report', 'leave.view', 'schedule.view', 'map.view', 'olt.view', 
             'odc.view', 'odp.view', 'htb.view', 'router.view', 'genieacs.view', 
             'chat.view', 'telegram.view', 'calculator.view', 'setting.view',
-            'atk.view', 'atk.report'
+            'atk.view', 'atk.report', 'finance.report'
         ];
 
         // Management: View All, Manage most business aspects, restricted from System admin
@@ -72,7 +72,7 @@ class RoleController extends Controller implements HasMiddleware
             'Hotspot', 'PPPoE', 'Map', 'Leave Management', 'Schedule Management', 'Network Monitor',
             'Inventory (Alat & Material)', 'Coordinator Management', 'Investor Management',
             'Region Management', 'Package Management', 'Utilities', 'Profile', 'Notification',
-            'ATK Cashier', 'Car Wash', 'WhatsApp', 'Telegram'
+            'ATK Cashier', 'Car Wash', 'WhatsApp', 'Telegram', 'Guide'
         ];
 
         return [
