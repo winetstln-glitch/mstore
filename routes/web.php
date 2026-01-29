@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('routers', RouterController::class);
 
     // Business & Operations
+    Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
+    Route::post('finance/settings', [FinanceController::class, 'updateSettings'])->name('finance.settings.update');
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
@@ -200,6 +202,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'assign'])->name('inventory.assets.assign'); // GET for form
     Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
+    Route::get('/inventory/assets/handover-letter/{user}', [\App\Http\Controllers\AssetController::class, 'downloadHandoverLetter'])->name('inventory.assets.handover_letter');
 
     // ATK Cashier
     Route::post('atk/products/{product}/restock', [\App\Http\Controllers\AtkProductController::class, 'restock'])->name('atk.products.restock');

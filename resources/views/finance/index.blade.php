@@ -14,6 +14,9 @@
             <a href="{{ route('finance.profit_loss') }}" class="btn btn-info">
                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> {{ __('Profit & Loss Report') }}
             </a>
+            <a href="{{ route('finance.settings') }}" class="btn btn-secondary">
+                <i class="fa-solid fa-cog me-1"></i> {{ __('Settings') }}
+            </a>
             @endif
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
                 <i class="fa-solid fa-plus me-1"></i> {{ __('Add Transaction') }}

@@ -97,6 +97,8 @@
                                                 <span class="badge bg-danger">{{ __('Broken') }}</span>
                                             @elseif($asset->status == 'lost')
                                                 <span class="badge bg-dark">{{ __('Lost') }}</span>
+                                            @elseif($asset->status == 'pending_return')
+                                                <span class="badge bg-info text-dark">{{ __('Return Pending') }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -127,12 +129,19 @@
                                                             <i class="fa-solid fa-rotate-left"></i> {{ __('Return') }}
                                                         </button>
                                                     </form>
+                                                @elseif($asset->status == 'pending_return')
+                                                    <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Approve return and add to stock?') }}')">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                            <i class="fa-solid fa-check"></i> {{ __('Approve Return') }}
+                                                        </button>
+                                                    </form>
                                                 @endif
                                                 
                                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
                                                 <ul class="dropdown-menu">
                                                     <li>
-                                                        <a class="dropdown-item" href="#" onclick="openEditModal({{ $asset->id }}, '{{ $asset->serial_number }}', '{{ $asset->status }}', '{{ $asset->condition }}', '{{ $asset->mac_address }}', '{{ $asset->asset_code }}')">
+                                                        <a class="dropdown-item" href="#" onclick="openEditModal({{ $asset->id }}, '{{ $asset->serial_number }}', '{{ $asset->status }}', '{{ $asset->condition }}', '{{ $asset->mac_address }}', '{{ $asset->asset_code }}', {{ $asset->is_returnable ? 'true' : 'false' }})">
                                                             <i class="fa-solid fa-edit me-2"></i> {{ __('Edit Details') }}
                                                         </a>
                                                     </li>
@@ -287,6 +296,7 @@
                                 <option value="maintenance">{{ __('Maintenance') }}</option>
                                 <option value="broken">{{ __('Broken') }}</option>
                                 <option value="lost">{{ __('Lost') }}</option>
+                                <option value="pending_return">{{ __('Return Pending') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -295,6 +305,14 @@
                                 <option value="good">{{ __('Good') }}</option>
                                 <option value="damaged">{{ __('Damaged') }}</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_returnable" value="1" id="editIsReturnable">
+                            <label class="form-check-label" for="editIsReturnable">
+                                {{ __('Wajib Dikembalikan? (Returnable)') }}
+                            </label>
                         </div>
                     </div>
                 </div>

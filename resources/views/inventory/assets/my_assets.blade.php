@@ -6,6 +6,9 @@
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fa-solid fa-toolbox me-2"></i> {{ __('My Assets & Tools') }}
         </h1>
+        <a href="{{ route('inventory.assets.handover_letter', Auth::id()) }}" target="_blank" class="btn btn-sm btn-primary shadow-sm">
+            <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Download Surat Pemegangan Alat') }}
+        </a>
     </div>
 
     <div class="row">
@@ -48,6 +51,8 @@
                                         <td>
                                             @if($asset->status == 'deployed')
                                                 <span class="badge bg-success">{{ __('Active / In Use') }}</span>
+                                            @elseif($asset->status == 'pending_return')
+                                                <span class="badge bg-info">{{ __('Return Requested') }}</span>
                                             @else
                                                 <span class="badge bg-warning">{{ ucfirst($asset->status) }}</span>
                                             @endif
@@ -62,12 +67,18 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
-                                            <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-warning">
-                                                    <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
+                                            @if($asset->status === 'pending_return')
+                                                <button class="btn btn-sm btn-secondary" disabled>
+                                                    <i class="fa-solid fa-clock me-1"></i> {{ __('Waiting Approval') }}
                                                 </button>
-                                            </form>
+                                            @else
+                                                <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty

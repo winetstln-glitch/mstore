@@ -27,6 +27,34 @@ class FinanceController extends Controller implements HasMiddleware
         ];
     }
 
+    private function getExcludedExpenseCategories()
+    {
+        $stored = Setting::getValue('finance_excluded_expense_categories');
+        if ($stored) {
+            $decoded = json_decode($stored, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+            return array_map('trim', explode(',', $stored));
+        }
+        return [
+            'ISP Payment',
+            'Tool Fund',
+            'Coordinator Commission',
+            'Investor Profit Share',
+            'Investor Cash Fund'
+        ];
+    }
+
+    private function getExcludedGeneralExpenseCategories()
+    {
+        // General expenses exclude Allocations (Shares) and Fund Usages
+        return array_merge($this->getExcludedExpenseCategories(), [
+            'Pembayaran ISP', // ISP Fund Usage
+            'Pembelian Alat', // Tool Fund Usage
+        ]);
+    }
+
     public function downloadIncomeBreakdownPdf()
     {
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
@@ -124,15 +152,7 @@ class FinanceController extends Controller implements HasMiddleware
 
             $expenses = Transaction::where('coordinator_id', $coordinator->id)
                 ->where('type', 'expense')
-                ->whereNotIn('category', [
-                    'Coordinator Commission',
-                    'ISP Payment',
-                    'Tool Fund',
-                    'Investor Profit Share',
-                    'Investor Cash Fund',
-                    'Pembayaran ISP',
-                    'Pembelian Alat'
-                ])
+                ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
                 ->sum('amount');
 
             $netBalance = $grossRevenue - $commission - $expenses;
@@ -218,15 +238,7 @@ class FinanceController extends Controller implements HasMiddleware
         
         // Other Expenses (excluding automatically generated ones, fund usages, and investor distributions)
         $expenses = $transactions->where('type', 'expense')
-            ->whereNotIn('category', [
-                'Coordinator Commission',
-                'ISP Payment',
-                'Tool Fund',
-                'Investor Profit Share',
-                'Investor Cash Fund',
-                'Pembayaran ISP',
-                'Pembelian Alat'
-            ])
+            ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
             ->sum('amount');
 
         $netBalance = $grossRevenue - $commission - $expenses;
@@ -282,15 +294,7 @@ class FinanceController extends Controller implements HasMiddleware
         $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
 
         $expenses = $transactions->where('type', 'expense')
-            ->whereNotIn('category', [
-                'Coordinator Commission',
-                'ISP Payment',
-                'Tool Fund',
-                'Investor Profit Share',
-                'Investor Cash Fund',
-                'Pembayaran ISP',
-                'Pembelian Alat'
-            ])
+            ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
             ->sum('amount');
 
         $netBalance = $grossRevenue - $commission - $expenses;
@@ -803,7 +807,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         $totalIncome = (clone $totalsQuery)->where('type', 'income')->sum('amount');
         $totalExpense = (clone $totalsQuery)->where('type', 'expense')
-            ->whereNotIn('category', ['Pembayaran ISP', 'Pembelian Alat'])
+            ->whereNotIn('category', $this->getExcludedExpenseCategories())
             ->sum('amount');
         $balance = $totalIncome - $totalExpense;
         
@@ -829,15 +833,7 @@ class FinanceController extends Controller implements HasMiddleware
         // General Expenses (Usage of Company Fund)
         // Exclude: Shares (Allocations) and Fund Usages (ISP/Tool)
         $totalGeneralExpenses = (clone $totalsQuery)->where('type', 'expense')
-            ->whereNotIn('category', [
-                'Coordinator Commission',
-                'ISP Payment',
-                'Tool Fund',
-                'Investor Profit Share',
-                'Investor Cash Fund',
-                'Pembayaran ISP',
-                'Pembelian Alat'
-            ])->sum('amount');
+            ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())->sum('amount');
 
         $investorCapital = (clone $totalsQuery)->whereNotNull('investor_id')->where('type', 'income')->sum('amount');
         $investorWithdrawals = (clone $totalsQuery)->whereNotNull('investor_id')->where('type', 'expense')->sum('amount');
@@ -845,7 +841,10 @@ class FinanceController extends Controller implements HasMiddleware
 
         $monthlyIncome = collect();
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance') && $userCoordinator) {
-            $monthlyIncome = Transaction::selectRaw('strftime("%Y-%m", transaction_date) as ym, SUM(amount) as total')
+            $driver = DB::connection()->getDriverName();
+            $dateFormat = $driver === 'sqlite' ? 'strftime("%Y-%m", transaction_date)' : 'DATE_FORMAT(transaction_date, "%Y-%m")';
+
+            $monthlyIncome = Transaction::selectRaw("$dateFormat as ym, SUM(amount) as total")
                 ->where('coordinator_id', $userCoordinator->id)
                 ->where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
@@ -1110,7 +1109,7 @@ class FinanceController extends Controller implements HasMiddleware
         $grossProfit = $totalRevenue - $totalCOGS;
 
         $operatingExpenses = (clone $query)->where('type', 'expense')
-            ->whereNotIn('category', ['Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Pembayaran ISP', 'Pembelian Alat', 'Investor Cash Fund'])
+            ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
             ->sum('amount');
 
         $serverExpenses = (clone $query)->where('type', 'expense')->where('category', 'Operational')->sum('amount');
@@ -1261,15 +1260,7 @@ class FinanceController extends Controller implements HasMiddleware
 
             $expenses = (clone $coordQuery)
                 ->where('type', 'expense')
-                ->whereNotIn('category', [
-                    'Coordinator Commission',
-                    'ISP Payment',
-                    'Tool Fund',
-                    'Investor Profit Share',
-                    'Investor Cash Fund',
-                    'Pembayaran ISP',
-                    'Pembelian Alat'
-                ])
+                ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
                 ->sum('amount');
 
             $netBalance = $grossRevenue - $commission - $expenses;
@@ -1356,15 +1347,7 @@ class FinanceController extends Controller implements HasMiddleware
 
             $expenses = (clone $coordQuery)
                 ->where('type', 'expense')
-                ->whereNotIn('category', [
-                    'Coordinator Commission',
-                    'ISP Payment',
-                    'Tool Fund',
-                    'Investor Profit Share',
-                    'Investor Cash Fund',
-                    'Pembayaran ISP',
-                    'Pembelian Alat'
-                ])
+                ->whereNotIn('category', $this->getExcludedGeneralExpenseCategories())
                 ->sum('amount');
 
             $netBalance = $grossRevenue - $commission - $expenses;
@@ -1859,5 +1842,80 @@ class FinanceController extends Controller implements HasMiddleware
         });
 
         return redirect()->route('finance.index')->with('success', __('Transaction recorded successfully.'));
+    }
+
+    public function settings()
+    {
+        $excludedCategories = $this->getExcludedExpenseCategories();
+        // Convert array to comma separated string for display
+        $excludedCategoriesStr = implode(', ', $excludedCategories);
+        
+        $coordRate = Setting::getValue('commission_coordinator_percent', 15);
+        $ispRate = Setting::getValue('commission_isp_percent', 25);
+        $toolRate = Setting::getValue('commission_tool_percent', 20);
+        $investorCashRate = Setting::getValue('investor_cash_percent', 5);
+        
+        return view('finance.settings', compact(
+            'excludedCategoriesStr', 
+            'coordRate', 
+            'ispRate', 
+            'toolRate', 
+            'investorCashRate'
+        ));
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $request->validate([
+            'commission_coordinator_percent' => 'required|numeric|min:0|max:100',
+            'commission_isp_percent' => 'required|numeric|min:0|max:100',
+            'commission_tool_percent' => 'required|numeric|min:0|max:100',
+            'investor_cash_percent' => 'required|numeric|min:0|max:100',
+            'excluded_categories' => 'required|string',
+        ]);
+        
+        Setting::updateOrCreate(['key' => 'commission_coordinator_percent'], ['value' => $request->commission_coordinator_percent]);
+        Setting::updateOrCreate(['key' => 'commission_isp_percent'], ['value' => $request->commission_isp_percent]);
+        Setting::updateOrCreate(['key' => 'commission_tool_percent'], ['value' => $request->commission_tool_percent]);
+        Setting::updateOrCreate(['key' => 'investor_cash_percent'], ['value' => $request->investor_cash_percent]);
+        
+        // Process categories
+        $categories = array_map('trim', explode(',', $request->excluded_categories));
+        // Remove empty strings
+        $categories = array_filter($categories, function($value) { return !empty($value); });
+        
+        Setting::updateOrCreate(['key' => 'finance_excluded_expense_categories'], ['value' => json_encode(array_values($categories))]);
+        
+        return redirect()->back()->with('success', __('Settings updated successfully.'));
+    }
+
+    private function getExcludedExpenseCategories()
+    {
+        $stored = Setting::getValue('finance_excluded_expense_categories');
+        if ($stored) {
+            $decoded = json_decode($stored, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+            // Fallback if stored as simple string (legacy/migration safety)
+            return array_map('trim', explode(',', $stored));
+        }
+        
+        return [
+            'ISP Payment',
+            'Tool Fund',
+            'Coordinator Commission',
+            'Investor Profit Share',
+            'Investor Cash Fund'
+        ];
+    }
+    
+    private function getExcludedGeneralExpenseCategories()
+    {
+        // This includes allocations + usage
+        $base = $this->getExcludedExpenseCategories();
+        // Usage categories that are usually excluded from general expenses because they are funded by allocations
+        $usages = ['Pembayaran ISP', 'Pembelian Alat'];
+        return array_unique(array_merge($base, $usages));
     }
 }

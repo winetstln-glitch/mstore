@@ -56,10 +56,11 @@ class AssetController extends Controller implements HasMiddleware
             'serial_number' => 'nullable|unique:assets,serial_number',
             'mac_address' => 'nullable|unique:assets,mac_address',
             'condition' => 'required|in:good,damaged',
-            'status' => 'required|in:in_stock,deployed,maintenance,broken,lost',
+            'status' => 'required|in:in_stock,deployed,maintenance,broken,lost,pending_return',
+            'is_returnable' => 'boolean',
         ]);
 
-        Asset::create($validated);
+        Asset::create(array_merge($validated, ['is_returnable' => $request->boolean('is_returnable', true)]));
 
         return redirect()->back()->with('success', __('Asset created successfully.'));
     }
@@ -70,12 +71,13 @@ class AssetController extends Controller implements HasMiddleware
             'asset_code' => 'required|unique:assets,asset_code,' . $asset->id,
             'serial_number' => 'nullable|unique:assets,serial_number,' . $asset->id,
             'condition' => 'required|in:good,damaged',
-            'status' => 'required|in:in_stock,deployed,maintenance,broken,lost',
+            'status' => 'required|in:in_stock,deployed,maintenance,broken,lost,pending_return',
             'latitude' => 'nullable|string',
             'longitude' => 'nullable|string',
+            'is_returnable' => 'boolean',
         ]);
 
-        $asset->update($validated);
+        $asset->update(array_merge($validated, ['is_returnable' => $request->boolean('is_returnable', $asset->is_returnable)]));
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'asset' => $asset]);
@@ -126,7 +128,7 @@ class AssetController extends Controller implements HasMiddleware
         // Authorization check
         $user = Auth::user();
         // Check if user has management permission
-        $isManager = $user->hasPermission('inventory.manage') || $user->hasRole('admin');
+        $isManager = $user->hasPermission('inventory.manage') || $user->hasRole('admin') || $user->hasRole('finance');
         
         // Check if user is the holder
         $isHolder = false;
@@ -143,17 +145,40 @@ class AssetController extends Controller implements HasMiddleware
             abort(403, __('You are not authorized to return this asset.'));
         }
 
-        $asset->update([
-            'holder_type' => null,
-            'holder_id' => null,
-            'status' => 'in_stock',
-            'meta_data' => array_merge($asset->meta_data ?? [], ['returned_at' => now()->toDateTimeString(), 'returned_by' => Auth::id()]),
-        ]);
+        // If Pending Return and Manager -> Approve
+        if ($asset->status === 'pending_return' && $isManager) {
+            $asset->update([
+                'holder_type' => null,
+                'holder_id' => null,
+                'status' => 'in_stock',
+                'meta_data' => array_merge($asset->meta_data ?? [], [
+                    'returned_at' => now()->toDateTimeString(),
+                    'returned_by' => $asset->holder_id, // Original holder
+                    'approved_by' => $user->id
+                ]),
+            ]);
+            $asset->item->increment('stock');
+            return redirect()->back()->with('success', __('Asset return approved and returned to stock.'));
+        }
 
-        // Increment inventory stock
-        $asset->item->increment('stock');
-
-        return redirect()->back()->with('success', __('Asset returned to stock.'));
+        // If Manager -> Immediate Return
+        if ($isManager) {
+            $asset->update([
+                'holder_type' => null,
+                'holder_id' => null,
+                'status' => 'in_stock',
+                'meta_data' => array_merge($asset->meta_data ?? [], ['returned_at' => now()->toDateTimeString(), 'returned_by' => $user->id]),
+            ]);
+            $asset->item->increment('stock');
+            return redirect()->back()->with('success', __('Asset returned to stock.'));
+        } else {
+            // Holder -> Request Return
+            $asset->update([
+                'status' => 'pending_return',
+                'meta_data' => array_merge($asset->meta_data ?? [], ['return_requested_at' => now()->toDateTimeString()]),
+            ]);
+            return redirect()->back()->with('success', __('Asset return requested. Waiting for approval.'));
+        }
     }
 
     public function myAssets()
@@ -187,5 +212,31 @@ class AssetController extends Controller implements HasMiddleware
     {
         $asset->delete();
         return redirect()->back()->with('success', __('Asset deleted successfully.'));
+    }
+
+    public function downloadHandoverLetter(User $user)
+    {
+        if (Auth::id() !== $user->id && !Auth::user()->hasPermission('inventory.manage') && !Auth::user()->hasRole('admin')) {
+             abort(403);
+        }
+
+        $assets = Asset::with('item')
+            ->where('holder_type', User::class)
+            ->where('holder_id', $user->id)
+            ->get();
+
+        $coordinator = Coordinator::where('user_id', $user->id)->first();
+        if ($coordinator) {
+            $coordAssets = Asset::with('item')
+                ->where('holder_type', Coordinator::class)
+                ->where('holder_id', $coordinator->id)
+                ->get();
+            $assets = $assets->merge($coordAssets);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('inventory.assets.pdf.handover_letter', compact('user', 'assets', 'coordinator'));
+        $pdf->setPaper('a4', 'portrait');
+        
+        return $pdf->stream('Surat_Pemegangan_Alat_' . str_replace(' ', '_', $user->name) . '.pdf');
     }
 }
