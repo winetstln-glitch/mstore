@@ -546,7 +546,7 @@
                         <label class="form-label">{{ __('Select Investor') }}</label>
                         <select name="investor_id" class="form-select">
                             <option value="">-- {{ __('Select Investor') }} --</option>
-                            @foreach(\App\Models\User::role('investor')->get() as $investor)
+                            @foreach(\App\Models\User::whereHas('role', function($q) { $q->where('name', 'investor'); })->get() as $investor)
                                 <option value="{{ $investor->id }}">{{ $investor->name }}</option>
                             @endforeach
                         </select>
