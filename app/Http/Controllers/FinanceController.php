@@ -6,6 +6,9 @@ use App\Models\Coordinator;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\InventoryTransaction;
+use App\Models\AtkTransaction;
+use App\Models\WashTransaction;
+use App\Models\AtkTransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,7 @@ class FinanceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:finance.view', only: ['index', 'show', 'coordinatorDetail', 'downloadCoordinatorPdf', 'profitLoss', 'downloadProfitLossPdf', 'downloadProfitLossExcel', 'managerReport', 'downloadManagerReportPdf', 'downloadManagerReportExcel']),
-            new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'storeCoordinatorIncome']),
+            new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
@@ -558,11 +561,10 @@ class FinanceController extends Controller implements HasMiddleware
                     $toolAmount = $rem2 * ($toolRate / 100);
                     $rem3 = $rem2 - $toolAmount;
                     
-                    $investorRate = Setting::getValue('commission_investor_percent', 50);
-                    $totalInvestorAmount = $rem3 * ($investorRate / 100);
                     $investorCashPercent = Setting::getValue('investor_cash_percent', 5);
-                    $investorCashAmount = $totalInvestorAmount * ($investorCashPercent / 100);
-                    $investorDistributableAmount = $totalInvestorAmount - $investorCashAmount;
+                    $investorCashAmount = $rem3 * ($investorCashPercent / 100);
+                    $rem4 = $rem3 - $investorCashAmount;
+                    $investorDistributableAmount = $rem4;
 
                     // Create Coordinator Commission
                     Transaction::create([
@@ -609,7 +611,7 @@ class FinanceController extends Controller implements HasMiddleware
                                 'category' => 'Investor Profit Share',
                                 'amount' => $investorDistributableAmount,
                                 'transaction_date' => $validated['transaction_date'],
-                                'description' => $investorRate . '% Profit Share from transaction #' . $transaction->id,
+                                'description' => '100% Profit Share from transaction #' . $transaction->id,
                                 'coordinator_id' => $validated['coordinator_id'],
                                 'investor_id' => $singleInvestorId,
                                 'reference_number' => 'INV-' . $transaction->id,
@@ -637,7 +639,7 @@ class FinanceController extends Controller implements HasMiddleware
                                 'category' => 'Investor Profit Share',
                                 'amount' => $investorDistributableAmount,
                                 'transaction_date' => $validated['transaction_date'],
-                                'description' => $investorRate . '% Profit Share from transaction #' . $transaction->id,
+                                'description' => '100% Profit Share from transaction #' . $transaction->id,
                                 'coordinator_id' => $validated['coordinator_id'],
                                 'investor_id' => $investor->id,
                                 'reference_number' => 'INV-' . $transaction->id,
@@ -672,7 +674,7 @@ class FinanceController extends Controller implements HasMiddleware
                                     'category' => 'Investor Profit Share',
                                     'amount' => $amount,
                                     'transaction_date' => $validated['transaction_date'],
-                                    'description' => $investorRate . '% Profit Share from transaction #' . $transaction->id,
+                                    'description' => '100% Profit Share from transaction #' . $transaction->id,
                                     'coordinator_id' => $validated['coordinator_id'],
                                     'investor_id' => $investor->id,
                                     'reference_number' => 'INV-' . $transaction->id,
@@ -1041,10 +1043,25 @@ class FinanceController extends Controller implements HasMiddleware
     private function buildProfitLossData(?string $month): array
     {
         $query = Transaction::query();
+        $atkQuery = AtkTransaction::query();
+        $washQuery = WashTransaction::query();
+        $invQuery = InventoryTransaction::query()->where('type', 'out');
         
         if ($month) {
-            $query->whereMonth('transaction_date', date('m', strtotime($month)))
-                  ->whereYear('transaction_date', date('Y', strtotime($month)));
+            $monthVal = date('m', strtotime($month));
+            $yearVal = date('Y', strtotime($month));
+
+            $query->whereMonth('transaction_date', $monthVal)
+                  ->whereYear('transaction_date', $yearVal);
+            
+            $atkQuery->whereMonth('created_at', $monthVal)
+                     ->whereYear('created_at', $yearVal);
+
+            $washQuery->whereMonth('created_at', $monthVal)
+                      ->whereYear('created_at', $yearVal);
+            
+            $invQuery->whereMonth('created_at', $monthVal)
+                     ->whereYear('created_at', $yearVal);
         }
 
         $memberIncome = (clone $query)->where('category', 'Member Income')->sum('amount');
@@ -1053,13 +1070,42 @@ class FinanceController extends Controller implements HasMiddleware
             ->whereNotIn('category', ['Member Income', 'Voucher Income'])
             ->sum('amount');
         
-        $totalRevenue = $memberIncome + $voucherIncome + $otherIncome;
+        // --- ATK Data ---
+        $atkRevenue = (clone $atkQuery)->sum('total_amount');
+        // Calculate ATK COGS
+        // We need to join items and products to get buy_price * quantity
+        // Note: We need to filter by transaction date, so we start from AtkTransactionItem or join AtkTransaction
+        $atkCOGS = AtkTransactionItem::join('atk_transactions', 'atk_transaction_items.atk_transaction_id', '=', 'atk_transactions.id')
+            ->join('atk_products', 'atk_transaction_items.atk_product_id', '=', 'atk_products.id')
+            ->when($month, function ($q, $month) {
+                return $q->whereMonth('atk_transactions.created_at', date('m', strtotime($month)))
+                         ->whereYear('atk_transactions.created_at', date('Y', strtotime($month)));
+            })
+            ->sum(DB::raw('atk_transaction_items.quantity * atk_products.buy_price'));
+        $atkProfit = $atkRevenue - $atkCOGS;
+
+        // --- Wash Data ---
+        $washRevenue = (clone $washQuery)->sum('total_amount');
+        $washProfit = $washRevenue; // Assuming no direct COGS for now
+
+        // --- Inventory Data (Material Profit) ---
+        // Revenue = Value of material OUT (Usage) = Quantity * InventoryItem Price
+        $inventoryRevenue = (clone $invQuery)->with('item')->get()->sum(function($t) {
+            return $t->quantity * ($t->item->price ?? 0);
+        });
+        
+        // Cost = 'Pembelian Alat' in Transactions
+        $inventoryCost = (clone $query)->where('category', 'Pembelian Alat')->sum('amount');
+        $inventoryProfit = $inventoryRevenue - $inventoryCost;
+
+
+        $totalRevenue = $memberIncome + $voucherIncome + $otherIncome + $atkRevenue + $washRevenue + $inventoryRevenue;
 
         $coordCommission = (clone $query)->where('category', 'Coordinator Commission')->sum('amount');
         $ispPayment = (clone $query)->where('category', 'ISP Payment')->sum('amount');
         $toolFund = (clone $query)->where('category', 'Tool Fund')->sum('amount');
         
-        $totalCOGS = $coordCommission + $ispPayment + $toolFund;
+        $totalCOGS = $coordCommission + $ispPayment + $toolFund + $atkCOGS + $inventoryCost;
 
         $grossProfit = $totalRevenue - $totalCOGS;
 
@@ -1087,10 +1133,15 @@ class FinanceController extends Controller implements HasMiddleware
             'memberIncome' => $memberIncome,
             'voucherIncome' => $voucherIncome,
             'otherIncome' => $otherIncome,
+            'atkRevenue' => $atkRevenue,
+            'washRevenue' => $washRevenue,
+            'inventoryRevenue' => $inventoryRevenue,
             'totalRevenue' => $totalRevenue,
             'coordCommission' => $coordCommission,
             'ispPayment' => $ispPayment,
             'toolFund' => $toolFund,
+            'atkCOGS' => $atkCOGS,
+            'inventoryCost' => $inventoryCost,
             'totalCOGS' => $totalCOGS,
             'grossProfit' => $grossProfit,
             'operatingExpenses' => $operatingExpenses,
@@ -1614,11 +1665,16 @@ class FinanceController extends Controller implements HasMiddleware
 
             $writer->addRow(Row::fromValues(['Member Income', $data['memberIncome']]));
             $writer->addRow(Row::fromValues(['Voucher Income', $data['voucherIncome']]));
+            $writer->addRow(Row::fromValues(['ATK Revenue', $data['atkRevenue']]));
+            $writer->addRow(Row::fromValues(['Wash Revenue', $data['washRevenue']]));
+            $writer->addRow(Row::fromValues(['Inventory Revenue', $data['inventoryRevenue']]));
             $writer->addRow(Row::fromValues(['Other Income', $data['otherIncome']]));
             $writer->addRow(Row::fromValues(['Total Revenue', $data['totalRevenue']]));
             $writer->addRow(Row::fromValues(['Coordinator Commission', -1 * $data['coordCommission']]));
             $writer->addRow(Row::fromValues(['ISP Payment', -1 * $data['ispPayment']]));
             $writer->addRow(Row::fromValues(['Tool Fund', -1 * $data['toolFund']]));
+            $writer->addRow(Row::fromValues(['ATK COGS', -1 * $data['atkCOGS']]));
+            $writer->addRow(Row::fromValues(['Inventory Cost', -1 * $data['inventoryCost']]));
             $writer->addRow(Row::fromValues(['Total Cost of Revenue', -1 * $data['totalCOGS']]));
             $writer->addRow(Row::fromValues(['Gross Profit', $data['grossProfit']]));
             $writer->addRow(Row::fromValues(['Operating Expenses', -1 * $data['operatingExpenses']]));

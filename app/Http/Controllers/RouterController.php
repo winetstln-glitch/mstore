@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Router;
+use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
@@ -69,12 +70,23 @@ class RouterController extends Controller implements HasMiddleware
     {
         $user = Auth::user();
 
-        // If user is not admin and is a coordinator with an assigned router, redirect to details directly
-        if (!$user->hasRole('admin') && $user->coordinator && $user->coordinator->router_id) {
-            return redirect()->route('routers.sessions', $user->coordinator->router_id);
+        // Access Control for Coordinators/Managers
+        $query = Router::latest();
+        
+        if (!$user->hasRole(['admin', 'management']) && $user->coordinator) {
+            if ($user->coordinator->router_id) {
+                // If specific router assigned, redirect to it
+                return redirect()->route('routers.sessions', $user->coordinator->router_id);
+            } elseif ($user->coordinator->region_id) {
+                // If region assigned, filter by region
+                $query->where('region_id', $user->coordinator->region_id);
+            } else {
+                // Coordinator with no assignment sees nothing or dummy
+                $query->where('id', 0);
+            }
         }
 
-        $routers = Router::latest()->paginate(10);
+        $routers = $query->paginate(10);
         return view('routers.index', compact('routers'));
     }
 
@@ -83,7 +95,8 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        return view('routers.create');
+        $regions = Region::orderBy('name')->get();
+        return view('routers.create', compact('regions'));
     }
 
     /**
@@ -96,6 +109,7 @@ class RouterController extends Controller implements HasMiddleware
             'host' => 'required|string|max:255',
             'port' => 'required|integer',
             'username' => 'required|string|max:255',
+            'region_id' => 'nullable|exists:regions,id',
             'location' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -112,6 +126,17 @@ class RouterController extends Controller implements HasMiddleware
 
     public function show(Router $router)
     {
+        $user = Auth::user();
+        if (!$user->hasRole(['admin', 'management']) && $user->coordinator) {
+            $allowed = false;
+            if ($user->coordinator->router_id == $router->id) $allowed = true;
+            if ($user->coordinator->region_id && $user->coordinator->region_id == $router->region_id) $allowed = true;
+            
+            if (!$allowed) {
+                abort(403, 'Unauthorized access to this router.');
+            }
+        }
+
         $mikrotik = new MikrotikService($router);
 
         $mikrotikConnected = $mikrotik->isConnected();
@@ -175,6 +200,19 @@ class RouterController extends Controller implements HasMiddleware
 
     public function sessions(Router $router)
     {
+        $user = Auth::user();
+
+        // Access Control
+        if (!$user->hasRole(['admin', 'management']) && $user->coordinator) {
+            $allowed = false;
+            if ($user->coordinator->router_id == $router->id) $allowed = true;
+            if ($user->coordinator->region_id && $user->coordinator->region_id == $router->region_id) $allowed = true;
+            
+            if (!$allowed) {
+                abort(403, 'Unauthorized access to this router.');
+            }
+        }
+
         $mikrotik = new MikrotikService($router);
 
         $mikrotikConnected = $mikrotik->isConnected();
@@ -199,7 +237,8 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function edit(Router $router)
     {
-        return view('routers.edit', compact('router'));
+        $regions = Region::orderBy('name')->get();
+        return view('routers.edit', compact('router', 'regions'));
     }
 
     /**
@@ -209,9 +248,11 @@ class RouterController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'region_id' => 'nullable|exists:regions,id',
             'host' => 'required|string|max:255',
             'port' => 'required|integer',
             'username' => 'required|string|max:255',
+            'region_id' => 'nullable|exists:regions,id',
             'location' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',

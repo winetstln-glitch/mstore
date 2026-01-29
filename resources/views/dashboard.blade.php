@@ -30,6 +30,7 @@
                 </div>
                 <div>
                     <a href="{{ route('attendance.create') }}" class="btn btn-primary">
+                        <span class="visually-hidden">{{ __('Clock In/Out') }}</span>
                         @if(!$todayAttendance)
                             <i class="fa-solid fa-sign-in-alt"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
                         @elseif(!$todayAttendance->clock_out)
@@ -102,20 +103,29 @@
         </div>
     </div>
 
-    <!-- Revenue (Placeholder) -->
+    <!-- Active Sessions -->
     <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Network Status') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Active Sessions') }}</h6>
                     <div class="bg-success bg-opacity-10 text-success rounded p-2">
-                        <i class="fa-solid fa-server"></i>
+                        <i class="fa-solid fa-network-wired"></i>
                     </div>
                 </div>
-                <h3 class="fw-bold mb-1">98.9%</h3>
-                <div class="small text-success">
-                    <i class="fa-solid fa-check me-1"></i>
-                    <span>{{ __('Operational') }}</span>
+                <div class="d-flex justify-content-between align-items-end mb-1">
+                    <div>
+                        <div class="small text-muted">{{ __('PPPoE') }}</div>
+                        <h4 class="fw-bold mb-0">{{ $stats['pppoe_active'] }}</h4>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted">{{ __('Hotspot') }}</div>
+                        <h4 class="fw-bold mb-0">{{ $stats['hotspot_active'] }}</h4>
+                    </div>
+                </div>
+                <div class="small {{ $stats['router_status'] == 'online' ? 'text-success' : 'text-danger' }} mt-2">
+                    <i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>
+                    <span>{{ $stats['router_status'] == 'online' ? __('Router Online') : __('Router Offline') }}</span>
                 </div>
             </div>
         </div>

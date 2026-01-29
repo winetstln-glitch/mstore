@@ -239,5 +239,18 @@
     "In Stock": "Tersedia",
     "Crop Image": "Potong Gambar",
     "Crop & Save": "Potong & Simpan",
-    "Profile Photo": "Foto Profil"
+    "Profile Photo": "Foto Profil",
+    "My Attendance Today": "Absensi Saya Hari Ini",
+    "Not Present Yet": "Belum Hadir",
+    "You have not clocked in today.": "Anda belum absen masuk hari ini.",
+    "Clock In": "Absen Masuk",
+    "Clock Out": "Absen Keluar",
+    "Attendance": "Absensi",
+    "In": "Masuk",
+    "Out": "Keluar",
+    "Present": "Hadir",
+    "Late": "Terlambat",
+    "Absent": "Tidak Hadir"
+    ,
+    "Clock In/Out": "Absen Masuk/Keluar"
 }

@@ -7,6 +7,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GenieACSController;
 use App\Http\Controllers\GenieAcsServerController;
+use App\Http\Controllers\HotspotController;
+use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\InstallationWebController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WashController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -113,6 +116,14 @@ Route::middleware('auth')->group(function () {
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
+    Route::get('hotspot/online', [RouterController::class, 'index'])->name('hotspot.online');
+    Route::get('hotspot/generate', [HotspotController::class, 'generate'])->name('hotspot.generate');
+    Route::post('hotspot/generate', [HotspotController::class, 'storeGenerate'])->name('hotspot.store_generate');
+    Route::get('hotspot/print', [HotspotController::class, 'print'])->name('hotspot.print');
+    Route::get('hotspot/profile/create', [HotspotController::class, 'createProfile'])->name('hotspot.create_profile');
+    Route::post('hotspot/profile/store', [HotspotController::class, 'storeProfile'])->name('hotspot.store_profile');
+    Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
+    Route::get('pppoe', [PppoeController::class, 'index'])->name('pppoe.index');
     Route::resource('routers', RouterController::class);
 
     // Business & Operations
@@ -189,6 +200,31 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
+    // ATK Cashier
+    Route::post('atk/products/{product}/restock', [\App\Http\Controllers\AtkProductController::class, 'restock'])->name('atk.products.restock');
+    Route::resource('atk/products', \App\Http\Controllers\AtkProductController::class)->names('atk.products');
+    Route::get('atk/pos', [\App\Http\Controllers\AtkTransactionController::class, 'create'])->name('atk.pos');
+    Route::post('atk/pos', [\App\Http\Controllers\AtkTransactionController::class, 'store'])->name('atk.pos.store');
+    Route::get('atk/transactions/export', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('atk.transactions.export');
+    Route::get('atk/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'index'])->name('atk.transactions.index');
+    Route::get('atk/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('atk.transactions.receipt');
+    Route::get('atk/transactions/{transaction}', [\App\Http\Controllers\AtkTransactionController::class, 'show'])->name('atk.transactions.show');
+    Route::get('atk/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('atk.dashboard');
+
+    // Car Wash
+    Route::prefix('wash')->name('wash.')->group(function () {
+        Route::get('/dashboard', [WashController::class, 'index'])->name('index');
+        Route::get('/export', [WashController::class, 'exportExcel'])->name('export');
+        Route::get('/pos', [WashController::class, 'create'])->name('pos');
+        Route::post('/pos', [WashController::class, 'store'])->name('store');
+        Route::get('/receipt/{transaction}', [WashController::class, 'receipt'])->name('receipt');
+        
+        Route::get('/services', [WashController::class, 'services'])->name('services.index');
+        Route::post('/services', [WashController::class, 'storeService'])->name('services.store');
+        Route::put('/services/{service}', [WashController::class, 'updateService'])->name('services.update');
+        Route::delete('/services/{service}', [WashController::class, 'destroyService'])->name('services.destroy');
+    });
+
     // GenieACS / Network Monitor Routes
     Route::prefix('genieacs')->name('genieacs.')->group(function () {
         // Server Management
@@ -203,6 +239,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/device/{id}/alias', [GenieACSController::class, 'updateAlias'])->name('updateAlias');
         Route::post('/device/{id}/wan', [GenieACSController::class, 'updateWan'])->name('updateWan');
         Route::post('/device/{id}/wlan', [GenieACSController::class, 'updateWlan'])->name('updateWlan');
+        Route::post('/device/{id}/admin', [GenieACSController::class, 'updateAdmin'])->name('updateAdmin');
         Route::post('/device/{id}/param', [GenieACSController::class, 'updateParam'])->name('updateParam');
     });
 });

@@ -29,7 +29,7 @@ class PiketAndLeaveTest extends TestCase
         $techRole = Role::create(['name' => 'technician', 'label' => 'Technician']);
 
         // Create Permissions
-        $perms = ['leave.manage', 'schedule.manage', 'setting.view'];
+        $perms = ['leave.manage', 'schedule.manage', 'setting.view', 'leave.create', 'leave.view'];
         foreach ($perms as $p) {
             $perm = Permission::create(['name' => $p, 'label' => $p, 'group' => 'attendance']);
             $adminRole->permissions()->attach($perm);
@@ -41,6 +41,14 @@ class PiketAndLeaveTest extends TestCase
 
         $this->technician = User::factory()->create([
             'role_id' => $techRole->id,
+        ]);
+        
+        // Give technician leave permissions
+        $permCreate = Permission::where('name', 'leave.create')->first();
+        $permView = Permission::where('name', 'leave.view')->first();
+        $techRole->permissions()->syncWithoutDetaching([
+            $permCreate->id, 
+            $permView->id
         ]);
 
         // Ensure quota setting exists

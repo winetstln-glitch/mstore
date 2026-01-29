@@ -128,6 +128,19 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="region_id" class="form-label">{{ __('Wilayah / Region') }}</label>
+                            <select id="region_id" name="region_id" class="form-select @error('region_id') is-invalid @enderror">
+                                <option value="">{{ __('Pilih Wilayah (Opsional)') }}</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ old('region_id') == $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="location" class="form-label">{{ __('Lokasi Router') }}</label>
                             <input type="text" id="location" name="location" value="{{ old('location') }}" class="form-control @error('location') is-invalid @enderror" placeholder="{{ __('Contoh: Kantor Pusat / POP Gedung A') }}">
                             @error('location')

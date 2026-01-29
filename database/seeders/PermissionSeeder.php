@@ -90,9 +90,17 @@ class PermissionSeeder extends Seeder
             ['name' => 'router.edit', 'label' => 'Edit Router', 'group' => 'Router Management'],
             ['name' => 'router.delete', 'label' => 'Delete Router', 'group' => 'Router Management'],
 
+            // PPPoE
+            ['name' => 'pppoe.view', 'label' => 'View PPPoE', 'group' => 'PPPoE'],
+            ['name' => 'pppoe.manage', 'label' => 'Manage PPPoE', 'group' => 'PPPoE'],
+
             // Finance
             ['name' => 'finance.view', 'label' => 'View Finance', 'group' => 'Finance'],
             ['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance'],
+
+            // Hotspot
+            ['name' => 'hotspot.view', 'label' => 'View Hotspot Sessions', 'group' => 'Hotspot'],
+            ['name' => 'hotspot.manage', 'label' => 'Manage Hotspot', 'group' => 'Hotspot'],
 
             // Map
             ['name' => 'map.view', 'label' => 'View Map', 'group' => 'Map'],
@@ -170,6 +178,18 @@ class PermissionSeeder extends Seeder
             // Notification
             ['name' => 'notification.view', 'label' => 'View Notifications', 'group' => 'Notification'],
             ['name' => 'notification.manage', 'label' => 'Manage Notifications', 'group' => 'Notification'],
+
+            // ATK Cashier
+            ['name' => 'atk.view', 'label' => 'View ATK Dashboard', 'group' => 'ATK Cashier'],
+            ['name' => 'atk.manage', 'label' => 'Manage ATK Products', 'group' => 'ATK Cashier'],
+            ['name' => 'atk.pos', 'label' => 'Access POS', 'group' => 'ATK Cashier'],
+            ['name' => 'atk.report', 'label' => 'View ATK Reports', 'group' => 'ATK Cashier'],
+
+            // Car Wash
+            ['name' => 'wash.view', 'label' => 'View Wash Dashboard', 'group' => 'Car Wash'],
+            ['name' => 'wash.manage', 'label' => 'Manage Wash Services', 'group' => 'Car Wash'],
+            ['name' => 'wash.pos', 'label' => 'Access Wash POS', 'group' => 'Car Wash'],
+            ['name' => 'wash.report', 'label' => 'View Wash Reports', 'group' => 'Car Wash'],
         ];
 
         $permissionNames = collect($permissions)->pluck('name')->toArray();

@@ -30,7 +30,7 @@ class DashboardAttendanceTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Absensi Saya Hari Ini');
         $response->assertSee('Belum Hadir');
-        $response->assertSee('Absen Masuk/Keluar');
+        $response->assertSee(__('Clock In'));
     }
 
     public function test_technician_dashboard_shows_attendance_widget()
@@ -50,7 +50,7 @@ class DashboardAttendanceTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Absensi Saya Hari Ini');
         $response->assertSee('Belum Hadir');
-        $response->assertSee('Absen Masuk/Keluar');
+        $response->assertSee(__('Clock In'));
     }
 
     public function test_dashboard_shows_attendance_status_when_clocked_in()

@@ -72,6 +72,18 @@
                 <td class="text-right">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
             </tr>
             <tr>
+                <td>Pendapatan Toko ATK</td>
+                <td class="text-right">{{ number_format($atkRevenue, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>Pendapatan Wash</td>
+                <td class="text-right">{{ number_format($washRevenue, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>Pendapatan Inventaris (Material)</td>
+                <td class="text-right">{{ number_format($inventoryRevenue, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
                 <td>Pendapatan Lain-lain</td>
                 <td class="text-right">{{ number_format($otherIncome, 0, ',', '.') }}</td>
             </tr>
@@ -98,6 +110,14 @@
             <tr>
                 <td>Tool Fund / Manajemen</td>
                 <td class="text-right">-{{ number_format($toolFund, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>HPP Toko ATK</td>
+                <td class="text-right">-{{ number_format($atkCOGS, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>Biaya Inventaris (Material)</td>
+                <td class="text-right">-{{ number_format($inventoryCost, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td><strong>Total Beban Pokok Pendapatan</strong></td>

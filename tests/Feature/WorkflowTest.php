@@ -33,7 +33,24 @@ class WorkflowTest extends TestCase
             ['name' => 'ticket.complete'],
             ['label' => 'Complete Ticket', 'group' => 'Ticket Management']
         );
-        $this->techRole->permissions()->syncWithoutDetaching([$ticketCompletePermission->id]);
+        $dashboardViewPermission = Permission::firstOrCreate(
+            ['name' => 'dashboard.view'],
+            ['label' => 'View Dashboard']
+        );
+        $this->techRole->permissions()->syncWithoutDetaching([
+            $ticketCompletePermission->id,
+            $dashboardViewPermission->id
+        ]);
+
+        // Assign permissions to Admin
+        $permissions = [
+            'dashboard.view', 'customer.create', 'customer.view', 
+            'ticket.create', 'ticket.view', 'ticket.edit'
+        ];
+        foreach ($permissions as $perm) {
+            $p = Permission::firstOrCreate(['name' => $perm], ['label' => $perm]);
+            $this->adminRole->permissions()->attach($p->id);
+        }
 
         // Create Users
         $this->admin = User::create([
@@ -84,7 +101,7 @@ class WorkflowTest extends TestCase
         // 2b. Admin views dashboard and sees the new ticket
         $response = $this->actingAs($this->admin)->get(route('dashboard'));
         $response->assertStatus(200);
-        $response->assertSee('Dashboard Overview');
+        $response->assertViewIs('dashboard');
         $response->assertSee('Internet Slow'); // Recent tickets
         $response->assertSee('Customers');
 

@@ -30,8 +30,15 @@ class OdpController extends Controller implements HasMiddleware
     {
         $query = Odp::with(['odc', 'region']);
 
+        // Filter by Region
         if ($request->filled('region_id')) {
             $query->where('region_id', $request->region_id);
+        }
+
+        // Filter by Coordinator's Region
+        $user = auth()->user();
+        if ($user && !$user->hasRole('admin') && !$user->hasRole('management') && $user->coordinator && $user->coordinator->region_id) {
+            $query->where('region_id', $user->coordinator->region_id);
         }
 
         if ($request->filled('search')) {

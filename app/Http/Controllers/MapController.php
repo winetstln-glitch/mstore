@@ -37,7 +37,7 @@ class MapController extends Controller implements HasMiddleware
     public function index()
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance') || $user->hasRole('management');
         
         $coordinators = [];
         $regionId = null;

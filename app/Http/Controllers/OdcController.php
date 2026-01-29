@@ -30,6 +30,12 @@ class OdcController extends Controller implements HasMiddleware
     {
         $query = Odc::with(['olt', 'region']);
 
+        // Filter by Coordinator's Region
+        $user = auth()->user();
+        if ($user && !$user->hasRole('admin') && !$user->hasRole('management') && $user->coordinator && $user->coordinator->region_id) {
+            $query->where('region_id', $user->coordinator->region_id);
+        }
+
         if ($request->filled('region_id')) {
             $query->where('region_id', $request->region_id);
         }
@@ -214,18 +220,9 @@ class OdcController extends Controller implements HasMiddleware
         $ponRaw = preg_replace('/[^0-9]/', '', $data['pon_port']);
         $pon = str_pad($ponRaw, 2, '0', STR_PAD_LEFT);
 
-        // Area: Take First, Middle, and Last characters
+        // Area: Take first 2 characters from AREA (spaces removed)
         $areaRaw = strtoupper(preg_replace('/\s+/', '', $data['area']));
-        $length = strlen($areaRaw);
-        if ($length <= 3) {
-            $area = $areaRaw;
-        } else {
-            $first = substr($areaRaw, 0, 1);
-            $last = substr($areaRaw, -1);
-            $middleIndex = floor($length / 2);
-            $middle = substr($areaRaw, $middleIndex, 1);
-            $area = $first . $middle . $last;
-        }
+        $area = substr($areaRaw, 0, 2);
 
         // Color: Take first 1 character
         $colorRaw = strtoupper(preg_replace('/\s+/', '', $data['color']));

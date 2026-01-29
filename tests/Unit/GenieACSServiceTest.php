@@ -45,7 +45,7 @@ class GenieACSServiceTest extends TestCase
             ], 200),
             
             // Mock setParameterValues
-            '*/devices/device-123/tasks?timeout=3000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
+            '*/devices/device-123/tasks?timeout=8000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
         ]);
 
         $service = new GenieACSService();
@@ -275,7 +275,7 @@ class GenieACSServiceTest extends TestCase
     public function testSetParameterValuesTreatsCurl52AsSuccess()
     {
         Http::fake([
-            '*/devices/device-error/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-error/tasks?timeout=8000&connection_request' => Http::response([], 500),
             '*/devices/device-error/tasks' => function () {
                 throw new \Exception('cURL error 52: Empty reply from server');
             },
@@ -292,7 +292,7 @@ class GenieACSServiceTest extends TestCase
     public function testRebootDeviceFallsBackToQueueOnFailure()
     {
         Http::fake([
-            '*/devices/device-reboot/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-reboot/tasks?timeout=8000&connection_request' => Http::response([], 500),
             '*/devices/device-reboot/tasks' => Http::response([], 200),
         ]);
 
@@ -309,7 +309,7 @@ class GenieACSServiceTest extends TestCase
     public function testRebootDeviceTreatsCurlTimeoutAsSuccess()
     {
         Http::fake([
-            '*/devices/device-reboot-timeout/tasks?timeout=3000&connection_request' => Http::response([], 500),
+            '*/devices/device-reboot-timeout/tasks?timeout=8000&connection_request' => Http::response([], 500),
             '*/devices/device-reboot-timeout/tasks' => function () {
                 throw new \Exception('cURL error 28: Operation timed out');
             },

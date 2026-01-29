@@ -36,7 +36,7 @@ class RoleController extends Controller implements HasMiddleware
         $nocGroups = [
             'Dashboard', 'Customer Management', 'Ticket Management', 'Router Management', 
             'OLT Management', 'ODC Management', 'ODP Management', 'HTB Management', 
-            'PPPoE Management', 'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification'
+            'PPPoE', 'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification'
         ];
 
         $technicianNames = [
@@ -50,21 +50,34 @@ class RoleController extends Controller implements HasMiddleware
         $coordinatorNames = [
             'dashboard.view', 'inventory.view', 'inventory.pickup', 'map.view', 
             'profile.view', 'profile.update', 'notification.view', 'notification.manage', 
-            'finance.view'
+            'finance.view', 'pppoe.view', 'pppoe.manage', 'hotspot.view', 'hotspot.manage'
         ];
         
         // Finance: Full Management for some, View for others
-        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification'];
+        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification', 'ATK Cashier'];
         $financeViewNames = [
             'dashboard.view', 'customer.view', 'ticket.view', 'installation.view', 
             'technician.view', 'coordinator.view', 'region.view', 'attendance.view', 
             'attendance.report', 'leave.view', 'schedule.view', 'map.view', 'olt.view', 
             'odc.view', 'odp.view', 'htb.view', 'router.view', 'genieacs.view', 
-            'chat.view', 'telegram.view', 'calculator.view', 'setting.view'
+            'chat.view', 'telegram.view', 'calculator.view', 'setting.view',
+            'atk.view', 'atk.report'
+        ];
+
+        // Management: View All, Manage most business aspects, restricted from System admin
+        $managementGroups = [
+            'Dashboard', 'Customer Management', 'Ticket Management', 'Installation Management',
+            'Technician Management', 'Attendance', 'ODC Management', 'ODP Management',
+            'HTB Management', 'OLT Management', 'Router Management', 'Finance',
+            'Hotspot', 'PPPoE', 'Map', 'Leave Management', 'Schedule Management', 'Network Monitor',
+            'Inventory (Alat & Material)', 'Coordinator Management', 'Investor Management',
+            'Region Management', 'Package Management', 'Utilities', 'Profile', 'Notification',
+            'ATK Cashier', 'Car Wash', 'WhatsApp', 'Telegram'
         ];
 
         return [
             'Administrator' => $allPermissions->pluck('id')->values()->toArray(),
+            'Management' => $allPermissions->whereIn('group', $managementGroups)->pluck('id')->values()->toArray(),
             'Network Operations Center' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
             'Technician' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
             'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
@@ -97,8 +110,14 @@ class RoleController extends Controller implements HasMiddleware
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        $name = Str::slug($validated['label']);
+        
+        if (Role::where('name', $name)->exists()) {
+            return back()->withErrors(['label' => 'A role with this name (slug: ' . $name . ') already exists. Please choose a different label.'])->withInput();
+        }
+
         $role = Role::create([
-            'name' => Str::slug($validated['label']),
+            'name' => $name,
             'label' => $validated['label'],
         ]);
 

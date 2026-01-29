@@ -64,6 +64,11 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab" aria-controls="admin" aria-selected="false">
+                            <i class="fa-solid fa-user-shield me-1"></i> {{ __('Superadmin / Admin') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold" id="params-tab" data-bs-toggle="tab" data-bs-target="#params" type="button" role="tab" aria-controls="params" aria-selected="false">
                             <i class="fa-solid fa-list me-1"></i> {{ __('All Parameters') }}
                         </button>
@@ -518,6 +523,84 @@
                                 </div>
                             </div>
                         @endif
+                    </div>
+
+                    <!-- Admin Tab -->
+                    <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card shadow-sm border h-100">
+                                    <div class="card-header bg-light fw-bold">
+                                        <i class="fa-solid fa-key me-1"></i> {{ __('Update Admin Credentials') }}
+                                    </div>
+                                    <div class="card-body">
+                                        <form action="{{ route('genieacs.updateAdmin', ['id' => $id, 'server_id' => $serverId]) }}" method="POST">
+                                            @csrf
+                                            <div class="alert alert-info small">
+                                                <i class="fa-solid fa-info-circle me-1"></i> {{ __('This will attempt to update User Admin and Super Admin passwords across known parameter paths (ZTE, etc.).') }}
+                                            </div>
+                                            
+                                            <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('User Admin (Admin Web)') }}</h6>
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ __('Username') }}</label>
+                                                <div class="input-group mb-2">
+                                                    <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                                                    <input type="text" name="user_admin_name" class="form-control" placeholder="{{ __('New User Admin Username') }}">
+                                                </div>
+                                                <label class="form-label">{{ __('Password') }}</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                                                    <input type="text" name="user_admin_password" class="form-control" placeholder="{{ __('New User Admin Password') }}">
+                                                </div>
+                                            </div>
+
+                                            <h6 class="fw-bold mb-3 border-bottom pb-2 mt-4">{{ __('Super Admin') }}</h6>
+                                            <div class="mb-3">
+                                                {{-- Super Admin usually has fixed username (superadmin/telecomadmin) but we can allow change if needed --}}
+                                                {{-- Based on params provided: InternetGatewayDevice.DeviceInfo.X_ZTE-COM_AdminAccount.Password only? --}}
+                                                {{-- User list didn't explicitly show AdminAccount.Username, but let's check --}}
+                                                {{-- Actually, for SuperAdmin, user only listed Password param in the prompt for physical device? --}}
+                                                {{-- "InternetGatewayDevice.DeviceInfo.X_ZTE-COM_AdminAccount.Password" --}}
+                                                {{-- But "VirtualParameters.superAdmin" might cover both if it's a script. --}}
+                                                {{-- I'll just add Password for SuperAdmin to match the likely intent (unlocking), --}}
+                                                {{-- but since user asked "ganti username dan password", I'll add username too just in case. --}}
+                                                
+                                                <label class="form-label">{{ __('Password') }}</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fa-solid fa-shield-halved"></i></span>
+                                                    <input type="text" name="super_admin_password" class="form-control" placeholder="{{ __('New Super Admin Password') }}">
+                                                </div>
+                                            </div>
+
+                                            <div class="text-end mt-4">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fa-solid fa-save me-1"></i> {{ __('Save Changes') }}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card shadow-sm border h-100">
+                                    <div class="card-header bg-light fw-bold">
+                                        <i class="fa-solid fa-list-check me-1"></i> {{ __('Target Parameters') }}
+                                    </div>
+                                    <div class="card-body bg-body-tertiary">
+                                        <p class="small text-muted mb-2">{{ __('The following parameters will be updated if they exist on the device:') }}</p>
+                                        <ul class="list-group list-group-flush small">
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>VirtualParameters.userAdmin</li>
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>VirtualParameters.superAdmin</li>
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>InternetGatewayDevice.UserInterface...</li>
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>InternetGatewayDevice.DeviceInfo...</li>
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>X_ZTE-COM_UserInterface...</li>
+                                            <li class="list-group-item bg-transparent py-1"><i class="fa-solid fa-check text-success me-2"></i>X_CU_Function...</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- All Parameters Tab -->

@@ -21,6 +21,7 @@ class RoleSeeder extends Seeder
             ['name' => 'coordinator', 'label' => 'Coordinator'],
             ['name' => 'customer', 'label' => 'Customer'],
             ['name' => 'finance', 'label' => 'Finance Staff'],
+            ['name' => 'management', 'label' => 'Management'],
         ];
 
         foreach ($roles as $roleData) {
@@ -44,7 +45,7 @@ class RoleSeeder extends Seeder
                     'ODC Management',
                     'ODP Management',
                     'HTB Management',
-                    'PPPoE Management',
+                    'PPPoE',
                     'Radius',
                     'Map',
                     'Network Monitor',
@@ -62,7 +63,7 @@ class RoleSeeder extends Seeder
                     'installation.edit', // Can update status/photos
                     'attendance.view',
                     'attendance.create',
-                    'attendance.report',
+                    // 'attendance.report', // Removed to restrict global report access
                     'map.view',
                     'odp.view',
                     'odp.edit',
@@ -90,6 +91,14 @@ class RoleSeeder extends Seeder
                     'notification.view',
                     'notification.manage',
                     'finance.view',
+                    // Added based on user request for menu visibility
+                    'odc.view',
+                    'htb.view',
+                    'odp.view',
+                    'customer.view',
+                    'calculator.view',
+                    'genieacs.view',
+                    'router.view',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'finance') {
@@ -102,9 +111,11 @@ class RoleSeeder extends Seeder
                     'Finance',
                     'Investor Management',
                     'Package Management', 
-                    'Inventory',
+                    'Inventory (Alat & Material)',
                     'Profile',
-                    'Notification'
+                    'Notification',
+                    'Car Wash',
+                    'ATK Cashier'
                 ];
                 $managePermissions = Permission::whereIn('group', $manageGroups)->get();
 
@@ -133,20 +144,72 @@ class RoleSeeder extends Seeder
                     'odc.view',
                     'odp.view',
                     'htb.view',
+                    'hotspot.view',
                     'router.view',
                     'genieacs.view',
                     
                     // Communications & Tools
                     'chat.view',     // WhatsApp
                     'telegram.view', // Telegram
+                    'apikey.view',   // Google Map API
                     'calculator.view',
                     
                     // Settings (View only)
                     'setting.view',
+
+                    // ATK Cashier
+                    'atk.view',
+                    'atk.manage',
+                    'atk.pos',
+                    'atk.report',
                 ];
                 $viewPermissions = Permission::whereIn('name', $viewPermissionNames)->get();
 
                 $role->permissions()->sync($managePermissions->merge($viewPermissions));
+            } elseif ($role->name === 'management') {
+                // Management permissions
+                // 1. View Access to Everything (Dashboard, Reports, Logs, etc.)
+                $viewPermissions = Permission::where('name', 'like', '%.view')
+                    ->orWhere('name', 'like', '%.report')
+                    ->get();
+
+                // 2. Manage Access to Business & Operations
+                $manageGroups = [
+                    'Dashboard',
+                    'Customer Management',
+                    'Ticket Management',
+                    'Installation Management',
+                    'Technician Management',
+                    'Attendance',
+                    'ODC Management',
+                    'ODP Management',
+                    'HTB Management',
+                    'OLT Management',
+                    'Router Management',
+                    'Finance',
+                    'Hotspot',
+                    'PPPoE', // Added PPPoE
+                    'Map',
+                    'Leave Management',
+                    'Schedule Management',
+                    'Network Monitor',
+                    'Inventory (Alat & Material)',
+                    'Coordinator Management',
+                    'Investor Management',
+                    'Region Management',
+                    'Package Management',
+                    'Utilities',
+                    'Profile',
+                    'Notification',
+                    'ATK Cashier',
+                    'Car Wash', // Added Car Wash
+                    'WhatsApp',
+                    'Telegram'
+                ];
+                
+                $managePermissions = Permission::whereIn('group', $manageGroups)->get();
+
+                $role->permissions()->sync($viewPermissions->merge($managePermissions));
             }
         }
     }

@@ -110,6 +110,14 @@
                             <td>{{ __('Dana Alat') }}</td>
                             <td class="text-end text-danger">-{{ number_format($toolFund, 0, ',', '.') }}</td>
                         </tr>
+                        <tr>
+                            <td>{{ __('HPP Toko ATK') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($atkCOGS, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Biaya Inventaris (Material)') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($inventoryCost, 0, ',', '.') }}</td>
+                        </tr>
                         <tr class="fw-bold table-warning">
                             <td>{{ __('Total Beban Pokok Pendapatan') }}</td>
                             <td class="text-end text-danger">-{{ number_format($totalCOGS, 0, ',', '.') }}</td>

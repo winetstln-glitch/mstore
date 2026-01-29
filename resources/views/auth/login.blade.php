@@ -265,7 +265,7 @@
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
                             </span>
-                            <input id="email" class="form-control auth-input border-start-0 @error('email') is-invalid @enderror" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="mstore" />
+                            <input id="email" class="form-control auth-input border-start-0 @error('email') is-invalid @enderror" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="Masukan Username" />
                             @error('email')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -278,7 +278,7 @@
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-lock"></i>
                             </span>
-                            <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="••••••••" />
+                            <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukan Password" />
                             <button type="button" class="btn auth-input-toggle border-start-0" onclick="togglePasswordVisibility('password')">
                                 <i class="fa-solid fa-eye"></i>
                             </button>

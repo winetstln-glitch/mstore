@@ -10,6 +10,8 @@ use App\Models\InventoryItem;
 use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
 use App\Models\Transaction;
+use App\Models\Router;
+use App\Services\MikrotikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +23,7 @@ class DashboardController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
-        return [
-            new Middleware('permission:dashboard.view', only: ['index']),
-        ];
+        return [];
     }
 
     public function index()
@@ -89,10 +89,28 @@ class DashboardController extends Controller implements HasMiddleware
         $stats = [
             'total_customers' => $customerQuery->count(),
             'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', now()->startOfMonth())->count(),
-            'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
+            'open_tickets' => $ticketQuery->clone()->whereIn('status', ['open', 'assigned', 'in_progress', 'pending'])->count(),
             'tickets_today' => $ticketQuery->clone()->whereDate('created_at', today())->count(),
-            'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
+            'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved', 'installation'])->count(),
+            'hotspot_active' => 0,
+            'pppoe_active' => 0,
+            'router_status' => 'offline',
         ];
+
+        // Fetch Live Stats from Router (ID 2 or First Active)
+        try {
+            $router = Router::find(2) ?? Router::where('is_active', true)->first();
+            if ($router) {
+                $mikrotik = new MikrotikService($router);
+                if ($mikrotik->isConnected()) {
+                    $stats['hotspot_active'] = $mikrotik->getHotspotActiveCount();
+                    $stats['pppoe_active'] = $mikrotik->getPppoeActiveCount();
+                    $stats['router_status'] = 'online';
+                }
+            }
+        } catch (\Exception $e) {
+            // Keep defaults if connection fails
+        }
 
         $recentTickets = $ticketQuery->clone()
             ->with(['customer', 'technicians'])

@@ -147,7 +147,18 @@ class GenieACSController extends Controller implements HasMiddleware
             if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'odp_id') && 
                 \Illuminate\Support\Facades\Schema::hasColumn('customers', 'pppoe_user')) {
                 
-                $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'pppoe_user', 'ont_sn']);
+                $customerQuery = Customer::with('odp:id,name')->select(['id', 'odp_id', 'pppoe_user', 'ont_sn']);
+                
+                // Regional Filtering for Coordinators
+                $user = auth()->user();
+                if ($user && !$user->hasRole('admin') && $user->coordinator && $user->coordinator->region_id) {
+                    $customerQuery->whereHas('odp', function($q) use ($user) {
+                        $q->where('region_id', $user->coordinator->region_id);
+                    });
+                }
+
+                $customers = $customerQuery->get();
+
                 foreach ($customers as $customer) {
                     $odpData = $customer->odp ? ['name' => $customer->odp->name, 'id' => $customer->odp->id] : ['name' => '-', 'id' => null];
                     if ($customer->pppoe_user) {
@@ -188,7 +199,11 @@ class GenieACSController extends Controller implements HasMiddleware
             });
         }
 
-        $odps = Odp::select('id', 'name')->orderBy('name')->get();
+        $odpQuery = Odp::select('id', 'name')->orderBy('name');
+        if (auth()->check() && !auth()->user()->hasRole('admin') && auth()->user()->coordinator && auth()->user()->coordinator->region_id) {
+            $odpQuery->where('region_id', auth()->user()->coordinator->region_id);
+        }
+        $odps = $odpQuery->get();
 
         return view('genieacs.index', compact('devices', 'servers', 'activeServer', 'modeAll', 'odps'));
     }
@@ -365,6 +380,40 @@ class GenieACSController extends Controller implements HasMiddleware
             return back()->with('success', $result['message']);
         }
         return back()->with('error', $result['message']);
+    }
+
+    /**
+     * Update Admin Credentials
+     */
+    public function updateAdmin(Request $request, $id)
+    {
+        $request->validate([
+            'user_admin_name' => 'nullable|string',
+            'user_admin_password' => 'nullable|string',
+            'super_admin_password' => 'nullable|string',
+        ]);
+
+        $serverId = $request->query('server_id');
+        if ($serverId && $serverId !== 'all') {
+            $server = GenieAcsServer::find((int) $serverId);
+            if ($server) {
+                $this->genieService->useServer($server);
+            }
+        }
+
+        $data = [
+            'user_admin_name' => $request->user_admin_name,
+            'user_admin_password' => $request->user_admin_password,
+            'super_admin_password' => $request->super_admin_password,
+        ];
+
+        $success = $this->genieService->updateAdminCredentials($id, $data);
+
+        if ($success) {
+            return back()->with('success', __('Admin credentials update queued/applied successfully.'));
+        }
+
+        return back()->with('error', __('Failed to update admin credentials. Device might be offline or unreachable.'));
     }
 
     /**

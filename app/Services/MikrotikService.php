@@ -281,6 +281,57 @@ class MikrotikService
         }
     }
 
+    /**
+     * Get Hotspot Users
+     */
+    public function getHotspotUsers()
+    {
+        if (!$this->client) return [];
+        try {
+            $query = new Query('/ip/hotspot/user/print');
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get Hotspot Profiles
+     */
+    public function getHotspotProfiles()
+    {
+        if (!$this->client) return [];
+        try {
+            $query = new Query('/ip/hotspot/user/profile/print');
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Create Hotspot Profile
+     */
+    public function createHotspotProfile($name, $sharedUsers = 1, $rateLimit = null, $sessionTimeout = null)
+    {
+        if (!$this->client) return false;
+
+        try {
+            $query = new Query('/ip/hotspot/user/profile/add');
+            $query->equal('name', $name);
+            $query->equal('shared-users', (string)$sharedUsers);
+            
+            if ($rateLimit) $query->equal('rate-limit', $rateLimit);
+            if ($sessionTimeout) $query->equal('session-timeout', $sessionTimeout);
+
+            $this->client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error("Mikrotik Add Hotspot Profile Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function disconnectHotspotById(string $id): bool
     {
         if (!$this->client) return false;
@@ -292,6 +343,31 @@ class MikrotikService
             return true;
         } catch (Exception $e) {
             Log::error("Mikrotik Hotspot Disconnect Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Create Hotspot User
+     */
+    public function createHotspotUser($name, $password, $profile, $limitUptime = null, $limitBytes = null, $comment = null)
+    {
+        if (!$this->client) return false;
+
+        try {
+            $query = new Query('/ip/hotspot/user/add');
+            $query->equal('name', $name);
+            $query->equal('password', $password);
+            $query->equal('profile', $profile);
+            
+            if ($limitUptime) $query->equal('limit-uptime', $limitUptime);
+            if ($limitBytes) $query->equal('limit-bytes-total', $limitBytes);
+            if ($comment) $query->equal('comment', $comment);
+
+            $this->client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error("Mikrotik Add Hotspot User Error: " . $e->getMessage());
             return false;
         }
     }

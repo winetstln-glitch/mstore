@@ -85,9 +85,9 @@ class OdpAutoNameTest extends TestCase
             'odc_id' => $odc->id,
             'kampung' => 'Pasir Ipis',
             // Name format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]
-            // Area: XY (from input), Cable: 99 (from input), Color: B (from input), Seq: 01
-            // ODP-XY-99-B/01
-            'name' => 'ODP-XY-99-B/01'
+            // Area: XYZ (from input), Cable: 99 (from input), Color: B (from input), Seq: 01
+            // ODP-XYZ-99-B/01
+            'name' => 'ODP-XYZ-99-B/01'
         ]);
     }
 

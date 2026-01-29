@@ -1413,6 +1413,54 @@ class GenieACSService
 
 
     /**
+     * Update Admin Credentials (User Admin & Super Admin)
+     */
+    public function updateAdminCredentials($deviceId, $data)
+    {
+        $params = [];
+
+        // User Admin Name
+        if (!empty($data['user_admin_name'])) {
+            $name = $data['user_admin_name'];
+            $params['InternetGatewayDevice.UserInterface.X_ZTE-COM_WebUserInfo.AdminName'] = $name;
+            $params['InternetGatewayDevice.X_ZTE-COM_UserInterface.X_ZTE-COM_WebUserInfo.AdminName'] = $name;
+            $params['InternetGatewayDevice.X_CU_Function.ServiceMgt.LocalAdminName'] = $name;
+            $params['InternetGatewayDevice.X_CU_Function.Web.AdminName'] = $name;
+        }
+
+        // User Admin Password
+        if (!empty($data['user_admin_password'])) {
+            $password = $data['user_admin_password'];
+            
+            // Virtual Parameter (if exists)
+            $params['VirtualParameters.userAdmin'] = $password;
+            
+            // Standard/ZTE Parameters
+            $params['InternetGatewayDevice.UserInterface.X_ZTE-COM_WebUserInfo.AdminPassword'] = $password;
+            $params['InternetGatewayDevice.X_ZTE-COM_UserInterface.X_ZTE-COM_WebUserInfo.AdminPassword'] = $password;
+            $params['InternetGatewayDevice.X_CU_Function.ServiceMgt.LocalAdminPassword'] = $password;
+            $params['InternetGatewayDevice.X_CU_Function.Web.AdminPassw'] = $password;
+        }
+
+        // Super Admin Password
+        if (!empty($data['super_admin_password'])) {
+            $password = $data['super_admin_password'];
+
+            // Virtual Parameter (if exists)
+            $params['VirtualParameters.superAdmin'] = $password;
+            
+            // Standard/ZTE Parameters
+            $params['InternetGatewayDevice.DeviceInfo.X_ZTE-COM_AdminAccount.Password'] = $password;
+        }
+
+        if (empty($params)) {
+            return true; // Nothing to update
+        }
+
+        return $this->setParameterValues($deviceId, $params);
+    }
+
+    /**
      * Get device status by Serial Number (or OUI+ProductClass+Serial)
      */
     public function getDeviceStatus($serialNumber)

@@ -281,8 +281,8 @@ class InventoryController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
-            'type_group' => 'required|in:material,tool',
+            'category' => 'sometimes|string|max:255',
+            'type_group' => 'sometimes|in:material,tool',
             'type' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
             'model' => 'nullable|string|max:255',
@@ -292,7 +292,22 @@ class InventoryController extends Controller implements HasMiddleware
             'price' => 'required|numeric|min:0',
         ]);
 
-        InventoryItem::create($validated);
+        $validated['category'] = $validated['category'] ?? ($request->input('category', ''));
+        $validated['type_group'] = $validated['type_group'] ?? ($request->input('type_group', 'material'));
+
+        $item = InventoryItem::create($validated);
+
+        if (($item->stock ?? 0) > 0 && ($item->price ?? 0) > 0) {
+            Transaction::create([
+                'user_id' => Auth::id(),
+                'type' => 'expense',
+                'category' => 'Pembelian Alat',
+                'amount' => $item->stock * $item->price,
+                'transaction_date' => now()->toDateString(),
+                'description' => 'Pembelian awal stok ' . $item->name,
+                'reference_number' => 'INV-IN-' . $item->id,
+            ]);
+        }
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item added successfully.'));
     }
@@ -301,8 +316,8 @@ class InventoryController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
-            'type_group' => 'required|in:material,tool',
+            'category' => 'sometimes|string|max:255',
+            'type_group' => 'sometimes|in:material,tool',
             'type' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
             'model' => 'nullable|string|max:255',
@@ -312,9 +327,24 @@ class InventoryController extends Controller implements HasMiddleware
             'price' => 'required|numeric|min:0',
         ]);
 
+        $oldStock = $item->stock;
         $item->update($validated);
 
-        return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item updated successfully.'));
+        $diff = ($item->stock - $oldStock);
+        if ($diff > 0 && ($item->price ?? 0) > 0) {
+            Transaction::create([
+                'user_id' => Auth::id(),
+                'type' => 'expense',
+                'category' => 'Pembelian Alat',
+                'amount' => $diff * $item->price,
+                'transaction_date' => now()->toDateString(),
+                'description' => 'Penambahan stok ' . $item->name,
+                'reference_number' => 'INV-IN-' . $item->id,
+            ]);
+        }
+
+        $redirectTypeGroup = $validated['type_group'] ?? ($item->type_group ?? 'material');
+        return redirect()->route('inventory.index', ['type_group' => $redirectTypeGroup])->with('success', __('Item updated successfully.'));
     }
 
     public function destroyItem(InventoryItem $item)
@@ -347,6 +377,11 @@ class InventoryController extends Controller implements HasMiddleware
             'quantity' => $validated['quantity'],
             'description' => $validated['description'],
         ]);
+
+        Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)
+            ->update([
+                'amount' => $item->price * $validated['quantity'],
+            ]);
 
         return redirect()->route('inventory.index')->with('success', __('Pickup updated successfully.'));
     }

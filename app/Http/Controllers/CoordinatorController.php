@@ -6,6 +6,8 @@ use App\Models\Coordinator;
 use App\Models\Region;
 use App\Models\User;
 use App\Models\Router;
+use App\Models\Role;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;

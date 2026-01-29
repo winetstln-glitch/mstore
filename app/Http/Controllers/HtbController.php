@@ -27,6 +27,14 @@ class HtbController extends Controller implements HasMiddleware
     {
         $query = Htb::with(['odp', 'parent']);
 
+        // Filter by Coordinator's Region (via ODP)
+        $user = auth()->user();
+        if ($user && !$user->hasRole('admin') && !$user->hasRole('management') && $user->coordinator && $user->coordinator->region_id) {
+             $query->whereHas('odp', function($q) use ($user) {
+                 $q->where('region_id', $user->coordinator->region_id);
+             });
+        }
+
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%")
