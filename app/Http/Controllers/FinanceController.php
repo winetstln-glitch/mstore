@@ -1889,33 +1889,4 @@ class FinanceController extends Controller implements HasMiddleware
         return redirect()->back()->with('success', __('Settings updated successfully.'));
     }
 
-    private function getExcludedExpenseCategories()
-    {
-        $stored = Setting::getValue('finance_excluded_expense_categories');
-        if ($stored) {
-            $decoded = json_decode($stored, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                return $decoded;
-            }
-            // Fallback if stored as simple string (legacy/migration safety)
-            return array_map('trim', explode(',', $stored));
-        }
-        
-        return [
-            'ISP Payment',
-            'Tool Fund',
-            'Coordinator Commission',
-            'Investor Profit Share',
-            'Investor Cash Fund'
-        ];
-    }
-    
-    private function getExcludedGeneralExpenseCategories()
-    {
-        // This includes allocations + usage
-        $base = $this->getExcludedExpenseCategories();
-        // Usage categories that are usually excluded from general expenses because they are funded by allocations
-        $usages = ['Pembayaran ISP', 'Pembelian Alat'];
-        return array_unique(array_merge($base, $usages));
-    }
 }
