@@ -95,6 +95,10 @@ class DashboardController extends Controller implements HasMiddleware
             'hotspot_active' => 0,
             'pppoe_active' => 0,
             'router_status' => 'offline',
+            // GenieACS Stats
+            'genie_total' => GenieDeviceStatus::count(),
+            'genie_online' => GenieDeviceStatus::where('is_online', true)->count(),
+            'genie_offline' => GenieDeviceStatus::where('is_online', false)->count(),
         ];
 
         // Fetch Live Stats from Router (ID 2 or First Active)

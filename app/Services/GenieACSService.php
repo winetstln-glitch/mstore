@@ -33,6 +33,39 @@ class GenieACSService
     }
 
     /**
+     * Get All Devices for Monitoring (with projection)
+     */
+    public function getAllDevicesForMonitoring()
+    {
+        try {
+            // Projection fields: ID, LastInform, and IP
+            // Note: IP path depends on device model, we try common ones or just rely on summary if available in your GenieACS setup
+            // Usually GenieACS stores some summary in VirtualParameters or presets.
+            // For now, we fetch minimal data.
+            $projection = implode(',', [
+                '_id',
+                '_lastInform',
+                'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress',
+                'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
+                'Device.IP.Interface.1.IPv4Address.1.IPAddress'
+            ]);
+
+            $response = $this->request()
+                ->get("{$this->baseUrl}/devices", [
+                    'projection' => $projection
+                ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+            return [];
+        } catch (\Exception $e) {
+            Log::error("GenieACS GetDevices Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Set Parameters (Provisioning)
      * $params example: [['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', 'user', 'xsd:string']]
      */
