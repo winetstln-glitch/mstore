@@ -11,6 +11,7 @@ use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\Router;
+use App\Models\GenieDeviceStatus;
 use App\Services\MikrotikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
