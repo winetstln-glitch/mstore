@@ -86,6 +86,23 @@
                             <td>{{ __('Pendapatan Lainnya') }}</td>
                             <td class="text-end">{{ number_format($otherIncome, 0, ',', '.') }}</td>
                         </tr>
+                        <tr>
+                            <td>{{ __('Pendapatan Toko ATK') }}</td>
+                            <td class="text-end">{{ number_format($atkRevenue, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Pendapatan Cuci Kendaraan') }}</td>
+                            <td class="text-end">{{ number_format($washRevenue, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{ __('Pendapatan Inventaris (Material Proyek)') }}
+                                @if(isset($toolValueOut) && $toolValueOut > 0)
+                                    <br><small class="text-muted fst-italic">Note: Penggunaan Alat Kerja senilai {{ number_format($toolValueOut, 0, ',', '.') }} tidak dihitung sebagai pendapatan (Aset Tetap).</small>
+                                @endif
+                            </td>
+                            <td class="text-end">{{ number_format($inventoryRevenue, 0, ',', '.') }}</td>
+                        </tr>
                         <tr class="fw-bold table-success">
                             <td>{{ __('Total Pendapatan') }}</td>
                             <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
@@ -115,7 +132,7 @@
                             <td class="text-end text-danger">-{{ number_format($atkCOGS, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
-                            <td>{{ __('Biaya Inventaris (Material)') }}</td>
+                            <td>{{ __('Biaya Pembelian Alat/Material') }}</td>
                             <td class="text-end text-danger">-{{ number_format($inventoryCost, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="fw-bold table-warning">

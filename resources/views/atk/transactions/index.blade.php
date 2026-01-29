@@ -65,6 +65,13 @@
                                 <a href="{{ route('atk.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i> Detail
                                 </a>
+                                <form action="{{ route('atk.transactions.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         @empty

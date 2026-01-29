@@ -36,7 +36,7 @@
              @if($coordinator)
             <tr>
                 <td>Wilayah</td>
-                <td>: {{ $coordinator->region->name ?? '-' }}</td>
+                <td>: {{ $coordinator->region?->name ?? '-' }}</td>
             </tr>
             @endif
         </table>

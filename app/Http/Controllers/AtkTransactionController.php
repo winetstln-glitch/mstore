@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AtkProduct;
 use App\Models\AtkTransaction;
 use App\Models\AtkTransactionItem;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -142,6 +143,17 @@ class AtkTransactionController extends Controller
                 $data['product']->decrement('stock', $data['quantity']);
             }
 
+            // Create Linked Finance Transaction (Income)
+            Transaction::create([
+                'user_id' => auth()->id(),
+                'type' => 'income',
+                'category' => 'ATK Revenue', // Consistent with P&L naming? P&L uses direct query, but this is for Finance List visibility
+                'amount' => $totalAmount,
+                'transaction_date' => $transaction->created_at,
+                'description' => 'ATK Sale - ' . $transaction->invoice_number,
+                'reference_number' => 'INV-ATK-' . $transaction->id,
+            ]);
+
             DB::commit();
 
             return response()->json([
@@ -172,6 +184,34 @@ class AtkTransactionController extends Controller
         return view('atk.transactions.receipt', compact('transaction'));
     }
     
+    public function destroy(AtkTransaction $transaction)
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Delete linked Finance Transaction
+            Transaction::where('reference_number', 'INV-ATK-' . $transaction->id)->delete();
+            
+            // Restore stock
+            foreach ($transaction->items as $item) {
+                 $item->product->increment('stock', $item->quantity);
+            }
+            
+            // Delete items (if not cascaded by DB)
+            $transaction->items()->delete();
+            
+            // Delete transaction
+            $transaction->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('atk.transactions.index')->with('success', 'Transaksi berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
+        }
+    }
+
     public function dashboard() {
          // Simple Dashboard logic
          $totalSales = AtkTransaction::where('type', 'out')->sum('total_amount');

@@ -130,6 +130,7 @@ Route::middleware('auth')->group(function () {
     // Business & Operations
     Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
     Route::post('finance/settings', [FinanceController::class, 'updateSettings'])->name('finance.settings.update');
+    Route::get('finance/export-accounting', [FinanceController::class, 'downloadAccountingReport'])->name('finance.export_accounting');
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
@@ -212,6 +213,7 @@ Route::middleware('auth')->group(function () {
     Route::get('atk/transactions/export', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('atk.transactions.export');
     Route::get('atk/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'index'])->name('atk.transactions.index');
     Route::get('atk/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('atk.transactions.receipt');
+    Route::delete('atk/transactions/{transaction}', [\App\Http\Controllers\AtkTransactionController::class, 'destroy'])->name('atk.transactions.destroy');
     Route::get('atk/transactions/{transaction}', [\App\Http\Controllers\AtkTransactionController::class, 'show'])->name('atk.transactions.show');
     Route::get('atk/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('atk.dashboard');
 

@@ -9,6 +9,7 @@ use App\Models\InventoryTransaction;
 use App\Models\AtkTransaction;
 use App\Models\WashTransaction;
 use App\Models\AtkTransactionItem;
+use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,144 @@ class FinanceController extends Controller implements HasMiddleware
             'Pembayaran ISP', // ISP Fund Usage
             'Pembelian Alat', // Tool Fund Usage
         ]);
+    }
+
+    public function downloadAccountingReport()
+    {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $writer = new Writer();
+        $writer->openToBrowser('Laporan_Pembukuan_Lengkap.xlsx');
+
+        // --- Sheet 1: Buku Kas (Cash Book) ---
+        $sheet1 = $writer->getCurrentSheet();
+        $sheet1->setName('Buku Kas');
+        $writer->addRow(Row::fromValues(['Tanggal', 'No. Ref', 'Deskripsi', 'Kategori', 'Masuk (Debit)', 'Keluar (Kredit)', 'Saldo']));
+
+        $transactions = Transaction::orderBy('transaction_date')->orderBy('created_at')->get();
+        $balance = 0;
+
+        foreach ($transactions as $t) {
+            $debit = ($t->type === 'income') ? $t->amount : 0;
+            $credit = ($t->type === 'expense') ? $t->amount : 0;
+            $balance += ($debit - $credit);
+
+            $writer->addRow(Row::fromValues([
+                $t->transaction_date,
+                $t->reference_number ?? '-',
+                $t->description ?? '-',
+                $t->category,
+                $debit,
+                $credit,
+                $balance
+            ]));
+        }
+
+        // --- Sheet 2: Jurnal Umum (General Journal) ---
+        $writer->addNewSheetAndMakeItCurrent();
+        $writer->getCurrentSheet()->setName('Jurnal Umum');
+        $writer->addRow(Row::fromValues(['Tanggal', 'Akun / Keterangan', 'Ref', 'Debit', 'Kredit']));
+
+        foreach ($transactions as $t) {
+            // Jurnal Otomatis Logic
+            // Income: Debit Kas, Credit Kategori Pendapatan
+            // Expense: Debit Kategori Pengeluaran, Credit Kas
+            
+            if ($t->type === 'income') {
+                // Debit Cash
+                $writer->addRow(Row::fromValues([
+                    $t->transaction_date,
+                    'Kas / Bank',
+                    $t->reference_number,
+                    $t->amount,
+                    0
+                ]));
+                // Credit Income
+                $writer->addRow(Row::fromValues([
+                    $t->transaction_date,
+                    $t->category,
+                    $t->reference_number,
+                    0,
+                    $t->amount
+                ]));
+            } else {
+                // Debit Expense
+                $writer->addRow(Row::fromValues([
+                    $t->transaction_date,
+                    $t->category,
+                    $t->reference_number,
+                    $t->amount,
+                    0
+                ]));
+                // Credit Cash
+                $writer->addRow(Row::fromValues([
+                    $t->transaction_date,
+                    'Kas / Bank',
+                    $t->reference_number,
+                    0,
+                    $t->amount
+                ]));
+            }
+        }
+
+        // --- Sheet 3: Laba Rugi (Profit & Loss) ---
+        $writer->addNewSheetAndMakeItCurrent();
+        $writer->getCurrentSheet()->setName('Laba Rugi');
+        $writer->addRow(Row::fromValues(['Keterangan', 'Jumlah']));
+
+        $incomes = $transactions->where('type', 'income')->groupBy('category');
+        $expenses = $transactions->where('type', 'expense')->groupBy('category');
+        
+        $totalRevenue = 0;
+        $writer->addRow(Row::fromValues(['PENDAPATAN', '']));
+        foreach ($incomes as $cat => $group) {
+            $sum = $group->sum('amount');
+            $totalRevenue += $sum;
+            $writer->addRow(Row::fromValues(['   ' . $cat, $sum]));
+        }
+        $writer->addRow(Row::fromValues(['Total Pendapatan', $totalRevenue]));
+        $writer->addRow(Row::fromValues(['', '']));
+
+        $writer->addRow(Row::fromValues(['BEBAN & PENGELUARAN', '']));
+        $totalExpense = 0;
+        foreach ($expenses as $cat => $group) {
+            $sum = $group->sum('amount');
+            $totalExpense += $sum;
+            $writer->addRow(Row::fromValues(['   ' . $cat, $sum]));
+        }
+        $writer->addRow(Row::fromValues(['Total Pengeluaran', $totalExpense]));
+        $writer->addRow(Row::fromValues(['', '']));
+        
+        $netProfit = $totalRevenue - $totalExpense;
+        $writer->addRow(Row::fromValues(['LABA / (RUGI) BERSIH', $netProfit]));
+
+        // --- Sheet 4: Neraca (Balance Sheet) ---
+        $writer->addNewSheetAndMakeItCurrent();
+        $writer->getCurrentSheet()->setName('Neraca');
+        $writer->addRow(Row::fromValues(['ASET', 'Jumlah', '', 'KEWAJIBAN & EKUITAS', 'Jumlah']));
+
+        // Assets
+        $cashBalance = $balance; // Final balance from Cash Book
+        $inventoryValue = InventoryItem::sum(DB::raw('stock * price'));
+        $totalAssets = $cashBalance + $inventoryValue;
+
+        // Liabilities (Simplified)
+        $liabilities = 0;
+
+        // Equity
+        $equity = $totalAssets - $liabilities;
+
+        $writer->addRow(Row::fromValues(['ASET LANCAR', '', '', 'KEWAJIBAN', '']));
+        $writer->addRow(Row::fromValues(['   Kas & Bank', $cashBalance, '', '   Utang Usaha', $liabilities]));
+        $writer->addRow(Row::fromValues(['   Persediaan Barang', $inventoryValue, '', '   Total Kewajiban', $liabilities]));
+        $writer->addRow(Row::fromValues(['', '', '', '', '']));
+        $writer->addRow(Row::fromValues(['Total Aset', $totalAssets, '', 'EKUITAS', '']));
+        $writer->addRow(Row::fromValues(['', '', '', '   Modal & Laba Ditahan', $equity]));
+        $writer->addRow(Row::fromValues(['', '', '', 'Total Kewajiban & Ekuitas', $liabilities + $equity]));
+
+        $writer->close();
     }
 
     public function downloadIncomeBreakdownPdf()
@@ -719,6 +858,25 @@ class FinanceController extends Controller implements HasMiddleware
             Transaction::where('reference_number', 'INV-' . $transaction->id)->delete();
             Transaction::where('reference_number', 'INV-CASH-' . $transaction->id)->delete();
             
+            // Cascade Delete for ATK Transactions
+            if ($transaction->reference_number && str_starts_with($transaction->reference_number, 'INV-ATK-')) {
+                $atkId = str_replace('INV-ATK-', '', $transaction->reference_number);
+                $atkTransaction = AtkTransaction::with('items.product')->find($atkId);
+                if ($atkTransaction) {
+                    // Restore stock
+                    foreach ($atkTransaction->items as $item) {
+                        if ($item->product) {
+                            $item->product->increment('stock', $item->quantity);
+                        }
+                    }
+                    $atkTransaction->items()->delete();
+                    $atkTransaction->delete();
+                }
+            }
+
+            // Fallback for legacy data (by description)
+            Transaction::where('description', 'LIKE', '%from transaction #' . $transaction->id)->delete();
+            
             $transaction->delete();
         });
 
@@ -746,6 +904,9 @@ class FinanceController extends Controller implements HasMiddleware
                     Transaction::where('reference_number', 'TOOL-' . $transaction->id)->delete();
                     Transaction::where('reference_number', 'INV-' . $transaction->id)->delete();
                     Transaction::where('reference_number', 'INV-CASH-' . $transaction->id)->delete();
+                    
+                    // Fallback for legacy data (by description)
+                    Transaction::where('description', 'LIKE', '%from transaction #' . $transaction->id)->delete();
                     
                     $transaction->delete();
                 }
@@ -1066,7 +1227,7 @@ class FinanceController extends Controller implements HasMiddleware
         $memberIncome = (clone $query)->where('category', 'Member Income')->sum('amount');
         $voucherIncome = (clone $query)->where('category', 'Voucher Income')->sum('amount');
         $otherIncome = (clone $query)->where('type', 'income')
-            ->whereNotIn('category', ['Member Income', 'Voucher Income'])
+            ->whereNotIn('category', ['Member Income', 'Voucher Income', 'ATK Revenue'])
             ->sum('amount');
         
         // --- ATK Data ---
@@ -1089,9 +1250,26 @@ class FinanceController extends Controller implements HasMiddleware
 
         // --- Inventory Data (Material Profit) ---
         // Revenue = Value of material OUT (Usage) = Quantity * InventoryItem Price
-        $inventoryRevenue = (clone $invQuery)->with('item')->get()->sum(function($t) {
-            return $t->quantity * ($t->item->price ?? 0);
-        });
+        // ONLY count 'material', exclude 'tool' (fixed assets)
+        $materialRevenue = (clone $invQuery)->with('item')
+            ->whereHas('item', function($q) {
+                $q->where('type_group', 'material')
+                  ->orWhereNull('type_group');
+            })
+            ->get()->sum(function($t) {
+                return $t->quantity * ($t->item->price ?? 0);
+            });
+
+        // Calculate Tool Value Out (Asset movement, not revenue)
+        $toolValueOut = (clone $invQuery)->with('item')
+            ->whereHas('item', function($q) {
+                $q->where('type_group', 'tool');
+            })
+            ->get()->sum(function($t) {
+                return $t->quantity * ($t->item->price ?? 0);
+            });
+
+        $inventoryRevenue = $materialRevenue;
         
         // Cost = 'Pembelian Alat' in Transactions
         $inventoryCost = (clone $query)->where('category', 'Pembelian Alat')->sum('amount');
@@ -1135,6 +1313,7 @@ class FinanceController extends Controller implements HasMiddleware
             'atkRevenue' => $atkRevenue,
             'washRevenue' => $washRevenue,
             'inventoryRevenue' => $inventoryRevenue,
+            'toolValueOut' => $toolValueOut,
             'totalRevenue' => $totalRevenue,
             'coordCommission' => $coordCommission,
             'ispPayment' => $ispPayment,
@@ -1167,6 +1346,21 @@ class FinanceController extends Controller implements HasMiddleware
 
         $memberIncome = (clone $query)->where('type', 'income')->where('category', 'Member Income')->sum('amount');
         $voucherIncome = (clone $query)->where('type', 'income')->where('category', 'Voucher Income')->sum('amount');
+        
+        // Revenue Split (Cash vs Transfer)
+        // Cash: Collected by Coordinator (Debt)
+        // Transfer: Collected by Company (No Debt for Coordinator)
+        $cashRevenue = (clone $query)->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->where(function($q) {
+                $q->where('payment_method', 'cash')->orWhereNull('payment_method');
+            })->sum('amount');
+
+        $transferRevenue = (clone $query)->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->where('payment_method', 'transfer')
+            ->sum('amount');
+            
         $totalRevenue = $memberIncome + $voucherIncome;
 
         $coordRate = Setting::getValue('commission_coordinator_percent', 15);
@@ -1184,14 +1378,25 @@ class FinanceController extends Controller implements HasMiddleware
         $consumptionExpenses = (clone $query)->where('type', 'expense')->where('category', 'Consumption')->sum('amount');
         $repairExpenses = (clone $query)->where('type', 'expense')->where('category', 'Repair')->sum('amount');
 
+        // Total Expenses paid by Coordinator (assumed cash)
         $operatingExpenses = $transportExpenses + $consumptionExpenses + $repairExpenses;
+        
+        // Deposits made by Coordinator
+        $depositedAmount = (clone $query)->where('type', 'transfer')
+            ->where('category', 'Setoran Pengurus')
+            ->sum('amount');
 
-        $depositToCompany = $afterCommission - $operatingExpenses;
+        // Sisa Disetor Calculation
+        // Logic: (Cash Collected) - (Commission Earned) - (Expenses Paid) - (Already Deposited)
+        // Note: Commission is deducted from the "Cash to Deposit". If Commission > Cash Collected (e.g. all Transfer), result is negative (Company owes Coordinator).
+        $depositToCompany = $cashRevenue - $coordCommission - $operatingExpenses - $depositedAmount;
 
         return [
             'memberIncome' => $memberIncome,
             'voucherIncome' => $voucherIncome,
             'totalRevenue' => $totalRevenue,
+            'cashRevenue' => $cashRevenue,
+            'transferRevenue' => $transferRevenue,
             'coordCommission' => $coordCommission,
             'afterCommission' => $afterCommission,
             'operatingExpenses' => $operatingExpenses,
@@ -1199,6 +1404,7 @@ class FinanceController extends Controller implements HasMiddleware
             'consumptionExpenses' => $consumptionExpenses,
             'repairExpenses' => $repairExpenses,
             'depositToCompany' => $depositToCompany,
+            'depositedAmount' => $depositedAmount,
             'coordRate' => $coordRate,
         ];
     }

@@ -32,62 +32,26 @@
                 <div class="col-md-4 mb-3">
                     <div class="card border-left-success h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Pendapatan Member') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($memberIncome, 0, ',', '.') }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card border-left-success h-100">
-                        <div class="card-body">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Pendapatan Voucher') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($voucherIncome, 0, ',', '.') }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card border-left-success h-100">
-                        <div class="card-body">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Pendapatan') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                            <small class="text-muted">Cash: {{ number_format($cashRevenue, 0, ',', '.') }} | Trf: {{ number_format($transferRevenue, 0, ',', '.') }}</small>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="row mb-4">
                 <div class="col-md-4 mb-3">
                     <div class="card border-left-info h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Komisi Pengurus (±' . $coordRate . '%)') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">-{{ number_format($coordCommission, 0, ',', '.') }}</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Sudah Disetor') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($depositedAmount, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="card border-left-primary h-100">
+                    <div class="card border-left-warning h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Sisa Setelah Komisi') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($afterCommission, 0, ',', '.') }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card border-left-danger h-100">
-                        <div class="card-body">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">{{ __('Total Pengeluaran Pengurus (Transport/Konsumsi/Perbaikan)') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">-{{ number_format($operatingExpenses, 0, ',', '.') }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <div class="card border-left-success h-100">
-                        <div class="card-body">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Sisa Disetor ke Perusahaan') }}</div>
-                            <div class="h4 mb-0 font-weight-bold text-gray-800">{{ number_format($depositToCompany, 0, ',', '.') }}</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Sisa Kewajiban Setor') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($depositToCompany, 0, ',', '.') }}</div>
+                            <small class="text-muted">{{ __('(Cash - Komisi - Beban - Setoran)') }}</small>
                         </div>
                     </div>
                 </div>
@@ -105,16 +69,20 @@
                             <td class="text-end">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="fw-bold table-success">
-                            <td>{{ __('Total Pendapatan') }}</td>
+                            <td>{{ __('Total Pendapatan (Gross)') }}</td>
                             <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;<i>- Via Transfer (Langsung ke Perusahaan)</i></td>
+                            <td class="text-end text-muted">({{ number_format($transferRevenue, 0, ',', '.') }})</td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;<i>- Via Cash (Dipegang Pengurus)</i></td>
+                            <td class="text-end fw-bold">{{ number_format($cashRevenue, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td>{{ __('Komisi Pengurus (±' . $coordRate . '%)') }}</td>
                             <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="fw-bold">
-                            <td>{{ __('Sisa Setelah Komisi') }}</td>
-                            <td class="text-end">{{ number_format($afterCommission, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td>{{ __('Pengeluaran Transportasi') }}</td>
@@ -132,8 +100,12 @@
                             <td>{{ __('Total Pengeluaran Pengurus') }}</td>
                             <td class="text-end text-danger">-{{ number_format($operatingExpenses, 0, ',', '.') }}</td>
                         </tr>
+                        <tr>
+                            <td>{{ __('Sudah Disetor (Dicicil)') }}</td>
+                            <td class="text-end text-success">-{{ number_format($depositedAmount, 0, ',', '.') }}</td>
+                        </tr>
                         <tr class="fw-bold table-primary">
-                            <td>{{ __('Total Sisa Disetor ke Perusahaan') }}</td>
+                            <td>{{ __('Sisa Kewajiban Setor (Net Bill)') }}</td>
                             <td class="text-end">{{ number_format($depositToCompany, 0, ',', '.') }}</td>
                         </tr>
                     </tbody>

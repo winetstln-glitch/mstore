@@ -3,6 +3,28 @@
 @section('title', __('Peta'))
 
 @section('content')
+<style>
+    .laser-glow {
+        width: 12px;
+        height: 12px;
+        background-color: #00f2ff;
+        border-radius: 50%;
+        box-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 15px #00f2ff;
+        animation: pulse-glow 0.5s infinite alternate;
+    }
+    @keyframes pulse-glow {
+        from {
+            transform: scale(0.8);
+            box-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
+            opacity: 0.8;
+        }
+        to {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px #00f2ff, 0 0 20px #00f2ff, 0 0 30px #00f2ff;
+            opacity: 1;
+        }
+    }
+</style>
 
     <div class="row">
         <div class="col-md-12">
@@ -856,10 +878,10 @@
                         if (isOnline) {
                             var points = pathPoints.map(function(pt){ return L.latLng(pt[0], pt[1]); });
                             var arrowIcon = L.divIcon({
-                                html: "<span class='arrow-glow'>➤</span>",
+                                html: "<div class='laser-glow'></div>",
                                 className: 'bg-transparent border-0',
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
+                                iconSize: [12, 12],
+                                iconAnchor: [6, 6]
                             });
                             var arrowMarker = L.marker(points[0], { icon: arrowIcon, interactive: false }).addTo(lines);
                             var t = 0;

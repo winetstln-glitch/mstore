@@ -290,6 +290,8 @@ class InventoryController extends Controller implements HasMiddleware
             'unit' => 'required|string|max:50',
             'stock' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
+            'expense_source' => 'nullable|in:company,investor',
+            'investor_id' => 'nullable|required_if:expense_source,investor|exists:users,id',
         ]);
 
         $validated['category'] = $validated['category'] ?? ($request->input('category', ''));
@@ -298,7 +300,7 @@ class InventoryController extends Controller implements HasMiddleware
         $item = InventoryItem::create($validated);
 
         if (($item->stock ?? 0) > 0 && ($item->price ?? 0) > 0) {
-            Transaction::create([
+            $transactionData = [
                 'user_id' => Auth::id(),
                 'type' => 'expense',
                 'category' => 'Pembelian Alat',
@@ -306,7 +308,14 @@ class InventoryController extends Controller implements HasMiddleware
                 'transaction_date' => now()->toDateString(),
                 'description' => 'Pembelian awal stok ' . $item->name,
                 'reference_number' => 'INV-IN-' . $item->id,
-            ]);
+            ];
+
+            if ($request->expense_source === 'investor' && $request->investor_id) {
+                $transactionData['investor_id'] = $request->investor_id;
+                $transactionData['description'] .= ' (Dibebankan ke Investor)';
+            }
+
+            Transaction::create($transactionData);
         }
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item added successfully.'));
@@ -325,6 +334,8 @@ class InventoryController extends Controller implements HasMiddleware
             'unit' => 'required|string|max:50',
             'stock' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
+            'expense_source' => 'nullable|in:company,investor',
+            'investor_id' => 'nullable|required_if:expense_source,investor|exists:users,id',
         ]);
 
         $oldStock = $item->stock;
@@ -332,7 +343,7 @@ class InventoryController extends Controller implements HasMiddleware
 
         $diff = ($item->stock - $oldStock);
         if ($diff > 0 && ($item->price ?? 0) > 0) {
-            Transaction::create([
+            $transactionData = [
                 'user_id' => Auth::id(),
                 'type' => 'expense',
                 'category' => 'Pembelian Alat',
@@ -340,7 +351,14 @@ class InventoryController extends Controller implements HasMiddleware
                 'transaction_date' => now()->toDateString(),
                 'description' => 'Penambahan stok ' . $item->name,
                 'reference_number' => 'INV-IN-' . $item->id,
-            ]);
+            ];
+
+            if ($request->expense_source === 'investor' && $request->investor_id) {
+                $transactionData['investor_id'] = $request->investor_id;
+                $transactionData['description'] .= ' (Dibebankan ke Investor)';
+            }
+
+            Transaction::create($transactionData);
         }
 
         $redirectTypeGroup = $validated['type_group'] ?? ($item->type_group ?? 'material');

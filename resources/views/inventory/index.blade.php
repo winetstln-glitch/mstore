@@ -445,6 +445,22 @@
                         <label class="form-label">{{ __('Description') }}</label>
                         <textarea name="description" class="form-control" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Charge To') }}</label>
+                        <select name="expense_source" class="form-select" id="expenseSource" onchange="toggleInvestorSelect('expenseSource', 'investorSelect')">
+                            <option value="company">{{ __('Company (Perusahaan)') }}</option>
+                            <option value="investor">{{ __('Investor') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="investorSelect">
+                        <label class="form-label">{{ __('Select Investor') }}</label>
+                        <select name="investor_id" class="form-select">
+                            <option value="">-- {{ __('Select Investor') }} --</option>
+                            @foreach(\App\Models\User::whereHas('role', function($q) { $q->where('name', 'investor'); })->get() as $investor)
+                                <option value="{{ $investor->id }}">{{ $investor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
@@ -518,6 +534,22 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('Description') }}</label>
                         <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Charge To (For Stock Increase)') }}</label>
+                        <select name="expense_source" class="form-select" id="editExpenseSource" onchange="toggleInvestorSelect('editExpenseSource', 'editInvestorSelect')">
+                            <option value="company">{{ __('Company (Perusahaan)') }}</option>
+                            <option value="investor">{{ __('Investor') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="editInvestorSelect">
+                        <label class="form-label">{{ __('Select Investor') }}</label>
+                        <select name="investor_id" class="form-select">
+                            <option value="">-- {{ __('Select Investor') }} --</option>
+                            @foreach(\App\Models\User::role('investor')->get() as $investor)
+                                <option value="{{ $investor->id }}">{{ $investor->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -599,6 +631,18 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // ... (existing code)
+    });
+
+    function toggleInvestorSelect(sourceId, targetId) {
+        var source = document.getElementById(sourceId);
+        var target = document.getElementById(targetId);
+        if (source.value === 'investor') {
+            target.classList.remove('d-none');
+        } else {
+            target.classList.add('d-none');
+        }
+    }
         var editItemModal = document.getElementById('editItemModal');
         editItemModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
