@@ -97,6 +97,10 @@
             <td class="text-right">{{ number_format($afterCommission, 0, ',', '.') }}</td>
         </tr>
         <tr>
+            <td>Potongan Kas (5%)</td>
+            <td class="text-right">-{{ number_format($kasFund, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
             <td>Pengeluaran Transportasi</td>
             <td class="text-right">-{{ number_format($transportExpenses, 0, ',', '.') }}</td>
         </tr>

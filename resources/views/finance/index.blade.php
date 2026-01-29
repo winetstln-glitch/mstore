@@ -14,6 +14,9 @@
             <a href="{{ route('finance.profit_loss') }}" class="btn btn-info">
                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> {{ __('Profit & Loss Report') }}
             </a>
+            <a href="{{ route('finance.material_report') }}" class="btn btn-primary" style="background-color: #6f42c1; border-color: #6f42c1;">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> {{ __('Laporan Material') }}
+            </a>
             <a href="{{ route('finance.export_accounting') }}" class="btn btn-success">
                 <i class="fa-solid fa-file-excel me-1"></i> {{ __('Laporan Pembukuan') }}
             </a>
@@ -468,6 +471,7 @@
                                             data-type="{{ $transaction->type }}"
                                             data-category="{{ $transaction->category }}"
                                             data-amount="{{ $transaction->amount }}"
+                                            data-payment-method="{{ $transaction->payment_method }}"
                                             data-date="{{ $transaction->transaction_date->format('Y-m-d') }}"
                                             data-coordinator="{{ $transaction->coordinator_id }}"
                                             data-description="{{ $transaction->description }}"
@@ -582,6 +586,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">{{ __('Payment Method') }}</label>
+                        <select name="payment_method" class="form-select">
+                            <option value="cash">{{ __('Cash') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">{{ __('Amount') }}</label>
                         <input type="number" name="amount" class="form-control" min="0" required>
                     </div>
@@ -656,6 +667,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">{{ __('Payment Method') }}</label>
+                        <select name="payment_method" class="form-select">
+                            <option value="cash">{{ __('Cash') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">{{ __('Amount') }}</label>
                         <input type="number" name="amount" class="form-control" min="0" required>
                     </div>
@@ -701,6 +719,7 @@
                 var type = button.getAttribute('data-type');
                 var category = button.getAttribute('data-category');
                 var amount = button.getAttribute('data-amount');
+                var paymentMethod = button.getAttribute('data-payment-method');
                 var date = button.getAttribute('data-date');
                 var coordinator = button.getAttribute('data-coordinator');
                 var description = button.getAttribute('data-description');
@@ -713,6 +732,7 @@
                 form.querySelector('[name="type"]').value = type;
                 form.querySelector('[name="category"]').value = category;
                 form.querySelector('[name="amount"]').value = amount;
+                form.querySelector('[name="payment_method"]').value = paymentMethod || 'cash';
                 form.querySelector('[name="transaction_date"]').value = date;
                 form.querySelector('[name="coordinator_id"]').value = coordinator || '';
                 

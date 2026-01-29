@@ -194,6 +194,209 @@ class FinanceController extends Controller implements HasMiddleware
         $writer->close();
     }
 
+    public function materialReport(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $coordinatorId = $request->input('coordinator_id');
+
+        $query = InventoryTransaction::with(['item', 'coordinator.region', 'coordinator.user'])
+            ->where('type', 'out')
+            ->whereHas('item', function($q) {
+                $q->where('type_group', 'material')
+                  ->orWhereNull('type_group'); // Include null if legacy items might be materials
+            })
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate);
+
+        if ($coordinatorId) {
+            $query->where('coordinator_id', $coordinatorId);
+        }
+
+        $transactions = $query->latest()->get();
+
+        // Calculate totals
+        $totalQuantity = $transactions->sum('quantity');
+        $totalValue = $transactions->sum(function($t) {
+            return $t->quantity * ($t->item->price ?? 0);
+        });
+
+        $commissionRate = Setting::getValue('commission_coordinator_percent', 15);
+        $commissionAmount = $totalValue * ($commissionRate / 100);
+        $netTotal = $totalValue - $commissionAmount;
+
+        $coordinators = Coordinator::with('user')->get();
+
+        return view('finance.material_report', compact(
+            'transactions', 
+            'startDate', 
+            'endDate', 
+            'coordinators', 
+            'totalQuantity',
+            'totalValue',
+            'commissionRate',
+            'commissionAmount',
+            'netTotal',
+            'coordinatorId'
+        ));
+    }
+
+    public function downloadMaterialReportPdf(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $coordinatorId = $request->input('coordinator_id');
+
+        $query = InventoryTransaction::with(['item', 'coordinator.region', 'coordinator.user'])
+            ->where('type', 'out')
+            ->whereHas('item', function($q) {
+                $q->where('type_group', 'material')
+                  ->orWhereNull('type_group');
+            })
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate);
+
+        if ($coordinatorId) {
+            $query->where('coordinator_id', $coordinatorId);
+        }
+
+        $transactions = $query->latest()->get();
+
+        $totalQuantity = $transactions->sum('quantity');
+        $totalValue = $transactions->sum(function($t) {
+            return $t->quantity * ($t->item->price ?? 0);
+        });
+
+        $commissionRate = Setting::getValue('commission_coordinator_percent', 15);
+        $commissionAmount = $totalValue * ($commissionRate / 100);
+        $netTotal = $totalValue - $commissionAmount;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.material_report_pdf', compact(
+            'transactions', 
+            'startDate', 
+            'endDate', 
+            'totalQuantity', 
+            'totalValue',
+            'commissionRate',
+            'commissionAmount',
+            'netTotal'
+        ));
+        
+        $pdf->setPaper('a4', 'portrait');
+        
+        return $pdf->stream('laporan_pendapatan_material.pdf', ['Attachment' => false]);
+    }
+
+    public function downloadMaterialReportExcel(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $coordinatorId = $request->input('coordinator_id');
+
+        $query = InventoryTransaction::with(['item', 'coordinator.region', 'coordinator.user'])
+            ->where('type', 'out')
+            ->whereHas('item', function($q) {
+                $q->where('type_group', 'material')
+                  ->orWhereNull('type_group');
+            })
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate);
+
+        if ($coordinatorId) {
+            $query->where('coordinator_id', $coordinatorId);
+        }
+
+        $transactions = $query->latest()->get();
+
+        return response()->streamDownload(function () use ($transactions, $startDate, $endDate) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues(['Laporan Pendapatan Material']));
+            $writer->addRow(Row::fromValues(['Periode: ' . $startDate . ' s/d ' . $endDate]));
+            $writer->addRow(Row::fromValues([]));
+
+            $writer->addRow(Row::fromValues([
+                'Tanggal',
+                'Pengurus',
+                'Nama Barang',
+                'Jumlah',
+                'Harga Satuan',
+                'Total Harga',
+                'Keterangan',
+            ]));
+
+            $totalQty = 0;
+            $totalVal = 0;
+
+            foreach ($transactions as $t) {
+                $price = $t->item->price ?? 0;
+                $subtotal = $t->quantity * $price;
+                $totalQty += $t->quantity;
+                $totalVal += $subtotal;
+
+                $writer->addRow(Row::fromValues([
+                    $t->created_at->format('Y-m-d H:i'),
+                    $t->coordinator->name ?? '-',
+                    $t->item->name ?? '-',
+                    $t->quantity,
+                    $price,
+                    $subtotal,
+                    $t->notes,
+                ]));
+            }
+
+            $writer->addRow(Row::fromValues([]));
+            $writer->addRow(Row::fromValues([
+                'TOTAL',
+                '',
+                '',
+                $totalQty,
+                '',
+                $totalVal,
+                ''
+            ]));
+
+            $commissionRate = Setting::getValue('commission_coordinator_percent', 15);
+            $commissionAmount = $totalVal * ($commissionRate / 100);
+            $netTotal = $totalVal - $commissionAmount;
+
+            $writer->addRow(Row::fromValues([
+                'Komisi (' . $commissionRate . '%)',
+                '',
+                '',
+                '',
+                '',
+                -$commissionAmount,
+                ''
+            ]));
+
+            $writer->addRow(Row::fromValues([
+                'NET TOTAL',
+                '',
+                '',
+                '',
+                '',
+                $netTotal,
+                ''
+            ]));
+
+            $writer->close();
+        }, 'laporan_material_' . $startDate . '_' . $endDate . '.xlsx');
+    }
+
     public function downloadIncomeBreakdownPdf()
     {
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
@@ -489,6 +692,7 @@ class FinanceController extends Controller implements HasMiddleware
             'coordinator_id' => 'nullable|exists:coordinators,id',
             'investor_id' => 'nullable|exists:investors,id',
             'reference_number' => 'nullable|string',
+            'payment_method' => 'nullable|in:cash,transfer',
         ]);
 
         DB::transaction(function () use ($transaction, $validated) {
@@ -1335,11 +1539,17 @@ class FinanceController extends Controller implements HasMiddleware
         ];
     }
 
-    private function buildManagerReportData(?string $month): array
+    private function buildManagerReportData(?string $month, ?string $coordinatorId = null, ?string $date = null): array
     {
         $query = Transaction::whereNotNull('coordinator_id');
         
-        if ($month) {
+        if ($coordinatorId) {
+            $query->where('coordinator_id', $coordinatorId);
+        }
+
+        if ($date) {
+            $query->whereDate('transaction_date', $date);
+        } elseif ($month) {
             $query->whereMonth('transaction_date', date('m', strtotime($month)))
                   ->whereYear('transaction_date', date('Y', strtotime($month)));
         }
@@ -1373,6 +1583,10 @@ class FinanceController extends Controller implements HasMiddleware
 
         $afterCommission = $totalRevenue - $coordCommission;
 
+        // Calculate 5% Kas Fund (from Total Revenue - Commission)
+        // Rule: 5% dari (Total Revenue - Commission)
+        $kasFund = $afterCommission * 0.05;
+
         $serverExpenses = (clone $query)->where('type', 'expense')->where('category', 'Operational')->sum('amount');
         $transportExpenses = (clone $query)->where('type', 'expense')->where('category', 'Transport')->sum('amount');
         $consumptionExpenses = (clone $query)->where('type', 'expense')->where('category', 'Consumption')->sum('amount');
@@ -1387,9 +1601,9 @@ class FinanceController extends Controller implements HasMiddleware
             ->sum('amount');
 
         // Sisa Disetor Calculation
-        // Logic: (Cash Collected) - (Commission Earned) - (Expenses Paid) - (Already Deposited)
-        // Note: Commission is deducted from the "Cash to Deposit". If Commission > Cash Collected (e.g. all Transfer), result is negative (Company owes Coordinator).
-        $depositToCompany = $cashRevenue - $coordCommission - $operatingExpenses - $depositedAmount;
+        // New Logic (User Request): (Cash + Transfer) - Commission - Kas - Expenses - Deposited
+        // Base: Total Revenue (Cash + Transfer)
+        $depositToCompany = $totalRevenue - $coordCommission - $kasFund - $operatingExpenses - $depositedAmount;
 
         return [
             'memberIncome' => $memberIncome,
@@ -1399,6 +1613,7 @@ class FinanceController extends Controller implements HasMiddleware
             'transferRevenue' => $transferRevenue,
             'coordCommission' => $coordCommission,
             'afterCommission' => $afterCommission,
+            'kasFund' => $kasFund,
             'operatingExpenses' => $operatingExpenses,
             'transportExpenses' => $transportExpenses,
             'consumptionExpenses' => $consumptionExpenses,
@@ -1428,13 +1643,28 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         $month = $request->input('month');
-        $data = $this->buildManagerReportData($month);
+        $date = $request->input('date');
+        $coordinatorId = $request->input('coordinator_id');
+
+        $data = $this->buildManagerReportData($month, $coordinatorId, $date);
 
         $coordinatorSummaries = [];
-        $coordinators = Coordinator::all();
-        foreach ($coordinators as $coordinator) {
+        // Only fetch specific coordinator if filtered, otherwise fetch all
+        $coordinatorsQuery = Coordinator::query();
+        if ($coordinatorId) {
+            $coordinatorsQuery->where('id', $coordinatorId);
+        }
+        $targetCoordinators = $coordinatorsQuery->get();
+        
+        // Pass ALL coordinators for the dropdown filter
+        $allCoordinators = Coordinator::all();
+
+        foreach ($targetCoordinators as $coordinator) {
             $coordQuery = Transaction::where('coordinator_id', $coordinator->id);
-            if ($month) {
+            
+            if ($date) {
+                $coordQuery->whereDate('transaction_date', $date);
+            } elseif ($month) {
                 $coordQuery->whereMonth('transaction_date', date('m', strtotime($month)))
                     ->whereYear('transaction_date', date('Y', strtotime($month)));
             }
@@ -1496,16 +1726,29 @@ class FinanceController extends Controller implements HasMiddleware
             )
             ->whereNotNull('transactions.investor_id');
 
-        if ($month) {
+        if ($date) {
+            $investorSummaries->whereDate('transactions.transaction_date', $date);
+        } elseif ($month) {
             $investorSummaries->whereMonth('transactions.transaction_date', date('m', strtotime($month)))
                 ->whereYear('transactions.transaction_date', date('Y', strtotime($month)));
+        }
+
+        if ($coordinatorId) {
+             $investorSummaries->where('transactions.coordinator_id', $coordinatorId);
         }
 
         $investorSummaries = $investorSummaries
             ->groupBy('transactions.investor_id', 'investors.name')
             ->get();
 
-        return view('finance.manager_report', array_merge($data, ['month' => $month]));
+        return view('finance.manager_report', array_merge($data, [
+            'month' => $month,
+            'date' => $date,
+            'coordinatorId' => $coordinatorId,
+            'coordinators' => $allCoordinators,
+            'coordinatorSummaries' => $coordinatorSummaries,
+            'investorSummaries' => $investorSummaries
+        ]));
     }
 
     public function downloadManagerReportPdf(Request $request)
@@ -1515,13 +1758,24 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         $month = $request->input('month');
-        $data = $this->buildManagerReportData($month);
+        $date = $request->input('date');
+        $coordinatorId = $request->input('coordinator_id');
+
+        $data = $this->buildManagerReportData($month, $coordinatorId, $date);
 
         $coordinatorSummaries = [];
-        $coordinators = Coordinator::all();
-        foreach ($coordinators as $coordinator) {
+        // Filter coordinators if needed
+        $coordinatorsQuery = Coordinator::query();
+        if ($coordinatorId) {
+            $coordinatorsQuery->where('id', $coordinatorId);
+        }
+        $targetCoordinators = $coordinatorsQuery->get();
+
+        foreach ($targetCoordinators as $coordinator) {
             $coordQuery = Transaction::where('coordinator_id', $coordinator->id);
-            if ($month) {
+            if ($date) {
+                $coordQuery->whereDate('transaction_date', $date);
+            } elseif ($month) {
                 $coordQuery->whereMonth('transaction_date', date('m', strtotime($month)))
                     ->whereYear('transaction_date', date('Y', strtotime($month)));
             }
@@ -1583,9 +1837,15 @@ class FinanceController extends Controller implements HasMiddleware
             )
             ->whereNotNull('transactions.investor_id');
 
-        if ($month) {
+        if ($date) {
+            $investorSummaries->whereDate('transactions.transaction_date', $date);
+        } elseif ($month) {
             $investorSummaries->whereMonth('transactions.transaction_date', date('m', strtotime($month)))
                 ->whereYear('transactions.transaction_date', date('Y', strtotime($month)));
+        }
+
+        if ($coordinatorId) {
+             $investorSummaries->where('transactions.coordinator_id', $coordinatorId);
         }
 
         $investorSummaries = $investorSummaries
@@ -1616,13 +1876,24 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         $month = $request->input('month');
-        $data = $this->buildManagerReportData($month);
+        $date = $request->input('date');
+        $coordinatorId = $request->input('coordinator_id');
+
+        $data = $this->buildManagerReportData($month, $coordinatorId, $date);
 
         $coordinatorSummaries = [];
-        $coordinators = Coordinator::all();
-        foreach ($coordinators as $coordinator) {
+        
+        $coordinatorsQuery = Coordinator::query();
+        if ($coordinatorId) {
+            $coordinatorsQuery->where('id', $coordinatorId);
+        }
+        $targetCoordinators = $coordinatorsQuery->get();
+
+        foreach ($targetCoordinators as $coordinator) {
             $coordQuery = Transaction::where('coordinator_id', $coordinator->id);
-            if ($month) {
+            if ($date) {
+                $coordQuery->whereDate('transaction_date', $date);
+            } elseif ($month) {
                 $coordQuery->whereMonth('transaction_date', date('m', strtotime($month)))
                     ->whereYear('transaction_date', date('Y', strtotime($month)));
             }
@@ -1692,9 +1963,15 @@ class FinanceController extends Controller implements HasMiddleware
             )
             ->whereNotNull('transactions.investor_id');
 
-        if ($month) {
+        if ($date) {
+            $investorSummaries->whereDate('transactions.transaction_date', $date);
+        } elseif ($month) {
             $investorSummaries->whereMonth('transactions.transaction_date', date('m', strtotime($month)))
                 ->whereYear('transactions.transaction_date', date('Y', strtotime($month)));
+        }
+
+        if ($coordinatorId) {
+             $investorSummaries->where('transactions.coordinator_id', $coordinatorId);
         }
 
         $investorSummaries = $investorSummaries
@@ -1721,6 +1998,7 @@ class FinanceController extends Controller implements HasMiddleware
             $writer->addRow(Row::fromValues(['Total Pendapatan', $data['totalRevenue']]));
             $writer->addRow(Row::fromValues(['Komisi Pengurus', -1 * $data['coordCommission']]));
             $writer->addRow(Row::fromValues(['Sisa Setelah Komisi', $data['afterCommission']]));
+            $writer->addRow(Row::fromValues(['Potongan Kas (5%)', -1 * $data['kasFund']]));
             $writer->addRow(Row::fromValues(['Pengeluaran Transportasi', -1 * $data['transportExpenses']]));
             $writer->addRow(Row::fromValues(['Pengeluaran Konsumsi', -1 * $data['consumptionExpenses']]));
             $writer->addRow(Row::fromValues(['Pengeluaran Perbaikan', -1 * $data['repairExpenses']]));
@@ -1884,6 +2162,7 @@ class FinanceController extends Controller implements HasMiddleware
             'coordinator_id' => 'nullable|exists:coordinators,id',
             'investor_id' => 'nullable|exists:investors,id',
             'reference_number' => 'nullable|string',
+            'payment_method' => 'nullable|in:cash,transfer',
         ]);
 
         $validated['user_id'] = Auth::id();

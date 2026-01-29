@@ -136,6 +136,9 @@ Route::middleware('auth')->group(function () {
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
     
     Route::get('finance/income-breakdown/pdf', [FinanceController::class, 'downloadIncomeBreakdownPdf'])->name('finance.income_breakdown.pdf');
+    Route::get('finance/material-report/pdf', [FinanceController::class, 'downloadMaterialReportPdf'])->name('finance.material_report.pdf');
+    Route::get('finance/material-report/excel', [FinanceController::class, 'downloadMaterialReportExcel'])->name('finance.material_report.excel');
+    Route::get('finance/material-report', [FinanceController::class, 'materialReport'])->name('finance.material_report');
     Route::get('finance/investor-share/pdf', [FinanceController::class, 'downloadInvestorSharePdf'])->name('finance.investor_share.pdf');
 
     Route::get('finance/manager-report', [FinanceController::class, 'managerReport'])->name('finance.manager_report');

@@ -23,8 +23,20 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Periode Laporan') }}</h6>
-            <form action="{{ route('finance.manager_report') }}" method="GET" class="d-flex">
-                <input type="month" name="month" class="form-control form-control-sm me-2" value="{{ request('month') }}" onchange="this.form.submit()">
+            <form action="{{ route('finance.manager_report') }}" method="GET" class="d-flex align-items-center gap-2">
+                <select name="coordinator_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">{{ __('Semua Pengurus') }}</option>
+                    @foreach($coordinators as $coord)
+                        <option value="{{ $coord->id }}" {{ $coordinatorId == $coord->id ? 'selected' : '' }}>
+                            {{ $coord->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <input type="date" name="date" class="form-control form-control-sm" value="{{ $date ?? '' }}" onchange="this.form.submit()">
+                <input type="month" name="month" class="form-control form-control-sm" value="{{ $month }}" onchange="this.form.submit()">
+                @if($date || $month || $coordinatorId)
+                    <a href="{{ route('finance.manager_report') }}" class="btn btn-sm btn-secondary">{{ __('Reset') }}</a>
+                @endif
             </form>
         </div>
         <div class="card-body">
@@ -51,7 +63,7 @@
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Sisa Kewajiban Setor') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($depositToCompany, 0, ',', '.') }}</div>
-                            <small class="text-muted">{{ __('(Cash - Komisi - Beban - Setoran)') }}</small>
+                            <small class="text-muted">{{ __('(Total - Komisi - Kas - Beban - Setoran)') }}</small>
                         </div>
                     </div>
                 </div>
@@ -83,6 +95,10 @@
                         <tr>
                             <td>{{ __('Komisi Pengurus (±' . $coordRate . '%)') }}</td>
                             <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ __('Potongan Kas (5%)') }}</td>
+                            <td class="text-end text-danger">-{{ number_format($kasFund, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
                             <td>{{ __('Pengeluaran Transportasi') }}</td>
