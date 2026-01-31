@@ -1,0 +1,367 @@
+:root {
+    --sidebar-width: 280px;
+    --header-height: 60px;
+    --primary-color: #3f6ad8; /* ArchitectUI Blue */
+}
+
+body {
+    font-family: 'Instrument Sans', sans-serif;
+    background-color: #f0f2f5;
+    overflow-x: hidden;
+}
+
+/* Sidebar */
+#sidebar-wrapper {
+    height: 100vh;
+    width: var(--sidebar-width);
+    margin-left: 0;
+    transition: margin 0.25s ease-out;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    overflow-y: auto;
+    scrollbar-width: thin;
+
+    background: #fff;
+    box-shadow: 7px 0 60px rgba(0,0,0,0.05);
+}
+
+#sidebar-wrapper .sidebar-heading {
+    padding: 0 1.5rem;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+#sidebar-wrapper .list-group {
+    width: var(--sidebar-width);
+}
+
+.sidebar-item {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    color: #343a40;
+    text-decoration: none;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.sidebar-item:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+}
+
+.sidebar-item.active {
+    background-color: #e0f3ff;
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.sidebar-item i {
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+    font-size: 1.1rem;
+    opacity: 0.7;
+}
+
+.sidebar-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 700;
+    color: #adb5bd;
+    padding: 1.5rem 1.5rem 0.5rem;
+}
+
+/* Content Wrapper */
+#page-content-wrapper {
+    margin-left: var(--sidebar-width);
+    transition: margin 0.25s ease-out;
+}
+
+/* Navbar */
+.main-header {
+    height: var(--header-height);
+    box-shadow: 0 0.46875rem 2.1875rem rgba(4,9,20,0.03), 0 0.9375rem 1.40625rem rgba(4,9,20,0.03), 0 0.25rem 0.53125rem rgba(4,9,20,0.05), 0 0.125rem 0.1875rem rgba(4,9,20,0.03);
+    background: #fff;
+    padding: 0 1.5rem;
+    z-index: 999;
+}
+
+/* Toggled State */
+body.sb-sidenav-toggled #sidebar-wrapper {
+    margin-left: calc(-1 * var(--sidebar-width));
+}
+
+body.sb-sidenav-toggled #page-content-wrapper {
+    margin-left: 0;
+}
+
+/* Dark Mode Overrides - Cyberpunk/Deep Purple Theme */
+[data-bs-theme="dark"] body {
+    background-color: #110f24; /* Deep Navy/Purple Background */
+    color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] #sidebar-wrapper {
+    background: #1f1b36; /* Dark Purple Sidebar */
+    box-shadow: 7px 0 60px rgba(0,0,0,0.3);
+    border-right: 1px solid #3a3469;
+}
+
+[data-bs-theme="dark"] #sidebar-wrapper .sidebar-heading {
+    border-bottom: 1px solid #3a3469;
+    color: #fff;
+    background: #1a172e;
+}
+
+[data-bs-theme="dark"] .sidebar-item {
+    color: #b0b8c4;
+}
+
+[data-bs-theme="dark"] .sidebar-item:hover {
+    background-color: #383061;
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .sidebar-item.active {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    border-left-color: #818cf8;
+}
+
+[data-bs-theme="dark"] .main-header {
+    background: #1f1b36;
+    border-bottom: 1px solid #3a3469;
+}
+
+/* Global component overrides */
+[data-bs-theme="dark"] .bg-white { background-color: #1f1b36 !important; }
+[data-bs-theme="dark"] .bg-light { background-color: #29244a !important; }
+[data-bs-theme="dark"] .text-dark { color: #e0e0e0 !important; }
+[data-bs-theme="dark"] .text-muted { color: #9ca3af !important; }
+
+[data-bs-theme="dark"] .card { 
+    background-color: #1f1b36; 
+    border-color: #3a3469; 
+}
+[data-bs-theme="dark"] .card-header { 
+    background-color: #262145; 
+    border-bottom-color: #3a3469; 
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .table { 
+    color: #e0e0e0; 
+    --bs-table-color: #e0e0e0; 
+    --bs-table-bg: transparent; 
+}
+[data-bs-theme="dark"] .table thead { background-color: #262145; }
+[data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: #2d2852; }
+[data-bs-theme="dark"] .table td, [data-bs-theme="dark"] .table th { border-color: #3a3469; }
+
+[data-bs-theme="dark"] .input-group-text.bg-light { 
+    background-color: #29244a !important; 
+    border-color: #3a3469; 
+    color: #b0b8c4; 
+}
+[data-bs-theme="dark"] .dropdown-menu { background-color: #1f1b36; border-color: #3a3469; }
+[data-bs-theme="dark"] .dropdown-item { color: #e0e0e0; }
+[data-bs-theme="dark"] .dropdown-item:hover { background-color: #383061; color: #fff; }
+
+/* Form Controls in Dark Mode */
+[data-bs-theme="dark"] .form-control, 
+[data-bs-theme="dark"] .form-select {
+    background-color: #17142b;
+    border-color: #3a3469;
+    color: #e0e0e0;
+}
+[data-bs-theme="dark"] .form-control:focus, 
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: #17142b;
+    border-color: #818cf8;
+    color: #fff;
+    box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+}
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: #6b7280;
+}
+
+/* Border Overrides */
+[data-bs-theme="dark"] .border { border-color: #3a3469 !important; }
+[data-bs-theme="dark"] .border-top { border-top-color: #3a3469 !important; }
+[data-bs-theme="dark"] .border-bottom { border-bottom-color: #3a3469 !important; }
+[data-bs-theme="dark"] .border-start { border-start-color: #3a3469 !important; }
+[data-bs-theme="dark"] .border-end { border-end-color: #3a3469 !important; }
+
+/* Leaflet Map Dark Mode Overrides */
+[data-bs-theme="dark"] .leaflet-popup-content-wrapper,
+[data-bs-theme="dark"] .leaflet-popup-tip {
+    background-color: #1f1b36;
+    color: #e0e0e0;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.5);
+}
+[data-bs-theme="dark"] .leaflet-popup-content {
+    color: #e9ecef;
+}
+[data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
+    color: #adb5bd;
+}
+[data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover {
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    /* Sidebar hidden by default on mobile */
+    #sidebar-wrapper {
+        margin-left: -280px;
+        width: 280px; /* Full width */
+        position: fixed;
+        z-index: 1050;
+        transition: margin .25s ease-out;
+    }
+
+    /* Sidebar shown when toggled */
+    body.sb-sidenav-toggled #sidebar-wrapper {
+        margin-left: 0;
+    }
+    
+    /* Content always full width */
+    #page-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    body.sb-sidenav-toggled #page-content-wrapper {
+        margin-left: 0;
+    }
+
+    /* Overlay for mobile */
+    #sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        transition: opacity 0.3s ease;
+    }
+    
+    body.sb-sidenav-toggled #sidebar-overlay {
+        display: block;
+    }
+
+    /* Ensure text and headers are visible */
+    .sidebar-heading {
+        justify-content: flex-start; /* Align logo left */
+        padding: 0 1.5rem;
+    }
+    
+    .sidebar-item {
+        font-size: 0.95rem !important; /* Restore font size */
+        justify-content: flex-start; /* Align left */
+        padding: 0.75rem 1.5rem; /* Restore padding */
+        text-align: left;
+    }
+    
+    .sidebar-item i {
+        font-size: 1.1rem !important;
+        margin-right: 10px !important;
+        width: 25px !important;
+    }
+
+    /* Show all elements that were hidden */
+    .sidebar-item span,
+    .sidebar-item i.ms-auto,
+    .sidebar-header,
+    .sidebar-item::after,
+    .sidebar-header.d-flex {
+        display: block !important;
+    }
+
+    /* Ensure chevron is flexed correctly if it was hidden */
+    .sidebar-item i.ms-auto {
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+
+    /* Mobile Form Improvements */
+    .form-control, .form-select, .btn {
+        min-height: 46px; /* Larger touch target */
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+
+    .input-group .btn {
+        z-index: 0; /* Fix overlap issues */
+    }
+
+    /* Select2 Mobile Fixes */
+    .select2-container .select2-selection--single,
+    .select2-container .select2-selection--multiple {
+        min-height: 46px !important;
+        font-size: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        line-height: 46px !important;
+        padding-left: 12px !important;
+        color: #333;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+        height: 44px !important;
+        top: 1px !important;
+    }
+
+    .select2-container--bootstrap-5 .select2-dropdown .select2-results__option {
+        padding: 10px 12px; /* Larger tap area for options */
+        font-size: 15px;
+    }
+
+    /* Stack buttons on mobile */
+    form .d-flex.justify-content-end {
+        flex-direction: column-reverse;
+        gap: 10px;
+        width: 100%;
+    }
+
+    form .d-flex.justify-content-end .btn {
+        width: 100%;
+        margin: 0 !important;
+    }
+    
+    /* Dark Mode Select2 Override */
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+        background-color: #17142b !important;
+        border-color: #3a3469 !important;
+        color: #e0e0e0 !important;
+    }
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered {
+        color: #e0e0e0 !important;
+    }
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+        background-color: #1f1b36 !important;
+        border-color: #3a3469 !important;
+    }
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+        color: #e0e0e0 !important;
+    }
+    [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
+        background-color: #383061 !important;
+    }
+}

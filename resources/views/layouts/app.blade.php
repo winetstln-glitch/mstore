@@ -24,364 +24,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
+    <!-- Custom Dashboard CSS -->
+    <link href="{{ asset('css/dashboard-custom.css') }}" rel="stylesheet">
+
     @stack('styles')
 
-    <style>
-        :root {
-            --sidebar-width: 280px;
-            --header-height: 60px;
-            --primary-color: #3f6ad8; /* ArchitectUI Blue */
-        }
-        
-        body {
-            font-family: 'Instrument Sans', sans-serif;
-            background-color: #f0f2f5;
-            overflow-x: hidden;
-        }
-
-        /* Sidebar */
-        #sidebar-wrapper {
-            height: 100vh;
-            width: var(--sidebar-width);
-            margin-left: 0;
-            transition: margin 0.25s ease-out;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            overflow-y: auto;
-            scrollbar-width: thin;
-
-            background: #fff;
-            box-shadow: 7px 0 60px rgba(0,0,0,0.05);
-        }
-
-        #sidebar-wrapper .sidebar-heading {
-            padding: 0 1.5rem;
-            height: var(--header-height);
-            display: flex;
-            align-items: center;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        #sidebar-wrapper .list-group {
-            width: var(--sidebar-width);
-        }
-
-        .sidebar-item {
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            align-items: center;
-            color: #343a40;
-            text-decoration: none;
-            transition: all 0.2s;
-            border-left: 3px solid transparent;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .sidebar-item:hover {
-            background-color: #f8f9fa;
-            color: var(--primary-color);
-        }
-
-        .sidebar-item.active {
-            background-color: #e0f3ff;
-            color: var(--primary-color);
-            border-left-color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        .sidebar-item i {
-            width: 25px;
-            text-align: center;
-            margin-right: 10px;
-            font-size: 1.1rem;
-            opacity: 0.7;
-        }
-
-        .sidebar-header {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            font-weight: 700;
-            color: #adb5bd;
-            padding: 1.5rem 1.5rem 0.5rem;
-        }
-
-        /* Content Wrapper */
-        #page-content-wrapper {
-            margin-left: var(--sidebar-width);
-            transition: margin 0.25s ease-out;
-        }
-
-        /* Navbar */
-        .main-header {
-            height: var(--header-height);
-            box-shadow: 0 0.46875rem 2.1875rem rgba(4,9,20,0.03), 0 0.9375rem 1.40625rem rgba(4,9,20,0.03), 0 0.25rem 0.53125rem rgba(4,9,20,0.05), 0 0.125rem 0.1875rem rgba(4,9,20,0.03);
-            background: #fff;
-            padding: 0 1.5rem;
-            z-index: 999;
-        }
-
-        /* Toggled State */
-        body.sb-sidenav-toggled #sidebar-wrapper {
-            margin-left: calc(-1 * var(--sidebar-width));
-        }
-        
-        body.sb-sidenav-toggled #page-content-wrapper {
-            margin-left: 0;
-        }
-
-        /* Dark Mode Overrides - Cyberpunk/Deep Purple Theme */
-        [data-bs-theme="dark"] body {
-            background-color: #110f24; /* Deep Navy/Purple Background */
-            color: #e0e0e0;
-        }
-        
-        [data-bs-theme="dark"] #sidebar-wrapper {
-            background: #1f1b36; /* Dark Purple Sidebar */
-            box-shadow: 7px 0 60px rgba(0,0,0,0.3);
-            border-right: 1px solid #3a3469;
-        }
-
-        [data-bs-theme="dark"] #sidebar-wrapper .sidebar-heading {
-            border-bottom: 1px solid #3a3469;
-            color: #fff;
-            background: #1a172e;
-        }
-
-        [data-bs-theme="dark"] .sidebar-item {
-            color: #b0b8c4;
-        }
-
-        [data-bs-theme="dark"] .sidebar-item:hover {
-            background-color: #383061;
-            color: #fff;
-        }
-
-        [data-bs-theme="dark"] .sidebar-item.active {
-            background-color: rgba(99, 102, 241, 0.2);
-            color: #818cf8;
-            border-left-color: #818cf8;
-        }
-
-        [data-bs-theme="dark"] .main-header {
-            background: #1f1b36;
-            border-bottom: 1px solid #3a3469;
-        }
-        
-        /* Global component overrides */
-        [data-bs-theme="dark"] .bg-white { background-color: #1f1b36 !important; }
-        [data-bs-theme="dark"] .bg-light { background-color: #29244a !important; }
-        [data-bs-theme="dark"] .text-dark { color: #e0e0e0 !important; }
-        [data-bs-theme="dark"] .text-muted { color: #9ca3af !important; }
-        
-        [data-bs-theme="dark"] .card { 
-            background-color: #1f1b36; 
-            border-color: #3a3469; 
-        }
-        [data-bs-theme="dark"] .card-header { 
-            background-color: #262145; 
-            border-bottom-color: #3a3469; 
-            color: #fff;
-        }
-        
-        [data-bs-theme="dark"] .table { 
-            color: #e0e0e0; 
-            --bs-table-color: #e0e0e0; 
-            --bs-table-bg: transparent; 
-        }
-        [data-bs-theme="dark"] .table thead { background-color: #262145; }
-        [data-bs-theme="dark"] .table-hover tbody tr:hover { background-color: #2d2852; }
-        [data-bs-theme="dark"] .table td, [data-bs-theme="dark"] .table th { border-color: #3a3469; }
-
-        [data-bs-theme="dark"] .input-group-text.bg-light { 
-            background-color: #29244a !important; 
-            border-color: #3a3469; 
-            color: #b0b8c4; 
-        }
-        [data-bs-theme="dark"] .dropdown-menu { background-color: #1f1b36; border-color: #3a3469; }
-        [data-bs-theme="dark"] .dropdown-item { color: #e0e0e0; }
-        [data-bs-theme="dark"] .dropdown-item:hover { background-color: #383061; color: #fff; }
-        
-        /* Form Controls in Dark Mode */
-        [data-bs-theme="dark"] .form-control, 
-        [data-bs-theme="dark"] .form-select {
-            background-color: #17142b;
-            border-color: #3a3469;
-            color: #e0e0e0;
-        }
-        [data-bs-theme="dark"] .form-control:focus, 
-        [data-bs-theme="dark"] .form-select:focus {
-            background-color: #17142b;
-            border-color: #818cf8;
-            color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
-        }
-        [data-bs-theme="dark"] .form-control::placeholder {
-            color: #6b7280;
-        }
-
-        /* Border Overrides */
-        [data-bs-theme="dark"] .border { border-color: #3a3469 !important; }
-        [data-bs-theme="dark"] .border-top { border-top-color: #3a3469 !important; }
-        [data-bs-theme="dark"] .border-bottom { border-bottom-color: #3a3469 !important; }
-        [data-bs-theme="dark"] .border-start { border-start-color: #3a3469 !important; }
-        [data-bs-theme="dark"] .border-end { border-end-color: #3a3469 !important; }
-
-        /* Leaflet Map Dark Mode Overrides */
-        [data-bs-theme="dark"] .leaflet-popup-content-wrapper,
-        [data-bs-theme="dark"] .leaflet-popup-tip {
-            background-color: #1f1b36;
-            color: #e0e0e0;
-            box-shadow: 0 3px 14px rgba(0,0,0,0.5);
-        }
-        [data-bs-theme="dark"] .leaflet-popup-content {
-            color: #e9ecef;
-        }
-        [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
-            color: #adb5bd;
-        }
-        [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover {
-            color: #fff;
-        }
-  
-          /* Responsive */
-        @media (max-width: 992px) {
-            #sidebar-wrapper {
-                margin-left: 0;
-                width: 70px; /* Slim sidebar for mobile */
-                overflow-x: hidden;
-            }
-            #sidebar-wrapper .sidebar-heading {
-                padding: 0;
-                justify-content: center;
-            }
-            #sidebar-wrapper .sidebar-heading img {
-                margin: 0 !important;
-                max-height: 30px !important;
-            }
-            #sidebar-wrapper .list-group {
-                width: 70px;
-            }
-            
-            /* Hide text labels, show only icons */
-            .sidebar-item {
-                justify-content: center;
-                padding: 15px 10px;
-                text-align: center;
-            }
-            .sidebar-item span, /* Assuming text is wrapped or bare text */
-            .sidebar-item i.ms-auto, /* Chevron/arrow icons */
-            .sidebar-header,
-            .sidebar-item::after { /* Any extra content */
-                display: none !important;
-            }
-            /* Need to target text node if not wrapped in span. 
-               Since blade usually outputs text directly, we might need to wrap text in span or use visibility:hidden for text but visible for icon. 
-               Better approach: set font-size 0 for link, reset for icon. */
-            
-            .sidebar-item {
-                font-size: 0 !important; /* Hide text */
-            }
-            .sidebar-item i {
-                font-size: 1.2rem !important; /* Show icon */
-                margin-right: 0 !important;
-                width: auto !important;
-            }
-            
-            /* User profile section in sidebar */
-            .sidebar-header.d-flex {
-                display: none !important;
-            }
-            
-            #page-content-wrapper {
-                margin-left: 70px;
-                width: calc(100% - 70px);
-            }
-            
-            /* Adjust toggled state if needed */
-            body.sb-sidenav-toggled #sidebar-wrapper {
-                margin-left: -70px;
-            }
-            body.sb-sidenav-toggled #page-content-wrapper {
-                margin-left: 0;
-            }
-
-            /* Mobile Form Improvements */
-            .form-control, .form-select, .btn {
-                min-height: 46px; /* Larger touch target */
-                font-size: 16px; /* Prevent iOS zoom */
-            }
-
-            .input-group .btn {
-                z-index: 0; /* Fix overlap issues */
-            }
-
-            /* Select2 Mobile Fixes */
-            .select2-container .select2-selection--single,
-            .select2-container .select2-selection--multiple {
-                min-height: 46px !important;
-                font-size: 16px !important;
-                display: flex !important;
-                align-items: center !important;
-            }
-            
-            .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-                line-height: 46px !important;
-                padding-left: 12px !important;
-                color: #333;
-            }
-
-            .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
-                height: 44px !important;
-                top: 1px !important;
-            }
-
-            .select2-container--bootstrap-5 .select2-dropdown .select2-results__option {
-                padding: 10px 12px; /* Larger tap area for options */
-                font-size: 15px;
-            }
-
-            /* Stack buttons on mobile */
-            form .d-flex.justify-content-end {
-                flex-direction: column-reverse;
-                gap: 10px;
-                width: 100%;
-            }
-
-            form .d-flex.justify-content-end .btn {
-                width: 100%;
-                margin: 0 !important;
-            }
-            
-            /* Dark Mode Select2 Override */
-            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
-                background-color: #17142b !important;
-                border-color: #3a3469 !important;
-                color: #e0e0e0 !important;
-            }
-            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered {
-                color: #e0e0e0 !important;
-            }
-            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
-                background-color: #1f1b36 !important;
-                border-color: #3a3469 !important;
-            }
-            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
-                color: #e0e0e0 !important;
-            }
-            [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
-                background-color: #383061 !important;
-            }
-        }
-        
-    </style>
-    
     <script>
         // Check local storage for theme
         const storedTheme = localStorage.getItem('theme');
@@ -428,12 +75,12 @@
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('hotspot.view'))
                     <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Hotspot Active') }}
+                        <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Active') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
                     <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('PPPoE Active') }}
+                        <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
                     </a>
                     @endif
                 </div>
@@ -469,22 +116,22 @@
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('olt.view'))
                     <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('OLT') }}
+                        <i class="fa-solid fa-server"></i> {{ __('OLT') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('odc.view'))
                     <a href="{{ route('odcs.index') }}" class="sidebar-item {{ request()->routeIs('odcs.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('ODC') }}
+                        <i class="fa-solid fa-box-archive"></i> {{ __('ODC') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('odp.view'))
                     <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('ODP') }}
+                        <i class="fa-solid fa-box"></i> {{ __('ODP') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('htb.view'))
                     <a href="{{ route('htbs.index') }}" class="sidebar-item {{ request()->routeIs('htbs.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('HTB') }}
+                        <i class="fa-solid fa-network-wired"></i> {{ __('HTB') }}
                     </a>
                     @endif
                 </div>
@@ -516,22 +163,22 @@
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('atk.view'))
                     <a href="{{ route('atk.dashboard') }}" class="sidebar-item {{ request()->routeIs('atk.dashboard') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Dashboard Toko') }}
+                        <i class="fa-solid fa-chart-line"></i> {{ __('Dashboard Toko') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('atk.pos'))
                     <a href="{{ route('atk.pos') }}" class="sidebar-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Kasir (POS)') }}
+                        <i class="fa-solid fa-cash-register"></i> {{ __('Kasir (POS)') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('atk.manage'))
                     <a href="{{ route('atk.products.index') }}" class="sidebar-item {{ request()->routeIs('atk.products.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Produk & Stok') }}
+                        <i class="fa-solid fa-boxes-stacked"></i> {{ __('Produk & Stok') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('atk.report'))
                     <a href="{{ route('atk.transactions.index') }}" class="sidebar-item {{ request()->routeIs('atk.transactions.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Riwayat Transaksi') }}
+                        <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
                     </a>
                     @endif
                 </div>
@@ -549,17 +196,17 @@
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('wash.view'))
                     <a href="{{ route('wash.index') }}" class="sidebar-item {{ request()->routeIs('wash.index') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Dashboard Cuci') }}
+                        <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard Cuci') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('wash.pos'))
                     <a href="{{ route('wash.pos') }}" class="sidebar-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Kasir (POS)') }}
+                        <i class="fa-solid fa-cash-register"></i> {{ __('Kasir (POS)') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('wash.manage'))
                     <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ request()->routeIs('wash.services.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Layanan & Harga') }}
+                        <i class="fa-solid fa-tags"></i> {{ __('Layanan & Harga') }}
                     </a>
                     @endif
                 </div>
@@ -582,20 +229,20 @@
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('inventory.view'))
                     <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Inventory / Tools') }}
+                        <i class="fa-solid fa-toolbox"></i> {{ __('Inventory / Tools') }}
                     </a>
                     <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Aset Saya') }}
+                        <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('attendance.view'))
                     <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ request()->routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Absensi Saya') }}
+                        <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('attendance.report'))
                     <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Rekap Absensi') }}
+                        <i class="fa-solid fa-clipboard-user"></i> {{ __('Rekap Absensi') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('schedule.view'))
@@ -621,21 +268,21 @@
             <div class="collapse {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('packages.*')) ? 'show' : '' }}" id="settingsCollapse">
                 <div class="bg-light ps-3">
                     <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Pengaturan Umum') }}
+                        <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Umum') }}
                     </a>
                     @if(Auth::user()->hasPermission('region.view'))
                     <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Wilayah') }}
+                        <i class="fa-solid fa-map-location-dot"></i> {{ __('Wilayah') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('coordinator.view'))
                     <a href="{{ route('coordinators.index') }}" class="sidebar-item {{ request()->routeIs('coordinators.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Data Pengurus') }}
+                        <i class="fa-solid fa-user-tie"></i> {{ __('Data Pengurus') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('user.view'))
                     <a href="{{ route('users.index') }}" class="sidebar-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-circle"></i> {{ __('Manajemen User') }}
+                        <i class="fa-solid fa-users-gear"></i> {{ __('Manajemen User') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('role.view'))
@@ -645,7 +292,7 @@
                     @endif
                     @if(Auth::user()->hasPermission('package.view'))
                     <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-cube"></i> {{ __('Paket Internet') }}
+                        <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('chat.view'))
@@ -670,6 +317,9 @@
         </div>
     </div>
     <!-- /#sidebar-wrapper -->
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebar-overlay"></div>
 
     <!-- Page Content -->
     <div id="page-content-wrapper" class="d-flex flex-column min-vh-100">
@@ -831,50 +481,11 @@
         });
     @endif
     
-    // Sidebar Toggle
-    document.getElementById('sidebarToggle').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.body.classList.toggle('sb-sidenav-toggled');
-    });
-
-    // Close Sidebar when clicking overlay (Mobile)
-    const overlay = document.getElementById('sidebar-overlay');
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            document.body.classList.remove('sb-sidenav-toggled');
-        });
-    }
-
-    // Theme Toggle Logic
-    const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = document.getElementById('themeIcon');
-    const htmlElement = document.documentElement;
-
-    function updateThemeIcon(theme) {
-        if (theme === 'dark') {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        } else {
-            themeIcon.classList.remove('fa-sun');
-            themeIcon.classList.add('fa-moon');
-        }
-    }
-
-    // Initialize Icon
-    updateThemeIcon(htmlElement.getAttribute('data-bs-theme'));
-
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = htmlElement.getAttribute('data-bs-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        htmlElement.setAttribute('data-bs-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
-
-        // Dispatch custom event for components to react
-        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
-    });
+    // Sidebar Toggle, Theme Toggle, etc. are moved to public/js/dashboard-custom.js
 </script>
+
+<!-- Custom Dashboard JS -->
+<script src="{{ asset('js/dashboard-custom.js') }}"></script>
 
 @stack('scripts')
 
