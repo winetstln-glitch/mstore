@@ -146,10 +146,32 @@
 
         var map = L.map('map-picker').setView([defaultLat, defaultLng], zoom);
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
+        });
+
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
+            maxZoom: 22,
+            subdomains:['mt0','mt1','mt2','mt3'],
+            attribution: '&copy; Google Maps'
+        });
+        
+        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        });
+
+        // Add default layer (OSM)
+        osm.addTo(map);
+
+        var baseMaps = {
+            "Street (OSM)": osm,
+            "Satellite (Google)": googleHybrid,
+            "Dark Mode": darkLayer
+        };
+
+        L.control.layers(baseMaps).addTo(map);
 
         var marker = null;
         if (coordInput.value) {

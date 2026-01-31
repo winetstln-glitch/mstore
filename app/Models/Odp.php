@@ -12,6 +12,7 @@ class Odp extends Model
     protected $fillable = [
         'name',
         'odc_id',
+        'closure_id',
         'color',
         'latitude',
         'longitude',

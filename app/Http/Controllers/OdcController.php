@@ -97,8 +97,10 @@ class OdcController extends Controller implements HasMiddleware
                     $validated['olt_id'] = $parentOdc->olt_id;
                 }
             }
-            // Fallback if OLT cannot be found?
             if (empty($validated['olt_id'])) {
+                 if ($request->wantsJson()) {
+                     return response()->json(['message' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'], 422);
+                 }
                  return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
             }
         }
@@ -174,6 +176,9 @@ class OdcController extends Controller implements HasMiddleware
                 // But if closure changes, OLT might change.
                 // If existing ODC has OLT, keep it if new one not found?
                 // Better to fail if logic is inconsistent.
+                 if ($request->wantsJson()) {
+                     return response()->json(['message' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'], 422);
+                 }
                  return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
             }
         }
@@ -196,13 +201,20 @@ class OdcController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Odc $odc)
+    public function destroy(Request $request, Odc $odc)
     {
         if ($odc->odps()->exists()) {
+            if ($request->wantsJson()) {
+                 return response()->json(['message' => __('Cannot delete ODC because it has associated ODPs.')], 422);
+            }
             return back()->with('error', __('Cannot delete ODC because it has associated ODPs.'));
         }
 
         $odc->delete();
+
+        if ($request->wantsJson()) {
+             return response()->json(['success' => true]);
+        }
 
         return redirect()->route('odcs.index')->with('success', __('ODC deleted successfully.'));
     }

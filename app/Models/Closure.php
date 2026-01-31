@@ -11,6 +11,11 @@ class Closure extends Model
 
     protected $fillable = [
         'name',
+        'color',
+        'capacity',
+        'pon_port',
+        'cable_no',
+        'area',
         'coordinates',
         'parent_type',
         'parent_id',

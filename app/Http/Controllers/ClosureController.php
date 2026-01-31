@@ -57,20 +57,40 @@ class ClosureController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:closures',
             'coordinates' => 'nullable|string',
-            'parent_type' => 'nullable|string|in:App\Models\Olt,App\Models\Odc',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'parent_type' => 'nullable|string|in:App\Models\Olt,App\Models\Odc,App\Models\Closure',
             'parent_id' => 'nullable|integer',
             'description' => 'nullable|string',
+            'capacity' => 'nullable|integer',
+            'pon_port' => 'nullable|string',
+            'area' => 'nullable|string',
+            'color' => 'nullable|string',
+            'cable_no' => 'nullable|string',
         ]);
+
+        // Merge lat/lng into coordinates if present
+        if ($request->filled(['latitude', 'longitude'])) {
+            $validated['coordinates'] = $request->latitude . ',' . $request->longitude;
+        }
+        unset($validated['latitude'], $validated['longitude']);
 
         // Validate parent_id existence based on parent_type
         if (!empty($validated['parent_type']) && !empty($validated['parent_id'])) {
             $parentClass = $validated['parent_type'];
             if (!$parentClass::where('id', $validated['parent_id'])->exists()) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Selected parent does not exist.'], 422);
+                }
                 return back()->withErrors(['parent_id' => 'Selected parent does not exist.'])->withInput();
             }
         }
 
-        Closure::create($validated);
+        $closure = Closure::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $closure]);
+        }
 
         return redirect()->route('closures.index')->with('success', __('Closure created successfully.'));
     }
@@ -102,20 +122,40 @@ class ClosureController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:closures,name,' . $closure->id,
             'coordinates' => 'nullable|string',
-            'parent_type' => 'nullable|string|in:App\Models\Olt,App\Models\Odc',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'parent_type' => 'nullable|string|in:App\Models\Olt,App\Models\Odc,App\Models\Closure',
             'parent_id' => 'nullable|integer',
             'description' => 'nullable|string',
+            'capacity' => 'nullable|integer',
+            'pon_port' => 'nullable|string',
+            'area' => 'nullable|string',
+            'color' => 'nullable|string',
+            'cable_no' => 'nullable|string',
         ]);
+
+        // Merge lat/lng into coordinates if present
+        if ($request->filled(['latitude', 'longitude'])) {
+            $validated['coordinates'] = $request->latitude . ',' . $request->longitude;
+        }
+        unset($validated['latitude'], $validated['longitude']);
 
         // Validate parent_id existence based on parent_type
         if (!empty($validated['parent_type']) && !empty($validated['parent_id'])) {
             $parentClass = $validated['parent_type'];
             if (!$parentClass::where('id', $validated['parent_id'])->exists()) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Selected parent does not exist.'], 422);
+                }
                 return back()->withErrors(['parent_id' => 'Selected parent does not exist.'])->withInput();
             }
         }
 
         $closure->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $closure]);
+        }
 
         return redirect()->route('closures.index')->with('success', __('Closure updated successfully.'));
     }
@@ -123,9 +163,13 @@ class ClosureController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Closure $closure)
+    public function destroy(Request $request, Closure $closure)
     {
         $closure->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('closures.index')->with('success', __('Closure deleted successfully.'));
     }

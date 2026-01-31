@@ -156,6 +156,18 @@ class MapController extends Controller implements HasMiddleware
             $closureQuery->where('region_id', $regionId);
         }
         $closures = $closureQuery->get();
+        
+        // Parse coordinates for map
+        $closures->transform(function ($closure) {
+            if ($closure->coordinates) {
+                $parts = explode(',', $closure->coordinates);
+                if (count($parts) == 2) {
+                    $closure->latitude = trim($parts[0]);
+                    $closure->longitude = trim($parts[1]);
+                }
+            }
+            return $closure;
+        });
 
         // Fetch Assets (Tools) with location
         $assets = Asset::with(['item', 'holder'])
@@ -224,9 +236,21 @@ class MapController extends Controller implements HasMiddleware
             case 'htb': $model = Htb::find($id); break;
             case 'customer': $model = Customer::find($id); break;
             case 'asset': $model = Asset::find($id); break;
+            case 'closure': $model = Closure::find($id); break;
         }
 
         if ($model) {
+            // Special handling for Closure because it uses 'coordinates' string column
+            if ($type === 'closure') {
+                 if ($request->latitude && $request->longitude) {
+                     $model->coordinates = $request->latitude . ',' . $request->longitude;
+                 } else {
+                     $model->coordinates = null;
+                 }
+                 $model->save();
+                 return response()->json(['success' => true]);
+            }
+
             $model->latitude = $request->latitude;
             $model->longitude = $request->longitude;
             $model->save();

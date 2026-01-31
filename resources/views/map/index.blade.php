@@ -57,6 +57,9 @@
                             <button type="button" class="btn-shadow btn btn-primary btn-sm" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
                                 <i class="fa fa-plus me-1"></i> {{ __('Tambah HTB') }}
                             </button>
+                            <button type="button" class="btn-shadow btn btn-info text-dark btn-sm" id="btnAddClosureMode">
+                                <i class="fa fa-plus me-1"></i> {{ __('Tambah Closure') }}
+                            </button>
                             <button type="button" class="btn-shadow btn btn-danger btn-sm d-none" id="btnCancelAdd">
                                 <i class="fa fa-times me-1"></i> {{ __('Batal Tambah') }}
                             </button>
@@ -180,14 +183,30 @@
                         <input type="number" class="form-control" id="odc_capacity" name="capacity" value="48" required>
                     </div>
                     <div class="mb-3">
-                        <label for="odc_olt" class="form-label">{{ __('OLT') }}</label>
-                        <select class="form-select" id="odc_olt" name="olt_id" required>
-                            <option value="">{{ __('Pilih OLT') }}</option>
-                            @foreach($olts as $olt)
-                                <option value="{{ $olt->id }}">{{ $olt->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                            <label for="odc_parent_type" class="form-label">{{ __('Parent Type') }}</label>
+                            <select class="form-select" id="odc_parent_type" name="parent_type">
+                                <option value="olt">OLT</option>
+                                <option value="closure">Closure</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="odc_olt_group">
+                            <label for="odc_olt" class="form-label">{{ __('Parent OLT') }}</label>
+                            <select class="form-select" id="odc_olt" name="olt_id">
+                                <option value="">{{ __('Pilih OLT') }}</option>
+                                @foreach($olts as $olt)
+                                    <option value="{{ $olt->id }}">{{ $olt->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3 d-none" id="odc_closure_group">
+                            <label for="odc_closure" class="form-label">{{ __('Parent Closure') }}</label>
+                            <select class="form-select" id="odc_closure" name="closure_id">
+                                <option value="">{{ __('Pilih Closure') }}</option>
+                                @foreach($closures as $closure)
+                                    <option value="{{ $closure->id }}">{{ $closure->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     <div class="mb-3">
                         <label for="odc_description" class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea class="form-control" id="odc_description" name="description"></textarea>
@@ -245,11 +264,27 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label for="odp_parent_type" class="form-label">{{ __('Parent Type') }}</label>
+                        <select class="form-select" id="odp_parent_type" name="parent_type">
+                            <option value="odc">ODC</option>
+                            <option value="closure">Closure</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="odp_odc_group">
                         <label for="odp_odc" class="form-label">{{ __('Uplink ODC') }}</label>
                         <select class="form-select" id="odp_odc" name="odc_id">
                             <option value="">{{ __('Pilih ODC') }}</option>
                             @foreach($odcs as $odc)
-                                <option value="{{ $odc->id }}">{{ $odc->name }}</option>
+                            <option value="{{ $odc->id }}">{{ $odc->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="odp_closure_group">
+                        <label for="odp_closure" class="form-label">{{ __('Parent Closure') }}</label>
+                        <select class="form-select" id="odp_closure" name="closure_id">
+                            <option value="">{{ __('Pilih Closure') }}</option>
+                            @foreach($closures as $closure)
+                            <option value="{{ $closure->id }}">{{ $closure->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -346,6 +381,96 @@
         </div>
     </div>
 </div>
+
+<!-- Closure Modal -->
+<div class="modal fade" id="closureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="closureModalLabel">{{ __('Tambah Closure') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="closureForm">
+                    <input type="hidden" id="closure_id" name="id">
+                    <input type="hidden" id="closure_lat" name="latitude">
+                    <input type="hidden" id="closure_lng" name="longitude">
+                    
+                    <div class="mb-3">
+                        <label for="closure_name" class="form-label">{{ __('Nama Closure') }}</label>
+                        <input type="text" class="form-control" id="closure_name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="closure_capacity" class="form-label">{{ __('Kapasitas') }}</label>
+                        <input type="number" class="form-control" id="closure_capacity" name="capacity" value="48" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="closure_pon_port" class="form-label">{{ __('Port PON') }}</label>
+                            <input type="text" class="form-control" id="closure_pon_port" name="pon_port" placeholder="e.g. 01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="closure_area" class="form-label">{{ __('Area') }}</label>
+                            <input type="text" class="form-control" id="closure_area" name="area" placeholder="e.g. CI">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="closure_color" class="form-label">{{ __('Warna') }}</label>
+                            <select class="form-select" id="closure_color" name="color">
+                                <option value="">{{ __('Pilih Warna') }}</option>
+                                <option value="BLUE" data-code="B">Blue (Biru)</option>
+                                <option value="ORANGE" data-code="O">Orange (Oranye)</option>
+                                <option value="GREEN" data-code="G">Green (Hijau)</option>
+                                <option value="BROWN" data-code="C">Brown (Coklat)</option>
+                                <option value="SLATE" data-code="S">Slate (Abu-abu)</option>
+                                <option value="WHITE" data-code="P">White (Putih)</option>
+                                <option value="RED" data-code="M">Red (Merah)</option>
+                                <option value="BLACK" data-code="H">Black (Hitam)</option>
+                                <option value="YELLOW" data-code="K">Yellow (Kuning)</option>
+                                <option value="VIOLET" data-code="U">Violet (Ungu)</option>
+                                <option value="ROSE" data-code="P">Rose (Pink)</option>
+                                <option value="AQUA" data-code="T">Aqua (Tosca)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="closure_cable_no" class="form-label">{{ __('No Kabel') }}</label>
+                            <input type="text" class="form-control" id="closure_cable_no" name="cable_no" placeholder="e.g. 01">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="closure_parent_type" class="form-label">{{ __('Tipe Induk') }}</label>
+                        <select class="form-select" id="closure_parent_type" name="parent_type">
+                            <option value="">{{ __('Pilih Tipe Induk') }}</option>
+                            <option value="App\Models\Olt">OLT</option>
+                            <option value="App\Models\Odc">ODC</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="closure_parent_wrapper">
+                        <label for="closure_parent_id" class="form-label">{{ __('Induk') }}</label>
+                        <select class="form-select" id="closure_parent_id" name="parent_id">
+                            <option value="">{{ __('Pilih Induk') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="closure_description" class="form-label">{{ __('Deskripsi') }}</label>
+                        <textarea class="form-control" id="closure_description" name="description"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                <button type="button" class="btn btn-primary" id="saveClosureBtn">{{ __('Simpan Closure') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -367,6 +492,7 @@
     .icon-odc { color: #fd7e14; border-color: #fd7e14; }
     .icon-odp { color: #0dcaf0; border-color: #0dcaf0; }
     .icon-htb { color: #6610f2; border-color: #6610f2; }
+    .icon-closure { color: #20c997; border-color: #20c997; }
     .icon-customer-online { color: #198754; border-color: #198754; }
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
     .icon-asset { color: #d63384; border-color: #d63384; }
@@ -411,6 +537,7 @@
         var htbs = @json($htbs) || [];
         var odcs = @json($odcs) || [];
         var olts = @json($olts) || [];
+        var closures = @json($closures) || [];
         var assets = @json($assets) || [];
         var coordinatorRegionId = @json($coordinatorRegionId ?? null);
 
@@ -724,16 +851,74 @@
                 editLayer.clearLayers();
             }
 
-            // OLT -> ODC
+            // Parent -> Closure
+            closures.forEach(function(closure) {
+                if (closure.latitude && closure.longitude && closure.parent_id && closure.parent_type) {
+                    var parent = null;
+                    var parentTypeKey = '';
+                    
+                    if (closure.parent_type.includes('Olt')) {
+                        parent = olts.find(i => i.id == closure.parent_id);
+                        parentTypeKey = 'olt';
+                    } else if (closure.parent_type.includes('Odc')) {
+                        parent = odcs.find(i => i.id == closure.parent_id);
+                        parentTypeKey = 'odc';
+                    } else if (closure.parent_type.includes('Odp')) {
+                        parent = odps.find(i => i.id == closure.parent_id);
+                        parentTypeKey = 'odp';
+                    } else if (closure.parent_type.includes('Closure')) {
+                        parent = closures.find(i => i.id == closure.parent_id);
+                        parentTypeKey = 'closure';
+                    }
+                    
+                    if (parent && parent.latitude && parent.longitude) {
+                        var colorKey = (closure.color || '').toUpperCase();
+                        var lineColor = colorMap[colorKey] || closure.color || '#20c997';
+
+                        var key = getConnectionKey(parentTypeKey, parent.id, 'closure', closure.id);
+                        var pathPoints = [[parent.latitude, parent.longitude]];
+                        (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
+                        pathPoints.push([closure.latitude, closure.longitude]);
+
+                        var poly = L.polyline(pathPoints, {
+                            color: lineColor,
+                            weight: 4,
+                            opacity: 0.7,
+                            dashArray: '5, 5'
+                        }).addTo(lines);
+
+                        if (editMode) {
+                            poly.on('click', function(e) {
+                                addWaypointMarker(key, e.latlng);
+                                drawLines();
+                            });
+                        }
+                    }
+                }
+            });
+
+            // OLT/Closure -> ODC
             odcs.forEach(function(odc) {
                 if (odc.latitude && odc.longitude) {
-                    var uplinkOlt = olts.find(o => o.id == odc.olt_id);
-                    if (uplinkOlt && uplinkOlt.latitude && uplinkOlt.longitude) {
+                    var uplink = null;
+                    var uplinkType = 'olt';
+                    
+                    if (odc.closure_id) {
+                         uplink = closures.find(c => c.id == odc.closure_id);
+                         uplinkType = 'closure';
+                    }
+                    
+                    if (!uplink) {
+                         uplink = olts.find(o => o.id == odc.olt_id);
+                         uplinkType = 'olt';
+                    }
+
+                    if (uplink && uplink.latitude && uplink.longitude) {
                         var colorKey = (odc.color || '').toUpperCase();
                         var lineColor = colorMap[colorKey] || odc.color || '#6f42c1';
                         
-                        var key = getConnectionKey('olt', uplinkOlt.id, 'odc', odc.id);
-                        var pathPoints = [[uplinkOlt.latitude, uplinkOlt.longitude]];
+                        var key = getConnectionKey(uplinkType, uplink.id, 'odc', odc.id);
+                        var pathPoints = [[uplink.latitude, uplink.longitude]];
                         (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
                         pathPoints.push([odc.latitude, odc.longitude]);
 
@@ -754,16 +939,28 @@
                 }
             });
 
-            // ODC -> ODP
+            // ODC/Closure -> ODP
             odps.forEach(function(odp) {
                 if (isVisible(odp, 'odp') && odp.latitude && odp.longitude) {
-                    var uplinkOdc = odcs.find(o => o.id == odp.odc_id);
-                    if (uplinkOdc && uplinkOdc.latitude && uplinkOdc.longitude) {
+                    var uplink = null;
+                    var uplinkType = 'odc';
+                    
+                    if (odp.closure_id) {
+                        uplink = closures.find(c => c.id == odp.closure_id);
+                        uplinkType = 'closure';
+                    }
+                    
+                    if (!uplink) {
+                        uplink = odcs.find(o => o.id == odp.odc_id);
+                        uplinkType = 'odc';
+                    }
+
+                    if (uplink && uplink.latitude && uplink.longitude) {
                         var colorKey = (odp.color || '').toUpperCase();
                         var lineColor = colorMap[colorKey] || odp.color || '#fd7e14';
                         
-                        var key = getConnectionKey('odc', uplinkOdc.id, 'odp', odp.id);
-                        var pathPoints = [[uplinkOdc.latitude, uplinkOdc.longitude]];
+                        var key = getConnectionKey(uplinkType, uplink.id, 'odp', odp.id);
+                        var pathPoints = [[uplink.latitude, uplink.longitude]];
                         (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
                         pathPoints.push([odp.latitude, odp.longitude]);
 
@@ -964,6 +1161,9 @@
                     } else if (type === 'asset') {
                         var item = assets.find(i => i.id == id);
                         if (item) { item.latitude = null; item.longitude = null; }
+                    } else if (type === 'closure') {
+                        var item = closures.find(i => i.id == id);
+                        if (item) { item.latitude = null; item.longitude = null; }
                     }
                     
                     map.removeLayer(marker);
@@ -1043,6 +1243,9 @@
                     } else if (type === 'asset') {
                         var item = assets.find(i => i.id == id);
                         if (item) { item.latitude = lat; item.longitude = lng; }
+                    } else if (type === 'closure') {
+                        var item = closures.find(i => i.id == id);
+                        if (item) { item.latitude = lat; item.longitude = lng; }
                     }
                     drawLines(); // Redraw lines with new position
                     alert('{{ __('Lokasi berhasil diperbarui!') }}');
@@ -1074,6 +1277,7 @@
             else if (type === 'odc') { iconClass = 'fa-hdd'; colorClass = 'icon-odc'; size = 36; }
             else if (type === 'odp') { iconClass = 'fa-box'; colorClass = 'icon-odp'; size = 32; }
             else if (type === 'htb') { iconClass = 'fa-sitemap'; colorClass = 'icon-htb'; size = 30; }
+            else if (type === 'closure') { iconClass = 'fa-archive'; colorClass = 'icon-closure'; size = 30; }
             else if (type === 'asset') { iconClass = 'fa-tools'; colorClass = 'icon-asset'; size = 28; }
             else if (type === 'online') { iconClass = 'fa-wifi'; colorClass = 'icon-customer-online'; size = 26; }
             else { iconClass = 'fa-user-slash'; colorClass = 'icon-customer-offline'; size = 26; }
@@ -1318,6 +1522,64 @@
             }
         });
 
+
+
+        // Draw Closures
+        closures.forEach(function(closure) {
+            if (closure.latitude && closure.longitude) {
+                var container = document.createElement('div');
+                container.innerHTML = `
+                    <div style="min-width: 200px;">
+                        <h6 class="mb-2">Closure: ${closure.name}</h6>
+                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
+                            <tr><td class="p-0 text-muted">Deskripsi:</td><td class="p-0 text-end">${closure.description || '-'}</td></tr>
+                            <tr><td class="p-0 text-muted">Warna:</td><td class="p-0 text-end">${closure.color || '-'}</td></tr>
+                        </table>
+                    </div>`;
+                
+                var editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-sm btn-primary text-white mt-2';
+                editBtn.style.fontSize = '0.8rem';
+                editBtn.style.padding = '2px 6px';
+                editBtn.innerText = 'Edit';
+                editBtn.onclick = function() { window.editClosure(closure.id); };
+                container.querySelector('div').appendChild(editBtn);
+
+                var deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.innerText = 'Hapus';
+                
+                // We need to define marker first
+                var marker = L.marker([closure.latitude, closure.longitude], {
+                    icon: createIcon('closure'),
+                    draggable: true
+                }).addTo(markers);
+                
+                deleteBtn.onclick = function() { deleteLocation('closure', closure.id, marker); };
+                container.querySelector('div').appendChild(deleteBtn);
+
+                marker.bindPopup(container);
+
+                allMarkerObjs.push({ marker: marker, type: 'closure', data: closure });
+
+                var oldLat = closure.latitude;
+                var oldLng = closure.longitude;
+
+                marker.on('dragstart', function(e) {
+                    oldLat = e.target.getLatLng().lat;
+                    oldLng = e.target.getLatLng().lng;
+                });
+
+                marker.on('dragend', function(e) {
+                    var newLat = e.target.getLatLng().lat;
+                    var newLng = e.target.getLatLng().lng;
+                    updateLocation('closure', closure.id, newLat, newLng, oldLat, oldLng, marker);
+                });
+            }
+        });
+
         // Draw Assets
         assets.forEach(function(asset) {
             if (asset.latitude && asset.longitude) {
@@ -1462,6 +1724,7 @@
         var btnAddOdc = document.getElementById('btnAddOdcMode');
         var btnAddOdp = document.getElementById('btnAddOdpMode');
         var btnAddHtb = document.getElementById('btnAddHtbMode');
+        var btnAddClosure = document.getElementById('btnAddClosureMode');
         var btnCancel = document.getElementById('btnCancelAdd');
         var mapContainer = document.getElementById('map');
 
@@ -1488,7 +1751,43 @@
         btnAddOdc.addEventListener('click', function() { setMode('odc'); });
         btnAddOdp.addEventListener('click', function() { setMode('odp'); });
         btnAddHtb.addEventListener('click', function() { setMode('htb'); });
+        btnAddClosure.addEventListener('click', function() { setMode('closure'); });
         btnCancel.addEventListener('click', function() { setMode(null); });
+
+        // Parent Type Change Listeners
+        // ODC Parent Type
+        var odcParentType = document.getElementById('odc_parent_type');
+        if (odcParentType) {
+            odcParentType.addEventListener('change', function() {
+                var val = this.value;
+                if (val === 'closure') {
+                    document.getElementById('odc_closure_group').classList.remove('d-none');
+                    document.getElementById('odc_olt_group').classList.add('d-none');
+                    document.getElementById('odc_olt').value = ''; // Reset
+                } else {
+                    document.getElementById('odc_closure_group').classList.add('d-none');
+                    document.getElementById('odc_olt_group').classList.remove('d-none');
+                    document.getElementById('odc_closure').value = ''; // Reset
+                }
+            });
+        }
+
+        // ODP Parent Type
+        var odpParentType = document.getElementById('odp_parent_type');
+        if (odpParentType) {
+            odpParentType.addEventListener('change', function() {
+                var val = this.value;
+                if (val === 'closure') {
+                    document.getElementById('odp_closure_group').classList.remove('d-none');
+                    document.getElementById('odp_odc_group').classList.add('d-none');
+                    document.getElementById('odp_odc').value = ''; // Reset
+                } else {
+                    document.getElementById('odp_closure_group').classList.add('d-none');
+                    document.getElementById('odp_odc_group').classList.remove('d-none');
+                    document.getElementById('odp_closure').value = ''; // Reset
+                }
+            });
+        }
 
         map.on('click', function(e) {
             if (!addMode) return;
@@ -1508,6 +1807,13 @@
                 document.getElementById('odc_id').value = ''; // Clear ID for new
                 document.getElementById('odc_lat').value = lat;
                 document.getElementById('odc_lng').value = lng;
+                
+                // Reset Parent Type Logic
+                if(odcParentType) {
+                    odcParentType.value = 'olt';
+                    odcParentType.dispatchEvent(new Event('change'));
+                }
+
                 document.getElementById('odcModalLabel').innerText = '{{ __('Tambah ODC') }}'; // Set title
                 var odcModal = new bootstrap.Modal(document.getElementById('odcModal'));
                 odcModal.show();
@@ -1516,9 +1822,32 @@
                 document.getElementById('odp_id').value = ''; // Clear ID for new
                 document.getElementById('odp_lat').value = lat;
                 document.getElementById('odp_lng').value = lng;
+
+                // Reset Parent Type Logic
+                if(odpParentType) {
+                    odpParentType.value = 'odc';
+                    odpParentType.dispatchEvent(new Event('change'));
+                }
+
                 document.getElementById('odpModalLabel').innerText = '{{ __('Tambah ODP') }}'; // Set title
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
                 odpModal.show();
+            } else if (addMode === 'closure') {
+                document.getElementById('closureForm').reset();
+                document.getElementById('closure_id').value = '';
+                document.getElementById('closure_lat').value = lat;
+                document.getElementById('closure_lng').value = lng;
+                document.getElementById('closureModalLabel').innerText = '{{ __('Tambah Closure') }}';
+                
+                // Reset Parent Type Logic for Closure (Assuming it has one)
+                var closureParentType = document.getElementById('closure_parent_type');
+                if(closureParentType) {
+                    closureParentType.value = 'olt'; // Default
+                    closureParentType.dispatchEvent(new Event('change'));
+                }
+
+                var closureModal = new bootstrap.Modal(document.getElementById('closureModal'));
+                closureModal.show();
             } else if (addMode === 'htb') {
                 document.getElementById('htbForm').reset();
                 document.getElementById('htb_id').value = '';
@@ -1547,7 +1876,6 @@
                 document.getElementById('odc_lat').value = odc.latitude;
                 document.getElementById('odc_lng').value = odc.longitude;
                 document.getElementById('odc_capacity').value = odc.capacity;
-                document.getElementById('odc_olt').value = odc.olt_id;
                 document.getElementById('odc_description').value = odc.description || '';
                 
                 // New Fields
@@ -1555,6 +1883,31 @@
                 document.getElementById('odc_area').value = odc.area || '';
                 document.getElementById('odc_color').value = odc.color || '';
                 document.getElementById('odc_cable_no').value = odc.cable_no || '';
+
+                // Handle Parent
+                var parentType = 'olt';
+                var oltId = '';
+                var closureId = '';
+
+                if (odc.closure_id) {
+                    parentType = 'closure';
+                    closureId = odc.closure_id;
+                } else {
+                    parentType = 'olt';
+                    oltId = odc.olt_id;
+                }
+
+                var typeSelect = document.getElementById('odc_parent_type');
+                if (typeSelect) {
+                    typeSelect.value = parentType;
+                    typeSelect.dispatchEvent(new Event('change'));
+                }
+
+                if (parentType === 'olt') {
+                    document.getElementById('odc_olt').value = oltId;
+                } else {
+                    document.getElementById('odc_closure').value = closureId;
+                }
 
                 document.getElementById('odcModalLabel').innerText = '{{ __('Edit ODC') }}';
                 var odcModal = new bootstrap.Modal(document.getElementById('odcModal'));
@@ -1571,12 +1924,36 @@
                 document.getElementById('odp_lng').value = odp.longitude;
                 document.getElementById('odp_capacity').value = odp.capacity;
                 document.getElementById('odp_region').value = odp.region_id;
-                document.getElementById('odp_odc').value = odp.odc_id;
                 document.getElementById('odp_color').value = odp.color || '#fd7e14';
                 document.getElementById('odp_description').value = odp.description || '';
                 
                 // New Fields
                 document.getElementById('odp_kampung').value = odp.kampung || '';
+
+                // Handle Parent
+                var parentType = 'odc';
+                var odcId = '';
+                var closureId = '';
+
+                if (odp.closure_id) {
+                    parentType = 'closure';
+                    closureId = odp.closure_id;
+                } else {
+                    parentType = 'odc';
+                    odcId = odp.odc_id;
+                }
+
+                var typeSelect = document.getElementById('odp_parent_type');
+                if (typeSelect) {
+                    typeSelect.value = parentType;
+                    typeSelect.dispatchEvent(new Event('change'));
+                }
+
+                if (parentType === 'odc') {
+                    document.getElementById('odp_odc').value = odcId;
+                } else {
+                    document.getElementById('odp_closure').value = closureId;
+                }
 
                 document.getElementById('odpModalLabel').innerText = '{{ __('Edit ODP') }}';
                 var odpModal = new bootstrap.Modal(document.getElementById('odpModal'));
@@ -1611,6 +1988,49 @@
                 document.getElementById('htbModalLabel').innerText = '{{ __('Edit HTB') }}';
                 var htbModal = new bootstrap.Modal(document.getElementById('htbModal'));
                 htbModal.show();
+            }
+        };
+
+        window.editClosure = function(id) {
+            var closure = closures.find(c => c.id == id);
+            if (closure) {
+                document.getElementById('closure_id').value = closure.id;
+                document.getElementById('closure_name').value = closure.name;
+                document.getElementById('closure_lat').value = closure.latitude;
+                document.getElementById('closure_lng').value = closure.longitude;
+                document.getElementById('closure_description').value = closure.description || '';
+                
+                // New Fields
+                document.getElementById('closure_capacity').value = closure.capacity || 48;
+                document.getElementById('closure_pon_port').value = closure.pon_port || '';
+                document.getElementById('closure_area').value = closure.area || '';
+                document.getElementById('closure_color').value = closure.color || '';
+                document.getElementById('closure_cable_no').value = closure.cable_no || '';
+
+                // Handle Parent
+                var parentTypeSelect = document.getElementById('closure_parent_type');
+                parentTypeSelect.value = closure.parent_type || '';
+                
+                // Trigger change to populate parent_id
+                var event = new Event('change');
+                parentTypeSelect.dispatchEvent(event);
+                
+                // Wait for dropdown to populate (since it's sync in change handler? no it loops existing data)
+                // Actually the change handler is logic I added? I need to check if I added the change handler.
+                // Assuming I will add it or it exists.
+                // Wait, I need to make sure closure_parent_type change handler exists.
+                
+                // Set parent_id
+                if (closure.parent_id) {
+                    // Slight delay to ensure options are populated if async? 
+                    // No, my implementation of parent population will be sync or I need to handle it.
+                    // Let's assume the options are already there or populated by the change event.
+                    document.getElementById('closure_parent_id').value = closure.parent_id;
+                }
+                
+                document.getElementById('closureModalLabel').innerText = '{{ __('Edit Closure') }}';
+                var closureModal = new bootstrap.Modal(document.getElementById('closureModal'));
+                closureModal.show();
             }
         };
 
@@ -1662,6 +2082,65 @@
                     location.reload();
                 } else {
                     alert('{{ __('Error placing OLT:') }} ' + (data.message || JSON.stringify(data)));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('{{ __('An error occurred while saving.') }}');
+            });
+        });
+
+        // Closure Parent Logic
+        var closureParentType = document.getElementById('closure_parent_type');
+        if (closureParentType) {
+            closureParentType.addEventListener('change', function() {
+                 var type = this.value;
+                 var parentIdSelect = document.getElementById('closure_parent_id');
+                 parentIdSelect.innerHTML = '<option value="">{{ __('Pilih Parent') }}</option>';
+                 
+                 var items = [];
+                 if (type === 'App\\Models\\Olt') {
+                     items = olts;
+                 } else if (type === 'App\\Models\\Odc') {
+                     items = odcs;
+                 } else if (type === 'App\\Models\\Odp') {
+                     items = odps;
+                 } else if (type === 'App\\Models\\Closure') {
+                     items = closures;
+                 }
+                 
+                 items.forEach(function(item) {
+                     var option = document.createElement('option');
+                     option.value = item.id;
+                     option.text = item.name;
+                     parentIdSelect.appendChild(option);
+                 });
+            });
+        }
+
+        // Save Closure Logic
+        document.getElementById('saveClosureBtn').addEventListener('click', function() {
+            var id = document.getElementById('closure_id').value;
+            var url = id ? `/closures/${id}` : '/closures';
+            var method = id ? 'PUT' : 'POST';
+            var formData = new FormData(document.getElementById('closureForm'));
+            var data = Object.fromEntries(formData.entries());
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success || data.id) {
+                    location.reload();
+                } else {
+                    alert('{{ __('Error saving Closure:') }} ' + (data.message || JSON.stringify(data)));
                 }
             })
             .catch(error => {
