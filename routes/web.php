@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::resource('categories', \App\Http\Controllers\CategoryController::class);
 
     // API Keys Management
     Route::get('settings/apikeys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('apikeys.index');
@@ -164,6 +165,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('htbs', \App\Http\Controllers\HtbController::class);
     Route::get('odcs/export/excel', [\App\Http\Controllers\OdcController::class, 'exportExcel'])->name('odcs.export.excel');
     Route::resource('odcs', \App\Http\Controllers\OdcController::class);
+    Route::resource('closures', \App\Http\Controllers\ClosureController::class);
     Route::resource('regions', \App\Http\Controllers\RegionController::class);
     Route::resource('coordinators', \App\Http\Controllers\CoordinatorController::class);
     Route::get('investors/export/pdf', [InvestorController::class, 'exportPdf'])->name('investors.export.pdf');

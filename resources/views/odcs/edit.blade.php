@@ -30,16 +30,46 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="olt_id" class="form-label">{{ __('OLT') }}</label>
-                            <select class="form-select @error('olt_id') is-invalid @enderror" id="olt_id" name="olt_id" required>
-                                <option value="">{{ __('Select OLT') }}</option>
-                                @foreach($olts as $olt)
-                                    <option value="{{ $olt->id }}" {{ old('olt_id', $odc->olt_id) == $olt->id ? 'selected' : '' }}>{{ $olt->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('olt_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            @php
+                                $sourceType = old('source_type', $odc->closure_id ? 'closure' : 'olt');
+                            @endphp
+                            <label class="form-label">{{ __('Connection Source') }}</label>
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="source_type" id="source_olt" value="olt" {{ $sourceType == 'olt' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="source_olt">Direct OLT</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="source_type" id="source_closure" value="closure" {{ $sourceType == 'closure' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="source_closure">Via Closure</label>
+                                </div>
+                            </div>
+
+                            <div id="olt_input_group" style="{{ $sourceType == 'olt' ? '' : 'display:none;' }}">
+                                <label for="olt_id" class="form-label">{{ __('Select OLT') }}</label>
+                                <select class="form-select @error('olt_id') is-invalid @enderror" id="olt_id" name="olt_id">
+                                    <option value="">{{ __('Select OLT') }}</option>
+                                    @foreach($olts as $olt)
+                                        <option value="{{ $olt->id }}" {{ old('olt_id', $odc->olt_id) == $olt->id ? 'selected' : '' }}>{{ $olt->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('olt_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div id="closure_input_group" style="{{ $sourceType == 'closure' ? '' : 'display:none;' }}">
+                                <label for="closure_id" class="form-label">{{ __('Select Closure') }}</label>
+                                <select class="form-select @error('closure_id') is-invalid @enderror" id="closure_id" name="closure_id">
+                                    <option value="">{{ __('Select Closure') }}</option>
+                                    @foreach($closures as $closure)
+                                        <option value="{{ $closure->id }}" {{ old('closure_id', $odc->closure_id) == $closure->id ? 'selected' : '' }}>{{ $closure->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('closure_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
 
@@ -62,8 +92,22 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="color" class="form-label">{{ __('Color') }}</label>
-                            <input type="text" class="form-control @error('color') is-invalid @enderror" id="color" name="color" value="{{ old('color', $odc->color) }}" required placeholder="e.g. BLUE">
+                            <label for="color" class="form-label">{{ __('Tube / Fiber Color') }}</label>
+                            <select class="form-select @error('color') is-invalid @enderror" id="color" name="color" required>
+                                <option value="">{{ __('Select Color') }}</option>
+                                <option value="BLUE" {{ old('color', $odc->color) == 'BLUE' ? 'selected' : '' }} data-code="B">Blue (Biru)</option>
+                                <option value="ORANGE" {{ old('color', $odc->color) == 'ORANGE' ? 'selected' : '' }} data-code="O">Orange (Oranye)</option>
+                                <option value="GREEN" {{ old('color', $odc->color) == 'GREEN' ? 'selected' : '' }} data-code="G">Green (Hijau)</option>
+                                <option value="BROWN" {{ old('color', $odc->color) == 'BROWN' ? 'selected' : '' }} data-code="C">Brown (Coklat)</option>
+                                <option value="SLATE" {{ old('color', $odc->color) == 'SLATE' ? 'selected' : '' }} data-code="S">Slate (Abu-abu)</option>
+                                <option value="WHITE" {{ old('color', $odc->color) == 'WHITE' ? 'selected' : '' }} data-code="P">White (Putih)</option>
+                                <option value="RED" {{ old('color', $odc->color) == 'RED' ? 'selected' : '' }} data-code="M">Red (Merah)</option>
+                                <option value="BLACK" {{ old('color', $odc->color) == 'BLACK' ? 'selected' : '' }} data-code="H">Black (Hitam)</option>
+                                <option value="YELLOW" {{ old('color', $odc->color) == 'YELLOW' ? 'selected' : '' }} data-code="K">Yellow (Kuning)</option>
+                                <option value="VIOLET" {{ old('color', $odc->color) == 'VIOLET' ? 'selected' : '' }} data-code="U">Violet (Ungu)</option>
+                                <option value="ROSE" {{ old('color', $odc->color) == 'ROSE' ? 'selected' : '' }} data-code="P">Rose (Merah Muda)</option>
+                                <option value="AQUA" {{ old('color', $odc->color) == 'AQUA' ? 'selected' : '' }} data-code="T">Aqua (Tosca)</option>
+                            </select>
                             @error('color')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -226,6 +270,33 @@
                 marker = L.marker(e.latlng).addTo(map);
             }
         });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const sourceOlt = document.getElementById('source_olt');
+        const sourceClosure = document.getElementById('source_closure');
+        const oltGroup = document.getElementById('olt_input_group');
+        const closureGroup = document.getElementById('closure_input_group');
+        const oltSelect = document.getElementById('olt_id');
+        const closureSelect = document.getElementById('closure_id');
+
+        function toggleSource() {
+            if (sourceOlt.checked) {
+                oltGroup.style.display = 'block';
+                closureGroup.style.display = 'none';
+                closureSelect.value = '';
+            } else {
+                oltGroup.style.display = 'none';
+                closureGroup.style.display = 'block';
+                oltSelect.value = '';
+            }
+        }
+
+        sourceOlt.addEventListener('change', toggleSource);
+        sourceClosure.addEventListener('change', toggleSource);
+        
+        // Run once on load
+        toggleSource();
     });
 </script>
 @endsection

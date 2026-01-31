@@ -119,22 +119,46 @@
                                                 <label>Ganti Gambar</label>
                                                 <input type="file" name="image" class="form-control" accept="image/*">
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group mb-3">
                                                 <label>Nama Layanan</label>
                                                 <input type="text" name="name" class="form-control" value="{{ $service->name }}" required>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group mb-3">
+                                                <label>Kategori</label>
+                                                <select name="category_id" class="form-control">
+                                                    <option value="">-- Pilih Kategori --</option>
+                                                    @foreach($categories as $category)
+                                                        <option value="{{ $category->id }}" {{ $service->category_id == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="form-group mb-3">
                                                 <label>Tipe Kendaraan</label>
                                                 <select name="vehicle_type" class="form-control" required>
                                                     <option value="car" {{ $service->vehicle_type == 'car' ? 'selected' : '' }}>Mobil</option>
                                                     <option value="motor" {{ $service->vehicle_type == 'motor' ? 'selected' : '' }}>Motor</option>
                                                 </select>
                                             </div>
-                                            <div class="form-group">
-                                                <label>Harga</label>
+                                            <div class="form-group mb-3">
+                                                <label>Jenis</label>
+                                                <select name="type" class="form-control" onchange="toggleStock(this, 'edit_stock_{{ $service->id }}')" required>
+                                                    <option value="service" {{ $service->type == 'service' ? 'selected' : '' }}>Jasa</option>
+                                                    <option value="physical" {{ $service->type == 'physical' ? 'selected' : '' }}>Barang Fisik</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>Modal</label>
+                                                <input type="number" name="cost_price" class="form-control" value="{{ $service->cost_price }}" required>
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>Harga Jual</label>
                                                 <input type="number" name="price" class="form-control" value="{{ $service->price }}" required>
                                             </div>
-                                            <div class="form-group">
+                                            <div class="form-group mb-3" id="edit_stock_{{ $service->id }}" style="display: {{ $service->type == 'physical' ? 'block' : 'none' }};">
+                                                <label>Stok</label>
+                                                <input type="number" name="stock" class="form-control" value="{{ $service->stock ?? 0 }}">
+                                            </div>
+                                            <div class="form-group mb-3">
                                                 <label>Status</label>
                                                 <select name="is_active" class="form-control">
                                                     <option value="1" {{ $service->is_active ? 'selected' : '' }}>Aktif</option>

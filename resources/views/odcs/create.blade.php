@@ -29,16 +29,43 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="olt_id" class="form-label">{{ __('OLT') }}</label>
-                            <select class="form-select @error('olt_id') is-invalid @enderror" id="olt_id" name="olt_id" required>
-                                <option value="">{{ __('Select OLT') }}</option>
-                                @foreach($olts as $olt)
-                                    <option value="{{ $olt->id }}" {{ old('olt_id') == $olt->id ? 'selected' : '' }}>{{ $olt->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('olt_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <label class="form-label">{{ __('Connection Source') }}</label>
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="source_type" id="source_olt" value="olt" {{ old('source_type', 'olt') == 'olt' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="source_olt">Direct OLT</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="source_type" id="source_closure" value="closure" {{ old('source_type') == 'closure' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="source_closure">Via Closure</label>
+                                </div>
+                            </div>
+
+                            <div id="olt_input_group" style="{{ old('source_type', 'olt') == 'olt' ? '' : 'display:none;' }}">
+                                <label for="olt_id" class="form-label">{{ __('Select OLT') }}</label>
+                                <select class="form-select @error('olt_id') is-invalid @enderror" id="olt_id" name="olt_id">
+                                    <option value="">{{ __('Select OLT') }}</option>
+                                    @foreach($olts as $olt)
+                                        <option value="{{ $olt->id }}" {{ old('olt_id') == $olt->id ? 'selected' : '' }}>{{ $olt->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('olt_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div id="closure_input_group" style="{{ old('source_type') == 'closure' ? '' : 'display:none;' }}">
+                                <label for="closure_id" class="form-label">{{ __('Select Closure') }}</label>
+                                <select class="form-select @error('closure_id') is-invalid @enderror" id="closure_id" name="closure_id">
+                                    <option value="">{{ __('Select Closure') }}</option>
+                                    @foreach($closures as $closure)
+                                        <option value="{{ $closure->id }}" {{ old('closure_id') == $closure->id ? 'selected' : '' }}>{{ $closure->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('closure_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
 
@@ -99,48 +126,35 @@
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label for="name" class="form-label">{{ __('ODC Name (Auto-generated)') }}</label>
-                            <input type="text" class="form-control bg-light" id="name" name="name" value="{{ old('name') }}" readonly placeholder="{{ __('Auto-generated: ODC-[PON]-[AREA]-[COLOR]-[CABLE]') }}">
-                            <div class="form-text">{{ __('Format: ODC PON AREA WARNA KABEL') }}</div>
-                        </div>
-                    </div>
-
                     <div class="mb-3">
-                        <label for="description" class="form-label">{{ __('Description (Optional)') }}</label>
-                        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="2">{{ old('description') }}</textarea>
-                        @error('description')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Location') }}</label>
+                        <label class="form-label">{{ __('Coordinates (Latitude, Longitude)') }}</label>
                         <div class="row g-2">
                             <div class="col-md-6">
-                                <input type="text" class="form-control @error('latitude') is-invalid @enderror" id="latitude" name="latitude" value="{{ old('latitude') }}" placeholder="Latitude" required>
+                                <input type="number" step="any" class="form-control @error('latitude') is-invalid @enderror" id="latitude" name="latitude" value="{{ old('latitude') }}" placeholder="Latitude" required>
                                 @error('latitude')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6">
-                                <input type="text" class="form-control @error('longitude') is-invalid @enderror" id="longitude" name="longitude" value="{{ old('longitude') }}" placeholder="Longitude" required>
+                                <input type="number" step="any" class="form-control @error('longitude') is-invalid @enderror" id="longitude" name="longitude" value="{{ old('longitude') }}" placeholder="Longitude" required>
                                 @error('longitude')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
-                        <div class="form-text text-muted">{{ __('Click on the map below to select location.') }}</div>
                     </div>
 
-                    <div id="map-picker" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;" class="mb-3"></div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{{ __('Description') }}</label>
+                        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description') }}</textarea>
+                        @error('description')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
                     <div class="d-flex justify-content-end gap-2">
-                        <button type="reset" class="btn btn-outline-secondary">{{ __('Reset') }}</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-save me-1"></i> {{ __('Save ODC') }}
-                        </button>
+                        <a href="{{ route('odcs.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
+                        <button type="submit" class="btn btn-primary">{{ __('Save ODC') }}</button>
                     </div>
                 </form>
             </div>
@@ -148,132 +162,34 @@
     </div>
 </div>
 
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Name Auto-generation Preview
-        const ponInput = document.getElementById('pon_port');
-        const areaInput = document.getElementById('area');
-        const colorInput = document.getElementById('color');
-        const cableInput = document.getElementById('cable_no');
-        const nameInput = document.getElementById('name');
+        const sourceOlt = document.getElementById('source_olt');
+        const sourceClosure = document.getElementById('source_closure');
+        const oltGroup = document.getElementById('olt_input_group');
+        const closureGroup = document.getElementById('closure_input_group');
+        const oltSelect = document.getElementById('olt_id');
+        const closureSelect = document.getElementById('closure_id');
 
-        function updateNamePreview() {
-            let ponVal = ponInput.value ? ponInput.value.replace(/[^0-9]/g, '') : '';
-            let pon = ponVal ? ponVal.padStart(2, '0') : '[PON]';
-
-            let areaVal = areaInput.value ? areaInput.value.replace(/\s+/g, '').toUpperCase() : '';
-            let area = '[AREA]';
-            if (areaVal) {
-                if (areaVal.length > 3) {
-                    let first = areaVal.charAt(0);
-                    let last = areaVal.charAt(areaVal.length - 1);
-                    let middle = areaVal.charAt(Math.floor(areaVal.length / 2));
-                    area = first + middle + last;
-                } else {
-                    area = areaVal;
-                }
-            }
-
-            // Get selected option's data-code for color abbreviation
-            let selectedOption = colorInput.options[colorInput.selectedIndex];
-            let colorCode = selectedOption && selectedOption.getAttribute('data-code') ? selectedOption.getAttribute('data-code') : '';
-            let color = colorCode ? colorCode : '[WARNA]';
-
-            let cableVal = cableInput.value ? cableInput.value.replace(/[^0-9]/g, '') : '';
-            let cable = cableVal ? cableVal.padStart(2, '0') : '[KABEL]';
-            
-            nameInput.value = `ODC-${pon}-${area}-${color}-${cable}`;
-        }
-
-        ponInput.addEventListener('input', updateNamePreview);
-        areaInput.addEventListener('input', updateNamePreview);
-        colorInput.addEventListener('change', updateNamePreview); // Changed to change event for select
-        cableInput.addEventListener('input', updateNamePreview);
-
-        var defaultLat = -6.2088;
-        var defaultLng = 106.8456;
-        var zoom = 13;
-
-        var map = L.map('map-picker').setView([defaultLat, defaultLng], zoom);
-
-        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-        });
-
-        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 22,
-            subdomains: ['mt0','mt1','mt2','mt3'],
-            attribution: '&copy; Google Maps'
-        });
-
-        var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 20,
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-        });
-
-        var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-        if (currentTheme === 'dark') {
-            darkLayer.addTo(map);
-        } else {
-            osm.addTo(map);
-        }
-
-        var baseMaps = {
-            "Dark Mode": darkLayer,
-            "Satellite (Google)": googleHybrid,
-            "Street (OSM)": osm
-        };
-        L.control.layers(baseMaps).addTo(map);
-
-        window.addEventListener('themeChanged', function(e) {
-            if (e.detail.theme === 'dark') {
-                if (map.hasLayer(osm)) map.removeLayer(osm);
-                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
-                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+        function toggleSource() {
+            if (sourceOlt.checked) {
+                oltGroup.style.display = 'block';
+                closureGroup.style.display = 'none';
+                closureSelect.value = '';
             } else {
-                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
-                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+                oltGroup.style.display = 'none';
+                closureGroup.style.display = 'block';
+                oltSelect.value = '';
             }
-        });
-
-        var marker;
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
-                map.setView([lat, lng], 15);
-            });
         }
 
-        map.on('click', function(e) {
-            var lat = e.latlng.lat.toFixed(6);
-            var lng = e.latlng.lng.toFixed(6);
-
-            document.getElementById('latitude').value = lat;
-            document.getElementById('longitude').value = lng;
-
-            if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng).addTo(map);
-            }
-        });
+        sourceOlt.addEventListener('change', toggleSource);
+        sourceClosure.addEventListener('change', toggleSource);
         
-        // Load existing location if validation failed
-        var oldLat = document.getElementById('latitude').value;
-        var oldLng = document.getElementById('longitude').value;
-        if(oldLat && oldLng) {
-            var latlng = [parseFloat(oldLat), parseFloat(oldLng)];
-            marker = L.marker(latlng).addTo(map);
-            map.setView(latlng, 15);
-        }
+        // Run once on load
+        toggleSource();
     });
 </script>
+@endpush
 @endsection

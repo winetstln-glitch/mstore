@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Odc;
 use App\Models\Olt;
 use App\Models\Region;
+use App\Models\Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -61,7 +62,8 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
-        return view('odcs.create', compact('olts', 'regions'));
+        $closures = Closure::orderBy('name')->get();
+        return view('odcs.create', compact('olts', 'regions', 'closures'));
     }
 
     /**
@@ -71,7 +73,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255|unique:odcs',
-            'olt_id' => 'required|exists:olts,id',
+            'olt_id' => 'required_without:closure_id|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'required|string',
             'area' => 'required|string',
@@ -83,6 +85,23 @@ class OdcController extends Controller implements HasMiddleware
             'description' => 'nullable|string',
             'closure_id' => 'nullable|exists:closures,id',
         ]);
+
+        if (!empty($validated['closure_id'])) {
+            // Derive OLT ID from Closure
+            $closure = Closure::find($validated['closure_id']);
+            if ($closure && $closure->parent_type === 'App\Models\Olt') {
+                $validated['olt_id'] = $closure->parent_id;
+            } elseif ($closure && $closure->parent_type === 'App\Models\Odc') {
+                $parentOdc = Odc::find($closure->parent_id);
+                if ($parentOdc) {
+                    $validated['olt_id'] = $parentOdc->olt_id;
+                }
+            }
+            // Fallback if OLT cannot be found?
+            if (empty($validated['olt_id'])) {
+                 return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
+            }
+        }
 
         if (empty($validated['name'])) {
             $validated['name'] = $this->generateOdcName($validated);
@@ -115,7 +134,8 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
-        return view('odcs.edit', compact('odc', 'olts', 'regions'));
+        $closures = Closure::orderBy('name')->get();
+        return view('odcs.edit', compact('odc', 'olts', 'regions', 'closures'));
     }
 
     /**
@@ -125,7 +145,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,' . $odc->id,
-            'olt_id' => 'sometimes|required|exists:olts,id',
+            'olt_id' => 'required_without:closure_id|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'sometimes|required|string',
             'area' => 'sometimes|required|string',
@@ -135,7 +155,28 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'sometimes|required|integer|min:0',
             'description' => 'nullable|string',
+            'closure_id' => 'nullable|exists:closures,id',
         ]);
+
+        if (!empty($validated['closure_id'])) {
+            // Derive OLT ID from Closure
+            $closure = Closure::find($validated['closure_id']);
+            if ($closure && $closure->parent_type === 'App\Models\Olt') {
+                $validated['olt_id'] = $closure->parent_id;
+            } elseif ($closure && $closure->parent_type === 'App\Models\Odc') {
+                $parentOdc = Odc::find($closure->parent_id);
+                if ($parentOdc) {
+                    $validated['olt_id'] = $parentOdc->olt_id;
+                }
+            }
+            if (empty($validated['olt_id'])) {
+                // If we can't find it, maybe keep existing?
+                // But if closure changes, OLT might change.
+                // If existing ODC has OLT, keep it if new one not found?
+                // Better to fail if logic is inconsistent.
+                 return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
+            }
+        }
 
         if (array_key_exists('name', $validated) && empty($validated['name'])) {
             // Merge with existing data to ensure all fields for name generation are present

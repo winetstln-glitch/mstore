@@ -114,15 +114,20 @@
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('htb.view'))
-            <a class="sidebar-item {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
+            @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('htb.view') || Auth::user()->hasPermission('closure.view'))
+            <a class="sidebar-item {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
                 <i class="fa fa-sitemap"></i> {{ __('Infrastruktur') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*')) ? 'show' : '' }}" id="networkInfraCollapse">
+            <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'show' : '' }}" id="networkInfraCollapse">
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('olt.view'))
                     <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-server"></i> {{ __('OLT') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('closure.view'))
+                    <a href="{{ route('closures.index') }}" class="sidebar-item {{ request()->routeIs('closures.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-box-open"></i> {{ __('Closure') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('odc.view'))
@@ -279,6 +284,11 @@
                     <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Umum') }}
                     </a>
+                    @if(Auth::user()->hasPermission('setting.view'))
+                    <a href="{{ route('categories.index') }}" class="sidebar-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-list"></i> {{ __('Manajemen Kategori') }}
+                    </a>
+                    @endif
                     @if(Auth::user()->hasPermission('region.view'))
                     <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-map-location-dot"></i> {{ __('Wilayah') }}
