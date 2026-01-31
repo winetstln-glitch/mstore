@@ -4,8 +4,9 @@
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-12">
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <h1 class="h3 mb-0 text-gray-800">
+            <!-- Header Section -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <h1 class="h3 mb-0 text-gray-800 text-center text-md-start">
                     @if(request('type_group') == 'tool')
                         {{ __('Tools & Assets Inventory') }}
                     @elseif(request('type_group') == 'material')
@@ -14,17 +15,20 @@
                         {{ __('Inventory Management') }}
                     @endif
                 </h1>
-                <div class="d-flex gap-2">
-                    <div class="btn-group me-2" role="group">
+                
+                <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
+                    <!-- Filter Group -->
+                    <div class="btn-group" role="group">
                         <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }}">{{ __('All') }}</a>
                         <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'tool' ? 'active' : '' }}">{{ __('Tools') }}</a>
                         <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'material' ? 'active' : '' }}">{{ __('Materials') }}</a>
                     </div>
 
                     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-                    <div class="dropdown me-2">
+                    <!-- Category Dropdown -->
+                    <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-filter me-1"></i> {{ request('category') ? ucfirst(request('category')) : __('All Categories') }}
+                            <i class="fa-solid fa-filter me-1"></i> <span class="d-none d-sm-inline">{{ request('category') ? ucfirst(request('category')) : __('Category') }}</span>
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}">{{ __('All Categories') }}</a></li>
@@ -34,9 +38,10 @@
                         </ul>
                     </div>
 
-                    <div class="btn-group me-2">
+                    <!-- Export/Import Dropdown -->
+                    <div class="dropdown">
                         <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-file-export me-1"></i> {{ __('Export/Import') }}
+                            <i class="fa-solid fa-file-export"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export') }}</span>
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ route('inventory.export.excel') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Export Excel') }}</a></li>
@@ -45,29 +50,35 @@
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal"><i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Import Excel') }}</a></li>
                         </ul>
                     </div>
-                    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                        <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-md-inline">{{ __('Add New Item') }}</span>
+
+                    <!-- Add Button -->
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal" title="{{ __('Add New Item') }}">
+                        <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add') }}</span>
                     </button>
                     @endif
-                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning me-2">
-                        <i class="fa-solid fa-rotate-left me-1"></i> <span class="d-none d-md-inline">{{ __('Return Tool') }}</span>
+
+                    <!-- Return Tool Button -->
+                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning" title="{{ __('Return Tool') }}">
+                        <i class="fa-solid fa-rotate-left"></i> <span class="d-none d-sm-inline ms-1">{{ __('Return') }}</span>
                     </a>
-                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary">
-                        <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-md-inline">{{ __('Pickup Item') }}</span>
+
+                    <!-- Pickup Button -->
+                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary" title="{{ __('Pickup Item') }}">
+                        <i class="fa-solid fa-box-open"></i> <span class="d-none d-sm-inline ms-1">{{ __('Pickup') }}</span>
                     </a>
                 </div>
             </div>
 
             <!-- Dashboard Stats -->
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
+            <div class="row mb-4 g-3">
+                <div class="col-6 col-xl-3 mb-0">
                     <div class="card border-left-primary shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        {{ __('Total Stock Value') }}</div>
+                                        {{ __('Total Stock') }}</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalStockValue, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
@@ -78,7 +89,7 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-xl-3 mb-0">
                     <div class="card border-left-success shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
@@ -95,13 +106,13 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-xl-3 mb-0">
                     <div class="card border-left-info shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        {{ __('Total Purchases') }}</div>
+                                        {{ __('Purchases') }}</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
@@ -112,13 +123,13 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-xl-3 mb-0">
                     <div class="card border-left-warning shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        {{ __('Total Sales/Usage') }}</div>
+                                        {{ __('Sales/Usage') }}</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalSales, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
