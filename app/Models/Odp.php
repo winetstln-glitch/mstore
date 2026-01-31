@@ -60,4 +60,9 @@ class Odp extends Model
         }
         return $this->filled >= $this->capacity;
     }
+
+    public function closure()
+    {
+        return $this->belongsTo(Closure::class);
+    }
 }

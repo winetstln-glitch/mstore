@@ -12,6 +12,7 @@ class AtkTransaction extends Model
     protected $fillable = [
         'invoice_number',
         'user_id',
+        'employee_id',
         'customer_name',
         'total_amount',
         'amount_paid',
@@ -28,5 +29,10 @@ class AtkTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
     }
 }

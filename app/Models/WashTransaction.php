@@ -18,6 +18,7 @@ class WashTransaction extends Model
         'payment_method', 
         'status', 
         'user_id', 
+        'employee_id',
         'notes'
     ];
 
@@ -29,5 +30,10 @@ class WashTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
     }
 }

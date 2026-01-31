@@ -78,7 +78,8 @@ class WashController extends Controller
     public function create()
     {
         $services = WashService::where('is_active', true)->get();
-        return view('wash.pos', compact('services'));
+        $employees = \App\Models\User::where('is_active', true)->get();
+        return view('wash.pos', compact('services', 'employees'));
     }
 
     public function store(Request $request)
@@ -91,6 +92,7 @@ class WashController extends Controller
             'payment_method' => 'required|in:cash,transfer,qris',
             'customer_name' => 'nullable|string',
             'plate_number' => 'nullable|string',
+            'employee_id' => 'nullable|exists:users,id',
         ]);
 
         DB::beginTransaction();
@@ -125,6 +127,7 @@ class WashController extends Controller
                 'payment_method' => $request->payment_method,
                 'status' => 'completed',
                 'user_id' => auth()->id(),
+                'employee_id' => $request->employee_id,
                 'notes' => $request->notes,
             ]);
 
@@ -163,11 +166,17 @@ class WashController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'vehicle_type' => 'required|in:car,motor',
             'price' => 'required|numeric|min:0',
         ]);
 
-        WashService::create($request->all());
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+             $data['image'] = $request->file('image')->store('wash-services', 'public');
+        }
+
+        WashService::create($data);
         return back()->with('success', 'Service added successfully');
     }
 
@@ -175,11 +184,20 @@ class WashController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'vehicle_type' => 'required|in:car,motor',
             'price' => 'required|numeric|min:0',
         ]);
 
-        $service->update($request->all());
+        $data = $request->all();
+        if ($request->hasFile('image')) {
+            if ($service->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($service->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($service->image);
+            }
+             $data['image'] = $request->file('image')->store('wash-services', 'public');
+        }
+
+        $service->update($data);
         return back()->with('success', 'Service updated successfully');
     }
 

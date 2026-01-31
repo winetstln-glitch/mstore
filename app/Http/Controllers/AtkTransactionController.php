@@ -78,7 +78,8 @@ class AtkTransactionController extends Controller
     public function create()
     {
         $products = AtkProduct::where('stock', '>', 0)->get();
-        return view('atk.pos.index', compact('products'));
+        $employees = \App\Models\User::where('is_active', true)->get();
+        return view('atk.pos.index', compact('products', 'employees'));
     }
 
     public function store(Request $request)
@@ -90,6 +91,7 @@ class AtkTransactionController extends Controller
             'items.*.price_type' => 'required|in:retail,wholesale',
             'payment_method' => 'required|string',
             'amount_paid' => 'numeric|min:0',
+            'employee_id' => 'nullable|exists:users,id',
         ]);
 
         try {

@@ -5,22 +5,22 @@
 @section('content')
 <style>
     .laser-glow {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
         background-color: #00f2ff;
         border-radius: 50%;
-        box-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 15px #00f2ff;
+        box-shadow: 0 0 5px #ff0000ff, 0 0 10px #ff1500ff, 0 0 15px #ff0055ff;
         animation: pulse-glow 0.5s infinite alternate;
     }
     @keyframes pulse-glow {
         from {
             transform: scale(0.8);
-            box-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff;
+            box-shadow: 0 0 5px #ff0000ff, 0 0 10px #ff0000ff;
             opacity: 0.8;
         }
         to {
             transform: scale(1.2);
-            box-shadow: 0 0 10px #00f2ff, 0 0 20px #00f2ff, 0 0 30px #00f2ff;
+            box-shadow: 0 0 10px #ff0000ff, 0 0 20px #ff0026ff, 0 0 30px #ff0033ff;
             opacity: 1;
         }
     }

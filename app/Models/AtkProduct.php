@@ -12,6 +12,7 @@ class AtkProduct extends Model
     protected $fillable = [
         'code',
         'name',
+        'image',
         'stock',
         'buy_price',
         'sell_price_retail',

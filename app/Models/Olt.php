@@ -40,4 +40,9 @@ class Olt extends Model
     {
         return $this->hasMany(Odc::class);
     }
+
+    public function closures()
+    {
+        return $this->morphMany(Closure::class, 'parent');
+    }
 }

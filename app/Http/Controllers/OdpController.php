@@ -82,6 +82,7 @@ class OdpController extends Controller implements HasMiddleware
             'kampung' => 'required|string|max:255',
             'odp_area' => 'nullable|string|max:10',
             'odp_cable' => 'nullable|string|max:10',
+            'closure_id' => 'nullable|exists:closures,id',
         ]);
 
         if (empty($validated['name'])) {

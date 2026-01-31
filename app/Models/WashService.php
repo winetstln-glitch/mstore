@@ -11,7 +11,8 @@ class WashService extends Model
 
     protected $fillable = [
         'name', 
-        'vehicle_type', 
+        'image',
+        'vehicle_type',  
         'price', 
         'description', 
         'is_active'

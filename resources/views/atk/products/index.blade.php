@@ -22,6 +22,7 @@
                     <thead>
                         <tr>
                             <th>Kode</th>
+                            <th>Gambar</th>
                             <th>Nama</th>
                             <th>Stok</th>
                             <th>Satuan</th>
@@ -35,6 +36,13 @@
                         @forelse($products as $product)
                         <tr>
                             <td>{{ $product->code }}</td>
+                            <td>
+                                @if($product->image)
+                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" width="50" height="50" class="img-thumbnail">
+                                @else
+                                    <span class="badge bg-secondary">No Image</span>
+                                @endif
+                            </td>
                             <td>{{ $product->name }}</td>
                             <td>
                                 <span class="badge {{ $product->stock < 10 ? 'bg-warning' : 'bg-success' }}">
@@ -83,7 +91,7 @@
 <!-- Create Modal -->
 <div class="modal fade" id="createProductModal" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('atk.products.store') }}" method="POST">
+        <form action="{{ route('atk.products.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
@@ -91,6 +99,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Gambar Produk</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                    </div>
                     <div class="mb-3">
                         <label>Kode Produk</label>
                         <input type="text" name="code" class="form-control" required>
@@ -136,7 +148,7 @@
 <!-- Edit Modal -->
 <div class="modal fade" id="editProductModal" tabindex="-1">
     <div class="modal-dialog">
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="modal-content">
@@ -145,6 +157,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3 text-center">
+                        <img id="edit_image_preview" src="" alt="Preview" style="max-width: 150px; display: none;" class="img-thumbnail mb-2">
+                    </div>
+                    <div class="mb-3">
+                        <label>Ganti Gambar</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                    </div>
                     <div class="mb-3">
                         <label>Kode Produk</label>
                         <input type="text" name="code" id="edit_code" class="form-control" required>
@@ -236,6 +255,16 @@
         document.getElementById('edit_buy_price').value = product.buy_price;
         document.getElementById('edit_sell_price_retail').value = product.sell_price_retail;
         document.getElementById('edit_sell_price_wholesale').value = product.sell_price_wholesale;
+
+        // Image Preview
+        const imgPreview = document.getElementById('edit_image_preview');
+        if (product.image) {
+            imgPreview.src = "{{ asset('storage') }}/" + product.image;
+            imgPreview.style.display = 'block';
+        } else {
+            imgPreview.style.display = 'none';
+            imgPreview.src = '';
+        }
     }
 </script>
 @endpush

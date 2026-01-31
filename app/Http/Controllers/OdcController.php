@@ -81,6 +81,7 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'required|numeric|between:-180,180',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
+            'closure_id' => 'nullable|exists:closures,id',
         ]);
 
         if (empty($validated['name'])) {

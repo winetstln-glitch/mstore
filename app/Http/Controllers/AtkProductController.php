@@ -66,6 +66,7 @@ class AtkProductController extends Controller
         $request->validate([
             'code' => 'required|unique:atk_products',
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'required|integer|min:0',
             'buy_price' => 'required|numeric|min:0',
             'sell_price_retail' => 'required|numeric|min:0',
@@ -73,7 +74,13 @@ class AtkProductController extends Controller
             'unit' => 'required',
         ]);
 
-        AtkProduct::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('atk-products', 'public');
+        }
+
+        AtkProduct::create($data);
 
         return redirect()->route('atk.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
@@ -83,6 +90,7 @@ class AtkProductController extends Controller
         $request->validate([
             'code' => 'required|unique:atk_products,code,' . $product->id,
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'required|integer|min:0',
             'buy_price' => 'required|numeric|min:0',
             'sell_price_retail' => 'required|numeric|min:0',
@@ -90,7 +98,16 @@ class AtkProductController extends Controller
             'unit' => 'required',
         ]);
 
-        $product->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            if ($product->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('atk-products', 'public');
+        }
+
+        $product->update($data);
 
         return redirect()->route('atk.products.index')->with('success', 'Produk berhasil diperbarui.');
     }

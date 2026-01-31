@@ -44,4 +44,14 @@ class Odc extends Model
     {
         return $this->hasMany(Odp::class);
     }
+
+    public function closure(): BelongsTo
+    {
+        return $this->belongsTo(Closure::class);
+    }
+
+    public function childClosures()
+    {
+        return $this->morphMany(Closure::class, 'parent');
+    }
 }

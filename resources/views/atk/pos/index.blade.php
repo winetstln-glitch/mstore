@@ -16,6 +16,13 @@
                         @foreach($products as $product)
                         <div class="col-md-4 mb-3 product-item" data-name="{{ strtolower($product->name) }}" data-code="{{ strtolower($product->code) }}">
                             <div class="card h-100 cursor-pointer" onclick="addToCart({{ $product }})">
+                                @if($product->image)
+                                    <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 150px; object-fit: cover;">
+                                @else
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                        <i class="fas fa-box fa-3x text-gray-300"></i>
+                                    </div>
+                                @endif
                                 <div class="card-body text-center">
                                     <h6 class="font-weight-bold">{{ $product->name }}</h6>
                                     <p class="small text-muted mb-1">{{ $product->code }}</p>
@@ -77,6 +84,16 @@
                             <option value="cash">Tunai</option>
                             <option value="transfer">Transfer</option>
                             <option value="qris">QRIS</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Karyawan (Opsional)</label>
+                        <select id="employeeId" class="form-select">
+                            <option value="">-- Pilih Karyawan --</option>
+                            @foreach($employees as $employee)
+                                <option value="{{ $employee->id }}">{{ $employee->name }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -214,7 +231,8 @@
                 customer_name: $('#customerName').val(),
                 payment_method: $('#paymentMethod').val(),
                 amount_paid: $('#amountPaid').val(),
-                price_type: priceType
+                price_type: priceType,
+                employee_id: $('#employeeId').val()
             },
             success: function(response) {
                 if (response.success) {

@@ -27,6 +27,7 @@
                     <thead>
                         <tr>
                             <th>Nama Layanan</th>
+                            <th>Gambar</th>
                             <th>Tipe Kendaraan</th>
                             <th>Harga</th>
                             <th>Status</th>
@@ -37,6 +38,13 @@
                         @foreach($services as $service)
                         <tr>
                             <td>{{ $service->name }}</td>
+                            <td>
+                                @if($service->image)
+                                    <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" width="50" height="50" class="img-thumbnail">
+                                @else
+                                    <span class="badge bg-secondary">No Image</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($service->vehicle_type == 'car')
                                     <i class="fas fa-car"></i> Mobil
@@ -70,7 +78,7 @@
                         <div class="modal fade" id="editServiceModal{{ $service->id }}" tabindex="-1">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <form action="{{ route('wash.services.update', $service->id) }}" method="POST">
+                                    <form action="{{ route('wash.services.update', $service->id) }}" method="POST" enctype="multipart/form-data">
                                         @csrf
                                         @method('PUT')
                                         <div class="modal-header">
@@ -78,6 +86,15 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
+                                            <div class="form-group mb-3 text-center">
+                                                @if($service->image)
+                                                    <img src="{{ asset('storage/' . $service->image) }}" alt="Preview" style="max-width: 150px;" class="img-thumbnail mb-2">
+                                                @endif
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>Ganti Gambar</label>
+                                                <input type="file" name="image" class="form-control" accept="image/*">
+                                            </div>
                                             <div class="form-group">
                                                 <label>Nama Layanan</label>
                                                 <input type="text" name="name" class="form-control" value="{{ $service->name }}" required>
@@ -121,13 +138,17 @@
 <div class="modal fade" id="addServiceModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('wash.services.store') }}" method="POST">
+            <form action="{{ route('wash.services.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Tambah Layanan Baru</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label>Gambar Layanan</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                    </div>
                     <div class="form-group">
                         <label>Nama Layanan</label>
                         <input type="text" name="name" class="form-control" required>

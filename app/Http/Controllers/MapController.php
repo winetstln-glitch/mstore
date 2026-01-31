@@ -8,6 +8,7 @@ use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Htb;
 use App\Models\Olt;
+use App\Models\Closure;
 use App\Models\Region;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
@@ -155,8 +156,9 @@ class MapController extends Controller implements HasMiddleware
             ->whereNotNull('longitude')
             ->get();
 
-        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin'));
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin', 'closures'));
     }
+}
 
     /**
      * Show the form for creating a new resource.

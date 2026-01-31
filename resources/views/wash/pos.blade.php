@@ -28,7 +28,14 @@
                             <div class="row">
                                 @foreach($services as $service)
                                     <div class="col-md-4 mb-3">
-                                        <div class="card h-100 border-left-primary service-card" style="cursor: pointer" onclick="addToCart({{ $service }})">
+                                        <div class="card h-100 border-left-primary service-card shadow-sm" style="cursor: pointer; overflow: hidden;" onclick="addToCart({{ $service }})">
+                                            @if($service->image)
+                                                <img src="{{ asset('storage/' . $service->image) }}" class="card-img-top" alt="{{ $service->name }}" style="height: 140px; object-fit: cover;">
+                                            @else
+                                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 140px;">
+                                                    <i class="fas fa-soap fa-3x text-gray-300"></i>
+                                                </div>
+                                            @endif
                                             <div class="card-body">
                                                 <div class="font-weight-bold text-primary text-uppercase mb-1">{{ $service->name }}</div>
                                                 <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
@@ -72,6 +79,15 @@
                         <div class="form-group">
                             <label>Plat Nomor</label>
                             <input type="text" id="plate_number" class="form-control" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Karyawan (Opsional)</label>
+                            <select id="employee_id" class="form-control">
+                                <option value="">-- Pilih Karyawan --</option>
+                                @foreach($employees as $employee)
+                                    <option value="{{ $employee->id }}">{{ $employee->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Pembayaran</label>
@@ -176,6 +192,7 @@ document.getElementById('checkout-form').addEventListener('submit', function(e) 
         items: cart,
         customer_name: document.getElementById('customer_name').value,
         plate_number: document.getElementById('plate_number').value,
+        employee_id: document.getElementById('employee_id').value,
         amount_paid: amountPaid,
         payment_method: document.getElementById('payment_method').value,
         _token: '{{ csrf_token() }}'
