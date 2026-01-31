@@ -67,6 +67,7 @@ class ClosureController extends Controller implements HasMiddleware
             'area' => 'nullable|string',
             'color' => 'nullable|string',
             'cable_no' => 'nullable|string',
+            'region_id' => 'nullable|exists:regions,id',
         ]);
 
         // Merge lat/lng into coordinates if present
@@ -132,6 +133,7 @@ class ClosureController extends Controller implements HasMiddleware
             'area' => 'nullable|string',
             'color' => 'nullable|string',
             'cable_no' => 'nullable|string',
+            'region_id' => 'nullable|exists:regions,id',
         ]);
 
         // Merge lat/lng into coordinates if present

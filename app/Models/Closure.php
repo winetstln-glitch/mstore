@@ -20,11 +20,17 @@ class Closure extends Model
         'parent_type',
         'parent_id',
         'description',
+        'region_id',
     ];
 
     public function parent()
     {
         return $this->morphTo();
+    }
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
     }
 
     public function odcs()

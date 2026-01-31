@@ -443,6 +443,16 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="closure_region" class="form-label">{{ __('Wilayah') }}</label>
+                        <select class="form-select" id="closure_region" name="region_id">
+                            <option value="">{{ __('Pilih Wilayah') }}</option>
+                            @foreach($regions as $region)
+                                <option value="{{ $region->id }}">{{ $region->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="closure_parent_type" class="form-label">{{ __('Tipe Induk') }}</label>
                         <select class="form-select" id="closure_parent_type" name="parent_type">
                             <option value="">{{ __('Pilih Tipe Induk') }}</option>
