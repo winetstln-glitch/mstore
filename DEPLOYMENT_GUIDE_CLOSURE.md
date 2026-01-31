@@ -1,51 +1,63 @@
-# Panduan Deployment Fitur Closure & Update Terbaru
+# Panduan Deployment Fitur Closure & Peta
+(Terakhir Diperbarui: 2026-02-01)
 
 Ikuti langkah-langkah berikut untuk mengupdate aplikasi di server produksi Anda.
 
-## 1. Persiapan (Opsional tapi Disarankan)
-Sebelum melakukan update, sangat disarankan untuk membackup database Anda untuk menghindari kehilangan data jika terjadi kesalahan.
+## 1. Persiapan (Backup)
+Sangat disarankan untuk membackup database sebelum update.
 
 ```bash
-# Contoh command backup (sesuaikan dengan setup server Anda)
-mysqldump -u username -p database_name > backup_sebelum_update.sql
+# Contoh (sesuaikan user/db):
+mysqldump -u username -p database_name > backup_mstore_$(date +%F).sql
 ```
 
-## 2. Ambil Update Terbaru dari GitHub
-Masuk ke direktori project Anda di server dan jalankan perintah git pull.
+## 2. Ambil Update Code
+Masuk ke direktori project dan pull perubahan terbaru.
 
 ```bash
-cd /path/to/your/project
+cd /path/to/mstore
 git pull origin main
 ```
 
 ## 3. Jalankan Migrasi Database
-Fitur baru (Closure, Category, dll) memerlukan perubahan struktur database. Jalankan migrasi untuk membuat tabel baru.
+Terdapat perubahan struktur database untuk fitur Closure dan relasi ODP/ODC.
 
 ```bash
 php artisan migrate
 ```
-*Jika diminta konfirmasi "Do you really wish to run this command?", ketik `yes`.*
+*Pastikan tidak ada error saat migrasi. Migrasi akan membuat tabel `closures` dan menambahkan kolom relasi.*
 
-## 4. Optimasi Cache
-Bersihkan dan buat ulang cache konfigurasi agar perubahan route dan config terbaca dengan benar.
+## 4. Bersihkan Cache
+Agar perubahan konfigurasi dan view terbaca sempurna.
 
 ```bash
 php artisan optimize:clear
-php artisan optimize
+php artisan view:clear
+php artisan config:clear
 ```
 
-## 5. Cek Permissions (Jika Perlu)
-Pastikan folder storage dan bootstrap/cache memiliki permission yang benar (biasanya sudah benar, tapi cek jika ada error).
+## 5. Fitur Baru yang Tersedia
+Setelah update, fitur berikut akan aktif:
 
-```bash
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-```
+1.  **Manajemen Closure**:
+    - Menu baru "Closure" untuk mendata closure (Splice Closure).
+    - Field lengkap: Kapasitas, Port PON, Warna, Area, No Kabel, dll.
+    - Relasi Parent: Closure bisa menginduk ke OLT atau ODC.
+    - Relasi Child: ODC dan ODP sekarang bisa menginduk ke Closure.
 
-## 6. Selesai
-Fitur baru sudah siap digunakan!
-- **Closure**: Menu baru di sidebar "Closure".
-- **Map & Koordinat**: Form Closure sekarang memiliki peta dan tombol "Current Location".
-- **ODC Connection**: Form ODC sekarang bisa memilih koneksi "Direct OLT" atau "Via Closure".
-- **Category**: Manajemen kategori di menu Inventory/Settings.
-- **Tampilan**: Perbaikan layout inventory di HP dan favicon baru.
+2.  **Peta & Lokasi**:
+    - **Pilihan Layer Peta**: Form Tambah/Edit (Closure & ODP) sekarang memiliki pilihan layer:
+        - **Street (OSM)**: Tampilan jalan standar.
+        - **Satellite (Google)**: Tampilan satelit.
+        - **Dark Mode**: Tampilan gelap (cocok untuk mode malam).
+    - **Marker Drag & Drop**: Titik lokasi bisa digeser untuk presisi.
+    - **Current Location**: Tombol untuk mengambil lokasi GPS saat ini.
+
+3.  **Perbaikan Bug**:
+    - Fix error saat menyimpan ODP dengan parent Closure.
+    - Fix tampilan peta di mode gelap.
+
+## Troubleshooting
+Jika peta tidak muncul atau error:
+- Pastikan koneksi internet server/client stabil (untuk memuat peta Leaflet/Google).
+- Clear cache browser Anda (Ctrl+Shift+R).
