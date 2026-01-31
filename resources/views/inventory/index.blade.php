@@ -138,7 +138,43 @@
                     <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assigned Assets / Tools') }}</h6>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <!-- Mobile View -->
+                    <div class="d-md-none">
+                        @foreach($myAssets as $asset)
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">{{ $asset->item->name }}</h6>
+                                        <div class="small text-muted mb-1">{{ $asset->asset_code }}</div>
+                                        <div class="small text-muted">{{ $asset->serial_number }}</div>
+                                    </div>
+                                    @if($asset->condition == 'good')
+                                        <span class="badge bg-success">{{ __('Good') }}</span>
+                                    @else
+                                        <span class="badge bg-danger">{{ __('Damaged') }}</span>
+                                    @endif
+                                </div>
+                                
+                                @if(isset($asset->meta_data['assignment_note']))
+                                    <div class="alert alert-light p-2 mb-2 small border">
+                                        <i class="fa-solid fa-quote-left text-muted me-1"></i> {{ $asset->meta_data['assignment_note'] }}
+                                    </div>
+                                @endif
+
+                                <div class="d-grid mt-2">
+                                    <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-warning w-100">
+                                            <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return Asset') }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Desktop View -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
@@ -199,7 +235,72 @@
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Inventory Items') }}</h6>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <!-- Mobile View -->
+                    <div class="d-md-none">
+                        @forelse($items as $item)
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div>
+                                        @if($item->type_group == 'tool')
+                                            <span class="badge bg-primary mb-1"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Tool') }}</span>
+                                        @else
+                                            <span class="badge bg-secondary mb-1"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</span>
+                                        @endif
+                                        <h6 class="mb-0 fw-bold">{{ $item->name }}</h6>
+                                        <div class="small text-muted">{{ $item->brand }} {{ $item->model }}</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="h5 mb-0 fw-bold {{ $item->stock > 10 ? 'text-success' : 'text-danger' }}">
+                                            {{ $item->stock }} <small class="text-muted fs-6">{{ $item->unit }}</small>
+                                        </div>
+                                        <div class="small text-muted">Rp {{ number_format($item->price, 0, ',', '.') }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="badge bg-light text-dark border">{{ ucfirst($item->category) }}</span>
+                                    
+                                    <div class="btn-group">
+                                        <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info" title="{{ __('Manage Assets') }}">
+                                            <i class="fa-solid fa-barcode"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editItemModal"
+                                            data-id="{{ $item->id }}"
+                                            data-name="{{ $item->name }}"
+                                            data-category="{{ $item->category }}"
+                                            data-type_group="{{ $item->type_group }}"
+                                            data-type="{{ $item->type }}"
+                                            data-brand="{{ $item->brand }}"
+                                            data-model="{{ $item->model }}"
+                                            data-unit="{{ $item->unit }}"
+                                            data-stock="{{ $item->stock }}"
+                                            data-price="{{ $item->price }}"
+                                            data-description="{{ $item->description }}"
+                                            data-action="{{ route('inventory.update', $item->id) }}">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this item?') }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-0 rounded-end">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-boxes-stacked fa-2x mb-3 opacity-25"></i>
+                                <p class="mb-0">{{ __('No items found.') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Desktop View -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
@@ -295,7 +396,76 @@
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Recent Pickups') }}</h6>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <!-- Mobile View -->
+                    <div class="d-md-none">
+                        @forelse($transactions as $transaction)
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">{{ $transaction->item->name }}</h6>
+                                        <div class="small text-muted">
+                                            <i class="fa-regular fa-clock me-1"></i> {{ $transaction->created_at->format('d M Y H:i') }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-danger fs-5">-{{ $transaction->quantity }} {{ $transaction->item->unit }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar avatar-xs bg-light rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
+                                        <i class="fa-solid fa-user fa-2xs text-secondary"></i>
+                                    </div>
+                                    <span class="small fw-medium">{{ $transaction->user->name }}</span>
+                                </div>
+
+                                @if($transaction->description)
+                                    <div class="small text-muted fst-italic mb-2">"{{ $transaction->description }}"</div>
+                                @endif
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div>
+                                        @if($transaction->proof_image)
+                                            <a href="{{ Storage::url($transaction->proof_image) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <i class="fa-solid fa-image me-1"></i> {{ __('Proof') }}
+                                            </a>
+                                        @endif
+                                    </div>
+
+                                    @if(Auth::id() === $transaction->user_id || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editPickupModal"
+                                            data-id="{{ $transaction->id }}"
+                                            data-item="{{ $transaction->item->name }}"
+                                            data-quantity="{{ $transaction->quantity }}"
+                                            data-unit="{{ $transaction->item->unit }}"
+                                            data-description="{{ $transaction->description }}"
+                                            data-action="{{ route('inventory.pickup.update', $transaction->id) }}">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <form action="{{ route('inventory.pickup.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this pickup?') }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-0 rounded-end">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-clock-rotate-left fa-2x mb-3 opacity-25"></i>
+                                <p class="mb-0">{{ __('No history found.') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Desktop View -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
                                 <tr>
@@ -506,7 +676,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('Type') }}</label>
-                            <input type="text" name="type" id="editType" class="form-control">
+                            <input type="text" name="type" id="editType" class="form-control" required>
                         </div>
                     </div>
                     <div class="row">

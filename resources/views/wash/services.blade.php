@@ -20,6 +20,16 @@
     <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    @if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="table-responsive">
@@ -27,9 +37,12 @@
                     <thead>
                         <tr>
                             <th>Nama Layanan</th>
+                            <th>Kategori</th>
                             <th>Gambar</th>
-                            <th>Tipe Kendaraan</th>
+                            <th>Tipe</th>
                             <th>Harga</th>
+                            <th>Modal</th>
+                            <th>Stok</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>
@@ -38,6 +51,7 @@
                         @foreach($services as $service)
                         <tr>
                             <td>{{ $service->name }}</td>
+                            <td>{{ $service->category->name ?? '-' }}</td>
                             <td>
                                 @if($service->image)
                                     <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" width="50" height="50" class="img-thumbnail">
@@ -51,8 +65,18 @@
                                 @else
                                     <i class="fas fa-motorcycle"></i> Motor
                                 @endif
+                                <br>
+                                <small class="text-muted">{{ ucfirst($service->type) }}</small>
                             </td>
                             <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
+                            <td>Rp {{ number_format($service->cost_price, 0, ',', '.') }}</td>
+                            <td>
+                                @if($service->type == 'physical')
+                                    {{ $service->stock }}
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td>
                                 @if($service->is_active)
                                     <span class="badge badge-success">Aktif</span>
@@ -149,20 +173,44 @@
                         <label>Gambar Layanan</label>
                         <input type="file" name="image" class="form-control" accept="image/*">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label>Nama Layanan</label>
                         <input type="text" name="name" class="form-control" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mb-3">
+                        <label>Kategori</label>
+                        <select name="category_id" class="form-control">
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
                         <label>Tipe Kendaraan</label>
                         <select name="vehicle_type" class="form-control" required>
                             <option value="car">Mobil</option>
                             <option value="motor">Motor</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Harga</label>
+                    <div class="form-group mb-3">
+                        <label>Jenis</label>
+                        <select name="type" class="form-control" onchange="toggleStock(this, 'add_stock')" required>
+                            <option value="service" selected>Jasa</option>
+                            <option value="physical">Barang Fisik</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Modal</label>
+                        <input type="number" name="cost_price" class="form-control" value="0" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Harga Jual</label>
                         <input type="number" name="price" class="form-control" required>
+                    </div>
+                    <div class="form-group mb-3" id="add_stock" style="display: none;">
+                        <label>Stok</label>
+                        <input type="number" name="stock" class="form-control" value="0">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -174,3 +222,16 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function toggleStock(select, targetId) {
+        const target = document.getElementById(targetId);
+        if (select.value === 'physical') {
+            target.style.display = 'block';
+        } else {
+            target.style.display = 'none';
+        }
+    }
+</script>
+@endpush

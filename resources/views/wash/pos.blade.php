@@ -25,9 +25,9 @@
                     
                     <div class="tab-content" id="pills-tabContent">
                         <div class="tab-pane fade show active" id="pills-all" role="tabpanel">
-                            <div class="row">
+                            <div class="row" id="service-list">
                                 @foreach($services as $service)
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-4 mb-3 service-item" data-vehicle-type="{{ $service->vehicle_type }}">
                                         <div class="card h-100 border-left-primary service-card shadow-sm" style="cursor: pointer; overflow: hidden;" onclick="addToCart({{ $service }})">
                                             @if($service->image)
                                                 <img src="{{ asset('storage/' . $service->image) }}" class="card-img-top" alt="{{ $service->name }}" style="height: 140px; object-fit: cover;">
@@ -110,6 +110,30 @@
 </div>
 
 <script>
+    // Tab Filtering
+    document.querySelectorAll('#pills-tab .nav-link').forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = this.getAttribute('href'); // #pills-all, #pills-car, #pills-motor
+            
+            // Activate Tab
+            document.querySelectorAll('#pills-tab .nav-link').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            // Filter Items
+            const type = target.replace('#pills-', ''); // all, car, motor
+            const items = document.querySelectorAll('.service-item');
+            
+            items.forEach(item => {
+                if (type === 'all' || item.dataset.vehicleType === type) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+
 let cart = [];
 
 function addToCart(service) {

@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Close Sidebar via X button (Mobile)
+    const sidebarClose = document.getElementById('sidebarClose');
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.remove('sb-sidenav-toggled');
+        });
+    }
+
     // Close Sidebar when clicking overlay (Mobile)
     const overlay = document.getElementById('sidebar-overlay');
     if (overlay) {

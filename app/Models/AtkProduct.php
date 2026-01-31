@@ -12,6 +12,7 @@ class AtkProduct extends Model
     protected $fillable = [
         'code',
         'name',
+        'category_id',
         'image',
         'stock',
         'buy_price',
@@ -19,6 +20,11 @@ class AtkProduct extends Model
         'sell_price_wholesale',
         'unit',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function items()
     {

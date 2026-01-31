@@ -11,6 +11,7 @@ class WashTransaction extends Model
 
     protected $fillable = [
         'transaction_code', 
+        'customer_id',
         'customer_name', 
         'plate_number', 
         'total_amount', 
@@ -21,6 +22,11 @@ class WashTransaction extends Model
         'employee_id',
         'notes'
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
     public function items()
     {

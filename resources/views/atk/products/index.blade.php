@@ -4,9 +4,17 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Manajemen Produk ATK</h1>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProductModal">
-            <i class="fas fa-plus"></i> Tambah Produk
-        </button>
+        <div>
+            <a href="{{ route('atk.products.export') }}" class="btn btn-success me-2">
+                <i class="fas fa-file-excel"></i> Export
+            </a>
+            <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#importProductModal">
+                <i class="fas fa-file-import"></i> Import
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProductModal">
+                <i class="fas fa-plus"></i> Tambah Produk
+            </button>
+        </div>
     </div>
 
     @if(session('success'))
@@ -22,6 +30,7 @@
                     <thead>
                         <tr>
                             <th>Kode</th>
+                            <th>Kategori</th>
                             <th>Gambar</th>
                             <th>Nama</th>
                             <th>Stok</th>
@@ -88,60 +97,112 @@
     </div>
 </div>
 
-<!-- Create Modal -->
-<div class="modal fade" id="createProductModal" tabindex="-1">
+<!-- Create Product Modal -->
+<div class="modal fade" id="createProductModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('atk.products.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="modal-content">
+        <div class="modal-content">
+            <form action="{{ route('atk.products.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Tambah Produk Baru</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label>Gambar Produk</label>
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                    </div>
-                    <div class="mb-3">
-                        <label>Kode Produk</label>
+                        <label class="form-label">Kode Produk / Barcode</label>
                         <input type="text" name="code" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label>Nama Produk</label>
+                        <label class="form-label">Nama Produk</label>
                         <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select name="category_id" class="form-select" required>
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label>Stok Awal</label>
-                            <input type="number" name="stock" class="form-control" value="0" min="0" required>
+                            <label class="form-label">Stok Awal</label>
+                            <input type="number" name="stock" class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Satuan</label>
-                            <input type="text" name="unit" class="form-control" placeholder="pcs, pack..." required>
+                            <label class="form-label">Satuan</label>
+                            <select name="unit" class="form-select" required>
+                                <option value="pcs">Pcs</option>
+                                <option value="pack">Pack</option>
+                                <option value="box">Box</option>
+                                <option value="lusin">Lusin</option>
+                                <option value="rim">Rim</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label>Harga Beli</label>
-                        <input type="number" name="buy_price" class="form-control" value="0" min="0" required>
+                        <label class="form-label">Harga Beli</label>
+                        <input type="number" name="buy_price" class="form-control" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label>Harga Jual (Ecer)</label>
-                            <input type="number" name="sell_price_retail" class="form-control" value="0" min="0" required>
+                            <label class="form-label">Harga Jual Ecer</label>
+                            <input type="number" name="sell_price_retail" class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Harga Jual (Grosir)</label>
-                            <input type="number" name="sell_price_wholesale" class="form-control" value="0" min="0" required>
+                            <label class="form-label">Harga Jual Grosir</label>
+                            <input type="number" name="sell_price_wholesale" class="form-control" required>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gambar Produk</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import Product Modal -->
+<div class="modal fade" id="importProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('atk.products.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Produk dari Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <small>
+                            Format Excel (mulai baris 2):<br>
+                            Kolom A: Kode Produk (Barcode)<br>
+                            Kolom B: Nama Produk<br>
+                            Kolom C: Stok (Angka)<br>
+                            Kolom D: Satuan (pcs/pack/dll)<br>
+                            Kolom E: Harga Beli<br>
+                            Kolom F: Harga Jual Ecer<br>
+                            Kolom G: Harga Jual Grosir
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">File Excel (.xlsx, .xls)</label>
+                        <input type="file" name="file" class="form-control" required accept=".xlsx, .xls">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -163,6 +224,15 @@
                     <div class="mb-3">
                         <label>Ganti Gambar</label>
                         <input type="file" name="image" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label>Kategori</label>
+                        <select name="category_id" id="edit_category_id" class="form-select">
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label>Kode Produk</label>
@@ -255,6 +325,9 @@
         document.getElementById('edit_buy_price').value = product.buy_price;
         document.getElementById('edit_sell_price_retail').value = product.sell_price_retail;
         document.getElementById('edit_sell_price_wholesale').value = product.sell_price_wholesale;
+
+        // Set Category
+        document.getElementById('edit_category_id').value = product.category_id || "";
 
         // Image Preview
         const imgPreview = document.getElementById('edit_image_preview');

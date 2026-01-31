@@ -150,6 +150,13 @@ class MapController extends Controller implements HasMiddleware
             return $customer;
         });
 
+        // Fetch Closures
+        $closureQuery = Closure::query();
+        if ($regionId) {
+            $closureQuery->where('region_id', $regionId);
+        }
+        $closures = $closureQuery->get();
+
         // Fetch Assets (Tools) with location
         $assets = Asset::with(['item', 'holder'])
             ->whereNotNull('latitude')
@@ -158,7 +165,6 @@ class MapController extends Controller implements HasMiddleware
 
         return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin', 'closures'));
     }
-}
 
     /**
      * Show the form for creating a new resource.

@@ -36,7 +36,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-body-tertiary border-bottom-0 pt-3 px-3">
+            <div class="card-header bg-body-tertiary border-bottom-0 pt-3 px-2">
                 <ul class="nav nav-tabs card-header-tabs" id="deviceTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
@@ -631,7 +631,7 @@
                                             <td class="text-break align-middle py-1 param-value">{{ $param['value'] }}</td>
                                             <td class="text-center align-middle py-1">
                                                 @if($param['writable'])
-                                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" 
+                                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-3" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#editParamModal" 
                                                         data-path="{{ $param['path'] }}" 

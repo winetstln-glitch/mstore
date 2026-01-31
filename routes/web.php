@@ -209,6 +209,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/assets/handover-letter/{user}', [\App\Http\Controllers\AssetController::class, 'downloadHandoverLetter'])->name('inventory.assets.handover_letter');
 
     // ATK Cashier
+    Route::get('atk/products/export', [\App\Http\Controllers\AtkProductController::class, 'exportExcel'])->name('atk.products.export');
+    Route::post('atk/products/import', [\App\Http\Controllers\AtkProductController::class, 'importExcel'])->name('atk.products.import');
     Route::post('atk/products/{product}/restock', [\App\Http\Controllers\AtkProductController::class, 'restock'])->name('atk.products.restock');
     Route::resource('atk/products', \App\Http\Controllers\AtkProductController::class)->names('atk.products');
     Route::get('atk/pos', [\App\Http\Controllers\AtkTransactionController::class, 'create'])->name('atk.pos');
@@ -232,7 +234,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/services', [WashController::class, 'storeService'])->name('services.store');
         Route::put('/services/{service}', [WashController::class, 'updateService'])->name('services.update');
         Route::delete('/services/{service}', [WashController::class, 'destroyService'])->name('services.destroy');
+
+        Route::resource('employees', \App\Http\Controllers\WashEmployeeController::class);
     });
+
+    // Reports
+    Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/atk', [\App\Http\Controllers\ReportController::class, 'atk'])->name('reports.atk');
+    Route::get('reports/wash', [\App\Http\Controllers\ReportController::class, 'wash'])->name('reports.wash');
 
     // GenieACS / Network Monitor Routes
     Route::prefix('genieacs')->name('genieacs.')->group(function () {

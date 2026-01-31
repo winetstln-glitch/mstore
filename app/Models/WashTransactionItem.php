@@ -12,10 +12,16 @@ class WashTransactionItem extends Model
     protected $fillable = [
         'wash_transaction_id', 
         'wash_service_id', 
+        'employee_id',
         'price', 
         'quantity', 
         'subtotal'
     ];
+
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
+    }
 
     public function service()
     {

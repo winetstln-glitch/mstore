@@ -77,9 +77,14 @@ class WashController extends Controller
 
     public function create()
     {
-        $services = WashService::where('is_active', true)->get();
-        $employees = \App\Models\User::where('is_active', true)->get();
-        return view('wash.pos', compact('services', 'employees'));
+        $services = WashService::where('is_active', true)->with('category')->get();
+        $categories = \App\Models\Category::all();
+        // Only get users with wash.employee role
+        $employees = \App\Models\User::whereHas('role', function($q) {
+            $q->where('name', 'wash.employee');
+        })->where('is_active', true)->get();
+        
+        return view('wash.pos', compact('services', 'employees', 'categories'));
     }
 
     public function store(Request $request)
@@ -88,11 +93,13 @@ class WashController extends Controller
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:wash_services,id',
             'items.*.qty' => 'required|integer|min:1',
+            'items.*.employee_id' => 'nullable|exists:users,id', // Per item employee
             'amount_paid' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,transfer,qris',
             'customer_name' => 'nullable|string',
+            'customer_id' => 'nullable|exists:customers,id',
             'plate_number' => 'nullable|string',
-            'employee_id' => 'nullable|exists:users,id',
+            'employee_id' => 'nullable|exists:users,id', // Default/Main employee
         ]);
 
         DB::beginTransaction();
@@ -102,6 +109,12 @@ class WashController extends Controller
 
             foreach ($request->items as $itemData) {
                 $service = WashService::find($itemData['id']);
+                
+                // Check stock for physical items
+                if ($service->type === 'physical' && $service->stock < $itemData['qty']) {
+                    throw new \Exception("Stok {$service->name} tidak mencukupi (Sisa: {$service->stock})");
+                }
+
                 $subtotal = $service->price * $itemData['qty'];
                 $totalAmount += $subtotal;
 
@@ -110,7 +123,13 @@ class WashController extends Controller
                     'price' => $service->price,
                     'quantity' => $itemData['qty'],
                     'subtotal' => $subtotal,
+                    'employee_id' => $itemData['employee_id'] ?? $request->employee_id, // Use item employee or default
                 ];
+                
+                // Deduct stock if physical
+                if ($service->type === 'physical') {
+                    $service->decrement('stock', $itemData['qty']);
+                }
             }
 
             // Generate Transaction Code
@@ -121,11 +140,12 @@ class WashController extends Controller
             $transaction = WashTransaction::create([
                 'transaction_code' => $code,
                 'customer_name' => $request->customer_name ?? 'Guest',
+                'customer_id' => $request->customer_id,
                 'plate_number' => $request->plate_number,
                 'total_amount' => $totalAmount,
                 'amount_paid' => $request->amount_paid,
                 'payment_method' => $request->payment_method,
-                'status' => 'completed',
+                'status' => 'completed', // Or 'pending' if queue
                 'user_id' => auth()->id(),
                 'employee_id' => $request->employee_id,
                 'notes' => $request->notes,
@@ -134,6 +154,21 @@ class WashController extends Controller
             foreach ($itemsToCreate as $item) {
                 $item['wash_transaction_id'] = $transaction->id;
                 WashTransactionItem::create($item);
+            }
+            
+            // Loyalty Logic (Simple: 1 Point per transaction if registered customer)
+            if ($request->customer_id) {
+                $customer = \App\Models\Customer::find($request->customer_id);
+                if ($customer) {
+                    $points = 1; // Customize logic here
+                    $customer->increment('loyalty_points', $points);
+                    \App\Models\LoyaltyLog::create([
+                        'customer_id' => $customer->id,
+                        'wash_transaction_id' => $transaction->id,
+                        'points' => $points,
+                        'description' => "Poin dari transaksi {$code}"
+                    ]);
+                }
             }
 
             DB::commit();
@@ -158,8 +193,9 @@ class WashController extends Controller
     // Service Management
     public function services()
     {
-        $services = WashService::all();
-        return view('wash.services', compact('services'));
+        $services = WashService::with('category')->get();
+        $categories = \App\Models\Category::all();
+        return view('wash.services', compact('services', 'categories'));
     }
 
     public function storeService(Request $request)
@@ -169,6 +205,10 @@ class WashController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'vehicle_type' => 'required|in:car,motor',
             'price' => 'required|numeric|min:0',
+            'type' => 'required|in:service,physical',
+            'cost_price' => 'required|numeric|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $data = $request->all();
@@ -187,6 +227,10 @@ class WashController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'vehicle_type' => 'required|in:car,motor',
             'price' => 'required|numeric|min:0',
+            'type' => 'required|in:service,physical',
+            'cost_price' => 'required|numeric|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $data = $request->all();

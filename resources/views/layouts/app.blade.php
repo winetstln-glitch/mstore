@@ -44,10 +44,16 @@
 <div id="wrapper">
     <!-- Sidebar -->
     <div id="sidebar-wrapper">
-        <div class="sidebar-heading">
-            <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" style="max-height: 40px;" class="me-2">
+        <div class="sidebar-heading py-3 position-relative">
+            <div class="sidebar-brand-icon">
+                <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
+            </div>
+            <!-- Close Button for Mobile -->
+            <button class="btn btn-link text-secondary position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
+                <i class="fa-solid fa-times fa-lg"></i>
+            </button>
         </div>
-        <div class="list-group list-group-flush pb-4">
+        <div class="list-group list-group-flush pb-2">
             
             {{-- User Panel (Simplified) --}}
            
@@ -72,7 +78,7 @@
                 <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'show' : '' }}" id="servicesCollapse">
-                <div class="bg-light ps-3">
+                <div class="bg-light ps-2">
                     @if(Auth::user()->hasPermission('hotspot.view'))
                     <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Active') }}
@@ -207,6 +213,9 @@
                     @if(Auth::user()->hasPermission('wash.manage'))
                     <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ request()->routeIs('wash.services.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-tags"></i> {{ __('Layanan & Harga') }}
+                    </a>
+                    <a href="{{ route('wash.employees.index') }}" class="sidebar-item {{ request()->routeIs('wash.employees.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-users"></i> {{ __('Karyawan Steam') }}
                     </a>
                     @endif
                 </div>
@@ -409,7 +418,7 @@
             </div>
         </nav>
 
-        <div class="container-fluid px-4 py-4 pb-5 flex-grow-1">
+        <div class="container-fluid px-2 py-3 pb-3 flex-grow-1">
             <!-- Flash Messages (Handled by SweetAlert2 now) -->
             {{-- 
             @if(session('success'))
