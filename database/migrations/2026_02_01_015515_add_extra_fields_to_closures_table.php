@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('closures', function (Blueprint $table) {
+            $table->string('color')->nullable()->after('name');
             $table->integer('capacity')->default(48)->after('color');
             $table->string('pon_port')->nullable()->after('capacity');
             $table->string('cable_no')->nullable()->after('pon_port');
@@ -25,7 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('closures', function (Blueprint $table) {
-            $table->dropColumn(['capacity', 'pon_port', 'cable_no', 'area']);
+            $table->dropColumn(['color', 'capacity', 'pon_port', 'cable_no', 'area']);
         });
     }
 };
