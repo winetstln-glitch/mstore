@@ -49,7 +49,7 @@
                 <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
             </div>
             <!-- Close Button for Mobile -->
-            <button class="btn btn-link text-secondary position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
+            <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
                 <i class="fa-solid fa-times fa-lg"></i>
             </button>
         </div>
@@ -73,6 +73,12 @@
             </a>
             @endif
 
+            @if(Auth::user()->hasPermission('installation.view'))
+            <a href="{{ route('installations.index') }}" class="sidebar-item {{ request()->routeIs('installations.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Pemasangan Baru') }}
+            </a>
+            @endif
+
             @if(Auth::user()->hasPermission('hotspot.view') || Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
             <a class="sidebar-item {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#servicesCollapse" role="button" aria-expanded="{{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'true' : 'false' }}" aria-controls="servicesCollapse">
                 <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
@@ -85,7 +91,7 @@
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
-                    <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
+                    <a href="{{ route('routers.index') }}" class="sidebar-item {{ request()->routeIs('routers.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
                     </a>
                     @endif
@@ -114,20 +120,15 @@
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('htb.view') || Auth::user()->hasPermission('closure.view'))
-            <a class="sidebar-item {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
+            @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('closure.view') || Auth::user()->hasPermission('htb.view'))
+            <a class="sidebar-item {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
                 <i class="fa fa-sitemap"></i> {{ __('Infrastruktur') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('htbs.*') || request()->routeIs('closures.*')) ? 'show' : '' }}" id="networkInfraCollapse">
+            <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'show' : '' }}" id="networkInfraCollapse">
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('olt.view'))
                     <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-server"></i> {{ __('OLT') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('closure.view'))
-                    <a href="{{ route('closures.index') }}" class="sidebar-item {{ request()->routeIs('closures.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-box-open"></i> {{ __('Closure') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('odc.view'))
@@ -138,6 +139,11 @@
                     @if(Auth::user()->hasPermission('odp.view'))
                     <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-box"></i> {{ __('ODP') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('closure.view'))
+                    <a href="{{ route('closures.index') }}" class="sidebar-item {{ request()->routeIs('closures.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-box-open"></i> {{ __('Closure') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('htb.view'))
@@ -156,11 +162,18 @@
             @endif
 
             {{-- Keuangan Group --}}
-            @if(Auth::user()->hasPermission('finance.view'))
+            @if(Auth::user()->hasPermission('finance.view') || Auth::user()->hasPermission('investor.view'))
             <div class="sidebar-header mt-2">{{ __('Keuangan') }}</div>
+            @if(Auth::user()->hasPermission('finance.view'))
             <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
                 <i class="fa fa-wallet"></i> {{ __('Dashboard Keuangan') }}
             </a>
+            @endif
+            @if(Auth::user()->hasPermission('investor.view'))
+            <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-hand-holding-dollar"></i> {{ __('Data Investor') }}
+            </a>
+            @endif
             @endif
 
             {{-- Toko ATK Group --}}
@@ -284,11 +297,6 @@
                     <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Umum') }}
                     </a>
-                    @if(Auth::user()->hasPermission('setting.view'))
-                    <a href="{{ route('categories.index') }}" class="sidebar-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-list"></i> {{ __('Manajemen Kategori') }}
-                    </a>
-                    @endif
                     @if(Auth::user()->hasPermission('region.view'))
                     <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-map-location-dot"></i> {{ __('Wilayah') }}
@@ -428,7 +436,7 @@
             </div>
         </nav>
 
-        <div class="container-fluid px-2 py-3 pb-3 flex-grow-1">
+        <div class="container-fluid px-3 py-3 pb-3 flex-grow-1">
             <!-- Flash Messages (Handled by SweetAlert2 now) -->
             {{-- 
             @if(session('success'))

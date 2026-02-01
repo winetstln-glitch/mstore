@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Odc;
 use App\Models\Olt;
 use App\Models\Region;
-use App\Models\Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -30,12 +29,6 @@ class OdcController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Odc::with(['olt', 'region']);
-
-        // Filter by Coordinator's Region
-        $user = auth()->user();
-        if ($user && !$user->hasRole('admin') && !$user->hasRole('management') && $user->coordinator && $user->coordinator->region_id) {
-            $query->where('region_id', $user->coordinator->region_id);
-        }
 
         if ($request->filled('region_id')) {
             $query->where('region_id', $request->region_id);
@@ -62,8 +55,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
-        $closures = Closure::orderBy('name')->get();
-        return view('odcs.create', compact('olts', 'regions', 'closures'));
+        return view('odcs.create', compact('olts', 'regions'));
     }
 
     /**
@@ -73,7 +65,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255|unique:odcs',
-            'olt_id' => 'required_without:closure_id|exists:olts,id',
+            'olt_id' => 'required|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'required|string',
             'area' => 'required|string',
@@ -83,27 +75,7 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'required|numeric|between:-180,180',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
-            'closure_id' => 'nullable|exists:closures,id',
         ]);
-
-        if (!empty($validated['closure_id'])) {
-            // Derive OLT ID from Closure
-            $closure = Closure::find($validated['closure_id']);
-            if ($closure && $closure->parent_type === 'App\Models\Olt') {
-                $validated['olt_id'] = $closure->parent_id;
-            } elseif ($closure && $closure->parent_type === 'App\Models\Odc') {
-                $parentOdc = Odc::find($closure->parent_id);
-                if ($parentOdc) {
-                    $validated['olt_id'] = $parentOdc->olt_id;
-                }
-            }
-            if (empty($validated['olt_id'])) {
-                 if ($request->wantsJson()) {
-                     return response()->json(['message' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'], 422);
-                 }
-                 return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
-            }
-        }
 
         if (empty($validated['name'])) {
             $validated['name'] = $this->generateOdcName($validated);
@@ -136,8 +108,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
-        $closures = Closure::orderBy('name')->get();
-        return view('odcs.edit', compact('odc', 'olts', 'regions', 'closures'));
+        return view('odcs.edit', compact('odc', 'olts', 'regions'));
     }
 
     /**
@@ -147,7 +118,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,' . $odc->id,
-            'olt_id' => 'required_without:closure_id|exists:olts,id',
+            'olt_id' => 'sometimes|required|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'sometimes|required|string',
             'area' => 'sometimes|required|string',
@@ -157,31 +128,7 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'sometimes|required|integer|min:0',
             'description' => 'nullable|string',
-            'closure_id' => 'nullable|exists:closures,id',
         ]);
-
-        if (!empty($validated['closure_id'])) {
-            // Derive OLT ID from Closure
-            $closure = Closure::find($validated['closure_id']);
-            if ($closure && $closure->parent_type === 'App\Models\Olt') {
-                $validated['olt_id'] = $closure->parent_id;
-            } elseif ($closure && $closure->parent_type === 'App\Models\Odc') {
-                $parentOdc = Odc::find($closure->parent_id);
-                if ($parentOdc) {
-                    $validated['olt_id'] = $parentOdc->olt_id;
-                }
-            }
-            if (empty($validated['olt_id'])) {
-                // If we can't find it, maybe keep existing?
-                // But if closure changes, OLT might change.
-                // If existing ODC has OLT, keep it if new one not found?
-                // Better to fail if logic is inconsistent.
-                 if ($request->wantsJson()) {
-                     return response()->json(['message' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'], 422);
-                 }
-                 return back()->withErrors(['closure_id' => 'Cannot determine OLT from selected Closure. Please select OLT manually.'])->withInput();
-            }
-        }
 
         if (array_key_exists('name', $validated) && empty($validated['name'])) {
             // Merge with existing data to ensure all fields for name generation are present
@@ -201,20 +148,13 @@ class OdcController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Odc $odc)
+    public function destroy(Odc $odc)
     {
         if ($odc->odps()->exists()) {
-            if ($request->wantsJson()) {
-                 return response()->json(['message' => __('Cannot delete ODC because it has associated ODPs.')], 422);
-            }
             return back()->with('error', __('Cannot delete ODC because it has associated ODPs.'));
         }
 
         $odc->delete();
-
-        if ($request->wantsJson()) {
-             return response()->json(['success' => true]);
-        }
 
         return redirect()->route('odcs.index')->with('success', __('ODC deleted successfully.'));
     }
@@ -274,9 +214,18 @@ class OdcController extends Controller implements HasMiddleware
         $ponRaw = preg_replace('/[^0-9]/', '', $data['pon_port']);
         $pon = str_pad($ponRaw, 2, '0', STR_PAD_LEFT);
 
-        // Area: Take first 2 characters from AREA (spaces removed)
+        // Area: Take First, Middle, and Last characters
         $areaRaw = strtoupper(preg_replace('/\s+/', '', $data['area']));
-        $area = substr($areaRaw, 0, 2);
+        $length = strlen($areaRaw);
+        if ($length <= 3) {
+            $area = $areaRaw;
+        } else {
+            $first = substr($areaRaw, 0, 1);
+            $last = substr($areaRaw, -1);
+            $middleIndex = floor($length / 2);
+            $middle = substr($areaRaw, $middleIndex, 1);
+            $area = $first . $middle . $last;
+        }
 
         // Color: Take first 1 character
         $colorRaw = strtoupper(preg_replace('/\s+/', '', $data['color']));

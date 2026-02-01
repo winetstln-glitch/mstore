@@ -13,14 +13,6 @@ return new class extends Migration
     {
         Schema::create('hotspot_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('router_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->integer('shared_users')->default(1);
-            $table->string('rate_limit')->nullable(); // e.g., "1M/1M"
-            $table->decimal('price', 10, 2)->default(0);
-            $table->integer('validity_value')->nullable(); // e.g., 24
-            $table->string('validity_unit')->nullable(); // e.g., "hours", "days"
-            $table->string('mikrotik_id')->nullable();
             $table->timestamps();
         });
     }

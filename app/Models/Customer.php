@@ -99,16 +99,6 @@ class Customer extends Model
         return $this->belongsTo(Olt::class);
     }
 
-    public function loyaltyLogs()
-    {
-        return $this->hasMany(LoyaltyLog::class);
-    }
-
-    public function washTransactions()
-    {
-        return $this->hasMany(WashTransaction::class);
-    }
-
     public function invoices()
     {
         return $this->hasMany(Invoice::class);

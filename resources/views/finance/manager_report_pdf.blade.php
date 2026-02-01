@@ -93,14 +93,6 @@
             <td class="text-right">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td>Sisa Setelah Komisi</td>
-            <td class="text-right">{{ number_format($afterCommission, 0, ',', '.') }}</td>
-        </tr>
-        <tr>
-            <td>Potongan Kas (5%)</td>
-            <td class="text-right">-{{ number_format($kasFund, 0, ',', '.') }}</td>
-        </tr>
-        <tr>
             <td>Pengeluaran Transportasi</td>
             <td class="text-right">-{{ number_format($transportExpenses, 0, ',', '.') }}</td>
         </tr>
@@ -113,12 +105,20 @@
             <td class="text-right">-{{ number_format($repairExpenses, 0, ',', '.') }}</td>
         </tr>
         <tr>
+            <td>Pengeluaran Lainnya</td>
+            <td class="text-right">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
             <td><strong>Total Pengeluaran Pengurus</strong></td>
             <td class="text-right"><strong>-{{ number_format($operatingExpenses, 0, ',', '.') }}</strong></td>
         </tr>
         <tr>
-            <th>Total Sisa Disetor ke Perusahaan</th>
-            <th class="text-right">{{ number_format($depositToCompany, 0, ',', '.') }}</th>
+            <td>Sudah Disetor</td>
+            <td class="text-right">-{{ number_format($deposited, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <th>Sisa Saldo (Wajib Setor)</th>
+            <th class="text-right">{{ number_format($netBalance, 0, ',', '.') }}</th>
         </tr>
     </table>
 
@@ -131,7 +131,8 @@
                 <th class="text-right">Pendapatan</th>
                 <th class="text-right">Komisi Pengurus</th>
                 <th class="text-right">Pengeluaran Pengurus</th>
-                <th class="text-right">Total Sisa Disetor ke Perusahaan</th>
+                <th class="text-right">Sudah Disetor</th>
+                <th class="text-right">Sisa Saldo (Wajib Setor)</th>
             </tr>
             @foreach($coordinatorSummaries as $index => $row)
                 <tr>
@@ -140,6 +141,7 @@
                     <td class="text-right">{{ number_format($row->gross_revenue, 0, ',', '.') }}</td>
                     <td class="text-right">-{{ number_format($row->commission, 0, ',', '.') }}</td>
                     <td class="text-right">-{{ number_format($row->expenses, 0, ',', '.') }}</td>
+                    <td class="text-right">-{{ number_format($row->deposited, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($row->net_balance, 0, ',', '.') }}</td>
                 </tr>
             @endforeach

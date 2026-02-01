@@ -12,7 +12,6 @@ class Odp extends Model
     protected $fillable = [
         'name',
         'odc_id',
-        'closure_id',
         'color',
         'latitude',
         'longitude',
@@ -60,10 +59,5 @@ class Odp extends Model
             return false;
         }
         return $this->filled >= $this->capacity;
-    }
-
-    public function closure()
-    {
-        return $this->belongsTo(Closure::class);
     }
 }

@@ -86,23 +86,6 @@
                             <td>{{ __('Pendapatan Lainnya') }}</td>
                             <td class="text-end">{{ number_format($otherIncome, 0, ',', '.') }}</td>
                         </tr>
-                        <tr>
-                            <td>{{ __('Pendapatan Toko ATK') }}</td>
-                            <td class="text-end">{{ number_format($atkRevenue, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Pendapatan Cuci Kendaraan') }}</td>
-                            <td class="text-end">{{ number_format($washRevenue, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                {{ __('Pendapatan Inventaris (Material Proyek)') }}
-                                @if(isset($toolValueOut) && $toolValueOut > 0)
-                                    <br><small class="text-muted fst-italic">Note: Penggunaan Alat Kerja senilai {{ number_format($toolValueOut, 0, ',', '.') }} tidak dihitung sebagai pendapatan (Aset Tetap).</small>
-                                @endif
-                            </td>
-                            <td class="text-end">{{ number_format($inventoryRevenue, 0, ',', '.') }}</td>
-                        </tr>
                         <tr class="fw-bold table-success">
                             <td>{{ __('Total Pendapatan') }}</td>
                             <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
@@ -116,24 +99,16 @@
                             <td colspan="2" class="text-uppercase text-warning">{{ __('Beban Pokok Pendapatan') }}</td>
                         </tr>
                         <tr>
-                            <td>{{ __('Komisi Koordinator') }}</td>
+                            <td>{{ __('Komisi Koordinator') }} (±{{ number_format($coordRate, 1) }}%)</td>
                             <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
-                            <td>{{ __('Pembayaran ISP') }}</td>
+                            <td>{{ __('Pembayaran ISP') }} (±{{ number_format($ispRate, 1) }}%)</td>
                             <td class="text-end text-danger">-{{ number_format($ispPayment, 0, ',', '.') }}</td>
                         </tr>
                         <tr>
-                            <td>{{ __('Dana Alat') }}</td>
+                            <td>{{ __('Dana Alat') }} (±{{ number_format($toolRate, 1) }}%)</td>
                             <td class="text-end text-danger">-{{ number_format($toolFund, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('HPP Toko ATK') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($atkCOGS, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Biaya Pembelian Alat/Material') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($inventoryCost, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="fw-bold table-warning">
                             <td>{{ __('Total Beban Pokok Pendapatan') }}</td>

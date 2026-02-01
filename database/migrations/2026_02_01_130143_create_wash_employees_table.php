@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('assets', function (Blueprint $table) {
-            $table->boolean('is_returnable')->default(true)->after('condition')->comment('True if asset must be returned, False if given permanently (consumable/gift)');
+        Schema::create('wash_employees', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('phone')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('assets', function (Blueprint $table) {
-            $table->dropColumn('is_returnable');
-        });
+        Schema::dropIfExists('wash_employees');
     }
 };

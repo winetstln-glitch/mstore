@@ -47,7 +47,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $query = Customer::query();
 
         // Filter for Coordinator (Pengurus)
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('management')) {
+        if (!Auth::user()->hasRole('admin')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator && $coordinator->region_id) {
                 $query->whereHas('odp', function($q) use ($coordinator) {
@@ -513,27 +513,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             'ssid_password' => $request->query('ssid_password'),
             'pppoe_user' => $request->query('pppoe_user'),
         ];
-        
-        $queryOdp = \App\Models\Odp::query();
-        $queryHtb = \App\Models\Htb::with(['parent', 'odp']);
-        $queryOlt = \App\Models\Olt::where('is_active', true);
-        
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('management')) {
-             $coordinator = Coordinator::where('user_id', Auth::id())->first();
-             if ($coordinator && $coordinator->region_id) {
-                 $queryOdp->where('region_id', $coordinator->region_id);
-                 $queryHtb->whereHas('odp', function($q) use ($coordinator) {
-                     $q->where('region_id', $coordinator->region_id);
-                 });
-                 $queryOlt->whereHas('odcs', function($q) use ($coordinator) {
-                     $q->where('region_id', $coordinator->region_id);
-                 });
-             }
-        }
-        
-        $odps = $queryOdp->get();
-        $htbs = $queryHtb->get();
-        $olts = $queryOlt->get();
+        $odps = \App\Models\Odp::all();
+        $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
+        $olts = \App\Models\Olt::where('is_active', true)->get();
 
         // Fetch GenieACS devices
         try {
@@ -646,26 +628,9 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function edit(Customer $customer)
     {
-        $queryOdp = \App\Models\Odp::query();
-        $queryHtb = \App\Models\Htb::with(['parent', 'odp']);
-        $queryOlt = \App\Models\Olt::where('is_active', true);
-        
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('management')) {
-             $coordinator = Coordinator::where('user_id', Auth::id())->first();
-             if ($coordinator && $coordinator->region_id) {
-                 $queryOdp->where('region_id', $coordinator->region_id);
-                 $queryHtb->whereHas('odp', function($q) use ($coordinator) {
-                     $q->where('region_id', $coordinator->region_id);
-                 });
-                 $queryOlt->whereHas('odcs', function($q) use ($coordinator) {
-                     $q->where('region_id', $coordinator->region_id);
-                 });
-             }
-        }
-        
-        $odps = $queryOdp->get();
-        $htbs = $queryHtb->get();
-        $olts = $queryOlt->get();
+        $odps = \App\Models\Odp::all();
+        $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
+        $olts = \App\Models\Olt::where('is_active', true)->get();
         
         // Fetch GenieACS devices
         try {

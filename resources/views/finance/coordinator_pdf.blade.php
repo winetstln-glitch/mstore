@@ -99,7 +99,11 @@
             <td class="text-right">-{{ number_format($expenses, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <th>Total Sisa Disetor ke Perusahaan</th>
+            <td>Sudah Disetor</td>
+            <td class="text-right">-{{ number_format($deposited, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <th>Sisa Saldo (Wajib Setor)</th>
             <th class="text-right">{{ number_format($netBalance, 0, ',', '.') }}</th>
         </tr>
     </table>

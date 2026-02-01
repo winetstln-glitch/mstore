@@ -30,7 +30,6 @@
                 </div>
                 <div>
                     <a href="{{ route('attendance.create') }}" class="btn btn-primary">
-                        <span class="visually-hidden">{{ __('Clock In/Out') }}</span>
                         @if(!$todayAttendance)
                             <i class="fa-solid fa-sign-in-alt"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
                         @elseif(!$todayAttendance->clock_out)
@@ -103,79 +102,21 @@
         </div>
     </div>
 
-    <!-- Active Sessions -->
+    <!-- Revenue (Placeholder) -->
     <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Active Sessions') }}</h6>
+                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Network Status') }}</h6>
                     <div class="bg-success bg-opacity-10 text-success rounded p-2">
-                        <i class="fa-solid fa-network-wired"></i>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end mb-1">
-                    <div>
-                        <div class="small text-muted">{{ __('PPPoE') }}</div>
-                        <h4 class="fw-bold mb-0">{{ $stats['pppoe_active'] }}</h4>
-                    </div>
-                    <div class="text-end">
-                        <div class="small text-muted">{{ __('Hotspot') }}</div>
-                        <h4 class="fw-bold mb-0">{{ $stats['hotspot_active'] }}</h4>
-                    </div>
-                </div>
-                <div class="small {{ $stats['router_status'] == 'online' ? 'text-success' : 'text-danger' }} mt-2">
-                    <i class="fa-solid fa-circle me-1" style="font-size: 8px;"></i>
-                    <span>{{ $stats['router_status'] == 'online' ? __('Router Online') : __('Router Offline') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- GenieACS Monitoring Section -->
-<div class="row g-4 mb-4">
-    <!-- Total Devices -->
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Total Devices') }}</h6>
-                    <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
                         <i class="fa-solid fa-server"></i>
                     </div>
                 </div>
-                <h3 class="fw-bold mb-0">{{ $stats['genie_total'] }}</h3>
-                <small class="text-muted">{{ __('Registered in ACS') }}</small>
-            </div>
-        </div>
-    </div>
-    <!-- Online Devices -->
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Online Devices') }}</h6>
-                    <div class="bg-success bg-opacity-10 text-success rounded p-2">
-                        <i class="fa-solid fa-signal"></i>
-                    </div>
+                <h3 class="fw-bold mb-1">98.9%</h3>
+                <div class="small text-success">
+                    <i class="fa-solid fa-check me-1"></i>
+                    <span>{{ __('Operational') }}</span>
                 </div>
-                <h3 class="fw-bold mb-0">{{ $stats['genie_online'] }}</h3>
-                <small class="text-success"><i class="fa-solid fa-check-circle me-1"></i>{{ __('Connected') }}</small>
-            </div>
-        </div>
-    </div>
-    <!-- Offline Devices -->
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Offline Devices') }}</h6>
-                    <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-0">{{ $stats['genie_offline'] }}</h3>
-                <small class="text-danger"><i class="fa-solid fa-times-circle me-1"></i>{{ __('Disconnected') }}</small>
             </div>
         </div>
     </div>

@@ -72,18 +72,6 @@
                 <td class="text-right">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Pendapatan Toko ATK</td>
-                <td class="text-right">{{ number_format($atkRevenue, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td>Pendapatan Wash</td>
-                <td class="text-right">{{ number_format($washRevenue, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td>Pendapatan Inventaris (Material)</td>
-                <td class="text-right">{{ number_format($inventoryRevenue, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
                 <td>Pendapatan Lain-lain</td>
                 <td class="text-right">{{ number_format($otherIncome, 0, ',', '.') }}</td>
             </tr>
@@ -100,24 +88,16 @@
                 <td colspan="2">BEBAN POKOK PENDAPATAN (COST OF REVENUE)</td>
             </tr>
             <tr>
-                <td>Komisi Pengurus</td>
+                <td>Komisi Pengurus (±{{ number_format($coordRate, 1) }}%)</td>
                 <td class="text-right">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Pembayaran ISP</td>
+                <td>Pembayaran ISP (±{{ number_format($ispRate, 1) }}%)</td>
                 <td class="text-right">-{{ number_format($ispPayment, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Tool Fund / Manajemen</td>
+                <td>Tool Fund / Manajemen (±{{ number_format($toolRate, 1) }}%)</td>
                 <td class="text-right">-{{ number_format($toolFund, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td>HPP Toko ATK</td>
-                <td class="text-right">-{{ number_format($atkCOGS, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td>Biaya Inventaris (Material)</td>
-                <td class="text-right">-{{ number_format($inventoryCost, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <td><strong>Total Beban Pokok Pendapatan</strong></td>

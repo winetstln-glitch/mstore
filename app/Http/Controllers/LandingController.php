@@ -5,30 +5,55 @@ namespace App\Http\Controllers;
 use App\Models\Package;
 use App\Models\AtkProduct;
 use App\Models\WashService;
-use App\Models\Odp;
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class LandingController extends Controller
 {
     public function index()
     {
-        $packages = Package::where('is_active', true)->get();
+        // Safely fetch Packages
+        try {
+            $packages = Package::where('is_active', true)->orderBy('price')->get();
+        } catch (\Exception $e) {
+            $packages = collect([]);
+        }
         
-        // Fetch featured/latest ATK Products (limit 8)
-        $atkProducts = AtkProduct::with('category')->latest()->take(8)->get();
+        // Safely fetch ATK Products
+        try {
+            if (class_exists(AtkProduct::class) && Schema::hasTable('atk_products')) {
+                $atkProducts = AtkProduct::where('stock', '>', 0)->latest()->take(4)->get();
+            } else {
+                $atkProducts = collect([]);
+            }
+        } catch (\Exception $e) {
+            $atkProducts = collect([]);
+        }
 
-        // Fetch Wash Services (Active ones)
-        $washServices = WashService::where('is_active', true)->with('category')->get();
+        // Safely fetch Wash Services
+        try {
+            if (class_exists(WashService::class) && Schema::hasTable('wash_services')) {
+                // Check if is_active column exists
+                if (Schema::hasColumn('wash_services', 'is_active')) {
+                    $washServices = WashService::where('is_active', true)->get();
+                } else {
+                    $washServices = WashService::all();
+                }
+            } else {
+                $washServices = collect([]);
+            }
+        } catch (\Exception $e) {
+            $washServices = collect([]);
+        }
+            
+        // Get WA Number from settings or default
+        try {
+            $waNumber = Setting::getValue('whatsapp_number', '6281234567890');
+        } catch (\Exception $e) {
+            $waNumber = '6281234567890';
+        }
 
-        // Fetch ODPs for Coverage Map (only those with coordinates)
-        $odps = Odp::whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->select('name', 'latitude', 'longitude', 'filled', 'capacity')
-            ->get();
-
-        // WhatsApp Contact Number (Format: 628xxx)
-        $waNumber = '6287777369687'; // Default placeholder, replace with actual number or setting
-
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'odps', 'waNumber'));
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber'));
     }
 }

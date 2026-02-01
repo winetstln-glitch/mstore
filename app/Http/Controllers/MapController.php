@@ -7,8 +7,8 @@ use App\Models\Asset;
 use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Htb;
-use App\Models\Olt;
 use App\Models\Closure;
+use App\Models\Olt;
 use App\Models\Region;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
@@ -38,7 +38,7 @@ class MapController extends Controller implements HasMiddleware
     public function index()
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance') || $user->hasRole('management');
+        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
         
         $coordinators = [];
         $regionId = null;
@@ -77,6 +77,13 @@ class MapController extends Controller implements HasMiddleware
             });
         }
         $htbs = $htbQuery->get();
+
+        // Fetch Closures
+        $closureQuery = Closure::query();
+        if ($regionId) {
+            $closureQuery->where('region_id', $regionId);
+        }
+        $closures = $closureQuery->get();
 
         // Fetch Regions
         $regions = Region::orderBy('name')->get();
@@ -150,25 +157,6 @@ class MapController extends Controller implements HasMiddleware
             return $customer;
         });
 
-        // Fetch Closures
-        $closureQuery = Closure::query();
-        if ($regionId) {
-            $closureQuery->where('region_id', $regionId);
-        }
-        $closures = $closureQuery->get();
-        
-        // Parse coordinates for map
-        $closures->transform(function ($closure) {
-            if ($closure->coordinates) {
-                $parts = explode(',', $closure->coordinates);
-                if (count($parts) == 2) {
-                    $closure->latitude = trim($parts[0]);
-                    $closure->longitude = trim($parts[1]);
-                }
-            }
-            return $closure;
-        });
-
         // Fetch Assets (Tools) with location
         $assets = Asset::with(['item', 'holder'])
             ->whereNotNull('latitude')
@@ -234,23 +222,12 @@ class MapController extends Controller implements HasMiddleware
             case 'odc': $model = Odc::find($id); break;
             case 'odp': $model = Odp::find($id); break;
             case 'htb': $model = Htb::find($id); break;
+            case 'closure': $model = Closure::find($id); break;
             case 'customer': $model = Customer::find($id); break;
             case 'asset': $model = Asset::find($id); break;
-            case 'closure': $model = Closure::find($id); break;
         }
 
         if ($model) {
-            // Special handling for Closure because it uses 'coordinates' string column
-            if ($type === 'closure') {
-                 if ($request->latitude && $request->longitude) {
-                     $model->coordinates = $request->latitude . ',' . $request->longitude;
-                 } else {
-                     $model->coordinates = null;
-                 }
-                 $model->save();
-                 return response()->json(['success' => true]);
-            }
-
             $model->latitude = $request->latitude;
             $model->longitude = $request->longitude;
             $model->save();

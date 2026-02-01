@@ -86,17 +86,17 @@
             </div>
         </div>
 
-        <!-- Investor Cash -->
+        <!-- Deposited -->
         <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card border-left-secondary shadow h-100 py-2">
+            <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Uang Kas') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($investorCash, 0, ',', '.') }}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Sudah Disetor') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($deposited, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fa-solid fa-piggy-bank fa-2x text-gray-300"></i>
+                            <i class="fa-solid fa-hand-holding-dollar fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -105,11 +105,11 @@
 
         <!-- Remaining Balance -->
         <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Sisa Disetor') }}</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Sisa Saldo (Wajib Setor)') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netBalance, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">

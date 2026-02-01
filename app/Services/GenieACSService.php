@@ -33,39 +33,6 @@ class GenieACSService
     }
 
     /**
-     * Get All Devices for Monitoring (with projection)
-     */
-    public function getAllDevicesForMonitoring()
-    {
-        try {
-            // Projection fields: ID, LastInform, and IP
-            // Note: IP path depends on device model, we try common ones or just rely on summary if available in your GenieACS setup
-            // Usually GenieACS stores some summary in VirtualParameters or presets.
-            // For now, we fetch minimal data.
-            $projection = implode(',', [
-                '_id',
-                '_lastInform',
-                'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress',
-                'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
-                'Device.IP.Interface.1.IPv4Address.1.IPAddress'
-            ]);
-
-            $response = $this->request()
-                ->get("{$this->baseUrl}/devices", [
-                    'projection' => $projection
-                ]);
-
-            if ($response->successful()) {
-                return $response->json();
-            }
-            return [];
-        } catch (\Exception $e) {
-            Log::error("GenieACS GetDevices Error: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
      * Set Parameters (Provisioning)
      * $params example: [['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', 'user', 'xsd:string']]
      */
@@ -1444,54 +1411,6 @@ class GenieACSService
 
 
 
-
-    /**
-     * Update Admin Credentials (User Admin & Super Admin)
-     */
-    public function updateAdminCredentials($deviceId, $data)
-    {
-        $params = [];
-
-        // User Admin Name
-        if (!empty($data['user_admin_name'])) {
-            $name = $data['user_admin_name'];
-            $params['InternetGatewayDevice.UserInterface.X_ZTE-COM_WebUserInfo.AdminName'] = $name;
-            $params['InternetGatewayDevice.X_ZTE-COM_UserInterface.X_ZTE-COM_WebUserInfo.AdminName'] = $name;
-            $params['InternetGatewayDevice.X_CU_Function.ServiceMgt.LocalAdminName'] = $name;
-            $params['InternetGatewayDevice.X_CU_Function.Web.AdminName'] = $name;
-        }
-
-        // User Admin Password
-        if (!empty($data['user_admin_password'])) {
-            $password = $data['user_admin_password'];
-            
-            // Virtual Parameter (if exists)
-            $params['VirtualParameters.userAdmin'] = $password;
-            
-            // Standard/ZTE Parameters
-            $params['InternetGatewayDevice.UserInterface.X_ZTE-COM_WebUserInfo.AdminPassword'] = $password;
-            $params['InternetGatewayDevice.X_ZTE-COM_UserInterface.X_ZTE-COM_WebUserInfo.AdminPassword'] = $password;
-            $params['InternetGatewayDevice.X_CU_Function.ServiceMgt.LocalAdminPassword'] = $password;
-            $params['InternetGatewayDevice.X_CU_Function.Web.AdminPassw'] = $password;
-        }
-
-        // Super Admin Password
-        if (!empty($data['super_admin_password'])) {
-            $password = $data['super_admin_password'];
-
-            // Virtual Parameter (if exists)
-            $params['VirtualParameters.superAdmin'] = $password;
-            
-            // Standard/ZTE Parameters
-            $params['InternetGatewayDevice.DeviceInfo.X_ZTE-COM_AdminAccount.Password'] = $password;
-        }
-
-        if (empty($params)) {
-            return true; // Nothing to update
-        }
-
-        return $this->setParameterValues($deviceId, $params);
-    }
 
     /**
      * Get device status by Serial Number (or OUI+ProductClass+Serial)

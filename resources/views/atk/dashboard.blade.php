@@ -1,19 +1,25 @@
 @extends('layouts.app')
 
+@section('title', __('ATK Dashboard'))
+
 @section('content')
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Dashboard Kasir ATK</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ __('ATK Store Dashboard') }}</h1>
+        <a href="{{ route('atk.pos') }}" class="btn btn-primary">
+            <i class="fa-solid fa-cash-register me-2"></i> {{ __('Open POS') }}
+        </a>
+    </div>
 
     <div class="row">
-        <!-- Earnings (Monthly) Card Example -->
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Penjualan Hari Ini</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todaySales, 0, ',', '.') }}</div>
+                                {{ __('Daily Sales') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -23,15 +29,14 @@
             </div>
         </div>
 
-        <!-- Earnings (Monthly) Card Example -->
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Total Penjualan</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalSales, 0, ',', '.') }}</div>
+                                {{ __('Monthly Sales') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -41,18 +46,17 @@
             </div>
         </div>
 
-        <!-- Pending Requests Card Example -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Stok Menipis</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $lowStockProducts->count() }}</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                {{ __('Transactions Today') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $transactionCount }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -64,35 +68,39 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Stok Menipis (< 10)</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Top Selling Products') }}</h6>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group">
-                        @foreach($lowStockProducts as $product)
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ $product->name }}
-                            <span class="badge bg-warning rounded-pill">{{ $product->stock }}</span>
-                        </li>
-                        @endforeach
-                    </ul>
+                    @if($topProducts->count() > 0)
+                        <ul class="list-group list-group-flush">
+                            @foreach($topProducts as $product)
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ $product->product_name }}
+                                    <span class="badge bg-primary rounded-pill">{{ $product->total_qty }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-center text-muted my-3">{{ __('No sales data available.') }}</p>
+                    @endif
                 </div>
             </div>
         </div>
+        
         <div class="col-lg-6 mb-4">
              <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Aksi Cepat</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Quick Actions') }}</h6>
                 </div>
                 <div class="card-body">
-                    <a href="{{ route('atk.pos') }}" class="btn btn-primary btn-lg btn-block mb-3 w-100">
-                        <i class="fas fa-cash-register"></i> Buka Kasir
-                    </a>
-                    <a href="{{ route('atk.products.index') }}" class="btn btn-info btn-lg btn-block mb-3 w-100">
-                        <i class="fas fa-boxes"></i> Kelola Produk
-                    </a>
-                    <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary btn-lg btn-block w-100">
-                        <i class="fas fa-history"></i> Riwayat Transaksi
-                    </a>
+                    <div class="d-grid gap-2">
+                        <a href="{{ route('atk.products.create') }}" class="btn btn-outline-primary">
+                            <i class="fa-solid fa-plus me-2"></i> {{ __('Add New Product') }}
+                        </a>
+                        <a href="{{ route('atk.transactions.index') }}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-list me-2"></i> {{ __('View Transaction History') }}
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

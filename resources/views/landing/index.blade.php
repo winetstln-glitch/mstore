@@ -53,7 +53,7 @@
                     </li>
                     <li class="nav-item me-2 ms-2">
                         <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
-                            <i class="fas fa-moon"></i>
+                            <i class="fas fa-moon" id="themeIcon"></i>
                         </button>
                     </li>
                     <li class="nav-item ms-lg-2">
@@ -79,12 +79,15 @@
                 <div class="col-lg-6 hero-content" data-aos="fade-right">
                     <h1>Solusi Digital & Layanan Terlengkap</h1>
                     <p>Dari internet super cepat, perlengkapan kantor berkualitas, hingga perawatan kendaraan Anda. Semua ada di sini.</p>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap justify-content-center justify-content-lg-start">
                         <a href="#packages" class="btn btn-outline-light rounded-pill px-4 py-3 fw-bold">
                             <i class="fas fa-wifi me-2"></i>Pasang Internet
                         </a>
                         <a href="#atk-promo" class="btn btn-outline-light rounded-pill px-4 py-3 fw-bold">
                             <i class="fas fa-shopping-bag me-2"></i>Belanja ATK
+                        </a>
+                        <a href="{{ route('login') }}" class="btn btn-outline-light rounded-pill px-4 py-3 fw-bold d-lg-none">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
                         </a>
                     </div>
                 </div>
@@ -158,7 +161,7 @@
                                     <li><i class="fas fa-check-circle"></i> {{ $package->description }}</li>
                                 @endif
                             </ul>
-                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary btn-select-plan">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary btn-select-plan">
                                 Pilih Paket
                             </a>
                         </div>
@@ -199,7 +202,7 @@
                             <div class="product-description small">
                                 {{ Str::limit($product->description ?? 'Tersedia di toko kami.', 60) }}
                             </div>
-                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary rounded-pill w-100 mt-auto">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary rounded-pill w-100 mt-auto">
                                 <i class="fab fa-whatsapp me-2"></i>Pesan
                             </a>
                         </div>
@@ -243,7 +246,7 @@
                             <h4 class="product-title mb-3">{{ $service->name }}</h4>
                             <div class="product-price display-6 mb-3">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
                             <p class="text-muted mb-4">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
-                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-success rounded-pill w-100">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-success rounded-pill w-100">
                                 <i class="fab fa-whatsapp me-2"></i>Booking Sekarang
                             </a>
                         </div>
@@ -314,7 +317,7 @@
                     <div class="social-links mt-3">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://wa.me/{{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
                 <div class="col-lg-2 col-6 mb-4">
@@ -338,7 +341,7 @@
                     <ul class="list-unstyled text-white-50">
                         <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Jl. Raya Internet No. 123, Kota Digital</li>
                         <li class="mb-2">
-                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}" target="_blank" class="text-white-50 text-decoration-none">
+                            <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-white-50 text-decoration-none">
                                 <i class="fas fa-phone me-2"></i> +62 877 7736 9687
                             </a>
                         </li>
@@ -353,14 +356,15 @@
         </div>
     </footer>
 
-
-
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
+    <!-- Custom Dashboard JS (for Theme Toggle) -->
+    <script src="{{ asset('js/dashboard-custom.js') }}"></script>
+
     <script>
         AOS.init({
             duration: 800,
@@ -410,6 +414,14 @@
 
             // Initial Theme Check
             updateMapTheme();
+
+            // Geolocation Check for Android WebView (User Request)
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition( 
+                    (pos) => console.log("Geolocation Active:", pos.coords.latitude, pos.coords.longitude), 
+                    (err) => console.error("Geolocation Error:", err) 
+                );
+            }
 
             // ODP Icon
             var odpIcon = L.divIcon({

@@ -14,7 +14,6 @@ class Odc extends Model
     protected $fillable = [
         'name',
         'olt_id',
-        'closure_id',
         'region_id',
         'pon_port',
         'area',
@@ -44,15 +43,5 @@ class Odc extends Model
     public function odps(): HasMany
     {
         return $this->hasMany(Odp::class);
-    }
-
-    public function closure(): BelongsTo
-    {
-        return $this->belongsTo(Closure::class);
-    }
-
-    public function childClosures()
-    {
-        return $this->morphMany(Closure::class, 'parent');
     }
 }

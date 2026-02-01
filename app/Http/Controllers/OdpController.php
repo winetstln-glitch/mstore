@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Odp;
 use App\Models\Region;
 use App\Models\Odc;
-use App\Models\Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -31,15 +30,8 @@ class OdpController extends Controller implements HasMiddleware
     {
         $query = Odp::with(['odc', 'region']);
 
-        // Filter by Region
         if ($request->filled('region_id')) {
             $query->where('region_id', $request->region_id);
-        }
-
-        // Filter by Coordinator's Region
-        $user = auth()->user();
-        if ($user && !$user->hasRole('admin') && !$user->hasRole('management') && $user->coordinator && $user->coordinator->region_id) {
-            $query->where('region_id', $user->coordinator->region_id);
         }
 
         if ($request->filled('search')) {
@@ -78,48 +70,12 @@ class OdpController extends Controller implements HasMiddleware
             'capacity' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
             'region_id' => 'required|exists:regions,id',
-            'odc_id' => 'required_without:closure_id|exists:odcs,id',
+            'odc_id' => 'required|exists:odcs,id',
             'color' => 'required|string|max:20',
             'kampung' => 'required|string|max:255',
             'odp_area' => 'nullable|string|max:10',
             'odp_cable' => 'nullable|string|max:10',
-            'closure_id' => 'nullable|exists:closures,id',
         ]);
-
-        if (!empty($validated['closure_id'])) {
-            // Derive ODC ID from Closure
-            $closure = Closure::find($validated['closure_id']);
-            if ($closure && $closure->parent_type === 'App\Models\Odc') {
-                $validated['odc_id'] = $closure->parent_id;
-            } elseif ($closure && $closure->parent_type === 'App\Models\Odp') {
-                // Should not happen for ODP -> Closure -> ODP, but loop prevention?
-                // If Closure parent is ODP, then this ODP is grandchild of another ODP?
-                // Logic: ODP connected to Closure. Closure connected to X.
-                // We need ODC ID for Odp table structure (usually requires odc_id).
-                // If Closure is connected to ODP, we might need to find that ODP's ODC.
-                $parentOdp = Odp::find($closure->parent_id);
-                if ($parentOdp) {
-                    $validated['odc_id'] = $parentOdp->odc_id;
-                }
-            } elseif ($closure && $closure->parent_type === 'App\Models\Closure') {
-                // Recursive lookup? Simplified: Just try to find ODC up the chain.
-                // For now, if we can't find ODC immediately, we might fail or require odc_id input.
-                // But let's assume user selected closure, so we must find ODC or allow null if DB allows.
-                // DB odp.odc_id might be nullable? Let's check migration.
-                // Usually odc_id is foreign key. If we make it nullable in migration, fine.
-                // If not, we MUST find it.
-            }
-            
-            // If we still don't have odc_id, and it's required by DB...
-            // Let's check if we can get it from closure->odc relation if any.
-            // Assuming for now we try best effort or user provided it.
-            if (empty($validated['odc_id'])) {
-                 if ($request->wantsJson()) {
-                     return response()->json(['message' => 'Cannot determine ODC from selected Closure. Please select ODC manually.'], 422);
-                 }
-                 return back()->withErrors(['closure_id' => 'Cannot determine ODC from selected Closure. Please select ODC manually.'])->withInput();
-            }
-        }
 
         if (empty($validated['name'])) {
             $validated['name'] = $this->generateOdpName($validated);
@@ -247,31 +203,11 @@ class OdpController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
-            'region_id' => 'nullable|exists:regions,id',
-            'odc_id' => 'nullable|exists:odcs,id',
+            'region_id' => 'sometimes|required|exists:regions,id',
+            'odc_id' => 'sometimes|required|exists:odcs,id',
             'color' => 'sometimes|required|string|max:20',
             'kampung' => 'sometimes|required|string|max:255',
-            'closure_id' => 'nullable|exists:closures,id',
         ]);
-
-        if (!empty($validated['closure_id'])) {
-            $closure = Closure::find($validated['closure_id']);
-            if ($closure && $closure->parent_type === 'App\Models\Odc') {
-                $validated['odc_id'] = $closure->parent_id;
-            } elseif ($closure && $closure->parent_type === 'App\Models\Odp') {
-                 $parentOdp = Odp::find($closure->parent_id);
-                 if ($parentOdp) {
-                     $validated['odc_id'] = $parentOdp->odc_id;
-                 }
-            }
-
-            if (empty($validated['odc_id'])) {
-                 if ($request->wantsJson()) {
-                     return response()->json(['message' => 'Cannot determine ODC from selected Closure. Please select ODC manually.'], 422);
-                 }
-                 return back()->withErrors(['closure_id' => 'Cannot determine ODC from selected Closure. Please select ODC manually.'])->withInput();
-            }
-        }
 
         $odp->update($validated);
 

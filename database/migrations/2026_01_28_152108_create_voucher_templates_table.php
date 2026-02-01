@@ -13,9 +13,6 @@ return new class extends Migration
     {
         Schema::create('voucher_templates', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->longText('html_content'); // Stores HTML with placeholders
-            $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
     }

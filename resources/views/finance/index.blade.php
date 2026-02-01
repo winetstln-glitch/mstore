@@ -24,6 +24,9 @@
                 <i class="fa-solid fa-cog me-1"></i> {{ __('Settings') }}
             </a>
             @endif
+            <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+                <i class="fa-solid fa-circle-question me-1"></i> {{ __('Bantuan') }}
+            </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
                 <i class="fa-solid fa-plus me-1"></i> {{ __('Add Transaction') }}
             </button>
@@ -161,9 +164,8 @@
                                 <th>{{ __('Pengurus') }}</th>
                                 <th>{{ __('Total Pendapatan') }}</th>
                                 <th>{{ __('Komisi Pengurus') }}</th>
-                                <th>{{ __('Dana ISP') }}</th>
-                                <th>{{ __('Dana Alat') }}</th>
                                 <th>{{ __('Pengeluaran') }}</th>
+                                <th>{{ __('Sudah Disetor') }}</th>
                                 <th>{{ __('Sisa Saldo') }}</th>
                                 <th>{{ __('Aksi') }}</th>
                             </tr>
@@ -174,9 +176,8 @@
                                 <td>{{ $summary->name }}</td>
                                 <td class="text-end">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</td>
                                 <td class="text-end text-danger">-{{ number_format($summary->commission, 0, ',', '.') }}</td>
-                                <td class="text-end text-danger">-{{ number_format($summary->isp_share, 0, ',', '.') }}</td>
-                                <td class="text-end text-danger">-{{ number_format($summary->tools_cost, 0, ',', '.') }}</td>
                                 <td class="text-end text-danger">-{{ number_format($summary->expenses, 0, ',', '.') }}</td>
+                                <td class="text-end text-primary">-{{ number_format($summary->deposited ?? 0, 0, ',', '.') }}</td>
                                 <td class="text-end fw-bold {{ $summary->net_balance >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ number_format($summary->net_balance, 0, ',', '.') }}
                                 </td>
@@ -421,7 +422,8 @@
                                 <th>{{ __('Category') }}</th>
                                 <th>{{ __('Description') }}</th>
                                 <th>{{ __('Coordinator') }}</th>
-                                <th class="text-end">{{ __('Amount') }}</th>
+                                <th class="text-end text-success">{{ __('Pemasukan') }}</th>
+                                <th class="text-end text-danger">{{ __('Pengeluaran') }}</th>
                                 <th>{{ __('Ref') }}</th>
                                 <th class="text-center">{{ __('Action') }}</th>
                             </tr>
@@ -458,8 +460,11 @@
                                         <span class="text-muted">-</span>
                                     @endif
                                 </td>
-                                <td class="align-middle text-end fw-bold {{ $transaction->type == 'income' ? 'text-success' : 'text-danger' }}">
-                                    {{ $transaction->type == 'income' ? '+' : '-' }} {{ number_format($transaction->amount, 0, ',', '.') }}
+                                <td class="align-middle text-end fw-bold text-success">
+                                    {{ $transaction->type == 'income' ? number_format($transaction->amount, 0, ',', '.') : '-' }}
+                                </td>
+                                <td class="align-middle text-end fw-bold text-danger">
+                                    {{ $transaction->type != 'income' ? number_format($transaction->amount, 0, ',', '.') : '-' }}
                                 </td>
                                 <td class="align-middle small">{{ $transaction->reference_number }}</td>
                                 <td class="align-middle text-center row-actions">
@@ -491,7 +496,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9" class="text-center">{{ __('No transactions found.') }}</td>
+                                <td colspan="10" class="text-center">{{ __('No transactions found.') }}</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -563,6 +568,7 @@
                         <select name="type" class="form-select" required>
                             <option value="income">{{ __('Income') }}</option>
                             <option value="expense">{{ __('Expense') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -573,7 +579,11 @@
                                 <option value="Member Income">{{ __('Member Income') }}</option>
                                 <option value="Voucher Income">{{ __('Voucher Income') }}</option>
                             </optgroup>
+                            <optgroup label="{{ __('Transfer') }}">
+                                <option value="Setoran Pengurus">{{ __('Setoran Pengurus') }}</option>
+                            </optgroup>
                             <optgroup label="{{ __('Expense') }}">
+                                <option value="Deposit to Company">{{ __('Setor Tunai') }}</option>
                                 <option value="Salary">{{ __('Salary') }}</option>
                                 <option value="Operational">{{ __('Server Expense') }}</option>
                                 <option value="Transport">{{ __('Transport') }}</option>
@@ -644,6 +654,7 @@
                         <select name="type" class="form-select" required>
                             <option value="income">{{ __('Income') }}</option>
                             <option value="expense">{{ __('Expense') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -654,7 +665,11 @@
                                 <option value="Member Income">{{ __('Member Income') }}</option>
                                 <option value="Voucher Income">{{ __('Voucher Income') }}</option>
                             </optgroup>
+                            <optgroup label="{{ __('Transfer') }}">
+                                <option value="Setoran Pengurus">{{ __('Setoran Pengurus') }}</option>
+                            </optgroup>
                             <optgroup label="{{ __('Expense') }}">
+                                <option value="Deposit to Company">{{ __('Setor Tunai') }}</option>
                                 <option value="Salary">{{ __('Salary') }}</option>
                                 <option value="Operational">{{ __('Server Expense') }}</option>
                                 <option value="Transport">{{ __('Transport') }}</option>
@@ -704,6 +719,50 @@
                     <button type="submit" class="btn btn-primary">{{ __('Update Transaction') }}</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="helpModalLabel"><i class="fa-solid fa-circle-question me-2"></i>{{ __('Panduan Alur Keuangan') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border-info">
+                    <h6 class="alert-heading fw-bold"><i class="fa-solid fa-cash-register me-2"></i>Alur Pemasukan (Income)</h6>
+                    <hr>
+                    <ol>
+                        <li><strong>Input Pemasukan:</strong> Masukkan transaksi baru dengan tipe <code>Income</code> dan kategori <code>Member Income</code> atau <code>Voucher Income</code>.</li>
+                        <li><strong>Otomatisasi Sistem:</strong> Sistem akan secara otomatis menghitung pembagian dana sebagai berikut:
+                            <ul class="mt-2">
+                                <li><span class="badge bg-danger">15%</span> <strong>Komisi Pengurus:</strong> Dihitung dari total pendapatan kotor.</li>
+                                <li><span class="badge bg-danger">25%</span> <strong>Iuran Internet (ISP):</strong> Dihitung dari total pendapatan kotor.</li>
+                                <li><span class="badge bg-danger">20%</span> <strong>Dana Alat (Management):</strong> Dihitung dari total pendapatan kotor.</li>
+                                <li><span class="badge bg-success">Sisa</span> <strong>Net Balance:</strong> Sisa setelah dikurangi poin-poin di atas.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Investor Share:</strong> Dari Net Balance, sistem akan menghitung pembagian untuk investor sesuai persentase kepemilikan.</li>
+                        <li><strong>Dana Kas (Investor Cash Fund):</strong> 5% dari sisa disetor diambil untuk uang kas (sebelum bagi hasil investor).</li>
+                    </ol>
+                </div>
+
+                <div class="alert alert-light border-danger mt-3">
+                    <h6 class="alert-heading fw-bold"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Alur Pengeluaran (Expense)</h6>
+                    <hr>
+                    <ul>
+                        <li><strong>Input Pengeluaran:</strong> Masukkan transaksi dengan tipe <code>Expense</code>.</li>
+                        <li><strong>Kategori:</strong> Pilih kategori yang sesuai (Operational, Repair, dll).</li>
+                        <li><strong>Dampak:</strong> Pengeluaran akan mengurangi saldo kas perusahaan atau saldo koordinator terkait.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+            </div>
         </div>
     </div>
 </div>

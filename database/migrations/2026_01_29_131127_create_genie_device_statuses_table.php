@@ -13,10 +13,6 @@ return new class extends Migration
     {
         Schema::create('genie_device_statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('device_id')->unique();
-            $table->string('ip_address')->nullable();
-            $table->timestamp('last_inform')->nullable();
-            $table->boolean('is_online')->default(false);
             $table->timestamps();
         });
     }

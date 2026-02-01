@@ -11,35 +11,31 @@ class Closure extends Model
 
     protected $fillable = [
         'name',
-        'color',
-        'capacity',
-        'pon_port',
-        'cable_no',
-        'area',
-        'coordinates',
-        'parent_type',
-        'parent_id',
-        'description',
+        'odc_id',
         'region_id',
+        'latitude',
+        'longitude',
+        'capacity',
+        'filled',
+        'description',
+        'image',
     ];
-
-    public function parent()
-    {
-        return $this->morphTo();
-    }
 
     public function region()
     {
         return $this->belongsTo(Region::class);
     }
 
-    public function odcs()
+    public function odc()
     {
-        return $this->hasMany(Odc::class);
+        return $this->belongsTo(Odc::class);
     }
 
-    public function odps()
+    public function isFull(): bool
     {
-        return $this->hasMany(Odp::class);
+        if ($this->capacity === null) {
+            return false;
+        }
+        return $this->filled >= $this->capacity;
     }
 }

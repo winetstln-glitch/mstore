@@ -17,7 +17,6 @@ class Transaction extends Model
         'type',
         'category',
         'amount',
-        'payment_method',
         'description',
         'transaction_date',
         'reference_number',

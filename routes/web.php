@@ -8,7 +8,6 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GenieACSController;
 use App\Http\Controllers\GenieAcsServerController;
 use App\Http\Controllers\HotspotController;
-use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\InstallationWebController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
@@ -22,9 +21,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WashController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
 // Locale Switcher
@@ -35,15 +34,13 @@ Route::get('locale/{lang}', function ($lang) {
     return redirect()->back();
 })->name('locale.switch');
 
-Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
-
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::view('/guide', 'guide.index')->name('guide.index');
     
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -64,7 +61,6 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
-    Route::resource('categories', \App\Http\Controllers\CategoryController::class);
 
     // API Keys Management
     Route::get('settings/apikeys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('apikeys.index');
@@ -88,7 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');
     Route::resource('tickets', TicketWebController::class);
     
-    // Route::resource('installations', InstallationWebController::class); // Removed
+    Route::resource('installations', InstallationWebController::class);
     Route::resource('technicians', TechnicianController::class);
     
     // Technician Attendance
@@ -121,27 +117,18 @@ Route::middleware('auth')->group(function () {
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
     Route::get('hotspot/online', [RouterController::class, 'index'])->name('hotspot.online');
-    Route::get('hotspot/generate', [HotspotController::class, 'generate'])->name('hotspot.generate');
-    Route::post('hotspot/generate', [HotspotController::class, 'storeGenerate'])->name('hotspot.store_generate');
-    Route::get('hotspot/print', [HotspotController::class, 'print'])->name('hotspot.print');
-    Route::get('hotspot/profile/create', [HotspotController::class, 'createProfile'])->name('hotspot.create_profile');
-    Route::post('hotspot/profile/store', [HotspotController::class, 'storeProfile'])->name('hotspot.store_profile');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
-    Route::get('pppoe', [PppoeController::class, 'index'])->name('pppoe.index');
     Route::resource('routers', RouterController::class);
 
     // Business & Operations
+    Route::get('finance/material-report', [FinanceController::class, 'materialReport'])->name('finance.material_report');
+    Route::get('finance/export-accounting', [FinanceController::class, 'exportAccounting'])->name('finance.export_accounting');
     Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
-    Route::post('finance/settings', [FinanceController::class, 'updateSettings'])->name('finance.settings.update');
-    Route::get('finance/export-accounting', [FinanceController::class, 'downloadAccountingReport'])->name('finance.export_accounting');
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
     
     Route::get('finance/income-breakdown/pdf', [FinanceController::class, 'downloadIncomeBreakdownPdf'])->name('finance.income_breakdown.pdf');
-    Route::get('finance/material-report/pdf', [FinanceController::class, 'downloadMaterialReportPdf'])->name('finance.material_report.pdf');
-    Route::get('finance/material-report/excel', [FinanceController::class, 'downloadMaterialReportExcel'])->name('finance.material_report.excel');
-    Route::get('finance/material-report', [FinanceController::class, 'materialReport'])->name('finance.material_report');
     Route::get('finance/investor-share/pdf', [FinanceController::class, 'downloadInvestorSharePdf'])->name('finance.investor_share.pdf');
 
     Route::get('finance/manager-report', [FinanceController::class, 'managerReport'])->name('finance.manager_report');
@@ -210,42 +197,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'assign'])->name('inventory.assets.assign'); // GET for form
     Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
-    Route::get('/inventory/assets/handover-letter/{user}', [\App\Http\Controllers\AssetController::class, 'downloadHandoverLetter'])->name('inventory.assets.handover_letter');
-
-    // ATK Cashier
-    Route::get('atk/products/export', [\App\Http\Controllers\AtkProductController::class, 'exportExcel'])->name('atk.products.export');
-    Route::post('atk/products/import', [\App\Http\Controllers\AtkProductController::class, 'importExcel'])->name('atk.products.import');
-    Route::post('atk/products/{product}/restock', [\App\Http\Controllers\AtkProductController::class, 'restock'])->name('atk.products.restock');
-    Route::resource('atk/products', \App\Http\Controllers\AtkProductController::class)->names('atk.products');
-    Route::get('atk/pos', [\App\Http\Controllers\AtkTransactionController::class, 'create'])->name('atk.pos');
-    Route::post('atk/pos', [\App\Http\Controllers\AtkTransactionController::class, 'store'])->name('atk.pos.store');
-    Route::get('atk/transactions/export', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('atk.transactions.export');
-    Route::get('atk/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'index'])->name('atk.transactions.index');
-    Route::get('atk/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('atk.transactions.receipt');
-    Route::delete('atk/transactions/{transaction}', [\App\Http\Controllers\AtkTransactionController::class, 'destroy'])->name('atk.transactions.destroy');
-    Route::get('atk/transactions/{transaction}', [\App\Http\Controllers\AtkTransactionController::class, 'show'])->name('atk.transactions.show');
-    Route::get('atk/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('atk.dashboard');
-
-    // Car Wash
-    Route::prefix('wash')->name('wash.')->group(function () {
-        Route::get('/dashboard', [WashController::class, 'index'])->name('index');
-        Route::get('/export', [WashController::class, 'exportExcel'])->name('export');
-        Route::get('/pos', [WashController::class, 'create'])->name('pos');
-        Route::post('/pos', [WashController::class, 'store'])->name('store');
-        Route::get('/receipt/{transaction}', [WashController::class, 'receipt'])->name('receipt');
-        
-        Route::get('/services', [WashController::class, 'services'])->name('services.index');
-        Route::post('/services', [WashController::class, 'storeService'])->name('services.store');
-        Route::put('/services/{service}', [WashController::class, 'updateService'])->name('services.update');
-        Route::delete('/services/{service}', [WashController::class, 'destroyService'])->name('services.destroy');
-
-        Route::resource('employees', \App\Http\Controllers\WashEmployeeController::class);
-    });
-
-    // Reports
-    Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
-    Route::get('reports/atk', [\App\Http\Controllers\ReportController::class, 'atk'])->name('reports.atk');
-    Route::get('reports/wash', [\App\Http\Controllers\ReportController::class, 'wash'])->name('reports.wash');
 
     // GenieACS / Network Monitor Routes
     Route::prefix('genieacs')->name('genieacs.')->group(function () {
@@ -261,7 +212,35 @@ Route::middleware('auth')->group(function () {
         Route::post('/device/{id}/alias', [GenieACSController::class, 'updateAlias'])->name('updateAlias');
         Route::post('/device/{id}/wan', [GenieACSController::class, 'updateWan'])->name('updateWan');
         Route::post('/device/{id}/wlan', [GenieACSController::class, 'updateWlan'])->name('updateWlan');
-        Route::post('/device/{id}/admin', [GenieACSController::class, 'updateAdmin'])->name('updateAdmin');
         Route::post('/device/{id}/param', [GenieACSController::class, 'updateParam'])->name('updateParam');
+    });
+
+    // Wash Module Routes
+    Route::prefix('wash')->name('wash.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])->name('index');
+        Route::get('/pos', [\App\Http\Controllers\WashTransactionController::class, 'pos'])->name('pos');
+        Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])->name('transactions.store');
+        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show']);
+    });
+
+    // Wash Services (Auto Wash)
+    Route::resource('wash/services', \App\Http\Controllers\WashController::class)->names([
+        'index' => 'wash.services.index',
+        'create' => 'wash.services.create',
+        'store' => 'wash.services.store',
+        'edit' => 'wash.services.edit',
+        'update' => 'wash.services.update',
+        'destroy' => 'wash.services.destroy',
+    ])->except(['show']);
+    Route::resource('wash/employees', \App\Http\Controllers\WashEmployeeController::class)->names('wash.employees');
+    
+    // ATK Store Routes
+    Route::prefix('atk')->name('atk.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('dashboard');
+        Route::get('/pos', [\App\Http\Controllers\AtkTransactionController::class, 'pos'])->name('pos');
+        Route::post('/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
+        Route::resource('products', \App\Http\Controllers\AtkProductController::class);
+        Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show']);
     });
 });

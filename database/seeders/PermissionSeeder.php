@@ -21,7 +21,6 @@ class PermissionSeeder extends Seeder
             ['name' => 'user.create', 'label' => 'Create User', 'group' => 'User Management'],
             ['name' => 'user.edit', 'label' => 'Edit User', 'group' => 'User Management'],
             ['name' => 'user.delete', 'label' => 'Delete User', 'group' => 'User Management'],
-            ['name' => 'user.export', 'label' => 'Export Users', 'group' => 'User Management'],
 
             // Role Management
             ['name' => 'role.view', 'label' => 'View Roles', 'group' => 'Role Management'],
@@ -34,9 +33,6 @@ class PermissionSeeder extends Seeder
             ['name' => 'customer.create', 'label' => 'Create Customer', 'group' => 'Customer Management'],
             ['name' => 'customer.edit', 'label' => 'Edit Customer', 'group' => 'Customer Management'],
             ['name' => 'customer.delete', 'label' => 'Delete Customer', 'group' => 'Customer Management'],
-            ['name' => 'customer.import', 'label' => 'Import Customers', 'group' => 'Customer Management'],
-            ['name' => 'customer.export', 'label' => 'Export Customers', 'group' => 'Customer Management'],
-            ['name' => 'customer.manage_network', 'label' => 'Manage Customer Network', 'group' => 'Customer Management'],
 
             // Ticket Management
             ['name' => 'ticket.view', 'label' => 'View Tickets', 'group' => 'Ticket Management'],
@@ -94,17 +90,9 @@ class PermissionSeeder extends Seeder
             ['name' => 'router.edit', 'label' => 'Edit Router', 'group' => 'Router Management'],
             ['name' => 'router.delete', 'label' => 'Delete Router', 'group' => 'Router Management'],
 
-            // PPPoE
-            ['name' => 'pppoe.view', 'label' => 'View PPPoE', 'group' => 'PPPoE'],
-            ['name' => 'pppoe.manage', 'label' => 'Manage PPPoE', 'group' => 'PPPoE'],
-
             // Finance
             ['name' => 'finance.view', 'label' => 'View Finance', 'group' => 'Finance'],
             ['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance'],
-
-            // Hotspot
-            ['name' => 'hotspot.view', 'label' => 'View Hotspot Sessions', 'group' => 'Hotspot'],
-            ['name' => 'hotspot.manage', 'label' => 'Manage Hotspot', 'group' => 'Hotspot'],
 
             // Map
             ['name' => 'map.view', 'label' => 'View Map', 'group' => 'Map'],
@@ -147,8 +135,6 @@ class PermissionSeeder extends Seeder
             ['name' => 'inventory.view', 'label' => 'View Inventory', 'group' => 'Inventory (Alat & Material)'],
             ['name' => 'inventory.manage', 'label' => 'Manage Inventory', 'group' => 'Inventory (Alat & Material)'],
             ['name' => 'inventory.pickup', 'label' => 'Pickup Inventory', 'group' => 'Inventory (Alat & Material)'],
-            ['name' => 'asset.view_mine', 'label' => 'View My Assets', 'group' => 'Inventory (Alat & Material)'],
-            ['name' => 'asset.manage', 'label' => 'Manage Assets', 'group' => 'Inventory (Alat & Material)'],
 
             // Coordinator Management
             ['name' => 'coordinator.view', 'label' => 'View Coordinators', 'group' => 'Coordinator Management'],
@@ -184,24 +170,6 @@ class PermissionSeeder extends Seeder
             // Notification
             ['name' => 'notification.view', 'label' => 'View Notifications', 'group' => 'Notification'],
             ['name' => 'notification.manage', 'label' => 'Manage Notifications', 'group' => 'Notification'],
-
-            // ATK Cashier
-            ['name' => 'atk.view', 'label' => 'View ATK Dashboard', 'group' => 'ATK Cashier'],
-            ['name' => 'atk.manage', 'label' => 'Manage ATK Products', 'group' => 'ATK Cashier'],
-            ['name' => 'atk.pos', 'label' => 'Access POS', 'group' => 'ATK Cashier'],
-            ['name' => 'atk.report', 'label' => 'View ATK Reports', 'group' => 'ATK Cashier'],
-
-            // Car Wash
-            ['name' => 'wash.view', 'label' => 'View Wash Dashboard', 'group' => 'Car Wash'],
-            ['name' => 'wash.manage', 'label' => 'Manage Wash Services', 'group' => 'Car Wash'],
-            ['name' => 'wash.pos', 'label' => 'Access Wash POS', 'group' => 'Car Wash'],
-            ['name' => 'wash.report', 'label' => 'View Wash Reports', 'group' => 'Car Wash'],
-
-            // Guide (User Manual)
-            ['name' => 'guide.view', 'label' => 'View User Guide', 'group' => 'Guide'],
-
-            // System Logs
-            ['name' => 'log.view', 'label' => 'View System Logs', 'group' => 'Settings'],
         ];
 
         $permissionNames = collect($permissions)->pluck('name')->toArray();

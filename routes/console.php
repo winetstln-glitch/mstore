@@ -10,6 +10,3 @@ Artisan::command('inspire', function () {
 
 // Schedule Network Monitor
 Schedule::command('monitor:network')->everyTenMinutes();
-
-// Schedule GenieACS Monitor (Telegram Notifications & Status)
-Schedule::command('genieacs:monitor')->everyMinute();

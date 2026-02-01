@@ -1,88 +1,54 @@
 @extends('layouts.app')
 
+@section('title', __('Transaction History'))
+
 @section('content')
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Riwayat Transaksi ATK</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Filter Data</h6>
-        </div>
-        <div class="card-body">
-            <form action="{{ route('atk.transactions.index') }}" method="GET" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">Tanggal Mulai</label>
-                    <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tanggal Akhir</label>
-                    <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Atau Pilih Bulan</label>
-                    <input type="month" name="month" class="form-control" value="{{ request('month') }}">
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-undo"></i>
-                    </a>
-                    <button type="submit" formaction="{{ route('atk.transactions.export') }}" class="btn btn-success w-100">
-                        <i class="fas fa-file-excel"></i> Export
-                    </button>
-                </div>
-            </form>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
+        <a href="{{ route('atk.pos') }}" class="btn btn-primary">
+            <i class="fa-solid fa-cash-register me-2"></i> {{ __('New Transaction') }}
+        </a>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Invoice</th>
-                            <th>Tanggal</th>
-                            <th>Kasir</th>
-                            <th>Pelanggan</th>
-                            <th>Total</th>
-                            <th>Metode</th>
-                            <th>Aksi</th>
+                            <th>{{ __('Date') }}</th>
+                            <th>{{ __('Transaction No') }}</th>
+                            <th>{{ __('Cashier') }}</th>
+                            <th>{{ __('Total') }}</th>
+                            <th>{{ __('Method') }}</th>
+                            <th>{{ __('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($transactions as $transaction)
+                        @foreach($transactions as $transaction)
                         <tr>
-                            <td>{{ $transaction->invoice_number }}</td>
                             <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                            <td>{{ $transaction->user->name }}</td>
-                            <td>{{ $transaction->customer_name }}</td>
+                            <td>{{ $transaction->transaction_number }}</td>
+                            <td>{{ $transaction->user->name ?? '-' }}</td>
                             <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
                             <td><span class="badge bg-secondary">{{ strtoupper($transaction->payment_method) }}</span></td>
                             <td>
-                                <a href="{{ route('atk.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i> Detail
+                                <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-info">
+                                    <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <form action="{{ route('atk.transactions.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-trash"></i> Hapus
-                                    </button>
-                                </form>
+                                <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-warning">
+                                    <i class="fa-solid fa-print"></i>
+                                </a>
                             </td>
                         </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center">Belum ada transaksi.</td>
-                        </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
-            {{ $transactions->links() }}
+            <div class="mt-3">
+                {{ $transactions->links() }}
+            </div>
         </div>
     </div>
 </div>

@@ -2,25 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class WashTransactionItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'wash_transaction_id', 
-        'wash_service_id', 
-        'employee_id',
-        'price', 
-        'quantity', 
-        'subtotal'
+        'wash_transaction_id', 'wash_service_id', 'service_name', 'price', 'quantity', 'subtotal'
     ];
 
-    public function employee()
+    public function transaction()
     {
-        return $this->belongsTo(User::class, 'employee_id');
+        return $this->belongsTo(WashTransaction::class);
     }
 
     public function service()

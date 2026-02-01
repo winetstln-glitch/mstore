@@ -2,31 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class WashTransaction extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'transaction_code', 
-        'customer_id',
-        'customer_name', 
-        'plate_number', 
-        'total_amount', 
-        'amount_paid', 
-        'payment_method', 
-        'status', 
-        'user_id', 
-        'employee_id',
-        'notes'
+        'user_id', 'transaction_number', 'customer_name', 'vehicle_plate', 
+        'total_amount', 'payment_method', 'cash_amount', 'change_amount', 'notes'
     ];
-
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class);
-    }
 
     public function items()
     {
@@ -36,10 +19,5 @@ class WashTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function employee()
-    {
-        return $this->belongsTo(User::class, 'employee_id');
     }
 }

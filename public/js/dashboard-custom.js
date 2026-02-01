@@ -1,37 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar Toggle
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.body.classList.toggle('sb-sidenav-toggled');
-        });
-    }
-
-    // Close Sidebar via X button (Mobile)
-    const sidebarClose = document.getElementById('sidebarClose');
-    if (sidebarClose) {
-        sidebarClose.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.body.classList.remove('sb-sidenav-toggled');
-        });
-    }
-
-    // Close Sidebar when clicking overlay (Mobile)
-    const overlay = document.getElementById('sidebar-overlay');
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            document.body.classList.remove('sb-sidenav-toggled');
-        });
-    }
-
-    // Theme Toggle Logic
-    const themeToggle = document.getElementById('themeToggle');
+    
+    /* -------------------------------------------------------------------------- */
+    /*                               Theme Toggle Logic                           */
+    /* -------------------------------------------------------------------------- */
+    const themeToggleBtn = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
     const htmlElement = document.documentElement;
 
-    if (themeToggle && themeIcon && htmlElement) {
-        function updateThemeIcon(theme) {
+    // Function to set theme
+    function setTheme(theme) {
+        htmlElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        // Update Icon
+        if (themeIcon) {
             if (theme === 'dark') {
                 themeIcon.classList.remove('fa-moon');
                 themeIcon.classList.add('fa-sun');
@@ -41,19 +23,62 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Initialize Icon
-        updateThemeIcon(htmlElement.getAttribute('data-bs-theme'));
+        // Dispatch Custom Event for Maps etc.
+        const event = new CustomEvent('themeChanged', { detail: { theme: theme } });
+        window.dispatchEvent(event);
+    }
 
-        themeToggle.addEventListener('click', () => {
+    // Initialize Theme
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme) {
+        setTheme(storedTheme);
+    } else {
+        // Default to light or system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
+    }
+
+    // Event Listener
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', function() {
             const currentTheme = htmlElement.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            htmlElement.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
+            setTheme(newTheme);
+        });
+    }
 
-            // Dispatch custom event for components to react
-            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
+
+    /* -------------------------------------------------------------------------- */
+    /*                               Sidebar Logic                                */
+    /* -------------------------------------------------------------------------- */
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const body = document.body;
+
+    // Create Overlay if it doesn't exist
+    if (!document.getElementById('sidebar-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'sidebar-overlay';
+        overlay.addEventListener('click', function() {
+            body.classList.remove('sb-sidenav-toggled');
+        });
+        document.body.appendChild(overlay);
+    }
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            body.classList.toggle('sb-sidenav-toggled');
+        });
+    }
+
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', function(e) {
+            e.preventDefault();
+            body.classList.remove('sb-sidenav-toggled');
         });
     }
 });

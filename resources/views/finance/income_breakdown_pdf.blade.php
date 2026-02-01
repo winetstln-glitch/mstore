@@ -65,9 +65,10 @@
                 <th>Investor</th>
                 <th class="text-end">Pendapatan Kotor</th>
                 <th class="text-end">Komisi Pengurus ({{ $coordRate }}%)</th>
+                <th class="text-end" style="background-color: #e3f2fd;">Sisa Setelah Pengurus</th>
                 <th class="text-end">Iuran Internet ({{ $ispRate }}%)</th>
+                <th class="text-end" style="background-color: #e3f2fd;">Sisa Setelah ISP</th>
                 <th class="text-end">Manajemen ({{ $toolRate }}%)</th>
-                <th class="text-end">Pendapatan Pengelola ({{ $managerRate }}%)</th>
                 <th class="text-end" style="background-color: #ffc107; color: #fff;">Sisa Bersih (Net Balance)</th>
                 <th class="text-end">Dana Kas ({{ $investorCashRate }}%)</th>
                 <th class="text-end">Income Bersih</th>
@@ -81,10 +82,11 @@
                 <td>{{ $breakdown->investor_names }}</td>
                 <td class="text-end fw-bold">{{ number_format($breakdown->gross_amount, 0, ',', '.') }}</td>
                 <td class="text-end text-danger">-{{ number_format($breakdown->commission, 0, ',', '.') }}</td>
+                <td class="text-end fw-bold bg-light">{{ number_format($breakdown->remaining_1, 0, ',', '.') }}</td>
                 <td class="text-end text-danger">-{{ number_format($breakdown->isp_share, 0, ',', '.') }}</td>
+                <td class="text-end fw-bold bg-light">{{ number_format($breakdown->remaining_2, 0, ',', '.') }}</td>
                 <td class="text-end text-danger">-{{ number_format($breakdown->tool_fund, 0, ',', '.') }}</td>
-                <td class="text-end text-danger fw-bold">-{{ number_format($breakdown->manager_income, 0, ',', '.') }}</td>
-                <td class="text-end fw-bold bg-light">{{ number_format($breakdown->net_balance, 0, ',', '.') }}</td>
+                <td class="text-end fw-bold bg-light">{{ number_format($breakdown->remaining_3, 0, ',', '.') }}</td>
                 <td class="text-end text-danger">{{ $breakdown->cash_fund > 0 ? '-' . number_format($breakdown->cash_fund, 0, ',', '.') : '0' }}</td>
                 <td class="text-end text-success">{{ number_format($breakdown->investor_share, 0, ',', '.') }}</td>
             </tr>

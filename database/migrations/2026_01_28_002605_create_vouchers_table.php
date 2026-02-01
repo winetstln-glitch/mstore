@@ -13,13 +13,6 @@ return new class extends Migration
     {
         Schema::create('vouchers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('hotspot_profile_id')->constrained()->onDelete('cascade');
-            $table->string('code')->unique();
-            $table->string('password')->nullable();
-            $table->decimal('price', 10, 2)->default(0);
-            $table->enum('status', ['active', 'used', 'expired'])->default('active');
-            $table->foreignId('generated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->string('batch_id')->nullable()->index(); // For grouping prints
             $table->timestamps();
         });
     }

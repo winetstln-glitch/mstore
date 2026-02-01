@@ -111,7 +111,7 @@ body {
     background: white;
     color: var(--primary-color);
     border-radius: 50px;
-    padding: 0.75rem 2rem;
+    padding: 0.55rem 1rem;
     font-weight: 800;
     font-size: 1.1rem;
     border: none;
@@ -122,6 +122,96 @@ body {
     transform: translateY(-3px);
     box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     color: var(--primary-color);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    /* Navbar Mobile Adjustments */
+    .navbar-custom {
+        padding: 0.5rem 0;
+    }
+
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    /* Mobile Menu */
+    .navbar-collapse {
+        margin-top: 0.5rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 1rem;
+        display: block;
+    }
+
+    /* Button Alignment */
+    .nav-item.ms-lg-2 {
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+    
+    .btn-login {
+        width: 100%;
+        display: block;
+    }
+
+    .hero-section {
+        padding: 5rem 0 3rem; /* Reduced padding for mobile */
+        text-align: center;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem; /* Adjusted for better mobile fit */
+    }
+
+    .hero-content p {
+        font-size: 1rem; /* Smaller text for mobile */
+    }
+    
+    .section-title h2 {
+        font-size: 1.8rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+        padding: 1rem; /* Compact padding */
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+
+    .monitoring-content {
+        order: 2;
+    }
+    
+    .monitoring-image {
+        order: 1;
+        margin-bottom: 2rem;
+    }
+}
+
+/* Extra Small Devices (Android Small) */
+@media (max-width: 375px) {
+    .hero-content h1 {
+        font-size: 1.6rem;
+    }
+    
+    .hero-content p {
+        font-size: 0.9rem;
+    }
+    
+    .hero-section .btn {
+        padding: 0.5rem 1rem !important; /* Smaller padding */
+        font-size: 0.9rem !important; /* Smaller font */
+        width: 100%; /* Full width buttons for better touch targets */
+        margin-bottom: 0.5rem;
+    }
+    
+    .hero-section .d-flex {
+        flex-direction: column; /* Stack buttons vertically */
+    }
 }
 
 /* Feature Cards (Stats) */
@@ -184,106 +274,84 @@ body {
     transition: all 0.3s;
     border: none;
     height: 100%;
-    position: relative;
-    display: flex;
-    flex-direction: column;
 }
 
-.pricing-card:hover {
-    transform: translateY(-10px);
+.pricing-card:hover, .product-card:hover {
+    transform: translateY(-5px);
 }
 
 .pricing-header {
-    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    background: linear-gradient(135deg, var(--primary-color), #224abe);
+    color: white;
     padding: 2rem;
     text-align: center;
-    color: white;
 }
 
 .pricing-speed {
-    font-size: 2.5rem;
-    font-weight: 900;
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .pricing-unit {
-    font-size: 1rem;
-    opacity: 0.8;
+    font-size: 1.2rem;
+    opacity: 0.9;
 }
 
 .pricing-body {
     padding: 2rem;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+    text-align: center;
 }
 
 .pricing-price {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
+    margin-bottom: 1rem;
 }
 
 .price-amount {
     font-size: 2rem;
     font-weight: 800;
+    color: var(--text-dark);
 }
 
 .price-period {
     color: var(--secondary-color);
-    font-size: 0.9rem;
 }
 
 .pricing-features {
     list-style: none;
     padding: 0;
-    margin: 0 0 2rem 0;
-    flex-grow: 1;
+    margin: 1.5rem 0;
+    text-align: left;
 }
 
 .pricing-features li {
     margin-bottom: 0.8rem;
-    display: flex;
-    align-items: center;
     color: var(--secondary-color);
 }
 
-.pricing-features li i {
+.pricing-features i {
     color: #1cc88a;
-    margin-right: 10px;
+    margin-right: 0.5rem;
 }
 
-.btn-select-plan {
-    width: 100%;
-    border-radius: 50px;
-    padding: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: auto;
-}
-
-/* ATK & Wash Product Cards */
+/* Product Cards (ATK & Wash) */
 .product-card {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--card-shadow);
     transition: all 0.3s;
-    border: 1px solid var(--card-border);
+    border: none;
     height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.product-card:hover {
-    transform: translateY(-5px);
-}
-
 .product-image {
-    height: 200px;
     width: 100%;
+    height: 200px;
     object-fit: cover;
-    background-color: #eee;
+    background-color: var(--bg-light);
 }
 
 .product-body {
@@ -295,160 +363,151 @@ body {
 
 .product-category {
     font-size: 0.8rem;
-    color: var(--accent-color);
-    font-weight: 700;
     text-transform: uppercase;
+    color: var(--primary-color);
+    font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 .product-title {
-    font-size: 1.25rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
     color: var(--text-dark);
+    margin-bottom: 0.5rem;
 }
 
 .product-price {
-    font-size: 1.2rem;
     font-weight: 800;
-    color: var(--primary-color);
+    color: var(--text-dark);
+    font-size: 1.2rem;
     margin-bottom: 1rem;
 }
 
 .product-description {
     color: var(--secondary-color);
-    font-size: 0.9rem;
     margin-bottom: 1.5rem;
     flex-grow: 1;
 }
 
-/* Monitoring Section */
-.monitoring-section {
-    padding: 5rem 0;
-    background: var(--card-bg);
-    margin-top: 3rem;
-}
-
-.feature-box {
-    padding: 2rem;
-}
-
-.feature-icon-circle {
-    width: 60px;
-    height: 60px;
-    background: rgba(78, 115, 223, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary-color);
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.bg-white {
-    background-color: var(--card-bg) !important;
-}
-
-.mockup-img {
-    border-radius: var(--radius-lg);
-    box-shadow: 0 1rem 3rem rgba(0,0,0,0.175);
-    width: 100%;
-    transition: transform 0.3s;
-}
-
-.mockup-img:hover {
-    transform: scale(1.02);
-}
-
-/* Dark Mode Toggle */
-.theme-toggle {
-    background: transparent;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.theme-toggle:hover {
-    background: var(--primary-color);
-    color: white;
-}
-
-[data-bs-theme="dark"] .theme-toggle {
-    border-color: #fff;
-    color: #fff;
-}
-
-[data-bs-theme="dark"] .theme-toggle:hover {
-    background: #fff;
-    color: var(--text-dark);
-}
-
-/* Footer */
-footer {
-    background: #2d3436;
-    color: white;
-    padding: 4rem 0 2rem;
-    margin-top: 5rem;
-}
-
-
-.footer-brand {
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    display: block;
-    color: white;
-    text-decoration: none;
-}
-
-.social-links a {
-    display: inline-flex;
-    width: 40px;
-    height: 40px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    margin-right: 10px;
-    transition: all 0.3s;
-    text-decoration: none;
-}
-
-.social-links a:hover {
-    background: var(--primary-color);
-    transform: translateY(-3px);
-}
-
-/* Mobile Responsive */
+/* App-like Mobile Tweaks */
 @media (max-width: 768px) {
-    .hero-section {
-        padding: 6rem 0 4rem;
-        text-align: center;
+    #coverageMap {
+        height: 300px !important;
     }
     
-    .hero-content h1 {
-        font-size: 2.2rem;
+    .product-image {
+        height: 180px;
     }
     
-    .stat-card {
-        margin-bottom: 1rem;
+    .section-title {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.75rem;
+    }
+    
+    /* Ensure all images are responsive */
+    img {
+        max-width: 100%;
+        height: auto;
     }
 
-    .monitoring-content {
-        order: 2;
+    /* Better spacing for mobile */
+    .pricing-card, .product-card {
+        margin-bottom: 0; /* Remove bottom margin as we use horizontal scroll */
     }
     
-    .monitoring-image {
-        order: 1;
-        margin-bottom: 2rem;
+    /* Full width buttons on mobile */
+    .btn-select-plan, .product-body .btn {
+        width: 100%;
+        padding: 0.8rem;
+    }
+
+    /* Horizontal Scrolling for Mobile (App-like feel) */
+    #packages .row, 
+    #atk-promo .row, 
+    #wash-services .row {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 1.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        overscroll-behavior-x: contain; /* Prevent browser navigation on scroll end */
+    }
+
+    #packages .row::-webkit-scrollbar,
+    #atk-promo .row::-webkit-scrollbar,
+    #wash-services .row::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+
+    #packages .col-md-6, 
+    #atk-promo .col-md-6, 
+    #wash-services .col-md-6 {
+        flex: 0 0 85%;
+        max-width: 85%;
+        scroll-snap-align: center;
+        margin-right: 1rem;
+    }
+
+    /* Center the first item if needed or add padding */
+    #packages .row::before,
+    #atk-promo .row::before,
+    #wash-services .row::before {
+        content: '';
+        flex: 0 0 0.5rem;
+    }
+    
+    /* Stats Section Horizontal Scroll */
+    .mt-n5 > .row {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        overscroll-behavior-x: contain;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+    }
+    
+    .mt-n5 > .row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mt-n5 > .row > .col-md-4 {
+        flex: 0 0 80%; /* Slightly smaller than main cards */
+        max-width: 80%;
+        scroll-snap-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Adjust stat card for horizontal scroll context */
+    .stat-card {
+        margin-bottom: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    /* Add "spacer" pseudo-elements for start/end padding */
+    .mt-n5 > .row::before,
+    .mt-n5 > .row::after {
+        content: '';
+        flex: 0 0 0.5rem;
+    }
+
+    /* Active State (Ripple-like effect) */
+    .btn:active, .nav-link:active, .stat-card:active, .pricing-card:active, .product-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
     }
 }

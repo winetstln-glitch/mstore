@@ -2,67 +2,48 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Role;
+use App\Models\WashEmployee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class WashEmployeeController extends Controller
 {
     public function index()
     {
-        $employees = User::whereHas('role', function($q) {
-            $q->where('name', 'wash.employee');
-        })->latest()->paginate(10);
+        $employees = WashEmployee::all();
         return view('wash.employees.index', compact('employees'));
+    }
+
+    public function create()
+    {
+        return view('wash.employees.create');
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+            'name' => 'required',
         ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'is_active' => true,
-        ]);
-
-        $user->assignRole('wash.employee');
-
-        return redirect()->route('wash.employees.index')->with('success', 'Karyawan berhasil ditambahkan.');
+        WashEmployee::create($request->all());
+        return redirect()->route('wash.employees.index')->with('success', 'Employee created successfully.');
     }
 
-    public function update(Request $request, User $employee)
+    public function edit(WashEmployee $employee)
+    {
+        return view('wash.employees.edit', compact('employee'));
+    }
+
+    public function update(Request $request, WashEmployee $employee)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
-            'password' => 'nullable|string|min:8',
+            'name' => 'required',
         ]);
-
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-        ];
-
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $employee->update($data);
-
-        return redirect()->route('wash.employees.index')->with('success', 'Karyawan berhasil diperbarui.');
+        $employee->update($request->all());
+        return redirect()->route('wash.employees.index')->with('success', 'Employee updated successfully.');
     }
 
-    public function destroy(User $employee)
+    public function destroy(WashEmployee $employee)
     {
         $employee->delete();
-        return redirect()->route('wash.employees.index')->with('success', 'Karyawan berhasil dihapus.');
+        return redirect()->route('wash.employees.index')->with('success', 'Employee deleted successfully.');
     }
 }
