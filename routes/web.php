@@ -35,8 +35,10 @@ Route::get('locale/{lang}', function ($lang) {
     return redirect()->back();
 })->name('locale.switch');
 
-Route::get('/', [LoginController::class, 'create'])->name('login');
-Route::post('/', [LoginController::class, 'store']);
+Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
+
+Route::get('/login', [LoginController::class, 'create'])->name('login');
+Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function () {

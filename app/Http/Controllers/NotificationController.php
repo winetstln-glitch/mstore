@@ -31,7 +31,7 @@ class NotificationController extends Controller implements HasMiddleware
             $url = route('tickets.show', $data['ticket_id']);
         }
         if (!$url) {
-            $url = url('/');
+            $url = route('dashboard');
         }
 
         $model->delete();
