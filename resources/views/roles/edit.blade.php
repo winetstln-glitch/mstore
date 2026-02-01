@@ -36,30 +36,28 @@
                     <div class="mb-4">
                         <h5 class="fw-bold mb-3">{{ __('Permissions') }}</h5>
                         
-                        <div class="row g-4">
+                        <div class="permission-groups">
                             @foreach($permissions as $group => $perms)
-                                <div class="col-md-6 col-lg-4">
-                                    <div class="card h-100 border permission-group">
-                                        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-2">
-                                            <h6 class="mb-0 fw-bold">{{ $group }}</h6>
-                                            <div class="form-check">
-                                                <input type="checkbox" class="form-check-input group-checkbox" onchange="toggleGroup(this)">
-                                                <label class="form-check-label small">{{ __('All') }}</label>
-                                            </div>
+                                <div class="mb-4 permission-group border rounded p-3 bg-light-subtle">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                        <h6 class="mb-0 fw-bold text-primary">{{ $group }}</h6>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input group-checkbox" onchange="toggleGroup(this)">
+                                            <label class="form-check-label small fw-semibold">{{ __('Select All') }}</label>
                                         </div>
-                                        <div class="card-body p-3">
-                                            <div class="d-flex flex-column gap-2">
-                                                @foreach($perms as $permission)
-                                                    <div class="form-check">
-                                                        <input id="perm_{{ $permission->id }}" name="permissions[]" type="checkbox" value="{{ $permission->id }}" 
-                                                            {{ in_array($permission->id, $rolePermissions) ? 'checked' : '' }}
-                                                            class="form-check-input permission-checkbox"
-                                                            onchange="checkGroup(this)">
-                                                        <label for="perm_{{ $permission->id }}" class="form-check-label">{{ $permission->label }}</label>
-                                                    </div>
-                                                @endforeach
+                                    </div>
+                                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-2">
+                                        @foreach($perms as $permission)
+                                            <div class="col">
+                                                <div class="form-check">
+                                                    <input id="perm_{{ $permission->id }}" name="permissions[]" type="checkbox" value="{{ $permission->id }}" 
+                                                        {{ in_array($permission->id, $rolePermissions) ? 'checked' : '' }}
+                                                        class="form-check-input permission-checkbox"
+                                                        onchange="checkGroup(this)">
+                                                    <label for="perm_{{ $permission->id }}" class="form-check-label">{{ $permission->label }}</label>
+                                                </div>
                                             </div>
-                                        </div>
+                                        @endforeach
                                     </div>
                                 </div>
                             @endforeach

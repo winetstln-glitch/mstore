@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Hotspot Active Sessions'))
+@section('title', __('PPPoE Active Sessions'))
 
 @push('styles')
 <style>
@@ -88,10 +88,10 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="h4 mb-1">
-                {{ __('Hotspot Active Sessions') }}
+                {{ __('PPPoE Active Sessions') }}
             </h1>
             <div class="text-muted small">
-                {{ __('Active Hotspot users from Mikrotik.') }}
+                {{ __('Active PPPoE sessions from Mikrotik.') }}
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -129,8 +129,8 @@
             <div class="col-md-4">
                 <div class="card session-summary-card">
                     <div class="card-body text-center">
-                        <div class="session-summary-label mb-1">{{ __('Hotspot Aktif') }}</div>
-                        <div class="session-summary-value mb-0">{{ count($hotspotActiveSessions) }}</div>
+                        <div class="session-summary-label mb-1">{{ __('PPPoE Aktif') }}</div>
+                        <div class="session-summary-value mb-0">{{ count($pppoeActiveSessions) }}</div>
                     </div>
                 </div>
             </div>
@@ -138,40 +138,39 @@
 
         <div class="card shadow-sm border-0">
             <div class="card-header bg-body d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">{{ __('Hotspot Active List') }}</span>
+                <span class="fw-semibold">{{ __('PPPoE Active List') }}</span>
                 <div class="input-group input-group-sm" style="max-width: 260px;">
                     <span class="input-group-text bg-light border-0">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" class="form-control border-0" id="hotspotSearch" placeholder="{{ __('Cari user atau IP...') }}">
+                    <input type="text" class="form-control border-0" id="pppoeSearch" placeholder="{{ __('Cari username atau IP...') }}">
                 </div>
             </div>
             <div class="card-body p-0">
-                @if($mikrotikConnected && !empty($hotspotActiveSessions))
+                @if($mikrotikConnected && !empty($pppoeActiveSessions))
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-0 align-middle session-table" id="hotspotTable">
+                        <table class="table table-sm table-hover mb-0 align-middle session-table" id="pppoeTable">
                             <thead class="table-light">
                                 <tr>
                                     <th class="session-index">#</th>
                                     <th>{{ __('Username') }}</th>
                                     <th>{{ __('IP Address') }}</th>
                                     <th>{{ __('MAC Address') }}</th>
-                                    <th>{{ __('Server') }}</th>
-                                    <th>{{ __('Login By') }}</th>
+                                    <th>{{ __('Service') }}</th>
                                     <th>{{ __('Uptime') }}</th>
                                     <th class="text-end">{{ __('Aksi') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($hotspotActiveSessions as $index => $session)
+                                @foreach($pppoeActiveSessions as $index => $session)
                                     @php
-                                        $user = $session['user'] ?? '';
+                                        $username = $session['name'] ?? '';
                                         $ip = $session['address'] ?? '';
-                                        $mac = $session['mac-address'] ?? '';
+                                        $mac = $session['caller-id'] ?? '';
                                     @endphp
                                     <tr>
                                         <td class="session-index">{{ $index + 1 }}</td>
-                                        <td>{{ $user ?: '-' }}</td>
+                                        <td>{{ $username ?: '-' }}</td>
                                         <td>
                                             @if($ip)
                                                 <span class="session-chip session-chip-accent">
@@ -192,14 +191,13 @@
                                                 <span class="text-muted">-</span>
                                             @endif
                                         </td>
-                                        <td>{{ $session['server'] ?? '-' }}</td>
-                                        <td>{{ $session['login-by'] ?? '-' }}</td>
+                                        <td>{{ $session['service'] ?? '-' }}</td>
                                         <td class="session-uptime">{{ $session['uptime'] ?? '-' }}</td>
                                         <td class="text-end">
-                                            @if(!empty($session['.id']))
+                                            @if($username)
                                                 <button type="button"
                                                     class="btn btn-outline-danger btn-xs"
-                                                    onclick="disconnectHotspotSession('{{ route('routers.hotspot.disconnect', $router) }}', '{{ $session['.id'] }}')">
+                                                    onclick="disconnectPppoeSession('{{ route('routers.pppoe.disconnect', $router) }}', '{{ $username }}')">
                                                     <i class="fa-solid fa-power-off me-1"></i>{{ __('Disconnect') }}
                                                 </button>
                                             @endif
@@ -212,9 +210,9 @@
                 @else
                     <div class="p-3 text-center text-muted small">
                         @if(!$mikrotikConnected)
-                            {{ __('Router tidak terhubung ke Mikrotik, tidak dapat membaca user Hotspot aktif.') }}
+                            {{ __('Router tidak terhubung ke Mikrotik, tidak dapat membaca sesi PPPoE aktif.') }}
                         @else
-                            {{ __('Tidak ada user Hotspot aktif saat ini.') }}
+                            {{ __('Tidak ada sesi PPPoE aktif saat ini.') }}
                         @endif
                     </div>
                 @endif
@@ -234,8 +232,8 @@
         return meta ? meta.getAttribute('content') : '';
     }
 
-    function disconnectHotspotSession(url, id) {
-        if (!confirm('{{ __('Disconnect Hotspot session for this user?') }}')) {
+    function disconnectPppoeSession(url, name) {
+        if (!confirm('{{ __('Disconnect PPPoE session for this user?') }}')) {
             return;
         }
 
@@ -246,7 +244,7 @@
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ id: id })
+            body: JSON.stringify({ name: name })
         })
             .then(function (response) {
                 return response.json();
@@ -284,11 +282,11 @@
 
     // Simple search functionality
     document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('hotspotSearch');
+        const searchInput = document.getElementById('pppoeSearch');
         if(searchInput) {
             searchInput.addEventListener('keyup', function() {
                 const value = this.value.toLowerCase();
-                const table = document.getElementById('hotspotTable');
+                const table = document.getElementById('pppoeTable');
                 if(!table) return;
                 
                 const rows = table.getElementsByTagName('tr');
