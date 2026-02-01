@@ -26,6 +26,9 @@ class LandingController extends Controller
             ->select('name', 'latitude', 'longitude', 'filled', 'capacity')
             ->get();
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'odps'));
+        // WhatsApp Contact Number (Format: 628xxx)
+        $waNumber = '6281234567890'; // Default placeholder, replace with actual number or setting
+
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'odps', 'waNumber'));
     }
 }
