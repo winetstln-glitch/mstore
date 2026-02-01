@@ -26,13 +26,15 @@
     </script>
 </head>
 <body>
-    <div class="auth-shell position-relative">
-        <a href="{{ url('/') }}" class="back-home-btn">
-            <i class="fa-solid fa-arrow-left me-2"></i> Kembali
-        </a>
-        <button type="button" class="theme-toggle-btn" id="themeToggleLogin">
-            <i class="fa-solid fa-moon"></i>
-        </button>
+    <div class="auth-shell">
+        <div class="auth-header-actions d-flex justify-content-between align-items-center mb-3">
+            <a href="{{ url('/') }}" class="back-home-btn">
+                <i class="fa-solid fa-arrow-left me-2"></i> Kembali
+            </a>
+            <button type="button" class="theme-toggle-btn" id="themeToggleLogin">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
         <div class="auth-card">
             <div class="auth-left">
                 <div>
@@ -114,7 +116,7 @@
                     </div>
                 </form>
 
-                <div class="auth-footer mt-4">
+                <div class="auth-footer text-center mt-4">
                     &copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. All rights reserved.
                 </div>
             </div>

@@ -236,6 +236,11 @@
                         <i class="fa-solid fa-users"></i> {{ __('Karyawan Steam') }}
                     </a>
                     @endif
+                    @if(Auth::user()->hasPermission('wash.report'))
+                    <a href="{{ route('wash.transactions.index') }}" class="sidebar-item {{ request()->routeIs('wash.transactions.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
+                    </a>
+                    @endif
                 </div>
             </div>
             @endif

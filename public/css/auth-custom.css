@@ -121,15 +121,13 @@ body {
 }
 
 .theme-toggle-btn {
-    position: absolute;
-    top: -50px;
-    right: 20px;
     background: none;
     border: none;
     color: var(--auth-text);
     font-size: 1.25rem;
     cursor: pointer;
     transition: color 0.3s;
+    padding: 0.5rem;
 }
 
 .theme-toggle-btn:hover {
@@ -138,9 +136,6 @@ body {
 
 /* Back Home Button */
 .back-home-btn {
-    position: absolute;
-    top: -50px;
-    left: 20px;
     background: none;
     border: none;
     color: var(--auth-text);
@@ -151,6 +146,7 @@ body {
     align-items: center;
     font-weight: 600;
     transition: color 0.3s;
+    padding: 0.5rem;
 }
 
 .back-home-btn:hover {
@@ -178,7 +174,7 @@ body {
 @media (max-width: 768px) {
     .auth-card {
         flex-direction: column;
-        margin-top: 2rem; /* Add spacing from top buttons */
+        margin-top: 0;
     }
     .auth-left {
         padding: 2rem 1rem;

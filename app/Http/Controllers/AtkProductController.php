@@ -29,7 +29,12 @@ class AtkProductController extends Controller
             'stock' => 'required|integer|min:0',
             'unit' => 'nullable|string',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('atk-products', 'public');
+        }
 
         AtkProduct::create($validated);
 
@@ -52,7 +57,16 @@ class AtkProductController extends Controller
             'stock' => 'required|integer|min:0',
             'unit' => 'nullable|string',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($product->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+            }
+            $validated['image'] = $request->file('image')->store('atk-products', 'public');
+        }
 
         $product->update($validated);
 
@@ -61,6 +75,9 @@ class AtkProductController extends Controller
 
     public function destroy(AtkProduct $product)
     {
+        if ($product->image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+        }
         $product->delete();
         return redirect()->route('atk.products.index')->with('success', __('Product deleted successfully.'));
     }

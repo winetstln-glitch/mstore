@@ -35,9 +35,16 @@ class WashController extends Controller
             'vehicle_type' => 'required|in:car,motor',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'image' => 'nullable|image|max:2048',
         ]);
 
-        WashService::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('wash-services', 'public');
+        }
+
+        WashService::create($data);
 
         return redirect()->route('wash.services.index')
             ->with('success', 'Service created successfully.');
@@ -46,12 +53,7 @@ class WashController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(WashService $service) // Implicit binding requires correct route param name.
-    // In web.php: Route::resource('wash/services', ...). The param is likely 'service' or derived from 'services'.
-    // Checking web.php: Route::resource('wash/services', ...); 
-    // Laravel default param for 'wash/services' is 'service'.
-    // However, I should check if I need to explicitly define the parameter name or use $id.
-    // Let's use standard dependency injection.
+    public function edit(WashService $service)
     {
         return view('wash.services.edit', compact('service'));
     }
@@ -67,9 +69,20 @@ class WashController extends Controller
             'vehicle_type' => 'required|in:car,motor',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'image' => 'nullable|image|max:2048',
         ]);
 
-        $service->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($service->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($service->image);
+            }
+            $data['image'] = $request->file('image')->store('wash-services', 'public');
+        }
+
+        $service->update($data);
 
         return redirect()->route('wash.services.index')
             ->with('success', 'Service updated successfully.');
@@ -80,6 +93,10 @@ class WashController extends Controller
      */
     public function destroy(WashService $service)
     {
+        if ($service->image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($service->image);
+        }
+        
         $service->delete();
 
         return redirect()->route('wash.services.index')

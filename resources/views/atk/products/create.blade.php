@@ -13,7 +13,7 @@
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            <form action="{{ route('atk.products.store') }}" method="POST">
+            <form action="{{ route('atk.products.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -55,6 +55,11 @@
                         <label class="form-label">{{ __('Description') }}</label>
                         <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description') }}</textarea>
                         @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{{ __('Product Image') }}</label>
+                        <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
+                        @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
                 <div class="text-end">

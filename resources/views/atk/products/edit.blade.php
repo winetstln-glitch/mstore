@@ -57,6 +57,16 @@
                         <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description', $product->description) }}</textarea>
                         @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{{ __('Product Image') }}</label>
+                        @if($product->image)
+                            <div class="mb-2">
+                                <img src="{{ Storage::url($product->image) }}" alt="Product Image" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        @endif
+                        <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
+                        @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
                 </div>
                 <div class="text-end">
                     <button type="submit" class="btn btn-primary">{{ __('Update Product') }}</button>

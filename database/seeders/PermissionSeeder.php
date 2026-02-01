@@ -170,6 +170,24 @@ class PermissionSeeder extends Seeder
             // Notification
             ['name' => 'notification.view', 'label' => 'View Notifications', 'group' => 'Notification'],
             ['name' => 'notification.manage', 'label' => 'Manage Notifications', 'group' => 'Notification'],
+
+            // ATK Store
+            ['name' => 'atk.view', 'label' => 'View ATK Dashboard', 'group' => 'ATK Store'],
+            ['name' => 'atk.pos', 'label' => 'Access ATK POS', 'group' => 'ATK Store'],
+            ['name' => 'atk.manage', 'label' => 'Manage ATK Products', 'group' => 'ATK Store'],
+            ['name' => 'atk.report', 'label' => 'View ATK Reports', 'group' => 'ATK Store'],
+
+            // Car Wash
+            ['name' => 'wash.view', 'label' => 'View Wash Dashboard', 'group' => 'Car Wash'],
+            ['name' => 'wash.pos', 'label' => 'Access Wash POS', 'group' => 'Car Wash'],
+            ['name' => 'wash.manage', 'label' => 'Manage Wash Services', 'group' => 'Car Wash'],
+            ['name' => 'wash.report', 'label' => 'View Wash Reports', 'group' => 'Car Wash'],
+
+            // Hotspot & PPPoE (Services)
+            ['name' => 'hotspot.view', 'label' => 'View Hotspot', 'group' => 'Service Management'],
+            ['name' => 'hotspot.manage', 'label' => 'Manage Hotspot', 'group' => 'Service Management'],
+            ['name' => 'pppoe.view', 'label' => 'View PPPoE', 'group' => 'Service Management'],
+            ['name' => 'pppoe.manage', 'label' => 'Manage PPPoE', 'group' => 'Service Management'],
         ];
 
         $permissionNames = collect($permissions)->pluck('name')->toArray();

@@ -6,6 +6,7 @@ use App\Models\Package;
 use App\Models\AtkProduct;
 use App\Models\WashService;
 use App\Models\Setting;
+use App\Models\Odp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -54,6 +55,20 @@ class LandingController extends Controller
             $waNumber = '6281234567890';
         }
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber'));
+        // Safely fetch ODPs for Map
+        try {
+            if (class_exists(Odp::class) && Schema::hasTable('odps')) {
+                $odps = Odp::select('name', 'latitude', 'longitude', 'capacity', 'filled')
+                           ->whereNotNull('latitude')
+                           ->whereNotNull('longitude')
+                           ->get();
+            } else {
+                $odps = collect([]);
+            }
+        } catch (\Exception $e) {
+            $odps = collect([]);
+        }
+
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber', 'odps'));
     }
 }
