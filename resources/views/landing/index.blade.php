@@ -158,7 +158,7 @@
                                     <li><i class="fas fa-check-circle"></i> {{ $package->description }}</li>
                                 @endif
                             </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary btn-select-plan">
+                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary btn-select-plan">
                                 Pilih Paket
                             </a>
                         </div>
@@ -199,7 +199,7 @@
                             <div class="product-description small">
                                 {{ Str::limit($product->description ?? 'Tersedia di toko kami.', 60) }}
                             </div>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary rounded-pill w-100 mt-auto">
+                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary rounded-pill w-100 mt-auto">
                                 <i class="fab fa-whatsapp me-2"></i>Pesan
                             </a>
                         </div>
@@ -243,7 +243,7 @@
                             <h4 class="product-title mb-3">{{ $service->name }}</h4>
                             <div class="product-price display-6 mb-3">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
                             <p class="text-muted mb-4">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-success rounded-pill w-100">
+                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}&text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-success rounded-pill w-100">
                                 <i class="fab fa-whatsapp me-2"></i>Booking Sekarang
                             </a>
                         </div>
@@ -314,7 +314,7 @@
                     <div class="social-links mt-3">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="https://wa.me/{{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
                 <div class="col-lg-2 col-6 mb-4">
@@ -338,7 +338,7 @@
                     <ul class="list-unstyled text-white-50">
                         <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Jl. Raya Internet No. 123, Kota Digital</li>
                         <li class="mb-2">
-                            <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-white-50 text-decoration-none">
+                            <a href="https://api.whatsapp.com/send?phone={{ $waNumber }}" target="_blank" class="text-white-50 text-decoration-none">
                                 <i class="fas fa-phone me-2"></i> +62 877 7736 9687
                             </a>
                         </li>
