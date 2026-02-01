@@ -20,6 +20,9 @@
     <!-- AOS Animation -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
     <!-- Custom CSS -->
     <link href="{{ asset('css/landing.css') }}" rel="stylesheet">
 </head>
@@ -77,7 +80,7 @@
                     <h1>Solusi Digital & Layanan Terlengkap</h1>
                     <p>Dari internet super cepat, perlengkapan kantor berkualitas, hingga perawatan kendaraan Anda. Semua ada di sini.</p>
                     <div class="d-flex gap-2">
-                        <a href="#packages" class="btn btn-cta shadow">
+                        <a href="#packages" class="btn btn-outline-light rounded-pill px-4 py-3 fw-bold">
                             <i class="fas fa-wifi me-2"></i>Pasang Internet
                         </a>
                         <a href="#atk-promo" class="btn btn-outline-light rounded-pill px-4 py-3 fw-bold">
@@ -260,14 +263,8 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6 monitoring-image" data-aos="fade-right">
-                    <!-- Placeholder for Map/App Screenshot -->
-                    <div class="bg-dark rounded-4 p-2 shadow-lg" style="height: 350px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #2c3e50, #4ca1af);">
-                        <div class="text-center text-white">
-                            <i class="fas fa-map-marked-alt fa-5x mb-3 opacity-50"></i>
-                            <h4>Live Coverage Map</h4>
-                            <p>Transparansi jangkauan jaringan kami</p>
-                        </div>
-                    </div>
+                    <!-- Live Coverage Map -->
+                    <div id="coverageMap" class="shadow-lg" style="height: 400px; width: 100%; border-radius: 1rem; z-index: 1;"></div>
                 </div>
                 <div class="col-lg-6 monitoring-content ps-lg-5" data-aos="fade-left">
                     <h2 class="mb-4 fw-bold">Pantau Jaringan Secara Real-Time</h2>
@@ -355,10 +352,90 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     <script>
         AOS.init({
             duration: 800,
             once: true
+        });
+
+        // Initialize Map
+        document.addEventListener('DOMContentLoaded', function() {
+            var odps = @json($odps ?? []);
+            
+            // Default Center (Server Location or generic Indonesia coords if needed)
+            var defaultLat = -6.800278;
+            var defaultLng = 105.939159;
+            var initialZoom = 13;
+
+            // If we have ODPs, center on the first one
+            if (odps.length > 0) {
+                defaultLat = parseFloat(odps[0].latitude);
+                defaultLng = parseFloat(odps[0].longitude);
+                initialZoom = 15;
+            }
+
+            var map = L.map('coverageMap').setView([defaultLat, defaultLng], initialZoom);
+
+            // Tile Layers
+            var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            });
+
+            var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            });
+
+            // Theme Handling
+            function updateMapTheme() {
+                var currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                if (currentTheme === 'dark') {
+                    if (map.hasLayer(osm)) map.removeLayer(osm);
+                    darkLayer.addTo(map);
+                } else {
+                    if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                    osm.addTo(map);
+                }
+            }
+
+            // Initial Theme Check
+            updateMapTheme();
+
+            // ODP Icon
+            var odpIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color: #4e73df; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);'></div>",
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+            });
+
+            // Add Markers
+            var bounds = [];
+            odps.forEach(function(odp) {
+                if(odp.latitude && odp.longitude) {
+                    var marker = L.marker([odp.latitude, odp.longitude], {icon: odpIcon})
+                        .bindPopup("<b>" + odp.name + "</b><br>Status: Available")
+                        .addTo(map);
+                    bounds.push([odp.latitude, odp.longitude]);
+                }
+            });
+
+            // Fit bounds if multiple markers exist
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, {padding: [50, 50]});
+            }
+
+            // Listen for theme changes (from theme toggle script)
+            const themeToggleBtn = document.getElementById('themeToggle');
+            if(themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function() {
+                    setTimeout(updateMapTheme, 100); // Small delay to wait for attribute change
+                });
+            }
         });
 
         // Navbar scroll effect

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Package;
 use App\Models\AtkProduct;
 use App\Models\WashService;
+use App\Models\Odp;
 use Illuminate\Http\Request;
 
 class LandingController extends Controller
@@ -19,6 +20,12 @@ class LandingController extends Controller
         // Fetch Wash Services (Active ones)
         $washServices = WashService::where('is_active', true)->with('category')->get();
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices'));
+        // Fetch ODPs for Coverage Map (only those with coordinates)
+        $odps = Odp::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('name', 'latitude', 'longitude', 'filled', 'capacity')
+            ->get();
+
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'odps'));
     }
 }
