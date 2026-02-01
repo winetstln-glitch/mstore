@@ -223,6 +223,13 @@
                 @forelse($washServices as $service)
                 <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="{{ 100 * $loop->iteration }}">
                     <div class="product-card h-100 border-0 shadow-sm">
+                        @if($service->image)
+                            <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-image">
+                        @else
+                            <div class="product-image d-flex align-items-center justify-content-center bg-light text-secondary">
+                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-2x"></i>
+                            </div>
+                        @endif
                         <div class="product-body text-center">
                             <div class="mb-3">
                                 <span class="badge bg-info rounded-pill px-3 py-2">
