@@ -27,7 +27,7 @@ class LandingController extends Controller
             ->get();
 
         // WhatsApp Contact Number (Format: 628xxx)
-        $waNumber = '6281234567890'; // Default placeholder, replace with actual number or setting
+        $waNumber = '6287777369687'; // Default placeholder, replace with actual number or setting
 
         return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'odps', 'waNumber'));
     }

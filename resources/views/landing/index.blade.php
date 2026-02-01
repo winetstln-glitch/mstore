@@ -339,7 +339,7 @@
                         <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Jl. Raya Internet No. 123, Kota Digital</li>
                         <li class="mb-2">
                             <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-white-50 text-decoration-none">
-                                <i class="fas fa-phone me-2"></i> +62 812 3456 7890
+                                <i class="fas fa-phone me-2"></i> +62 877 7736 9687
                             </a>
                         </li>
                         <li class="mb-2"><i class="fas fa-envelope me-2"></i> support@mstore.com</li>
