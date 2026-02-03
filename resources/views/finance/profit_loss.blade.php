@@ -63,116 +63,134 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead class="bg-light">
-                        <tr>
-                            <th>{{ __('Uraian') }}</th>
-                            <th class="text-end">{{ __('Jumlah') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="table-light fw-bold">
-                            <td colspan="2" class="text-uppercase text-primary">{{ __('Pendapatan') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Pendapatan Member') }}</td>
-                            <td class="text-end">{{ number_format($memberIncome, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Pendapatan Voucher') }}</td>
-                            <td class="text-end">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Pendapatan Lainnya') }}</td>
-                            <td class="text-end">{{ number_format($otherIncome, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="fw-bold table-success">
-                            <td>{{ __('Total Pendapatan') }}</td>
-                            <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
-                        </tr>
+    <table class="table table-bordered table-sm">
+        <thead class="bg-light">
+            <tr>
+                <th>{{ __('Uraian') }}</th>
+                <th class="text-end text-success">{{ __('Jumlah Pemasukan') }}</th>
+                <th class="text-end text-danger">{{ __('Jumlah Pengeluaran') }}</th>
+            </tr>
+        </thead>
+        <tbody>
 
-                        <tr>
-                            <td colspan="2"></td>
-                        </tr>
+            {{-- ================= PENDAPATAN ================= --}}
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-uppercase text-primary">{{ __('Pendapatan') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Pendapatan Member') }}</td>
+                <td class="text-end">{{ number_format($memberIncome, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
+            <tr>
+                <td>{{ __('Pendapatan Voucher') }}</td>
+                <td class="text-end">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
+            <tr>
+                <td>{{ __('Pendapatan Lainnya') }}</td>
+                <td class="text-end">{{ number_format($otherIncome, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
+            <tr class="fw-bold table-success">
+                <td>{{ __('Total Pendapatan') }}</td>
+                <td class="text-end">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
 
-                        <tr class="table-light fw-bold">
-                            <td colspan="2" class="text-uppercase text-warning">{{ __('Beban Pokok Pendapatan') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Komisi Koordinator') }} (±{{ number_format($coordRate, 1) }}%)</td>
-                            <td class="text-end text-danger">-{{ number_format($coordCommission, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Pembayaran ISP') }} (±{{ number_format($ispRate, 1) }}%)</td>
-                            <td class="text-end text-danger">-{{ number_format($ispPayment, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Dana Alat') }} (±{{ number_format($toolRate, 1) }}%)</td>
-                            <td class="text-end text-danger">-{{ number_format($toolFund, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="fw-bold table-warning">
-                            <td>{{ __('Total Beban Pokok Pendapatan') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($totalCOGS, 0, ',', '.') }}</td>
-                        </tr>
+            <tr><td colspan="3"></td></tr>
 
-                        <tr>
-                            <td colspan="2"></td>
-                        </tr>
+            {{-- ================= BEBAN POKOK ================= --}}
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-uppercase text-warning">{{ __('Beban Pokok Pendapatan') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Komisi Koordinator') }} (±{{ number_format($coordRate, 1) }}%)</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($coordCommission, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Pembayaran ISP') }} (±{{ number_format($ispRate, 1) }}%)</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($ispPayment, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Dana Alat') }} (±{{ number_format($toolRate, 1) }}%)</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($toolFund, 0, ',', '.') }}</td>
+            </tr>
+            <tr class="fw-bold table-warning">
+                <td>{{ __('Total Beban Pokok Pendapatan') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($totalCOGS, 0, ',', '.') }}</td>
+            </tr>
 
-                        <tr class="table-secondary text-white fw-bold">
-                            <td>{{ __('Laba Kotor') }}</td>
-                            <td class="text-end">{{ number_format($grossProfit, 0, ',', '.') }}</td>
-                        </tr>
+            <tr><td colspan="3"></td></tr>
 
-                        <tr>
-                            <td colspan="2"></td>
-                        </tr>
+            {{-- ================= LABA KOTOR ================= --}}
+            <tr class="table-secondary text-white fw-bold">
+                <td>{{ __('Laba Kotor') }}</td>
+                <td class="text-end">{{ number_format($grossProfit, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
 
-                        <tr class="table-light fw-bold">
-                            <td colspan="2" class="text-uppercase text-danger">{{ __('Biaya Operasional') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Biaya Server') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($serverExpenses, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Transportasi') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($transportExpenses, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Konsumsi') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($consumptionExpenses, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Perbaikan') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($repairExpenses, 0, ',', '.') }}</td>
-                        </tr>
-                        @if($otherOperatingExpenses != 0)
-                        <tr>
-                            <td>{{ __('Biaya Operasional Lainnya') }}</td>
-                            <td class="text-end text-danger">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
-                        </tr>
-                        @endif
+            <tr><td colspan="3"></td></tr>
 
-                        <tr>
-                            <td colspan="2"></td>
-                        </tr>
+            {{-- ================= BIAYA OPERASIONAL ================= --}}
+            <tr class="table-light fw-bold">
+                <td colspan="3" class="text-uppercase text-danger">{{ __('Biaya Operasional') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Biaya Server') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($serverExpenses, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Transportasi') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($transportExpenses, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Konsumsi') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($consumptionExpenses, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>{{ __('Perbaikan') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($repairExpenses, 0, ',', '.') }}</td>
+            </tr>
+            @if($otherOperatingExpenses != 0)
+            <tr>
+                <td>{{ __('Biaya Operasional Lainnya') }}</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+            </tr>
+            @endif
 
-                        <tr class="table-primary text-white fw-bold">
-                            <td>{{ __('Laba Bersih (Investor Share)') }}</td>
-                            <td class="text-end">{{ number_format($netProfit, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>{{ __('Cadangan Kas Investor') }} ({{ $investorCashPercent }}%)</td>
-                            <td class="text-end text-danger">-{{ number_format($investorCashReserve, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="fw-bold table-primary">
-                            <td>{{ __('Bagi Hasil Investor Setelah Kas') }}</td>
-                            <td class="text-end">{{ number_format($investorShareAfterCash, 0, ',', '.') }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <tr><td colspan="3"></td></tr>
+
+            {{-- ================= LABA BERSIH ================= --}}
+            <tr class="table-primary text-white fw-bold">
+                <td>{{ __('Laba Bersih (Investor Share)') }}</td>
+                <td class="text-end">{{ number_format($netProfit, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
+            <tr>
+                <td>{{ __('Cadangan Kas Investor') }} ({{ $investorCashPercent }}%)</td>
+                <td class="text-end">-</td>
+                <td class="text-end">{{ number_format($investorCashReserve, 0, ',', '.') }}</td>
+            </tr>
+            <tr class="fw-bold table-primary">
+                <td>{{ __('Bagi Hasil Investor Setelah Kas') }}</td>
+                <td class="text-end">{{ number_format($investorShareAfterCash, 0, ',', '.') }}</td>
+                <td class="text-end">-</td>
+            </tr>
+
+        </tbody>
+    </table>
+</div>
+
         </div>
     </div>
 </div>
