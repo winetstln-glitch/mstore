@@ -90,7 +90,7 @@
                         <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Active') }}
                     </a>
                     @endif
-                    @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
+                    @if(Auth::user()->hasPermission('pppoe.view'))
                     <a href="{{ route('routers.index') }}" class="sidebar-item {{ request()->routeIs('routers.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
                     </a>
