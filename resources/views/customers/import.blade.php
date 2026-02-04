@@ -2,63 +2,87 @@
 
 @section('content')
 <div class="row justify-content-center">
-    <div class="col-lg-12">
+    <div class="col-12 col-lg-12 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary border-0 py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-body-emphasis">Import Customers from GenieACS</h5>
-                <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i> Back to List
-                </a>
+            <!-- Responsive Header -->
+            <div class="card-header bg-body-tertiary border-0 py-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                    <h5 class="mb-0 fw-bold text-body-emphasis text-truncate" style="max-width: 100%;">
+                        <i class="fa-solid fa-cloud-arrow-down me-2 text-primary"></i>
+                        {{ __('Import from GenieACS') }}
+                    </h5>
+                    <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
+                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
+                    </a>
+                </div>
             </div>
 
-            <div class="card-body p-4">
+            <div class="card-body p-3 p-md-4">
+                <!-- Search Form -->
                 <form action="{{ route('customers.import') }}" method="GET" class="mb-4">
                     <div class="input-group">
                         <span class="input-group-text bg-light"><i class="fa-solid fa-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control" placeholder="Search by Serial Number, PPPoE Username, or Product Class..." value="{{ $search ?? '' }}">
-                        <button type="submit" class="btn btn-primary">Search</button>
+                        <input type="text" name="search" class="form-control" placeholder="{{ __('Search Serial, Username, Model...') }}" value="{{ $search ?? '' }}">
+                        <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('customers.import') }}" class="btn btn-outline-secondary">Clear</a>
+                            <a href="{{ route('customers.import') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </div>
                 </form>
 
                 @if($newDevices->isEmpty())
                     <div class="alert alert-info shadow-sm border-0">
-                        <i class="fa-solid fa-circle-info me-2"></i> 
-                        @if(request('search'))
-                            No new devices found matching "<strong>{{ request('search') }}</strong>". They might already be imported or do not exist.
-                        @else
-                            No new devices found to import. All devices in GenieACS are already linked to customers.
-                        @endif
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-info fa-2x me-3 text-info opacity-50"></i>
+                            <div>
+                                @if(request('search'))
+                                    <strong>{{ __('No devices found.') }}</strong><br>
+                                    <span class="small">{{ __('No new devices matching your search.') }}</span>
+                                @else
+                                    <strong>{{ __('All Synced.') }}</strong><br>
+                                    <span class="small">{{ __('No new devices found in GenieACS.') }}</span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 @else
                     <div class="alert alert-light border shadow-sm mb-4">
                         <i class="fa-solid fa-lightbulb text-warning me-2"></i> 
-                        Found <strong>{{ $newDevices->count() }}</strong> devices in GenieACS that are not yet registered as customers.
+                        {{ __('Found :count devices.', ['count' => $newDevices->count()]) }}
                     </div>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="bg-body-tertiary">
                                 <tr>
-                                    <th scope="col" class="ps-3">Serial Number</th>
-                                    <th scope="col">Model / SSID</th>
-                                    <th scope="col">IP Address</th>
-                                    <th scope="col">Last Inform</th>
-                                    <th scope="col" class="text-end pe-3">Action</th>
+                                    <th scope="col" class="ps-3">{{ __('Serial') }}</th>
+                                    <!-- Hidden on mobile to save space -->
+                                    <th scope="col" class="d-none d-md-table-cell">{{ __('Model / SSID') }}</th>
+                                    <th scope="col" class="d-none d-md-table-cell">{{ __('IP Address') }}</th>
+                                    <th scope="col" class="d-none d-md-table-cell">{{ __('Last Inform') }}</th>
+                                    <th scope="col" class="text-end pe-3" style="width: 140px;">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($newDevices as $device)
                                     <tr>
-                                        <td class="ps-3 fw-medium">{{ $device->serial }}</td>
-                                        <td>
-                                            <div class="small fw-bold">{{ $device->device_model }}</div>
-                                            <div class="small text-muted">{{ $device->ssid_name }}</div>
+                                        <td class="ps-3">
+                                            <div class="fw-bold font-monospace text-break">{{ $device->serial }}</div>
+                                            <!-- Visible only on mobile below Serial -->
+                                            <div class="d-md-none small text-muted mt-1">
+                                                {{ $device->device_model ?? 'Unknown Model' }}
+                                            </div>
                                         </td>
-                                        <td>{{ $device->ip }}</td>
-                                        <td>{{ $device->lastInform }}</td>
+                                        
+                                        <!-- Desktop Only -->
+                                        <td class="d-none d-md-table-cell">
+                                            <div class="fw-bold small">{{ $device->device_model }}</div>
+                                            <div class="small text-muted text-truncate" style="max-width: 200px;">{{ $device->ssid_name }}</div>
+                                        </td>
+
+                                        <td class="d-none d-md-table-cell text-muted small font-monospace">{{ $device->ip }}</td>
+                                        <td class="d-none d-md-table-cell text-muted small">{{ $device->lastInform }}</td>
+                                        
                                         <td class="text-end pe-3">
                                             <a href="{{ route('customers.create', [
                                                 'onu_serial' => $device->serial, 
@@ -67,8 +91,8 @@
                                                 'device_model' => $device->device_model,
                                                 'ssid_name' => $device->ssid_name,
                                                 'ssid_password' => $device->ssid_password
-                                            ]) }}" class="btn btn-primary btn-sm">
-                                                <i class="fa-solid fa-plus me-1"></i> Add as Customer
+                                            ]) }}" class="btn btn-primary btn-sm d-block w-100">
+                                                <i class="fa-solid fa-plus me-1"></i> {{ __('Add Customer') }}
                                             </a>
                                         </td>
                                     </tr>
