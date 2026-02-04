@@ -1,26 +1,68 @@
 @extends('layouts.app')
 
 @section('content')
+@push('styles')
+<style>
+    /* Mobile Optimization Styles */
+    @media (max-width: 768px) {
+        /* Map height adjustment */
+        #map-picker {
+            height: 250px; /* Reduce height on mobile to save vertical space */
+        }
+
+        /* Sticky Bottom Action Bar */
+        .mobile-sticky-footer {
+            position: sticky;
+            bottom: 0;
+            background-color: var(--bs-body-bg);
+            padding: 1rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1020; /* Above other content */
+            margin-left: -1rem; /* Compensate for card padding */
+            margin-right: -1rem;
+            margin-bottom: -1rem;
+            border-top: 1px solid rgba(0,0,0,0.075);
+        }
+
+        /* Ensure inputs are 16px to prevent iOS auto-zoom */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+
+        /* Make connection type radios stack better if needed */
+        .d-flex.gap-3 {
+            gap: 1.5rem !important;
+        }
+    }
+    
+    /* Map container z-index to ensure it doesn't overlap sticky footer incorrectly */
+    #map-picker {
+        z-index: 1;
+    }
+</style>
+@endpush
+
 <div class="row justify-content-center">
-    <div class="col-lg-10">
+    <!-- Changed to col-12 on mobile for full width usage -->
+    <div class="col-12 col-lg-10 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Create Customer') }}</h5>
+                <h5 class="mb-0 fw-bold text-body-emphasis fs-6 fs-md-5">{{ __('Create Customer') }}</h5>
                 <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
+                    <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Back') }}</span>
                 </a>
             </div>
 
-            <div class="card-body p-4">
-                <form method="POST" action="{{ route('customers.store') }}">
+            <div class="card-body p-3 p-md-4">
+                <form method="POST" action="{{ route('customers.store') }}" id="customerForm">
                     @csrf
 
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3">{{ __('Personal Information') }}</h6>
                     <div class="row g-3 mb-4">
                         <!-- Name -->
                         <div class="col-md-6">
-                            <label for="name" class="form-label">{{ __('Full Name') }}</label>
-                            <input type="text" name="name" id="name" value="{{ old('name', $prefill['name'] ?? '') }}" required class="form-control @error('name') is-invalid @enderror">
+                            <label for="name" class="form-label small text-muted fw-bold">{{ __('Full Name') }}</label>
+                            <input type="text" name="name" id="name" value="{{ old('name', $prefill['name'] ?? '') }}" required class="form-control @error('name') is-invalid @enderror" placeholder="{{ __('Enter full name') }}">
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -28,8 +70,8 @@
 
                         <!-- Phone -->
                         <div class="col-md-6">
-                            <label for="phone" class="form-label">{{ __('Phone Number') }}</label>
-                            <input type="text" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
+                            <label for="phone" class="form-label small text-muted fw-bold">{{ __('Phone Number') }}</label>
+                            <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror" placeholder="0812...">
                             @error('phone')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -37,8 +79,8 @@
 
                         <!-- Address -->
                         <div class="col-12">
-                            <label for="address" class="form-label">{{ __('Address') }}</label>
-                            <textarea name="address" id="address" rows="3" class="form-control @error('address') is-invalid @enderror">{{ old('address') }}</textarea>
+                            <label for="address" class="form-label small text-muted fw-bold">{{ __('Address') }}</label>
+                            <textarea name="address" id="address" rows="2" class="form-control @error('address') is-invalid @enderror" placeholder="{{ __('Enter full address') }}">{{ old('address') }}</textarea>
                             @error('address')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -46,31 +88,37 @@
 
                         <!-- Location -->
                         <div class="col-md-6">
-                            <label for="latitude" class="form-label">{{ __('Latitude') }}</label>
-                            <input type="text" name="latitude" id="latitude" value="{{ old('latitude') }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
+                            <label for="latitude" class="form-label small text-muted">{{ __('Latitude') }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
+                                <input type="text" name="latitude" id="latitude" value="{{ old('latitude') }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
+                            </div>
                             @error('latitude')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="longitude" class="form-label">{{ __('Longitude') }}</label>
-                            <input type="text" name="longitude" id="longitude" value="{{ old('longitude') }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
+                            <label for="longitude" class="form-label small text-muted">{{ __('Longitude') }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
+                                <input type="text" name="longitude" id="longitude" value="{{ old('longitude') }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
+                            </div>
                             @error('longitude')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-12">
-                            <div class="form-text text-muted mb-2">{{ __('Click on the map or drag the marker to update location.') }}</div>
-                            <div id="map-picker" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
+                            <div class="form-text text-muted mb-2 small">{{ __('Tap map to set location') }}</div>
+                            <div id="map-picker" class="border rounded"></div>
                         </div>
                     </div>
 
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="package_id" class="form-label">{{ __('Package') }}</label>
+                            <label for="package_id" class="form-label small text-muted fw-bold">{{ __('Package') }}</label>
                             <select name="package_id" id="package_id" class="form-select @error('package_id') is-invalid @enderror">
                                 <option value="">{{ __('Select package') }}</option>
                                 @foreach($packages as $pkg)
@@ -86,34 +134,34 @@
 
                         <!-- IP Address -->
                         <div class="col-md-6">
-                            <label for="ip_address" class="form-label">{{ __('IP Address') }}</label>
-                            <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $prefill['ip_address'] ?? '') }}" class="form-control @error('ip_address') is-invalid @enderror">
+                            <label for="ip_address" class="form-label small text-muted fw-bold">{{ __('IP Address') }}</label>
+                            <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $prefill['ip_address'] ?? '') }}" class="form-control @error('ip_address') is-invalid @enderror" placeholder="192.168.x.x">
                             @error('ip_address')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <!-- VLAN -->
-                        <div class="col-md-6">
-                            <label for="vlan" class="form-label">{{ __('VLAN') }}</label>
-                            <input type="text" name="vlan" id="vlan" value="{{ old('vlan') }}" class="form-control @error('vlan') is-invalid @enderror">
+                        <div class="col-6">
+                            <label for="vlan" class="form-label small text-muted">{{ __('VLAN') }}</label>
+                            <input type="number" name="vlan" id="vlan" value="{{ old('vlan') }}" class="form-control @error('vlan') is-invalid @enderror">
                             @error('vlan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <!-- WAN MAC -->
-                        <div class="col-md-6">
-                            <label for="wan_mac" class="form-label">{{ __('WAN MAC Address') }}</label>
-                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac') }}" class="form-control @error('wan_mac') is-invalid @enderror">
+                        <div class="col-6">
+                            <label for="wan_mac" class="form-label small text-muted">{{ __('WAN MAC') }}</label>
+                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac') }}" class="form-control @error('wan_mac') is-invalid @enderror" placeholder="AA:BB:CC...">
                             @error('wan_mac')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <!-- PPPoE Username -->
-                        <div class="col-md-6">
-                            <label for="pppoe_user" class="form-label">{{ __('PPPoE Username') }}</label>
+                        <div class="col-6">
+                            <label for="pppoe_user" class="form-label small text-muted fw-bold">{{ __('PPPoE User') }}</label>
                             <input type="text" name="pppoe_user" id="pppoe_user" value="{{ old('pppoe_user', $prefill['pppoe_user'] ?? '') }}" class="form-control @error('pppoe_user') is-invalid @enderror">
                             @error('pppoe_user')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -121,8 +169,8 @@
                         </div>
 
                         <!-- PPPoE Password -->
-                        <div class="col-md-6">
-                            <label for="pppoe_password" class="form-label">{{ __('PPPoE Password') }}</label>
+                        <div class="col-6">
+                            <label for="pppoe_password" class="form-label small text-muted fw-bold">{{ __('PPPoE Pass') }}</label>
                             <input type="text" name="pppoe_password" id="pppoe_password" value="{{ old('pppoe_password') }}" class="form-control @error('pppoe_password') is-invalid @enderror">
                             @error('pppoe_password')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -131,12 +179,12 @@
 
                         <!-- OLT -->
                         <div class="col-md-6">
-                            <label for="olt_id" class="form-label">{{ __('OLT Server') }}</label>
+                            <label for="olt_id" class="form-label small text-muted">{{ __('OLT Server') }}</label>
                             <select name="olt_id" id="olt_id" class="form-select @error('olt_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select OLT') }} --</option>
                                 @foreach($olts as $olt)
                                     <option value="{{ $olt->id }}" {{ old('olt_id') == $olt->id ? 'selected' : '' }}>
-                                        {{ $olt->name }} ({{ $olt->host }})
+                                        {{ $olt->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -147,8 +195,8 @@
 
                         <!-- Connection Type -->
                         <div class="col-12">
-                            <label class="form-label d-block">{{ __('Connection Type') }}</label>
-                            <div class="d-flex gap-3">
+                            <label class="form-label d-block small text-muted fw-bold">{{ __('Connection Type') }}</label>
+                            <div class="d-flex gap-3 align-items-center">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="connection_type" id="conn_odp" value="odp" {{ old('connection_type', 'odp') == 'odp' ? 'checked' : '' }} onchange="toggleConnectionType()">
                                     <label class="form-check-label" for="conn_odp">{{ __('Direct ODP') }}</label>
@@ -162,7 +210,7 @@
 
                         <!-- ODP -->
                         <div class="col-md-6" id="odp_select_group">
-                            <label for="odp_id" class="form-label">{{ __('ODP Connection') }}</label>
+                            <label for="odp_id" class="form-label small text-muted fw-bold">{{ __('ODP Connection') }}</label>
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
                                 @foreach($odps as $odp)
@@ -178,7 +226,7 @@
 
                         <!-- HTB -->
                         <div class="col-md-6 d-none" id="htb_select_group">
-                            <label for="htb_id" class="form-label">{{ __('HTB Connection') }}</label>
+                            <label for="htb_id" class="form-label small text-muted fw-bold">{{ __('HTB Connection') }}</label>
                             <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror" disabled>
                                 <option value="">-- {{ __('Select HTB') }} --</option>
                                 @foreach($htbs as $htb)
@@ -194,8 +242,8 @@
 
                         <!-- ONU Serial -->
                         <div class="col-md-6">
-                            <label for="onu_serial" class="form-label">{{ __('ONU Serial (GenieACS)') }}</label>
-                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $prefill['onu_serial'] ?? '') }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Select or type serial...') }}">
+                            <label for="onu_serial" class="form-label small text-muted fw-bold">{{ __('ONU Serial') }}</label>
+                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $prefill['onu_serial'] ?? '') }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Type or select...') }}">
                             <datalist id="onu_list">
                                 @foreach($onuDevices as $device)
                                     <option value="{{ $device['serial'] }}">{{ $device['serial'] }} - {{ $device['model'] }}</option>
@@ -208,16 +256,16 @@
 
                         <!-- Device Model -->
                         <div class="col-md-6">
-                            <label for="device_model" class="form-label">{{ __('Device Model') }}</label>
-                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $prefill['device_model'] ?? '') }}" class="form-control @error('device_model') is-invalid @enderror" readonly>
+                            <label for="device_model" class="form-label small text-muted">{{ __('Device Model') }}</label>
+                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $prefill['device_model'] ?? '') }}" class="form-control bg-light @error('device_model') is-invalid @enderror" readonly>
                             @error('device_model')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <!-- SSID Name -->
-                        <div class="col-md-6">
-                            <label for="ssid_name" class="form-label">{{ __('SSID Name') }}</label>
+                        <div class="col-6">
+                            <label for="ssid_name" class="form-label small text-muted">{{ __('SSID Name') }}</label>
                             <input type="text" name="ssid_name" id="ssid_name" value="{{ old('ssid_name', $prefill['ssid_name'] ?? '') }}" class="form-control @error('ssid_name') is-invalid @enderror">
                             @error('ssid_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -225,8 +273,8 @@
                         </div>
 
                         <!-- SSID Password -->
-                        <div class="col-md-6">
-                            <label for="ssid_password" class="form-label">{{ __('SSID Password') }}</label>
+                        <div class="col-6">
+                            <label for="ssid_password" class="form-label small text-muted">{{ __('SSID Password') }}</label>
                             <div class="input-group">
                                 <input type="password" name="ssid_password" id="ssid_password" value="{{ old('ssid_password', $prefill['ssid_password'] ?? '') }}" class="form-control @error('ssid_password') is-invalid @enderror">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('ssid_password')">
@@ -240,7 +288,7 @@
 
                         <!-- Status -->
                         <div class="col-md-6">
-                            <label for="status" class="form-label">{{ __('Status') }}</label>
+                            <label for="status" class="form-label small text-muted fw-bold">{{ __('Status') }}</label>
                             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror">
                                 <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
                                 <option value="suspend" {{ old('status') == 'suspend' ? 'selected' : '' }}>{{ __('Suspend') }}</option>
@@ -252,9 +300,10 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 border-top pt-4">
-                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary">{{ __('Cancel') }}</a>
-                        <button type="submit" class="btn btn-primary px-4">{{ __('Save Customer') }}</button>
+                    <!-- Sticky Footer for Mobile UX -->
+                    <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2 border-top pt-4 mobile-sticky-footer">
+                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary w-100 w-md-auto">{{ __('Cancel') }}</a>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto px-4">{{ __('Save Customer') }}</button>
                     </div>
                 </form>
             </div>
@@ -263,13 +312,32 @@
 </div>
 @endsection
 
-@push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-@endpush
-
 @push('scripts')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    function toggleConnectionType() {
+        const type = document.querySelector('input[name="connection_type"]:checked').value;
+        const odpGroup = document.getElementById('odp_select_group');
+        const htbGroup = document.getElementById('htb_select_group');
+        const odpSelect = document.getElementById('odp_id');
+        const htbSelect = document.getElementById('htb_id');
+
+        if (type === 'htb') {
+            odpGroup.classList.add('d-none');
+            htbGroup.classList.remove('d-none');
+            odpSelect.disabled = true;
+            htbSelect.disabled = false;
+            odpSelect.value = "";
+        } else {
+            odpGroup.classList.remove('d-none');
+            htbGroup.classList.add('d-none');
+            odpSelect.disabled = false;
+            htbSelect.disabled = true;
+            htbSelect.value = "";
+        }
+    }
+
     function togglePasswordVisibility(fieldId) {
         const field = document.getElementById(fieldId);
         const icon = field.nextElementSibling.querySelector('i');
@@ -289,7 +357,6 @@
     document.getElementById('onu_serial').addEventListener('change', function() {
         var serial = this.value;
         if (serial) {
-            // Show loading state if needed, or just fetch
             fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial))
                 .then(response => {
                     if (!response.ok) throw new Error('Device not found');
@@ -325,10 +392,7 @@
         if (isNaN(lng)) lng = defaultLng;
 
         var mapContainer = document.getElementById('map-picker');
-        if (!mapContainer) {
-            console.error("Map container not found!");
-            return;
-        }
+        if (!mapContainer) return;
 
         try {
             var map = L.map('map-picker').setView([lat, lng], initialZoom);
@@ -362,7 +426,7 @@
             };
             L.control.layers(baseMaps).addTo(map);
 
-            // Fix map rendering issues in tabs/modals
+            // Fix map rendering issues
             setTimeout(function() {
                 map.invalidateSize();
             }, 500);
@@ -380,75 +444,58 @@
 
             var marker = L.marker([lat, lng], {draggable: true}).addTo(map);
 
+            function updateInputs(latlng) {
+                document.getElementById('latitude').value = latlng.lat.toFixed(8);
+                document.getElementById('longitude').value = latlng.lng.toFixed(8);
+            }
+
             marker.on('dragend', function(e) {
-                var lat = e.target.getLatLng().lat;
-                var lng = e.target.getLatLng().lng;
-                document.getElementById('latitude').value = lat.toFixed(8);
-                document.getElementById('longitude').value = lng.toFixed(8);
+                updateInputs(e.target.getLatLng());
             });
 
             map.on('click', function(e) {
-                var lat = e.latlng.lat;
-                var lng = e.latlng.lng;
-
-                document.getElementById('latitude').value = lat.toFixed(8);
-                document.getElementById('longitude').value = lng.toFixed(8);
-
-                if (marker) {
-                    marker.setLatLng(e.latlng);
-                } else {
-                    marker = L.marker(e.latlng, {draggable: true}).addTo(map);
-                    marker.on('dragend', function(e) {
-                        var lat = e.target.getLatLng().lat;
-                        var lng = e.target.getLatLng().lng;
-                        document.getElementById('latitude').value = lat.toFixed(8);
-                        document.getElementById('longitude').value = lng.toFixed(8);
-                    });
-                }
+                updateInputs(e.latlng);
+                marker.setLatLng(e.latlng);
             });
-        } catch (error) {
-            console.error("Error initializing map:", error);
-            mapContainer.innerHTML = '<div class="alert alert-danger">Failed to load map. Please check console for details.</div>';
-        }
 
-        var odps = @json($odps ?? []);
-        var odpSelect = document.getElementById('odp_id');
+            // ODP Markers
+            var odps = @json($odps ?? []);
+            var odpSelect = document.getElementById('odp_id');
 
-        odps.forEach(function(odp) {
-            if (!odp.latitude || !odp.longitude) {
-                return;
-            }
+            odps.forEach(function(odp) {
+                if (!odp.latitude || !odp.longitude) return;
 
-            var odpMarker = L.circleMarker([odp.latitude, odp.longitude], {
-                radius: 6,
-                color: '#0dcaf0',
-                fillColor: '#0dcaf0',
-                fillOpacity: 0.8
-            }).addTo(map);
+                var odpMarker = L.circleMarker([odp.latitude, odp.longitude], {
+                    radius: 6,
+                    color: '#0dcaf0',
+                    fillColor: '#0dcaf0',
+                    fillOpacity: 0.8
+                }).addTo(map);
 
-            var label = odp.name;
-            if (typeof odp.filled !== 'undefined' && typeof odp.capacity !== 'undefined') {
-                label += ' (' + odp.filled + '/' + odp.capacity + ')';
-            }
-            odpMarker.bindPopup(label);
+                var label = odp.name;
+                if (typeof odp.filled !== 'undefined' && typeof odp.capacity !== 'undefined') {
+                    label += ' (' + odp.filled + '/' + odp.capacity + ')';
+                }
+                odpMarker.bindPopup(label);
 
-            odpMarker.on('click', function() {
-                document.getElementById('latitude').value = odp.latitude.toFixed(8);
-                document.getElementById('longitude').value = odp.longitude.toFixed(8);
-                marker.setLatLng([odp.latitude, odp.longitude]);
+                odpMarker.on('click', function() {
+                    updateInputs({lat: odp.latitude, lng: odp.longitude});
+                    marker.setLatLng([odp.latitude, odp.longitude]);
 
-                if (odpSelect) {
-                    for (var i = 0; i < odpSelect.options.length; i++) {
-                        if (parseInt(odpSelect.options[i].value) === odp.id) {
-                            odpSelect.selectedIndex = i;
-                            break;
+                    if (odpSelect) {
+                        for (var i = 0; i < odpSelect.options.length; i++) {
+                            if (parseInt(odpSelect.options[i].value) === odp.id) {
+                                odpSelect.selectedIndex = i;
+                                break;
+                            }
                         }
                     }
-                }
-
-                map.panTo([odp.latitude, odp.longitude]);
+                    map.panTo([odp.latitude, odp.longitude]);
+                });
             });
-        });
+        } catch (error) {
+            console.error("Map Error:", error);
+        }
     });
 </script>
 @endpush
