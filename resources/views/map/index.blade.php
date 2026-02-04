@@ -4,6 +4,62 @@
 
 @section('content')
 <style>
+    /* Responsive Map Height */
+    #map {
+        width: 100%;
+        /* Default height: Full viewport height minus approx header/footer space */
+        height: calc(100vh - 160px); 
+        min-height: 500px;
+        border-radius: 8px;
+        z-index: 1; /* Ensure map stays below other fixed elements if any */
+    }
+
+    /* Mobile Adjustment for Map Height */
+    @media (max-width: 768px) {
+        #map {
+            height: calc(100vh - 180px); /* More space for stacked toolbar on mobile */
+            min-height: 60vh;
+        }
+        
+        /* Adjust popup font size for mobile */
+        .leaflet-popup-content {
+            font-size: 12px !important;
+            min-width: 200px !important;
+        }
+        
+        /* Make popup content scrollable if too tall */
+        .leaflet-popup-content-wrapper {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Stack toolbar items on mobile */
+        .toolbar-container {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+        .toolbar-title {
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .toolbar-actions {
+            justify-content: space-between;
+            width: 100%;
+        }
+        .btn-group-mobile {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            width: 100%;
+        }
+        .btn-group-mobile .btn {
+            flex: 1 1 auto; /* Buttons grow to fill space */
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+
+    /* Laser Glow Animation */
     .laser-glow {
         width: 10px;
         height: 10px;
@@ -27,58 +83,72 @@
 </style>
 
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-12">
             <div class="main-card mb-3 card shadow-sm border-0 border-top border-4 border-primary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <div>
-                            <h5 class="card-title d-inline-block me-3">{{ __('Peta Distribusi') }}</h5>
-                            @if(isset($isAdmin) && $isAdmin)
-                            <div class="d-inline-block me-2">
-                                <select class="form-select form-select-sm" id="areaFilter" style="width: auto; display: inline-block;">
-                                    <option value="">{{ __('Semua Area') }}</option>
-                                    @foreach($coordinators as $coord)
-                                        @if($coord->region)
-                                            <option value="{{ $coord->region_id }}">{{ $coord->region->name }} ({{ $coord->name }})</option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                            </div>
-                            @endif
-                            <button type="button" class="btn-shadow btn btn-primary btn-sm" id="btnAddOltMode">
-                                <i class="fa fa-server me-1"></i> {{ __('Tambah OLT') }}
-                            </button>
-                            <button type="button" class="btn-shadow btn btn-warning text-dark btn-sm" id="btnAddOdcMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Tambah ODC') }}
-                            </button>
-                            <button type="button" class="btn-shadow btn btn-success btn-sm" id="btnAddOdpMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Tambah ODP') }}
-                            </button>
-                            <button type="button" class="btn-shadow btn btn-primary btn-sm" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Tambah HTB') }}
-                            </button>
-                            <button type="button" class="btn-shadow btn btn-dark btn-sm" id="btnAddClosureMode">
-                                <i class="fa fa-plus me-1"></i> {{ __('Tambah Closure') }}
-                            </button>
-                            <button type="button" class="btn-shadow btn btn-danger btn-sm d-none" id="btnCancelAdd">
-                                <i class="fa fa-times me-1"></i> {{ __('Batal Tambah') }}
-                            </button>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
+                <div class="card-body p-2 p-md-3">
+                    <!-- Responsive Toolbar -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3 toolbar-container">
+                        
+                        <!-- Left Group: Title & Add Buttons -->
+                        <div class="d-flex flex-column w-100 w-md-auto toolbar-title">
+                            <h5 class="card-title fw-bold mb-2 mb-md-0 text-nowrap">
+                                {{ __('Peta Distribusi') }}
+                            </h5>
+                            
+                            <!-- Filter & Add Buttons Container -->
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                @if(isset($isAdmin) && $isAdmin)
+                                <div>
+                                    <select class="form-select form-select-sm" id="areaFilter" style="min-width: 150px;">
+                                        <option value="">{{ __('Semua Area') }}</option>
+                                        @foreach($coordinators as $coord)
+                                            @if($coord->region)
+                                                <option value="{{ $coord->region_id }}">{{ $coord->region->name }} ({{ $coord->name }})</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @endif
 
-                            <button type="button" class="btn-shadow btn btn-info btn-sm" onclick="location.reload()" title="{{ __('Segarkan') }}">
+                                <!-- Mobile: Scrollable/Button Group, Desktop: Inline -->
+                                <div class="btn-group-mobile">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btnAddOltMode">
+                                        <i class="fa fa-server me-1 d-none d-sm-inline"></i> {{ __('OLT') }}
+                                    </button>
+                                    <button type="button" class="btn btn-warning text-dark btn-sm" id="btnAddOdcMode">
+                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODC') }}
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm" id="btnAddOdpMode">
+                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODP') }}
+                                    </button>
+                                    <button type="button" class="btn btn-sm text-white" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
+                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('HTB') }}
+                                    </button>
+                                    <button type="button" class="btn btn-dark btn-sm" id="btnAddClosureMode">
+                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('Closure') }}
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm d-none" id="btnCancelAdd">
+                                        <i class="fa fa-times me-1"></i> {{ __('Batal') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Group: Utility Actions -->
+                        <div class="d-flex align-items-center gap-2 w-100 w-md-auto justify-content-md-end toolbar-actions">
+                            <button type="button" class="btn btn-info btn-sm text-white" onclick="location.reload()" title="{{ __('Segarkan') }}">
                                 <i class="fa fa-refresh"></i>
                             </button>
-                            <button type="button" class="btn-shadow btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
                                 <i class="fa fa-expand"></i>
                             </button>
-                            <button type="button" class="btn-shadow btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
+                            <button type="button" class="btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
                                 <i class="fa fa-pencil"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div id="map" class="border" style="height: 1000px; width: 100%; border-radius: 8px; cursor: default;"></div>
+                    <div id="map" class="border"></div>
                 </div>
             </div>
         </div>
@@ -87,7 +157,8 @@
 
 <!-- OLT Modal -->
 <div class="modal fade" id="oltModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <!-- Added modal-fullscreen-sm-down for better mobile experience -->
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="oltModalLabel">{{ __('Tempatkan OLT') }}</h5>
@@ -121,7 +192,7 @@
 
 <!-- ODC Modal -->
 <div class="modal fade" id="odcModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="odcModalLabel">{{ __('Tambah ODC') }}</h5>
@@ -207,7 +278,7 @@
 
 <!-- ODP Modal -->
 <div class="modal fade" id="odpModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="odpModalLabel">{{ __('Tambah ODP') }}</h5>
@@ -288,7 +359,7 @@
 </div>
 <!-- HTB Modal -->
 <div class="modal fade" id="htbModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="htbModalLabel">{{ __('Tambah HTB') }}</h5>
@@ -352,7 +423,7 @@
 
 <!-- Closure Modal -->
 <div class="modal fade" id="closureModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="closureModalLabel">{{ __('Tambah Closure') }}</h5>
@@ -1986,7 +2057,9 @@
         document.getElementById('btnFullscreen').addEventListener('click', function() {
             var mapElement = document.getElementById('map');
             if (!document.fullscreenElement) {
-                mapElement.requestFullscreen();
+                mapElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
             } else {
                 document.exitFullscreen();
             }
