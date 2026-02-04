@@ -91,7 +91,7 @@
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('pppoe.view'))
-                    <a href="{{ route('routers.index') }}" class="sidebar-item {{ request()->routeIs('routers.*') ? 'active' : '' }}">
+                    <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
                     </a>
                     @endif
