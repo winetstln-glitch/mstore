@@ -3,28 +3,33 @@
 @section('content')
 <div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-lg-12">
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <h1 class="h3 mb-0 text-gray-800">
+        <div class="col-12">
+            <!-- Responsive Header: Stacks on mobile, Horizontal on desktop -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                <h1 class="h3 mb-0 text-gray-800 text-truncate" style="max-width: 100%;">
                     @if(request('type_group') == 'tool')
-                        {{ __('Tools & Assets Inventory') }}
+                        {{ __('Tools & Assets') }}
                     @elseif(request('type_group') == 'material')
-                        {{ __('Materials & Devices Inventory') }}
+                        {{ __('Materials & Devices') }}
                     @else
                         {{ __('Inventory Management') }}
                     @endif
                 </h1>
-                <div class="d-flex gap-2">
-                    <div class="btn-group me-2" role="group">
-                        <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }}">{{ __('All') }}</a>
-                        <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'tool' ? 'active' : '' }}">{{ __('Tools') }}</a>
-                        <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'material' ? 'active' : '' }}">{{ __('Materials') }}</a>
+                
+                <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
+                    <!-- Filter Group: Stays together but allows wrapping if needed -->
+                    <div class="btn-group" role="group">
+                        <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }} btn-sm">{{ __('All') }}</a>
+                        <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'tool' ? 'active' : '' }} btn-sm">{{ __('Tools') }}</a>
+                        <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'material' ? 'active' : '' }} btn-sm">{{ __('Materials') }}</a>
                     </div>
 
                     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-                    <div class="dropdown me-2">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-filter me-1"></i> {{ request('category') ? ucfirst(request('category')) : __('All Categories') }}
+                    <!-- Category Dropdown: Icon only on small screens to save space -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-filter d-md-none"></i>
+                            <span class="d-none d-md-inline">{{ request('category') ? ucfirst(request('category')) : __('Categories') }}</span>
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}">{{ __('All Categories') }}</a></li>
@@ -34,41 +39,49 @@
                         </ul>
                     </div>
 
-                    <div class="btn-group me-2">
-                        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-file-export me-1"></i> {{ __('Export/Import') }}
+                    <!-- Export/Import Dropdown -->
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-secondary dropdown-toggle btn-sm" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis-vertical d-md-none"></i>
+                            <span class="d-none d-md-inline"><i class="fa-solid fa-file-export me-1"></i> {{ __('Actions') }}</span>
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ route('inventory.export.excel') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Export Excel') }}</a></li>
                             <li><a class="dropdown-item" href="{{ route('inventory.export.pdf') }}" target="_blank"><i class="fa-solid fa-file-pdf me-2 text-danger"></i> {{ __('Export PDF') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal"><i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Import Excel') }}</a></li>
                         </ul>
                     </div>
-                    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                        <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-md-inline">{{ __('Add New Item') }}</span>
+                    
+                    <!-- Add Button -->
+                    <button type="button" class="btn btn-success btn-sm flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Item') }}</span>
                     </button>
                     @endif
-                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning me-2">
-                        <i class="fa-solid fa-rotate-left me-1"></i> <span class="d-none d-md-inline">{{ __('Return Tool') }}</span>
+                    
+                    <!-- Return Button: Icon only on mobile -->
+                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning btn-sm" title="{{ __('Return Tool') }}">
+                        <i class="fa-solid fa-rotate-left"></i> <span class="d-none d-sm-inline ms-1">{{ __('Return') }}</span>
                     </a>
-                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary">
-                        <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-md-inline">{{ __('Pickup Item') }}</span>
+                    
+                    <!-- Pickup Button: Icon only on mobile -->
+                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0" title="{{ __('Pickup Item') }}">
+                        <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-sm-inline">{{ __('Pickup') }}</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Dashboard Stats -->
+            <!-- Dashboard Stats: 2 columns on mobile (col-6), 4 on desktop -->
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-md-6 col-xl-3 mb-3">
                     <div class="card border-left-primary shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        {{ __('Total Stock Value') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalStockValue, 0, ',', '.') }}</div>
+                                        {{ __('Stock Value') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 small">Rp {{ number_format($totalStockValue, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-warehouse fa-2x text-gray-300"></i>
@@ -78,7 +91,7 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-md-6 col-xl-3 mb-3">
                     <div class="card border-left-success shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
@@ -95,14 +108,14 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-md-6 col-xl-3 mb-3">
                     <div class="card border-left-info shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        {{ __('Total Purchases') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</div>
+                                        {{ __('Purchases') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 small">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-cart-shopping fa-2x text-gray-300"></i>
@@ -112,14 +125,14 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-6 col-md-6 col-xl-3 mb-3">
                     <div class="card border-left-warning shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        {{ __('Total Sales/Usage') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalSales, 0, ',', '.') }}</div>
+                                        {{ __('Sales/Usage') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 small">Rp {{ number_format($totalSales, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-money-bill-transfer fa-2x text-gray-300"></i>
@@ -135,7 +148,7 @@
             @if(isset($myAssets) && $myAssets->count() > 0)
             <div class="card shadow-sm border-0 mb-4 border-left-info">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assigned Assets / Tools') }}</h6>
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assets') }}</h6>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -143,11 +156,14 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Asset Name') }}</th>
-                                    <th>{{ __('Serial Number') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th>{{ __('Condition') }}</th>
-                                    <th>{{ __('Assignment Note') }}</th>
-                                    <th class="text-end pe-4">{{ __('Action') }}</th>
+                                    <!-- Hidden on mobile to save space -->
+                                    <th class="d-none d-md-table-cell">{{ __('Serial') }}</th>
+                                    <th class="py-3">{{ __('Status') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell">{{ __('Condition') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell">{{ __('Note') }}</th>
+                                    <th class="text-end pe-4" style="width: 80px;">{{ __('Act') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -155,31 +171,27 @@
                                     <tr>
                                         <td class="ps-4 fw-bold">
                                             {{ $asset->item->name }}
-                                            <div class="small text-muted">{{ $asset->asset_code }}</div>
+                                            <div class="small text-muted d-none d-md-block">{{ $asset->asset_code }}</div>
                                         </td>
-                                        <td>{{ $asset->serial_number }}</td>
+                                        <td class="d-none d-md-table-cell font-monospace small">{{ $asset->serial_number }}</td>
                                         <td>
-                                            <span class="badge bg-primary">{{ __('Deployed (To You)') }}</span>
+                                            <span class="badge bg-primary small">{{ __('Deployed') }}</span>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             @if($asset->condition == 'good')
-                                                <span class="badge bg-success">{{ __('Good') }}</span>
+                                                <span class="badge bg-success small">{{ __('Good') }}</span>
                                             @else
-                                                <span class="badge bg-danger">{{ __('Damaged') }}</span>
+                                                <span class="badge bg-danger small">{{ __('Damaged') }}</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            @if(isset($asset->meta_data['assignment_note']))
-                                                <i class="fa-solid fa-quote-left text-muted me-1"></i> {{ $asset->meta_data['assignment_note'] }}
-                                            @else
-                                                -
-                                            @endif
+                                        <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">
+                                            {{ $asset->meta_data['assignment_note'] ?? '-' }}
                                         </td>
                                         <td class="text-end pe-4">
-                                            <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
+                                            <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Return this asset?') }}')">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-warning">
-                                                    <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Return') }}">
+                                                    <i class="fa-solid fa-rotate-left"></i>
                                                 </button>
                                             </form>
                                         </td>
@@ -205,11 +217,14 @@
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Type') }}</th>
                                     <th class="py-3">{{ __('Name') }}</th>
-                                    <th class="py-3">{{ __('Category') }}</th>
-                                    <th class="py-3">{{ __('Brand/Model') }}</th>
-                                    <th class="py-3">{{ __('Stock') }}</th>
-                                    <th class="py-3">{{ __('Unit') }}</th>
-                                    <th class="pe-4 py-3 text-end" style="width: 150px;">{{ __('Actions') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Category') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Brand/Model') }}</th>
+                                    <th class="py-3 text-center">{{ __('Stock') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Unit') }}</th>
+                                    <th class="pe-4 py-3 text-end" style="width: 120px;">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -217,66 +232,64 @@
                                     <tr>
                                         <td class="ps-4">
                                             @if($item->type_group == 'tool')
-                                                <span class="badge bg-primary"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Tool') }}</span>
+                                                <span class="badge bg-primary"><i class="fa-solid fa-toolbox d-none d-md-inline me-1"></i> {{ __('Tool') }}</span>
                                             @else
-                                                <span class="badge bg-secondary"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</span>
+                                                <span class="badge bg-secondary"><i class="fa-solid fa-cube d-none d-md-inline me-1"></i> {{ __('Mat') }}</span>
                                             @endif
                                         </td>
                                         <td class="fw-medium">
                                             {{ $item->name }}
-                                            <div class="small text-muted">{{ Str::limit($item->description, 30) ?: '-' }}</div>
+                                            <div class="small text-muted d-none d-md-block text-truncate" style="max-width: 200px;">{{ Str::limit($item->description, 30) ?: '-' }}</div>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark border">{{ ucfirst($item->category) }}</span>
-                                            @if($item->type)
-                                                <div class="small text-muted">{{ ucfirst($item->type) }}</div>
-                                            @endif
+                                        <td class="d-none d-md-table-cell">
+                                            <span class="badge bg-light text-dark border small">{{ ucfirst($item->category) }}</span>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             {{ $item->brand ?: '-' }}
                                             @if($item->model)
-                                                <div class="small text-muted">{{ $item->model }}</div>
+                                                <div class="small text-muted text-truncate" style="max-width: 120px;">{{ $item->model }}</div>
                                             @endif
                                         </td>
-                                        <td>
-                                            <span class="badge {{ $item->stock > 10 ? 'bg-success' : 'bg-danger' }} rounded-pill">
+                                        <td class="text-center">
+                                            <span class="badge {{ $item->stock > 10 ? 'bg-success' : 'bg-danger' }} rounded-pill px-3">
                                                 {{ $item->stock }}
                                             </span>
                                         </td>
-                                        <td>{{ $item->unit }}</td>
+                                        <td class="d-none d-md-table-cell small">{{ $item->unit }}</td>
                                         <td class="pe-4 text-end">
-                                            <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info me-1" title="{{ __('Manage Assets') }}">
-                                                <i class="fa-solid fa-barcode"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-primary me-1" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#editItemModal"
-                                                data-id="{{ $item->id }}"
-                                                data-name="{{ $item->name }}"
-                                                data-category="{{ $item->category }}"
-                                                data-type_group="{{ $item->type_group }}"
-                                                data-type="{{ $item->type }}"
-                                                data-brand="{{ $item->brand }}"
-                                                data-model="{{ $item->model }}"
-                                                data-unit="{{ $item->unit }}"
-                                                data-stock="{{ $item->stock }}"
-                                                data-price="{{ $item->price }}"
-                                                data-description="{{ $item->description }}"
-                                                data-action="{{ route('inventory.update', $item->id) }}">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>
-                                            <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this item?') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="fa-solid fa-trash"></i>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info" title="{{ __('Assets') }}">
+                                                    <i class="fa-solid fa-barcode"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    data-bs-toggle="modal" data-bs-target="#editItemModal"
+                                                    data-id="{{ $item->id }}"
+                                                    data-name="{{ $item->name }}"
+                                                    data-category="{{ $item->category }}"
+                                                    data-type_group="{{ $item->type_group }}"
+                                                    data-type="{{ $item->type }}"
+                                                    data-brand="{{ $item->brand }}"
+                                                    data-model="{{ $item->model }}"
+                                                    data-unit="{{ $item->unit }}"
+                                                    data-stock="{{ $item->stock }}"
+                                                    data-price="{{ $item->price }}"
+                                                    data-description="{{ $item->description }}"
+                                                    data-action="{{ route('inventory.update', $item->id) }}">
+                                                    <i class="fa-solid fa-pen"></i>
                                                 </button>
-                                            </form>
+                                                <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete?') }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center py-5 text-muted">
+                                        <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="fa-solid fa-boxes-stacked fa-2x mb-3 opacity-25"></i>
                                             <p class="mb-0">{{ __('No items found.') }}</p>
                                         </td>
@@ -300,37 +313,42 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Date') }}</th>
-                                    <th class="py-3">{{ __('Type') }}</th>
-                                    <th class="py-3">{{ __('User') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Type') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('User') }}</th>
                                     <th class="py-3">{{ __('Item') }}</th>
-                                    <th class="py-3">{{ __('Quantity') }}</th>
-                                    <th class="py-3">{{ __('Description') }}</th>
+                                    <th class="py-3 text-end">{{ __('Qty') }}</th>
+                                    <!-- Hidden on mobile -->
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Desc') }}</th>
                                     <th class="pe-4 py-3 text-end">{{ __('Proof') }}</th>
-                                    <th class="pe-4 py-3 text-end">{{ __('Actions') }}</th>
+                                    <th class="pe-4 py-3 text-end" style="width: 80px;">{{ __('Act') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($transactions as $transaction)
                                     <tr>
-                                        <td class="ps-4">{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                                        <td>
+                                        <td class="ps-4 small">{{ $transaction->created_at->format('d M') }}</td>
+                                        <td class="d-none d-md-table-cell">
                                             @if($transaction->item->type_group == 'tool')
-                                                <span class="badge bg-primary"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Tool') }}</span>
+                                                <span class="badge bg-primary small"><i class="fa-solid fa-toolbox"></i></span>
                                             @else
-                                                <span class="badge bg-secondary"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</span>
+                                                <span class="badge bg-secondary small"><i class="fa-solid fa-cube"></i></span>
                                             @endif
                                         </td>
-                                        <td>{{ $transaction->user->name }}</td>
-                                        <td>{{ $transaction->item->name }}</td>
-                                        <td class="fw-bold text-danger">-{{ $transaction->quantity }} {{ $transaction->item->unit }}</td>
-                                        <td>{{ $transaction->description ?: '-' }}</td>
+                                        <td class="d-none d-md-table-cell small text-truncate" style="max-width: 100px;">{{ $transaction->user->name }}</td>
+                                        <td>
+                                            <div class="fw-bold text-truncate" style="max-width: 150px;">{{ $transaction->item->name }}</div>
+                                        </td>
+                                        <td class="text-end small text-danger">-{{ $transaction->quantity }}</td>
+                                        <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">{{ $transaction->description ?: '-' }}</td>
                                         <td class="pe-4 text-end">
                                             @if($transaction->proof_image)
                                                 <a href="{{ Storage::url($transaction->proof_image) }}" target="_blank" class="btn btn-sm btn-outline-info">
-                                                    <i class="fa-solid fa-image"></i> {{ __('View') }}
+                                                    <i class="fa-solid fa-image"></i>
                                                 </a>
                                             @else
-                                                <span class="text-muted">-</span>
+                                                <span class="text-muted small">-</span>
                                             @endif
                                         </td>
                                         <td class="pe-4 text-end">
@@ -346,7 +364,7 @@
                                                 data-action="{{ route('inventory.pickup.update', $transaction->id) }}">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
-                                            <form action="{{ route('inventory.pickup.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this pickup?') }}')">
+                                            <form action="{{ route('inventory.pickup.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete pickup?') }}')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -380,7 +398,7 @@
 
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <form action="{{ route('inventory.store') }}" method="POST">
             @csrf
             <div class="modal-content">
@@ -454,9 +472,10 @@
         </form>
     </div>
 </div>
+
 <!-- Edit Item Modal -->
 <div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <form id="editItemForm" action="" method="POST">
             @csrf
             @method('PUT')
@@ -528,9 +547,10 @@
         </form>
     </div>
 </div>
+
 <!-- Edit Pickup Modal -->
 <div class="modal fade" id="editPickupModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <form id="editPickupForm" action="" method="POST">
             @csrf
             @method('PUT')
@@ -567,7 +587,7 @@
 
 <!-- Import Item Modal -->
 <div class="modal fade" id="importItemModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <form action="{{ route('inventory.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-content">
