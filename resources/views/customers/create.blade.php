@@ -7,7 +7,7 @@
     @media (max-width: 768px) {
         /* Map height adjustment */
         #map-picker {
-            height: 250px; /* Reduce height on mobile */
+            height: 250px; /* Reduce height on mobile to save vertical space */
         }
 
         /* Sticky Bottom Action Bar */
@@ -17,24 +17,25 @@
             background-color: var(--bs-body-bg);
             padding: 1rem;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 1020;
-            margin-left: -1rem;
+            z-index: 1020; /* Above other content */
+            margin-left: -1rem; /* Compensate for card padding */
             margin-right: -1rem;
             margin-bottom: -1rem;
             border-top: 1px solid rgba(0,0,0,0.075);
         }
 
-        /* Prevent iOS auto-zoom on inputs */
+        /* Ensure inputs are 16px to prevent iOS auto-zoom */
         input, select, textarea {
             font-size: 16px !important;
         }
-        
-        /* Header adjustments */
-        .header-title h5 {
-            font-size: 1.1rem;
+
+        /* Make connection type radios stack better if needed */
+        .d-flex.gap-3 {
+            gap: 1.5rem !important;
         }
     }
     
+    /* Map container z-index to ensure it doesn't overlap sticky footer incorrectly */
     #map-picker {
         z-index: 1;
     }
@@ -42,42 +43,26 @@
 @endpush
 
 <div class="row justify-content-center">
+    <!-- Changed to col-12 on mobile for full width usage -->
     <div class="col-12 col-lg-10 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body border-0 py-3">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
-                    <div class="header-title text-truncate" style="max-width: 100%;">
-                        <h5 class="mb-0 fw-bold text-body-emphasis">
-                            <i class="fa-solid fa-pen-to-square me-2 text-primary"></i>
-                            {{ __('Edit Customer') }}: <span class="text-truncate d-inline-block align-bottom" style="max-width: 150px; vertical-align: middle;">{{ $customer->name }}</span>
-                        </h5>
-                        <div class="small text-muted mt-1 d-md-none">ID: {{ $customer->id }}</div>
-                    </div>
-                    
-                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
-                        @if($customer->onu_serial)
-                        <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white">
-                            <i class="fa-solid fa-sliders"></i> <span class="d-none d-sm-inline">{{ __('Settings') }}</span>
-                        </a>
-                        @endif
-                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Back') }}</span>
-                        </a>
-                    </div>
-                </div>
+            <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-body-emphasis fs-6 fs-md-5">{{ __('Create Customer') }}</h5>
+                <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Back') }}</span>
+                </a>
             </div>
 
             <div class="card-body p-3 p-md-4">
-                <form method="POST" action="{{ route('customers.update', $customer) }}" id="editCustomerForm">
+                <form method="POST" action="{{ route('customers.store') }}" id="customerForm">
                     @csrf
-                    @method('PUT')
 
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3">{{ __('Personal Information') }}</h6>
                     <div class="row g-3 mb-4">
                         <!-- Name -->
                         <div class="col-md-6">
                             <label for="name" class="form-label small text-muted fw-bold">{{ __('Full Name') }}</label>
-                            <input type="text" name="name" id="name" value="{{ old('name', $customer->name) }}" required class="form-control @error('name') is-invalid @enderror">
+                            <input type="text" name="name" id="name" value="{{ old('name', $prefill['name'] ?? '') }}" required class="form-control @error('name') is-invalid @enderror" placeholder="{{ __('Enter full name') }}">
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -86,7 +71,7 @@
                         <!-- Phone -->
                         <div class="col-md-6">
                             <label for="phone" class="form-label small text-muted fw-bold">{{ __('Phone Number') }}</label>
-                            <input type="tel" name="phone" id="phone" value="{{ old('phone', $customer->phone) }}" class="form-control @error('phone') is-invalid @enderror">
+                            <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror" placeholder="0812...">
                             @error('phone')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -95,7 +80,7 @@
                         <!-- Address -->
                         <div class="col-12">
                             <label for="address" class="form-label small text-muted fw-bold">{{ __('Address') }}</label>
-                            <textarea name="address" id="address" rows="2" class="form-control @error('address') is-invalid @enderror">{{ old('address', $customer->address) }}</textarea>
+                            <textarea name="address" id="address" rows="2" class="form-control @error('address') is-invalid @enderror" placeholder="{{ __('Enter full address') }}">{{ old('address') }}</textarea>
                             @error('address')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -106,7 +91,7 @@
                             <label for="latitude" class="form-label small text-muted">{{ __('Latitude') }}</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
-                                <input type="text" name="latitude" id="latitude" value="{{ old('latitude', $customer->latitude) }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
+                                <input type="text" name="latitude" id="latitude" value="{{ old('latitude') }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
                             </div>
                             @error('latitude')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -117,7 +102,7 @@
                             <label for="longitude" class="form-label small text-muted">{{ __('Longitude') }}</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
-                                <input type="text" name="longitude" id="longitude" value="{{ old('longitude', $customer->longitude) }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
+                                <input type="text" name="longitude" id="longitude" value="{{ old('longitude') }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
                             </div>
                             @error('longitude')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -125,7 +110,7 @@
                         </div>
 
                         <div class="col-12">
-                            <div class="form-text text-muted mb-2 small">{{ __('Tap map to update location') }}</div>
+                            <div class="form-text text-muted mb-2 small">{{ __('Tap map to set location') }}</div>
                             <div id="map-picker" class="border rounded"></div>
                         </div>
                     </div>
@@ -137,7 +122,7 @@
                             <select name="package_id" id="package_id" class="form-select @error('package_id') is-invalid @enderror">
                                 <option value="">{{ __('Select package') }}</option>
                                 @foreach($packages as $pkg)
-                                    <option value="{{ $pkg->id }}" {{ old('package_id', $customer->package_id) == $pkg->id ? 'selected' : '' }}>
+                                    <option value="{{ $pkg->id }}" {{ old('package_id', $customer->package_id ?? '') == $pkg->id ? 'selected' : '' }}>
                                         {{ $pkg->name }} @if($pkg->price) - {{ number_format($pkg->price, 0, ',', '.') }} @endif
                                     </option>
                                 @endforeach
@@ -150,7 +135,7 @@
                         <!-- IP Address -->
                         <div class="col-md-6">
                             <label for="ip_address" class="form-label small text-muted fw-bold">{{ __('IP Address') }}</label>
-                            <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $customer->ip_address) }}" class="form-control @error('ip_address') is-invalid @enderror" placeholder="192.168.x.x">
+                            <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $prefill['ip_address'] ?? '') }}" class="form-control @error('ip_address') is-invalid @enderror" placeholder="192.168.x.x">
                             @error('ip_address')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -158,8 +143,8 @@
 
                         <!-- VLAN -->
                         <div class="col-6">
-                            <label for="vlan" class="form-label small text-muted">VLAN</label>
-                            <input type="number" name="vlan" id="vlan" value="{{ old('vlan', $customer->vlan) }}" class="form-control @error('vlan') is-invalid @enderror">
+                            <label for="vlan" class="form-label small text-muted">{{ __('VLAN') }}</label>
+                            <input type="number" name="vlan" id="vlan" value="{{ old('vlan') }}" class="form-control @error('vlan') is-invalid @enderror">
                             @error('vlan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -168,19 +153,68 @@
                         <!-- WAN MAC -->
                         <div class="col-6">
                             <label for="wan_mac" class="form-label small text-muted">{{ __('WAN MAC') }}</label>
-                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac', $customer->wan_mac) }}" class="form-control @error('wan_mac') is-invalid @enderror" placeholder="AA:BB:CC...">
+                            <input type="text" name="wan_mac" id="wan_mac" value="{{ old('wan_mac') }}" class="form-control @error('wan_mac') is-invalid @enderror" placeholder="AA:BB:CC...">
                             @error('wan_mac')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- ODP -->
+                        <!-- PPPoE Username -->
+                        <div class="col-6">
+                            <label for="pppoe_user" class="form-label small text-muted fw-bold">{{ __('PPPoE User') }}</label>
+                            <input type="text" name="pppoe_user" id="pppoe_user" value="{{ old('pppoe_user', $prefill['pppoe_user'] ?? '') }}" class="form-control @error('pppoe_user') is-invalid @enderror">
+                            @error('pppoe_user')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- PPPoE Password -->
+                        <div class="col-6">
+                            <label for="pppoe_password" class="form-label small text-muted fw-bold">{{ __('PPPoE Pass') }}</label>
+                            <input type="text" name="pppoe_password" id="pppoe_password" value="{{ old('pppoe_password') }}" class="form-control @error('pppoe_password') is-invalid @enderror">
+                            @error('pppoe_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- OLT -->
                         <div class="col-md-6">
+                            <label for="olt_id" class="form-label small text-muted">{{ __('OLT Server') }}</label>
+                            <select name="olt_id" id="olt_id" class="form-select @error('olt_id') is-invalid @enderror">
+                                <option value="">-- {{ __('Select OLT') }} --</option>
+                                @foreach($olts as $olt)
+                                    <option value="{{ $olt->id }}" {{ old('olt_id') == $olt->id ? 'selected' : '' }}>
+                                        {{ $olt->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('olt_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Connection Type -->
+                        <div class="col-12">
+                            <label class="form-label d-block small text-muted fw-bold">{{ __('Connection Type') }}</label>
+                            <div class="d-flex gap-3 align-items-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="conn_odp" value="odp" {{ old('connection_type', 'odp') == 'odp' ? 'checked' : '' }} onchange="toggleConnectionType()">
+                                    <label class="form-check-label" for="conn_odp">{{ __('Direct ODP') }}</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="conn_htb" value="htb" {{ old('connection_type') == 'htb' ? 'checked' : '' }} onchange="toggleConnectionType()">
+                                    <label class="form-check-label" for="conn_htb">{{ __('Via HTB') }}</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ODP -->
+                        <div class="col-md-6" id="odp_select_group">
                             <label for="odp_id" class="form-label small text-muted fw-bold">{{ __('ODP Connection') }}</label>
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
                                 <option value="">-- {{ __('Select ODP') }} --</option>
                                 @foreach($odps as $odp)
-                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity && $customer->odp_id != $odp->id) ? 'disabled' : '' }}>
+                                    <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id ?? '') == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity && ($customer->odp_id ?? '') != $odp->id) ? 'disabled' : '' }}>
                                         {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Full' : '' }}
                                     </option>
                                 @endforeach
@@ -191,12 +225,12 @@
                         </div>
 
                         <!-- HTB -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" id="htb_select_group">
                             <label for="htb_id" class="form-label small text-muted fw-bold">{{ __('HTB Connection') }}</label>
-                            <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror">
+                            <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror" disabled>
                                 <option value="">-- {{ __('Select HTB') }} --</option>
                                 @foreach($htbs as $htb)
-                                    <option value="{{ $htb->id }}" {{ old('htb_id', $customer->htb_id) == $htb->id ? 'selected' : '' }} {{ ($htb->id != $customer->htb_id && $htb->capacity !== null && $htb->filled >= $htb->capacity) ? 'disabled' : '' }}>
+                                    <option value="{{ $htb->id }}" {{ old('htb_id', $customer->htb_id ?? '') == $htb->id ? 'selected' : '' }} {{ (($htb->id ?? '') != ($customer->htb_id ?? '') && $htb->capacity !== null && $htb->filled >= $htb->capacity) ? 'disabled' : '' }}>
                                         {{ $htb->name }} {{ $htb->parent ? '(via ' . $htb->parent->name . ')' : '' }} ({{ $htb->filled }}/{{ $htb->capacity ?? '∞' }}){{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? ' - Full' : '' }}
                                     </option>
                                 @endforeach
@@ -209,7 +243,7 @@
                         <!-- ONU Serial -->
                         <div class="col-md-6">
                             <label for="onu_serial" class="form-label small text-muted fw-bold">{{ __('ONU Serial') }}</label>
-                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $customer->onu_serial) }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Type or select...') }}">
+                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $prefill['onu_serial'] ?? '') }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Type or select...') }}">
                             <datalist id="onu_list">
                                 @foreach($onuDevices as $device)
                                     <option value="{{ $device['serial'] }}">{{ $device['serial'] }} - {{ $device['model'] }}</option>
@@ -223,7 +257,7 @@
                         <!-- Device Model -->
                         <div class="col-md-6">
                             <label for="device_model" class="form-label small text-muted">{{ __('Device Model') }}</label>
-                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $customer->device_model) }}" class="form-control bg-light @error('device_model') is-invalid @enderror" readonly>
+                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $prefill['device_model'] ?? '') }}" class="form-control bg-light @error('device_model') is-invalid @enderror" readonly>
                             @error('device_model')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -232,7 +266,7 @@
                         <!-- SSID Name -->
                         <div class="col-6">
                             <label for="ssid_name" class="form-label small text-muted">{{ __('SSID Name') }}</label>
-                            <input type="text" name="ssid_name" id="ssid_name" value="{{ old('ssid_name', $customer->ssid_name) }}" class="form-control @error('ssid_name') is-invalid @enderror">
+                            <input type="text" name="ssid_name" id="ssid_name" value="{{ old('ssid_name', $prefill['ssid_name'] ?? '') }}" class="form-control @error('ssid_name') is-invalid @enderror">
                             @error('ssid_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -242,7 +276,7 @@
                         <div class="col-6">
                             <label for="ssid_password" class="form-label small text-muted">{{ __('SSID Password') }}</label>
                             <div class="input-group">
-                                <input type="password" name="ssid_password" id="ssid_password" value="{{ old('ssid_password', $customer->ssid_password) }}" class="form-control @error('ssid_password') is-invalid @enderror">
+                                <input type="password" name="ssid_password" id="ssid_password" value="{{ old('ssid_password') }}" class="form-control @error('ssid_password') is-invalid @enderror">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('ssid_password')">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
@@ -256,9 +290,9 @@
                         <div class="col-md-6">
                             <label for="status" class="form-label small text-muted fw-bold">{{ __('Status') }}</label>
                             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror">
-                                <option value="active" {{ old('status', $customer->status) == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
-                                <option value="suspend" {{ old('status', $customer->status) == 'suspend' ? 'selected' : '' }}>{{ __('Suspend') }}</option>
-                                <option value="terminated" {{ old('status', $customer->status) == 'terminated' ? 'selected' : '' }}>{{ __('Terminated') }}</option>
+                                <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
+                                <option value="suspend" {{ old('status') == 'suspend' ? 'selected' : '' }}>{{ __('Suspend') }}</option>
+                                <option value="terminated" {{ old('status') == 'terminated' ? 'selected' : '' }}>{{ __('Terminated') }}</option>
                             </select>
                             @error('status')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -266,10 +300,10 @@
                         </div>
                     </div>
 
-                    <!-- Sticky Footer -->
+                    <!-- Sticky Footer for Mobile UX -->
                     <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2 border-top pt-4 mobile-sticky-footer">
                         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary w-100 w-md-auto">{{ __('Cancel') }}</a>
-                        <button type="submit" class="btn btn-primary w-100 w-md-auto px-4">{{ __('Update Customer') }}</button>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto px-4">{{ __('Save Customer') }}</button>
                     </div>
                 </form>
             </div>
@@ -282,6 +316,28 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    function toggleConnectionType() {
+        const type = document.querySelector('input[name="connection_type"]:checked').value;
+        const odpGroup = document.getElementById('odp_select_group');
+        const htbGroup = document.getElementById('htb_select_group');
+        const odpSelect = document.getElementById('odp_id');
+        const htbSelect = document.getElementById('htb_id');
+
+        if (type === 'htb') {
+            odpGroup.classList.add('d-none');
+            htbGroup.classList.remove('d-none');
+            odpSelect.disabled = true;
+            htbSelect.disabled = false;
+            odpSelect.value = "";
+        } else {
+            odpGroup.classList.remove('d-none');
+            htbGroup.classList.add('d-none');
+            odpSelect.disabled = false;
+            htbSelect.disabled = true;
+            htbSelect.value = "";
+        }
+    }
+
     function togglePasswordVisibility(fieldId) {
         const field = document.getElementById(fieldId);
         const icon = field.nextElementSibling.querySelector('i');
@@ -319,8 +375,8 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        var lat = @json(old('latitude', $customer->latitude));
-        var lng = @json(old('longitude', $customer->longitude));
+        var lat = @json(old('latitude'));
+        var lng = @json(old('longitude'));
         var zoom = 15;
 
         // Handle null, empty string, or non-numeric values
@@ -399,9 +455,44 @@
                 updateInputs(e.latlng);
                 marker.setLatLng(e.latlng);
             });
+
+            // ODP Markers
+            var odps = @json($odps ?? []);
+            var odpSelect = document.getElementById('odp_id');
+
+            odps.forEach(function(odp) {
+                if (!odp.latitude || !odp.longitude) return;
+
+                var odpMarker = L.circleMarker([odp.latitude, odp.longitude], {
+                    radius: 6,
+                    color: '#0dcaf0',
+                    fillColor: '#0dcaf0',
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                var label = odp.name;
+                if (typeof odp.filled !== 'undefined' && typeof odp.capacity !== 'undefined') {
+                    label += ' (' + odp.filled + '/' + odp.capacity + ')';
+                }
+                odpMarker.bindPopup(label);
+
+                odpMarker.on('click', function() {
+                    updateInputs({lat: odp.latitude, lng: odp.longitude});
+                    marker.setLatLng([odp.latitude, odp.longitude]);
+
+                    if (odpSelect) {
+                        for (var i = 0; i < odpSelect.options.length; i++) {
+                            if (parseInt(odpSelect.options[i].value) === odp.id) {
+                                odpSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    map.panTo([odp.latitude, odp.longitude]);
+                });
+            });
         } catch (error) {
             console.error("Map Error:", error);
-            if(mapContainer) mapContainer.innerHTML = '<div class="alert alert-danger">Failed to load map.</div>';
         }
     });
 </script>

@@ -117,16 +117,16 @@
 
         <!-- ACCRUALS & FUNDS STATUS (Status Dana yang Ditahan) -->
         <div class="row mb-4">
-            <!-- ISP Fund Liability -->
+                <!-- ISP Fund Liability -->
             <div class="col-xl-6 col-md-6 mb-4">
-                <div class="card border-left-secondary shadow h-100 py-2" style="border-left-color: #6f42c1 !important;">
+                <div class="card border-left-purple shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
-                                    {{ __('Dana ISP (Kewajiban)') }} <span class="badge bg-secondary">{{ $ispRate }}%</span></div>
+                                    {{ __('Dana ISP (Kewajiban)') }} <span class="badge bg-secondary">{{ $ispRate ?? 0 }}%</span></div>
                                 <!-- PERBAIKAN AUDIT: Hilangkan tanda minus di sini, tampilkan sebagai akumulasi kewajiban -->
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalIspShare, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalIspShare ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-muted">{{ __('Perlu dibayarkan ke ISP') }}</small>
                             </div>
                             <div class="col-auto">
@@ -139,13 +139,13 @@
 
             <!-- Tool Fund Accumulation -->
             <div class="col-xl-6 col-md-6 mb-4">
-                <div class="card border-left-info shadow h-100 py-2" style="border-left-color: #17a2b8 !important;">
+                <div class="card border-left-teal shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                    {{ __('Akumulasi Dana Peralatan') }} <span class="badge bg-info text-white">{{ $toolRate }}%</span></div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalToolFund, 0, ',', '.') }}</div>
+                                    {{ __('Akumulasi Dana Peralatan') }} <span class="badge bg-info text-white">{{ $toolRate ?? 0 }}%</span></div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalToolFund ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-muted">{{ __('Dana Cadangan Perbaikan/Beli Alat') }}</small>
                             </div>
                             <div class="col-auto">
@@ -157,40 +157,79 @@
             </div>
         </div>
 
+        <!-- ============================ MODIFIKASI UTAMA ============================ -->
         <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Per Koordinator') }}</h6>
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Pengurus (Cash Only)') }}</h6>
+                <span class="badge bg-warning text-dark">Exclude Ambil Barang</span>
             </div>
             <div class="card-body">
+                <div class="alert alert-info py-2 px-3 small mb-3">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Laporan ini hanya menghitung <strong>Arus Kas Tunai</strong>. Biaya "Ambil Barang" tidak memotong target setoran.
+                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm table-striped" width="100%" cellspacing="0">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('Koordinator') }}</th>
-                                <th class="text-end">{{ __('Pendapatan Kotor') }}</th>
-                                <th class="text-end text-danger">{{ __('Potongan (Komisi)') }}</th>
-                                <th class="text-end text-danger">{{ __('Biaya Operasional') }}</th>
-                                <th class="text-end text-primary">{{ __('Disetor ke Pusat') }}</th>
-                                <th class="text-end fw-bold bg-light">{{ __('Sisa Tanggal (Tanggungan)') }}</th>
-                                <th class="text-center">{{ __('Aksi') }}</th>
+                                <th rowspan="2">{{ __('Koordinator') }}</th>
+                                <th rowspan="2" class="text-end">{{ __('Pendapatan') }}</th>
+                                <th rowspan="2" class="text-end text-danger">{{ __('Komisi') }}</th>
+                                <th rowspan="2" class="text-end text-danger">
+                                    {{ __('Pengeluaran Tunai') }}
+                                    <br><small class="font-weight-normal text-muted">(Ops & Beli Luar)</small>
+                                </th>
+                                <th colspan="2" class="text-center bg-light fw-bold">{{ __('Setoran') }}</th>
+                                <th rowspan="2" class="text-end bg-dark text-white fw-bold">{{ __('Sisa Kas') }}</th>
+                                <th rowspan="2" class="text-center">{{ __('Aksi') }}</th>
+                            </tr>
+                            <tr class="table-light">
+                                <th class="text-end fw-bold text-primary">{{ __('Wajib Setor') }}</th>
+                                <th class="text-end">{{ __('Sudah Setor') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($coordinatorSummaries as $summary)
+                            @php
+                                // Pastikan variabel 'cash_expenses' ada di Controller Anda
+                                // Jika belum, ganti dengan $summary->expenses (namun logikanya akan salah)
+                                $cashExp = $summary->cash_expenses ?? 0; 
+                                $deposited = $summary->deposited ?? 0;
+                                
+                                // Rumus Target: Pendapatan - Komisi - Pengeluaran Tunai
+                                $mustDeposit = $summary->gross_revenue - $summary->commission - $cashExp;
+                                
+                                // Rumus Sisa: Wajib Setor - Sudah Disetor
+                                $remainingCash = $mustDeposit - $deposited;
+                            @endphp
                             <tr>
-                                <td>{{ $summary->name }}</td>
-                                <td class="text-end">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</td>
-                                <td class="text-end text-danger">-{{ number_format($summary->commission, 0, ',', '.') }}</td>
-                                <td class="text-end text-danger">-{{ number_format($summary->expenses, 0, ',', '.') }}</td>
-                                <td class="text-end text-primary">-{{ number_format($summary->deposited ?? 0, 0, ',', '.') }}</td>
-                                @php
-                                    $balance = $summary->net_balance;
-                                    $isNegative = $balance < 0;
-                                @endphp
-                                <td class="text-end fw-bold {{ $isNegative ? 'text-danger' : 'text-success' }}">
-                                    {{ number_format($balance, 0, ',', '.') }}
+                                <td class="align-middle">
+                                    <strong>{{ $summary->name }}</strong>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-end align-middle">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</td>
+                                <td class="text-end align-middle text-danger">-{{ number_format($summary->commission, 0, ',', '.') }}</td>
+                                
+                                <!-- Kolom Pengeluaran Tunai (Exclude Barang) -->
+                                <td class="text-end align-middle text-danger">
+                                    -{{ number_format($cashExp, 0, ',', '.') }}
+                                </td>
+                                
+                                <!-- Kolom Target (Wajib Setor) -->
+                                <td class="text-end align-middle fw-bold bg-light">
+                                    {{ number_format($mustDeposit, 0, ',', '.') }}
+                                </td>
+                                
+                                <!-- Kolom Sudah Setor -->
+                                <td class="text-end align-middle text-primary">
+                                    {{ number_format($deposited, 0, ',', '.') }}
+                                </td>
+                                
+                                <!-- Kolom Sisa -->
+                                <td class="text-end align-middle fw-bold {{ $remainingCash < 0 ? 'text-danger' : 'bg-dark text-white' }}">
+                                    {{ number_format($remainingCash, 0, ',', '.') }}
+                                </td>
+                                
+                                <td class="text-center align-middle">
                                     <a href="{{ route('finance.coordinator.detail', $summary->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat Detail Transaksi') }}">
                                         <i class="fas fa-magnifying-glass"></i>
                                     </a>
@@ -202,6 +241,8 @@
                 </div>
             </div>
         </div>
+        <!-- ======================================================================== -->
+
     @else
         @php
             $summary = $coordinatorSummaries[0] ?? null;
@@ -247,8 +288,8 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                        {{ __('Pengeluaran Operasional') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->expenses, 0, ',', '.') }}</div>
+                                        {{ __('Pengeluaran Tunai') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->cash_expenses ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-receipt fa-2x text-gray-300"></i>
@@ -268,7 +309,7 @@
                                     <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                         {{ __('Uang Kas Ditahan') }}</div>
                                     <!-- PERBAIKAN: Ini adalah uang investor yang ditahan, bukan pengeluaran koordinator -->
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->investor_cash, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</div>
                                     <small class="text-muted">Dana Investor (Dicatat)</small>
                                 </div>
                                 <div class="col-auto">
@@ -286,7 +327,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         {{ __('Wajib Setor') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->net_balance, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->net_balance ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-hand-holding-dollar fa-2x text-gray-300"></i>
@@ -305,7 +346,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Rincian Bagi Hasil Investor (Periode Ini)') }}</h6>
-            <a href="{{ route('finance.investor_share.pdf') }}" class="btn btn-sm btn-danger shadow-sm">
+            <a href="{{ route('finance.investor_share.pdf') ?? '#' }}" class="btn btn-sm btn-danger shadow-sm">
                 <i class="fas fa-file-pdf fa-sm text-white-50"></i> {{ __('Unduh Laporan PDF') }}
             </a>
         </div>
@@ -325,10 +366,10 @@
                         <tr>
                             <td><strong>{{ $summary->name }}</strong></td>
                             <!-- PERBAIKAN: Tampilkan positif. Di tampilan sebelumnya minus, membingungkan auditor apakah ini uang keluar atau alokasi -->
-                            <td class="text-end">{{ number_format($summary->investor_share, 0, ',', '.') }}</td>
-                            <td class="text-end">{{ number_format($summary->investor_cash, 0, ',', '.') }}</td>
+                            <td class="text-end">{{ number_format($summary->investor_share ?? 0, 0, ',', '.') }}</td>
+                            <td class="text-end">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</td>
                             @php
-                                $totalLiability = $summary->investor_share + $summary->investor_cash;
+                                $totalLiability = ($summary->investor_share ?? 0) + ($summary->investor_cash ?? 0);
                             @endphp
                             <td class="text-end fw-bold bg-light">{{ number_format($totalLiability, 0, ',', '.') }}</td>
                         </tr>
@@ -337,10 +378,10 @@
                         @endphp
                         @foreach($investorDetails as $detail)
                         <tr>
-                            <td>&nbsp;&nbsp;- {{ $detail['investor_name'] }}</td>
-                            <td class="text-end text-muted">{{ number_format($detail['profit_share'], 0, ',', '.') }}</td>
-                            <td class="text-end text-muted">{{ number_format($detail['cash_fund'], 0, ',', '.') }}</td>
-                            <td class="text-end text-muted fw-bold">{{ number_format($detail['profit_share'] + $detail['cash_fund'], 0, ',', '.') }}</td>
+                            <td>&nbsp;&nbsp;- {{ $detail['investor_name'] ?? '' }}</td>
+                            <td class="text-end text-muted">{{ number_format($detail['profit_share'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="text-end text-muted">{{ number_format($detail['cash_fund'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="text-end text-muted fw-bold">{{ number_format(($detail['profit_share'] ?? 0) + ($detail['cash_fund'] ?? 0), 0, ',', '.') }}</td>
                         </tr>
                         @endforeach
                         @endforeach
@@ -354,7 +395,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-info">{{ __('Audit Trail: Alur Pendapatan (10 Terakhir)') }}</h6>
-            <a href="{{ route('finance.income_breakdown.pdf') }}" class="btn btn-sm btn-danger shadow-sm">
+            <a href="{{ route('finance.income_breakdown.pdf') ?? '#' }}" class="btn btn-sm btn-danger shadow-sm">
                 <i class="fas fa-file-pdf fa-sm text-white-50"></i> {{ __('Unduh PDF') }}
             </a>
         </div>
@@ -379,10 +420,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($incomeBreakdowns as $breakdown)
+                        @foreach($incomeBreakdowns ?? [] as $breakdown)
                         <tr>
                             <td>{{ $breakdown->date->format('d M Y') }}</td>
-                            <td>{{ $breakdown->coordinator_name }}</td>
+                            <td>{{ $breakdown->coordinator_name ?? '' }}</td>
                             
                             <!-- Gross -->
                             <td class="text-end fw-bold">{{ number_format($breakdown->gross_amount, 0, ',', '.') }}</td>
@@ -400,7 +441,7 @@
                             <!-- PERBAIKAN: Dana Kas di sini sebaiknya ditulis positif atau (bracket) sebagai alokasi. Disini saya biarkan minus jika itu logika sistem, tapi beri warna berbeda agar dianggap "Allocation" bukan "Loss" -->
                             <td class="text-end text-warning">
                                 {{ number_format($breakdown->cash_fund, 0, ',', '.') }}
-                                <small class="d-block text-muted" style="font-size:0.7rem">({{ $investorCashRate }}%)</small>
+                                <small class="d-block text-muted" style="font-size:0.7rem">({{ $investorCashRate ?? 0 }}%)</small>
                             </td>
                             <td class="text-end text-success fw-bold">{{ number_format($breakdown->investor_share, 0, ',', '.') }}</td>
                         </tr>
@@ -429,7 +470,7 @@
                     
                     <select name="coordinator_id" class="form-select form-select-sm me-2" style="max-width: 150px;">
                         <option value="">{{ __('Semua Koordinator') }}</option>
-                        @foreach($coordinators as $coordinator)
+                        @foreach($coordinators ?? [] as $coordinator)
                             <option value="{{ $coordinator->id }}" {{ request('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
                                 {{ $coordinator->name }}
                             </option>
@@ -464,7 +505,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($transactions as $transaction)
+                            @forelse($transactions ?? [] as $transaction)
                             <tr>
                                 <td class="text-center select-column d-none">
                                     <input type="checkbox" name="ids[]" value="{{ $transaction->id }}" class="form-check-input select-row">
@@ -529,7 +570,7 @@
                     </table>
                 </div>
                 <div class="mt-3 d-flex justify-content-end">
-                    {{ $transactions->links() }}
+                    {{ $transactions->links() ?? '' }}
                 </div>
             </div>
         </div>
@@ -582,332 +623,132 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Tambah Transaksi Baru') }}</h5>
+                <h5 class="modal-title">{{ __('Add Transaction') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('finance.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Jenis Transaksi') }}</label>
-                        <select name="type" id="addType" class="form-select" required onchange="updateCategories('add')">
+                        <label class="form-label">{{ __('Type') }}</label>
+                        <select name="type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
-                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Kategori') }}</label>
-                        <select name="category" id="addCategory" class="form-select" required>
-                            <!-- Diisi via JS -->
+                        <label class="form-label">{{ __('Category') }}</label>
+                        <select name="category" class="form-select" required>
+                            <option value="monthly_fee">{{ __('Iuran Bulanan (Internet)') }}</option>
+                            <option value="installation_fee">{{ __('Biaya Pasang') }}</option>
+                            <option value="operational">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
+                            <option value="inventory_purchase">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="salary">{{ __('Gaji/Komisi') }}</option>
+                            <option value="other">{{ __('Lainnya') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Metode Pembayaran') }}</label>
-                        <select name="payment_method" class="form-select">
-                            <option value="cash">{{ __('Tunai') }}</option>
-                            <option value="transfer">{{ __('Transfer Bank') }}</option>
-                        </select>
+                        <label class="form-label">{{ __('Amount') }}</label>
+                        <input type="number" name="amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Jumlah Nominal (Rp)') }}</label>
-                        <input type="number" name="amount" class="form-control" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Tanggal') }}</label>
-                        <input type="date" name="transaction_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Koordinator (Opsional)') }}</label>
+                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
                         <select name="coordinator_id" class="form-select">
-                            <option value="">{{ __('Tanpa Koordinator / Pusat') }}</option>
-                            @foreach($coordinators as $coordinator)
-                                <option value="{{ $coordinator->id }}">{{ $coordinator->name }}</option>
+                            <option value="">-- None --</option>
+                            @foreach($coordinators ?? [] as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Keterangan / Deskripsi') }}</label>
-                        <textarea name="description" class="form-control" rows="2" required></textarea>
+                        <label class="form-label">{{ __('Description') }}</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('No. Referensi / Bukti') }}</label>
-                        <input type="text" name="reference_number" class="form-control" placeholder="Contoh: INV-001">
+                        <label class="form-label">{{ __('Date') }}</label>
+                        <input type="date" name="transaction_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Simpan Transaksi') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Edit Transaction Modal -->
-<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Edit Transaksi') }}</h5>
+                <h5 class="modal-title">{{ __('Panduan Audit Keuangan') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editTransactionForm" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Jenis Transaksi') }}</label>
-                        <select name="type" id="editType" class="form-select" required onchange="updateCategories('edit')">
-                            <option value="income">{{ __('Pemasukan') }}</option>
-                            <option value="expense">{{ __('Pengeluaran') }}</option>
-                            <option value="transfer">{{ __('Transfer') }}</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Kategori') }}</label>
-                        <select name="category" id="editCategory" class="form-select" required>
-                            <!-- Diisi via JS -->
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Metode Pembayaran') }}</label>
-                        <select name="payment_method" class="form-select">
-                            <option value="cash">{{ __('Tunai') }}</option>
-                            <option value="transfer">{{ __('Transfer Bank') }}</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Jumlah Nominal (Rp)') }}</label>
-                        <input type="number" name="amount" class="form-control" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Tanggal') }}</label>
-                        <input type="date" name="transaction_date" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Koordinator (Opsional)') }}</label>
-                        <select name="coordinator_id" class="form-select">
-                            <option value="">{{ __('Tanpa Koordinator / Pusat') }}</option>
-                            @foreach($coordinators as $coordinator)
-                                <option value="{{ $coordinator->id }}">{{ $coordinator->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Keterangan / Deskripsi') }}</label>
-                        <textarea name="description" class="form-control" rows="2" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('No. Referensi / Bukti') }}</label>
-                        <input type="text" name="reference_number" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Update Transaksi') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Help Modal (Audit Guide) -->
-<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="helpModalLabel"><i class="fa-solid fa-clipboard-check me-2"></i>{{ __('Panduan Audit & Alur Keuangan') }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
             <div class="modal-body">
-                <div class="alert alert-light border-primary shadow-sm">
-                    <h6 class="alert-heading fw-bold text-primary"><i class="fa-solid fa-circle-plus me-2"></i>1. Alur Pemasukan (Recognition)</h6>
-                    <hr>
-                    <ol class="mb-0">
-                        <li>Input transaksi sebagai <strong>Income</strong>.</li>
-                        <li>Sistem otomatis memisahkan dana berdasarkan persentase alokasi (Slicing Revenue).</li>
-                        <li><span class="badge bg-danger">Komisi & Biaya</span> = Langsung mengurangi kas (Cash Out).</li>
-                        <li><span class="badge bg-warning">Dana ISP & Alat</span> = Akumulasi Kewajiban (Accrued Liability), bukan kas keluar langsung, namun ditandai sebagai "Dana Ditahan".</li>
-                    </ol>
-                </div>
-
-                <div class="alert alert-light border-danger shadow-sm">
-                    <h6 class="alert-heading fw-bold text-danger"><i class="fa-solid fa-circle-minus me-2"></i>2. Alur Pengeluaran (Disbursement)</h6>
-                    <hr>
-                    <ul class="mb-0">
-                        <li>Input sebagai <strong>Expense</strong>.</li>
-                        <li>Jika menggunakan Dana Peralatan, pastikan kategorinya sesuai agar laporan aset akurat.</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('Mengerti') }}</button>
+                <h6>1. Saldo Kas Perusahaan</h6>
+                <p class="small text-muted">Adalah uang tunai riil yang seharusnya ada di tangan bendahara/admin saat ini. Dihitung dari Total Masuk - Total Keluar.</p>
+                
+                <h6>2. Akumulasi Dana Peralatan</h6>
+                <p class="small text-muted">Bukan biaya hilang, tapi dana yang disisihkan (virtual) dari pendapatan untuk beli alat di masa depan. Uangnya masih ada di Saldo Kas Perusahaan sampai dibelanjakan.</p>
+                
+                <h6>3. Wajib Setor Koordinator</h6>
+                <p class="small text-muted">Uang yang harus disetor koordinator ke admin. Rumus: (Pendapatan Kotor - Komisi) - Biaya Operasional.</p>
             </div>
         </div>
     </div>
 </div>
 
+@push('scripts')
 <script>
-    // Konfigurasi Kategori Dinamis
-    const categories = {
-        income: [
-            { val: 'Member Income', label: 'Pendapatan Member' },
-            { val: 'Voucher Income', label: 'Pendapatan Voucher' },
-            { val: 'Other Income', label: 'Pendapatan Lainnya' }
-        ],
-        expense: [
-            { val: 'Deposit to Company', label: 'Setor Tunai ke Pusat' },
-            { val: 'Salary', label: 'Gaji Karyawan' },
-            { val: 'Operational', label: 'Biaya Server/Listrik' },
-            { val: 'Transport', label: 'Transportasi' },
-            { val: 'Consumption', label: 'Konsumsi' },
-            { val: 'Repair', label: 'Perbaikan Alat' },
-            { val: 'Maintenance', label: 'Pemeliharaan' },
-            { val: 'Pembayaran ISP', label: 'Pembayaran ISP' },
-            { val: 'Pembelian Alat', label: 'Pembelian Aset Baru' }
-        ],
-        transfer: [
-            { val: 'Setoran Pengurus', label: 'Setoran dari Koordinator' }
-        ]
-    };
-
-    function updateCategories(prefix) {
-        const typeSelect = document.getElementById(prefix + 'Type');
-        const catSelect = document.getElementById(prefix + 'Category');
-        const selectedType = typeSelect.value;
-        
-        catSelect.innerHTML = '<option value="">Pilih Kategori...</option>';
-        
-        if(categories[selectedType]) {
-            categories[selectedType].forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.val;
-                option.textContent = cat.label;
-                catSelect.appendChild(option);
-            });
-        }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        // Init categories for add modal
-        updateCategories('add');
-
-        // Edit Modal Logic
-        var editTransactionModal = document.getElementById('editTransactionModal');
-        if (editTransactionModal) {
-            editTransactionModal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                var type = button.getAttribute('data-type');
-                var category = button.getAttribute('data-category');
-                // ... (ambil data lainnya sama seperti sebelumnya)
-                
-                // Set type first
-                var form = document.getElementById('editTransactionForm');
-                form.querySelector('[name="type"]').value = type;
-                
-                // Update categories based on type
-                updateCategories('edit');
-                
-                // Then set category
-                setTimeout(() => {
-                   form.querySelector('[name="category"]').value = category; 
-                }, 50);
-
-                form.action = button.getAttribute('data-action');
-                form.querySelector('[name="amount"]').value = button.getAttribute('data-amount');
-                form.querySelector('[name="payment_method"]').value = button.getAttribute('data-payment-method') || 'cash';
-                form.querySelector('[name="transaction_date"]').value = button.getAttribute('data-date');
-                form.querySelector('[name="coordinator_id"]').value = button.getAttribute('data-coordinator') || '';
-                form.querySelector('[name="description"]').value = button.getAttribute('data-description');
-                form.querySelector('[name="reference_number"]').value = button.getAttribute('data-ref');
-            });
-        }
-
-        // Bulk Delete Logic
-        const selectAll = document.getElementById('selectAll');
-        const checkboxes = document.querySelectorAll('.select-row');
+        const toggleBtn = document.getElementById('toggleSelectMode');
         const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-        const bulkDeleteForm = document.getElementById('bulkDeleteForm');
-        const toggleSelectModeBtn = document.getElementById('toggleSelectMode');
-        const selectColumns = document.querySelectorAll('.select-column');
-        const rowActions = document.querySelectorAll('.row-actions');
-
-        function updateBulkDeleteVisibility() {
-            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-            if (bulkDeleteBtn) {
-                if (anyChecked) {
-                    bulkDeleteBtn.classList.remove('d-none');
-                } else {
-                    bulkDeleteBtn.classList.add('d-none');
-                }
-            }
-        }
-
-        if (toggleSelectModeBtn) {
-            toggleSelectModeBtn.addEventListener('click', function () {
-                const isActive = this.classList.toggle('active');
-
-                selectColumns.forEach(col => {
-                    if (isActive) {
-                        col.classList.remove('d-none');
-                    } else {
-                        col.classList.add('d-none');
-                    }
-                });
-
-                rowActions.forEach(cell => {
-                    if (isActive) {
-                        cell.classList.add('d-none');
-                    } else {
-                        cell.classList.remove('d-none');
-                    }
-                });
-
-                if (!isActive) {
-                    if (selectAll) {
-                        selectAll.checked = false;
-                    }
-                    checkboxes.forEach(cb => {
-                        cb.checked = false;
-                    });
-                    updateBulkDeleteVisibility();
-                }
+        const selectCols = document.querySelectorAll('.select-column');
+        const checkboxes = document.querySelectorAll('.select-row');
+        const selectAll = document.getElementById('selectAll');
+        
+        if(toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                selectCols.forEach(el => el.classList.toggle('d-none'));
+                bulkDeleteBtn.classList.toggle('d-none');
             });
         }
-
-        if (selectAll) {
+        
+        if(selectAll) {
             selectAll.addEventListener('change', function() {
-                checkboxes.forEach(cb => {
-                    cb.checked = selectAll.checked;
-                });
-                updateBulkDeleteVisibility();
+                checkboxes.forEach(cb => cb.checked = this.checked);
             });
-        }
-
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateBulkDeleteVisibility);
-        });
-
-        window.submitBulkDelete = function() {
-            if (confirm('{{ __('Apakah Anda yakin ingin menghapus transaksi terpilih secara permanen?') }}')) {
-                const inputs = bulkDeleteForm.querySelectorAll('input[name="ids[]"]');
-                inputs.forEach(input => input.remove());
-                
-                checkboxes.forEach(cb => {
-                    if (cb.checked) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'ids[]';
-                        input.value = cb.value;
-                        bulkDeleteForm.appendChild(input);
-                    }
-                });
-                
-                bulkDeleteForm.submit();
-            }
         }
     });
-</script>
 
+    function submitBulkDelete() {
+        if(!confirm('{{ __("Yakin ingin menghapus transaksi terpilih?") }}')) return;
+        
+        const ids = [];
+        document.querySelectorAll('.select-row:checked').forEach(cb => ids.push(cb.value));
+        
+        if(ids.length === 0) {
+            alert('{{ __("Pilih transaksi dulu!") }}');
+            return;
+        }
+
+        const form = document.getElementById('bulkDeleteForm');
+        // Clear old inputs
+        form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
+        
+        // Add new inputs
+        ids.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        form.submit();
+    }
+</script>
+@endpush
 @endsection

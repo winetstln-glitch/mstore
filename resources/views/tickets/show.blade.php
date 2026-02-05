@@ -3,36 +3,38 @@
 @section('content')
 <div class="row">
     <!-- Main Ticket Info -->
-    <div class="col-lg-8">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm border-0 mb-3 mb-md-4">
+            <div class="card-body p-3 p-md-4">
+                <!-- Responsive Header: Stacked on mobile -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-4">
                     <div>
-                        <h4 class="fw-bold mb-1">{{ $ticket->subject }}</h4>
+                        <h4 class="fw-bold mb-1 text-truncate" style="max-width: 100%;">{{ $ticket->subject }}</h4>
                         <p class="text-muted small mb-0">Ticket #{{ $ticket->ticket_number }}</p>
                     </div>
-                    <div class="btn-group">
+                    <div class="d-flex gap-2 w-100 w-md-auto justify-content-md-end">
                         @if(Auth::user()->hasRole('admin'))
                         <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-success text-white btn-sm" onclick="return confirm('{{ __('Send WhatsApp notification to all assigned technicians?') }}')">
-                                <i class="fa-brands fa-whatsapp me-1"></i> {{ __('Notify') }}
+                            <button type="submit" class="btn btn-success text-white btn-sm flex-grow-1 flex-md-grow-0" onclick="return confirm('{{ __('Send WhatsApp notification?') }}')">
+                                <i class="fa-brands fa-whatsapp me-1"></i> <span class="d-none d-sm-inline">{{ __('Notify') }}</span>
                             </button>
                         </form>
                         @endif
                         @can('ticket.edit')
-                        <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-warning text-white btn-sm">
-                            <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit') }}
+                        <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-warning text-white btn-sm flex-grow-1 flex-md-grow-0">
+                            <i class="fa-solid fa-pen-to-square me-1"></i> <span class="d-none d-sm-inline">{{ __('Edit') }}</span>
                         </a>
                         @endcan
-                        <a href="{{ route('tickets.index') }}" class="btn btn-light border btn-sm">
+                        <a href="{{ route('tickets.index') }}" class="btn btn-light border btn-sm flex-grow-1 flex-md-grow-0">
                             {{ __('Back') }}
                         </a>
                     </div>
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3 col-6">
+                <!-- Grid info: Good for mobile (2 columns) -->
+                <div class="row g-2 g-md-3 mb-4">
+                    <div class="col-6 col-md-3">
                         <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Status') }}</small>
                         @php
                             $statusClass = match($ticket->status) {
@@ -43,11 +45,11 @@
                                 default => 'bg-warning-subtle text-warning'
                             };
                         @endphp
-                        <span class="badge {{ $statusClass }} mt-1">
-                            {{ ucfirst(str_replace('_', ' ', $ticket->status)) }}
-                        </span>
+                        <div class="mt-1">
+                            <span class="badge {{ $statusClass }} w-100">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-3 col-6">
+                    <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Priority</small>
                         @php
                             $priorityClass = match($ticket->priority) {
@@ -56,23 +58,23 @@
                                 default => 'bg-primary-subtle text-primary'
                             };
                         @endphp
-                        <span class="badge {{ $priorityClass }} mt-1">
-                            {{ ucfirst($ticket->priority) }}
-                        </span>
+                        <div class="mt-1">
+                            <span class="badge {{ $priorityClass }} w-100">{{ ucfirst($ticket->priority) }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-3 col-6">
+                    <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Type</small>
-                        <span class="d-block mt-1 fw-medium">{{ ucfirst(str_replace('_', ' ', $ticket->type)) }}</span>
+                        <span class="d-block mt-1 fw-medium small text-truncate">{{ ucfirst(str_replace('_', ' ', $ticket->type)) }}</span>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Created At</small>
-                        <span class="d-block mt-1 fw-medium">{{ $ticket->created_at->format('d M Y H:i') }}</span>
+                    <div class="col-6 col-md-3">
+                        <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Created</small>
+                        <span class="d-block mt-1 fw-medium small">{{ $ticket->created_at->format('d M Y') }}</span>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <h6 class="fw-bold border-bottom pb-2 mb-3">{{ __('Description') }}</h6>
-                    <div class="bg-body-tertiary p-3 rounded text-body-secondary" style="white-space: pre-line;">
+                    <div class="bg-body-tertiary p-3 rounded text-body-secondary small" style="white-space: pre-line;">
                         {{ $ticket->description ?? __('No description provided.') }}
                     </div>
                 </div>
@@ -80,24 +82,24 @@
                 @if($ticket->location)
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                            <h6 class="fw-bold mb-0">{{ __('Location / Notes') }}</h6>
+                            <h6 class="fw-bold mb-0 small text-uppercase">{{ __('Location') }}</h6>
                             @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editLocationModal">
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small fw-bold" data-bs-toggle="modal" data-bs-target="#editLocationModal">
                                     <i class="fa-solid fa-pen-to-square"></i> {{ __('Edit') }}
                                 </button>
                             @endif
                         </div>
-                        <p class="text-body-secondary">
+                        <p class="text-body-secondary small mb-0">
                             <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ticket->location) }}" target="_blank" class="text-decoration-none">
-                                <i class="fa-solid fa-map-location-dot me-1"></i> {{ $ticket->location }} <i class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
+                                <i class="fa-solid fa-map-location-dot me-1"></i> {{ Str::limit($ticket->location, 50) }} <i class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
                             </a>
                         </p>
                     </div>
                 @elseif(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                            <h6 class="fw-bold mb-0">{{ __('Location / Notes') }}</h6>
-                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editLocationModal">
+                            <h6 class="fw-bold mb-0 small text-uppercase">{{ __('Location') }}</h6>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small fw-bold" data-bs-toggle="modal" data-bs-target="#editLocationModal">
                                 <i class="fa-solid fa-plus"></i> {{ __('Add Location') }}
                             </button>
                         </div>
@@ -110,28 +112,28 @@
                     <h6 class="fw-bold border-bottom pb-2 mb-3">{{ __('Completion Photos') }}</h6>
                     
                     @if($ticket->photo_before || $ticket->photo_proof)
-                        <div class="row g-3 mb-3">
+                        <div class="row g-2 g-md-3 mb-3">
                             @if($ticket->photo_before)
-                            <div class="col-md-6">
+                            <div class="col-6 col-md-6">
                                 <div class="card h-100">
                                     <div class="card-header bg-light py-2">
                                         <small class="fw-bold text-uppercase">{{ __('Before') }}</small>
                                     </div>
-                                    <div class="card-body p-2 text-center">
-                                        <img src="{{ Storage::url($ticket->photo_before) }}" class="img-fluid rounded border shadow-sm" alt="Photo Before Work" style="max-height: 300px;">
+                                    <div class="card-body p-1 text-center">
+                                        <img src="{{ Storage::url($ticket->photo_before) }}" class="img-fluid rounded border shadow-sm w-100" style="max-height: 250px; object-fit: cover;">
                                     </div>
                                 </div>
                             </div>
                             @endif
                             
                             @if($ticket->photo_proof)
-                            <div class="col-md-6">
+                            <div class="col-6 col-md-6">
                                 <div class="card h-100">
                                     <div class="card-header bg-light py-2">
                                         <small class="fw-bold text-uppercase">{{ __('After') }}</small>
                                     </div>
-                                    <div class="card-body p-2 text-center">
-                                        <img src="{{ Storage::url($ticket->photo_proof) }}" class="img-fluid rounded border shadow-sm" alt="Photo After Work" style="max-height: 300px;">
+                                    <div class="card-body p-1 text-center">
+                                        <img src="{{ Storage::url($ticket->photo_proof) }}" class="img-fluid rounded border shadow-sm w-100" style="max-height: 250px; object-fit: cover;">
                                     </div>
                                 </div>
                             </div>
@@ -144,22 +146,23 @@
                     @endif
 
                     @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
-                        <div class="bg-light p-3 rounded border">
-                            <h6 class="fw-bold mb-3"><i class="fa-solid fa-check-circle text-success me-1"></i> {{ __('Mark as Completed') }}</h6>
+                        <div class="bg-light p-3 rounded border border-success-subtle">
+                            <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-check-circle me-1"></i> {{ __('Mark as Completed') }}</h6>
                             <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <div class="row mb-3">
                                     <div class="col-md-6 mb-2 mb-md-0">
                                         <label for="photo_before" class="form-label small fw-bold">{{ __('Photo Before') }} <span class="text-muted small fw-normal">({{ __('Optional') }})</span></label>
-                                        <input type="file" class="form-control form-control-sm" id="photo_before" name="photo_before" accept="image/*">
+                                        <!-- Changed to standard/large input for better touch on mobile -->
+                                        <input type="file" class="form-control" id="photo_before" name="photo_before" accept="image/*">
                                         @error('photo_before')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6">
                                         <label for="photo_proof" class="form-label small fw-bold">{{ __('Photo After') }} <span class="text-danger">*</span></label>
-                                        <input type="file" class="form-control form-control-sm" id="photo_proof" name="photo_proof" required accept="image/*">
+                                        <input type="file" class="form-control" id="photo_proof" name="photo_proof" required accept="image/*">
                                         @error('photo_proof')
                                             <div class="text-danger small mt-1">{{ $message }}</div>
                                         @enderror
@@ -167,9 +170,9 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="description" class="form-label small fw-bold">{{ __('Completion Notes') }} ({{ __('Optional') }})</label>
-                                    <textarea class="form-control form-control-sm" id="description" name="description" rows="2" placeholder="{{ __('Describe the solution...') }}"></textarea>
+                                    <textarea class="form-control" id="description" name="description" rows="2" placeholder="{{ __('Describe the solution...') }}"></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-success btn-sm w-100" onclick="return confirm('{{ __('Are you sure you want to mark this ticket as completed?') }}')">
+                                <button type="submit" class="btn btn-success w-100 py-2 fw-bold" onclick="return confirm('{{ __('Complete ticket?') }}')">
                                     <i class="fa-solid fa-check me-1"></i> {{ __('Complete Ticket') }}
                                 </button>
                             </form>
@@ -190,12 +193,12 @@
                         <li class="list-group-item border-0 ps-4 py-3 position-relative">
                             <div class="position-absolute top-0 start-0 translate-middle-x mt-4 bg-body border border-2 border-primary rounded-circle" style="width: 12px; height: 12px; left: -1.5px;"></div>
                             <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1 fw-bold text-body-emphasis">{{ ucfirst(str_replace('_', ' ', $log->action)) }}</h6>
-                                    <p class="mb-1 text-body-secondary small">{{ $log->description }}</p>
+                                <div class="w-100">
+                                    <h6 class="mb-1 fw-bold text-body-emphasis text-break">{{ ucfirst(str_replace('_', ' ', $log->action)) }}</h6>
+                                    <p class="mb-1 text-body-secondary small text-break">{{ $log->description }}</p>
                                     <small class="text-body-secondary fst-italic">by {{ $log->user->name ?? 'System' }}</small>
                                 </div>
-                                <small class="text-body-secondary">{{ $log->created_at->diffForHumans() }}</small>
+                                <small class="text-body-secondary text-nowrap ms-2">{{ $log->created_at->diffForHumans() }}</small>
                             </div>
                         </li>
                     @empty
@@ -207,9 +210,10 @@
     </div>
 
     <!-- Sidebar Info -->
-    <div class="col-lg-4">
+    <!-- mb-3 on mobile to reduce vertical scroll -->
+    <div class="col-12 col-lg-4">
         <!-- Customer Info -->
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-3 mb-md-4">
             <div class="card-header py-3">
                 <h6 class="mb-0 fw-bold">{{ __('Customer Details') }}</h6>
             </div>
@@ -219,24 +223,24 @@
                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
                             <i class="fa-solid fa-user fa-lg"></i>
                         </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ $ticket->customer->name }}</h6>
+                        <div class="overflow-hidden">
+                            <h6 class="mb-0 fw-bold text-truncate">{{ $ticket->customer->name }}</h6>
                             <small class="text-body-secondary">{{ __('Customer') }}</small>
                         </div>
                     </div>
                     <ul class="list-unstyled mb-0 small">
                         <li class="mb-2">
                             <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ticket->customer->address) }}" target="_blank" class="text-decoration-none text-body-secondary">
-                                <i class="fa-solid fa-location-dot me-2"></i> {{ $ticket->customer->address }}
+                                <i class="fa-solid fa-location-dot me-2"></i> <span class="text-break">{{ Str::limit($ticket->customer->address, 40) }}</span>
                             </a>
                         </li>
-                        <li class="mb-2"><i class="fa-solid fa-phone me-2 text-body-secondary"></i> {{ $ticket->customer->phone }}</li>
+                        <li class="mb-2"><i class="fa-solid fa-phone me-2 text-body-secondary"></i> <a href="tel:{{ $ticket->customer->phone }}" class="text-decoration-none">{{ $ticket->customer->phone }}</a></li>
                         <li class="mb-2"><i class="fa-solid fa-box me-2 text-body-secondary"></i> {{ $ticket->customer->package }}</li>
                     </ul>
-                    <div class="d-grid mt-3">
+                    <div class="d-grid gap-2 mt-3">
                         <a href="{{ route('customers.edit', $ticket->customer) }}" class="btn btn-outline-primary btn-sm">{{ __('View Customer') }}</a>
                         @if($ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
-                        <button type="button" class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
                             <i class="fa-solid fa-user-pen me-1"></i> {{ __('Edit Customer') }}
                         </button>
                         @endif
@@ -248,7 +252,7 @@
         </div>
 
         <!-- Network Info -->
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-3 mb-md-4">
             <div class="card-header py-3">
                 <h6 class="mb-0 fw-bold">{{ __('Network Details') }}</h6>
             </div>
@@ -270,7 +274,7 @@
                         @if($ticket->coordinator)
                             <div class="fw-medium">{{ $ticket->coordinator->name }}</div>
                             @if($ticket->coordinator->phone)
-                                <small class="d-block"><i class="fa-solid fa-phone me-1 text-muted"></i> {{ $ticket->coordinator->phone }}</small>
+                                <small class="d-block"><a href="tel:{{ $ticket->coordinator->phone }}" class="text-decoration-none"><i class="fa-solid fa-phone me-1 text-muted"></i> {{ $ticket->coordinator->phone }}</a></small>
                             @endif
                             @if($ticket->coordinator->region)
                                 <small class="d-block text-muted">{{ $ticket->coordinator->region->name }}</small>
@@ -301,7 +305,7 @@
                             </div>
                         </div>
                         <div class="d-grid mb-3">
-                            <a href="mailto:{{ $tech->email }}" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-envelope me-1"></i> {{ __('Email Technician') }}</a>
+                            <a href="mailto:{{ $tech->email }}" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-envelope me-1"></i> {{ __('Email') }}</a>
                         </div>
                     @endforeach
                 @else
@@ -316,8 +320,9 @@
 </div>
 
 @if($ticket->customer && $ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+<!-- Added modal-fullscreen-sm-down for mobile friendly edit -->
 <div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editCustomerModalLabel">{{ __('Edit Customer') }}</h5>
@@ -334,7 +339,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="cust_phone" class="form-label">{{ __('Phone') }}</label>
-                            <input type="text" class="form-control" id="cust_phone" name="phone" value="{{ $ticket->customer->phone }}">
+                            <input type="tel" class="form-control" id="cust_phone" name="phone" value="{{ $ticket->customer->phone }}">
                         </div>
                         <div class="col-12">
                             <label for="cust_address" class="form-label">{{ __('Address') }}</label>
@@ -379,10 +384,12 @@
     </div>
 </div>
 @endif
+
 <!-- Edit Location Modal -->
 @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+<!-- Added modal-fullscreen-sm-down for better map interaction on mobile -->
 <div class="modal fade" id="editLocationModal" tabindex="-1" aria-labelledby="editLocationModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editLocationModalLabel">{{ __('Edit Location') }}</h5>
@@ -393,18 +400,19 @@
                 @method('PATCH')
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="location" class="form-label">{{ __('Coordinates (Latitude, Longitude)') }}</label>
+                        <label for="location" class="form-label">{{ __('Coordinates (Lat, Lng)') }}</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="location" name="location" value="{{ $ticket->location }}" placeholder="-6.200000, 106.816666">
                             <button class="btn btn-outline-secondary" type="button" id="getCurrentLocation">
                                 <i class="fa-solid fa-crosshairs"></i>
                             </button>
                         </div>
-                        <div class="form-text">{{ __('Click the crosshair button to get your current location.') }}</div>
+                        <div class="form-text">{{ __('Click crosshair to get current location.') }}</div>
                     </div>
                     <div class="mt-3">
-                        <div class="form-text text-muted mb-2">{{ __('Click on the map or drag the marker to update location.') }}</div>
-                        <div id="ticket-map-picker" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
+                        <div class="form-text text-muted mb-2">{{ __('Tap map to set location.') }}</div>
+                        <!-- Increased height slightly for mobile usage -->
+                        <div id="ticket-map-picker" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -415,6 +423,7 @@
         </div>
     </div>
 </div>
+@endif
 
 
 
@@ -433,17 +442,18 @@
                         const lng = position.coords.longitude;
                         locationInput.value = `${lat}, ${lng}`;
                         getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
+                        // Trigger map update if map exists (assumed Leaflet logic)
+                        // You might need to emit an event or call a map function here if you implement map interaction
                     }, function(error) {
-                        alert('Error getting location: ' + error.message);
+                        alert('Error: ' + error.message);
                         getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
                     });
                 } else {
-                    alert('Geolocation is not supported by this browser.');
+                    alert('Geolocation not supported.');
                 }
             });
         }
     });
 </script>
 @endpush
-@endif
 @endsection

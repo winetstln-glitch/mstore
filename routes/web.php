@@ -110,7 +110,19 @@ Route::middleware('auth')->group(function () {
     Route::get('olt/{olt}/onus', [OnuController::class, 'index'])->name('olt.onus.index');
     Route::post('olt/{olt}/onus/sync', [OnuController::class, 'sync'])->name('olt.onus.sync');
     Route::resource('olt', OLTController::class);
-
+    // ... kode router lainnya ...
+    Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
+    Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
+    
+    // TAMBAHKAN BARIS INI (Route untuk halaman list PPPoE Active)
+    Route::get('routers/{router}/pppoe-active', [RouterController::class, 'pppoeActive'])->name('routers.pppoe.active');
+    
+    Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
+    Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
+    Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
+    Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->name('pppoe.index');
+    Route::resource('routers', RouterController::class);
+    
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
     Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');

@@ -121,7 +121,7 @@
                                     <button type="button" class="btn btn-success btn-sm" id="btnAddOdpMode">
                                         <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODP') }}
                                     </button>
-                                    <button type="button" class="btn btn-sm text-white" style="background-color: #6610f2; border-color: #6610f2;" id="btnAddHtbMode">
+                                    <button type="button" class="btn btn-indigo btn-sm" id="btnAddHtbMode">
                                         <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('HTB') }}
                                     </button>
                                     <button type="button" class="btn btn-dark btn-sm" id="btnAddClosureMode">

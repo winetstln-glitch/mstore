@@ -210,6 +210,7 @@ class FinanceController extends Controller implements HasMiddleware
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
 
+        // 1. Ambil Transaksi Keuangan
         $query = Transaction::where('coordinator_id', $coordinator->id)
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->orderBy('transaction_date', 'desc')
@@ -217,33 +218,78 @@ class FinanceController extends Controller implements HasMiddleware
 
         $transactions = $query->get();
 
-        // Calculate Summaries matching the index logic
+        // 2. Hitung Summary Keuangan
         $grossRevenue = $transactions->where('type', 'income')
             ->whereIn('category', ['Member Income', 'Voucher Income'])
             ->sum('amount');
 
         $commission = $transactions->where('category', 'Coordinator Commission')->sum('amount');
-        $ispShare = $transactions->where('category', 'ISP Payment')->sum('amount');
-        $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
-        $investorCash = $transactions->where('category', 'Investor Cash Fund')->sum('amount');
         $deposited = $transactions->where('category', 'Deposit to Company')->sum('amount');
         
-        // Other Expenses (excluding automatically generated ones, fund usages, and investor distributions)
-        $expenses = $transactions->where('type', 'expense')
+        // PERBAIKAN: Hitung ISP & Tool Fund agar tidak undefined
+        $ispShare = $transactions->where('category', 'ISP Payment')->sum('amount');
+        $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
+
+        // 3. Hitung TOTAL Expenses (Manual)
+        $totalExpensesRaw = $transactions->where('type', 'expense')
             ->whereNotIn('category', [
                 'Coordinator Commission',
                 'ISP Payment',
                 'Tool Fund',
                 'Investor Profit Share',
                 'Investor Cash Fund',
+                'Pembayaran ISP',
+                'Pembelian Alat',
                 'Deposit to Company'
             ])
             ->sum('amount');
-        
-        $netBalance = $grossRevenue - $commission - $expenses - $deposited;
+
+        // 4. PISAHKAN: Biaya Barang (Ambil Barang)
+        $inventoryExpenses = $transactions->where('category', 'Ambil Barang')->sum('amount');
+
+        // 5. PISAHKAN: Biaya Tunai (Ops & Beli Luar)
+        $cashExpenses = $totalExpensesRaw - $inventoryExpenses;
+
+        // 6. Ambil Detail Biaya Operasional (Untuk Tabel View)
+        $operationalExpenses = Transaction::where('coordinator_id', $coordinator->id)
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->where('type', 'expense')
+            ->whereNotIn('category', [
+                'Coordinator Commission',
+                'ISP Payment',
+                'Tool Fund',
+                'Investor Profit Share',
+                'Investor Cash Fund',
+                'Pembayaran ISP',
+                'Pembelian Alat',
+                'Deposit to Company',
+                'Ambil Barang' // Exclude dari list operasional tunai
+            ])
+            ->orderBy('transaction_date', 'desc')
+            ->get();
+
+        // 7. Ambil Detail Pengambilan Barang (Untuk Tabel View)
+        $inventoryItems = \App\Models\InventoryTransaction::with('item')
+            ->where('coordinator_id', $coordinator->id)
+            ->where('type', 'out')
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->get();
+
+        // Hitung total nilai barang keluar
+        $inventoryUsageValue = $inventoryItems->sum(function($t) {
+            return $t->quantity * ($t->item->price ?? 0);
+        });
+
+        // 8. Perhitungan Akhir
+        $netIncome = $grossRevenue - $cashExpenses - $commission;
+        $netBalance = $netIncome; 
 
         $toolRate = Setting::getValue('commission_tool_percent', 20);
         $investorCash = $transactions->where('category', 'Investor Cash Fund')->sum('amount');
+
+        // 9. Perbaikan untuk compact()
+        // Kita buat variabel baru agar compact() hanya menerima string
+        $totalExpenses = $cashExpenses; 
 
         return view('finance.coordinator_detail', compact(
             'coordinator',
@@ -253,7 +299,13 @@ class FinanceController extends Controller implements HasMiddleware
             'ispShare',
             'toolFund',
             'investorCash',
-            'expenses',
+            'totalExpenses', 
+            'cashExpenses',
+            'inventoryExpenses',
+            'inventoryUsageValue',
+            'operationalExpenses',
+            'inventoryItems',
+            'netIncome',
             'netBalance',
             'startDate',
             'endDate',
@@ -262,7 +314,7 @@ class FinanceController extends Controller implements HasMiddleware
         ));
     }
 
-    public function downloadCoordinatorPdf(Coordinator $coordinator, Request $request)
+      public function downloadCoordinatorPdf(Coordinator $coordinator, Request $request)
     {
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             if ($coordinator->user_id !== Auth::id()) {
@@ -275,7 +327,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         $query = Transaction::where('coordinator_id', $coordinator->id)
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->orderBy('transaction_date', 'asc'); // ASC for report usually
+            ->orderBy('transaction_date', 'asc'); 
 
         $transactions = $query->get();
 
@@ -290,11 +342,10 @@ class FinanceController extends Controller implements HasMiddleware
         $grossRevenue = $memberIncome + $voucherIncome;
 
         $commission = $transactions->where('category', 'Coordinator Commission')->sum('amount');
-        $ispShare = $transactions->where('category', 'ISP Payment')->sum('amount');
-        $toolFund = $transactions->where('category', 'Tool Fund')->sum('amount');
         $deposited = $transactions->where('category', 'Deposit to Company')->sum('amount');
 
-        $expenses = $transactions->where('type', 'expense')
+        // --- UPDATE LOGIC HERE ---
+        $totalExpenses = $transactions->where('type', 'expense')
             ->whereNotIn('category', [
                 'Coordinator Commission',
                 'ISP Payment',
@@ -306,8 +357,13 @@ class FinanceController extends Controller implements HasMiddleware
                 'Deposit to Company'
             ])
             ->sum('amount');
-        
-        $netBalance = $grossRevenue - $commission - $expenses - $deposited;
+
+        // Hitung Inventory & Cash
+        $inventoryExpenses = $transactions->where('category', 'Ambil Barang')->sum('amount');
+        $cashExpenses = $totalExpenses - $inventoryExpenses;
+        // -----------------------
+
+        $netBalance = $grossRevenue - $commission - $cashExpenses - $deposited;
 
         $toolRate = Setting::getValue('commission_tool_percent', 20);
 
@@ -332,7 +388,7 @@ class FinanceController extends Controller implements HasMiddleware
             'voucherIncome',
             'grossRevenue',
             'commission',
-            'expenses',
+            'expenses', // Kirim cashExpenses agar view PDF menampilkan angka yang benar
             'netBalance',
             'startDate',
             'endDate',
@@ -800,7 +856,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         $transactions = $query->paginate(15);
         
-        // Calculate totals based on user role
+        // Calculate Totals
         $totalsQuery = Transaction::query();
         if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
             if ($userCoordinator) {
@@ -810,7 +866,6 @@ class FinanceController extends Controller implements HasMiddleware
             }
         }
 
-        // Apply Month Filter to Totals
         if ($request->has('month')) {
             $totalsQuery->whereMonth('transaction_date', date('m', strtotime($request->month)))
                   ->whereYear('transaction_date', date('Y', strtotime($request->month)));
@@ -818,11 +873,10 @@ class FinanceController extends Controller implements HasMiddleware
 
         $totalIncome = (clone $totalsQuery)->where('type', 'income')->sum('amount');
         $totalExpense = (clone $totalsQuery)->where('type', 'expense')
-            ->whereNotIn('category', ['Pembayaran ISP', 'Pembelian Alat'])
+            ->whereNotIn('category', ['Pembayaran ISP', 'Pembelian Alat', 'Ambil Barang'])
             ->sum('amount');
         $balance = $totalIncome - $totalExpense;
         
-        // Accumulated Funds (Allocations - Usages)
         $ispAllocations = (clone $totalsQuery)->where('category', 'ISP Payment')->sum('amount');
         $ispUsages = (clone $totalsQuery)->where('category', 'Pembayaran ISP')->sum('amount');
         $totalIspShare = $ispAllocations - $ispUsages;
@@ -831,18 +885,13 @@ class FinanceController extends Controller implements HasMiddleware
         $toolUsages = (clone $totalsQuery)->where('category', 'Pembelian Alat')->sum('amount');
         $totalToolFund = $toolAllocations - $toolUsages;
         
-        // Calculate Company Share and General Expenses
-        // Shares (Allocations)
         $coordShare = (clone $totalsQuery)->where('category', 'Coordinator Commission')->sum('amount');
         $investorShare = (clone $totalsQuery)->where('category', 'Investor Profit Share')->sum('amount');
         $investorCashShare = (clone $totalsQuery)->where('category', 'Investor Cash Fund')->sum('amount');
         $totalInvestorShare = $investorShare + $investorCashShare;
         
-        // Company Gross Share (Allocation) = Total Income - All Shares
         $totalCompanyGrossShare = $totalIncome - $coordShare - $ispAllocations - $toolAllocations - $totalInvestorShare;
 
-        // General Expenses (Usage of Company Fund)
-        // Exclude: Shares (Allocations) and Fund Usages (ISP/Tool)
         $totalGeneralExpenses = (clone $totalsQuery)->where('type', 'expense')
             ->whereNotIn('category', [
                 'Coordinator Commission',
@@ -851,7 +900,8 @@ class FinanceController extends Controller implements HasMiddleware
                 'Investor Profit Share',
                 'Investor Cash Fund',
                 'Pembayaran ISP',
-                'Pembelian Alat'
+                'Pembelian Alat',
+                'Ambil Barang'
             ])->sum('amount');
 
         $investorCapital = (clone $totalsQuery)->whereNotNull('investor_id')->where('type', 'income')->sum('amount');
@@ -875,15 +925,14 @@ class FinanceController extends Controller implements HasMiddleware
             $coordinators = Coordinator::where('user_id', Auth::id())->get();
         }
         
+        // --- HITUNG SUMMARY PER KOORDINATOR ---
         $coordinatorSummaries = [];
         foreach ($coordinators as $coordinator) {
-            // Gross Revenue (Member & Voucher Income)
             $grossRevenue = Transaction::where('coordinator_id', $coordinator->id)
                 ->where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
                 ->sum('amount');
 
-            // Deductions (Based on actual transactions)
             $commission = Transaction::where('coordinator_id', $coordinator->id)
                 ->where('category', 'Coordinator Commission')
                 ->sum('amount');
@@ -908,7 +957,8 @@ class FinanceController extends Controller implements HasMiddleware
                 ->where('category', 'Deposit to Company')
                 ->sum('amount');
 
-            $expenses = Transaction::where('coordinator_id', $coordinator->id)
+            // Hitung TOTAL Expenses (Termasuk Barang Ambil)
+            $totalExpenses = Transaction::where('coordinator_id', $coordinator->id)
                 ->where('type', 'expense')
                 ->whereNotIn('category', [
                     'Coordinator Commission',
@@ -922,7 +972,16 @@ class FinanceController extends Controller implements HasMiddleware
                 ])
                 ->sum('amount');
 
-            $netBalance = $grossRevenue - $commission - $expenses - $deposited;
+            // PISAHKAN: Hitung Inventory (Ambil Barang)
+            $inventoryExpenses = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('category', 'Ambil Barang')
+                ->sum('amount');
+
+            // PISAHKAN: Hitung Cash Expenses (Ops & Beli Luar)
+            $cashExpenses = $totalExpenses - $inventoryExpenses;
+
+            // Hitung Net Balance Berdasarkan Cash
+            $netBalance = $grossRevenue - $commission - $cashExpenses - $deposited;
 
             $coordinatorSummaries[] = (object) [
                 'id' => $coordinator->id,
@@ -933,11 +992,14 @@ class FinanceController extends Controller implements HasMiddleware
                 'tools_cost' => $toolFund,
                 'investor_share' => $investorShareByCoordinator,
                 'investor_cash' => $investorCashByCoordinator,
-                'expenses' => $expenses,
+                'expenses' => $cashExpenses, // Update ini ke cash expenses agar tabel dashboard benar
+                'cash_expenses' => $cashExpenses, // Tambahkan untuk view baru
+                'inventory_expenses' => $inventoryExpenses, // Tambahkan untuk info
                 'deposited' => $deposited,
                 'net_balance' => $netBalance,
             ];
         }
+        // ---------------------------------------------
 
         $investorDetailsByCoordinator = [];
         if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
@@ -989,7 +1051,6 @@ class FinanceController extends Controller implements HasMiddleware
                 $cash = Transaction::where('reference_number', 'INV-CASH-' . $inc->id)->value('amount') ?? 0;
                 $shares = Transaction::where('reference_number', 'INV-' . $inc->id)->sum('amount');
                 
-                // Fetch Investors linked to this transaction
                 $investorNames = Transaction::where('reference_number', 'INV-' . $inc->id)
                     ->with('investor')
                     ->get()
@@ -997,16 +1058,12 @@ class FinanceController extends Controller implements HasMiddleware
                     ->unique()
                     ->implode(', ');
                 
-                // Calculate Net Balance (Sisa Disetor) based on flow:
-                // Gross - Com - ISP - Tool = Rem3 (Sisa Disetor)
-                
                 $netBalance = $inc->amount - $com - $isp - $tool;
                 $managerIncome = $com + $isp + $tool;
 
-                // Cascading remainders for display
                 $remaining1 = $inc->amount - $com;
                 $remaining2 = $remaining1 - $isp;
-                $remaining3 = $remaining2 - $tool; // Should equal netBalance
+                $remaining3 = $remaining2 - $tool; 
 
                 $incomeBreakdowns[] = (object) [
                     'id' => $inc->id,
@@ -1068,7 +1125,7 @@ class FinanceController extends Controller implements HasMiddleware
             'incomeBreakdowns'
         ));
     }
-
+    
     private function buildProfitLossData(?string $month): array
     {
         $query = Transaction::query();

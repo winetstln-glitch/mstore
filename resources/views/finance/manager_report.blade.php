@@ -82,7 +82,7 @@
                         <td>{{ __('Pendapatan Voucher') }}</td>
                         <td class="text-end fw-bold">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
                     </tr>
-                    <tr style="background-color: #d1e7dd;">
+                    <tr class="table-success">
                         <td class="fw-bold text-dark">TOTAL PENDAPATAN KOTOR</td>
                         <td class="text-end fw-bold text-dark fs-5">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                     </tr>
@@ -121,7 +121,7 @@
                     </tr>
                     
                     <!-- Total Expense -->
-                    <tr style="background-color: #f8d7da;">
+                    <tr class="table-danger">
                         <td class="fw-bold text-dark">TOTAL PENGELUARAN & POTONGAN</td>
                         <td class="text-end fw-bold text-dark">
                             - {{ number_format($coordCommission + $operatingExpenses, 0, ',', '.') }}
@@ -147,7 +147,7 @@
                         </td>
                         <td class="text-end text-danger">- {{ number_format($deposited, 0, ',', '.') }}</td>
                     </tr>
-                    <tr style="background-color: #fff3cd; border: 2px solid #ffc107;">
+                    <tr class="table-warning border border-warning border-2">
                         <td class="fw-bold text-dark fs-5">
                             <i class="fa-solid fa-wallet me-2"></i> SISA SALDO / WAJIB SETOR
                         </td>
