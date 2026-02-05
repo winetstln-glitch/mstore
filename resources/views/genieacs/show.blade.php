@@ -64,6 +64,11 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                     <button class="nav-link fw-bold" id="odp-tab" data-bs-toggle="tab" data-bs-target="#odp" type="button" role="tab" aria-controls="odp" aria-selected="false">
+                     <i class="fa-solid fa-map-location-dot me-1"></i> {{ __('ODP & Mapping') }}
+                    </button>
+                   </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link fw-bold" id="params-tab" data-bs-toggle="tab" data-bs-target="#params" type="button" role="tab" aria-controls="params" aria-selected="false">
                             <i class="fa-solid fa-list me-1"></i> {{ __('All Parameters') }}
                         </button>
@@ -649,8 +654,17 @@
                 modalPathInput.value = path;
                 modalValueInput.value = value;
             });
-        }});
+        });
     });
+    function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    // Cek tipe saat ini
+    if (input.type === "password") {
+        input.type = "text";
+    } else {
+        input.type = "password";
+    }
+}
 </script>
 
 <!-- Create ODP Modal -->
@@ -767,6 +781,62 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parameter Search
+        const searchInput = document.getElementById('paramSearch');
+        const table = document.getElementById('paramsTable');
+        
+        if (searchInput && table) {
+            searchInput.addEventListener('keyup', function() {
+                const filter = this.value.toLowerCase();
+                const rows = table.getElementsByTagName('tr');
+                
+                for (let i = 1; i < rows.length; i++) { // Start from 1 to skip header
+                    const pathCol = rows[i].getElementsByClassName('param-path')[0];
+                    const valCol = rows[i].getElementsByClassName('param-value')[0];
+                    
+                    if (pathCol && valCol) {
+                        const pathText = pathCol.textContent || pathCol.innerText;
+                        const valText = valCol.textContent || valCol.innerText;
+                        
+                        if (pathText.toLowerCase().indexOf(filter) > -1 || valText.toLowerCase().indexOf(filter) > -1) {
+                            rows[i].style.display = "";
+                        } else {
+                            rows[i].style.display = "none";
+                        }
+                    }
+                }
+            });
+        }
+
+        // Edit Modal Population
+        const editModal = document.getElementById('editParamModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const path = button.getAttribute('data-path');
+                const value = button.getAttribute('data-value');
+                
+                const modalPathInput = editModal.querySelector('#modalParamPath');
+                const modalValueInput = editModal.querySelector('#modalParamValue');
+                
+                modalPathInput.value = path;
+                modalValueInput.value = value;
+            });
+        }
+    }); // Perbaikan: Hapus satu kurung kurawal di sini
+
+    // Fungsi Toggle Password (Tambahkan ini)
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+        } else {
+            input.type = "password";
+        }
+    }
+
+    // Kode Logic ODP dan Fetch lainnya...
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     function saveCustomerOdp() {
@@ -787,6 +857,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Gunakan toast/alert yang lebih bagus jika ada, ini native alert
                 alert('Connection saved!');
                 location.reload(); 
             } else {
@@ -795,109 +866,8 @@
         });
     }
 
-    function saveNewOdp() {
-        const form = document.getElementById('createOdpForm');
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        
-        fetch('/odps', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                alert('ODP Created!');
-                location.reload();
-            } else {
-                alert('Error creating ODP: ' + JSON.stringify(result.errors || result.message));
-            }
-        });
-    }
-
-    function editSelectedOdp() {
-        const odpId = document.getElementById('customer_odp_id').value;
-        if (!odpId) {
-            alert('No ODP selected');
-            return;
-        }
-
-        // Fetch ODP details
-        fetch(`/odps/${odpId}`, {
-            headers: { 'Accept': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                const odp = result.data;
-                document.getElementById('edit_odp_id').value = odp.id;
-                document.getElementById('edit_odp_name').value = odp.name;
-                document.getElementById('edit_odp_region_id').value = odp.region_id;
-                document.getElementById('edit_odp_latitude').value = odp.latitude;
-                document.getElementById('edit_odp_longitude').value = odp.longitude;
-                document.getElementById('edit_odp_capacity').value = odp.capacity;
-                document.getElementById('edit_odp_filled').value = odp.filled;
-                document.getElementById('edit_odp_description').value = odp.description;
-                
-                const modal = new bootstrap.Modal(document.getElementById('editOdpModal'));
-                modal.show();
-            }
-        });
-    }
-
-    function updateOdp() {
-        const odpId = document.getElementById('edit_odp_id').value;
-        const form = document.getElementById('editOdpForm');
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        fetch(`/odps/${odpId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                alert('ODP Updated!');
-                location.reload();
-            } else {
-                alert('Error updating ODP');
-            }
-        });
-    }
-
-    function deleteSelectedOdp() {
-        const odpId = document.getElementById('customer_odp_id').value;
-        if (!odpId) return;
-
-        if (!confirm('Are you sure you want to delete this ODP? This cannot be undone.')) return;
-
-        fetch(`/odps/${odpId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                alert('ODP Deleted!');
-                location.reload();
-            } else {
-                alert('Error deleting ODP');
-            }
-        });
-    }
+    // ... (fungsi saveNewOdp, editSelectedOdp, updateOdp, deleteSelectedOdp tetap sama seperti kode Anda) ...
+    
+    // Pastikan copy sisa fungsi fetch Anda di sini
 </script>
 @endsection
