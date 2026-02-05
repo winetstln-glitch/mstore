@@ -33,28 +33,36 @@ class OLTController extends Controller implements HasMiddleware
     }
 
     /**
+        /**
      * Display the specified resource.
      */
     public function show(Olt $olt)
     {
-        // Calculate statistics from DB
+        // 1. Hitung statistik dari DB (Kode asli Anda)
         $totalOnus = $olt->onus()->count();
         $onlineOnus = $olt->onus()->where('status', 'online')->count();
         $offlineOnus = $olt->onus()->where('status', 'offline')->count();
         $losOnus = $olt->onus()->where('status', 'los')->count();
         
-        // Signal distribution (Example logic)
+        // Signal distribution
         $goodSignal = $olt->onus()->where('signal', '>=', -25)->count();
         $warningSignal = $olt->onus()->whereBetween('signal', [-27, -25.1])->count();
         $badSignal = $olt->onus()->where('signal', '<', -27)->count();
 
+        // --- TAMBAHKAN KODE INI (PENTING) ---
+        // Ambil daftar ONU yang terkait dengan OLT ini, sekaligus pagination
+        // Pastikan model Olt punya relasi hasMany('onus')
+        $onus = $olt->onus()->orderBy('interface')->paginate(20); 
+        // ---------------------------------------
+
+        // 2. Kirim variabel $onus ke View melalui compact
         return view('olt.show', compact(
             'olt', 
+            'onus', // <-- Jangan lupa tambahkan ini agar data masuk ke View
             'totalOnus', 'onlineOnus', 'offlineOnus', 'losOnus',
             'goodSignal', 'warningSignal', 'badSignal'
         ));
     }
-
     /**
      * Show the form for creating a new resource.
      */
