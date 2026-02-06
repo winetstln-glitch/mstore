@@ -21,9 +21,9 @@
     <div class="col-12">
         <div class="card shadow-sm border-0">
             <!-- Card Header: Stacked on Mobile, Row on Desktop -->
-            <div class="card-header bg-white py-3">
+            <div class="card-header py-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
-                    <h5 class="mb-0 fw-bold text-dark">{{ __('Customer Management') }}</h5>
+                    <h5 class="mb-0 fw-bold text-primary">{{ __('Customer Management') }}</h5>
                     
                     <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
                         @can('customer.delete')

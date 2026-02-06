@@ -172,20 +172,20 @@
                     <table class="table table-bordered table-sm table-striped" width="100%" cellspacing="0">
                         <thead class="table-light">
                             <tr>
-                                <th rowspan="2">{{ __('Koordinator') }}</th>
-                                <th rowspan="2" class="text-end">{{ __('Pendapatan') }}</th>
-                                <th rowspan="2" class="text-end text-danger">{{ __('Komisi') }}</th>
-                                <th rowspan="2" class="text-end text-danger">
+                                <th rowspan="2" class="text-end bg-light">{{ __('Koordinator') }}</th>
+                                <th rowspan="2" class="text-end bg-light">{{ __('Pendapatan') }}</th>
+                                <th rowspan="2" class="text-end bg-light text-danger">{{ __('Komisi') }}</th>
+                                <th rowspan="2" class="text-end bg-light text-danger">
                                     {{ __('Pengeluaran Tunai') }}
                                     <br><small class="font-weight-normal text-muted">(Ops & Beli Luar)</small>
                                 </th>
                                 <th colspan="2" class="text-center bg-light fw-bold">{{ __('Setoran') }}</th>
-                                <th rowspan="2" class="text-end bg-dark text-white fw-bold">{{ __('Sisa Kas') }}</th>
-                                <th rowspan="2" class="text-center">{{ __('Aksi') }}</th>
+                                <th rowspan="2" class="text-end bg-light fw-bold">{{ __('Sisa Kas') }}</th>
+                                <th rowspan="2" class="text-center bg-light">{{ __('Aksi') }}</th>
                             </tr>
                             <tr class="table-light">
-                                <th class="text-end fw-bold text-primary">{{ __('Wajib Setor') }}</th>
-                                <th class="text-end">{{ __('Sudah Setor') }}</th>
+                                <th class="text-end bg-light fw-bold text-primary">{{ __('Wajib Setor') }}</th>
+                                <th class="text-end bg-light fw-bold">{{ __('Sudah Setor') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -215,7 +215,7 @@
                                 </td>
                                 
                                 <!-- Kolom Target (Wajib Setor) -->
-                                <td class="text-end align-middle fw-bold bg-light">
+                                <td class="text-end align-middle fw-bold">
                                     {{ number_format($mustDeposit, 0, ',', '.') }}
                                 </td>
                                 
@@ -225,7 +225,7 @@
                                 </td>
                                 
                                 <!-- Kolom Sisa -->
-                                <td class="text-end align-middle fw-bold {{ $remainingCash < 0 ? 'text-danger' : 'bg-dark text-white' }}">
+                                <td class="text-end align-middle fw-bold {{ $remainingCash < 0 ? 'text-danger' : '' }}">
                                     {{ number_format($remainingCash, 0, ',', '.') }}
                                 </td>
                                 
@@ -406,14 +406,14 @@
                         <tr>
                             <th>{{ __('Tanggal') }}</th>
                             <th>{{ __('Koordinator') }}</th>
-                            <th class="text-end bg-white border-end">{{ __('Pendapatan Kotor') }}</th>
+                            <th class="text-end  border-end">{{ __('Pendapatan Kotor') }}</th>
                             <!-- Kolom Potongan -->
                             <th class="text-end text-danger bg-light">Komisi</th>
                             <th class="text-end text-danger bg-light">ISP</th>
                             <th class="text-end text-danger bg-light">Alat</th>
                             <th class="text-end text-danger bg-light">Mgr Fee</th>
                             <!-- Kolom Bersih -->
-                            <th class="text-end fw-bold bg-white border-start">{{ __('Net Balance') }}</th>
+                            <th class="text-end fw-bold border-start">{{ __('Net Balance') }}</th>
                             <!-- Kolom Alokasi Akhir -->
                             <th class="text-end text-info">Dana Kas</th>
                             <th class="text-end text-success fw-bold">{{ __('Income Investor') }}</th>

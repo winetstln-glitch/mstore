@@ -44,10 +44,11 @@
 <div id="wrapper">
     <!-- Sidebar -->
     <div id="sidebar-wrapper">
-        <div class="sidebar-heading py-3 position-relative">
+        <div class="sidebar-heading py-3 position-relative d-flex align-items-center justify-content-center">
             <div class="sidebar-brand-icon">
                 <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
             </div>
+            <span class="sidebar-brand-text ms-2 text-white">MSTORE</span>
             <!-- Close Button for Mobile -->
             <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
                 <i class="fa-solid fa-times fa-lg"></i>
@@ -357,7 +358,7 @@
     <div id="page-content-wrapper" class="d-flex flex-column min-vh-100">
         <nav class="navbar navbar-expand-lg main-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <button class="btn btn-link text-secondary" id="sidebarToggle">
+                <button class="btn btn-link text-white" id="sidebarToggle">
                     <i class="fa-solid fa-bars fa-lg"></i>
                 </button>
             </div>
@@ -365,7 +366,7 @@
             <div class="d-flex align-items-center gap-3">
                 <!-- Language Switcher -->
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link text-white border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa-solid fa-globe"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
@@ -376,7 +377,7 @@
 
                 <!-- Notifications -->
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link text-white border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa-regular fa-bell"></i>
                         @if(Auth::user()->unreadNotifications->count() > 0)
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -412,15 +413,15 @@
                 </div>
 
                 <!-- Theme Toggle -->
-                <button class="btn btn-outline-secondary border-0" id="themeToggle">
+                <button class="btn btn-link text-white border-0" id="themeToggle">
                     <i class="fa-solid fa-moon" id="themeIcon"></i>
                 </button>
 
                 <!-- Profile Dropdown -->
                 <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'User') . '&background=3f6ad8&color=fff' }}" alt="Avatar" width="32" height="32" class="rounded-circle me-2" style="object-fit: cover;">
-                        <span class="d-none d-md-inline text-body-emphasis fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
+                        <span class="d-none d-md-inline fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
                         <li><span class="dropdown-header text-uppercase small">{{ __('Account') }}</span></li>

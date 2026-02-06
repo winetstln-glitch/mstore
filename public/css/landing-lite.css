@@ -5,8 +5,9 @@
  */
 
 :root {
-    --primary: #4e73df;
-    --primary-dark: #224abe;
+    --btn-primary: #081d68;   
+    --primary: #071032;
+    --primary-dark: #072068;
     --secondary: #858796;
     --accent: #36b9cc;
     --bg-body: #f8f9fc;
@@ -24,6 +25,8 @@
     --bg-card: #2d3748;
     --text-main: #f7fafc;
     --secondary: #cbd5e0;
+     --primary: #e4e7ef;
+     --primary-dark:#142a6f;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
     --border-color: #4a5568;
 }
@@ -142,7 +145,7 @@ ul {
 }
 
 .btn-primary {
-    background-color: var(--primary);
+    background-color: var(--btn-primary);
     color: white;
     box-shadow: 0 4px 6px rgba(78, 115, 223, 0.25);
 }
@@ -362,7 +365,7 @@ ul {
 
 /* Pricing Card */
 .pricing-header {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(135deg, var(--btn-primary), var(--primary-dark));
     color: white;
     padding: 1.5rem;
     text-align: center;

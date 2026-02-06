@@ -499,6 +499,10 @@
         border: 2px solid white;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
+    [data-bs-theme="dark"] .custom-icon {
+        background: #1e293b;
+        border-color: #1e293b;
+    }
     .icon-olt { color: #6f42c1; border-color: #6f42c1; }
     .icon-odc { color: #fd7e14; border-color: #fd7e14; }
     .icon-odp { color: #0dcaf0; border-color: #0dcaf0; }
