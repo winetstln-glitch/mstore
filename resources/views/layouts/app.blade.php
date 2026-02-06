@@ -363,7 +363,7 @@
                 </button>
             </div>
 
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3"> 
                 <!-- Language Switcher -->
                 <div class="dropdown">
                     <button class="btn btn-link text-white border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">

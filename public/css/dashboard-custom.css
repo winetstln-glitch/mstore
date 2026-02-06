@@ -287,9 +287,7 @@ body.sb-sidenav-toggled #page-content-wrapper {
     color: #fff;
 }
 [data-bs-theme="dark"] .navbar {
-    background: #1e293b; /* Solid dark for navbar in dark mode, or keep gradient? */
-    /* Adminty usually keeps gradient headers even in dark mode, but let's stick to dark for better contrast */
-    background: #1e293b;
+    background: #1e293b; 
     border-bottom: 1px solid #2d3748;
 }
 [data-bs-theme="dark"] .table {
