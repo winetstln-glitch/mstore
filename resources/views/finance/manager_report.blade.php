@@ -30,7 +30,7 @@
 
     <!-- Filter Section -->
     <div class="card shadow mb-4">
-        <div class="card-body py-3 bg-white">
+        <div class="card-body py-3">
             <form action="{{ route('finance.manager_report') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small text-muted fw-bold">Pilih Koordinator</label>
@@ -54,7 +54,7 @@
                 </div>
                 <div class="col-md-3 text-end">
                     @if(request('month'))
-                    <span class="badge bg-light text-dark border border-secondary">
+                    <span class="badge bg-secondary-subtle text-body border border-secondary">
                         <i class="fa-regular fa-calendar me-1"></i> {{ \Carbon\Carbon::parse(request('month').'-01')->translatedFormat('F Y') }}
                     </span>
                     @endif
@@ -65,7 +65,7 @@
 
     <!-- Main Report Table -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-white border-bottom">
+        <div class="card-header py-3 border-bottom">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-table-list me-2"></i>Rekonsiliasi Keuangan</h6>
         </div>
         <div class="card-body">
@@ -83,8 +83,8 @@
                         <td class="text-end fw-bold">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
                     </tr>
                     <tr class="table-success">
-                        <td class="fw-bold text-dark">TOTAL PENDAPATAN KOTOR</td>
-                        <td class="text-end fw-bold text-dark fs-5">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                        <td class="fw-bold">TOTAL PENDAPATAN KOTOR</td>
+                        <td class="text-end fw-bold fs-5">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -122,7 +122,7 @@
                     
                     <!-- Total Expense -->
                     <tr class="table-danger">
-                        <td class="fw-bold text-dark">TOTAL PENGELUARAN & POTONGAN</td>
+                        <td class="fw-bold">TOTAL PENGELUARAN & POTONGAN</td>
                         <td class="text-end fw-bold text-dark">
                             - {{ number_format($coordCommission + $operatingExpenses, 0, ',', '.') }}
                         </td>
@@ -148,16 +148,16 @@
                         <td class="text-end text-danger">- {{ number_format($deposited, 0, ',', '.') }}</td>
                     </tr>
                     <tr class="table-warning border border-warning border-2">
-                        <td class="fw-bold text-dark fs-5">
+                        <td class="fw-bold fs-5">
                             <i class="fa-solid fa-wallet me-2"></i> SISA SALDO / WAJIB SETOR
                         </td>
-                        <td class="text-end fw-bold text-dark fs-5">{{ number_format($netBalance, 0, ',', '.') }}</td>
+                        <td class="text-end fw-bold fs-5">{{ number_format($netBalance, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
             </table>
 
         </div>
-        <div class="card-footer bg-white small text-muted text-center">
+        <div class="card-footer small text-muted text-center">
             * Laporan ini dihasilkan secara otomatis oleh sistem. Potongan Komisi dihitung berdasarkan persentase dari pendapatan kotor.
         </div>
     </div>

@@ -147,13 +147,13 @@
             <!-- My Assigned Assets (For Technicians/Coordinators) -->
             @if(isset($myAssets) && $myAssets->count() > 0)
             <div class="card shadow-sm border-0 mb-4 border-left-info">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assets') }}</h6>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
+                            <thead class="bg-body-secondary">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Asset Name') }}</th>
                                     <!-- Hidden on mobile to save space -->
@@ -207,7 +207,7 @@
             <!-- Items List -->
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3">
+                <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Inventory Items') }}</h6>
                 </div>
                 <div class="card-body p-0">

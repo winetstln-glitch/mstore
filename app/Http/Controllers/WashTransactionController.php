@@ -8,6 +8,9 @@ use App\Models\WashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use OpenSpout\Writer\XLSX\Writer;
+use OpenSpout\Common\Entity\Row;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class WashTransactionController extends Controller
 {
@@ -109,5 +112,39 @@ class WashTransactionController extends Controller
     {
         $transaction->load('items');
         return view('wash.transactions.show', compact('transaction'));
+    }
+
+    public function exportPdf()
+    {
+        $transactions = WashTransaction::with('user', 'items')->latest()->get();
+        $pdf = Pdf::loadView('wash.transactions.pdf', compact('transactions'));
+        return $pdf->download('wash_transactions.pdf');
+    }
+
+    public function exportExcel()
+    {
+        $transactions = WashTransaction::with('user', 'items')->latest()->get();
+        
+        return response()->streamDownload(function () use ($transactions) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues(['Date', 'Transaction Number', 'Customer', 'Vehicle', 'Services', 'Total Amount', 'Payment Method']));
+
+            foreach ($transactions as $trx) {
+                $services = $trx->items->pluck('service_name')->implode(', ');
+                $writer->addRow(Row::fromValues([
+                    $trx->created_at->format('Y-m-d H:i'),
+                    $trx->transaction_number,
+                    $trx->user->name ?? 'Guest',
+                    $trx->vehicle_type,
+                    $services,
+                    $trx->total_amount,
+                    $trx->payment_method
+                ]));
+            }
+
+            $writer->close();
+        }, 'wash_transactions.xlsx');
     }
 }

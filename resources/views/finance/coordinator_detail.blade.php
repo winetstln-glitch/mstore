@@ -6,13 +6,13 @@
 <div class="container-fluid">
     <!-- HEADER FILTER (Sesuai saran tambahan sebelumnya) -->
     <div class="card shadow-sm mb-4">
-        <div class="card-body py-2 bg-light">
+        <div class="card-body py-2">
             <form action="{{ route('finance.coordinator.detail', $coordinator->id) }}" method="GET" class="row g-3 align-items-end">
                 
                 <div class="col-md-4">
                     <label class="form-label small text-muted fw-bold">Pilih Periode</label>
                     <select name="month" class="form-select form-select-sm">
-                        <option value="{{ $startDate->format('Y-m') ?? date('Y-m') }}">{{ $startDate->format('F Y') }}</option>
+                        <option value="{{ \Carbon\Carbon::parse($startDate)->format('Y-m') }}">{{ \Carbon\Carbon::parse($startDate)->format('F Y') }}</option>
                         @for($i = 1; $i <= 6; $i++)
                         @php
                             $d = date('Y-m', strtotime("-$i months"));
@@ -87,8 +87,8 @@
                             <td class="text-end fw-bold">{{ number_format($voucherIncome ?? 0, 0, ',', '.') }}</td>
                         </tr>
                         <tr class="table-success">
-                            <td class="fw-bold text-dark">TOTAL PENDAPATAN KOTOR</td>
-                            <td class="text-end fw-bold text-dark fs-5">
+                            <td class="fw-bold">TOTAL PENDAPATAN KOTOR</td>
+                            <td class="text-end fw-bold fs-5">
                                 {{ number_format($grossRevenue ?? 0, 0, ',', '.') }}
                             </td>
                         </tr>
@@ -122,8 +122,8 @@
                             <td class="text-end text-danger">({{ number_format($expenses ?? 0, 0, ',', '.') }})</td>
                         </tr>
                         <tr>
-                            <td class="text-end fw-bold bg-light">SISA HASIL USAHA (NETTO)</td>
-                            <td class="text-end fw-bold bg-light">
+                            <td class="text-end fw-bold">SISA HASIL USAHA (NETTO)</td>
+                            <td class="text-end fw-bold">
                                 {{ number_format($grossRevenue - $commission - $expenses, 0, ',', '.') }}
                             </td>
                         </tr>
@@ -220,6 +220,7 @@
                             <th width="120">Kategori</th>
                             <th>Keterangan / Deskripsi</th>
                             <th width="110" class="text-end">Jumlah (Rp)</th>
+                            <th width="100" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -244,6 +245,28 @@
                                 {{ number_format($transaction->amount, 0, ',', '.') }}
                                 @if($transaction->type != 'income') ) @endif
                             </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editTransactionModal"
+                                    data-action="{{ route('finance.update', $transaction->id) }}"
+                                    data-type="{{ $transaction->type }}"
+                                    data-category="{{ $transaction->category }}"
+                                    data-amount="{{ $transaction->amount }}"
+                                    data-date="{{ $transaction->transaction_date->format('Y-m-d') }}"
+                                    data-coordinator="{{ $transaction->coordinator_id }}"
+                                    data-description="{{ $transaction->description }}"
+                                    data-ref="{{ $transaction->reference_number }}">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         @empty
                         <tr>
@@ -260,6 +283,7 @@
                             <td class="text-end">
                                 {{ number_format($transactions->where('type', 'income')->sum('amount') - $transactions->where('type', 'expense')->sum('amount'), 0, ',', '.') }}
                             </td>
+                            <td></td>
                         </tr>
                         @endif
                     </tbody>
@@ -269,7 +293,7 @@
     </div>
 
     <!-- FOOTER & TANDA TANGAN -->
-    <div class="alert alert-light border-top border-dashed small text-muted mt-4">
+    <div class="alert alert-secondary border-top border-dashed small text-muted mt-4">
         <em>Catatan: Nilai Komisi Pengurus dihitung otomatis oleh sistem berdasarkan % dari pendapatan kotor. Laporan ini digenerate pada {{ now()->format('d M Y H:i:s') }}.</em>
     </div>
 
@@ -296,4 +320,104 @@
     </div>
 
 </div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Edit Transaction') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTransactionForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Type') }}</label>
+                        <select name="type" id="edit_type" class="form-select" required>
+                            <option value="income">{{ __('Pemasukan') }}</option>
+                            <option value="expense">{{ __('Pengeluaran') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Category') }}</label>
+                        <select name="category" id="edit_category" class="form-select" required>
+                            <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
+                            <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
+                            <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
+                            <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
+                            <option value="Pembelian Alat">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="Gaji">{{ __('Gaji') }}</option>
+                            <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
+                            <option value="Ambil Barang">{{ __('Ambil Barang (Stok)') }}</option>
+                            <option value="Lainnya">{{ __('Lainnya') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Amount') }}</label>
+                        <input type="number" name="amount" id="edit_amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
+                        <select name="coordinator_id" id="edit_coordinator_id" class="form-select">
+                            <option value="{{ $coordinator->id }}">{{ $coordinator->name }}</option>
+                             @foreach(\App\Models\Coordinator::where('id', '!=', $coordinator->id)->get() as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Description') }}</label>
+                        <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Date') }}</label>
+                        <input type="date" name="transaction_date" id="edit_transaction_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                         <label class="form-label">{{ __('Ref') }}</label>
+                         <input type="text" name="reference_number" id="edit_reference_number" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editModal = document.getElementById('editTransactionModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const action = button.getAttribute('data-action');
+                const type = button.getAttribute('data-type');
+                const category = button.getAttribute('data-category');
+                const amount = button.getAttribute('data-amount');
+                const date = button.getAttribute('data-date');
+                const coordinator = button.getAttribute('data-coordinator');
+                const description = button.getAttribute('data-description');
+                const ref = button.getAttribute('data-ref');
+
+                const form = document.getElementById('editTransactionForm');
+                form.action = action;
+
+                document.getElementById('edit_type').value = type;
+                document.getElementById('edit_category').value = category;
+                document.getElementById('edit_amount').value = amount;
+                document.getElementById('edit_transaction_date').value = date;
+                document.getElementById('edit_coordinator_id').value = coordinator || '';
+                document.getElementById('edit_description').value = description;
+                document.getElementById('edit_reference_number').value = ref;
+            });
+        }
+    });
+</script>
+@endpush
 @endsection

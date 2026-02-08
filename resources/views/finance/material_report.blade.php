@@ -22,7 +22,7 @@
 
     <!-- FILTER SECTION -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-white">
+        <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-filter me-2"></i>{{ __('Filter Laporan') }}</h6>
         </div>
         <div class="card-body">
@@ -90,14 +90,14 @@
 
     <!-- TABLE SECTION -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Rincian Transaksi Material') }}</h6>
-            <span class="badge bg-light text-dark border">Periode: {{ request('start_date') ?? 'Awal' }} s/d {{ request('end_date') ?? 'Akhir' }}</span>
+            <span class="badge bg-secondary-subtle text-body border">Periode: {{ request('start_date') ?? 'Awal' }} s/d {{ request('end_date') ?? 'Akhir' }}</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle" width="100%" cellspacing="0">
-                    <thead class="table-light">
+                    <thead class="bg-body-secondary">
                         <tr>
                             <th width="100">{{ __('Tanggal') }}</th>
                             <th>{{ __('Item / Barang') }}</th>

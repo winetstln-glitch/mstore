@@ -8,6 +8,9 @@ use App\Models\AtkProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use OpenSpout\Writer\XLSX\Writer;
+use OpenSpout\Common\Entity\Row;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AtkTransactionController extends Controller
 {
@@ -117,5 +120,41 @@ class AtkTransactionController extends Controller
     {
         $transaction->load('items');
         return view('atk.transactions.receipt', compact('transaction'));
+    }
+
+    public function exportPdf()
+    {
+        $transactions = AtkTransaction::with('user', 'items')->latest()->get();
+        $pdf = Pdf::loadView('atk.transactions.pdf', compact('transactions'));
+        return $pdf->download('atk_transactions.pdf');
+    }
+
+    public function exportExcel()
+    {
+        $transactions = AtkTransaction::with('user', 'items')->latest()->get();
+        
+        return response()->streamDownload(function () use ($transactions) {
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues(['Date', 'Transaction Number', 'Customer', 'Items', 'Total Amount', 'Payment Method']));
+
+            foreach ($transactions as $trx) {
+                $items = $trx->items->map(function($item) {
+                    return $item->product_name . ' (' . $item->quantity . ')';
+                })->implode(', ');
+
+                $writer->addRow(Row::fromValues([
+                    $trx->created_at->format('Y-m-d H:i'),
+                    $trx->transaction_number,
+                    $trx->user->name ?? 'Guest',
+                    $items,
+                    $trx->total_amount,
+                    $trx->payment_method
+                ]));
+            }
+
+            $writer->close();
+        }, 'atk_transactions.xlsx');
     }
 }

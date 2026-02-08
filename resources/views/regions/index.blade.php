@@ -68,7 +68,7 @@
                 </div>
             </div>
             @if($regions->hasPages())
-                <div class="card-footer bg-white py-3">
+                <div class="card-footer py-3">
                     {{ $regions->links() }}
                 </div>
             @endif

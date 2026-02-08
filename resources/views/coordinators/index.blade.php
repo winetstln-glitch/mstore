@@ -16,7 +16,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
+                        <thead class="bg-body-secondary">
                             <tr>
                                 <th class="ps-4 py-3">{{ __('Name') }}</th>
                                 <th class="py-3">{{ __('User Account') }}</th>
@@ -88,7 +88,7 @@
                 </div>
             </div>
             @if($coordinators->hasPages())
-                <div class="card-footer bg-white py-3">
+                <div class="card-footer py-3">
                     {{ $coordinators->links() }}
                 </div>
             @endif

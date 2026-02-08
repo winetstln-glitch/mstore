@@ -65,7 +65,7 @@
                     <!-- Basic Information -->
                     <div class="col-md-6">
                         <div class="card h-100">
-                            <div class="card-header bg-light fw-bold">
+                            <div class="card-header bg-body-secondary fw-bold">
                                 <i class="fa-solid fa-circle-info me-2 text-muted"></i> {{ __('System Information') }}
                             </div>
                             <div class="card-body">

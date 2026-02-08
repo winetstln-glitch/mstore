@@ -6,7 +6,7 @@
         <!-- Mengubah col-md-8 menjadi col-12 col-lg-8 untuk lebar penuh di mobile -->
         <div class="col-12 col-lg-10 col-xl-8 px-3 px-md-0">
             <div class="card shadow-sm border-0 border-top border-4 border-primary">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-primary">
                         @if(request('type_group') == 'tool')
                             {{ __('Pickup Tool & Asset') }}
@@ -37,7 +37,7 @@
                             
                             <div class="table-responsive border rounded overflow-hidden">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="bg-light">
+                                    <thead class="bg-body-secondary">
                                         <tr>
                                             <th>{{ __('Item') }}</th>
                                             <th style="width: 200px;">{{ __('Quantity') }}</th>

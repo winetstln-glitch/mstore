@@ -126,7 +126,7 @@
                 <i class="fa fa-sitemap"></i> {{ __('Infrastruktur') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'show' : '' }}" id="networkInfraCollapse">
-                <div class="bg-light ps-3">
+                <div class="ps-3">
                     @if(Auth::user()->hasPermission('olt.view'))
                     <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-server"></i> {{ __('OLT') }}

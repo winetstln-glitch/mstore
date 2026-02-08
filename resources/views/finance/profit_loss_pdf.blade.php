@@ -50,6 +50,9 @@
         @else
             Periode: Semua Transaksi
         @endif
+        @if(isset($coordinatorName) && $coordinatorName)
+            <br>Pengurus: {{ $coordinatorName }}
+        @endif
     </div>
 
     <table>
@@ -136,11 +139,18 @@
                 <td>Perbaikan</td>
                 <td class="text-right">-{{ number_format($repairExpenses, 0, ',', '.') }}</td>
             </tr>
-            @if($otherOperatingExpenses != 0)
-            <tr>
-                <td>Biaya Operasional Lain-lain</td>
-                <td class="text-right">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
-            </tr>
+            @if(isset($otherExpensesBreakdown) && count($otherExpensesBreakdown) > 0)
+                @foreach($otherExpensesBreakdown as $category => $amount)
+                <tr>
+                    <td>{{ $category }}</td>
+                    <td class="text-right">-{{ number_format($amount, 0, ',', '.') }}</td>
+                </tr>
+                @endforeach
+            @elseif($otherOperatingExpenses != 0)
+                <tr>
+                    <td>Biaya Operasional Lain-lain</td>
+                    <td class="text-right">-{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+                </tr>
             @endif
             <tr>
                 <td><strong>Total Biaya Operasional</strong></td>
@@ -195,5 +205,18 @@
             </tbody>
         </table>
     @endif
+
+    <div style="margin-top: 50px;">
+        <table style="width: 100%; border: none;">
+            <tr style="border: none;">
+                <td style="border: none; text-align: center; width: 100%;">
+                    <p>Mengetahui,</p>
+                    <p><strong>Manager Pengelola</strong></p>
+                    <br><br><br><br>
+                    <p><strong>{{ isset($managerName) ? $managerName : '_______________________' }}</strong></p>
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>

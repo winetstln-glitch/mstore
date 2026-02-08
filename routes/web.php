@@ -142,6 +142,8 @@ Route::middleware('auth')->group(function () {
     
     Route::get('finance/income-breakdown/pdf', [FinanceController::class, 'downloadIncomeBreakdownPdf'])->name('finance.income_breakdown.pdf');
     Route::get('finance/investor-share/pdf', [FinanceController::class, 'downloadInvestorSharePdf'])->name('finance.investor_share.pdf');
+    Route::get('finance/investor-report', [FinanceController::class, 'investorReport'])->name('finance.investor_report');
+    Route::get('finance/investor-report/pdf', [FinanceController::class, 'downloadInvestorReportPdf'])->name('finance.investor_report.pdf');
 
     Route::get('finance/manager-report', [FinanceController::class, 'managerReport'])->name('finance.manager_report');
     Route::get('finance/manager-report/pdf', [FinanceController::class, 'downloadManagerReportPdf'])->name('finance.manager_report.pdf');
@@ -232,6 +234,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])->name('index');
         Route::get('/pos', [\App\Http\Controllers\WashTransactionController::class, 'pos'])->name('pos');
         Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
+        Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show']);
     });
 
@@ -251,6 +255,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('dashboard');
         Route::get('/pos', [\App\Http\Controllers\AtkTransactionController::class, 'pos'])->name('pos');
         Route::post('/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/transactions/export/pdf', [\App\Http\Controllers\AtkTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
+        Route::get('/transactions/export/excel', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show']);

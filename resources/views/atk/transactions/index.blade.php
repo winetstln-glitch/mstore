@@ -6,9 +6,17 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
-        <a href="{{ route('atk.pos') }}" class="btn btn-primary">
-            <i class="fa-solid fa-cash-register me-2"></i> {{ __('New Transaction') }}
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('atk.transactions.export.pdf') }}" class="btn btn-danger">
+                <i class="fa-solid fa-file-pdf me-2"></i> {{ __('Export PDF') }}
+            </a>
+            <a href="{{ route('atk.transactions.export.excel') }}" class="btn btn-success">
+                <i class="fa-solid fa-file-excel me-2"></i> {{ __('Export Excel') }}
+            </a>
+            <a href="{{ route('atk.pos') }}" class="btn btn-primary">
+                <i class="fa-solid fa-cash-register me-2"></i> {{ __('New Transaction') }}
+            </a>
+        </div>
     </div>
 
     <div class="card shadow mb-4">

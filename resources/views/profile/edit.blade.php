@@ -93,7 +93,7 @@
 
             <!-- Update Password -->
             <div class="card shadow-sm border-0 border-top border-4 border-warning">
-                <div class="card-header bg-white py-3">
+                <div class="card-header py-3">
                     <h5 class="mb-0 fw-bold text-dark">{{ __('Update Password') }}</h5>
                 </div>
                 <div class="card-body">

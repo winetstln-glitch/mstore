@@ -36,7 +36,7 @@
                     </div>
                     <div class="col-md-6">
                         <h6 class="text-muted text-uppercase small fw-bold">Description</h6>
-                        <p class="text-muted bg-light p-3 rounded small">
+                        <p class="text-muted bg-body-secondary p-3 rounded small">
                             {{ $odp->description ?? 'No description available.' }}
                         </p>
                     </div>
@@ -45,7 +45,7 @@
                 <div id="map-view" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
             </div>
             
-            <div class="card-footer bg-white border-top-0 d-flex justify-content-end gap-2 py-3">
+            <div class="card-footer border-top-0 d-flex justify-content-end gap-2 py-3">
                 @if(Auth::user()->hasPermission('map.manage'))
                 <a href="{{ route('odps.edit', $odp) }}" class="btn btn-primary">
                     <i class="fa-solid fa-pen-to-square me-1"></i> Edit ODP

@@ -33,7 +33,7 @@
                 <!-- WAN Settings -->
                 <div class="col-md-6">
                     <div class="card shadow-sm h-100 border-top border-4 border-primary">
-                        <div class="card-header bg-white py-3">
+                        <div class="card-header py-3">
                             <h5 class="card-title mb-0"><i class="fa-solid fa-network-wired me-2"></i>{{ __('WAN Settings') }}</h5>
                         </div>
                         <div class="card-body">
@@ -128,7 +128,7 @@
                 <!-- WLAN Settings -->
                 <div class="col-md-6">
                     <div class="card shadow-sm h-100 border-top border-4 border-success">
-                        <div class="card-header bg-white py-3">
+                        <div class="card-header py-3">
                             <h5 class="card-title mb-0"><i class="fa-solid fa-wifi me-2"></i>{{ __('WLAN Settings') }}</h5>
                         </div>
                         <div class="card-body">

@@ -12,6 +12,9 @@
             <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary">
                 <i class="fa-solid fa-file-lines me-1"></i> {{ __('Laporan Manajemen') }}
             </a>
+            <a href="{{ route('finance.investor_report') }}" class="btn btn-warning text-dark">
+                <i class="fa-solid fa-hand-holding-dollar me-1"></i> {{ __('Laporan Investor') }}
+            </a>
             <a href="{{ route('finance.profit_loss') }}" class="btn btn-primary">
                 <i class="fa-solid fa-chart-line me-1"></i> {{ __('Laba Rugi (P&L)') }}
             </a>
@@ -170,22 +173,22 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm table-striped" width="100%" cellspacing="0">
-                        <thead class="table-light">
+                        <thead >
                             <tr>
-                                <th rowspan="2" class="text-end bg-light">{{ __('Koordinator') }}</th>
-                                <th rowspan="2" class="text-end bg-light">{{ __('Pendapatan') }}</th>
-                                <th rowspan="2" class="text-end bg-light text-danger">{{ __('Komisi') }}</th>
-                                <th rowspan="2" class="text-end bg-light text-danger">
+                                <th rowspan="2" class="text-end">{{ __('Koordinator') }}</th>
+                                <th rowspan="2" class="text-end">{{ __('Pendapatan') }}</th>
+                                <th rowspan="2" class="text-end text-danger">{{ __('Komisi') }}</th>
+                                <th rowspan="2" class="text-end text-danger">
                                     {{ __('Pengeluaran Tunai') }}
                                     <br><small class="font-weight-normal text-muted">(Ops & Beli Luar)</small>
                                 </th>
-                                <th colspan="2" class="text-center bg-light fw-bold">{{ __('Setoran') }}</th>
-                                <th rowspan="2" class="text-end bg-light fw-bold">{{ __('Sisa Kas') }}</th>
-                                <th rowspan="2" class="text-center bg-light">{{ __('Aksi') }}</th>
+                                <th colspan="2" class="text-center fw-bold">{{ __('Setoran') }}</th>
+                                <th rowspan="2" class="text-end fw-bold">{{ __('Sisa Setor') }}</th>
+                                <th rowspan="2" class="text-center">{{ __('Aksi') }}</th>
                             </tr>
-                            <tr class="table-light">
-                                <th class="text-end bg-light fw-bold text-primary">{{ __('Wajib Setor') }}</th>
-                                <th class="text-end bg-light fw-bold">{{ __('Sudah Setor') }}</th>
+                            <tr>
+                                <th class="text-end fw-bold text-primary">{{ __('Wajib Setor') }}</th>
+                                <th class="text-end fw-bold">{{ __('Sudah Setor') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -371,7 +374,7 @@
                             @php
                                 $totalLiability = ($summary->investor_share ?? 0) + ($summary->investor_cash ?? 0);
                             @endphp
-                            <td class="text-end fw-bold bg-light">{{ number_format($totalLiability, 0, ',', '.') }}</td>
+                            <td class="text-end fw-bold">{{ number_format($totalLiability, 0, ',', '.') }}</td>
                         </tr>
                         @php
                             $investorDetails = $investorDetailsByCoordinator[$summary->id] ?? [];
@@ -402,16 +405,16 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-sm table-hover" width="100%" cellspacing="0">
-                    <thead class="table-light">
+                    <thead >
                         <tr>
                             <th>{{ __('Tanggal') }}</th>
                             <th>{{ __('Koordinator') }}</th>
                             <th class="text-end  border-end">{{ __('Pendapatan Kotor') }}</th>
                             <!-- Kolom Potongan -->
-                            <th class="text-end text-danger bg-light">Komisi</th>
-                            <th class="text-end text-danger bg-light">ISP</th>
-                            <th class="text-end text-danger bg-light">Alat</th>
-                            <th class="text-end text-danger bg-light">Mgr Fee</th>
+                            <th class="text-end text-danger">Komisi</th>
+                            <th class="text-end text-danger">ISP</th>
+                            <th class="text-end text-danger">Alat</th>
+                            <th class="text-end text-danger">Mgr Fee</th>
                             <!-- Kolom Bersih -->
                             <th class="text-end fw-bold border-start">{{ __('Net Balance') }}</th>
                             <!-- Kolom Alokasi Akhir -->
@@ -597,7 +600,7 @@
                                 <div style="width: 90px; font-size: 0.85rem;">
                                     {{ $label }}
                                 </div>
-                                <div class="flex-grow-1 bg-light" style="height: 20px; border-radius: 4px;">
+                                <div class="flex-grow-1 bg-secondary" style="height: 20px; border-radius: 4px; --bs-bg-opacity: .2;">
                                     <div class="bg-success" style="width: {{ $percent }}%; height: 100%; border-radius: 4px;"></div>
                                 </div>
                                 <div class="ms-2" style="width: 140px; text-align: right; font-size: 0.9rem;">
@@ -639,12 +642,14 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('Category') }}</label>
                         <select name="category" class="form-select" required>
-                            <option value="monthly_fee">{{ __('Iuran Bulanan (Internet)') }}</option>
-                            <option value="installation_fee">{{ __('Biaya Pasang') }}</option>
-                            <option value="operational">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
-                            <option value="inventory_purchase">{{ __('Beli Alat (Stok)') }}</option>
-                            <option value="salary">{{ __('Gaji/Komisi') }}</option>
-                            <option value="other">{{ __('Lainnya') }}</option>
+                            <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
+                            <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
+                            <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
+                            <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
+                            <option value="Pembelian Alat">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="Gaji">{{ __('Gaji') }}</option>
+                            <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
+                            <option value="Lainnya">{{ __('Lainnya') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -672,6 +677,74 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Edit Transaction') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTransactionForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Type') }}</label>
+                        <select name="type" id="edit_type" class="form-select" required>
+                            <option value="income">{{ __('Pemasukan') }}</option>
+                            <option value="expense">{{ __('Pengeluaran') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Category') }}</label>
+                        <select name="category" id="edit_category" class="form-select" required>
+                            <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
+                            <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
+                            <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
+                            <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
+                            <option value="Pembelian Alat">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="Gaji">{{ __('Gaji') }}</option>
+                            <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
+                            <option value="Ambil Barang">{{ __('Ambil Barang (Stok)') }}</option>
+                            <option value="Lainnya">{{ __('Lainnya') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Amount') }}</label>
+                        <input type="number" name="amount" id="edit_amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
+                        <select name="coordinator_id" id="edit_coordinator_id" class="form-select">
+                            <option value="">-- None --</option>
+                            @foreach($coordinators ?? [] as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Description') }}</label>
+                        <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Date') }}</label>
+                        <input type="date" name="transaction_date" id="edit_transaction_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                         <label class="form-label">{{ __('Ref') }}</label>
+                         <input type="text" name="reference_number" id="edit_reference_number" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
                 </div>
             </form>
         </div>
@@ -719,6 +792,32 @@
         if(selectAll) {
             selectAll.addEventListener('change', function() {
                 checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+        
+        const editModal = document.getElementById('editTransactionModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const action = button.getAttribute('data-action');
+                const type = button.getAttribute('data-type');
+                const category = button.getAttribute('data-category');
+                const amount = button.getAttribute('data-amount');
+                const date = button.getAttribute('data-date');
+                const coordinator = button.getAttribute('data-coordinator');
+                const description = button.getAttribute('data-description');
+                const ref = button.getAttribute('data-ref');
+
+                const form = document.getElementById('editTransactionForm');
+                form.action = action;
+
+                document.getElementById('edit_type').value = type;
+                document.getElementById('edit_category').value = category;
+                document.getElementById('edit_amount').value = amount;
+                document.getElementById('edit_transaction_date').value = date;
+                document.getElementById('edit_coordinator_id').value = coordinator || '';
+                document.getElementById('edit_description').value = description;
+                document.getElementById('edit_reference_number').value = ref;
             });
         }
     });

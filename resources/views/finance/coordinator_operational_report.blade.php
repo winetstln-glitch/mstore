@@ -82,7 +82,7 @@
 
                     <!-- B. PENGELUARAN OPERASIONAL -->
                     <tr>
-                        <td colspan="2" class="bg-light small fw-bold text-muted px-2">BIAYA OPERASIONAL (REALISASI)</td>
+                        <td colspan="2" class="bg-body-secondary small fw-bold text-muted px-2">BIAYA OPERASIONAL (REALISASI)</td>
                     </tr>
                     @foreach($operationalExpenses as $expense)
                     <tr>

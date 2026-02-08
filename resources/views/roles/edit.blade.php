@@ -4,14 +4,14 @@
 <div class="row justify-content-center">
     <div class="col-12 col-lg-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-user-shield me-2"></i>{{ __('Edit Role') }}: {{ $role->label }}</h5>
                 <a href="{{ route('roles.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
                 </a>
             </div>
 
-            <div class="card-body bg-light bg-opacity-50">
+            <div class="card-body bg-body-secondary bg-opacity-50">
                 <form action="{{ route('roles.update', $role) }}" method="POST" id="roleForm">
                     @csrf
                     @method('PUT')
@@ -59,7 +59,7 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <h5 class="fw-bold mb-0">{{ __('Manage Permissions') }}</h5>
-                            <span class="badge bg-light text-dark border">{{ count($permissions) }} {{ __('Groups') }}</span>
+                            <span class="badge bg-secondary-subtle text-body border">{{ count($permissions) }} {{ __('Groups') }}</span>
                         </div>
                         
                         <div class="permission-groups">

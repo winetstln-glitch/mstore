@@ -6,6 +6,14 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Wash Transactions</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ route('wash.transactions.export.pdf') }}" class="btn btn-sm btn-danger shadow-sm">
+                <i class="fas fa-file-pdf fa-sm text-white-50"></i> Generate PDF
+            </a>
+            <a href="{{ route('wash.transactions.export.excel') }}" class="btn btn-sm btn-success shadow-sm">
+                <i class="fas fa-file-excel fa-sm text-white-50"></i> Export Excel
+            </a>
+        </div>
     </div>
 
     <div class="card shadow mb-4">

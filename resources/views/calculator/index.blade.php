@@ -13,7 +13,7 @@
         <!-- Input Parameters -->
         <div class="col-lg-8">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
+                <div class="card-header py-3">
                     <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-sliders me-2"></i> {{ __('Parameter Link Optik') }}</h5>
                 </div>
                 <div class="card-body">
@@ -167,7 +167,7 @@
                             <span><i class="fa-solid fa-share-nodes text-muted me-2"></i> Loss Splitter</span>
                             <span class="text-danger" id="detail_splitter">-10.50 dB</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-light">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-body-secondary">
                             <span class="fw-bold">Total Link Loss</span>
                             <span class="fw-bold text-danger" id="total_loss">11.95 dB</span>
                         </li>

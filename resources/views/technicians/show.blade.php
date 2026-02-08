@@ -58,13 +58,13 @@
                                 <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('Performance Summary') }}</h6>
                                 <div class="row g-3">
                                     <div class="col-6">
-                                        <div class="p-3 bg-white dark:bg-gray-800 rounded border text-center">
+                                        <div class="p-3 bg-body rounded border text-center">
                                             <small class="text-muted d-block mb-1">{{ __('Total Tickets') }}</small>
                                             <span class="h4 fw-bold text-primary mb-0">{{ $technician->tickets()->count() }}</span>
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="p-3 bg-white dark:bg-gray-800 rounded border text-center">
+                                        <div class="p-3 bg-body rounded border text-center">
                                             <small class="text-muted d-block mb-1">{{ __('Total Installations') }}</small>
                                             <span class="h4 fw-bold text-success mb-0">{{ $technician->installations()->count() }}</span>
                                         </div>

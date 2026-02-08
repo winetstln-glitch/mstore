@@ -57,7 +57,7 @@
                     </div>
                     <ul class="list-group list-group-flush" id="cartList"></ul>
                 </div>
-                <div class="card-footer bg-white border-top">
+                <div class="card-footer border-top">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Total Items:</span>
                         <span class="fw-bold" id="totalItems">0</span>

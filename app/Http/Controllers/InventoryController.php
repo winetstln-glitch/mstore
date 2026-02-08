@@ -264,7 +264,7 @@ class InventoryController extends Controller implements HasMiddleware
                         'user_id' => Auth::id(),
                         'coordinator_id' => $request->coordinator_id,
                         'type' => 'expense',
-                        'category' => 'Pengeluaran Pengurus',
+                        'category' => 'Ambil Barang',
                         'amount' => $item->price * $request->quantity,
                         'transaction_date' => now()->toDateString(),
                         'description' => 'Pengurus mengambil ' . $request->quantity . ' ' . $item->unit . ' ' . $item->name,

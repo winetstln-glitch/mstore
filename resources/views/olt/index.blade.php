@@ -6,8 +6,8 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold text-dark">{{ __('OLT Management') }}</h5>
+            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 fw-bold text-body">{{ __('OLT Management') }}</h5>
                 @if(Auth::user()->hasPermission('olt.create'))
                 <a href="{{ route('olt.create') }}" class="btn btn-primary btn-sm">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Add OLT') }}
@@ -20,7 +20,7 @@
 
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead class="bg-body-secondary">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Host / IP Address') }}</th>

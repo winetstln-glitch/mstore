@@ -8,10 +8,10 @@
             <a href="{{ route('finance.index') }}" class="btn btn-secondary">
                 <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to Finance') }}
             </a>
-            <a href="{{ route('finance.profit_loss.excel', ['month' => request('month')]) }}" class="btn btn-success">
+            <a href="{{ route('finance.profit_loss.excel', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-success">
                 <i class="fa-solid fa-file-excel me-1"></i> {{ __('Download Excel') }}
             </a>
-            <a href="{{ route('finance.profit_loss.pdf', ['month' => request('month')]) }}" class="btn btn-danger">
+            <a href="{{ route('finance.profit_loss.pdf', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-danger">
                 <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Download PDF') }}
             </a>
             <button onclick="window.print()" class="btn btn-primary">
@@ -23,8 +23,16 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Report Period') }}</h6>
-            <form action="{{ route('finance.profit_loss') }}" method="GET" class="d-flex">
-                <input type="month" name="month" class="form-control form-control-sm me-2" value="{{ request('month') }}" onchange="this.form.submit()">
+            <form action="{{ route('finance.profit_loss') }}" method="GET" class="d-flex align-items-center gap-2">
+                <select name="coordinator_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">{{ __('Semua Pengurus') }}</option>
+                    @foreach($coordinators as $coordinator)
+                        <option value="{{ $coordinator->id }}" {{ $selectedCoordinatorId == $coordinator->id ? 'selected' : '' }}>
+                            {{ $coordinator->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month') }}" onchange="this.form.submit()">
             </form>
         </div>
         <div class="card-body">
@@ -160,12 +168,15 @@
                 <td class="text-end">-</td>
                 <td class="text-end">{{ number_format($repairExpenses, 0, ',', '.') }}</td>
             </tr>
-            @if($otherOperatingExpenses != 0)
+            @foreach($otherExpensesBreakdown as $category => $amount)
             <tr>
-                <td>{{ __('Biaya Operasional Lainnya') }}</td>
+                <td>{{ $category }}</td>
                 <td class="text-end">-</td>
-                <td class="text-end">{{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+                <td class="text-end">{{ number_format($amount, 0, ',', '.') }}</td>
             </tr>
+            @endforeach
+            @if($otherOperatingExpenses == 0 && count($otherExpensesBreakdown) == 0)
+            <!-- No other expenses -->
             @endif
 
             <tr><td colspan="3"></td></tr>
