@@ -166,6 +166,7 @@
     let cart = [];
 
     function addToCart(id, name, price, type) {
+        id = parseInt(id);
         const existingItem = cart.find(item => item.id === id);
         if (existingItem) {
             existingItem.quantity++;
@@ -211,7 +212,11 @@
     }
 
     function removeFromCart(id) {
-        cart = cart.filter(item => item.id !== id);
+        id = parseInt(id);
+        const index = cart.findIndex(item => item.id === id);
+        if (index > -1) {
+            cart.splice(index, 1);
+        }
         updateCartUI();
         if (cart.length === 0) {
             resetServiceSelection();
