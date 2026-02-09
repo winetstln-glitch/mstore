@@ -214,7 +214,26 @@
         cart = cart.filter(item => item.id !== id);
         updateCartUI();
         if (cart.length === 0) {
-            resetCart();
+            resetServiceSelection();
+        }
+    }
+
+    function resetServiceSelection() {
+        // Only reset filters and service visibility, NOT customer data
+        
+        // Reset filters by clicking All button to trigger all UI logic
+        const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+        if (allBtn) {
+            allBtn.click();
+        }
+        
+        // Reset brand options visibility
+        const brandSelect = document.getElementById('vehicle_brand');
+        const options = brandSelect.options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].parentElement.tagName === 'OPTGROUP') {
+                options[i].parentElement.style.display = '';
+            }
         }
     }
 
@@ -230,20 +249,7 @@
         document.getElementById('voucherSection').style.display = 'none';
         document.getElementById('use_voucher').checked = false;
         
-        // Reset filters by clicking All button to trigger all UI logic
-        const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
-        if (allBtn) {
-            allBtn.click();
-        }
-        
-        // Reset brand options visibility (redundant if click works, but safe)
-        const brandSelect = document.getElementById('vehicle_brand');
-        const options = brandSelect.options;
-        for (let i = 0; i < options.length; i++) {
-            if (options[i].parentElement.tagName === 'OPTGROUP') {
-                options[i].parentElement.style.display = '';
-            }
-        }
+        resetServiceSelection();
 
         updateCartUI();
     }
