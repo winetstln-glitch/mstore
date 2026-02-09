@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Super Admin',
             'email' => 'admin@mstore.local',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'role_id' => $adminRole->id,
             'is_active' => true,
         ]);
@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'NOC Officer',
             'email' => 'noc@mstore.local',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'role_id' => $nocRole->id,
             'is_active' => true,
         ]);
@@ -37,7 +37,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Technician One',
             'email' => 'tech1@mstore.local',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'role_id' => $techRole->id,
             'is_active' => true,
         ]);

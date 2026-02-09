@@ -53,7 +53,7 @@ class TechnicianController extends Controller implements HasMiddleware
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'role_id' => $role->id,
             'phone' => $request->phone,
             'telegram_chat_id' => $request->telegram_chat_id,

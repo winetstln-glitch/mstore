@@ -109,7 +109,7 @@ class UserController extends Controller implements HasMiddleware
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'role_id' => $request->role_id,
             'phone' => $request->phone,
             'daily_salary' => $request->daily_salary ?? 0,
@@ -150,7 +150,7 @@ class UserController extends Controller implements HasMiddleware
                 'password' => ['confirmed', Rules\Password::defaults()],
             ]);
             $user->update([
-                'password' => Hash::make($request->password),
+                'password' => $request->password,
             ]);
         }
 

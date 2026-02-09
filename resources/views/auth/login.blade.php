@@ -97,9 +97,7 @@
                                 Ingat Saya
                             </label>
                         </div>
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}">Lupa Password?</a>
-                        @endif
+                        <a href="{{ route('password.forgot') }}">Lupa Password?</a>
                     </div>
 
                     <div class="d-grid mb-3">

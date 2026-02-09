@@ -116,7 +116,7 @@ class ProfileController extends Controller implements HasMiddleware
         ]);
 
         Auth::user()->update([
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
         ]);
 
         return back()->with('success', __('Password updated successfully.'));
