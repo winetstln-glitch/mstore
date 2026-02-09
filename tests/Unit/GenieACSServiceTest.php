@@ -45,7 +45,7 @@ class GenieACSServiceTest extends TestCase
             ], 200),
             
             // Mock setParameterValues
-            '*/devices/device-123/tasks?timeout=3000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
+            '*/devices/device-123/tasks?timeout=8000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
         ]);
 
         $service = new GenieACSService();

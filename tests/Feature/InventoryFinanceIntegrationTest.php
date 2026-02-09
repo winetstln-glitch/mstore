@@ -163,6 +163,8 @@ class InventoryFinanceIntegrationTest extends TestCase
 
         $response = $this->post(route('inventory.store'), [
             'name' => 'ONU',
+            'category' => 'Network',
+            'type_group' => 'material',
             'unit' => 'pcs',
             'stock' => 5,
             'price' => 200000,
@@ -190,6 +192,8 @@ class InventoryFinanceIntegrationTest extends TestCase
 
         $item = InventoryItem::create([
             'name' => 'ONU',
+            'category' => 'Network',
+            'type_group' => 'material',
             'description' => 'Test Item',
             'unit' => 'pcs',
             'stock' => 2,
@@ -200,6 +204,8 @@ class InventoryFinanceIntegrationTest extends TestCase
 
         $response = $this->put(route('inventory.update', $item), [
             'name' => $item->name,
+            'category' => 'Network',
+            'type_group' => 'material',
             'unit' => $item->unit,
             'stock' => 5,
             'price' => $item->price,

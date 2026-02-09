@@ -69,7 +69,7 @@ class OdcAutoNameTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('odcs', [
-            'name' => 'ODC-01-CI-L-01', // Shortened format
+            'name' => 'ODC-01-CAK-L-01', // First, Middle, Last format
             'pon_port' => 'PON 01', // Original input preserved
             'area' => 'CI BADAK',
             'color' => 'LIGHT BLUE',
@@ -109,7 +109,7 @@ class OdcAutoNameTest extends TestCase
         
         $this->assertDatabaseHas('odcs', [
             'id' => $odc->id,
-            'name' => 'ODC-02-NE-R-02', // Shortened format
+            'name' => 'ODC-02-NAA-R-02', // First, Middle, Last format
             'pon_port' => 'PON02',
             'area' => 'NEWAREA',
             'color' => 'RED',

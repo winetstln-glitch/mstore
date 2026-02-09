@@ -121,6 +121,33 @@
                             <td>(B) Pengeluaran Operasional</td>
                             <td class="text-end text-danger">({{ number_format($expenses ?? 0, 0, ',', '.') }})</td>
                         </tr>
+                        @if(isset($operationalExpenses) && count($operationalExpenses) > 0)
+                            @foreach($operationalExpenses as $exp)
+                            <tr class="bg-light small">
+                                <td class="ps-5 text-muted fst-italic">
+                                    <i class="fa-solid fa-angle-right me-1"></i> 
+                                    {{ $exp->category }} 
+                                    @if($exp->description) - {{ $exp->description }} @endif
+                                </td>
+                                <td class="text-end text-muted">({{ number_format($exp->amount, 0, ',', '.') }})</td>
+                            </tr>
+                            @endforeach
+                        @endif
+                        @if(isset($inventoryItems) && count($inventoryItems) > 0)
+                        <tr>
+                            <td>(C) Pengambilan Barang (Stok)</td>
+                            <td class="text-end text-warning">({{ number_format($inventoryUsageValue ?? 0, 0, ',', '.') }})</td>
+                        </tr>
+                            @foreach($inventoryItems as $item)
+                            <tr class="bg-light small">
+                                <td class="ps-5 text-muted fst-italic">
+                                    <i class="fa-solid fa-box me-1"></i> 
+                                    {{ $item->item->name ?? 'Unknown Item' }} ({{ $item->quantity }} x {{ number_format($item->item->price ?? 0, 0, ',', '.') }})
+                                </td>
+                                <td class="text-end text-muted">({{ number_format(($item->quantity * ($item->item->price ?? 0)), 0, ',', '.') }})</td>
+                            </tr>
+                            @endforeach
+                        @endif
                         <tr>
                             <td class="text-end fw-bold">SISA HASIL USAHA (NETTO)</td>
                             <td class="text-end fw-bold">

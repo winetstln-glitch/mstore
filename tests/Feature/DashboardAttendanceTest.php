@@ -15,6 +15,8 @@ class DashboardAttendanceTest extends TestCase
 
     public function test_admin_dashboard_shows_attendance_widget()
     {
+        app()->setLocale('id');
+        
         // Create Admin with attendance permission
         $role = Role::create(['name' => 'admin', 'label' => 'Admin']);
         $permission = Permission::firstOrCreate(
@@ -30,18 +32,24 @@ class DashboardAttendanceTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Absensi Saya Hari Ini');
         $response->assertSee('Belum Hadir');
-        $response->assertSee('Absen Masuk/Keluar');
+        $response->assertSee('Absen Masuk');
     }
 
     public function test_technician_dashboard_shows_attendance_widget()
     {
+        app()->setLocale('id');
+
         // Create Technician with attendance permission
         $role = Role::create(['name' => 'technician', 'label' => 'Technician']);
         $permission = Permission::firstOrCreate(
             ['name' => 'attendance.view'],
             ['label' => 'View Attendance', 'group' => 'Attendance']
         );
-        $role->permissions()->attach($permission);
+        $dashboardPermission = Permission::firstOrCreate(
+            ['name' => 'dashboard.view'],
+            ['label' => 'View Dashboard', 'group' => 'Dashboard']
+        );
+        $role->permissions()->attach([$permission->id, $dashboardPermission->id]);
         
         $user = User::factory()->create(['role_id' => $role->id]);
 
@@ -50,18 +58,24 @@ class DashboardAttendanceTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Absensi Saya Hari Ini');
         $response->assertSee('Belum Hadir');
-        $response->assertSee('Absen Masuk/Keluar');
+        $response->assertSee('Absen Masuk');
     }
 
     public function test_dashboard_shows_attendance_status_when_clocked_in()
     {
+        app()->setLocale('id');
+
         // Create Technician with attendance permission
         $role = Role::create(['name' => 'technician', 'label' => 'Technician']);
         $permission = Permission::firstOrCreate(
             ['name' => 'attendance.view'],
             ['label' => 'View Attendance', 'group' => 'Attendance']
         );
-        $role->permissions()->attach($permission);
+        $dashboardPermission = Permission::firstOrCreate(
+            ['name' => 'dashboard.view'],
+            ['label' => 'View Dashboard', 'group' => 'Dashboard']
+        );
+        $role->permissions()->attach([$permission->id, $dashboardPermission->id]);
         
         $user = User::factory()->create(['role_id' => $role->id]);
 

@@ -40,6 +40,16 @@
             height: 6px;
             padding: 0;
         }
+        /* Style tambahan untuk tabel rincian investor */
+        .investor-header {
+            background-color: #e6f7ff; /* Warna beda sedikit untuk membedakan */
+            font-weight: bold;
+        }
+        .total-row {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            border-top: 2px solid #000;
+        }
     </style>
 </head>
 <body>
@@ -176,36 +186,7 @@
         </tbody>
     </table>
 
-    @if(isset($investorSummaries) && count($investorSummaries) > 0)
-        <br>
-        <h2 style="font-size: 14px; margin-top: 10px; margin-bottom: 6px; text-align: left;">
-            Rincian Pembagian Investor
-        </h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Investor</th>
-                    <th class="text-right">Bagian Investor Setelah Dana Kas</th>
-                    <th class="text-right">Dana Kas Investor</th>
-                    <th class="text-right">Total Pembagian</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($investorSummaries as $row)
-                    @php
-                        $totalShare = $row->profit_share + $row->cash_fund;
-                    @endphp
-                    <tr>
-                        <td>{{ $row->investor_name }}</td>
-                        <td class="text-right">-{{ number_format($row->profit_share, 0, ',', '.') }}</td>
-                        <td class="text-right">-{{ number_format($row->cash_fund, 0, ',', '.') }}</td>
-                        <td class="text-right">-{{ number_format($totalShare, 0, ',', '.') }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
+    <!-- END BAGIAN RINCIAN INVESTOR -->
     <div style="margin-top: 50px;">
         <table style="width: 100%; border: none;">
             <tr style="border: none;">
@@ -213,7 +194,7 @@
                     <p>Mengetahui,</p>
                     <p><strong>Manager Pengelola</strong></p>
                     <br><br><br><br>
-                    <p><strong>{{ isset($managerName) ? $managerName : '_______________________' }}</strong></p>
+                    <p>({{ $managerName ?? '_______________________' }})</p>
                 </td>
             </tr>
         </table>

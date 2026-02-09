@@ -275,7 +275,8 @@
         <div class="sign-box">
             <div>Disetujui Oleh,</div>
             <div class="sign-space"></div>
-            <div class="sign-line">Direktur</div>
+            <div class="sign-line">{{ $managerName ?? 'Manager Pengelola' }}</div>
+            <div>Manager Pengelola</div>
         </div>
     </div>
 

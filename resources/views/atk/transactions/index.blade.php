@@ -7,10 +7,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
         <div class="d-flex gap-2">
-            <a href="{{ route('atk.transactions.export.pdf') }}" class="btn btn-danger">
+            <a href="{{ route('atk.transactions.export.pdf', request()->all()) }}" class="btn btn-danger">
                 <i class="fa-solid fa-file-pdf me-2"></i> {{ __('Export PDF') }}
             </a>
-            <a href="{{ route('atk.transactions.export.excel') }}" class="btn btn-success">
+            <a href="{{ route('atk.transactions.export.excel', request()->all()) }}" class="btn btn-success">
                 <i class="fa-solid fa-file-excel me-2"></i> {{ __('Export Excel') }}
             </a>
             <a href="{{ route('atk.pos') }}" class="btn btn-primary">
@@ -20,6 +20,26 @@
     </div>
 
     <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <form action="{{ route('atk.transactions.index') }}" method="GET" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="start_date" class="col-form-label">{{ __('Start Date') }}</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                </div>
+                <div class="col-auto">
+                    <label for="end_date" class="col-form-label">{{ __('End Date') }}</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
+                    <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary">{{ __('Reset') }}</a>
+                </div>
+            </form>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">

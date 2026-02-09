@@ -264,7 +264,7 @@ class InventoryController extends Controller implements HasMiddleware
                         'user_id' => Auth::id(),
                         'coordinator_id' => $request->coordinator_id,
                         'type' => 'expense',
-                        'category' => 'Ambil Barang',
+                        'category' => 'Pengeluaran Pengurus',
                         'amount' => $item->price * $request->quantity,
                         'transaction_date' => now()->toDateString(),
                         'description' => 'Pengurus mengambil ' . $request->quantity . ' ' . $item->unit . ' ' . $item->name,
@@ -292,7 +292,19 @@ class InventoryController extends Controller implements HasMiddleware
             'price' => 'required|numeric|min:0',
         ]);
 
-        InventoryItem::create($validated);
+        $item = InventoryItem::create($validated);
+
+        if ($item->stock > 0 && $item->price > 0) {
+            Transaction::create([
+                'user_id' => Auth::id(),
+                'type' => 'expense',
+                'category' => 'Pembelian Alat',
+                'amount' => $item->stock * $item->price,
+                'transaction_date' => now()->toDateString(),
+                'description' => 'Pembelian stok awal ' . $item->name,
+                'reference_number' => 'INV-IN-' . $item->id,
+            ]);
+        }
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item added successfully.'));
     }
@@ -312,7 +324,21 @@ class InventoryController extends Controller implements HasMiddleware
             'price' => 'required|numeric|min:0',
         ]);
 
+        $oldStock = $item->stock;
         $item->update($validated);
+
+        if ($validated['stock'] > $oldStock && $validated['price'] > 0) {
+            $diff = $validated['stock'] - $oldStock;
+            Transaction::create([
+                'user_id' => Auth::id(),
+                'type' => 'expense',
+                'category' => 'Pembelian Alat',
+                'amount' => $diff * $validated['price'],
+                'transaction_date' => now()->toDateString(),
+                'description' => 'Penambahan stok ' . $item->name,
+                'reference_number' => 'INV-ADD-' . $item->id . '-' . time(),
+            ]);
+        }
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item updated successfully.'));
     }
@@ -347,6 +373,15 @@ class InventoryController extends Controller implements HasMiddleware
             'quantity' => $validated['quantity'],
             'description' => $validated['description'],
         ]);
+
+        // Update Finance Transaction if exists
+        $financeTx = Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)->first();
+        if ($financeTx && $item->price > 0) {
+            $financeTx->update([
+                'amount' => $validated['quantity'] * $item->price,
+                'description' => 'Pengurus mengambil ' . $validated['quantity'] . ' ' . $item->unit . ' ' . $item->name,
+            ]);
+        }
 
         return redirect()->route('inventory.index')->with('success', __('Pickup updated successfully.'));
     }

@@ -260,7 +260,8 @@
     <div class="signature-section">
         <div class="sign-box">
             <div>Mengetahui,</div>
-            <div class="sign-line">Manager Finance</div>
+            <div class="sign-line">{{ $managerName ?? 'Manager Finance' }}</div>
+            <div>Manager Pengelola</div>
         </div>
         <div class="sign-box">
             <div>Diperiksa,</div>

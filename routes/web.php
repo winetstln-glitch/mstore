@@ -229,11 +229,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/device/{id}/param', [GenieACSController::class, 'updateParam'])->name('updateParam');
     });
 
-    // Wash Module Routes
+    // Wash Service Routes
     Route::prefix('wash')->name('wash.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])->name('index');
+        Route::get('/dashboard', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])->name('dashboard');
         Route::get('/pos', [\App\Http\Controllers\WashTransactionController::class, 'pos'])->name('pos');
         Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show']);
@@ -258,6 +259,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\AtkTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
+        Route::get('products/export', [\App\Http\Controllers\AtkProductController::class, 'export'])->name('products.export');
+        Route::post('products/import', [\App\Http\Controllers\AtkProductController::class, 'import'])->name('products.import');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show']);
     });

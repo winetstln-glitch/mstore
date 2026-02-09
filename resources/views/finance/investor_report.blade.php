@@ -102,6 +102,48 @@
                 </table>
             </div>
 
+            <!-- Detailed Investor Breakdown -->
+            <div class="mt-4">
+                <h5 class="font-weight-bold text-gray-800 mb-3">{{ __('Rincian Pembagian Per Investor') }}</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>{{ __('Nama Investor') }}</th>
+                                <th>{{ __('Role') }}</th>
+                                <th class="text-end">{{ __('Pembagian Laba (IDR)') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($investors as $index => $investor)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        {{ $investor->name }}
+                                        @if($investor->coordinator_id)
+                                            <br><small class="text-muted">Koordinator: {{ $investor->coordinator->name ?? '-' }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ __('Investor') }}</span>
+                                    </td>
+                                    <td class="text-end fw-bold">{{ number_format($profitPerInvestor, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">{{ __('Tidak ada data investor.') }}</td>
+                                </tr>
+                            @endforelse
+                            <tr class="table-secondary fw-bold">
+                                <td colspan="3" class="text-end">{{ __('Total Dibagikan') }}</td>
+                                <td class="text-end">{{ number_format($profitPerInvestor * $investors->count(), 0, ',', '.') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="alert alert-info mt-3">
                 <i class="fas fa-info-circle me-1"></i>
                 <strong>Catatan:</strong> Perhitungan ini mencakup pengurangan "Ambil Barang" dan biaya operasional lainnya (Server, dll) dari total pendapatan sebelum dibagi ke investor.

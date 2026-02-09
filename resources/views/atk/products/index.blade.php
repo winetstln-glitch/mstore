@@ -6,9 +6,43 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Product Management') }}</h1>
-        <a href="{{ route('atk.products.create') }}" class="btn btn-primary">
-            <i class="fa-solid fa-plus me-2"></i> {{ __('Add Product') }}
-        </a>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="fa-solid fa-file-import me-2"></i> {{ __('Import Excel') }}
+            </button>
+            <a href="{{ route('atk.products.export') }}" class="btn btn-success">
+                <i class="fa-solid fa-file-export me-2"></i> {{ __('Export Excel') }}
+            </a>
+            <a href="{{ route('atk.products.create') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus me-2"></i> {{ __('Add Product') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">{{ __('Import Products') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('atk.products.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">{{ __('Choose Excel File') }}</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx, .xls" required>
+                            <small class="text-muted">Format: Code, Name, Category, Price, Cost Price, Stock, Unit, Description</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Import') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div class="card shadow mb-4">

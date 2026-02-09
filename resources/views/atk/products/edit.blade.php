@@ -13,7 +13,7 @@
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            <form action="{{ route('atk.products.update', $product) }}" method="POST">
+            <form action="{{ route('atk.products.update', $product) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="row">

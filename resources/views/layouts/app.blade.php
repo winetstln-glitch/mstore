@@ -220,7 +220,7 @@
             <div class="collapse {{ (request()->routeIs('wash.*')) ? 'show' : '' }}" id="washCollapse">
                 <div class="bg-light ps-3">
                     @if(Auth::user()->hasPermission('wash.view'))
-                    <a href="{{ route('wash.index') }}" class="sidebar-item {{ request()->routeIs('wash.index') ? 'active' : '' }}">
+                    <a href="{{ route('wash.dashboard') }}" class="sidebar-item {{ request()->routeIs('wash.dashboard') ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard Cuci') }}
                     </a>
                     @endif

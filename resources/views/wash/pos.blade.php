@@ -12,39 +12,34 @@
                 <div class="card-body">
                     <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="pills-all-tab" data-bs-toggle="pill" data-bs-target="#pills-all" type="button" role="tab">All</button>
+                            <button class="nav-link active filter-btn" data-filter="all" type="button">All</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="pills-car-tab" data-bs-toggle="pill" data-bs-target="#pills-car" type="button" role="tab">Mobil</button>
+                            <button class="nav-link filter-btn" data-filter="car" type="button">Mobil</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="pills-motor-tab" data-bs-toggle="pill" data-bs-target="#pills-motor" type="button" role="tab">Motor</button>
+                            <button class="nav-link filter-btn" data-filter="motor" type="button">Motor</button>
                         </li>
                     </ul>
-                    <div class="tab-content" id="pills-tabContent">
-                        <div class="tab-pane fade show active" id="pills-all" role="tabpanel">
-                            <div class="row">
-                                @foreach($services as $service)
-                                <div class="col-md-4 mb-3">
-                                    <div class="card h-100 service-card" onclick="addToCart({{ $service->id }}, '{{ $service->name }}', {{ $service->price }})">
-                                        <div class="card-body text-center">
-                                            <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
-                                                @if($service->image)
-                                                    <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
-                                                @else
-                                                    <i class="fas fa-image fa-2x text-muted"></i>
-                                                @endif
-                                            </div>
-                                            <h5 class="card-title">{{ $service->name }}</h5>
-                                            <p class="card-text text-primary font-weight-bold">Rp {{ number_format($service->price, 0, ',', '.') }}</p>
-                                            <small class="text-muted">{{ ucfirst($service->vehicle_type) }}</small>
-                                        </div>
+                    <div class="row" id="services-container">
+                        @foreach($services as $service)
+                        <div class="col-md-4 mb-3 service-item" data-type="{{ strtolower($service->vehicle_type) }}">
+                            <div class="card h-100 service-card" onclick="addToCart({{ $service->id }}, '{{ $service->name }}', {{ $service->price }}, '{{ strtolower($service->vehicle_type) }}')">
+                                <div class="card-body text-center">
+                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
+                                        @if($service->image)
+                                            <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
+                                        @else
+                                            <i class="fas fa-image fa-2x text-muted"></i>
+                                        @endif
                                     </div>
+                                    <h5 class="card-title">{{ $service->name }}</h5>
+                                    <p class="card-text text-primary font-weight-bold">Rp {{ number_format($service->price, 0, ',', '.') }}</p>
+                                    <small class="text-muted">{{ ucfirst($service->vehicle_type) }}</small>
                                 </div>
-                                @endforeach
                             </div>
                         </div>
-                        <!-- Add filtered tabs logic via JS or server-side if needed, for now just show all in All tab -->
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -59,12 +54,40 @@
                 <div class="card-body">
                     <form id="checkoutForm">
                         <div class="mb-3">
-                            <label for="customer_name" class="form-label">Customer Name</label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name">
+                            <label for="vehicle_brand" class="form-label">Vehicle Brand</label>
+                            <select class="form-select" id="vehicle_brand" name="vehicle_brand">
+                                <option value="">Select Brand</option>
+                                <optgroup label="Motor">
+                                    @foreach($brands['Motor'] as $brand)
+                                        <option value="{{ $brand }}">{{ $brand }}</option>
+                                    @endforeach
+                                </optgroup>
+                                <optgroup label="Mobil">
+                                    @foreach($brands['Mobil'] as $brand)
+                                        <option value="{{ $brand }}">{{ $brand }}</option>
+                                    @endforeach
+                                </optgroup>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label for="vehicle_plate" class="form-label">Vehicle Plate</label>
                             <input type="text" class="form-control" id="vehicle_plate" name="vehicle_plate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer_phone" class="form-label">Customer Phone</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="customer_phone" name="customer_phone" placeholder="Enter phone number">
+                                <button class="btn btn-outline-secondary" type="button" id="btnCheckCustomer">Check</button>
+                            </div>
+                            <small id="customerInfo" class="form-text text-muted"></small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer_name" class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name">
+                        </div>
+                        <div class="mb-3 form-check" id="voucherSection" style="display: none;">
+                            <input type="checkbox" class="form-check-input" id="use_voucher" name="use_voucher">
+                            <label class="form-check-label" for="use_voucher">Use Free Wash Voucher (Eligible: <span id="voucherCount">0</span>)</label>
                         </div>
 
                         <hr>
@@ -96,20 +119,132 @@
 </div>
 
 <script>
+    document.getElementById('btnCheckCustomer').addEventListener('click', function() {
+        const phone = document.getElementById('customer_phone').value;
+        if (!phone) {
+            alert('Please enter phone number');
+            return;
+        }
+
+        fetch(`{{ route('wash.customer.check') }}?phone=${phone}`)
+            .then(response => response.json())
+            .then(data => {
+                const info = document.getElementById('customerInfo');
+                const voucherSection = document.getElementById('voucherSection');
+                const nameInput = document.getElementById('customer_name');
+                const voucherCount = document.getElementById('voucherCount');
+
+                if (data.found) {
+                    nameInput.value = data.name;
+                    info.innerHTML = `<span class="text-success">Customer found! Visits: ${data.visit_count}</span>`;
+                    
+                    if (data.free_wash_eligibility > 0) {
+                        voucherSection.style.display = 'block';
+                        voucherCount.textContent = data.free_wash_eligibility;
+                    } else {
+                        voucherSection.style.display = 'none';
+                    }
+                } else {
+                    info.innerHTML = '<span class="text-warning">New Customer</span>';
+                    voucherSection.style.display = 'none';
+                    // Don't clear name if user already typed it
+                    if (nameInput.value === '') {
+                        nameInput.value = ''; 
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error checking customer');
+            });
+    });
+
+    document.getElementById('use_voucher').addEventListener('change', function() {
+        updateCartUI();
+    });
+
     let cart = [];
 
-    function addToCart(id, name, price) {
+    function addToCart(id, name, price, type) {
         const existingItem = cart.find(item => item.id === id);
         if (existingItem) {
             existingItem.quantity++;
         } else {
-            cart.push({ id, name, price, quantity: 1 });
+            // Check if cart has items of different type
+            if (cart.length > 0 && cart[0].type !== type) {
+                if (!confirm('You are adding a service for a different vehicle type. Clear current cart?')) {
+                    return;
+                }
+                resetCart();
+            }
+            cart.push({ id, name, price, type, quantity: 1 });
         }
         updateCartUI();
+        filterBrands(type);
+    }
+
+    function filterBrands(type) {
+        const brandSelect = document.getElementById('vehicle_brand');
+        const options = brandSelect.options;
+        let typeLower = type.toLowerCase();
+        
+        // Map database types to optgroup labels
+        if (typeLower === 'car') {
+            typeLower = 'mobil';
+        } else if (typeLower === 'motor') {
+            typeLower = 'motor';
+        }
+
+        for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            const parent = opt.parentElement;
+            if (parent.tagName === 'OPTGROUP') {
+                if (typeLower === 'all' || parent.label.toLowerCase() === typeLower) {
+                    parent.style.display = '';
+                } else {
+                    parent.style.display = 'none';
+                }
+            }
+        }
+        // Select the first valid option or reset
+        brandSelect.value = "";
     }
 
     function removeFromCart(id) {
         cart = cart.filter(item => item.id !== id);
+        updateCartUI();
+        if (cart.length === 0) {
+            resetCart();
+        }
+    }
+
+    function resetCart() {
+        cart = [];
+        document.getElementById('vehicle_brand').value = "";
+        document.getElementById('vehicle_plate').value = "";
+        document.getElementById('customer_name').value = "";
+        document.getElementById('customer_phone').value = "";
+        document.getElementById('cash_amount').value = "";
+        document.getElementById('changeAmount').textContent = "Rp 0";
+        document.getElementById('customerInfo').innerHTML = "";
+        document.getElementById('voucherSection').style.display = 'none';
+        document.getElementById('use_voucher').checked = false;
+        
+        // Reset filters by clicking All button to trigger all UI logic
+        const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+        if (allBtn) {
+            allBtn.click();
+        }
+        
+        // Reset brand options visibility (redundant if click works, but safe)
+        const brandSelect = document.getElementById('vehicle_brand');
+        const options = brandSelect.options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].parentElement.tagName === 'OPTGROUP') {
+                options[i].parentElement.style.display = '';
+            }
+        }
+
         updateCartUI();
     }
 
@@ -118,9 +253,11 @@
         const emptyMsg = document.getElementById('emptyCartMsg');
         const totalEl = document.getElementById('totalAmount');
         const btnCheckout = document.getElementById('btnCheckout');
+        const useVoucher = document.getElementById('use_voucher').checked;
         
         cartContainer.innerHTML = '';
         let total = 0;
+        let discount = 0;
 
         if (cart.length === 0) {
             emptyMsg.style.display = 'block';
@@ -147,15 +284,27 @@
                 `;
                 cartContainer.appendChild(div);
             });
+
+            if (useVoucher && cart.length > 0) {
+                discount = cart[0].price;
+            }
         }
 
-        totalEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        const finalTotal = Math.max(0, total - discount);
+        
+        if (discount > 0) {
+             totalEl.innerHTML = `<small class="text-decoration-line-through text-muted">Rp ${total.toLocaleString('id-ID')}</small> <span class="text-success fw-bold">Rp ${finalTotal.toLocaleString('id-ID')}</span>`;
+        } else {
+             totalEl.textContent = 'Rp ' + finalTotal.toLocaleString('id-ID');
+        }
+        
+        totalEl.dataset.amount = finalTotal; // Store numeric value
         calculateChange();
     }
 
     function calculateChange() {
-        const totalText = document.getElementById('totalAmount').textContent.replace('Rp ', '').replace(/\./g, '');
-        const total = parseInt(totalText) || 0;
+        const totalEl = document.getElementById('totalAmount');
+        const total = parseInt(totalEl.dataset.amount) || 0;
         const cashInput = document.getElementById('cash_amount').value;
         const cash = parseInt(cashInput) || 0;
         const changeEl = document.getElementById('changeAmount');
@@ -166,6 +315,30 @@
             changeEl.textContent = 'Rp 0';
         }
     }
+
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            // Remove active class from all
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked
+            this.classList.add('active');
+            
+            const type = this.getAttribute('data-filter');
+            
+            // Update brand filter if cart is empty
+            if (cart.length === 0) {
+                filterBrands(type);
+            }
+
+            document.querySelectorAll('.service-item').forEach(item => {
+                if (type === 'all' || item.dataset.type === type) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
 
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -199,21 +372,23 @@
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                alert('Transaction successful!');
-                cart = [];
-                document.getElementById('checkoutForm').reset();
-                updateCartUI();
-                // Optionally redirect or print receipt
+                alert('Transaction successful! Queue Number: ' + data.queue_number);
+                window.location.reload(); // Refresh page to reset everything
             } else {
                 alert('Error: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred.');
+            alert('An error occurred: ' + error.message);
         });
     });
 </script>

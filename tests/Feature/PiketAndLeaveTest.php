@@ -35,6 +35,13 @@ class PiketAndLeaveTest extends TestCase
             $adminRole->permissions()->attach($perm);
         }
 
+        // Create Technician Permissions
+        $techPerms = ['leave.view', 'leave.create'];
+        foreach ($techPerms as $p) {
+            $perm = Permission::firstOrCreate(['name' => $p], ['label' => $p, 'group' => 'attendance']);
+            $techRole->permissions()->attach($perm);
+        }
+
         $this->admin = User::factory()->create([
             'role_id' => $adminRole->id,
         ]);

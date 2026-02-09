@@ -495,20 +495,20 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: white;
-        border: 2px solid white;
+        background: #03cef7cf;
+        border: 1px solid white;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
     [data-bs-theme="dark"] .custom-icon {
-        background: #1e293b;
-        border-color: #1e293b;
+        background: #12151b81;
+        border-color: #1e293b39;
     }
     .icon-olt { color: #6f42c1; border-color: #6f42c1; }
     .icon-odc { color: #fd7e14; border-color: #fd7e14; }
     .icon-odp { color: #0dcaf0; border-color: #0dcaf0; }
     .icon-htb { color: #6610f2; border-color: #6610f2; }
     .icon-closure { color: #343a40; border-color: #343a40; }
-    .icon-customer-online { color: #198754; border-color: #198754; }
+    .icon-customer-online { color: #06f6d6ff; border-color: #0ce9daff; }
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
     .icon-asset { color: #d63384; border-color: #d63384; }
 

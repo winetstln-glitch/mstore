@@ -298,20 +298,21 @@ class FinanceController extends Controller implements HasMiddleware
         $netProfit = $netBeforeCashFund - $investorCashFund;
 
         // 7. Investor Split
-        $investorCount = 0;
+        $investors = collect();
         $coordinatorName = null;
         if ($coordinatorId) {
             $coordinator = Coordinator::find($coordinatorId);
             $coordinatorName = $coordinator->name ?? null;
-            // Count investors for this coordinator, excluding the coordinator themselves if listed
-            $investorCount = \App\Models\Investor::where('coordinator_id', $coordinatorId)
+            // Get investors for this coordinator, excluding the coordinator themselves if listed
+            $investors = \App\Models\Investor::where('coordinator_id', $coordinatorId)
                 ->where('name', '!=', $coordinatorName)
-                ->count();
+                ->get();
         } else {
-            // Count unique investors across all coordinators (if any) or just total count
-            $investorCount = \App\Models\Investor::count();
+            // Get all investors
+            $investors = \App\Models\Investor::all();
         }
         
+        $investorCount = $investors->count();
         if ($investorCount == 0) $investorCount = 1;
 
         $profitPerInvestor = $netProfit / $investorCount;
@@ -328,7 +329,8 @@ class FinanceController extends Controller implements HasMiddleware
             'investorCount', 
             'profitPerInvestor',
             'coordinators',
-            'coordinatorId'
+            'coordinatorId',
+            'investors'
         ));
     }
 
@@ -395,30 +397,22 @@ class FinanceController extends Controller implements HasMiddleware
 
         $netProfit = $netBeforeCashFund - $investorCashFund;
 
-        $investorCount = 0;
-        $investorNames = [];
+        $investors = collect();
         $coordinatorName = null;
         if ($coordinatorId) {
             $coordinator = Coordinator::find($coordinatorId);
             $coordinatorName = $coordinator->name ?? null;
-            // Count investors for this coordinator, excluding the coordinator themselves if listed
             $investors = \App\Models\Investor::where('coordinator_id', $coordinatorId)
                 ->where('name', '!=', $coordinatorName)
                 ->get();
-            
-            $investorCount = $investors->count();
-            $investorNames = $investors->pluck('name')->toArray();
         } else {
              $investors = \App\Models\Investor::all();
-             $investorCount = $investors->count();
-             $investorNames = $investors->pluck('name')->toArray();
         }
         
+        $investorCount = $investors->count();
         if ($investorCount == 0) $investorCount = 1;
-
+        
         $profitPerInvestor = $netProfit / $investorCount;
-
-        $managerName = Auth::user()->name;
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.investor_report_pdf', compact(
             'selectedMonth', 
@@ -429,14 +423,14 @@ class FinanceController extends Controller implements HasMiddleware
             'operationalExpenses', 
             'investorCashFund', 
             'netProfit', 
-            'investorCount',
-            'investorNames', 
+            'investorCount', 
             'profitPerInvestor',
             'coordinatorName',
-            'managerName'
+            'investors',
+            'coordinatorId'
         ));
         
-        return $pdf->stream('laporan_investor_' . $selectedMonth . '.pdf', ['Attachment' => false]);
+        return $pdf->stream('investor_report.pdf', ['Attachment' => false]);
     }
 
     public function developerReport(Request $request)
@@ -719,6 +713,8 @@ class FinanceController extends Controller implements HasMiddleware
             ->get();
 
         $expenses = $cashExpenses;
+        $managerName = Auth::user()->name;
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.coordinator_pdf', compact(
             'coordinator',
             'transactions',
@@ -732,7 +728,8 @@ class FinanceController extends Controller implements HasMiddleware
             'endDate',
             'toolRate',
             'investorDetails',
-            'deposited'
+            'deposited',
+            'managerName'
         ));
 
         $pdf->setPaper('a4', 'landscape');
@@ -1500,7 +1497,17 @@ class FinanceController extends Controller implements HasMiddleware
         $grossProfit = $totalRevenue - $totalCOGS;
 
         $operatingExpenses = (clone $query)->where('type', 'expense')
-            ->whereNotIn('category', ['Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Pembayaran ISP', 'Pembelian Alat', 'Investor Cash Fund'])
+            ->whereNotIn('category', [
+                'Coordinator Commission', 
+                'ISP Payment', 
+                'Tool Fund', 
+                'Pembayaran ISP', 
+                'Pembelian Alat', 
+                'Investor Cash Fund',
+                'Investor Profit Share',
+                'Deposit to Company',
+                'Ambil Barang'
+            ])
             ->sum('amount');
 
         $serverExpenses = (clone $query)->where('type', 'expense')->where('category', 'Operational')->sum('amount');
@@ -1519,7 +1526,8 @@ class FinanceController extends Controller implements HasMiddleware
         $excludedCategories = [
             'Coordinator Commission', 'ISP Payment', 'Tool Fund', 
             'Pembayaran ISP', 'Pembelian Alat', 'Investor Cash Fund',
-            'Operational', 'Transport', 'Consumption', 'Repair'
+            'Operational', 'Transport', 'Consumption', 'Repair',
+            'Investor Profit Share', 'Deposit to Company', 'Ambil Barang'
         ];
 
         $otherExpensesBreakdown = (clone $query)
@@ -1796,10 +1804,13 @@ class FinanceController extends Controller implements HasMiddleware
             ->groupBy('transactions.investor_id', 'investors.name')
             ->get();
 
+        $managerName = Auth::user()->name;
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.manager_report_pdf', array_merge($data, [
             'month' => $month,
             'coordinatorSummaries' => $coordinatorSummaries,
             'investorSummaries' => $investorSummaries,
+            'managerName' => $managerName,
         ]));
         
         $pdf->setPaper('a4', 'portrait');

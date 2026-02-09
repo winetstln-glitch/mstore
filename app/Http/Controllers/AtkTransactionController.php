@@ -70,6 +70,7 @@ class AtkTransactionController extends Controller
 
                 $items[] = [
                     'product_id' => $product->id,
+                    'atk_product_id' => $product->id, // Added for compatibility
                     'product_name' => $product->name,
                     'price' => $price,
                     'quantity' => $itemData['quantity'],
@@ -78,13 +79,14 @@ class AtkTransactionController extends Controller
             }
 
             $transaction = AtkTransaction::create([
-                'user_id' => Auth::id(),
-                'transaction_number' => 'TRX-' . time(),
-                'total_amount' => $total,
-                'payment_method' => $request->payment_method,
-                'cash_amount' => $request->cash_amount,
-                'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
-            ]);
+                    'user_id' => Auth::id(),
+                    'transaction_number' => 'TRX-' . time(),
+                    'invoice_number' => 'INV-' . time(), // Added to satisfy legacy constraint
+                    'total_amount' => $total,
+                    'payment_method' => $request->payment_method,
+                    'cash_amount' => $request->cash_amount,
+                    'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
+                ]);
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
@@ -104,9 +106,18 @@ class AtkTransactionController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = AtkTransaction::with('user')->latest()->paginate(10);
+        $query = AtkTransaction::with('user');
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        $transactions = $query->latest()->paginate(10);
         return view('atk.transactions.index', compact('transactions'));
     }
 
@@ -122,16 +133,34 @@ class AtkTransactionController extends Controller
         return view('atk.transactions.receipt', compact('transaction'));
     }
 
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $transactions = AtkTransaction::with('user', 'items')->latest()->get();
+        $query = AtkTransaction::with('user', 'items');
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        $transactions = $query->latest()->get();
         $pdf = Pdf::loadView('atk.transactions.pdf', compact('transactions'));
         return $pdf->download('atk_transactions.pdf');
     }
 
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
-        $transactions = AtkTransaction::with('user', 'items')->latest()->get();
+        $query = AtkTransaction::with('user', 'items');
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        $transactions = $query->latest()->get();
         
         return response()->streamDownload(function () use ($transactions) {
             $writer = new Writer();

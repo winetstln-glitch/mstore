@@ -25,13 +25,19 @@ class SidebarMenuTest extends TestCase
         $response->assertStatus(200);
 
         // Check for "Main Menu" header
-        $response->assertSee('Main Menu');
+        $response->assertSee(__('Main Menu'));
 
-        $response->assertSeeInOrder([__('Tickets'), __('Network Management')]);
-        $response->assertSeeInOrder([__('Network Management'), __('Administration')]);
+        $response->assertSeeInOrder([
+            __('Dashboard'),
+            __('Pelanggan & Layanan'),
+            __('Jaringan'),
+            __('Operasional'),
+            __('Sistem')
+        ]);
 
-        $response->assertSee(__('Monitoring Genieacs'));
-        $response->assertSee(__('Management Router'));
-        $response->assertSee(__('OLT Management'));
+        $response->assertSee(__('Network Monitor'));
+        $response->assertSee(__('Router / NAS'));
+        $response->assertSee(__('OLT'));
+        $response->assertSee(__('Tiket & Gangguan'));
     }
 }
