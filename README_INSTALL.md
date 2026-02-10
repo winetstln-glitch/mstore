@@ -1,71 +1,164 @@
 # Panduan Instalasi MStore
 
-Panduan ini menjelaskan cara menginstal aplikasi MStore pada server Linux (Ubuntu/Debian) menggunakan script instalasi otomatis.
+Panduan ringkas dan jelas untuk menginstal MStore di lingkungan Linux (Ubuntu/Debian) dan Windows (XAMPP). Tidak ada script `install.sh`; gunakan langkah manual di bawah ini atau deploy cepat dengan `deploy.sh`.
 
 ## Prasyarat
 
-- **Sistem Operasi**: Ubuntu 20.04, 22.04, atau 24.04 LTS (Direkomendasikan)
-- **Pengguna**: Akses Root (atau pengguna dengan hak akses sudo)
-- **Internet**: Diperlukan untuk mengunduh paket dan dependensi
+- Sistem Operasi: Ubuntu 20.04/22.04/24.04 (disarankan) atau Windows 10/11
+- PHP 8.1+ dan Composer
+- MySQL/MariaDB
+- Node.js dan NPM
+- Web server: Nginx/Apache
 
-## Langkah Instalasi
+## Instalasi di Linux (Ubuntu/Debian)
 
-### 1. Unggah File ke Server
-Unggah seluruh folder proyek MStore ke server Anda (misalnya menggunakan FileZilla, SFTP, atau Git clone).
-
-### 2. Berikan Izin Eksekusi pada Script
-Buka terminal server Anda dan masuk ke folder proyek yang baru saja diunggah. Jalankan perintah berikut agar script dapat dijalankan:
-
+### 1. Persiapan Server
 ```bash
-chmod +x install.sh
+sudo apt update && sudo apt upgrade -y
+sudo apt install nginx mysql-server php php-fpm php-mysql php-xml php-curl php-zip php-mbstring php-gd unzip git curl -y
 ```
 
-### 3. Jalankan Installer
-Jalankan script instalasi dengan hak akses root (sudo):
-
+### 2. Clone Repository
 ```bash
-sudo ./install.sh
+cd /var/www
+git clone https://github.com/winetstln-glitch/mstore.git
+cd mstore
 ```
 
-### 4. Ikuti Instruksi di Layar
-Script akan berjalan secara interaktif dan meminta beberapa informasi:
-- **Konfirmasi Instalasi**: Tekan `y` untuk melanjutkan.
-- **Nama Domain**: Masukkan domain atau IP address server (contoh: `mstore.example.com` atau `192.168.1.100`).
-- **Nama Database**: Masukkan nama database yang diinginkan (default: `mstore`).
-- **User Database**: Masukkan username database (default: `mstore`).
-- **Password Database**: Buat password untuk user database tersebut.
+### 3. Instalasi Dependensi
+```bash
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+composer install --optimize-autoloader --no-dev
+npm install
+npm run build
+```
 
-## Apa yang Dilakukan Script Ini?
+### 4. Konfigurasi Environment
+```bash
+cp .env.example .env
+nano .env
+```
+Sesuaikan:
+```env
+APP_URL=https://domain-atau-ip-anda
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mstore
+DB_USERNAME=nama_user
+DB_PASSWORD=password
+SESSION_DOMAIN=domain-anda
+SANCTUM_STATEFUL_DOMAINS=domain-anda
+```
 
-Script `install.sh` mengotomatiskan tugas-tugas teknis berikut:
-1.  **Update Sistem**: Memperbarui daftar paket Linux.
-2.  **Instalasi Dependensi**: Menginstal PHP 8.2, Nginx, MariaDB (MySQL), Composer, dan Node.js.
-3.  **Setup Database**: Membuat database dan user MySQL secara otomatis sesuai input Anda.
-4.  **Setup Aplikasi**:
-    - Menginstal library PHP via Composer.
-    - Membuat file konfigurasi `.env`.
-    - Mengenerate Application Key.
-    - Menjalankan migrasi database (membuat tabel).
-    - Mengompilasi aset frontend (CSS/JS) menggunakan Vite.
-5.  **Konfigurasi Web Server**: Mengatur Virtual Host Nginx agar aplikasi bisa diakses via web.
-6.  **Izin Akses (Permissions)**: Mengatur hak akses folder agar aman dan bisa dibaca oleh web server (`www-data`).
+### 5. Generate Key, Storage Link, Migrasi
+```bash
+php artisan key:generate
+php artisan storage:link
+php artisan migrate --force
+```
 
-## Pasca Instalasi
+### 6. Izin Folder
+```bash
+sudo chown -R www-data:www-data /var/www/mstore
+sudo chmod -R 775 /var/www/mstore/storage
+sudo chmod -R 775 /var/www/mstore/bootstrap/cache
+```
 
-Setelah instalasi selesai, Anda dapat mengakses aplikasi melalui browser di alamat:
-`http://nama-domain-anda.com` (atau IP address server).
+### 7. Nginx Server Block (contoh)
+```nginx
+server {
+  listen 80;
+  server_name domain-anda;
+  return 301 https://domain-anda$request_uri;
+}
 
-### Login Default
-Jika menggunakan data dummy (seeder) bawaan:
-- **Email**: `admin@example.com`
-- **Password**: `password`
+server {
+  listen 443 ssl http2;
+  server_name domain-anda;
 
-### Pemecahan Masalah (Troubleshooting)
+  root /var/www/mstore/public;
+  index index.php;
 
-- **500 Server Error**:
-  - Cek log error di `/var/www/mstore/storage/logs/laravel.log`.
-  - Pastikan folder `storage` dan `bootstrap/cache` memiliki izin tulis (`chmod -R 775`).
-- **Permission Denied**:
-  - Jalankan perintah: `chown -R www-data:www-data /var/www/mstore`.
-- **Database Error**:
-  - Pastikan kredensial di file `.env` sesuai dengan yang Anda masukkan saat instalasi.
+  ssl_certificate /etc/letsencrypt/live/domain-anda/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/domain-anda/privkey.pem;
+
+  location / { try_files $uri $uri/ /index.php?$query_string; }
+  location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+  }
+  client_max_body_size 64M;
+}
+```
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## Instalasi di Windows (XAMPP)
+
+### 1. Persiapan
+- Install XAMPP (PHP 8.1+), Composer, dan Node.js
+- Aktifkan Apache dan MySQL di XAMPP Control Panel
+
+### 2. Clone Repository
+```bash
+cd C:\xampp\htdocs
+git clone https://github.com/winetstln-glitch/mstore.git
+cd mstore
+```
+
+### 3. Instalasi Dependensi
+```bash
+composer install
+npm install
+npm run build
+```
+
+### 4. Database dan .env
+- Buat database `mstore` di phpMyAdmin
+- Salin `.env.example` menjadi `.env` dan sesuaikan kredensial
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mstore
+DB_USERNAME=root
+DB_PASSWORD=
+APP_URL=http://localhost
+```
+
+### 5. Setup Aplikasi
+```bash
+php artisan key:generate
+php artisan storage:link
+php artisan migrate
+```
+Akses: `http://localhost/mstore/public` atau jalankan `php artisan serve`.
+
+## Deploy Cepat (Server)
+
+Repositori menyertakan `deploy.sh` untuk memperbarui server dengan aman:
+```bash
+cd /var/www/mstore
+git pull origin main
+chmod +x deploy.sh
+./deploy.sh
+```
+Script ini melakukan fetch/reset, composer install, migrate --force, dan rebuild cache.
+
+## Login Default (Seeder)
+
+Jika menggunakan seeder:
+- Administrator: `admin@mstore.local` / `password`
+- NOC: `noc@mstore.local` / `password`
+- Teknisi: `tech1@mstore.local` / `password`
+- Finance: `finance@mstore.local` / `password`
+
+## Troubleshooting
+
+- 500 Error: cek `storage/logs/laravel.log`, pastikan permission `storage` dan `bootstrap/cache`.
+- Gambar tidak muncul: jalankan `php artisan storage:link`, cek `APP_URL`.
+- Database error: pastikan service MySQL aktif, kredensial `.env` benar.
