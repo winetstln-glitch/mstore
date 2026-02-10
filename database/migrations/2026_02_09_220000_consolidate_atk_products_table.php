@@ -23,6 +23,7 @@ return new class extends Migration
                 $table->string('unit')->nullable();
                 $table->text('description')->nullable();
                 $table->string('image')->nullable();
+                $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
             });
         } else {
@@ -54,6 +55,9 @@ return new class extends Migration
                 if (!Schema::hasColumn('atk_products', 'image')) {
                     $table->string('image')->nullable()->after('description');
                 }
+                if (!Schema::hasColumn('atk_products', 'employee_id')) {
+                    $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete()->after('image');
+                }
             });
         }
     }
@@ -63,6 +67,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('atk_products', function (Blueprint $table) {
+            if (Schema::hasColumn('atk_products', 'employee_id')) {
+                $table->dropForeign(['employee_id']);
+                $table->dropColumn('employee_id');
+            }
+        });
         Schema::dropIfExists('atk_products');
     }
 };
