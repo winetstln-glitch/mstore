@@ -40,7 +40,11 @@ return new class extends Migration
                 $table->foreignId('atk_transaction_id')->after('id')->constrained('atk_transactions')->cascadeOnDelete();
             }
             if (!Schema::hasColumn('atk_transaction_items', 'product_id')) {
-                $table->foreignId('product_id')->nullable()->after('atk_transaction_id')->constrained('atk_products')->nullOnDelete();
+                if (Schema::hasTable('atk_products')) {
+                    $table->foreignId('product_id')->nullable()->after('atk_transaction_id')->constrained('atk_products')->nullOnDelete();
+                } else {
+                    $table->unsignedBigInteger('product_id')->nullable()->after('atk_transaction_id');
+                }
             }
             if (!Schema::hasColumn('atk_transaction_items', 'product_name')) {
                 $table->string('product_name')->nullable()->after('product_id'); // Made nullable
