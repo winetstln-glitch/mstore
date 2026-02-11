@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="layout-navbar-fixed layout-wide" dir="ltr" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>{{ config('app.name', 'MStore') }} - Internet, ATK & Services</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,73 +19,105 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
-    <!-- Custom CSS (Light & Mobile First) -->
+    <!-- Bootstrap 5 (Pastikan ini ada atau tergantikan landing-lite.css) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Landing Lite CSS -->
     <link href="{{ asset('css/landing-lite.css') }}" rel="stylesheet">
+
+    
 </head>
 <body>
 
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="container nav-container">
-            <a class="nav-brand" href="#">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo" style="height: 35px;">
-                {{ config('app.name', 'MStore') }}
-            </a>
-            
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <button id="themeToggle" class="btn btn-outline-primary" style="padding: 0.5rem; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-moon"></i>
-                </button>
-
-                <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+        <div class="nav-container">
+            <div class="nav-inner">
+                <button class="nav-toggle" id="navToggle">
                     <i class="fas fa-bars"></i>
                 </button>
+                <a class="nav-brand" href="#">
+                    <img class="nav-logo" src="{{ asset('img/logo.png') }}" alt="Logo">
+                    <span>{{ config('app.name', 'MStore') }}</span>
+                </a>
+                <div class="nav-primary d-none d-lg-flex">
+                    <a class="nav-link" href="#home">Beranda</a>
+                    <a class="nav-link" href="#packages">Internet</a>
+                    <a class="nav-link" href="#atk-promo">ATK Store</a>
+                    <a class="nav-link" href="#wash-services">Auto Wash</a>
+                </div>
+                <div class="nav-actions">
+                    <div class="d-none d-lg-flex align-items-center ms-2">
+                        @auth
+                            <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">
+                                Dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm">
+                                Masuk
+                            </a>
+                        @endauth
+                    </div>
+                    <button class="btn-icon" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
             </div>
-            
             <div class="nav-menu" id="navMenu">
-                <a class="nav-link" href="#home">Beranda</a>
-                <a class="nav-link" href="#packages">Internet</a>
-                <a class="nav-link" href="#atk-promo">ATK Store</a>
-                <a class="nav-link" href="#wash-services">Auto Wash</a>
-                
-                @auth
-                    <a href="{{ route('dashboard') }}" class="btn btn-primary btn-full-mobile">
-                        <i class="fas fa-tachometer-alt"></i> &nbsp; Dashboard
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary btn-full-mobile">
-                        <i class="fas fa-sign-in-alt"></i> &nbsp; Masuk
-                    </a>
-                @endauth
+                <div class="nav-menu-inner">
+                    <div class="nav-menu-panel">
+                        <a class="nav-link" href="#home">Beranda</a>
+                        <a class="nav-link" href="#packages">Internet</a>
+                        <a class="nav-link" href="#atk-promo">ATK Store</a>
+                        <a class="nav-link" href="#wash-services">Auto Wash</a>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
+    <div class="mobile-appbar d-lg-none">
+        <div class="mobile-appbar-inner">
+            <div class="appbar-left">
+                <img class="appbar-logo" src="{{ asset('img/logo.png') }}" alt="Logo">
+                <span class="appbar-title">{{ config('app.name', 'MStore') }}</span>
+            </div>
+            <div></div>
+            <div class="appbar-actions">
+                <button class="btn-icon" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section id="home" class="hero">
-        <div class="container hero-container">
-            <div class="hero-content">
-                <h1 class="hero-title">Solusi Digital & Layanan Terlengkap</h1>
-                <p class="hero-desc">Dari internet super cepat, perlengkapan kantor berkualitas, hingga perawatan kendaraan Anda. Semua ada di sini.</p>
-                
-                <div class="hero-actions">
-                    <a href="#packages" class="btn btn-outline-light">
-                        <i class="fas fa-wifi"></i> &nbsp; Pasang Internet
-                    </a>
-                    <a href="#atk-promo" class="btn btn-outline-light">
-                        <i class="fas fa-shopping-bag"></i> &nbsp; Belanja ATK
-                    </a>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 hero-content fade-up">
+                    <h1 class="hero-title">Solusi Digital & Layanan Terlengkap</h1>
+                    <p class="hero-desc">Dari internet super cepat, perlengkapan kantor berkualitas, hingga perawatan kendaraan Anda. Semua ada di sini.</p>
+                    
+                    <div class="hero-actions d-flex">
+                        <a href="#packages" class="btn btn-primary">
+                            <i class="fas fa-wifi"></i> &nbsp; Paket Internet
+                        </a>
+                        <a href="#atk-promo" class="btn btn-outline-primary">
+                            <i class="fas fa-shopping-bag"></i>&nbsp; Belanja ATK
+                        </a>
+                    </div>
                 </div>
-            </div>
-            <div class="hero-img">
-                <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" alt="Fiber Optic Network" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                <div class="col-lg-6 hero-img fade-up">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" alt="Fiber Optic Network">
+                </div>
             </div>
         </div>
     </section>
 
+    
     <!-- Stats Section -->
-    <section class="container">
-        <div class="stats-grid">
+    <section class="container mb-5">
+        <div class="stats-grid fade-up">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-globe-asia"></i></div>
                 <div class="stat-number">Wide</div>
@@ -105,12 +139,12 @@
     <!-- Products/Packages Section -->
     <section id="packages" class="section">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header fade-up">
                 <h2 class="section-title">Pilihan Paket Internet</h2>
                 <p class="text-muted">Sesuaikan dengan kebutuhan digital rumah dan bisnis Anda.</p>
             </div>
 
-            <div class="scroll-container">
+            <div class="scroll-container fade-up">
                 @forelse($packages as $package)
                 <div class="scroll-item">
                     <div class="card">
@@ -121,9 +155,9 @@
                         <div class="pricing-body">
                             <div class="price">
                                 {{ number_format($package->price, 0, ',', '.') }}
-                                <span style="font-size: 0.8rem; font-weight: 400; color: #888;">/ bln</span>
+                                <span class="price-period">/ bln</span>
                             </div>
-                            <h4 class="mb-3">{{ $package->name }}</h4>
+                            <h4 class="mb-3 mt-2">{{ $package->name }}</h4>
                             <ul class="features">
                                 <li><i class="fas fa-check-circle"></i> Unlimited Quota</li>
                                 <li><i class="fas fa-check-circle"></i> Fiber Optic</li>
@@ -132,14 +166,14 @@
                                     <li><i class="fas fa-check-circle"></i> {{ $package->description }}</li>
                                 @endif
                             </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary btn-full-mobile mt-auto">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" target="_blank" class="btn btn-primary w-100 mt-auto">
                                 Pilih Paket
                             </a>
                         </div>
                     </div>
                 </div>
                 @empty
-                <div class="text-center" style="width: 100%;">
+                <div class="text-center w-100 p-5">
                     <div class="text-muted">Belum ada paket yang tersedia saat ini.</div>
                 </div>
                 @endforelse
@@ -148,22 +182,22 @@
     </section>
 
     <!-- ATK Promo Section -->
-    <section id="atk-promo" class="section" style="background-color: #f1f3f9;">
+    <section id="atk-promo" class="section section-alt">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header fade-up">
                 <h2 class="section-title">Promo Alat Tulis Kantor</h2>
                 <p class="text-muted">Lengkapi kebutuhan kantor dan sekolah Anda.</p>
             </div>
             
-            <div class="scroll-container">
+            <div class="scroll-container fade-up">
                 @forelse($atkProducts as $product)
                 <div class="scroll-item">
                     <div class="card">
                         @if($product->image)
                             <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="product-img">
                         @else
-                            <div class="product-img" style="display: flex; align-items: center; justify-content: center; color: #ccc;">
-                                <i class="fas fa-image fa-3x"></i>
+                            <div class="product-img d-flex align-items-center justify-content-center">
+                                <i class="fas fa-image fa-3x text-muted"></i>
                             </div>
                         @endif
                         <div class="product-body">
@@ -173,14 +207,14 @@
                             <div class="product-desc">
                                 {{ Str::limit($product->description ?? 'Tersedia di toko kami.', 60) }}
                             </div>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary btn-full-mobile mt-auto">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" target="_blank" class="btn btn-outline-primary w-100 mt-auto">
                                 <i class="fab fa-whatsapp"></i> &nbsp; Pesan
                             </a>
                         </div>
                     </div>
                 </div>
                 @empty
-                <div class="text-center" style="width: 100%;">
+                <div class="text-center w-100 p-5">
                     <p class="text-muted">Belum ada promo produk saat ini.</p>
                 </div>
                 @endforelse
@@ -191,25 +225,25 @@
     <!-- Wash Services Section -->
     <section id="wash-services" class="section">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header fade-up">
                 <h2 class="section-title">Layanan Cuci & Steam</h2>
                 <p class="text-muted">Perawatan terbaik untuk kendaraan Anda.</p>
             </div>
             
-            <div class="scroll-container">
+            <div class="scroll-container fade-up">
                 @forelse($washServices as $service)
                 <div class="scroll-item">
                     <div class="card">
                         @if($service->image)
                             <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
                         @else
-                            <div class="product-img" style="display: flex; align-items: center; justify-content: center; color: #ccc;">
-                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-3x"></i>
+                            <div class="product-img d-flex align-items-center justify-content-center">
+                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-3x text-secondary"></i>
                             </div>
                         @endif
                         <div class="product-body text-center">
                             <div class="mb-2">
-                                <span style="background: #36b9cc; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">
+                                <span class="chip">
                                     <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }}"></i>
                                     {{ ucfirst($service->vehicle_type) }}
                                 </span>
@@ -217,14 +251,14 @@
                             <h4 class="product-title">{{ $service->name }}</h4>
                             <div class="product-price">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
                             <p class="product-desc">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-primary btn-full-mobile mt-auto" style="background-color: #1cc88a; border-color: #1cc88a;">
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" target="_blank" class="btn btn-accent w-100 mt-auto">
                                 <i class="fab fa-whatsapp"></i> &nbsp; Booking
                             </a>
                         </div>
                     </div>
                 </div>
                 @empty
-                 <div class="text-center" style="width: 100%;">
+                 <div class="text-center w-100 p-5">
                     <p class="text-muted">Layanan belum tersedia.</p>
                 </div>
                 @endforelse
@@ -233,14 +267,14 @@
     </section>
 
     <!-- Monitoring Showcase Section -->
-    <section id="monitoring" class="monitoring">
+    <section id="monitoring" class="section">
         <div class="container">
             <div class="monitoring-grid">
-                <div class="monitoring-image">
+                <div class="monitoring-image fade-up">
                     <!-- Live Coverage Map -->
                     <div id="coverageMap"></div>
                 </div>
-                <div class="monitoring-content">
+                <div class="monitoring-content fade-up">
                     <h2 class="section-title">Pantau Jaringan Real-Time</h2>
                     <p class="text-muted mb-4">Teknologi monitoring canggih untuk kualitas jaringan prima.</p>
                     
@@ -250,21 +284,21 @@
                         </div>
                         <div>
                             <h5>ODP & Closure Mapping</h5>
-                            <p class="text-muted" style="font-size: 0.9rem;">Pemetaan infrastruktur akurat.</p>
+                            <p class="text-muted">Pemetaan infrastruktur akurat.</p>
                         </div>
                     </div>
 
-                    <div class="feature-item">
-                        <div class="feature-icon" style="background-color: #1cc88a;">
+                        <div class="feature-item">
+                        <div class="feature-icon">
                             <i class="fas fa-mobile-alt"></i>
                         </div>
                         <div>
                             <h5>Aplikasi Pelanggan & Teknisi</h5>
-                            <p class="text-muted" style="font-size: 0.9rem;">Sistem terintegrasi untuk respon cepat.</p>
+                            <p class="text-muted">Sistem terintegrasi untuk respon cepat.</p>
                         </div>
                     </div>
 
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary mt-2">
+                    <a href="{{ route('login') }}" class="btn btn-outline-primary mt-3">
                         Lihat Area Coverage (Login)
                     </a>
                 </div>
@@ -275,109 +309,160 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <div class="footer-grid">
-                <div>
+            <div class="row g-4">
+                <div class="col-md-4">
                     <a href="#" class="footer-brand">
                         <i class="fas fa-network-wired"></i> {{ config('app.name', 'MStore') }}
                     </a>
-                    <p>Penyedia layanan internet fiber optic terpercaya dengan komitmen kualitas dan pelayanan terbaik.</p>
+                    <p class="text-muted">Penyedia layanan internet fiber optic terpercaya dengan komitmen kualitas dan pelayanan terbaik.</p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
                         <a href="https://wa.me/{{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
-                <div>
-                    <h5 class="text-white mb-2">Layanan</h5>
+                <div class="col-6 col-md-2">
+                    <h5 class="footer-title">Layanan</h5>
                     <div class="footer-links">
                         <a href="#">Home Internet</a>
                         <a href="#">ATK Store</a>
                         <a href="#">Car Wash</a>
                     </div>
                 </div>
-                <div>
-                    <h5 class="text-white mb-2">Support</h5>
+                <div class="col-6 col-md-2">
+                    <h5 class="footer-title">Support</h5>
                     <div class="footer-links">
                         <a href="#">Cek Tagihan</a>
                         <a href="#">Lapor Gangguan</a>
                         <a href="#">Coverage Area</a>
                     </div>
                 </div>
-                <div>
-                    <h5 class="text-white mb-2">Hubungi Kami</h5>
+                <div class="col-md-4">
+                    <h5 class="footer-title">Hubungi Kami</h5>
                     <div class="footer-links">
-                        <div class="mb-1"><i class="fas fa-map-marker-alt"></i> Jl. Raya Internet No. 123</div>
-                        <div class="mb-1"><i class="fas fa-phone"></i> +62 877 7736 9687</div>
-                        <div class="mb-1"><i class="fas fa-envelope"></i> support@mstore.com</div>
+                        <div class="mb-2 text-muted"><i class="fas fa-map-marker-alt" style="width: 20px"></i> Jl. Raya Internet No. 123</div>
+                        <div class="mb-2 text-muted"><i class="fas fa-phone" style="width: 20px"></i> +62 877 7736 9687</div>
+                        <div class="mb-2 text-muted"><i class="fas fa-envelope" style="width: 20px"></i> support@mstore.com</div>
                     </div>
                 </div>
             </div>
-            <div class="text-center mt-4 pt-4" style="border-top: 1px solid #2d3748;">
-                <small>&copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. All rights reserved.</small>
+            <div class="text-center mt-5 pt-4 footer-bottom">
+                <small class="text-muted">&copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. All rights reserved.</small>
             </div>
         </div>
     </footer>
+
+    <div class="bottom-bar d-lg-none">
+        <div class="bottom-bar-inner">
+            <a href="#home" class="bottom-item active">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </a>
+            <a href="#packages" class="bottom-item">
+                <i class="fa-solid fa-wifi"></i>
+                <span>Internet</span>
+            </a>
+            <a href="#atk-promo" class="bottom-item">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span>ATK</span>
+            </a>
+            <a href="#wash-services" class="bottom-item">
+                <i class="fa-solid fa-car"></i>
+                <span>Wash</span>
+            </a>
+            @auth
+            <a href="{{ route('dashboard') }}" class="bottom-item">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dash</span>
+            </a>
+            @else
+            <a href="{{ route('login') }}" class="bottom-item">
+                <i class="fa-solid fa-user"></i>
+                <span>Masuk</span>
+            </a>
+            @endauth
+        </div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <script>
-        // Theme Toggle
+        // --- Theme Toggle Logic ---
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = themeToggle.querySelector('i');
         const html = document.documentElement;
 
-        // Check local storage
-        const currentTheme = localStorage.getItem('theme');
-        if (currentTheme) {
-            html.setAttribute('data-theme', currentTheme);
-            if (currentTheme === 'dark') {
+        // Load saved theme or default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = html.getAttribute('data-bs-theme') === 'dark';
+            const next = isDark ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('theme', next);
+        });
+
+        function applyTheme(theme) {
+            html.setAttribute('data-bs-theme', theme);
+            html.setAttribute('data-theme', theme);
+            
+            if (theme === 'dark') {
                 themeIcon.classList.remove('fa-moon');
                 themeIcon.classList.add('fa-sun');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
             }
         }
 
-        themeToggle.addEventListener('click', () => {
-            if (html.getAttribute('data-theme') === 'dark') {
-                html.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-            } else {
-                html.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-            }
-        });
-
-        // Navbar Toggle
+        // --- Navbar Toggle Logic ---
         const navToggle = document.getElementById('navToggle');
         const navMenu = document.getElementById('navMenu');
         
         navToggle.addEventListener('click', () => {
             navMenu.classList.toggle('active');
+            const icon = navToggle.querySelector('i');
+            if (navMenu.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
         });
 
-        // Close menu when clicking a link
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
                 navMenu.classList.remove('active');
+                navToggle.querySelector('i').classList.remove('fa-times');
+                navToggle.querySelector('i').classList.add('fa-bars');
             });
         });
 
-        // Initialize Map
+        // --- Scroll Animation (Fade Up) ---
+        const observerOptions = { threshold: 0.1 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // --- Initialize Map ---
         document.addEventListener('DOMContentLoaded', function() {
             var odps = @json($odps ?? []);
             
-            // Default Center (Server Location or generic Indonesia coords if needed)
+            // Default Center
             var defaultLat = -6.800278;
             var defaultLng = 105.939159;
             var initialZoom = 13;
 
-            // If we have ODPs, center on the first one
             if (odps.length > 0) {
-                // Try to find a valid ODP to center on
                 for(let i=0; i < odps.length; i++) {
                     if(odps[i].latitude && odps[i].longitude) {
                         defaultLat = parseFloat(odps[i].latitude);
@@ -389,8 +474,11 @@
 
             var map = L.map('coverageMap').setView([defaultLat, defaultLng], initialZoom);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
+            // Use a clean tile layer that supports dark mode styling conceptually or standard OSM
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
             }).addTo(map);
 
             // Add ODP Markers
@@ -400,11 +488,11 @@
                     
                     L.circleMarker([odp.latitude, odp.longitude], {
                         radius: 8,
-                        fillColor: isFull ? '#e74a3b' : '#4e73df',
+                        fillColor: isFull ? '#ef4444' : '#3b82f6',
                         color: '#fff',
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.8
+                        fillOpacity: 0.9
                     }).addTo(map)
                     .bindPopup("<b>" + odp.name + "</b><br>Status: " + (isFull ? "Penuh" : "Tersedia"));
                 }

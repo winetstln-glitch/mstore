@@ -18,6 +18,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 .auth-shell {
@@ -37,13 +38,37 @@ body {
 
 .auth-left {
     flex: 1;
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    background: linear-gradient(135deg, #7367F0 0%, #00CFE8 100%);
     color: white;
     padding: 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
+    position: relative;
+}
+
+.auth-left::before,
+.auth-left::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(12px);
+    opacity: 0.4;
+}
+.auth-left::before {
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255,255,255,0.6), transparent 60%);
+    top: 24px;
+    right: 24px;
+}
+.auth-left::after {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(0, 207, 232, 0.6), transparent 60%);
+    bottom: 24px;
+    left: 24px;
 }
 
 /* Updated Logo Styling with Background and Animation */
@@ -106,6 +131,26 @@ body {
     color: #6c757d;
 }
 
+.auth-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0 1rem;
+}
+.auth-separator::before,
+.auth-separator::after {
+    content: "";
+    height: 1px;
+    width: 40px;
+    background: rgba(0,0,0,0.15);
+    display: inline-block;
+}
+.auth-separator span {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
 .auth-form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
@@ -155,7 +200,7 @@ body {
 
 /* Login Button Styling */
 .btn-auth-primary {
-    background-color: #0d6efd;
+    background-color: #7367F0;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -165,10 +210,44 @@ body {
 }
 
 .btn-auth-primary:hover {
-    background-color: #0b5ed7;
+    background-color: #6a63ea;
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+    box-shadow: 0 4px 6px rgba(115, 103, 240, 0.25);
     color: white;
+}
+
+/* Dark mode refinements to mimic Vuexy */
+[data-bs-theme="dark"] body {
+    background-color: #161D31;
+}
+[data-bs-theme="dark"] .auth-card {
+    background-color: #283046;
+    border: 1px solid #2d3748;
+    box-shadow: none;
+}
+[data-bs-theme="dark"] .auth-right {
+    color: #e6e8f0;
+}
+[data-bs-theme="dark"] .auth-header-sub,
+[data-bs-theme="dark"] .auth-separator span {
+    color: #b4b7bd;
+}
+[data-bs-theme="dark"] .auth-separator::before,
+[data-bs-theme="dark"] .auth-separator::after {
+    background: #3a4256;
+}
+[data-bs-theme="dark"] .auth-input-group .input-group-text,
+[data-bs-theme="dark"] .auth-input-group .form-control {
+    background-color: #1f2637;
+    border-color: #2d3748;
+    color: #e6e8f0;
+}
+[data-bs-theme="dark"] .auth-input-group .form-control:focus {
+    border-color: #7367F0;
+}
+[data-bs-theme="dark"] .back-home-btn,
+[data-bs-theme="dark"] .theme-toggle-btn {
+    color: #e6e8f0;
 }
 
 @media (max-width: 768px) {

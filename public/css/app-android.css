@@ -1,0 +1,46 @@
+/* Android Modern UI tweaks for app-wide pages (dashboard, tables, forms) */
+:root {
+  --android-radius: 12px;
+}
+
+/* Typography scaling for mobile */
+@media (max-width: 991px) {
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.25rem; }
+  h4 { font-size: 1.15rem; }
+  h5 { font-size: 1.05rem; }
+  h6 { font-size: 0.95rem; }
+  .btn { padding: 0.6rem 1.1rem; border-radius: 9999px; font-weight: 600; }
+  .form-control, .form-select { font-size: 16px; border-radius: var(--android-radius); }
+  .card, .modal-content { border-radius: var(--android-radius); }
+  .table { font-size: 0.95rem; }
+}
+
+/* Ripple effect for interactive elements without JS */
+.btn, .list-group-item-action, .sidebar-item, .nav-link, .page-link {
+  position: relative; overflow: hidden;
+}
+.btn::after, .list-group-item-action::after, .sidebar-item::after, .nav-link::after, .page-link::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: currentColor; opacity: .15;
+}
+.btn:active::after, .list-group-item-action:active::after, .sidebar-item:active::after, .nav-link:active::after, .page-link:active::after {
+  animation: android-ripple .6s ease-out;
+}
+@keyframes android-ripple {
+  to { transform: translate(-50%, -50%) scale(35); opacity: 0; }
+}
+
+/* Subtle elevated containers */
+.card { box-shadow: 0 4px 10px rgba(0,0,0,.05); }
+.modal-content { box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+
+/* Pill badges for status chips */
+.badge { border-radius: 9999px; padding: .35rem .6rem; }
+
+/* Touch-friendly pagination */
+.pagination .page-item .page-link { border-radius: 9999px; padding: .45rem .75rem; }
+

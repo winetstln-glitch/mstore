@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\Coordinator;
 use App\Models\Customer;
+use App\Models\AtkTransaction;
+use App\Models\WashTransaction;
 use App\Models\Installation;
 use App\Models\InventoryItem;
 use App\Models\TechnicianAttendance;
@@ -92,6 +94,82 @@ class DashboardController extends Controller implements HasMiddleware
             'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
             'tickets_today' => $ticketQuery->clone()->whereDate('created_at', today())->count(),
             'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
+            'atk_today' => AtkTransaction::whereDate('created_at', today())->count(),
+            'atk_month_revenue' => AtkTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
+            'wash_today' => WashTransaction::whereDate('created_at', today())->count(),
+            'wash_month_revenue' => WashTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
+        ];
+
+        // Traffic Data (Orders & Tickets per Month)
+        $trafficData = [
+            'labels' => [],
+            'orders' => [],
+            'tickets' => []
+        ];
+
+        $atkMonthly = AtkTransaction::whereYear('created_at', now()->year)
+            ->get()
+            ->groupBy(function($t) { return $t->created_at->format('n'); })
+            ->map->count();
+
+        $washMonthly = WashTransaction::whereYear('created_at', now()->year)
+            ->get()
+            ->groupBy(function($t) { return $t->created_at->format('n'); })
+            ->map->count();
+
+        $ticketsMonthly = $ticketQuery->clone()
+            ->whereYear('created_at', now()->year)
+            ->get()
+            ->groupBy(function($ticket) { return $ticket->created_at->format('n'); })
+            ->map->count();
+
+        for ($i = 1; $i <= 12; $i++) {
+            $trafficData['labels'][] = \Carbon\Carbon::create(null, $i, 1)->format('F');
+            $ordersCount = ($atkMonthly->get($i, 0)) + ($washMonthly->get($i, 0));
+            $trafficData['orders'][] = $ordersCount;
+            $trafficData['tickets'][] = $ticketsMonthly->get($i, 0);
+        }
+
+        // Orders Month-over-Month Growth
+        $ordersCurrentMonth = AtkTransaction::where('created_at', '>=', now()->startOfMonth())->count()
+            + WashTransaction::where('created_at', '>=', now()->startOfMonth())->count();
+        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $ordersPrevMonth = AtkTransaction::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->count()
+            + WashTransaction::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->count();
+        $ordersGrowthPercent = $ordersPrevMonth > 0
+            ? round((($ordersCurrentMonth - $ordersPrevMonth) / $ordersPrevMonth) * 100, 1)
+            : ($ordersCurrentMonth > 0 ? 100.0 : 0.0);
+        $trafficStats = [
+            'orders_growth_percent' => $ordersGrowthPercent
+        ];
+
+        // Revenue Breakdown (Donut)
+        $atkRevenueYear = AtkTransaction::whereYear('created_at', now()->year)->sum('total_amount');
+        $washRevenueYear = WashTransaction::whereYear('created_at', now()->year)->sum('total_amount');
+        $otherRevenueYear = Transaction::where('type', 'income')
+            ->whereYear('transaction_date', now()->year)
+            ->sum('amount');
+        $revenueBreakdown = [
+            'labels' => ['ATK', 'Car Wash', 'Other'],
+            'series' => [$atkRevenueYear, $washRevenueYear, $otherRevenueYear],
+        ];
+
+        // Support Tracker (Last 7 Days)
+        $supportStart = now()->subDays(6)->startOfDay();
+        $supportEnd = now()->endOfDay();
+        $ticketsLast7Days = $ticketQuery->clone()
+            ->whereBetween('created_at', [$supportStart, $supportEnd])
+            ->get();
+        $supportTotal = $ticketsLast7Days->count();
+        $supportResolved = $ticketsLast7Days->whereIn('status', ['solved', 'closed'])->count();
+        $supportPending = $supportTotal - $supportResolved;
+        $supportResolvedPct = $supportTotal > 0 ? round(($supportResolved / $supportTotal) * 100) : 0;
+        $supportStats = [
+            'total' => $supportTotal,
+            'resolved' => $supportResolved,
+            'pending' => $supportPending,
+            'resolved_pct' => $supportResolvedPct,
         ];
 
         $recentTickets = $ticketQuery->clone()
@@ -176,6 +254,21 @@ class DashboardController extends Controller implements HasMiddleware
             $financialData['expense'][] = $expenseData->get($i, 0);
         }
 
-        return view('dashboard', compact('stats', 'recentTickets', 'upcomingInstallations', 'ticketRecap', 'todayAttendance', 'inventoryItems', 'totalInventoryValue', 'financialData', 'deployedAssets'));
+        return view('dashboard', compact(
+            'stats',
+            'recentTickets',
+            'upcomingInstallations',
+            'ticketRecap',
+            'todayAttendance',
+            'inventoryItems',
+            'totalInventoryValue',
+            'financialData',
+            'deployedAssets',
+            'trafficData',
+            'trafficStats',
+            'revenueBreakdown'
+            ,
+            'supportStats'
+        ));
     }
 }

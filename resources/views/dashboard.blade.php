@@ -44,6 +44,52 @@
     </div>
 </div>
 @endif
+<!-- Vuexy-like Analytics Widgets -->
+<div class="row g-4 mb-4">
+    <!-- Sales Overview (Area) -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Sales Overview') }}</h6>
+                <span class="badge bg-primary-subtle text-primary">
+                    {{ ($trafficStats['orders_growth_percent'] >= 0 ? '+' : '') . $trafficStats['orders_growth_percent'] . '%' }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div id="salesOverviewChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Support Tracker (Radial) -->
+    <div class="col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Support Tracker') }}</h6>
+                <small class="text-muted">{{ __('Last 7 Days') }}</small>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div id="supportTrackerChart" style="height: 240px; width: 100%;"></div>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-3">
+                <div class="d-flex justify-content-center gap-3">
+                    <span class="badge bg-success-subtle text-success">{{ __('Resolved') }}</span>
+                    <span class="badge bg-warning-subtle text-warning">{{ __('Pending') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Revenue Sources (Donut) -->
+    <div class="col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Revenue Sources') }}</h6>
+            </div>
+            <div class="card-body">
+                <div id="revenueSourcesChart" style="height: 240px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Stats Cards -->
 <div class="row g-4 mb-4">
@@ -196,6 +242,54 @@
             <div class="card-body">
                 <div style="height: 300px; width: 100%;">
                     <canvas id="financialChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- POS & Car Wash Summary -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('ATK Sales') }}</h6>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                        <i class="fa-solid fa-cash-register"></i>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">{{ __('Transaksi Hari Ini') }}</div>
+                        <h4 class="fw-bold mb-0">{{ $stats['atk_today'] }}</h4>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted">{{ __('Pendapatan Bulan Ini') }}</div>
+                        <h4 class="fw-bold text-success mb-0">{{ number_format($stats['atk_month_revenue'], 0, ',', '.') }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Car Wash Sales') }}</h6>
+                    <div class="bg-info bg-opacity-10 text-info rounded p-2">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">{{ __('Transaksi Hari Ini') }}</div>
+                        <h4 class="fw-bold mb-0">{{ $stats['wash_today'] }}</h4>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted">{{ __('Pendapatan Bulan Ini') }}</div>
+                        <h4 class="fw-bold text-success mb-0">{{ number_format($stats['wash_month_revenue'], 0, ',', '.') }}</h4>
+                    </div>
                 </div>
             </div>
         </div>
@@ -409,10 +503,10 @@
         </div>
     </div>
 </div>
-@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('financialChart').getContext('2d');
@@ -481,3 +575,60 @@
     });
 </script>
 @endpush
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sales Overview (Area)
+        const salesOptions = {
+            chart: { type: 'area', height: 300, toolbar: { show: false } },
+            series: [
+                { name: '{{ __("Order") }}', data: @json($trafficData['orders']) },
+                { name: '{{ __("Tickets") }}', data: @json($trafficData['tickets']) },
+            ],
+            colors: ['#7367F0', '#00CFE8'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
+            xaxis: { categories: @json($trafficData['labels']) },
+            yaxis: { labels: { formatter: val => Math.round(val) } },
+            legend: { position: 'top' }
+        };
+        const salesChart = new ApexCharts(document.querySelector('#salesOverviewChart'), salesOptions);
+        salesChart.render();
+
+        // Support Tracker (Radial)
+        const supportOptions = {
+            chart: { type: 'radialBar', height: 240 },
+            series: [{{ $supportStats['resolved_pct'] }}],
+            colors: ['#28C76F'],
+            plotOptions: {
+                radialBar: {
+                    hollow: { size: '60%' },
+                    dataLabels: {
+                        name: { show: true, fontSize: '14px', color: '#6e6b7b' },
+                        value: { show: true, formatter: v => v + '%', fontSize: '22px' }
+                    }
+                }
+            },
+            labels: ['{{ __("Resolved") }}']
+        };
+        const supportChart = new ApexCharts(document.querySelector('#supportTrackerChart'), supportOptions);
+        supportChart.render();
+
+        // Revenue Sources (Donut)
+        const revenueOptions = {
+            chart: { type: 'donut', height: 240 },
+            series: @json($revenueBreakdown['series']),
+            labels: @json($revenueBreakdown['labels']),
+            colors: ['#7367F0', '#00CFE8', '#FF9F43'],
+            legend: { position: 'bottom' },
+            dataLabels: { enabled: false }
+        };
+        const revenueChart = new ApexCharts(document.querySelector('#revenueSourcesChart'), revenueOptions);
+        revenueChart.render();
+    });
+</script>
+@endpush
+
+@endsection

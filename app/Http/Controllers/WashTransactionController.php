@@ -253,4 +253,10 @@ class WashTransactionController extends Controller
             $writer->close();
         }, 'wash_transactions.xlsx');
     }
+
+    public function receipt(WashTransaction $transaction)
+    {
+        $transaction->loadMissing('user', 'items');
+        return view('wash.transactions.receipt', compact('transaction'));
+    }
 }

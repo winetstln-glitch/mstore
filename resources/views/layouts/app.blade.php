@@ -14,6 +14,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -26,6 +27,7 @@
 
     <!-- Custom Dashboard CSS -->
     <link href="{{ asset('css/dashboard-custom.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/app-android.css') }}" rel="stylesheet">
 
     @stack('styles')
 
@@ -48,7 +50,7 @@
             <div class="sidebar-brand-icon">
                 <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
             </div>
-            <span class="sidebar-brand-text ms-2 text-white">MSTORE</span>
+            <span class="sidebar-brand-text ms-2 text-white"></span>
             <!-- Close Button for Mobile -->
             <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
                 <i class="fa-solid fa-times fa-lg"></i>
@@ -485,6 +487,10 @@
 
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- ApexCharts (Charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
 <script>
     // SweetAlert2 Flash Messages
@@ -519,6 +525,13 @@
 
 <!-- Custom Dashboard JS -->
 <script src="{{ asset('js/dashboard-custom.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.feather) {
+            window.feather.replace();
+        }
+    });
+</script>
 
 @stack('scripts')
 

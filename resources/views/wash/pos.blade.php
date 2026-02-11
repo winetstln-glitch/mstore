@@ -391,8 +391,15 @@
         })
         .then(data => {
             if (data.success) {
-                alert('Transaction successful! Queue Number: ' + data.queue_number);
-                window.location.reload(); // Refresh page to reset everything
+                const url = '{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt';
+                window.open(url, '_blank', 'width=400,height=600');
+                // Reset form/cart after printing
+                cart = [];
+                document.getElementById('checkoutForm').reset();
+                document.getElementById('emptyCartMsg').style.display = 'block';
+                document.getElementById('totalAmount').textContent = 'Rp 0';
+                document.getElementById('changeAmount').textContent = 'Rp 0';
+                updateCartUI();
             } else {
                 alert('Error: ' + data.message);
             }

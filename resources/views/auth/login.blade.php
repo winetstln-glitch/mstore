@@ -10,6 +10,11 @@
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
 
+    <!-- Public Sans Font (Vuexy-like) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
@@ -48,8 +53,8 @@
             </div>
             <div class="auth-right">
                 <div class="mb-4 w-100 text-center">
-                    <div class="auth-header-title">Welcome Back! <span>👋</span></div>
-                    <div class="auth-header-sub">Silakan login untuk mengakses dashboard.</div>
+                    <div class="auth-header-title">Selamat Datang! <span>👋</span></div>
+                    <div class="auth-header-sub">Silakan sign-in ke akun Anda dan mulai petualangan</div>
                 </div>
 
                 @if (session('status'))
@@ -62,7 +67,7 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="email" class="auth-form-label">Username</label>
+                        <label for="email" class="auth-form-label">Email atau Username</label>
                         <div class="input-group auth-input-group">
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
@@ -105,11 +110,17 @@
                             Masuk Sekarang <span class="ms-2"><i class="fa-solid fa-arrow-right"></i></span>
                         </button>
                     </div>
+                    
+                    <div class="auth-separator">
+                        <span>atau</span>
+                    </div>
 
                     <div class="text-center auth-links">
                         <span>Belum punya akun?</span>
                         @if (Route::has('register'))
-                            <a href="{{ route('register') }}">Daftar Sekarang</a>
+                            <a href="{{ route('register') }}">Buat Akun</a>
+                        @else
+                            <a href="{{ route('login') }}">Hubungi Admin</a>
                         @endif
                     </div>
                 </form>
