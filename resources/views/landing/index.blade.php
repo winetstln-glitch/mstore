@@ -105,6 +105,9 @@
                         <a href="#atk-promo" class="btn btn-outline-primary">
                             <i class="fas fa-shopping-bag"></i>&nbsp; Belanja ATK
                         </a>
+                        <a href="https://cctv.mstore.id/" target="_blank" rel="noopener" class="btn btn-outline-success">
+                            <i class="fas fa-video"></i>&nbsp; Monitoring CCTV Online
+                        </a>
                     </div>
                 </div>
                 <div class="col-lg-6 hero-img fade-up">
