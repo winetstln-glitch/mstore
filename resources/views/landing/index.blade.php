@@ -325,7 +325,6 @@
             </div>
         </div>
     </section>
-
     <!-- Monitoring Showcase Section -->
     <section id="monitoring" class="section">
         <div class="container">
@@ -366,25 +365,6 @@
         </div>
     </section>
  <!-- Stats Section -->
-    <section class="container mb-5">
-        <div class="stats-grid fade-up">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-globe-asia"></i></div>
-                <div class="stat-number">Wide</div>
-                <div class="stat-label">Coverage</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <div class="stat-number">1000+</div>
-                <div class="stat-label">Customers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-headset"></i></div>
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">Support</div>
-            </div>
-        </div>
-    </section>
 
     <!-- Footer -->
     <footer>
