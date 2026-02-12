@@ -6,33 +6,33 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Finance Dashboard') }}</h1>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="toolbar-scroll">
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <!-- PERBAIKAN: Ganti label menjadi sesuai konteks agar tidak menyesatkan auditor -->
-            <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary">
-                <i class="fa-solid fa-file-lines me-1"></i> {{ __('Laporan Manajemen') }}
+            <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary" data-bs-toggle="tooltip" title="{{ __('Laporan Manajemen') }}">
+                <i class="fa-solid fa-file-lines"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Manajemen') }}</span>
             </a>
-            <a href="{{ route('finance.investor_report') }}" class="btn btn-warning text-dark">
-                <i class="fa-solid fa-hand-holding-dollar me-1"></i> {{ __('Laporan Investor') }}
+            <a href="{{ route('finance.investor_report') }}" class="btn btn-warning text-dark" data-bs-toggle="tooltip" title="{{ __('Laporan Investor') }}">
+                <i class="fa-solid fa-hand-holding-dollar"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Investor') }}</span>
             </a>
-            <a href="{{ route('finance.profit_loss') }}" class="btn btn-primary">
-                <i class="fa-solid fa-chart-line me-1"></i> {{ __('Laba Rugi (P&L)') }}
+            <a href="{{ route('finance.profit_loss') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Laba Rugi (P&L)') }}">
+                <i class="fa-solid fa-chart-line"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laba Rugi (P&L)') }}</span>
             </a>
-            <a href="{{ route('finance.material_report') }}" class="btn btn-info">
-                <i class="fa-solid fa-boxes-stacked me-1"></i> {{ __('Laporan Aset') }}
+            <a href="{{ route('finance.material_report') }}" class="btn btn-info" data-bs-toggle="tooltip" title="{{ __('Laporan Aset') }}">
+                <i class="fa-solid fa-boxes-stacked"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Aset') }}</span>
             </a>
-            <a href="{{ route('finance.export_accounting') }}" class="btn btn-success">
-                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Jurnal') }}
+            <a href="{{ route('finance.export_accounting') }}" class="btn btn-success" data-bs-toggle="tooltip" title="{{ __('Export Jurnal') }}">
+                <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Jurnal') }}</span>
             </a>
-            <a href="{{ route('finance.settings') }}" class="btn btn-dark">
-                <i class="fa-solid fa-cog me-1"></i> {{ __('Settings') }}
+            <a href="{{ route('finance.settings') }}" class="btn btn-dark" data-bs-toggle="tooltip" title="{{ __('Settings') }}">
+                <i class="fa-solid fa-cog"></i> <span class="d-none d-sm-inline ms-1">{{ __('Settings') }}</span>
             </a>
             @endif
-            <button class="btn btn-light border" data-bs-toggle="modal" data-bs-target="#helpModal">
-                <i class="fa-solid fa-circle-question me-1"></i> {{ __('Panduan Audit') }}
+            <button class="btn btn-light border" data-bs-toggle="modal" data-bs-target="#helpModal" data-bs-toggle="tooltip" title="{{ __('Panduan Audit') }}">
+                <i class="fa-solid fa-circle-question"></i> <span class="d-none d-sm-inline ms-1">{{ __('Panduan Audit') }}</span>
             </button>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
-                <i class="fa-solid fa-plus me-1"></i> {{ __('Add Transaction') }}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal" data-bs-toggle="tooltip" title="{{ __('Add Transaction') }}">
+                <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add Transaction') }}</span>
             </button>
         </div>
     </div>

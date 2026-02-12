@@ -65,12 +65,12 @@
                 {{ __('Kelola router Mikrotik untuk layanan VPN pelanggan dan site-to-site.') }}
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshRouters">
-                <i class="fa-solid fa-arrows-rotate me-1"></i>{{ __('Refresh Status') }}
+        <div class="toolbar-scroll">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshRouters" data-bs-toggle="tooltip" title="{{ __('Refresh Status') }}">
+                <i class="fa-solid fa-arrows-rotate"></i> <span class="d-none d-sm-inline ms-1">{{ __('Refresh Status') }}</span>
             </button>
-            <a href="{{ route('routers.create') }}" class="btn btn-primary btn-sm">
-                <i class="fa-solid fa-plus me-1"></i>{{ __('Tambah Router VPN') }}
+            <a href="{{ route('routers.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Tambah Router VPN') }}">
+                <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Tambah Router VPN') }}</span>
             </a>
         </div>
     </div>
@@ -164,16 +164,16 @@
                                     @endif
                                 </td>
                                 <td class="text-end vpn-table-actions">
-                                    <a href="{{ route('routers.show', $router) }}" class="btn btn-outline-secondary btn-sm me-1">
-                                        <i class="fa-solid fa-circle-info me-1"></i>{{ __('Detail') }}
+                                    <a href="{{ route('routers.show', $router) }}" class="btn btn-outline-secondary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Detail') }}">
+                                        <i class="fa-solid fa-circle-info"></i> <span class="d-none d-sm-inline ms-1">{{ __('Detail') }}</span>
                                     </a>
                                     <button type="button"
                                         class="btn btn-outline-success btn-sm me-1"
                                         onclick="testConnection('{{ route('routers.test-connection', $router) }}', this)">
-                                        <i class="fa-solid fa-plug-circle-bolt me-1"></i>{{ __('Test') }}
+                                        <i class="fa-solid fa-plug-circle-bolt"></i> <span class="d-none d-sm-inline ms-1">{{ __('Test') }}</span>
                                     </button>
-                                    <a href="{{ route('routers.edit', $router) }}" class="btn btn-outline-primary btn-sm me-1">
-                                        <i class="fa-solid fa-pen-to-square me-1"></i>{{ __('Edit') }}
+                                    <a href="{{ route('routers.edit', $router) }}" class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Edit') }}">
+                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">{{ __('Edit') }}</span>
                                     </a>
                                     <form action="{{ route('routers.destroy', $router) }}" method="POST" class="d-inline">
                                         @csrf

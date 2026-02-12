@@ -270,6 +270,11 @@
                         <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
                     </a>
                     @endif
+                    @if(Auth::user()->hasPermission('technician.view'))
+                    <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-gear"></i> {{ __('Teknisi') }}
+                    </a>
+                    @endif
                     @if(Auth::user()->hasPermission('attendance.view'))
                     <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ request()->routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
                         <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
@@ -475,6 +480,37 @@
     <!-- /#page-content-wrapper -->
 </div>
 <!-- /#wrapper -->
+
+<div class="mobile-bottom-nav d-lg-none">
+    <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+        <i class="fa fa-home"></i><span>{{ __('Home') }}</span>
+    </a>
+    @if(Auth::user()->hasPermission('customer.view'))
+    <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
+        <i class="fa fa-users"></i><span>{{ __('Pelanggan') }}</span>
+    </a>
+    @endif
+    @if(Auth::user()->hasPermission('ticket.view'))
+    <a href="{{ route('tickets.index') }}" class="mbn-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+        <i class="fa fa-ticket-alt"></i><span>{{ __('Tiket') }}</span>
+    </a>
+    @endif
+    @if(Auth::user()->hasPermission('atk.pos'))
+    <a href="{{ route('atk.pos') }}" class="mbn-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
+        <i class="fa fa-cash-register"></i><span>{{ __('ATK') }}</span>
+    </a>
+    @endif
+    @if(Auth::user()->hasPermission('wash.pos'))
+    <a href="{{ route('wash.pos') }}" class="mbn-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
+        <i class="fa fa-car"></i><span>{{ __('Wash') }}</span>
+    </a>
+    @endif
+    @if(Auth::user()->hasPermission('setting.view'))
+    <a href="{{ route('settings.index') }}" class="mbn-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+        <i class="fa fa-cogs"></i><span>{{ __('Setting') }}</span>
+    </a>
+    @endif
+</div>
 
 <!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>

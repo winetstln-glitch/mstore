@@ -35,12 +35,29 @@
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
                 <div class="col-auto">
+                    <label for="category" class="col-form-label">{{ __('Category') }}</label>
+                </div>
+                <div class="col-auto">
+                    @php($opts = isset($categories) ? $categories : ['ATK','JASA POTOCOPY','JASA TRANSFER BANK'])
+                    <select id="category" name="category" class="form-select">
+                        <option value="">{{ __('All') }}</option>
+                        @foreach($opts as $opt)
+                            <option value="{{ $opt }}" {{ request('category')===$opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
                     <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
                     <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary">{{ __('Reset') }}</a>
                 </div>
             </form>
         </div>
         <div class="card-body">
+            <div class="mb-3">
+                <span class="badge bg-success">
+                    {{ __('Total Pendapatan') }}: Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}
+                </span>
+            </div>
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>

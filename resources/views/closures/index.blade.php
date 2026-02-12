@@ -9,32 +9,44 @@
             <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Closure Management') }}</h5>
                 
-                <div class="d-flex gap-2">
-                    <form action="{{ route('closures.index') }}" method="GET" class="d-flex gap-2">
-                        <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
-                            <option value="">{{ __('All Regions') }}</option>
-                            @foreach($regions as $region)
-                                <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
-                                    {{ $region->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <select name="odc_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
-                            <option value="">{{ __('All ODCs') }}</option>
-                            @foreach($odcs as $odc)
-                                <option value="{{ $odc->id }}" {{ request('odc_id') == $odc->id ? 'selected' : '' }}>
-                                    {{ $odc->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <div class="toolbar-scroll">
+                    <form action="{{ route('closures.index') }}" method="GET" class="w-100">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-auto">
+                                <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
+                                    <option value="">{{ __('All Regions') }}</option>
+                                    @foreach($regions as $region)
+                                        <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                            {{ $region->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <select name="odc_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
+                                    <option value="">{{ __('All ODCs') }}</option>
+                                    @foreach($odcs as $odc)
+                                        <option value="{{ $odc->id }}" {{ request('odc_id') == $odc->id ? 'selected' : '' }}>
+                                            {{ $odc->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-1">
+                            <div class="col-8 col-md-auto">
+                                <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                            </div>
+                            <div class="col-4 col-md-auto">
+                                <button type="submit" class="btn btn-secondary btn-sm w-100" data-bs-toggle="tooltip" title="{{ __('Search') }}"><i class="fa-solid fa-magnifying-glass"></i> <span class="d-none d-sm-inline ms-1">{{ __('Search') }}</span></button>
+                            </div>
+                        </div>
                     </form>
 
-                    <div>
+                    <div class="mt-2">
                         @if(Auth::user()->hasPermission('closure.create'))
-                        <a href="{{ route('closures.create') }}" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-plus me-1"></i> {{ __('Add') }}
+                        <a href="{{ route('closures.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add') }}">
+                            <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add') }}</span>
                         </a>
                         @endif
                     </div>

@@ -12,17 +12,9 @@
                     <div class="text-muted">{{ now()->format('l, d F Y') }}</div>
                 </div>
 
-                @if(!Auth::user()->avatar)
-                    <div class="alert alert-danger text-center mb-4">
-                        <i class="fa-solid fa-triangle-exclamation fs-1 mb-2"></i>
-                        <h5 class="fw-bold">{{ __('Profile Photo Required') }}</h5>
-                        <p>{{ __('You must set your profile photo before you can mark attendance.') }}</p>
-                        <a href="{{ route('profile.edit') }}" class="btn btn-outline-danger">{{ __('Go to Profile') }}</a>
-                    </div>
-                @else
-                    <div id="face-model-status" class="alert alert-info text-center mb-4" style="display: none;">
-                        <i class="fa-solid fa-spinner fa-spin me-2"></i> {{ __('Loading Face Recognition Models...') }}
-                    </div>
+                <div id="face-model-status" class="alert alert-info text-center mb-4" style="display: none;">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> {{ __('Loading Face Recognition Models...') }}
+                </div>
 
                     <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
                     <i class="fa-solid fa-info-circle fs-4 me-3"></i>
@@ -56,8 +48,7 @@
                         <small class="text-muted">{{ __('See you tomorrow!') }}</small>
                     </div>
 
-                @elseif(Auth::user()->avatar)
-                    @if($todayAttendance && !$todayAttendance->clock_out)
+                @elseif($todayAttendance && !$todayAttendance->clock_out)
                         <!-- Clock Out Form -->
                         <form action="{{ route('attendance.update', $todayAttendance->id) }}" method="POST" enctype="multipart/form-data" id="attendanceForm">
                             @csrf
@@ -84,7 +75,7 @@
                             </button>
                         </form>
 
-                    @else
+                @else
                         <!-- Clock In Form -->
                         <form action="{{ route('attendance.store') }}" method="POST" enctype="multipart/form-data" id="attendanceForm">
                             @csrf
@@ -105,8 +96,6 @@
                                 <i class="fa-solid fa-sign-in-alt me-2"></i> {{ __('CLOCK IN') }}
                             </button>
                         </form>
-                    @endif
-                @endif
                 @endif
             </div>
         </div>
@@ -176,7 +165,7 @@
 
     if (hasAvatar && faceVerificationEnabled) {
         loadModels();
-    } else if (!faceVerificationEnabled) {
+    } else {
         // If verification disabled, ensure inputs are enabled
         document.querySelectorAll('input[name="photo"]').forEach(input => input.disabled = false);
     }

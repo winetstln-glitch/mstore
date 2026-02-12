@@ -9,8 +9,8 @@
             <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('HTB Management') }}</h5>
                 @can('htb.create')
-                <a href="{{ route('htbs.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Add HTB') }}
+                <a href="{{ route('htbs.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add HTB') }}">
+                    <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add HTB') }}</span>
                 </a>
                 @endcan
             </div>
@@ -73,21 +73,21 @@
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
                                             @can('htb.view')
-                                            <a href="{{ route('htbs.show', $htb) }}" class="btn btn-sm btn-outline-info" title="{{ __('View') }}">
-                                                <i class="fa-solid fa-eye"></i>
+                                            <a href="{{ route('htbs.show', $htb) }}" class="btn btn-sm btn-outline-info" title="{{ __('View') }}" data-bs-toggle="tooltip">
+                                                <i class="fa-solid fa-eye"></i> <span class="d-none d-sm-inline ms-1">{{ __('View') }}</span>
                                             </a>
                                             @endcan
                                             @can('htb.edit')
-                                            <a href="{{ route('htbs.edit', $htb) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
-                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            <a href="{{ route('htbs.edit', $htb) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}" data-bs-toggle="tooltip">
+                                                <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">{{ __('Edit') }}</span>
                                             </a>
                                             @endcan
                                             @can('htb.delete')
                                             <form action="{{ route('htbs.destroy', $htb) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this HTB?') }}');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
-                                                    <i class="fa-solid fa-trash"></i>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}" data-bs-toggle="tooltip">
+                                                    <i class="fa-solid fa-trash"></i> <span class="d-none d-sm-inline ms-1">{{ __('Delete') }}</span>
                                                 </button>
                                             </form>
                                             @endcan

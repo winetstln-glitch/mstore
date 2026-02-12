@@ -5,13 +5,26 @@
 @section('content')
 <div class="container-fluid">
     <div class="row h-100">
-        <!-- Product List -->
+        <!-- Product & Service List -->
         <div class="col-md-8">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white py-3">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
                         <input type="text" id="productSearch" class="form-control border-start-0 ps-0" placeholder="Search products by name or code...">
+                    </div>
+                    <div class="mt-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" id="tabProducts" onclick="switchTab('products')">
+                                <i class="fa-solid fa-box"></i> Produk
+                            </button>
+                            <button class="btn btn-outline-secondary" id="tabServices" onclick="switchTab('services')">
+                                <i class="fa-solid fa-print"></i> Jasa Potocopy
+                            </button>
+                            <button class="btn btn-outline-success" id="tabBank" onclick="switchTab('bank')">
+                                <i class="fa-solid fa-building-columns"></i> Agen Bank
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body overflow-auto" style="max-height: 75vh;">
@@ -34,6 +47,62 @@
                             </div>
                         </div>
                         @endforeach
+                    </div>
+                    <div class="row g-3 d-none" id="serviceList">
+                        @foreach(($services ?? []) as $service)
+                        <div class="col-md-3 col-sm-4 col-6 service-item" data-name="{{ strtolower($service->name) }}" data-code="{{ strtolower($service->code) }}">
+                            <div class="card h-100 product-card cursor-pointer" onclick="addToCart({{ $service->id }}, '{{ addslashes($service->name) }}', {{ $service->price }}, 999999)">
+                                <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
+                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
+                                        @if($service->image)
+                                            <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
+                                        @else
+                                            <i class="fas fa-print fa-2x text-muted"></i>
+                                        @endif
+                                    </div>
+                                    <h6 class="card-title mb-1 text-truncate" title="{{ $service->name }}">{{ $service->name }}</h6>
+                                    <p class="card-text text-primary fw-bold mb-0">Rp {{ number_format($service->price, 0, ',', '.') }}</p>
+                                    <small class="text-muted">Jasa</small>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                        @if(empty($services) || count($services)===0)
+                            <div class="text-center py-5">
+                                <p class="text-muted">Belum ada jasa. <a href="{{ route('atk.products.create') }}">Tambah Jasa</a></p>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="d-none" id="bankPanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis Layanan</label>
+                                <select id="bankServiceId" class="form-select">
+                                    @foreach(($bankServices ?? []) as $bs)
+                                        <option value="{{ $bs->id }}">{{ $bs->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal Transfer</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="bankNominal" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="bankFee" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-success w-100" onclick="addBankToCart()">
+                                    <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     @if($products->isEmpty())
                         <div class="text-center py-5">
@@ -103,16 +172,57 @@
 
     document.getElementById('productSearch').addEventListener('input', function(e) {
         const search = e.target.value.toLowerCase();
-        document.querySelectorAll('.product-item').forEach(item => {
+        const activeList = document.getElementById('serviceList').classList.contains('d-none') ? '.product-item' : '.service-item';
+        document.querySelectorAll(activeList).forEach(item => {
             const name = item.dataset.name;
             const code = item.dataset.code;
-            if (name.includes(search) || code.includes(search)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = (name.includes(search) || code.includes(search)) ? 'block' : 'none';
         });
     });
+
+    function switchTab(tab) {
+        const pList = document.getElementById('productList');
+        const sList = document.getElementById('serviceList');
+        const bPanel = document.getElementById('bankPanel');
+        const tabP = document.getElementById('tabProducts');
+        const tabS = document.getElementById('tabServices');
+        const tabB = document.getElementById('tabBank');
+        if (tab === 'products') {
+            pList.classList.remove('d-none');
+            sList.classList.add('d-none');
+            bPanel.classList.add('d-none');
+            tabP.classList.add('active');
+            tabS.classList.remove('active');
+            tabB.classList.remove('active');
+        } else {
+            if (tab === 'services') {
+                pList.classList.add('d-none');
+                sList.classList.remove('d-none');
+                bPanel.classList.add('d-none');
+                tabS.classList.add('active');
+                tabP.classList.remove('active');
+                tabB.classList.remove('active');
+            } else {
+                pList.classList.add('d-none');
+                sList.classList.add('d-none');
+                bPanel.classList.remove('d-none');
+                tabB.classList.add('active');
+                tabP.classList.remove('active');
+                tabS.classList.remove('active');
+            }
+        }
+        document.getElementById('productSearch').dispatchEvent(new Event('input'));
+    }
+
+    function addBankToCart() {
+        const id = parseInt(document.getElementById('bankServiceId').value);
+        const nominal = parseFloat(document.getElementById('bankNominal').value) || 0;
+        const fee = parseFloat(document.getElementById('bankFee').value) || 0;
+        const name = (document.getElementById('bankServiceId').selectedOptions[0]?.text) || 'Agen Bank';
+        if (nominal <= 0 && fee <= 0) return;
+        cart.push({ id, name, price: fee, quantity: 1, maxStock: 1, bank: true, nominal_transaksi: nominal, fee });
+        renderCart();
+    }
 
     function addToCart(id, name, price, maxStock) {
         const existingItem = cart.find(item => item.id === id);
@@ -166,8 +276,8 @@
             btnCheckout.disabled = false;
 
             cart.forEach(item => {
-                const subtotal = item.price * item.quantity;
-                total += subtotal;
+                const subtotal = item.bank ? item.fee : (item.price * item.quantity);
+                total += item.bank ? (item.nominal_transaksi + item.fee) : subtotal;
                 count += item.quantity;
 
                 const li = document.createElement('li');
@@ -175,13 +285,19 @@
                 li.innerHTML = `
                     <div class="flex-grow-1">
                         <div class="fw-bold text-truncate" style="max-width: 150px;">${item.name}</div>
-                        <div class="text-muted small">Rp ${new Intl.NumberFormat('id-ID').format(item.price)} x ${item.quantity}</div>
+                        <div class="text-muted small">${
+                            item.bank 
+                            ? ('Nominal: Rp ' + new Intl.NumberFormat('id-ID').format(item.nominal_transaksi) + ' | Fee: Rp ' + new Intl.NumberFormat('id-ID').format(item.fee))
+                            : ('Rp ' + new Intl.NumberFormat('id-ID').format(item.price) + ' x ' + item.quantity)
+                        }</div>
                     </div>
                     <div class="d-flex align-items-center">
                          <div class="btn-group btn-group-sm me-2">
-                            <button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
-                            <button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+                            ${ item.bank 
+                                ? '<button class="btn btn-outline-secondary" disabled>1</button>' 
+                                : `<button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                   <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
+                                   <button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>` }
                          </div>
                          <span class="fw-bold me-2">Rp ${new Intl.NumberFormat('id-ID').format(subtotal)}</span>
                          <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
@@ -223,7 +339,9 @@
         const paymentMethod = document.getElementById('paymentMethod').value;
         const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
         let total = 0;
-        cart.forEach(item => total += item.price * item.quantity);
+        cart.forEach(item => {
+            total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
+        });
 
         if (paymentMethod === 'cash' && cashAmount < total) {
             alert('Insufficient cash amount!');
@@ -231,7 +349,7 @@
         }
 
         const data = {
-            items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+            items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
             payment_method: paymentMethod,
             cash_amount: cashAmount
         };

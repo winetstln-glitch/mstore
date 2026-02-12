@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Cash;
+use App\Models\AgentDeposit;
 
 class AtkTransactionController extends Controller
 {
@@ -35,8 +37,10 @@ class AtkTransactionController extends Controller
 
     public function pos()
     {
-        $products = AtkProduct::where('stock', '>', 0)->get();
-        return view('atk.pos', compact('products'));
+        $products = AtkProduct::where('category', 'ATK')->where('stock', '>', 0)->get();
+        $services = AtkProduct::where('category', 'JASA POTOCOPY')->get();
+        $bankServices = AtkProduct::where('category', 'JASA TRANSFER BANK')->get();
+        return view('atk.pos', compact('products', 'services', 'bankServices'));
     }
 
     public function store(Request $request)
@@ -45,6 +49,8 @@ class AtkTransactionController extends Controller
             'items' => 'required|array',
             'items.*.id' => 'required|exists:atk_products,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.nominal_transaksi' => 'nullable|numeric|min:0',
+            'items.*.fee' => 'nullable|numeric|min:0',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
         ]);
@@ -55,18 +61,34 @@ class AtkTransactionController extends Controller
             $total = 0;
             $items = [];
 
+            $sumBankNominal = 0;
             foreach ($request->items as $itemData) {
                 $product = AtkProduct::lockForUpdate()->find($itemData['id']);
                 
-                if ($product->stock < $itemData['quantity']) {
-                    throw new \Exception("Stock for {$product->name} is insufficient.");
+                $isService = strtoupper($product->category ?? '') === 'JASA POTOCOPY';
+                $isBank = strtoupper($product->category ?? '') === 'JASA TRANSFER BANK';
+                if (!$isService) {
+                    if ($product->stock < $itemData['quantity']) {
+                        throw new \Exception("Stock for {$product->name} is insufficient.");
+                    }
                 }
 
-                $price = $product->price; // Or calculate tiered price
-                $subtotal = $price * $itemData['quantity'];
-                $total += $subtotal;
+                if ($isBank) {
+                    $nominal = (float)($itemData['nominal_transaksi'] ?? 0);
+                    $fee = (float)($itemData['fee'] ?? 0);
+                    $sumBankNominal += $nominal;
+                    $subtotal = $fee;
+                    $total += ($nominal + $fee);
+                    $price = $fee;
+                } else {
+                    $price = $product->price;
+                    $subtotal = $price * $itemData['quantity'];
+                    $total += $subtotal;
+                }
 
-                $product->decrement('stock', $itemData['quantity']);
+                if (!$isService) {
+                    $product->decrement('stock', $itemData['quantity']);
+                }
 
                 $items[] = [
                     'product_id' => $product->id,
@@ -75,6 +97,8 @@ class AtkTransactionController extends Controller
                     'price' => $price,
                     'quantity' => $itemData['quantity'],
                     'subtotal' => $subtotal,
+                    'nominal_transaksi' => $isBank ? $nominal : null,
+                    'fee' => $isBank ? $fee : null,
                 ];
             }
 
@@ -90,6 +114,18 @@ class AtkTransactionController extends Controller
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
+            }
+
+            // Update default cash balance (Kas Utama)
+            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+            $cash->balance = (float)$cash->balance + (float)$total;
+            $cash->save();
+
+            // Reduce Agent Deposit by nominal transfer sum
+            if ($sumBankNominal > 0) {
+                $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);
+                $deposit->balance = (float)$deposit->balance - (float)$sumBankNominal;
+                $deposit->save();
             }
 
             DB::commit();
@@ -108,6 +144,7 @@ class AtkTransactionController extends Controller
 
     public function index(Request $request)
     {
+        $categories = ['ATK', 'JASA POTOCOPY', 'JASA TRANSFER BANK'];
         $query = AtkTransaction::with('user');
 
         if ($request->start_date && $request->end_date) {
@@ -117,8 +154,30 @@ class AtkTransactionController extends Controller
             ]);
         }
 
-        $transactions = $query->latest()->paginate(10);
-        return view('atk.transactions.index', compact('transactions'));
+        if ($request->filled('category')) {
+            $query->whereHas('items.product', function($q) use ($request) {
+                $q->where('category', $request->get('category'));
+            });
+        }
+
+        $transactions = $query->latest()->paginate(10)->appends($request->query());
+
+        // Total revenue for current filter
+        $sumQuery = AtkTransaction::query();
+        if ($request->start_date && $request->end_date) {
+            $sumQuery->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+        if ($request->filled('category')) {
+            $sumQuery->whereHas('items.product', function($q) use ($request) {
+                $q->where('category', $request->get('category'));
+            });
+        }
+        $totalRevenue = $sumQuery->sum('total_amount');
+
+        return view('atk.transactions.index', compact('transactions', 'categories', 'totalRevenue'));
     }
 
     public function show(AtkTransaction $transaction)
@@ -144,6 +203,12 @@ class AtkTransactionController extends Controller
             ]);
         }
 
+        if ($request->filled('category')) {
+            $query->whereHas('items.product', function($q) use ($request) {
+                $q->where('category', $request->get('category'));
+            });
+        }
+
         $transactions = $query->latest()->get();
         $pdf = Pdf::loadView('atk.transactions.pdf', compact('transactions'));
         return $pdf->download('atk_transactions.pdf');
@@ -158,6 +223,12 @@ class AtkTransactionController extends Controller
                 $request->start_date . ' 00:00:00',
                 $request->end_date . ' 23:59:59'
             ]);
+        }
+
+        if ($request->filled('category')) {
+            $query->whereHas('items.product', function($q) use ($request) {
+                $q->where('category', $request->get('category'));
+            });
         }
 
         $transactions = $query->latest()->get();

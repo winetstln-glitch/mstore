@@ -24,6 +24,36 @@ body {
     color: #3f4d67;
     overflow-x: hidden;
 }
+html, body { height: 100%; }
+body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+.toolbar-scroll {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: visible;
+    white-space: normal;
+    padding-bottom: 6px;
+}
+.toolbar-scroll .btn,
+.toolbar-scroll form,
+.toolbar-scroll .form-control,
+.toolbar-scroll .form-select {
+    flex: 0 0 auto;
+}
+@media (max-width: 576px) {
+    .toolbar-scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+    }
+    .card .card-body { padding: .75rem; }
+    .main-header { padding: .5rem .75rem; }
+    .container-fluid .row > [class*="col-"] { margin-bottom: .75rem; }
+}
+
+.mobile-btns .btn { padding: 2px 6px; font-size: 16px; }
+.btn-compact { padding: 2px 6px; font-size: 16px; }
 
 /* Sidebar - Adminty Style (Dark by default) */
 #sidebar-wrapper {
@@ -480,4 +510,52 @@ body.sb-sidenav-toggled #page-content-wrapper {
 }
 [data-bs-theme="dark"] .leaflet-bar a:hover {
     background-color: #2d3748;
+}
+
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    display: none;
+    z-index: 1050;
+}
+.mobile-bottom-nav .mbn-item {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    color: #6e6b7b;
+    text-decoration: none;
+}
+.mobile-bottom-nav .mbn-item i {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+.mobile-bottom-nav .mbn-item.active {
+    color: var(--primary-color);
+}
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex;
+    }
+    #page-content-wrapper {
+        padding-bottom: 70px;
+    }
+}
+[data-bs-theme="dark"] .mobile-bottom-nav {
+    background: #1e293b;
+    border-top-color: #2d3748;
+}
+[data-bs-theme="dark"] .mobile-bottom-nav .mbn-item {
+    color: #b4b7bd;
+}
+[data-bs-theme="dark"] .mobile-bottom-nav .mbn-item.active {
+    color: #7367F0;
 }

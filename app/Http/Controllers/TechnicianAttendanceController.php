@@ -459,7 +459,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
-        $faceVerificationEnabled = Setting::getValue('attendance_face_verification', '0');
+        // Force disable face verification per user request to simplify attendance
+        $faceVerificationEnabled = '0';
 
         return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled'));
     }

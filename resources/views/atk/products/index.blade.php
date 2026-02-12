@@ -30,10 +30,23 @@
                 <form action="{{ route('atk.products.import') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+                        <div class="alert alert-info">
+                            <div class="fw-bold mb-1">{{ __('Panduan Import') }}</div>
+                            <ul class="mb-2">
+                                <li>{{ __('Gunakan file format .xlsx (bukan .xls)') }}</li>
+                                <li>{{ __('Minimal kolom Nama Produk; kolom lain opsional') }}</li>
+                                <li>{{ __('Jika Code kosong, sistem akan membuat otomatis') }}</li>
+                                <li>{{ __('Urutan kolom yang didukung: Code, Name, Category, Price, Cost Price, Stock, Unit, Description') }}</li>
+                                <li>{{ __('Price/Cost Price angka; Stock bilangan bulat; Unit default pcs') }}</li>
+                            </ul>
+                            <a href="{{ route('atk.products.export') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fa-solid fa-file-export me-1"></i> {{ __('Unduh Template (Export)') }}
+                            </a>
+                        </div>
                         <div class="mb-3">
                             <label for="file" class="form-label">{{ __('Choose Excel File') }}</label>
-                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx, .xls" required>
-                            <small class="text-muted">Format: Code, Name, Category, Price, Cost Price, Stock, Unit, Description</small>
+                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx" required>
+                            <small class="text-muted">{{ __('Hanya menerima .xlsx') }}</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -47,6 +60,22 @@
 
     <div class="card shadow mb-4">
         <div class="card-body">
+            <form method="GET" action="{{ route('atk.products.index') }}" class="row g-2 mb-3">
+                <div class="col-sm-12 col-md-4">
+                    <select name="category" class="form-select">
+                        <option value="">{{ __('Semua Kategori') }}</option>
+                        @php($opts = isset($categories) ? $categories : ['ATK','JASA POTOCOPY','JASA TRANSFER BANK'])
+                        @foreach($opts as $opt)
+                            <option value="{{ $opt }}" {{ request('category')===$opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-sm-12 col-md-2">
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="fa-solid fa-filter me-1"></i> {{ __('Filter') }}
+                    </button>
+                </div>
+            </form>
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>

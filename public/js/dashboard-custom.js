@@ -81,4 +81,33 @@ document.addEventListener('DOMContentLoaded', function() {
             body.classList.remove('sb-sidenav-toggled');
         });
     }
+    if (window.bootstrap && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
+    }
 });
+
+;(function(){
+    const ua = navigator.userAgent || '';
+    const isWV = /\bwv\b|Android.*; wv/.test(ua) || !!window.ReactNativeWebView;
+    function onLinkClick(e){
+        const a = e.target.closest('a');
+        if(!a) return;
+        const href = a.getAttribute('href');
+        if(!href) return;
+        if(href.startsWith('#') || href.startsWith('javascript:')) return;
+        if(isWV){
+            e.preventDefault();
+            window.location.assign(href);
+        }
+    }
+    document.addEventListener('click', onLinkClick);
+    const origOpen = window.open;
+    window.open = function(url){
+        if(isWV){
+            window.location.assign(url);
+            return null;
+        }
+        return origOpen.apply(window, arguments);
+    };
+})();

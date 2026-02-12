@@ -4,47 +4,57 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-warning">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Installation Management') }}</h5>
-                <a href="{{ route('installations.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Add Installation') }}
-                </a>
+            <div class="card-header py-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Installation Management') }}</h5>
+                    <div class="toolbar-scroll">
+                        <a href="{{ route('installations.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add Installation') }}">
+                            <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add Installation') }}</span>
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="card-body">
                 <!-- Search and Filter -->
-                <form method="GET" action="{{ route('installations.index') }}" class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <span class="input-group-text bg-body-secondary border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
-                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search customer...') }}">
+                <form method="GET" action="{{ route('installations.index') }}" class="w-100 mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="">{{ __('All Statuses') }}</option>
+                                @foreach(['registered', 'survey', 'approved', 'installation', 'completed', 'cancelled'] as $status)
+                                    <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
+                                        {{ __(ucfirst($status)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select name="technician_id" class="form-select">
+                                <option value="">{{ __('All Technicians') }}</option>
+                                @foreach($technicians as $tech)
+                                    <option value="{{ $tech->id }}" {{ request('technician_id') == $tech->id ? 'selected' : '' }}>
+                                        {{ $tech->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <select name="status" class="form-select">
-                            <option value="">{{ __('All Statuses') }}</option>
-                            @foreach(['registered', 'survey', 'approved', 'installation', 'completed', 'cancelled'] as $status)
-                                <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
-                                    {{ __(ucfirst($status)) }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="row g-3 mt-1">
+                        <div class="col-12 col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-body-secondary border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
+                                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search customer...') }}">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <input type="date" name="date" value="{{ request('date') }}" class="form-control">
+                        </div>
                     </div>
-                    <div class="col-md-3">
-                        <select name="technician_id" class="form-select">
-                            <option value="">{{ __('All Technicians') }}</option>
-                            @foreach($technicians as $tech)
-                                <option value="{{ $tech->id }}" {{ request('technician_id') == $tech->id ? 'selected' : '' }}>
-                                    {{ $tech->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <input type="date" name="date" value="{{ request('date') }}" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-dark w-100">{{ __('Filter') }}</button>
+                    <div class="row g-3 mt-2">
+                        <div class="col-12 col-md-2">
+                            <button type="submit" class="btn btn-dark w-100">{{ __('Filter') }}</button>
+                        </div>
                     </div>
                 </form>
 

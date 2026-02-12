@@ -8,27 +8,37 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODC Management') }}</h5>
-                <form action="{{ route('odcs.index') }}" method="GET" class="d-flex gap-2">
-                    <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
-                        <option value="">{{ __('All Regions') }}</option>
-                        @foreach($regions as $region)
-                            <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
-                                {{ $region->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
-                    <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <form action="{{ route('odcs.index') }}" method="GET" class="toolbar-scroll w-100">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-auto">
+                            <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
+                                <option value="">{{ __('All Regions') }}</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                        {{ $region->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-8 col-md-auto">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                        </div>
+                        <div class="col-4 col-md-auto">
+                            <button type="submit" class="btn btn-secondary btn-sm w-100" data-bs-toggle="tooltip" title="{{ __('Search') }}"><i class="fa-solid fa-magnifying-glass"></i> <span class="d-none d-sm-inline ms-1">{{ __('Search') }}</span></button>
+                        </div>
+                    </div>
                 </form>
-                <div>
+                <div class="mt-2">
                     @if(Auth::user()->hasPermission('odc.view'))
-                    <a href="{{ route('odcs.export.excel') }}" class="btn btn-success btn-sm">
-                        <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
+                    <a href="{{ route('odcs.export.excel') }}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="{{ __('Export Excel') }}">
+                        <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Excel') }}</span>
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('odc.create'))
-                    <a href="{{ route('odcs.create') }}" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-plus me-1"></i> {{ __('Add ODC') }}
+                    <a href="{{ route('odcs.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add ODC') }}">
+                        <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add ODC') }}</span>
                     </a>
                     @endif
                 </div>

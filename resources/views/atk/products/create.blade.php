@@ -18,7 +18,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ __('Product Code') }}</label>
-                        <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" value="{{ old('code') }}" required>
+                        <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" value="{{ old('code') }}">
                         @error('code') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6 mb-3">
@@ -28,7 +28,13 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ __('Category') }}</label>
-                        <input type="text" name="category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category') }}">
+                        <select name="category" class="form-select @error('category') is-invalid @enderror">
+                            <option value="">{{ __('Pilih Kategori (opsional)') }}</option>
+                            @php($opts = ['ATK','JASA POTOCOPY','JASA TRANSFER BANK'])
+                            @foreach($opts as $opt)
+                                <option value="{{ $opt }}" {{ old('category')===$opt ? 'selected' : '' }}>{{ $opt }}</option>
+                            @endforeach
+                        </select>
                         @error('category') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6 mb-3">
@@ -38,17 +44,17 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ __('Cost Price (HPP)') }}</label>
-                        <input type="number" name="cost_price" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price') }}" required min="0">
+                        <input type="number" name="cost_price" class="form-control @error('cost_price') is-invalid @enderror" value="{{ old('cost_price') }}" min="0">
                         @error('cost_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ __('Selling Price') }}</label>
-                        <input type="number" name="price" class="form-control @error('price') is-invalid @enderror" value="{{ old('price') }}" required min="0">
+                        <input type="number" name="price" class="form-control @error('price') is-invalid @enderror" value="{{ old('price') }}" min="0">
                         @error('price') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ __('Initial Stock') }}</label>
-                        <input type="number" name="stock" class="form-control @error('stock') is-invalid @enderror" value="{{ old('stock', 0) }}" required min="0">
+                        <input type="number" name="stock" class="form-control @error('stock') is-invalid @enderror" value="{{ old('stock', 0) }}" min="0">
                         @error('stock') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-12 mb-3">

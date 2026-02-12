@@ -25,7 +25,7 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
                     <h5 class="mb-0 fw-bold text-primary">{{ __('Customer Management') }}</h5>
                     
-                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center mobile-btns">
                         @can('customer.delete')
                         <button type="button" class="btn btn-danger btn-sm w-100 w-md-auto d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
                             <i class="fa-solid fa-trash me-1"></i> <span class="d-none d-sm-inline">{{ __('Delete Selected') }}</span> (<span id="selectedCount">0</span>)
@@ -55,7 +55,7 @@
                                 <i class="fa-solid fa-cloud-arrow-down me-1"></i> <span class="d-none d-sm-inline">{{ __('Genie') }}</span>
                             </a>
                             
-                            <a href="{{ route('customers.create') }}" class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0" title="{{ __('Add Customer') }}">
+                            <a href="{{ route('customers.create') }}" class="btn btn-primary btn-sm flex-grow-0" title="{{ __('Add Customer') }}">
                                 <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Customer') }}</span>
                             </a>
                         @endcan

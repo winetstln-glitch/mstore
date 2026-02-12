@@ -5,11 +5,11 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <div class="card shadow-sm border-0 border-top border-4 border-info">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
+        <div class="card shadow-sm border-0">
+            <div class="card-header py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
                     <h5 class="mb-0 fw-bold">{{ __('Network Monitor (GenieACS)') }}</h5>
-                    <div class="mt-2">
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
                         @if(isset($modeAll) && $modeAll)
                             <span class="badge bg-info-subtle text-info border border-info-subtle">
                                 <i class="fa-solid fa-circle-nodes fa-xs me-1"></i> {{ __('Connected to: All Servers') }}
@@ -27,71 +27,70 @@
                             {{ __('Manage Servers') }}
                         </a>
                     </div>
-                </div>
+                
             </div>
 
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div class="mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <h6 class="fw-bold mb-0">{{ __('Perangkat Terhubung (TR-069)') }}</h6>
                         <span class="badge bg-primary rounded-pill">{{ $totalDevices ?? count($devices) }} {{ __('Total') }}</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                </div>
+                <form class="row g-2 g-md-3 mb-4">
+                    @php
+                        $currentPerPage = request('per_page', $perPage ?? 50);
+                        $selectedServerId = $currentServerId ?? request('server_id');
+                    @endphp
+                    <div class="col-12 col-md-3">
                         @if(isset($servers) && $servers->count())
-                            @php
-                                $selectedServerId = $currentServerId ?? request('server_id');
-                            @endphp
-                            <div class="d-flex align-items-center gap-1">
-                                <span class="small text-muted">{{ __('Server') }}</span>
-                                <select id="serverSelect" class="form-select form-select-sm" style="width: auto;">
-                                    <option value="all" {{ $selectedServerId === 'all' ? 'selected' : '' }}>{{ __('All Servers') }}</option>
-                                    @foreach($servers as $server)
-                                        <option value="{{ $server->id }}" {{ (string) $selectedServerId === (string) $server->id ? 'selected' : '' }}>
-                                            {{ $server->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                        <select id="serverSelect" class="form-select form-select-sm">
+                            <option value="all" {{ $selectedServerId === 'all' ? 'selected' : '' }}>{{ __('All Servers') }}</option>
+                            @foreach($servers as $server)
+                                <option value="{{ $server->id }}" {{ (string) $selectedServerId === (string) $server->id ? 'selected' : '' }}>
+                                    {{ $server->name }}
+                                </option>
+                            @endforeach
+                        </select>
                         @endif
-                        <div class="input-group input-group-sm" style="max-width: 260px;">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="input-group input-group-sm">
                             <span class="input-group-text bg-body-secondary border-end-0">
                                 <i class="fa-solid fa-search text-body-secondary"></i>
                             </span>
-                            <input type="text"
-                                   id="deviceSearch"
-                                   class="form-control border-start-0 ps-1"
-                                   placeholder="{{ __('Search ID, SN, PPPoE, IP...') }}">
+                            <input type="text" id="deviceSearch" class="form-control border-start-0 ps-1" placeholder="{{ __('Search ID, SN, PPPoE, IP...') }}">
                         </div>
-                        @php
-                            $currentPerPage = request('per_page', $perPage ?? 50);
-                        @endphp
-                        <div class="d-flex align-items-center gap-1">
-                            <span class="small text-muted">{{ __('Per page') }}</span>
-                            <select id="perPageSelect" class="form-select form-select-sm" style="width: auto;">
-                                <option value="20" {{ (string)$currentPerPage === '20' ? 'selected' : '' }}>20</option>
-                                <option value="50" {{ (string)$currentPerPage === '50' ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ (string)$currentPerPage === '100' ? 'selected' : '' }}>100</option>
-                                <option value="all" {{ (string)$currentPerPage === 'all' ? 'selected' : '' }}>All</option>
-                            </select>
-                        </div>
-                        <div class="btn-group btn-group-sm me-2" role="group">
-                            <button type="button" class="btn btn-outline-secondary active" id="btnViewList" title="{{ __('List View') }}">
-                                <i class="fa-solid fa-list"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="btnViewGrid" title="{{ __('Grid View') }}">
-                                <i class="fa-solid fa-grip"></i>
-                            </button>
-                        </div>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshButton">
-                            <i class="fa-solid fa-rotate-right me-1"></i> {{ __('Refresh') }}
-                        </button>
                     </div>
-                </div>
+                    <div class="col-6 col-md-2">
+                        <select id="perPageSelect" class="form-select form-select-sm">
+                            <option value="20" {{ (string)$currentPerPage === '20' ? 'selected' : '' }}>20</option>
+                            <option value="50" {{ (string)$currentPerPage === '50' ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ (string)$currentPerPage === '100' ? 'selected' : '' }}>100</option>
+                            <option value="all" {{ (string)$currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 mobile-btns">
+                        <div class="d-flex gap-2">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-compact active" id="btnViewList" title="{{ __('List View') }}">
+                                    <i class="fa-solid fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-compact" id="btnViewGrid" title="{{ __('Grid View') }}">
+                                    <i class="fa-solid fa-grip"></i>
+                                </button>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-compact" id="refreshButton">
+                                <i class="fa-solid fa-rotate-right"></i> <span class="d-none d-sm-inline ms-1">{{ __('Refresh') }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
 
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive" id="listViewContainer">
-                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable">
+                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable" style="min-width: 900px;">
                         <thead class="table-light text-nowrap">
                             <tr>
                                 <th scope="col" class="text-center" width="1%">{{ __('Status') }}</th>
