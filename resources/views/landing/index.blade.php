@@ -104,16 +104,17 @@
                         <a href="#packages" class="btn btn-primary">
                             <i class="fas fa-wifi"></i> &nbsp; Paket Internet
                         </a>
-                        <a href="#atk-promo" class="btn btn-outline-primary">
+                        <a href="#atk-promo" class="btn btn-primary">
                             <i class="fas fa-shopping-bag"></i>&nbsp; Belanja ATK
                         </a>
-                        <a href="https://cctv.mstore.id/" target="_blank" rel="noopener" class="btn btn-outline-success">
+                        <a href="https://cctv.mstore.id/" target="_blank" rel="noopener" class="btn btn-primary">
                             <i class="fas fa-video"></i>&nbsp; Monitoring CCTV Online
                         </a>
                     </div>
                 </div>
                 <div class="col-lg-6 hero-img fade-up">
-                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" alt="Fiber Optic Network">
+                    <img src="{{ asset('img/cctv-monitor.png') }}" class="img-fluid" alt="Monitoring Center"
+                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop';">
                 </div>
             </div>
         </div>
@@ -194,27 +195,7 @@
         </div>
     </section>
     
-    <!-- Stats Section -->
-    <section class="container mb-5">
-        <div class="stats-grid fade-up">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-globe-asia"></i></div>
-                <div class="stat-number">Wide</div>
-                <div class="stat-label">Coverage</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <div class="stat-number">1000+</div>
-                <div class="stat-label">Customers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-headset"></i></div>
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">Support</div>
-            </div>
-        </div>
-    </section>
-
+   
     <!-- Products/Packages Section -->
     <section id="packages" class="section">
         <div class="container">
@@ -384,6 +365,26 @@
             </div>
         </div>
     </section>
+ <!-- Stats Section -->
+    <section class="container mb-5">
+        <div class="stats-grid fade-up">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-globe-asia"></i></div>
+                <div class="stat-number">Wide</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Customers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-headset"></i></div>
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Support</div>
+            </div>
+        </div>
+    </section>
 
     <!-- Footer -->
     <footer>
@@ -441,19 +442,7 @@
                 <i class="fa-solid fa-wifi"></i>
                 <span>Internet</span>
             </a>
-            <a href="#atk-promo" class="bottom-item">
-                <i class="fa-solid fa-bag-shopping"></i>
-                <span>ATK</span>
-            </a>
-            <a href="#wash-services" class="bottom-item">
-                <i class="fa-solid fa-car"></i>
-                <span>Wash</span>
-            </a>
-            <a href="#cctv" class="bottom-item">
-                <i class="fa-solid fa-video"></i>
-                <span>CCTV</span>
-            </a>
-            @auth
+              @auth
             <a href="{{ route('dashboard') }}" class="bottom-item">
                 <i class="fa-solid fa-gauge-high"></i>
                 <span>Dash</span>
@@ -464,6 +453,14 @@
                 <span>Masuk</span>
             </a>
             @endauth
+            <a href="#atk-promo" class="bottom-item">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span>ATK</span>
+            </a>
+            <a href="#wash-services" class="bottom-item">
+                <i class="fa-solid fa-car"></i>
+                <span>Wash</span>
+            </a>
         </div>
     </div>
 
