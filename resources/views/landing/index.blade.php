@@ -45,6 +45,7 @@
                     <a class="nav-link" href="#packages">Internet</a>
                     <a class="nav-link" href="#atk-promo">ATK Store</a>
                     <a class="nav-link" href="#wash-services">Auto Wash</a>
+                    <a class="nav-link" href="#cctv">CCTV</a>
                 </div>
                 <div class="nav-actions">
                     <div class="d-none d-lg-flex align-items-center ms-2">
@@ -70,6 +71,7 @@
                         <a class="nav-link" href="#packages">Internet</a>
                         <a class="nav-link" href="#atk-promo">ATK Store</a>
                         <a class="nav-link" href="#wash-services">Auto Wash</a>
+                        <a class="nav-link" href="#cctv">CCTV</a>
                     </div>
                 </div>
             </div>
@@ -117,6 +119,80 @@
         </div>
     </section>
 
+    <!-- CCTV Packages Section -->
+    <section id="cctv" class="section section-alt">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2 class="section-title">Paket Instalasi & Pemasangan CCTV</h2>
+                <p class="text-muted">Keamanan rumah dan bisnis dengan sistem CCTV terpercaya.</p>
+            </div>
+            <div class="scroll-container fade-up">
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Basic</div>
+                            <div class="unit">2 Kamera</div>
+                        </div>
+                        <div class="pricing-body">
+                            <div class="price">1.999.000<span class="price-period"> / paket</span></div>
+                            <h4 class="mb-3 mt-2">Rumah Kecil</h4>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> DVR 4 Channel</li>
+                                <li><i class="fas fa-check-circle"></i> Kabel & Konektor</li>
+                                <li><i class="fas fa-check-circle"></i> Pemasangan & Setting</li>
+                            </ul>
+                            <div class="d-grid gap-2">
+                                <a href="https://cctv.mstore.id/" target="_blank" class="btn btn-outline-success">Lihat Detail</a>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" target="_blank" class="btn btn-primary">Pesan via WhatsApp</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Standard</div>
+                            <div class="unit">4 Kamera</div>
+                        </div>
+                        <div class="pricing-body">
+                            <div class="price">3.899.000<span class="price-period"> / paket</span></div>
+                            <h4 class="mb-3 mt-2">Rumah & Toko</h4>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> DVR 8 Channel</li>
+                                <li><i class="fas fa-check-circle"></i> Cloud/Remote View</li>
+                                <li><i class="fas fa-check-circle"></i> Garansi 1 Tahun</li>
+                            </ul>
+                            <div class="d-grid gap-2">
+                                <a href="https://cctv.mstore.id/" target="_blank" class="btn btn-outline-success">Lihat Detail</a>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Standard" target="_blank" class="btn btn-primary">Pesan via WhatsApp</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Premium</div>
+                            <div class="unit">8 Kamera</div>
+                        </div>
+                        <div class="pricing-body">
+                            <div class="price">6.999.000<span class="price-period"> / paket</span></div>
+                            <h4 class="mb-3 mt-2">Gudang & Kantor</h4>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> NVR IP Camera</li>
+                                <li><i class="fas fa-check-circle"></i> PoE Switch</li>
+                                <li><i class="fas fa-check-circle"></i> Maintenance 6 Bulan</li>
+                            </ul>
+                            <div class="d-grid gap-2">
+                                <a href="https://cctv.mstore.id/" target="_blank" class="btn btn-outline-success">Lihat Detail</a>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Premium" target="_blank" class="btn btn-primary">Pesan via WhatsApp</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
     
     <!-- Stats Section -->
     <section class="container mb-5">
@@ -373,6 +449,10 @@
                 <i class="fa-solid fa-car"></i>
                 <span>Wash</span>
             </a>
+            <a href="#cctv" class="bottom-item">
+                <i class="fa-solid fa-video"></i>
+                <span>CCTV</span>
+            </a>
             @auth
             <a href="{{ route('dashboard') }}" class="bottom-item">
                 <i class="fa-solid fa-gauge-high"></i>
@@ -392,32 +472,37 @@
     
     <script>
         // --- Theme Toggle Logic ---
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = themeToggle.querySelector('i');
+        const themeToggles = document.querySelectorAll('#themeToggle');
+        const themeIcons = Array.from(themeToggles).map(t => t.querySelector('i'));
         const html = document.documentElement;
 
         // Load saved theme or default to dark
         const savedTheme = localStorage.getItem('theme') || 'dark';
         applyTheme(savedTheme);
 
-        themeToggle.addEventListener('click', () => {
-            const isDark = html.getAttribute('data-bs-theme') === 'dark';
-            const next = isDark ? 'light' : 'dark';
-            applyTheme(next);
-            localStorage.setItem('theme', next);
+        themeToggles.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isDark = html.getAttribute('data-bs-theme') === 'dark';
+                const next = isDark ? 'light' : 'dark';
+                applyTheme(next);
+                localStorage.setItem('theme', next);
+            });
         });
 
         function applyTheme(theme) {
             html.setAttribute('data-bs-theme', theme);
             html.setAttribute('data-theme', theme);
             
-            if (theme === 'dark') {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-            } else {
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-            }
+            themeIcons.forEach(icon => {
+                if (!icon) return;
+                if (theme === 'dark') {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            });
         }
 
         // --- Navbar Toggle Logic ---
