@@ -145,7 +145,7 @@ class AtkTransactionController extends Controller
     public function index(Request $request)
     {
         $categories = ['ATK', 'JASA POTOCOPY', 'JASA TRANSFER BANK'];
-        $query = AtkTransaction::with('user');
+        $query = AtkTransaction::with(['user', 'items.product']);
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
@@ -160,7 +160,7 @@ class AtkTransactionController extends Controller
             });
         }
 
-        $transactions = $query->latest()->paginate(10)->appends($request->query());
+        $transactions = $query->latest()->paginate(15)->appends($request->query());
 
         // Total revenue for current filter
         $sumQuery = AtkTransaction::query();
