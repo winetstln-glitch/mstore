@@ -15,6 +15,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\SystemMetricsService;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -144,33 +145,9 @@ class DashboardController extends Controller implements HasMiddleware
             'orders_growth_percent' => $ordersGrowthPercent
         ];
 
-        // Revenue Breakdown (Donut)
-        $atkRevenueYear = AtkTransaction::whereYear('created_at', now()->year)->sum('total_amount');
-        $washRevenueYear = WashTransaction::whereYear('created_at', now()->year)->sum('total_amount');
-        $otherRevenueYear = Transaction::where('type', 'income')
-            ->whereYear('transaction_date', now()->year)
-            ->sum('amount');
-        $revenueBreakdown = [
-            'labels' => ['ATK', 'Car Wash', 'Other'],
-            'series' => [$atkRevenueYear, $washRevenueYear, $otherRevenueYear],
-        ];
-
-        // Support Tracker (Last 7 Days)
-        $supportStart = now()->subDays(6)->startOfDay();
-        $supportEnd = now()->endOfDay();
-        $ticketsLast7Days = $ticketQuery->clone()
-            ->whereBetween('created_at', [$supportStart, $supportEnd])
-            ->get();
-        $supportTotal = $ticketsLast7Days->count();
-        $supportResolved = $ticketsLast7Days->whereIn('status', ['solved', 'closed'])->count();
-        $supportPending = $supportTotal - $supportResolved;
-        $supportResolvedPct = $supportTotal > 0 ? round(($supportResolved / $supportTotal) * 100) : 0;
-        $supportStats = [
-            'total' => $supportTotal,
-            'resolved' => $supportResolved,
-            'pending' => $supportPending,
-            'resolved_pct' => $supportResolvedPct,
-        ];
+        // System Metrics (CPU/RAM/Swap) to power SupportTracker & RevenueSources charts
+        $metricsService = new SystemMetricsService();
+        $systemMetrics = $metricsService->getMetrics();
 
         $recentTickets = $ticketQuery->clone()
             ->with(['customer', 'technicians'])
@@ -266,9 +243,7 @@ class DashboardController extends Controller implements HasMiddleware
             'deployedAssets',
             'trafficData',
             'trafficStats',
-            'revenueBreakdown'
-            ,
-            'supportStats'
+            'systemMetrics'
         ));
     }
 }

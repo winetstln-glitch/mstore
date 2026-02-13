@@ -64,17 +64,14 @@
     <div class="col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Support Tracker') }}</h6>
-                <small class="text-muted">{{ __('Last 7 Days') }}</small>
+                <h6 class="mb-0 fw-bold">{{ __('Server CPU Usage') }}</h6>
+                <small class="text-muted">{{ __('Realtime') }}</small>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
                 <div id="supportTrackerChart" style="height: 240px; width: 100%;"></div>
             </div>
             <div class="card-footer bg-transparent border-0 text-center pb-3">
-                <div class="d-flex justify-content-center gap-3">
-                    <span class="badge bg-success-subtle text-success">{{ __('Resolved') }}</span>
-                    <span class="badge bg-warning-subtle text-warning">{{ __('Pending') }}</span>
-                </div>
+                <div class="small text-body-secondary">{{ __('Load Average') }}: {{ implode(' / ', $systemMetrics['loadavg']) }} ({{ $systemMetrics['cores'] }} {{ __('cores') }})</div>
             </div>
         </div>
     </div>
@@ -82,7 +79,7 @@
     <div class="col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Revenue Sources') }}</h6>
+                <h6 class="mb-0 fw-bold">{{ __('Server Memory & Swap') }}</h6>
             </div>
             <div class="card-body">
                 <div id="revenueSourcesChart" style="height: 240px;"></div>
@@ -597,10 +594,10 @@
         const salesChart = new ApexCharts(document.querySelector('#salesOverviewChart'), salesOptions);
         salesChart.render();
 
-        // Support Tracker (Radial)
+        // Support Tracker (Radial) -> CPU Usage
         const supportOptions = {
             chart: { type: 'radialBar', height: 240 },
-            series: [{{ $supportStats['resolved_pct'] }}],
+            series: [{{ $systemMetrics['cpu_usage_pct'] }}],
             colors: ['#28C76F'],
             plotOptions: {
                 radialBar: {
@@ -611,17 +608,22 @@
                     }
                 }
             },
-            labels: ['{{ __("Resolved") }}']
+            labels: ['CPU']
         };
         const supportChart = new ApexCharts(document.querySelector('#supportTrackerChart'), supportOptions);
         supportChart.render();
 
-        // Revenue Sources (Donut)
+        // Revenue Sources (Donut) -> RAM & Swap breakdown (MB)
         const revenueOptions = {
             chart: { type: 'donut', height: 240 },
-            series: @json($revenueBreakdown['series']),
-            labels: @json($revenueBreakdown['labels']),
-            colors: ['#7367F0', '#00CFE8', '#FF9F43'],
+            series: [
+                {{ $systemMetrics['ram_used_mb'] }},
+                {{ $systemMetrics['ram_free_mb'] }},
+                {{ $systemMetrics['swap_used_mb'] }},
+                {{ $systemMetrics['swap_free_mb'] }}
+            ],
+            labels: ['RAM Used', 'RAM Free', 'Swap Used', 'Swap Free'],
+            colors: ['#7367F0', '#00CFE8', '#FF9F43', '#EA5455'],
             legend: { position: 'bottom' },
             dataLabels: { enabled: false }
         };
