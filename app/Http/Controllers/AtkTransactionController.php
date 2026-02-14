@@ -102,23 +102,44 @@ class AtkTransactionController extends Controller
                 ];
             }
 
+            $method = $request->payment_method;
+            $cashAmount = $request->cash_amount;
+            $amountPaid = null;
+            $changeAmount = 0;
+            if ($method === 'cash') {
+                $amountPaid = $total;
+                $cashAmount = $cashAmount;
+                $changeAmount = $cashAmount ? ($cashAmount - $total) : 0;
+            } elseif (in_array($method, ['transfer', 'qris'])) {
+                $amountPaid = $total;
+                $cashAmount = null;
+                $changeAmount = 0;
+            } elseif ($method === 'hutang') {
+                $amountPaid = 0;
+                $cashAmount = null;
+                $changeAmount = 0;
+            }
+
             $transaction = AtkTransaction::create([
-                    'user_id' => Auth::id(),
-                    'transaction_number' => 'TRX-' . time(),
-                    'total_amount' => $total,
-                    'payment_method' => $request->payment_method,
-                    'cash_amount' => $request->cash_amount,
-                    'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
-                ]);
+                'user_id' => Auth::id(),
+                'transaction_number' => 'TRX-' . time(),
+                'total_amount' => $total,
+                'payment_method' => $method,
+                'cash_amount' => $cashAmount,
+                'change_amount' => $changeAmount,
+                'amount_paid' => $amountPaid,
+            ]);
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
             }
 
             // Update default cash balance (Kas Utama)
-            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-            $cash->balance = (float)$cash->balance + (float)$total;
-            $cash->save();
+            if ($method !== 'hutang') {
+                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $cash->balance = (float)$cash->balance + (float)$total;
+                $cash->save();
+            }
 
             // Reduce Agent Deposit by nominal transfer sum
             if ($sumBankNominal > 0) {

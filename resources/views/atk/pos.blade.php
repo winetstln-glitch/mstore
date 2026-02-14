@@ -150,6 +150,7 @@
                              <option value="cash">Cash</option>
                              <option value="transfer">Transfer</option>
                              <option value="qris">QRIS</option>
+                             <option value="hutang">Hutang</option>
                          </select>
                     </div>
                     
@@ -180,6 +181,17 @@
     
     // Attach click handlers to product/service cards
     document.addEventListener('DOMContentLoaded', function () {
+        const cashDiv = document.getElementById('cashInputDiv');
+        const methodSel = document.getElementById('paymentMethod');
+        methodSel.addEventListener('change', function () {
+            if (this.value === 'cash') {
+                cashDiv.style.display = '';
+            } else {
+                cashDiv.style.display = 'none';
+                document.getElementById('cashAmount').value = '';
+                document.getElementById('changeAmount').textContent = 'Rp 0';
+            }
+        });
         document.querySelectorAll('.product-card[data-id]').forEach(function (el) {
             el.addEventListener('click', function () {
                 const id = parseInt(this.dataset.id);
@@ -337,10 +349,13 @@
 
     function calculateChange() {
         const cash = parseFloat(document.getElementById('cashAmount').value) || 0;
+        const method = document.getElementById('paymentMethod').value;
         let total = 0;
-        cart.forEach(item => total += item.price * item.quantity);
+        cart.forEach(item => {
+            total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
+        });
         
-        const change = cash - total;
+        const change = method === 'cash' ? (cash - total) : 0;
         const changeEl = document.getElementById('changeAmount');
         
         if (change >= 0) {
@@ -354,11 +369,20 @@
         }
     }
 
+    // Tambahkan listener change pada paymentMethod
+document.getElementById('paymentMethod').addEventListener('change', function(e) {
+    const cashDiv = document.getElementById('cashInputDiv');
+    if (e.target.value === 'cash') {
+        cashDiv.style.display = 'block';
+    } else {
+        cashDiv.style.display = 'none';
+    }
+});
     function processTransaction() {
         if (cart.length === 0) return;
 
         const paymentMethod = document.getElementById('paymentMethod').value;
-        const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+        const cashAmount = paymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
         let total = 0;
         cart.forEach(item => {
             total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
