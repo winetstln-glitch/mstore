@@ -105,7 +105,6 @@ class AtkTransactionController extends Controller
             $transaction = AtkTransaction::create([
                     'user_id' => Auth::id(),
                     'transaction_number' => 'TRX-' . time(),
-                    'invoice_number' => 'INV-' . time(), // Added to satisfy legacy constraint
                     'total_amount' => $total,
                     'payment_method' => $request->payment_method,
                     'cash_amount' => $request->cash_amount,
