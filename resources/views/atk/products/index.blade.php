@@ -7,14 +7,17 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Product Management') }}</h1>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
-                <i class="fa-solid fa-file-import me-2"></i> {{ __('Import Excel') }}
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal" title="{{ __('Import Excel') }}">
+                <i class="fa-solid fa-file-import"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Import Excel') }}</span>
             </button>
-            <a href="{{ route('atk.products.export') }}" class="btn btn-success">
-                <i class="fa-solid fa-file-export me-2"></i> {{ __('Export Excel') }}
+            <a href="{{ route('atk.products.export') }}" class="btn btn-success" title="{{ __('Export Excel') }}">
+                <i class="fa-solid fa-file-export"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Export Excel') }}</span>
             </a>
-            <a href="{{ route('atk.products.create') }}" class="btn btn-primary">
-                <i class="fa-solid fa-plus me-2"></i> {{ __('Add Product') }}
+            <a href="{{ route('atk.products.create') }}" class="btn btn-primary" title="{{ __('Add Product') }}">
+                <i class="fa-solid fa-plus"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Add Product') }}</span>
             </a>
         </div>
     </div>
@@ -71,8 +74,9 @@
                     </select>
                 </div>
                 <div class="col-sm-12 col-md-2">
-                    <button type="submit" class="btn btn-dark w-100">
-                        <i class="fa-solid fa-filter me-1"></i> {{ __('Filter') }}
+                    <button type="submit" class="btn btn-dark w-100" title="{{ __('Filter') }}">
+                        <i class="fa-solid fa-filter"></i>
+                        <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
                     </button>
                 </div>
             </form>

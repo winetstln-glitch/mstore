@@ -6,8 +6,9 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Transaction Details</h1>
-        <a href="{{ route('wash.transactions.index') }}" class="btn btn-sm btn-secondary shadow-sm">
-            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back
+        <a href="{{ route('wash.transactions.index') }}" class="btn btn-sm btn-secondary shadow-sm" title="Back">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i>
+            <span class="d-none d-md-inline ms-1">Back</span>
         </a>
     </div>
 

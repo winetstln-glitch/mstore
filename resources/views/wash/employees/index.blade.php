@@ -6,8 +6,9 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Wash Employees</h1>
-        <a href="{{ route('wash.employees.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50"></i> Add New Employee
+        <a href="{{ route('wash.employees.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" title="Add New Employee">
+            <i class="fas fa-plus fa-sm text-white-50"></i>
+            <span class="d-none d-md-inline ms-1">Add New Employee</span>
         </a>
     </div>
 
@@ -29,6 +30,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Phone</th>
+                            <th>Account</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -38,6 +40,7 @@
                             <tr>
                                 <td>{{ $employee->name }}</td>
                                 <td>{{ $employee->phone ?? '-' }}</td>
+                                <td>{{ $employee->user?->name ?? '—' }}</td>
                                 <td>
                                     @if($employee->status == 'active')
                                         <span class="badge bg-success">Active</span>

@@ -110,6 +110,9 @@
                         <a href="https://cctv.mstore.id/" target="_blank" rel="noopener" class="btn btn-primary">
                             <i class="fas fa-video"></i>&nbsp; Monitoring CCTV Online
                         </a>
+                        <a href="{{ asset('apk/mstore-webview.apk') }}" class="btn btn-outline-light" download>
+                            <i class="fa-brands fa-android"></i>&nbsp; Download Aplikasi Android
+                        </a>
                     </div>
                 </div>
                 <div class="col-lg-6 hero-img fade-up">

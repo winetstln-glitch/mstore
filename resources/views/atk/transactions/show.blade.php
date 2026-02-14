@@ -7,11 +7,13 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction Details') }} #{{ $transaction->transaction_number }}</h1>
         <div>
-            <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary">
-                <i class="fa-solid fa-arrow-left me-2"></i> {{ __('Back') }}
+            <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary" title="{{ __('Back') }}">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Back') }}</span>
             </a>
-            <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-warning">
-                <i class="fa-solid fa-print me-2"></i> {{ __('Print Receipt') }}
+            <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-warning" title="{{ __('Print Receipt') }}">
+                <i class="fa-solid fa-print"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Print Receipt') }}</span>
             </a>
         </div>
     </div>

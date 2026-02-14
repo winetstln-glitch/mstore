@@ -11,7 +11,7 @@
   h4 { font-size: 1.15rem; }
   h5 { font-size: 1.05rem; }
   h6 { font-size: 0.95rem; }
-  .btn { padding: 0.6rem 1.1rem; border-radius: 9999px; font-weight: 600; }
+  .btn { padding: 0.6rem; border-radius: 10px; font-weight: 600; }
   .form-control, .form-select { font-size: 16px; border-radius: var(--android-radius); }
   .card, .modal-content { border-radius: var(--android-radius); }
   .table { font-size: 0.95rem; }

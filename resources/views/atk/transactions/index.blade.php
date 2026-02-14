@@ -7,14 +7,17 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
         <div class="d-flex gap-2">
-            <a href="{{ route('atk.transactions.export.pdf', request()->all()) }}" class="btn btn-danger">
-                <i class="fa-solid fa-file-pdf me-2"></i> {{ __('Export PDF') }}
+            <a href="{{ route('atk.transactions.export.pdf', request()->all()) }}" class="btn btn-danger" title="{{ __('Export PDF') }}">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Export PDF') }}</span>
             </a>
-            <a href="{{ route('atk.transactions.export.excel', request()->all()) }}" class="btn btn-success">
-                <i class="fa-solid fa-file-excel me-2"></i> {{ __('Export Excel') }}
+            <a href="{{ route('atk.transactions.export.excel', request()->all()) }}" class="btn btn-success" title="{{ __('Export Excel') }}">
+                <i class="fa-solid fa-file-excel"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Export Excel') }}</span>
             </a>
-            <a href="{{ route('atk.pos') }}" class="btn btn-primary">
-                <i class="fa-solid fa-cash-register me-2"></i> {{ __('New Transaction') }}
+            <a href="{{ route('atk.pos') }}" class="btn btn-primary" title="{{ __('New Transaction') }}">
+                <i class="fa-solid fa-cash-register"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('New Transaction') }}</span>
             </a>
         </div>
     </div>
@@ -47,8 +50,14 @@
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
-                    <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary">{{ __('Reset') }}</a>
+                    <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
+                        <i class="fa-solid fa-filter"></i>
+                        <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
+                    </button>
+                    <a href="{{ route('atk.transactions.index') }}" class="btn btn-secondary" title="{{ __('Reset') }}">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span class="d-none d-md-inline ms-1">{{ __('Reset') }}</span>
+                    </a>
                 </div>
             </form>
         </div>

@@ -6,8 +6,9 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Add New Employee</h1>
-        <a href="{{ route('wash.employees.index') }}" class="btn btn-sm btn-secondary shadow-sm">
-            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back
+        <a href="{{ route('wash.employees.index') }}" class="btn btn-sm btn-secondary shadow-sm" title="Back">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i>
+            <span class="d-none d-md-inline ms-1">Back</span>
         </a>
     </div>
 
@@ -35,6 +36,22 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="user_id" class="form-label">Link to Account</label>
+                    <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
+                        <option value="">{{ __('— Optional —') }}</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
+                                {{ $user->name }} @if($user->email) ({{ $user->email }}) @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('user_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    <small class="text-muted">{{ __('Mengaitkan akun memungkinkan absensi seperti teknisi.') }}</small>
+                </div>
+
+                <div class="mb-3">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select @error('status') is-invalid @enderror" id="status" name="status">
                         <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
@@ -45,7 +62,10 @@
                     @enderror
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Employee</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    <span class="d-none d-md-inline ms-1">Save Employee</span>
+                </button>
             </form>
         </div>
     </div>

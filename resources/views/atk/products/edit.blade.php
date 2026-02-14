@@ -6,8 +6,9 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Edit Product') }}</h1>
-        <a href="{{ route('atk.products.index') }}" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left me-2"></i> {{ __('Back') }}
+        <a href="{{ route('atk.products.index') }}" class="btn btn-secondary" title="{{ __('Back') }}">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="d-none d-md-inline ms-2">{{ __('Back') }}</span>
         </a>
     </div>
 

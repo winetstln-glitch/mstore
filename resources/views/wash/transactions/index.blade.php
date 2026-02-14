@@ -7,11 +7,13 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Wash Transactions</h1>
         <div class="d-flex gap-2">
-            <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm">
-                <i class="fas fa-file-pdf fa-sm text-white-50"></i> Generate PDF
+            <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm" title="Generate PDF">
+                <i class="fas fa-file-pdf fa-sm text-white-50"></i>
+                <span class="d-none d-md-inline ms-1">Generate PDF</span>
             </a>
-            <a href="{{ route('wash.transactions.export.excel', request()->all()) }}" class="btn btn-sm btn-success shadow-sm">
-                <i class="fas fa-file-excel fa-sm text-white-50"></i> Export Excel
+            <a href="{{ route('wash.transactions.export.excel', request()->all()) }}" class="btn btn-sm btn-success shadow-sm" title="Export Excel">
+                <i class="fas fa-file-excel fa-sm text-white-50"></i>
+                <span class="d-none d-md-inline ms-1">Export Excel</span>
             </a>
         </div>
     </div>
@@ -35,8 +37,14 @@
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
-                    <a href="{{ route('wash.transactions.index') }}" class="btn btn-secondary">{{ __('Reset') }}</a>
+                    <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
+                        <i class="fas fa-filter"></i>
+                        <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
+                    </button>
+                    <a href="{{ route('wash.transactions.index') }}" class="btn btn-secondary" title="{{ __('Reset') }}">
+                        <i class="fas fa-rotate-left"></i>
+                        <span class="d-none d-md-inline ms-1">{{ __('Reset') }}</span>
+                    </a>
                 </div>
             </form>
         </div>
