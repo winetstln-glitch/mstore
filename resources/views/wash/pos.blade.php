@@ -374,6 +374,11 @@
             vehicle_plate: document.getElementById('vehicle_plate').value,
             _token: '{{ csrf_token() }}'
         };
+        
+        const btn = document.getElementById('btnCheckout');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
 
         fetch('{{ route("wash.transactions.store") }}', {
             method: 'POST',
@@ -393,13 +398,8 @@
             if (data.success) {
                 const url = '{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt';
                 window.open(url, '_blank', 'width=400,height=600');
-                // Reset form/cart after printing
-                cart = [];
-                document.getElementById('checkoutForm').reset();
-                document.getElementById('emptyCartMsg').style.display = 'block';
-                document.getElementById('totalAmount').textContent = 'Rp 0';
-                document.getElementById('changeAmount').textContent = 'Rp 0';
-                updateCartUI();
+                // Reset all states for next transaction
+                resetCart();
             } else {
                 alert('Error: ' + data.message);
             }
@@ -407,6 +407,10 @@
         .catch(error => {
             console.error('Error:', error);
             alert('An error occurred: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         });
     });
 </script>
