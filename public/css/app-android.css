@@ -17,6 +17,16 @@
   .table { font-size: 0.95rem; }
 }
 
+html, body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, .btn, .sidebar-item, .nav-link, .page-link, .product-card, .service-card, .mobile-bottom-nav .mbn-item {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+          user-select: none;
+}
+
 /* Ripple effect for interactive elements without JS */
 .btn, .list-group-item-action, .sidebar-item, .nav-link, .page-link {
   position: relative; overflow: hidden;
@@ -28,7 +38,7 @@
   background: currentColor; opacity: .15;
 }
 .btn:active::after, .list-group-item-action:active::after, .sidebar-item:active::after, .nav-link:active::after, .page-link:active::after {
-  animation: android-ripple .6s ease-out;
+  animation: android-ripple .35s ease-out;
 }
 @keyframes android-ripple {
   to { transform: translate(-50%, -50%) scale(35); opacity: 0; }
@@ -43,4 +53,3 @@
 
 /* Touch-friendly pagination */
 .pagination .page-item .page-link { border-radius: 9999px; padding: .45rem .75rem; }
-

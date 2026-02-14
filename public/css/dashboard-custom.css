@@ -544,6 +544,8 @@ body.sb-sidenav-toggled #page-content-wrapper {
 @media (max-width: 768px) {
     .mobile-bottom-nav {
         display: flex;
+        will-change: transform;
+        transform: translateZ(0);
     }
     #page-content-wrapper {
         padding-bottom: 70px;
