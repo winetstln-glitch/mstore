@@ -40,7 +40,8 @@ class AtkTransactionController extends Controller
         $products = AtkProduct::where('category', 'ATK')->where('stock', '>', 0)->get();
         $services = AtkProduct::where('category', 'JASA POTOCOPY')->get();
         $bankServices = AtkProduct::where('category', 'JASA TRANSFER BANK')->get();
-        return view('atk.pos', compact('products', 'services', 'bankServices'));
+        $coordinators = \App\Models\Coordinator::orderBy('name')->get(['id','name']);
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'coordinators'));
     }
 
     public function store(Request $request)
@@ -53,6 +54,7 @@ class AtkTransactionController extends Controller
             'items.*.fee' => 'nullable|numeric|min:0',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
+            'coordinator_id' => 'nullable|exists:coordinators,id',
         ]);
 
         try {
@@ -128,6 +130,7 @@ class AtkTransactionController extends Controller
                 'cash_amount' => $cashAmount,
                 'change_amount' => $changeAmount,
                 'amount_paid' => $amountPaid,
+                'coordinator_id' => $method === 'hutang' ? $request->coordinator_id : null,
             ]);
 
             foreach ($items as $item) {

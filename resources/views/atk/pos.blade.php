@@ -165,6 +165,15 @@
                              <span id="changeAmount" class="fw-bold">Rp 0</span>
                         </div>
                     </div>
+                    <div class="mb-3 d-none" id="coordinatorDiv">
+                        <label class="form-label">Nama Pengurus</label>
+                        <select class="form-select" id="coordinatorId">
+                            <option value="">-- Pilih Pengurus --</option>
+                            @foreach(($coordinators ?? []) as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
                     <button class="btn btn-success w-100 py-2" onclick="processTransaction()" id="btnCheckout" disabled>
                         <i class="fas fa-check-circle me-2"></i> Checkout
@@ -182,12 +191,14 @@
     // Attach click handlers to product/service cards
     document.addEventListener('DOMContentLoaded', function () {
         const cashDiv = document.getElementById('cashInputDiv');
+        const coordDiv = document.getElementById('coordinatorDiv');
         const methodSel = document.getElementById('paymentMethod');
         methodSel.addEventListener('change', function () {
-            if (this.value === 'cash') {
-                cashDiv.style.display = '';
-            } else {
-                cashDiv.style.display = 'none';
+            const isCash = this.value === 'cash';
+            const isDebt = this.value === 'hutang';
+            cashDiv.style.display = isCash ? '' : 'none';
+            coordDiv.classList.toggle('d-none', !isDebt);
+            if (!isCash) {
                 document.getElementById('cashAmount').value = '';
                 document.getElementById('changeAmount').textContent = 'Rp 0';
             }
@@ -396,7 +407,8 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
             payment_method: paymentMethod,
-            cash_amount: cashAmount
+            cash_amount: cashAmount,
+            coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null
         };
 
         const btn = document.getElementById('btnCheckout');
