@@ -31,7 +31,11 @@
                     <div class="row g-3" id="productList">
                         @foreach($products as $product)
                         <div class="col-md-3 col-sm-4 col-6 product-item" data-name="{{ strtolower($product->name) }}" data-code="{{ strtolower($product->code) }}">
-                            <div class="card h-100 product-card cursor-pointer" data-fasttap onclick="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->price }}, {{ $product->stock }})">
+                            <div class="card h-100 product-card cursor-pointer" data-fasttap
+                                 data-id="{{ $product->id }}"
+                                 data-name="{{ $product->name }}"
+                                 data-price="{{ $product->price }}"
+                                 data-stock="{{ $product->stock }}">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
                                     <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
                                         @if($product->image)
@@ -51,7 +55,11 @@
                     <div class="row g-3 d-none" id="serviceList">
                         @foreach(($services ?? []) as $service)
                         <div class="col-md-3 col-sm-4 col-6 service-item" data-name="{{ strtolower($service->name) }}" data-code="{{ strtolower($service->code) }}">
-                            <div class="card h-100 product-card cursor-pointer" data-fasttap onclick="addToCart({{ $service->id }}, '{{ addslashes($service->name) }}', {{ $service->price }}, 999999)">
+                            <div class="card h-100 product-card cursor-pointer" data-fasttap
+                                 data-id="{{ $service->id }}"
+                                 data-name="{{ $service->name }}"
+                                 data-price="{{ $service->price }}"
+                                 data-stock="999999">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
                                     <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
                                         @if($service->image)
@@ -169,6 +177,19 @@
 @push('scripts')
 <script>
     let cart = [];
+    
+    // Attach click handlers to product/service cards
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.product-card[data-id]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                const id = parseInt(this.dataset.id);
+                const name = this.dataset.name;
+                const price = parseFloat(this.dataset.price);
+                const maxStock = parseInt(this.dataset.stock);
+                addToCart(id, name, price, maxStock);
+            });
+        });
+    });
 
     document.getElementById('productSearch').addEventListener('input', function(e) {
         const search = e.target.value.toLowerCase();

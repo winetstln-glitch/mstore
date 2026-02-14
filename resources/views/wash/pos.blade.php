@@ -24,7 +24,11 @@
                     <div class="row" id="services-container">
                         @foreach($services as $service)
                         <div class="col-md-4 mb-3 service-item" data-type="{{ strtolower($service->vehicle_type) }}">
-                            <div class="card h-100 service-card" data-fasttap onclick="addToCart({{ $service->id }}, '{{ $service->name }}', {{ $service->price }}, '{{ strtolower($service->vehicle_type) }}')">
+                            <div class="card h-100 service-card" data-fasttap
+                                 data-id="{{ $service->id }}"
+                                 data-name="{{ $service->name }}"
+                                 data-price="{{ $service->price }}"
+                                 data-vehicletype="{{ strtolower($service->vehicle_type) }}">
                                 <div class="card-body text-center">
                                     <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
                                         @if($service->image)
@@ -117,6 +121,22 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.service-card').forEach(function (el) {
+        el.addEventListener('click', function () {
+            const id = parseInt(this.dataset.id);
+            const name = this.dataset.name;
+            const price = parseFloat(this.dataset.price);
+            const type = this.dataset.vehicletype;
+            addToCart(id, name, price, type);
+        });
+    });
+});
+</script>
+@endpush
 
 <script>
     document.getElementById('btnCheckCustomer').addEventListener('click', function() {
