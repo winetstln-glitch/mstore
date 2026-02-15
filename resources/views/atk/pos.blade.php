@@ -153,6 +153,12 @@
                              <option value="hutang">Hutang</option>
                          </select>
                     </div>
+                    <div class="form-check mb-3 d-none" id="debtToggleDiv">
+                        <input class="form-check-input" type="checkbox" id="isDebt">
+                        <label class="form-check-label" for="isDebt">
+                            Catat sebagai Hutang (Kasbon)
+                        </label>
+                    </div>
                     
                     <div class="mb-3" id="cashInputDiv">
                         <label class="form-label">Cash Received</label>
@@ -174,6 +180,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Pelanggan</label>
+                        <input type="text" class="form-control" id="customerName" placeholder="Opsional, wajib jika Hutang">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">No. HP</label>
+                        <input type="text" class="form-control" id="customerPhone" placeholder="Opsional, wajib jika Hutang">
+                    </div>
 
                     <button class="btn btn-success w-100 py-2" onclick="processTransaction()" id="btnCheckout" disabled>
                         <i class="fas fa-check-circle me-2"></i> Checkout
@@ -192,6 +206,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         const cashDiv = document.getElementById('cashInputDiv');
         const coordDiv = document.getElementById('coordinatorDiv');
+        const debtDiv = document.getElementById('debtToggleDiv');
+        const debtCbx = document.getElementById('isDebt');
         const methodSel = document.getElementById('paymentMethod');
         methodSel.addEventListener('change', function () {
             const isCash = this.value === 'cash';
@@ -203,6 +219,18 @@
                 document.getElementById('changeAmount').textContent = 'Rp 0';
             }
         });
+        if (debtCbx) {
+            debtCbx.addEventListener('change', function () {
+                if (this.checked) {
+                    methodSel.value = 'hutang';
+                } else {
+                    if (methodSel.value === 'hutang') {
+                        methodSel.value = 'cash';
+                    }
+                }
+                methodSel.dispatchEvent(new Event('change'));
+            });
+        }
         document.querySelectorAll('.product-card[data-id]').forEach(function (el) {
             el.addEventListener('click', function () {
                 const id = parseInt(this.dataset.id);
@@ -231,6 +259,10 @@
         const tabP = document.getElementById('tabProducts');
         const tabS = document.getElementById('tabServices');
         const tabB = document.getElementById('tabBank');
+        const debtDiv = document.getElementById('debtToggleDiv');
+        const debtCbx = document.getElementById('isDebt');
+        const methodSel = document.getElementById('paymentMethod');
+        const coordDiv = document.getElementById('coordinatorDiv');
         if (tab === 'products') {
             pList.classList.remove('d-none');
             sList.classList.add('d-none');
@@ -238,6 +270,15 @@
             tabP.classList.add('active');
             tabS.classList.remove('active');
             tabB.classList.remove('active');
+            debtDiv.classList.add('d-none');
+            if (debtCbx) {
+                debtCbx.checked = false;
+                if (methodSel.value === 'hutang') {
+                    methodSel.value = 'cash';
+                    methodSel.dispatchEvent(new Event('change'));
+                    coordDiv.classList.add('d-none');
+                }
+            }
         } else {
             if (tab === 'services') {
                 pList.classList.add('d-none');
@@ -246,6 +287,7 @@
                 tabS.classList.add('active');
                 tabP.classList.remove('active');
                 tabB.classList.remove('active');
+                debtDiv.classList.remove('d-none');
             } else {
                 pList.classList.add('d-none');
                 sList.classList.add('d-none');
@@ -253,6 +295,15 @@
                 tabB.classList.add('active');
                 tabP.classList.remove('active');
                 tabS.classList.remove('active');
+                debtDiv.classList.add('d-none');
+                if (debtCbx) {
+                    debtCbx.checked = false;
+                    if (methodSel.value === 'hutang') {
+                        methodSel.value = 'cash';
+                        methodSel.dispatchEvent(new Event('change'));
+                        coordDiv.classList.add('d-none');
+                    }
+                }
             }
         }
         document.getElementById('productSearch').dispatchEvent(new Event('input'));
@@ -404,11 +455,22 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
             return;
         }
 
+        const isDebt = document.getElementById('isDebt') ? document.getElementById('isDebt').checked : (paymentMethod === 'hutang');
+        const customerName = document.getElementById('customerName') ? document.getElementById('customerName').value.trim() : '';
+        const customerPhone = document.getElementById('customerPhone') ? document.getElementById('customerPhone').value.trim() : '';
+        if (isDebt && !customerName) {
+            alert('Nama pelanggan wajib diisi untuk hutang.');
+            return;
+        }
+
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
             payment_method: paymentMethod,
             cash_amount: cashAmount,
-            coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null
+            coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null,
+            is_debt: isDebt,
+            customer_name: customerName || null,
+            customer_phone: customerPhone || null
         };
 
         const btn = document.getElementById('btnCheckout');

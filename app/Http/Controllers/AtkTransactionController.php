@@ -55,6 +55,9 @@ class AtkTransactionController extends Controller
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
             'coordinator_id' => 'nullable|exists:coordinators,id',
+            'is_debt' => 'nullable|boolean',
+            'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:50',
         ]);
 
         try {
@@ -104,7 +107,7 @@ class AtkTransactionController extends Controller
                 ];
             }
 
-            $method = $request->payment_method;
+            $method = $request->boolean('is_debt') ? 'hutang' : $request->payment_method;
             $cashAmount = $request->cash_amount;
             $amountPaid = null;
             $changeAmount = 0;
@@ -117,6 +120,9 @@ class AtkTransactionController extends Controller
                 $cashAmount = null;
                 $changeAmount = 0;
             } elseif ($method === 'hutang') {
+                if (!$request->filled('customer_name')) {
+                    throw new \Exception('Nama pelanggan wajib diisi untuk hutang.');
+                }
                 $amountPaid = 0;
                 $cashAmount = null;
                 $changeAmount = 0;
@@ -131,6 +137,8 @@ class AtkTransactionController extends Controller
                 'change_amount' => $changeAmount,
                 'amount_paid' => $amountPaid,
                 'coordinator_id' => $method === 'hutang' ? $request->coordinator_id : null,
+                'customer_name' => $method === 'hutang' ? $request->customer_name : null,
+                'customer_phone' => $method === 'hutang' ? $request->customer_phone : null,
             ]);
 
             foreach ($items as $item) {
