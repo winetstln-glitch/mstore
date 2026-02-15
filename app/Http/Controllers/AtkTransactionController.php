@@ -291,4 +291,58 @@ class AtkTransactionController extends Controller
             $writer->close();
         }, 'atk_transactions.xlsx');
     }
+
+    public function debts(Request $request)
+    {
+        $query = AtkTransaction::with(['user', 'coordinator'])->where('is_debt', true);
+        if ($request->filled('coordinator_id')) {
+            $query->where('coordinator_id', $request->coordinator_id);
+        }
+        if ($request->filled('status')) {
+            if ($request->status === 'belum') {
+                $query->where('is_settled', false);
+            } elseif ($request->status === 'lunas') {
+                $query->where('is_settled', true);
+            }
+        }
+        if ($request->filled('due_start') && $request->filled('due_end')) {
+            $query->whereBetween('due_date', [$request->due_start, $request->due_end]);
+        }
+        $debts = $query->latest()->paginate(15)->appends($request->query());
+        $coordinators = \App\Models\Coordinator::orderBy('name')->get(['id','name']);
+        return view('atk.debts.index', compact('debts', 'coordinators'));
+    }
+
+    public function settleDebt(Request $request, AtkTransaction $transaction)
+    {
+        $request->validate([
+            'pay_amount' => 'required|numeric|min:1',
+            'method' => 'required|string|in:cash,transfer,qris'
+        ]);
+        if (!$transaction->is_debt || $transaction->is_settled) {
+            return response()->json(['success' => false, 'message' => 'Transaksi tidak valid untuk pelunasan'], 400);
+        }
+        try {
+            DB::beginTransaction();
+            $pay = (float)$request->pay_amount;
+            $transaction->amount_paid = (float)$transaction->amount_paid + $pay;
+            $transaction->settled_amount = $transaction->amount_paid;
+            if ($transaction->amount_paid + 0.00001 >= (float)$transaction->total_amount) {
+                $transaction->is_settled = true;
+                $transaction->settled_at = now();
+            }
+            $transaction->save();
+
+            if ($request->method === 'cash') {
+                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $cash->balance = (float)$cash->balance + $pay;
+                $cash->save();
+            }
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Pelunasan berhasil', 'is_settled' => $transaction->is_settled]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
 }
