@@ -164,13 +164,14 @@ function submitSettle() {
         alert('Jumlah bayar tidak valid');
         return;
     }
+    const due = document.getElementById('settleDueDate').value;
     fetch('{{ url("atk/debts") }}/' + id + '/settle', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
-        body: JSON.stringify({ pay_amount: pay, method })
+        body: JSON.stringify({ pay_amount: pay, method, due_date: due || null })
     }).then(r => r.json()).then(res => {
         if (res.success) {
             location.reload();
@@ -182,4 +183,3 @@ function submitSettle() {
 </script>
 @endpush
 @endsection
-

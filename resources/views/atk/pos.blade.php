@@ -180,6 +180,10 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-3 d-none" id="dueDateDiv">
+                        <label class="form-label">Jatuh Tempo (opsional)</label>
+                        <input type="date" class="form-control" id="dueDate">
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Nama Pelanggan</label>
                         <input type="text" class="form-control" id="customerName" placeholder="Opsional, wajib jika Hutang">
@@ -208,12 +212,14 @@
         const coordDiv = document.getElementById('coordinatorDiv');
         const debtDiv = document.getElementById('debtToggleDiv');
         const debtCbx = document.getElementById('isDebt');
+        const dueDiv = document.getElementById('dueDateDiv');
         const methodSel = document.getElementById('paymentMethod');
         methodSel.addEventListener('change', function () {
             const isCash = this.value === 'cash';
             const isDebt = this.value === 'hutang';
             cashDiv.style.display = isCash ? '' : 'none';
             coordDiv.classList.toggle('d-none', !isDebt);
+            dueDiv.classList.toggle('d-none', !isDebt);
             if (!isCash) {
                 document.getElementById('cashAmount').value = '';
                 document.getElementById('changeAmount').textContent = 'Rp 0';
@@ -263,6 +269,7 @@
         const debtCbx = document.getElementById('isDebt');
         const methodSel = document.getElementById('paymentMethod');
         const coordDiv = document.getElementById('coordinatorDiv');
+        const dueDiv = document.getElementById('dueDateDiv');
         if (tab === 'products') {
             pList.classList.remove('d-none');
             sList.classList.add('d-none');
@@ -271,6 +278,7 @@
             tabS.classList.remove('active');
             tabB.classList.remove('active');
             debtDiv.classList.add('d-none');
+            dueDiv.classList.add('d-none');
             if (debtCbx) {
                 debtCbx.checked = false;
                 if (methodSel.value === 'hutang') {
@@ -288,6 +296,7 @@
                 tabP.classList.remove('active');
                 tabB.classList.remove('active');
                 debtDiv.classList.remove('d-none');
+                dueDiv.classList.remove('d-none');
             } else {
                 pList.classList.add('d-none');
                 sList.classList.add('d-none');
@@ -296,6 +305,7 @@
                 tabP.classList.remove('active');
                 tabS.classList.remove('active');
                 debtDiv.classList.add('d-none');
+                dueDiv.classList.add('d-none');
                 if (debtCbx) {
                     debtCbx.checked = false;
                     if (methodSel.value === 'hutang') {
@@ -314,7 +324,10 @@
         const nominal = parseFloat(document.getElementById('bankNominal').value) || 0;
         const fee = parseFloat(document.getElementById('bankFee').value) || 0;
         const name = (document.getElementById('bankServiceId').selectedOptions[0]?.text) || 'Agen Bank';
-        if (nominal <= 0 && fee <= 0) return;
+        if (nominal < 10000) {
+            alert('Nominal minimal Rp 10.000');
+            return;
+        }
         cart.push({ id, name, price: fee, quantity: 1, maxStock: 1, bank: true, nominal_transaksi: nominal, fee });
         renderCart();
     }
@@ -473,7 +486,8 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
             coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null,
             is_debt: isDebt,
             customer_name: customerName || null,
-            customer_phone: customerPhone || null
+            customer_phone: customerPhone || null,
+            due_date: isDebt ? (document.getElementById('dueDate')?.value || null) : null
         };
 
         const btn = document.getElementById('btnCheckout');

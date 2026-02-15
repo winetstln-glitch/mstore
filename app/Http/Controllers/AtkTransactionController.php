@@ -58,6 +58,7 @@ class AtkTransactionController extends Controller
             'is_debt' => 'nullable|boolean',
             'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:50',
+            'due_date' => 'nullable|date',
         ]);
 
         try {
@@ -141,6 +142,7 @@ class AtkTransactionController extends Controller
                 'customer_name' => $method === 'hutang' ? $request->customer_name : null,
                 'customer_phone' => $method === 'hutang' ? $request->customer_phone : null,
                 'is_debt' => $isDebt,
+                'due_date' => $isDebt ? $request->due_date : null,
             ]);
 
             foreach ($items as $item) {
@@ -317,7 +319,8 @@ class AtkTransactionController extends Controller
     {
         $request->validate([
             'pay_amount' => 'required|numeric|min:1',
-            'method' => 'required|string|in:cash,transfer,qris'
+            'method' => 'required|string|in:cash,transfer,qris',
+            'due_date' => 'nullable|date'
         ]);
         if (!$transaction->is_debt || $transaction->is_settled) {
             return response()->json(['success' => false, 'message' => 'Transaksi tidak valid untuk pelunasan'], 400);
@@ -330,6 +333,9 @@ class AtkTransactionController extends Controller
             if ($transaction->amount_paid + 0.00001 >= (float)$transaction->total_amount) {
                 $transaction->is_settled = true;
                 $transaction->settled_at = now();
+            }
+            if ($request->filled('due_date')) {
+                $transaction->due_date = $request->due_date;
             }
             $transaction->save();
 
