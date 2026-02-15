@@ -107,7 +107,8 @@ class AtkTransactionController extends Controller
                 ];
             }
 
-            $method = $request->boolean('is_debt') ? 'hutang' : $request->payment_method;
+            $isDebt = $request->boolean('is_debt') || in_array(strtolower($request->payment_method), ['hutang', 'debt']);
+            $method = $isDebt ? 'hutang' : $request->payment_method;
             $cashAmount = $request->cash_amount;
             $amountPaid = null;
             $changeAmount = 0;
@@ -139,6 +140,7 @@ class AtkTransactionController extends Controller
                 'coordinator_id' => $method === 'hutang' ? $request->coordinator_id : null,
                 'customer_name' => $method === 'hutang' ? $request->customer_name : null,
                 'customer_phone' => $method === 'hutang' ? $request->customer_phone : null,
+                'is_debt' => $isDebt,
             ]);
 
             foreach ($items as $item) {
@@ -146,7 +148,7 @@ class AtkTransactionController extends Controller
             }
 
             // Update default cash balance (Kas Utama)
-            if ($method !== 'hutang') {
+            if (!$isDebt) {
                 $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
                 $cash->balance = (float)$cash->balance + (float)$total;
                 $cash->save();
@@ -164,6 +166,7 @@ class AtkTransactionController extends Controller
             return response()->json([
                 'success' => true,
                 'transaction_id' => $transaction->id,
+                'receipt_url' => url('atk/transactions/'.$transaction->id.'/receipt'),
                 'message' => 'Transaction successful'
             ]);
 

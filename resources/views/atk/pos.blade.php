@@ -444,28 +444,31 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
         if (cart.length === 0) return;
 
         const paymentMethod = document.getElementById('paymentMethod').value;
-        const cashAmount = paymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
+        const isDebt = document.getElementById('isDebt') ? document.getElementById('isDebt').checked : (paymentMethod === 'hutang');
+        const sendPaymentMethod = isDebt ? 'debt' : paymentMethod;
+        const cashAmount = sendPaymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
         let total = 0;
         cart.forEach(item => {
             total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
         });
 
-        if (paymentMethod === 'cash' && cashAmount < total) {
+        if (sendPaymentMethod === 'cash' && cashAmount < total) {
             alert('Insufficient cash amount!');
             return;
         }
 
-        const isDebt = document.getElementById('isDebt') ? document.getElementById('isDebt').checked : (paymentMethod === 'hutang');
         const customerName = document.getElementById('customerName') ? document.getElementById('customerName').value.trim() : '';
         const customerPhone = document.getElementById('customerPhone') ? document.getElementById('customerPhone').value.trim() : '';
         if (isDebt && !customerName) {
             alert('Nama pelanggan wajib diisi untuk hutang.');
+            const cn = document.getElementById('customerName');
+            if (cn) cn.focus();
             return;
         }
 
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
-            payment_method: paymentMethod,
+            payment_method: sendPaymentMethod,
             cash_amount: cashAmount,
             coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null,
             is_debt: isDebt,
@@ -488,8 +491,8 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                // Open Receipt
-                window.open('{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt', '_blank', 'width=400,height=600');
+                const urlReceipt = result.receipt_url ? result.receipt_url : ('{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt');
+                window.open(urlReceipt, '_blank', 'width=400,height=600');
                 
                 // Reset Cart
                 cart = [];
