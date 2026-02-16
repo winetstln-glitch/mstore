@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Journal;
 use App\Models\JournalEntry;
+use App\Models\Period;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -23,6 +24,21 @@ class AccountingPoster
         }
 
         return DB::transaction(function () use ($journalNo, $date, $description, $lines, $periodId, $sourceType, $sourceId) {
+            if (!$periodId) {
+                $d = \Carbon\Carbon::parse($date);
+                $name = $d->format('Y-m');
+                $start = $d->copy()->startOfMonth()->toDateString();
+                $end = $d->copy()->endOfMonth()->toDateString();
+                $period = Period::firstOrCreate(
+                    ['name' => $name],
+                    ['start_date' => $start, 'end_date' => $end, 'status' => 'open']
+                );
+                $periodId = $period->id;
+            }
+            $period = Period::findOrFail($periodId);
+            if ($period->status === 'closed') {
+                throw new InvalidArgumentException('Cannot post to a closed period');
+            }
             $j = Journal::create([
                 'journal_no' => $journalNo,
                 'date' => $date,

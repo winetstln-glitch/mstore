@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\Account;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -32,8 +33,8 @@ class SettingController extends Controller implements HasMiddleware
             ->orderBy('id')
             ->get()
             ->groupBy('group');
-            
-        return view('settings.index', compact('settings'));
+        $accountOptions = Account::orderBy('code')->get();
+        return view('settings.index', compact('settings','accountOptions'));
     }
 
     /**

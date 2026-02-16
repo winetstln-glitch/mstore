@@ -171,6 +171,31 @@
             <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
                 <i class="fa fa-wallet"></i> {{ __('Dashboard Keuangan') }}
             </a>
+            <a class="sidebar-item {{ (request()->routeIs('accounting.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#accountingCollapse" role="button" aria-expanded="{{ (request()->routeIs('accounting.*')) ? 'true' : 'false' }}" aria-controls="accountingCollapse">
+                <i class="fa-solid fa-book-open"></i> {{ __('Akuntansi') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ (request()->routeIs('accounting.*')) ? 'show' : '' }}" id="accountingCollapse">
+                <div class="bg-light ps-3">
+                    <a href="{{ route('accounting.trial_balance') }}" class="sidebar-item {{ request()->routeIs('accounting.trial_balance') ? 'active' : '' }}">
+                        <i class="fa-regular fa-file-lines"></i> {{ __('Neraca Saldo') }}
+                    </a>
+                    <a href="{{ route('accounting.income_statement') }}" class="sidebar-item {{ request()->routeIs('accounting.income_statement') ? 'active' : '' }}">
+                        <i class="fa-regular fa-file-lines"></i> {{ __('Laba Rugi') }}
+                    </a>
+                    <a href="{{ route('accounting.balance_sheet') }}" class="sidebar-item {{ request()->routeIs('accounting.balance_sheet') ? 'active' : '' }}">
+                        <i class="fa-regular fa-file-lines"></i> {{ __('Neraca') }}
+                    </a>
+                    <a href="{{ route('accounting.ledger') }}" class="sidebar-item {{ request()->routeIs('accounting.ledger') ? 'active' : '' }}">
+                        <i class="fa-regular fa-file-lines"></i> {{ __('Buku Besar') }}
+                    </a>
+                    <a href="{{ route('accounting.cash_flow') }}" class="sidebar-item {{ request()->routeIs('accounting.cash_flow') ? 'active' : '' }}">
+                        <i class="fa-regular fa-file-lines"></i> {{ __('Arus Kas') }}
+                    </a>
+                    <a href="{{ route('accounting.periods.index') }}" class="sidebar-item {{ request()->routeIs('accounting.periods.*') ? 'active' : '' }}">
+                        <i class="fa-regular fa-calendar-check"></i> {{ __('Periode Akuntansi') }}
+                    </a>
+                </div>
+            </div>
             @endif
             @if(Auth::user()->hasPermission('investor.view'))
             <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">

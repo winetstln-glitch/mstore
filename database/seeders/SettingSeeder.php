@@ -84,6 +84,14 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Persentase Keperluan Alat (%)',
             ],
+            // Accounting Settings
+            [
+                'key' => 'accounting_retained_earnings_account_id',
+                'value' => '',
+                'group' => 'accounting',
+                'type' => 'account',
+                'label' => 'Akun Laba Berjalan (Equity)',
+            ],
         ];
 
         foreach ($settings as $setting) {

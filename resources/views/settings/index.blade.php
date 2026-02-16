@@ -79,6 +79,15 @@
                                                     </table>
                                                 </div>
                                             </div>
+                                        @elseif($setting->type == 'account')
+                                            <select name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-select">
+                                                <option value="">-- Pilih Akun --</option>
+                                                @foreach(($accountOptions ?? []) as $acc)
+                                                    <option value="{{ $acc->id }}" {{ $setting->value == (string)$acc->id ? 'selected' : '' }}>
+                                                        {{ $acc->code }} - {{ $acc->name }} ({{ $acc->type }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         @elseif($setting->type == 'textarea')
                                             <textarea name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-control" rows="3">{{ $setting->value }}</textarea>
                                         @elseif($setting->type == 'packages')

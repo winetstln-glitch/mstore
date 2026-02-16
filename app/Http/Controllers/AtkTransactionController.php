@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AtkTransaction;
 use App\Models\AtkTransactionItem;
 use App\Models\AtkProduct;
+use App\Models\Account;
+use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -62,6 +64,9 @@ class AtkTransactionController extends Controller
             $items = [];
 
             $sumBankNominal = 0;
+            $sumFee = 0;
+            $sumRevenueSales = 0;
+            $hpp = 0;
             foreach ($request->items as $itemData) {
                 $product = AtkProduct::lockForUpdate()->find($itemData['id']);
                 
@@ -77,6 +82,7 @@ class AtkTransactionController extends Controller
                     $nominal = (float)($itemData['nominal_transaksi'] ?? 0);
                     $fee = (float)($itemData['fee'] ?? 0);
                     $sumBankNominal += $nominal;
+                    $sumFee += $fee;
                     $subtotal = $fee;
                     $total += ($nominal + $fee);
                     $price = $fee;
@@ -84,10 +90,14 @@ class AtkTransactionController extends Controller
                     $price = $product->price;
                     $subtotal = $price * $itemData['quantity'];
                     $total += $subtotal;
+                    $sumRevenueSales += $subtotal;
                 }
 
                 if (!$isService) {
                     $product->decrement('stock', $itemData['quantity']);
+                    if (!$isBank) {
+                        $hpp += ((float)$product->cost_price) * (int)$itemData['quantity'];
+                    }
                 }
 
                 $items[] = [
@@ -126,6 +136,43 @@ class AtkTransactionController extends Controller
                 $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);
                 $deposit->balance = (float)$deposit->balance - (float)$sumBankNominal;
                 $deposit->save();
+            }
+
+            $drCode = $request->payment_method === 'hutang' ? '1101' : ($request->payment_method === 'cash' ? '1001' : '1002');
+            $drAccId = Account::where('code', $drCode)->value('id');
+            $revAtkId = Account::where('code', '4003')->value('id');
+            $revBankId = Account::where('code', '4004')->value('id');
+            $depositId = Account::where('code', '1401')->value('id');
+            $hppId = Account::where('code', '5001')->value('id');
+            $inventoryId = Account::where('code', '1201')->value('id');
+            if ($drAccId && $revAtkId && $revBankId && $depositId) {
+                $lines = [];
+                if ($total > 0) {
+                    $lines[] = ['account_id' => $drAccId, 'debit' => $total, 'credit' => 0, 'unit' => 'ATK'];
+                }
+                if ($sumRevenueSales > 0) {
+                    $lines[] = ['account_id' => $revAtkId, 'debit' => 0, 'credit' => $sumRevenueSales, 'unit' => 'ATK'];
+                }
+                if ($sumFee > 0) {
+                    $lines[] = ['account_id' => $revBankId, 'debit' => 0, 'credit' => $sumFee, 'unit' => 'ATK'];
+                }
+                if ($sumBankNominal > 0) {
+                    $lines[] = ['account_id' => $depositId, 'debit' => 0, 'credit' => $sumBankNominal, 'unit' => 'ATK'];
+                }
+                if ($hpp > 0 && $hppId && $inventoryId) {
+                    $lines[] = ['account_id' => $hppId, 'debit' => $hpp, 'credit' => 0, 'unit' => 'ATK'];
+                    $lines[] = ['account_id' => $inventoryId, 'debit' => 0, 'credit' => $hpp, 'unit' => 'ATK'];
+                }
+                $poster = app(AccountingPoster::class);
+                $poster->post(
+                    'ATK-' . $transaction->transaction_number,
+                    now()->toDateString(),
+                    'ATK POS',
+                    $lines,
+                    null,
+                    'atk_transaction',
+                    $transaction->id
+                );
             }
 
             DB::commit();

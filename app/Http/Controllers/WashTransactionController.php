@@ -6,6 +6,8 @@ use App\Models\WashTransaction;
 use App\Models\WashTransactionItem;
 use App\Models\WashService;
 use App\Models\WashCustomer;
+use App\Models\Account;
+use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -166,6 +168,25 @@ class WashTransactionController extends Controller
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
+            }
+
+            $cashCode = $request->payment_method === 'cash' ? '1001' : '1002';
+            $cashAccId = Account::where('code', $cashCode)->value('id');
+            $revAccId = Account::where('code', '4005')->value('id');
+            if ($cashAccId && $revAccId && $finalTotal > 0) {
+                $poster = app(AccountingPoster::class);
+                $poster->post(
+                    'WASH-' . $transaction->transaction_number,
+                    now()->toDateString(),
+                    'Wash POS',
+                    [
+                        ['account_id' => $cashAccId, 'debit' => $finalTotal, 'credit' => 0, 'unit' => 'MSTORE'],
+                        ['account_id' => $revAccId, 'debit' => 0, 'credit' => $finalTotal, 'unit' => 'MSTORE'],
+                    ],
+                    null,
+                    'wash_transaction',
+                    $transaction->id
+                );
             }
 
             DB::commit();

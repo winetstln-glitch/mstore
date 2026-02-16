@@ -19,6 +19,12 @@
                 <div class="col-auto">
                     <button class="btn btn-primary">Terapkan</button>
                 </div>
+                <div class="col-auto ms-auto">
+                    <div class="btn-group">
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('accounting.trial_balance.pdf', request()->all()) }}">Export PDF</a>
+                        <a class="btn btn-outline-success btn-sm" href="{{ route('accounting.trial_balance.excel', request()->all()) }}">Export Excel</a>
+                    </div>
+                </div>
             </form>
             <div class="table-responsive">
                 <table class="table table-bordered table-striped align-middle">

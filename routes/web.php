@@ -218,6 +218,28 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/trial-balance', [\App\Http\Controllers\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
+        Route::get('/income-statement', [\App\Http\Controllers\AccountingReportController::class, 'incomeStatement'])->name('income_statement');
+        Route::get('/balance-sheet', [\App\Http\Controllers\AccountingReportController::class, 'balanceSheet'])->name('balance_sheet');
+        Route::get('/ledger', [\App\Http\Controllers\AccountingReportController::class, 'ledger'])->name('ledger');
+        Route::get('/cash-flow', [\App\Http\Controllers\AccountingReportController::class, 'cashFlow'])->name('cash_flow');
+        Route::get('/trial-balance/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportTrialBalancePdf'])->name('trial_balance.pdf');
+        Route::get('/trial-balance/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportTrialBalanceExcel'])->name('trial_balance.excel');
+        Route::get('/income-statement/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportIncomeStatementPdf'])->name('income_statement.pdf');
+        Route::get('/income-statement/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportIncomeStatementExcel'])->name('income_statement.excel');
+        Route::get('/balance-sheet/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportBalanceSheetPdf'])->name('balance_sheet.pdf');
+        Route::get('/balance-sheet/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportBalanceSheetExcel'])->name('balance_sheet.excel');
+        Route::get('/ledger/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportLedgerPdf'])->name('ledger.pdf');
+        Route::get('/ledger/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportLedgerExcel'])->name('ledger.excel');
+        Route::get('/cash-flow/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportCashFlowPdf'])->name('cash_flow.pdf');
+        Route::get('/cash-flow/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportCashFlowExcel'])->name('cash_flow.excel');
+        
+        // Period management
+        Route::get('/periods', [\App\Http\Controllers\PeriodController::class, 'index'])->name('periods.index');
+        Route::get('/periods/create', [\App\Http\Controllers\PeriodController::class, 'create'])->name('periods.create');
+        Route::post('/periods', [\App\Http\Controllers\PeriodController::class, 'store'])->name('periods.store');
+        Route::get('/periods/{period}/opening', [\App\Http\Controllers\PeriodController::class, 'openingForm'])->name('periods.opening');
+        Route::post('/periods/{period}/opening', [\App\Http\Controllers\PeriodController::class, 'postOpening'])->name('periods.opening.post');
+        Route::post('/periods/{period}/close', [\App\Http\Controllers\PeriodController::class, 'close'])->name('periods.close');
     });
 
     // GenieACS / Network Monitor Routes
