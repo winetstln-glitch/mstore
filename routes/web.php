@@ -216,6 +216,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
+    Route::prefix('accounting')->name('accounting.')->group(function () {
+        Route::get('/trial-balance', [\App\Http\Controllers\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
+    });
+
     // GenieACS / Network Monitor Routes
     Route::prefix('genieacs')->name('genieacs.')->group(function () {
         // Server Management

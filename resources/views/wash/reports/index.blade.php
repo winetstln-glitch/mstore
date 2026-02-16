@@ -49,8 +49,8 @@
 
             <!-- RINGKASAN KEUANGAN (Full Width untuk Audit) -->
             <div class="table-responsive mb-4">
-                <table class="table table-bordered table-light mb-0">
-                    <thead class="table-secondary">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table">
                         <tr>
                             <th style="width: 33%;">Total Pemasukan</th>
                             <th style="width: 33%;">Total Pengeluaran</th>
@@ -71,7 +71,7 @@
             <h6 class="fw-bold mt-4 text-decoration-underline">A. Rincian Pemasukan (Harian)</h6>
             <div class="table-responsive mb-4">
                 <table class="table table-bordered table-striped table-hover align-middle">
-                    <thead class="table-light">
+                    <thead class="table">
                         <tr>
                             <th style="width: 5%;">No</th>
                             <th style="width: 15%;">Waktu</th>
@@ -94,7 +94,7 @@
                         @endforelse
                         
                         <!-- Total Footer -->
-                        <tr class="table-light fw-bold">
+                        <tr class="table fw-bold">
                             <td colspan="4" class="text-end">Total Pemasukan:</td>
                             <td class="text-end">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
                         </tr>
@@ -106,7 +106,7 @@
             <h6 class="fw-bold mt-4 text-decoration-underline">B. Rincian Pengeluaran (Harian)</h6>
             <div class="table-responsive mb-4">
                 <table class="table table-bordered table-striped table-hover align-middle">
-                    <thead class="table-light">
+                    <thead class="table">
                         <tr>
                             <th style="width: 5%;">No</th>
                             <th style="width: 20%;">Tanggal</th>
@@ -127,7 +127,7 @@
                         @endforelse
 
                         <!-- Total Footer -->
-                        <tr class="table-light fw-bold">
+                        <tr class="table fw-bold">
                             <td colspan="3" class="text-end">Total Pengeluaran:</td>
                             <td class="text-end">Rp {{ number_format($dailyExpense,0,',','.') }}</td>
                         </tr>
@@ -182,8 +182,8 @@
 
             <!-- RINGKASAN BULANAN -->
             <div class="table-responsive mb-4">
-                <table class="table table-bordered table-light mb-0">
-                    <thead class="table-secondary">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table">
                         <tr>
                             <th style="width: 33%;">Pemasukan Bulanan</th>
                             <th style="width: 33%;">Pengeluaran Bulanan</th>
@@ -202,6 +202,42 @@
 
             <!-- TABEL BULANAN -->
             <div class="row">
+                <div class="col-12 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">Rekap Harian ({{ $month }})</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%;">Tanggal</th>
+                                    <th class="text-end" style="width: 26%;">Pemasukan</th>
+                                    <th class="text-end" style="width: 26%;">Pengeluaran</th>
+                                    <th class="text-end" style="width: 28%;">Laba / Rugi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $incomeMap = collect($monthlyDailyIncome)->keyBy('d');
+                                    $expenseMap = collect($monthlyDailyExpense)->keyBy('d');
+                                    $days = collect($incomeMap->keys())->merge($expenseMap->keys())->unique()->sort();
+                                @endphp
+                                @forelse($days as $d)
+                                @php
+                                    $inc = (float)($incomeMap[$d]->total ?? 0);
+                                    $exp = (float)($expenseMap[$d]->total ?? 0);
+                                @endphp
+                                <tr>
+                                    <td>{{ $d }}</td>
+                                    <td class="text-end">Rp {{ number_format($inc,0,',','.') }}</td>
+                                    <td class="text-end">Rp {{ number_format($exp,0,',','.') }}</td>
+                                    <td class="text-end fw-semibold">Rp {{ number_format($inc - $exp,0,',','.') }}</td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="4" class="text-center">Tidak ada data</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="col-md-6 mb-4">
                     <h6 class="fw-bold text-decoration-underline">Statistik per Layanan (Bulanan)</h6>
                     <table class="table table-bordered table-sm">

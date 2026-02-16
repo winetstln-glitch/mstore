@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             InventoryItemSeeder::class,
             SettingSeeder::class,
             PackageSeeder::class,
+            ChartOfAccountsSeeder::class,
         ]);
     }
 }
