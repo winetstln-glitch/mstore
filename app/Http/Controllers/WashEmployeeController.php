@@ -4,45 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Models\WashEmployee;
 use Illuminate\Http\Request;
-use App\Models\User;
 
 class WashEmployeeController extends Controller
 {
     public function index()
     {
-        $employees = WashEmployee::with('user')->get();
+        $employees = WashEmployee::all();
         return view('wash.employees.index', compact('employees'));
     }
 
     public function create()
     {
-        $users = User::orderBy('name')->get();
-        return view('wash.employees.create', compact('users'));
+        return view('wash.employees.create');
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required',
-            'user_id' => 'nullable|exists:users,id',
         ]);
-        WashEmployee::create($request->only(['name','phone','status','user_id']));
+        WashEmployee::create($request->all());
         return redirect()->route('wash.employees.index')->with('success', 'Employee created successfully.');
     }
 
     public function edit(WashEmployee $employee)
     {
-        $users = User::orderBy('name')->get();
-        return view('wash.employees.edit', compact('employee','users'));
+        return view('wash.employees.edit', compact('employee'));
     }
 
     public function update(Request $request, WashEmployee $employee)
     {
         $request->validate([
             'name' => 'required',
-            'user_id' => 'nullable|exists:users,id',
         ]);
-        $employee->update($request->only(['name','phone','status','user_id']));
+        $employee->update($request->all());
         return redirect()->route('wash.employees.index')->with('success', 'Employee updated successfully.');
     }
 

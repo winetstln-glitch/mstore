@@ -8,7 +8,7 @@ class SystemMetricsService
     {
         $cores = $this->getCoreCount();
         $loadAvg = function_exists('sys_getloadavg') ? sys_getloadavg() : [0, 0, 0];
-        $cpuUsagePct = $this->getCpuUsagePct($cores, $loadAvg);
+        $cpuUsagePct = $cores > 0 ? min(100, round(($loadAvg[0] / $cores) * 100)) : 0;
 
         $memInfo = $this->parseMemInfo();
         $memTotalKb = $memInfo['MemTotal'] ?? 0;
@@ -42,56 +42,6 @@ class SystemMetricsService
             'swap_used_pct' => $swapUsedPct,
             'loadavg' => $loadAvg,
             'cores' => $cores,
-        ];
-    }
-
-    private function getCpuUsagePct(int $cores, array $loadAvg): int
-    {
-        if (is_readable('/proc/stat')) {
-            $a = $this->readProcStat();
-            usleep(200000);
-            $b = $this->readProcStat();
-            if ($a && $b) {
-                $idleA = $a['idle'] + $a['iowait'];
-                $idleB = $b['idle'] + $b['iowait'];
-                $nonIdleA = $a['user'] + $a['nice'] + $a['system'] + $a['irq'] + $a['softirq'] + $a['steal'];
-                $nonIdleB = $b['user'] + $b['nice'] + $b['system'] + $b['irq'] + $b['softirq'] + $b['steal'];
-                $totalA = $idleA + $nonIdleA;
-                $totalB = $idleB + $nonIdleB;
-                $totalDelta = max(1, $totalB - $totalA);
-                $idleDelta = max(0, $idleB - $idleA);
-                $pct = (int)round((1 - ($idleDelta / $totalDelta)) * 100);
-                if ($pct < 0) $pct = 0;
-                if ($pct > 100) $pct = 100;
-                return $pct;
-            }
-        }
-        return $cores > 0 ? min(100, (int)round(($loadAvg[0] / $cores) * 100)) : 0;
-    }
-
-    private function readProcStat(): array
-    {
-        $line = '';
-        $fh = @fopen('/proc/stat', 'r');
-        if ($fh) {
-            $line = fgets($fh);
-            fclose($fh);
-        }
-        if (!$line || strpos($line, 'cpu ') !== 0) {
-            return [];
-        }
-        $parts = preg_split('/\s+/', trim($line));
-        $vals = array_slice($parts, 1);
-        $vals = array_map('intval', $vals);
-        return [
-            'user' => $vals[0] ?? 0,
-            'nice' => $vals[1] ?? 0,
-            'system' => $vals[2] ?? 0,
-            'idle' => $vals[3] ?? 0,
-            'iowait' => $vals[4] ?? 0,
-            'irq' => $vals[5] ?? 0,
-            'softirq' => $vals[6] ?? 0,
-            'steal' => $vals[7] ?? 0,
         ];
     }
 

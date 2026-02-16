@@ -153,12 +153,6 @@
                              <option value="hutang">Hutang</option>
                          </select>
                     </div>
-                    <div class="form-check mb-3 d-none" id="debtToggleDiv">
-                        <input class="form-check-input" type="checkbox" id="isDebt">
-                        <label class="form-check-label" for="isDebt">
-                            Catat sebagai Hutang (Kasbon)
-                        </label>
-                    </div>
                     
                     <div class="mb-3" id="cashInputDiv">
                         <label class="form-label">Cash Received</label>
@@ -170,27 +164,6 @@
                              <span>Change:</span>
                              <span id="changeAmount" class="fw-bold">Rp 0</span>
                         </div>
-                    </div>
-                    <div class="mb-3 d-none" id="coordinatorDiv">
-                        <label class="form-label">Nama Pengurus</label>
-                        <select class="form-select" id="coordinatorId">
-                            <option value="">-- Pilih Pengurus --</option>
-                            @foreach(($coordinators ?? []) as $c)
-                                <option value="{{ $c->id }}">{{ $c->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3 d-none" id="dueDateDiv">
-                        <label class="form-label">Jatuh Tempo (opsional)</label>
-                        <input type="date" class="form-control" id="dueDate">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nama Pelanggan</label>
-                        <input type="text" class="form-control" id="customerName" placeholder="Opsional, wajib jika Hutang">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">No. HP</label>
-                        <input type="text" class="form-control" id="customerPhone" placeholder="Opsional, wajib jika Hutang">
                     </div>
 
                     <button class="btn btn-success w-100 py-2" onclick="processTransaction()" id="btnCheckout" disabled>
@@ -209,34 +182,16 @@
     // Attach click handlers to product/service cards
     document.addEventListener('DOMContentLoaded', function () {
         const cashDiv = document.getElementById('cashInputDiv');
-        const coordDiv = document.getElementById('coordinatorDiv');
-        const debtDiv = document.getElementById('debtToggleDiv');
-        const debtCbx = document.getElementById('isDebt');
-        const dueDiv = document.getElementById('dueDateDiv');
         const methodSel = document.getElementById('paymentMethod');
         methodSel.addEventListener('change', function () {
-            const isCash = this.value === 'cash';
-            const isDebt = this.value === 'hutang';
-            cashDiv.style.display = isCash ? '' : 'none';
-            coordDiv.classList.toggle('d-none', !isDebt);
-            dueDiv.classList.toggle('d-none', !isDebt);
-            if (!isCash) {
+            if (this.value === 'cash') {
+                cashDiv.style.display = '';
+            } else {
+                cashDiv.style.display = 'none';
                 document.getElementById('cashAmount').value = '';
                 document.getElementById('changeAmount').textContent = 'Rp 0';
             }
         });
-        if (debtCbx) {
-            debtCbx.addEventListener('change', function () {
-                if (this.checked) {
-                    methodSel.value = 'hutang';
-                } else {
-                    if (methodSel.value === 'hutang') {
-                        methodSel.value = 'cash';
-                    }
-                }
-                methodSel.dispatchEvent(new Event('change'));
-            });
-        }
         document.querySelectorAll('.product-card[data-id]').forEach(function (el) {
             el.addEventListener('click', function () {
                 const id = parseInt(this.dataset.id);
@@ -265,11 +220,6 @@
         const tabP = document.getElementById('tabProducts');
         const tabS = document.getElementById('tabServices');
         const tabB = document.getElementById('tabBank');
-        const debtDiv = document.getElementById('debtToggleDiv');
-        const debtCbx = document.getElementById('isDebt');
-        const methodSel = document.getElementById('paymentMethod');
-        const coordDiv = document.getElementById('coordinatorDiv');
-        const dueDiv = document.getElementById('dueDateDiv');
         if (tab === 'products') {
             pList.classList.remove('d-none');
             sList.classList.add('d-none');
@@ -277,16 +227,6 @@
             tabP.classList.add('active');
             tabS.classList.remove('active');
             tabB.classList.remove('active');
-            debtDiv.classList.add('d-none');
-            dueDiv.classList.add('d-none');
-            if (debtCbx) {
-                debtCbx.checked = false;
-                if (methodSel.value === 'hutang') {
-                    methodSel.value = 'cash';
-                    methodSel.dispatchEvent(new Event('change'));
-                    coordDiv.classList.add('d-none');
-                }
-            }
         } else {
             if (tab === 'services') {
                 pList.classList.add('d-none');
@@ -295,8 +235,6 @@
                 tabS.classList.add('active');
                 tabP.classList.remove('active');
                 tabB.classList.remove('active');
-                debtDiv.classList.remove('d-none');
-                dueDiv.classList.remove('d-none');
             } else {
                 pList.classList.add('d-none');
                 sList.classList.add('d-none');
@@ -304,16 +242,6 @@
                 tabB.classList.add('active');
                 tabP.classList.remove('active');
                 tabS.classList.remove('active');
-                debtDiv.classList.add('d-none');
-                dueDiv.classList.add('d-none');
-                if (debtCbx) {
-                    debtCbx.checked = false;
-                    if (methodSel.value === 'hutang') {
-                        methodSel.value = 'cash';
-                        methodSel.dispatchEvent(new Event('change'));
-                        coordDiv.classList.add('d-none');
-                    }
-                }
             }
         }
         document.getElementById('productSearch').dispatchEvent(new Event('input'));
@@ -324,10 +252,7 @@
         const nominal = parseFloat(document.getElementById('bankNominal').value) || 0;
         const fee = parseFloat(document.getElementById('bankFee').value) || 0;
         const name = (document.getElementById('bankServiceId').selectedOptions[0]?.text) || 'Agen Bank';
-        if (nominal < 10000) {
-            alert('Nominal minimal Rp 10.000');
-            return;
-        }
+        if (nominal <= 0 && fee <= 0) return;
         cart.push({ id, name, price: fee, quantity: 1, maxStock: 1, bank: true, nominal_transaksi: nominal, fee });
         renderCart();
     }
@@ -457,37 +382,21 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
         if (cart.length === 0) return;
 
         const paymentMethod = document.getElementById('paymentMethod').value;
-        const isDebt = document.getElementById('isDebt') ? document.getElementById('isDebt').checked : (paymentMethod === 'hutang');
-        const sendPaymentMethod = isDebt ? 'debt' : paymentMethod;
-        const cashAmount = sendPaymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
+        const cashAmount = paymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
         let total = 0;
         cart.forEach(item => {
             total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
         });
 
-        if (sendPaymentMethod === 'cash' && cashAmount < total) {
+        if (paymentMethod === 'cash' && cashAmount < total) {
             alert('Insufficient cash amount!');
-            return;
-        }
-
-        const customerName = document.getElementById('customerName') ? document.getElementById('customerName').value.trim() : '';
-        const customerPhone = document.getElementById('customerPhone') ? document.getElementById('customerPhone').value.trim() : '';
-        if (isDebt && !customerName) {
-            alert('Nama pelanggan wajib diisi untuk hutang.');
-            const cn = document.getElementById('customerName');
-            if (cn) cn.focus();
             return;
         }
 
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
-            payment_method: sendPaymentMethod,
-            cash_amount: cashAmount,
-            coordinator_id: paymentMethod === 'hutang' ? (document.getElementById('coordinatorId').value || null) : null,
-            is_debt: isDebt,
-            customer_name: customerName || null,
-            customer_phone: customerPhone || null,
-            due_date: isDebt ? (document.getElementById('dueDate')?.value || null) : null
+            payment_method: paymentMethod,
+            cash_amount: cashAmount
         };
 
         const btn = document.getElementById('btnCheckout');
@@ -505,8 +414,8 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                const urlReceipt = result.receipt_url ? result.receipt_url : ('{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt');
-                window.open(urlReceipt, '_blank', 'width=400,height=600');
+                // Open Receipt
+                window.open('{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt', '_blank', 'width=400,height=600');
                 
                 // Reset Cart
                 cart = [];

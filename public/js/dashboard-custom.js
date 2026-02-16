@@ -90,9 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
 ;(function(){
     const ua = navigator.userAgent || '';
     const isWV = /\bwv\b|Android.*; wv/.test(ua) || !!window.ReactNativeWebView;
-    if (isWV) {
-        try { document.documentElement.classList.add('is-wv'); } catch (e) {}
-    }
     function onLinkClick(e){
         const a = e.target.closest('a');
         if(!a) return;
@@ -101,7 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(href.startsWith('#') || href.startsWith('javascript:')) return;
         if(isWV){
             e.preventDefault();
-            // open all links in same view for WebView
             window.location.assign(href);
         }
     }
@@ -114,39 +110,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return origOpen.apply(window, arguments);
     };
-})();
-
-// Enhance sidebar history behavior for Android back button in WebView
-(function(){
-    const body = document.body;
-    const overlay = document.getElementById('sidebar-overlay');
-    const isWV = document.documentElement.classList.contains('is-wv');
-    if (!isWV) return;
-    function sidebarOpen(){
-        return body.classList.contains('sb-sidenav-toggled');
-    }
-    function pushIfNeeded(){
-        if (sidebarOpen()) {
-            try { history.pushState({ sidebar: true }, ''); } catch(e){}
-        }
-    }
-    window.addEventListener('popstate', function(){
-        if (sidebarOpen()) {
-            body.classList.remove('sb-sidenav-toggled');
-        }
-    });
-    // Observe toggle button and overlay
-    const toggle = document.getElementById('sidebarToggle');
-    if (toggle) {
-        toggle.addEventListener('click', function(){
-            setTimeout(pushIfNeeded, 0);
-        });
-    }
-    if (overlay) {
-        overlay.addEventListener('click', function(){
-            if (sidebarOpen()) {
-                try { history.back(); } catch(e){ body.classList.remove('sb-sidenav-toggled'); }
-            }
-        });
-    }
 })();

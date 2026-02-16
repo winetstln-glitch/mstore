@@ -40,8 +40,7 @@ class AtkTransactionController extends Controller
         $products = AtkProduct::where('category', 'ATK')->where('stock', '>', 0)->get();
         $services = AtkProduct::where('category', 'JASA POTOCOPY')->get();
         $bankServices = AtkProduct::where('category', 'JASA TRANSFER BANK')->get();
-        $coordinators = \App\Models\Coordinator::orderBy('name')->get(['id','name']);
-        return view('atk.pos', compact('products', 'services', 'bankServices', 'coordinators'));
+        return view('atk.pos', compact('products', 'services', 'bankServices'));
     }
 
     public function store(Request $request)
@@ -54,11 +53,6 @@ class AtkTransactionController extends Controller
             'items.*.fee' => 'nullable|numeric|min:0',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
-            'coordinator_id' => 'nullable|exists:coordinators,id',
-            'is_debt' => 'nullable|boolean',
-            'customer_name' => 'nullable|string|max:255',
-            'customer_phone' => 'nullable|string|max:50',
-            'due_date' => 'nullable|date',
         ]);
 
         try {
@@ -108,53 +102,24 @@ class AtkTransactionController extends Controller
                 ];
             }
 
-            $isDebt = $request->boolean('is_debt') || in_array(strtolower($request->payment_method), ['hutang', 'debt']);
-            $method = $isDebt ? 'hutang' : $request->payment_method;
-            $cashAmount = $request->cash_amount;
-            $amountPaid = null;
-            $changeAmount = 0;
-            if ($method === 'cash') {
-                $amountPaid = $total;
-                $cashAmount = $cashAmount;
-                $changeAmount = $cashAmount ? ($cashAmount - $total) : 0;
-            } elseif (in_array($method, ['transfer', 'qris'])) {
-                $amountPaid = $total;
-                $cashAmount = null;
-                $changeAmount = 0;
-            } elseif ($method === 'hutang') {
-                if (!$request->filled('customer_name')) {
-                    throw new \Exception('Nama pelanggan wajib diisi untuk hutang.');
-                }
-                $amountPaid = 0;
-                $cashAmount = null;
-                $changeAmount = 0;
-            }
-
             $transaction = AtkTransaction::create([
-                'user_id' => Auth::id(),
-                'transaction_number' => 'TRX-' . time(),
-                'total_amount' => $total,
-                'payment_method' => $method,
-                'cash_amount' => $cashAmount,
-                'change_amount' => $changeAmount,
-                'amount_paid' => $amountPaid,
-                'coordinator_id' => $method === 'hutang' ? $request->coordinator_id : null,
-                'customer_name' => $method === 'hutang' ? $request->customer_name : null,
-                'customer_phone' => $method === 'hutang' ? $request->customer_phone : null,
-                'is_debt' => $isDebt,
-                'due_date' => $isDebt ? $request->due_date : null,
-            ]);
+                    'user_id' => Auth::id(),
+                    'transaction_number' => 'TRX-' . time(),
+                    'invoice_number' => 'INV-' . time(), // Added to satisfy legacy constraint
+                    'total_amount' => $total,
+                    'payment_method' => $request->payment_method,
+                    'cash_amount' => $request->cash_amount,
+                    'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
+                ]);
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
             }
 
             // Update default cash balance (Kas Utama)
-            if (!$isDebt) {
-                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-                $cash->balance = (float)$cash->balance + (float)$total;
-                $cash->save();
-            }
+            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+            $cash->balance = (float)$cash->balance + (float)$total;
+            $cash->save();
 
             // Reduce Agent Deposit by nominal transfer sum
             if ($sumBankNominal > 0) {
@@ -168,7 +133,6 @@ class AtkTransactionController extends Controller
             return response()->json([
                 'success' => true,
                 'transaction_id' => $transaction->id,
-                'receipt_url' => url('atk/transactions/'.$transaction->id.'/receipt'),
                 'message' => 'Transaction successful'
             ]);
 
@@ -292,63 +256,5 @@ class AtkTransactionController extends Controller
 
             $writer->close();
         }, 'atk_transactions.xlsx');
-    }
-
-    public function debts(Request $request)
-    {
-        $query = AtkTransaction::with(['user', 'coordinator'])->where('is_debt', true);
-        if ($request->filled('coordinator_id')) {
-            $query->where('coordinator_id', $request->coordinator_id);
-        }
-        if ($request->filled('status')) {
-            if ($request->status === 'belum') {
-                $query->where('is_settled', false);
-            } elseif ($request->status === 'lunas') {
-                $query->where('is_settled', true);
-            }
-        }
-        if ($request->filled('due_start') && $request->filled('due_end')) {
-            $query->whereBetween('due_date', [$request->due_start, $request->due_end]);
-        }
-        $debts = $query->latest()->paginate(15)->appends($request->query());
-        $coordinators = \App\Models\Coordinator::orderBy('name')->get(['id','name']);
-        return view('atk.debts.index', compact('debts', 'coordinators'));
-    }
-
-    public function settleDebt(Request $request, AtkTransaction $transaction)
-    {
-        $request->validate([
-            'pay_amount' => 'required|numeric|min:1',
-            'method' => 'required|string|in:cash,transfer,qris',
-            'due_date' => 'nullable|date'
-        ]);
-        if (!$transaction->is_debt || $transaction->is_settled) {
-            return response()->json(['success' => false, 'message' => 'Transaksi tidak valid untuk pelunasan'], 400);
-        }
-        try {
-            DB::beginTransaction();
-            $pay = (float)$request->pay_amount;
-            $transaction->amount_paid = (float)$transaction->amount_paid + $pay;
-            $transaction->settled_amount = $transaction->amount_paid;
-            if ($transaction->amount_paid + 0.00001 >= (float)$transaction->total_amount) {
-                $transaction->is_settled = true;
-                $transaction->settled_at = now();
-            }
-            if ($request->filled('due_date')) {
-                $transaction->due_date = $request->due_date;
-            }
-            $transaction->save();
-
-            if ($request->method === 'cash') {
-                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-                $cash->balance = (float)$cash->balance + $pay;
-                $cash->save();
-            }
-            DB::commit();
-            return response()->json(['success' => true, 'message' => 'Pelunasan berhasil', 'is_settled' => $transaction->is_settled]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
-        }
     }
 }

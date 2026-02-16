@@ -47,7 +47,8 @@ class WashTransactionController extends Controller
     {
         $services = WashService::where('is_active', true)->orderBy('vehicle_type')->orderBy('name')->get();
         $brands = $this->brands;
-        return view('wash.pos', compact('services', 'brands'));
+        $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id','name']);
+        return view('wash.pos', compact('services', 'brands', 'employees'));
     }
 
     public function checkCustomer(Request $request)
@@ -109,13 +110,13 @@ class WashTransactionController extends Controller
                 $subtotal = $price * $itemData['quantity'];
                 $total += $subtotal;
 
-              $items[] = [
-                'wash_service_id' => $service->id,
-                'service_name'    => $service->name,
-                'price'           => $price,
-                'quantity'        => $itemData['quantity'],
-                'subtotal'        => $subtotal,
-                'employee_id'     => Auth::id(),
+                $items[] = [
+                    'wash_service_id' => $service->id,
+                    'service_name'    => $service->name,
+                    'price'           => $price,
+                    'quantity'        => $itemData['quantity'],
+                    'subtotal'        => $subtotal,
+                    'employee_id'     => $itemData['employee_id'] ?? null,
                 ];
 
             }
@@ -160,6 +161,7 @@ class WashTransactionController extends Controller
                 'customer_name' => $request->customer_name ?? ($customer ? $customer->name : null),
                 'vehicle_plate' => $request->vehicle_plate,
                 'vehicle_brand' => $request->vehicle_brand,
+                'status' => 'lunas',
             ]);
 
             foreach ($items as $item) {

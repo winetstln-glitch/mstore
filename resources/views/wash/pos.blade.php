@@ -95,7 +95,7 @@
                         </div>
 
                         <hr>
-                        <div id="cartItems" class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                        <div id="cartItems" class="mb-3" style="max-height: 360px; overflow-y: auto;">
                             <!-- Cart items will appear here -->
                             <p class="text-center text-muted" id="emptyCartMsg">No items selected</p>
                         </div>
@@ -106,12 +106,23 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="cash_amount" class="form-label">Cash Amount</label>
-                            <input type="number" class="form-control" id="cash_amount" name="cash_amount" oninput="calculateChange()">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method">
+                                <option value="cash">Cash</option>
+                                <option value="qris">QRIS</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="edc"> NB EDC</option>
+                            </select>
                         </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Change:</span>
-                            <span id="changeAmount">Rp 0</span>
+                        <div id="cashSection">
+                            <div class="mb-3">
+                                <label for="cash_amount" class="form-label">Cash Amount</label>
+                                <input type="number" class="form-control" id="cash_amount" name="cash_amount" oninput="calculateChange()">
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Change:</span>
+                                <span id="changeAmount">Rp 0</span>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100" id="btnCheckout" disabled>Checkout</button>
@@ -184,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     let cart = [];
+    const employees = @json($employees ?? []);
 
     function addToCart(id, name, price, type) {
         id = parseInt(id);
@@ -284,18 +296,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const emptyMsg = document.getElementById('emptyCartMsg');
         const totalEl = document.getElementById('totalAmount');
         const btnCheckout = document.getElementById('btnCheckout');
-        const useVoucher = document.getElementById('use_voucher').checked;
+        const voucherEl = document.getElementById('use_voucher');
+        const useVoucher = voucherEl ? !!voucherEl.checked : false;
         
         cartContainer.innerHTML = '';
         let total = 0;
         let discount = 0;
 
         if (cart.length === 0) {
-            emptyMsg.style.display = 'block';
-            btnCheckout.disabled = true;
+            if (emptyMsg) emptyMsg.style.display = 'block';
+            if (btnCheckout) btnCheckout.disabled = true;
         } else {
-            emptyMsg.style.display = 'none';
-            btnCheckout.disabled = false;
+            if (emptyMsg) emptyMsg.style.display = 'none';
+            if (btnCheckout) btnCheckout.disabled = false;
 
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
@@ -303,16 +316,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 const div = document.createElement('div');
                 div.className = 'd-flex justify-content-between align-items-center mb-2 border-bottom pb-2';
+                const selectId = 'emp_sel_' + item.id;
+                const empOptions = ['<option value=\"\">- Pegawai -</option>']
+                    .concat(employees.map(e => `<option value=\"${e.id}\" ${item.employee_id==e.id?'selected':''}>${e.name}</option>`))
+                    .join('');
                 div.innerHTML = `
-                    <div>
-                        <div>${item.name}</div>
-                        <small class="text-muted">${item.quantity} x ${item.price.toLocaleString('id-ID')}</small>
+                    <div class="me-2">
+                        <div class="fw-semibold">${item.name}</div>
+                        <small class="text-muted d-block">${item.quantity} x ${item.price.toLocaleString('id-ID')}</small>
+                        <div class="mt-1">
+                            <select id="${selectId}" class="form-select form-select-sm">
+                                ${empOptions}
+                            </select>
+                        </div>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="me-2">${itemTotal.toLocaleString('id-ID')}</span>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="removeFromCart(${item.id})">&times;</button>
+                        <span class="me-2">Rp ${itemTotal.toLocaleString('id-ID')}</span>
+                         <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
+                setTimeout(() => {
+                    const sel = document.getElementById(selectId);
+                    if (sel) {
+                        sel.addEventListener('change', function() {
+                            item.employee_id = this.value ? parseInt(this.value) : null;
+                        });
+                    }
+                }, 0);
                 cartContainer.appendChild(div);
             });
 
@@ -329,21 +359,25 @@ document.addEventListener('DOMContentLoaded', function () {
              totalEl.textContent = 'Rp ' + finalTotal.toLocaleString('id-ID');
         }
         
-        totalEl.dataset.amount = finalTotal; // Store numeric value
+        if (totalEl) totalEl.dataset.amount = finalTotal; // Store numeric value
         calculateChange();
     }
 
     function calculateChange() {
         const totalEl = document.getElementById('totalAmount');
-        const total = parseInt(totalEl.dataset.amount) || 0;
-        const cashInput = document.getElementById('cash_amount').value;
+        const total = parseInt(totalEl?.dataset?.amount || 0) || 0;
+        const method = document.getElementById('payment_method')?.value || 'cash';
+        const cashInput = document.getElementById('cash_amount')?.value || 0;
         const cash = parseInt(cashInput) || 0;
         const changeEl = document.getElementById('changeAmount');
+        const cashSection = document.getElementById('cashSection');
 
-        if (cash >= total) {
-            changeEl.textContent = 'Rp ' + (cash - total).toLocaleString('id-ID');
+        if (cashSection) cashSection.style.display = (method === 'cash') ? '' : 'none';
+
+        if (method === 'cash' && cash >= total) {
+            if (changeEl) changeEl.textContent = 'Rp ' + (cash - total).toLocaleString('id-ID');
         } else {
-            changeEl.textContent = 'Rp 0';
+            if (changeEl) changeEl.textContent = 'Rp 0';
         }
     }
 
@@ -371,6 +405,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Toggle cash section on payment method change
+    const paymentMethodEl = document.getElementById('payment_method');
+    if (paymentMethodEl) {
+        paymentMethodEl.addEventListener('change', calculateChange);
+        // Initialize visibility
+        calculateChange();
+    }
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -378,7 +419,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const totalText = document.getElementById('totalAmount').textContent.replace('Rp ', '').replace(/\./g, '');
         const total = parseInt(totalText) || 0;
-        const cashInput = document.getElementById('cash_amount').value;
+        const method = document.getElementById('payment_method')?.value || 'cash';
+        const cashInput = document.getElementById('cash_amount')?.value || 0;
         const cash = parseInt(cashInput) || 0;
 
         /* if (cash < total) {
@@ -388,11 +430,13 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const data = {
             items: cart,
-            payment_method: 'cash',
-            cash_amount: cash,
+            payment_method: method,
+            cash_amount: method === 'cash' ? cash : null,
             customer_name: document.getElementById('customer_name').value,
+            customer_phone: document.getElementById('customer_phone').value,
+            use_voucher: document.getElementById('use_voucher').checked,
             vehicle_plate: document.getElementById('vehicle_plate').value,
-            _token: '{{ csrf_token() }}'
+            vehicle_brand: document.getElementById('vehicle_brand').value
         };
         
         const btn = document.getElementById('btnCheckout');
@@ -404,7 +448,8 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify(data)
         })
@@ -416,9 +461,19 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(data => {
             if (data.success) {
-                const url = '{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt';
+                const url = data.receipt_url ? data.receipt_url : ('{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt');
                 window.open(url, '_blank', 'width=400,height=600');
-                // Reset all states for next transaction
+                const phone = data.customer_phone || document.getElementById('customer_phone').value;
+                if (phone && !data.wa_sent) {
+                    fetch(`{{ url('wash/transactions') }}/${data.transaction_id}/whatsapp-receipt`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: `phone=${encodeURIComponent(phone)}`
+                    }).catch(()=>{});
+                }
                 resetCart();
             } else {
                 alert('Error: ' + data.message);

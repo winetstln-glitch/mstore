@@ -495,20 +495,20 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: #03cef7cf;
+        background: #06d4feff;
         border: 1px solid white;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
     [data-bs-theme="dark"] .custom-icon {
-        background: #12151b81;
-        border-color: #1e293b39;
+        background: #222730db;
+        border-color: #f2f6a765;
     }
-    .icon-olt { color: #6f42c1; border-color: #6f42c1; }
-    .icon-odc { color: #fd7e14; border-color: #fd7e14; }
-    .icon-odp { color: #0dcaf0; border-color: #0dcaf0; }
-    .icon-htb { color: #6610f2; border-color: #6610f2; }
-    .icon-closure { color: #343a40; border-color: #343a40; }
-    .icon-customer-online { color: #06f6d6ff; border-color: #0ce9daff; }
+    .icon-olt { color: #f513e6ff; border-color: #f913f9ff; }
+    .icon-odc { color: #f1fd14ff; border-color: #fdf114ff; }
+    .icon-odp { color: #34f994; border-color: #34f994; }
+    .icon-htb { color: #0707fcff; border-color: #0c14f8ff; }
+    .icon-closure { color: #361347ff; border-color: #343a40; }
+    .icon-customer-online { color: #10fdddff; border-color: #0ce9daff; }
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
     .icon-asset { color: #d63384; border-color: #d63384; }
 

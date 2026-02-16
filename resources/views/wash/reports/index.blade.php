@@ -1,0 +1,267 @@
+@extends('layouts.app')
+@section('title', 'Laporan Wash')
+
+@section('content')
+<div class="container-fluid py-4">
+    
+    <!-- Judul & Filter -->
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 fw-bold">Laporan Keuangan Wash</h5>
+                <div class="btn-group">
+                    <a class="btn btn-sm btn-outline-secondary" id="btnExportPdf">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </a>
+                    <a class="btn btn-sm btn-outline-success" id="btnExportExcel">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Navigasi Tab -->
+            <ul class="nav nav-tabs" id="reportTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily-content" type="button">Harian</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly-content" type="button">Bulanan</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Isi Laporan -->
+    <div class="tab-content" id="reportTabContent">
+        
+        <!-- =========================== -->
+        <!-- TAB HARIAN -->
+        <!-- =========================== -->
+        <div class="tab-pane fade show active" id="daily-content">
+            
+            <!-- Filter Tanggal -->
+            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end">
+                <input type="hidden" name="view" value="daily">
+                <div class="col-auto"><label class="form-label mb-0 fw-bold">Tanggal:</label></div>
+                <div class="col-auto"><input type="date" name="date" value="{{ $date }}" class="form-control"></div>
+                <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
+            </form>
+
+            <!-- RINGKASAN KEUANGAN (Full Width untuk Audit) -->
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-light mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width: 33%;">Total Pemasukan</th>
+                            <th style="width: 33%;">Total Pengeluaran</th>
+                            <th style="width: 34%;">Laba / Rugi Kotor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle" style="font-size: 1.1rem;">
+                            <td class="text-success fw-bold">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
+                            <td class="text-danger fw-bold">Rp {{ number_format($dailyExpense,0,',','.') }}</td>
+                            <td class="fw-bold">Rp {{ number_format($dailyIncome - $dailyExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TABEL 1: RINCIAN PEMASUKAN (Full Width) -->
+            <h6 class="fw-bold mt-4 text-decoration-underline">A. Rincian Pemasukan (Harian)</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 15%;">Waktu</th>
+                            <th style="width: 20%;">No. Transaksi</th>
+                            <th style="width: 25%;">Metode Pembayaran</th>
+                            <th class="text-end" style="width: 35%;">Nominal (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dailyIncomeRows as $index => $r)
+                        <tr>
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td>{{ $r->created_at->format('H:i') }}</td>
+                            <td class="font-monospace">{{ $r->transaction_number }}</td>
+                            <td><span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span></td>
+                            <td class="text-end">{{ number_format($r->total_amount,0,',','.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="5" class="text-center py-3">Tidak ada data pemasukan</td></tr>
+                        @endforelse
+                        
+                        <!-- Total Footer -->
+                        <tr class="table-light fw-bold">
+                            <td colspan="4" class="text-end">Total Pemasukan:</td>
+                            <td class="text-end">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TABEL 2: RINCIAN PENGELUARAN (Full Width) -->
+            <h6 class="fw-bold mt-4 text-decoration-underline">B. Rincian Pengeluaran (Harian)</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 20%;">Tanggal</th>
+                            <th style="width: 40%;">Deskripsi / Keterangan</th>
+                            <th class="text-end" style="width: 35%;">Nominal (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dailyExpenseRows as $index => $r)
+                        <tr>
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td>{{ \Carbon\Carbon::parse($r->transaction_date)->format('Y-m-d') }}</td>
+                            <td>{{ $r->description }}</td>
+                            <td class="text-end text-danger">{{ number_format($r->amount,0,',','.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="text-center py-3">Tidak ada data pengeluaran</td></tr>
+                        @endforelse
+
+                        <!-- Total Footer -->
+                        <tr class="table-light fw-bold">
+                            <td colspan="3" class="text-end">Total Pengeluaran:</td>
+                            <td class="text-end">Rp {{ number_format($dailyExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TABEL 3 & 4: ANALISIS (Full Width, Stacked) -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">C. Breakdown per Layanan</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Layanan</th><th class="text-end">Total</th></tr></thead>
+                        <tbody>
+                            @forelse($dailyByService as $r)
+                            <tr><td>{{ $r->service_name }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">D. Breakdown per Metode Bayar</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Metode</th><th class="text-end">Total</th></tr></thead>
+                        <tbody>
+                            @forelse($dailyByPayment as $r)
+                            <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div> <!-- End Daily Tab -->
+
+        <!-- =========================== -->
+        <!-- TAB BULANAN -->
+        <!-- =========================== -->
+        <div class="tab-pane fade" id="monthly-content">
+            
+            <!-- Filter Bulan -->
+            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end">
+                <input type="hidden" name="view" value="monthly">
+                <div class="col-auto"><label class="form-label mb-0 fw-bold">Bulan:</label></div>
+                <div class="col-auto"><input type="month" name="month" value="{{ $month }}" class="form-control"></div>
+                <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
+            </form>
+
+            <!-- RINGKASAN BULANAN -->
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-light mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width: 33%;">Pemasukan Bulanan</th>
+                            <th style="width: 33%;">Pengeluaran Bulanan</th>
+                            <th style="width: 34%;">Laba Bersih Bulanan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</td>
+                            <td class="text-danger">Rp {{ number_format($monthlyExpense,0,',','.') }}</td>
+                            <td>Rp {{ number_format($monthlyIncome - $monthlyExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TABEL BULANAN -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">Statistik per Layanan (Bulanan)</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Layanan</th><th class="text-end">Total</th></tr></thead>
+                        <tbody>
+                            @forelse($monthlyByService as $r)
+                            <tr><td>{{ $r->service_name }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">Statistik per Metode (Bulanan)</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead><tr><th>Metode</th><th class="text-end">Total</th></tr></thead>
+                        <tbody>
+                            @forelse($monthlyByPayment as $r)
+                            <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div> <!-- End Monthly Tab -->
+
+    </div>
+</div>
+
+<!-- Script Otomatis Tab -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('month') && !urlParams.has('date')) {
+            new bootstrap.Tab(document.querySelector('#monthly-tab')).show();
+        }
+    });
+</script>
+<script>
+    // Build export URLs preserving current filters
+    (function() {
+        function q(name) { return new URLSearchParams(window.location.search).get(name); }
+        var pdf = document.getElementById('btnExportPdf');
+        var xls = document.getElementById('btnExportExcel');
+        if (pdf) {
+            var params = new URLSearchParams();
+            if (q('date')) params.set('date', q('date'));
+            if (q('month')) params.set('month', q('month'));
+            pdf.href = '{{ route('wash.reports.pdf') }}' + (params.toString() ? ('?' + params.toString()) : '');
+        }
+        if (xls) {
+            var params2 = new URLSearchParams();
+            if (q('date')) params2.set('date', q('date'));
+            if (q('month')) params2.set('month', q('month'));
+            xls.href = '{{ route('wash.reports.excel') }}' + (params2.toString() ? ('?' + params2.toString()) : '');
+        }
+    })();
+</script>
+@endsection

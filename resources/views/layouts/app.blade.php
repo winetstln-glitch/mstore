@@ -52,7 +52,7 @@
             </div>
             <span class="sidebar-brand-text ms-2 text-white"></span>
             <!-- Close Button for Mobile -->
-            <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;" data-fasttap>
+            <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
                 <i class="fa-solid fa-times fa-lg"></i>
             </button>
         </div>
@@ -203,9 +203,19 @@
                         <i class="fa-solid fa-boxes-stacked"></i> {{ __('Produk & Stok') }}
                     </a>
                     @endif
+                    @if(Auth::user()->hasPermission('atk.manage'))
+                    <a href="{{ route('atk.expenses.index') }}" class="sidebar-item {{ request()->routeIs('atk.expenses.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
+                    </a>
+                    @endif
                     @if(Auth::user()->hasPermission('atk.report'))
                     <a href="{{ route('atk.transactions.index') }}" class="sidebar-item {{ request()->routeIs('atk.transactions.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('atk.report'))
+                    <a href="{{ route('atk.reports.index') }}" class="sidebar-item {{ request()->routeIs('atk.reports.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-line"></i> {{ __('Laporan') }}
                     </a>
                     @endif
                 </div>
@@ -239,9 +249,19 @@
                         <i class="fa-solid fa-users"></i> {{ __('Karyawan Steam') }}
                     </a>
                     @endif
+                    @if(Auth::user()->hasPermission('wash.manage'))
+                    <a href="{{ route('wash.expenses.index') }}" class="sidebar-item {{ request()->routeIs('wash.expenses.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
+                    </a>
+                    @endif
                     @if(Auth::user()->hasPermission('wash.report'))
                     <a href="{{ route('wash.transactions.index') }}" class="sidebar-item {{ request()->routeIs('wash.transactions.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('wash.report'))
+                    <a href="{{ route('wash.reports.index') }}" class="sidebar-item {{ request()->routeIs('wash.reports.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-line"></i> {{ __('Laporan') }}
                     </a>
                     @endif
                 </div>
@@ -365,7 +385,7 @@
     <div id="page-content-wrapper" class="d-flex flex-column min-vh-100">
         <nav class="navbar navbar-expand-lg main-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <button class="btn btn-link text-white" id="sidebarToggle" data-fasttap>
+                <button class="btn btn-link text-white" id="sidebarToggle">
                     <i class="fa-solid fa-bars fa-lg"></i>
                 </button>
             </div>
@@ -482,31 +502,31 @@
 <!-- /#wrapper -->
 
 <div class="mobile-bottom-nav d-lg-none">
-    <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <i class="fa fa-home"></i><span>{{ __('Home') }}</span>
     </a>
     @if(Auth::user()->hasPermission('customer.view'))
-    <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
         <i class="fa fa-users"></i><span>{{ __('Pelanggan') }}</span>
     </a>
     @endif
     @if(Auth::user()->hasPermission('ticket.view'))
-    <a href="{{ route('tickets.index') }}" class="mbn-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('tickets.index') }}" class="mbn-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
         <i class="fa fa-ticket-alt"></i><span>{{ __('Tiket') }}</span>
     </a>
     @endif
     @if(Auth::user()->hasPermission('atk.pos'))
-    <a href="{{ route('atk.pos') }}" class="mbn-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('atk.pos') }}" class="mbn-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
         <i class="fa fa-cash-register"></i><span>{{ __('ATK') }}</span>
     </a>
     @endif
     @if(Auth::user()->hasPermission('wash.pos'))
-    <a href="{{ route('wash.pos') }}" class="mbn-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('wash.pos') }}" class="mbn-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
         <i class="fa fa-car"></i><span>{{ __('Wash') }}</span>
     </a>
     @endif
     @if(Auth::user()->hasPermission('setting.view'))
-    <a href="{{ route('settings.index') }}" class="mbn-item {{ request()->routeIs('settings.*') ? 'active' : '' }}" data-fasttap>
+    <a href="{{ route('settings.index') }}" class="mbn-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
         <i class="fa fa-cogs"></i><span>{{ __('Setting') }}</span>
     </a>
     @endif
@@ -561,31 +581,6 @@
 
 <!-- Custom Dashboard JS -->
 <script src="{{ asset('js/dashboard-custom.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-  var startX=0,startY=0,startT=0,target=null;
-  document.addEventListener('touchstart',function(e){
-    var el=e.target.closest('[data-fasttap]');
-    if(!el) return;
-    startT=Date.now();
-    startX=e.touches[0].clientX;
-    startY=e.touches[0].clientY;
-    target=el;
-  },{passive:true});
-  document.addEventListener('touchend',function(e){
-    if(!target) return;
-    var dx=Math.abs(e.changedTouches[0].clientX-startX);
-    var dy=Math.abs(e.changedTouches[0].clientY-startY);
-    var dt=Date.now()-startT;
-    if(dx<10&&dy<10&&dt<300){
-      e.preventDefault();
-      var ev=new MouseEvent('click',{bubbles:true,cancelable:true,view:window});
-      target.dispatchEvent(ev);
-    }
-    target=null;
-  },{passive:false});
-});
-</script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.feather) {
