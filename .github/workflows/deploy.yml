@@ -31,6 +31,9 @@ jobs:
             else
               composer install --no-dev --prefer-dist --no-interaction
               php artisan migrate --force
+              php artisan db:seed --class=PermissionSeeder --force || true
+              php artisan db:seed --class=RoleSeeder --force || true
+              php artisan db:seed --class=SettingSeeder --force || true
               php artisan optimize:clear
               php artisan config:cache
               php artisan route:cache
