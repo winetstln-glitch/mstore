@@ -37,7 +37,8 @@ echo "=== Creating backup old build & DB ($TIMESTAMP) ==="
 cp -r public/build "$BACKUP_DIR/build/build_$TIMESTAMP"
 
 # Backup MySQL DB (update DB credentials)
-mysqldump -u root -pYOUR_DB_PASSWORD --all-databases > "$BACKUP_DIR/db/db_$TIMESTAMP.sql" || true
+mysqldump --no-tablespaces -u mstore -p'Mstore@2026!App' mstore > backup.sql
+ "$BACKUP_DIR/db/db_$TIMESTAMP.sql" || true
 
 # =========================
 # Pull latest code
