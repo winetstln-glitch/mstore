@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
 set -e
 
+# -------------------------
+# Config
+# -------------------------
 BRANCH=${BRANCH:-main}
 REMOTE=${REMOTE:-origin}
 APP_PATH=$(pwd)
-BACKUP_PATH="$APP_PATH/backups/$(date +%Y%m%d_%H%M%S)"
-
-echo "=== Deploying $BRANCH ==="
+BACKUP_ROOT="$APP_PATH/backups"
 
 # -------------------------
-# Fix Git safe.directory
+# Backup Rotation (keep 7)
 # -------------------------
-if ! git config --global --get-all safe.directory | grep -q "$APP_PATH"; then
-  git config --global --add safe.directory "$APP_PATH"
+mkdir -p "$BACKUP_ROOT"
+BACKUP_COUNT=$(ls -1 "$BACKUP_ROOT" | wc -l)
+if [ "$BACKUP_COUNT" -ge 7 ]; then
+  OLDEST=$(ls -1 "$BACKUP_ROOT" | sort | head -n 1)
+  rm -rf "$BACKUP_ROOT/$OLDEST"
 fi
 
-# -------------------------
-# Backup current build
-# -------------------------
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_PATH="$BACKUP_ROOT/$TIMESTAMP"
 mkdir -p "$BACKUP_PATH"
-echo "=== Creating backup ==="
+
+echo "=== Backup old build & DB ($TIMESTAMP) ==="
 cp -r public/build "$BACKUP_PATH/build"
 
-# Optional: backup DB
+# Optional: backup DB if mysqldump works
 DB_NAME=$(php artisan tinker <<< "echo env('DB_DATABASE');" | tail -n 1)
 DB_USER=$(php artisan tinker <<< "echo env('DB_USERNAME');" | tail -n 1)
 DB_PASS=$(php artisan tinker <<< "echo env('DB_PASSWORD');" | tail -n 1)
@@ -30,29 +34,24 @@ DB_HOST=$(php artisan tinker <<< "echo env('DB_HOST');" | tail -n 1)
 mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$BACKUP_PATH/db_backup.sql" || true
 
 # -------------------------
-# Pull latest code
+# Git Pull
 # -------------------------
+echo "=== Pull latest code ==="
+if ! git config --global --get-all safe.directory | grep -q "$APP_PATH"; then
+  git config --global --add safe.directory "$APP_PATH"
+fi
+
 git fetch --all
 git reset --hard "$REMOTE/$BRANCH"
 
 # -------------------------
-# Composer dependencies
+# Composer
 # -------------------------
+echo "=== Composer install ==="
 composer install --no-dev --prefer-dist --optimize-autoloader
 
 # -------------------------
-# Check Node version
-# -------------------------
-NODE_MIN_VERSION=16
-NODE_MAJOR=$(node -v | sed 's/v\([0-9]*\).*/\1/')
-if [ "$NODE_MAJOR" -lt "$NODE_MIN_VERSION" ]; then
-  echo "Node version too old ($NODE_MAJOR). Installing Node 18..."
-  curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-  apt install -y nodejs
-fi
-
-# -------------------------
-# Frontend build (Vite)
+# Frontend Build
 # -------------------------
 echo "=== Building frontend (Vite) ==="
 set +e
@@ -69,14 +68,14 @@ if [ $BUILD_STATUS -ne 0 ]; then
 fi
 
 # -------------------------
-# Set permissions for web server
+# Permissions
 # -------------------------
 echo "=== Setting permissions ==="
 chown -R www-data:www-data public/build
 chmod -R 755 public/build
 
 # -------------------------
-# Laravel migrations
+# Laravel Migrations
 # -------------------------
 echo "=== Running migrations ==="
 set +e
@@ -90,7 +89,7 @@ if [ $MIGRATE_STATUS -ne 0 ]; then
 fi
 
 # -------------------------
-# Clear cache and optimize
+# Cache + Optimize
 # -------------------------
 php artisan optimize:clear
 php artisan config:cache
@@ -98,9 +97,9 @@ php artisan route:cache
 php artisan view:cache
 
 # -------------------------
-# Restart PHP-FPM & Nginx
+# Restart services
 # -------------------------
-echo "=== Restarting services ==="
+echo "=== Restart PHP-FPM & Nginx ==="
 sudo systemctl restart php8.2-fpm
 sudo systemctl restart nginx
 
@@ -110,3 +109,4 @@ sudo systemctl restart nginx
 php artisan queue:restart || true
 
 echo "=== Deploy Finished Successfully ==="
+echo "Backup saved at: $BACKUP_PATH"
