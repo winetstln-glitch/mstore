@@ -1,54 +1,19 @@
-name: Deploy to Server
+name: Auto Deploy
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check required deploy secrets
-        shell: bash
+      - name: Pull Latest Code
         run: |
-          missing=()
-          [ -z "${{ secrets.SSH_HOST }}" ] && missing+=("SSH_HOST")
-          [ -z "${{ secrets.SSH_USER }}" ] && missing+=("SSH_USER")
-          [ -z "${{ secrets.SSH_KEY }}" ] && missing+=("SSH_KEY")
-          [ -z "${{ secrets.DEPLOY_PATH }}" ] && missing+=("DEPLOY_PATH")
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "Missing required secrets: ${missing[*]}"
-            exit 1
-          fi
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script_stop: true
-          script: |
-            set -e
-            cd "${{ secrets.DEPLOY_PATH }}"
-            git fetch --all
-            git reset --hard origin/main
-            if [ -f "./deploy.sh" ]; then
-              chmod +x deploy.sh
-              ./deploy.sh
-            else
-              composer install --no-dev --prefer-dist --no-interaction
-              php artisan migrate --force
-              php artisan db:seed --class=PermissionSeeder --force || true
-              php artisan db:seed --class=RoleSeeder --force || true
-              php artisan db:seed --class=SettingSeeder --force || true
-              php artisan optimize:clear
-              php artisan config:cache
-              php artisan route:cache
-              php artisan view:cache
-            fi
+          cd /var/www/mstore
+          git fetch --all
+          git reset --hard origin/main
+          chmod +x deploy.sh
+          ./deploy.sh
