@@ -125,11 +125,11 @@
                         </div>
 
                         <div class="col-12">
-                            <div class="form-text text-muted mb-2 small">{{ __('Tap map to update location') }}</div>
+                              <div class="form-text text-muted">{{ __('Click on the map below to select location.') }}</div>
                             <div id="map-picker" class="border rounded"></div>
                         </div>
                     </div>
-
+  <div id="map-picker" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;" class="mb-3"></div>
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
