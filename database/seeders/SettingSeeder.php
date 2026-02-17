@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Setting;
 use Illuminate\Database\Seeder;
+use App\Models\Account;
 
 class SettingSeeder extends Seeder
 {
@@ -106,6 +107,14 @@ class SettingSeeder extends Seeder
                 ]);
             } else {
                 Setting::create($setting);
+            }
+        }
+        // Set default retained earnings account if empty and account 3201 exists
+        $retained = Setting::where('key','accounting_retained_earnings_account_id')->first();
+        if ($retained && empty($retained->value)) {
+            $acc = Account::where('code','3201')->first();
+            if ($acc) {
+                $retained->update(['value' => (string)$acc->id]);
             }
         }
     }
