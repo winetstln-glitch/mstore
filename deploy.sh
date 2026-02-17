@@ -16,6 +16,12 @@ git reset --hard "$REMOTE/$BRANCH"
 
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
+# =========================
+# BUILD FRONTEND (PENTING)
+# =========================
+npm install
+npm run build
+
 php artisan migrate --force
 
 php artisan optimize:clear
