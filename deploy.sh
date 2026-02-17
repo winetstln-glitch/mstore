@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -e
+# Load NVM & Node
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"         # Load NVM
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+export PATH="$NVM_DIR/versions/node/v18.20.8/bin:$PATH"
 
 # =========================
 # CONFIG
