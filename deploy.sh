@@ -25,6 +25,20 @@ git reset --hard "$REMOTE/$BRANCH"
 composer install --no-dev --prefer-dist --optimize-autoloader
 
 # =========================
+# Check Node version
+# =========================
+NODE_MIN_VERSION=16
+
+NODE_MAJOR=$(node -v | sed 's/v\([0-9]*\).*/\1/')
+
+if [ "$NODE_MAJOR" -lt "$NODE_MIN_VERSION" ]; then
+  echo "Node version too old ($NODE_MAJOR). Installing Node 18..."
+  # Require root privileges for apt
+  sudo curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
+  sudo apt install -y nodejs
+fi
+
+# =========================
 # Frontend build (Vite)
 # =========================
 echo "=== Building frontend (Vite) ==="
