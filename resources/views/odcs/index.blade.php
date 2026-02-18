@@ -6,47 +6,50 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODC Management') }}</h5>
-                <form action="{{ route('odcs.index') }}" method="GET" class="toolbar-scroll w-100">
-                    <div class="row g-2">
-                        <div class="col-12 col-md-auto">
-                            <select name="region_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 150px;">
-                                <option value="">{{ __('All Regions') }}</option>
-                                @foreach($regions as $region)
-                                    <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
-                                        {{ $region->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+            <div class="card-header bg-body-tertiary py-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODC Management') }}</h5>
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
+                        @if(Auth::user()->hasPermission('odc.view'))
+                        <a href="{{ route('odcs.export.excel') }}" class="btn btn-outline-secondary btn-sm" title="{{ __('Export Excel') }}">
+                            <i class="fa-solid fa-file-export me-1"></i> <span class="d-none d-sm-inline">{{ __('Export') }}</span>
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('odc.create'))
+                        <a href="{{ route('odcs.create') }}" class="btn btn-primary btn-sm" title="{{ __('Add ODC') }}">
+                            <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add ODC') }}</span>
+                        </a>
+                        @endif
                     </div>
-                    <div class="row g-2 mt-1">
-                        <div class="col-8 col-md-auto">
-                            <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
-                        </div>
-                        <div class="col-4 col-md-auto">
-                            <button type="submit" class="btn btn-secondary btn-sm w-100" data-bs-toggle="tooltip" title="{{ __('Search') }}"><i class="fa-solid fa-magnifying-glass"></i> <span class="d-none d-sm-inline ms-1">{{ __('Search') }}</span></button>
-                        </div>
-                    </div>
-                </form>
-                <div class="mt-2">
-                    @if(Auth::user()->hasPermission('odc.view'))
-                    <a href="{{ route('odcs.export.excel') }}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="{{ __('Export Excel') }}">
-                        <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Excel') }}</span>
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('odc.create'))
-                    <a href="{{ route('odcs.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add ODC') }}">
-                        <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add ODC') }}</span>
-                    </a>
-                    @endif
                 </div>
             </div>
 
             <div class="card-body">
+                <form method="GET" action="{{ route('odcs.index') }}" class="row g-2 g-md-3 mb-3">
+                    <div class="col-12 col-md-4 col-lg-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search...') }}">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 col-lg-3">
+                        <select name="region_id" class="form-select">
+                            <option value="">{{ __('All Regions') }}</option>
+                            @foreach($regions as $region)
+                                <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <button type="submit" class="btn btn-dark w-100">
+                            <i class="fa-solid fa-filter me-1 d-md-none"></i> {{ __('Filter') }}
+                        </button>
+                    </div>
+                </form>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover table-sm align-middle">
                         <thead class="bg-body-tertiary">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
@@ -60,7 +63,7 @@
                         <tbody>
                             @forelse($odcs as $odc)
                                 <tr>
-                                    <td class="ps-3">
+                                    <td class="ps-3 cell-truncate" title="{{ $odc->name }}">
                                         <div class="fw-bold">{{ $odc->name }}</div>
                                         <div class="small text-muted my-1">
                                             @if($odc->pon_port) <span class="badge bg-light text-dark border me-1" title="PON Port">{{ $odc->pon_port }}</span> @endif
@@ -70,10 +73,10 @@
                                         </div>
                                         <div class="small text-muted">{{ $odc->description }}</div>
                                     </td>
-                                    <td>
+                                    <td class="cell-nowrap">
                                         <div class="fw-semibold">{{ $odc->region->name ?? '-' }}</div>
                                     </td>
-                                    <td>
+                                    <td class="cell-nowrap">
                                         <div class="fw-semibold">{{ $odc->olt->name ?? '-' }}</div>
                                     </td>
                                     <td>

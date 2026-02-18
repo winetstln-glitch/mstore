@@ -37,6 +37,7 @@
     
     /* Map container z-index to ensure it doesn't overlap sticky footer incorrectly */
     #map-picker {
+        height: 320px;
         z-index: 1;
     }
 </style>
@@ -191,6 +192,22 @@
                             @error('olt_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        <!-- Closure first (filter for ODC & ODP) -->
+                        <div class="col-md-6">
+                            <label for="closure_id" class="form-label small text-muted fw-bold">{{ __('Closure') }}</label>
+                            <select id="closure_id" class="form-select">
+                                <option value="">{{ __('Select Closure (optional)') }}</option>
+                                @foreach(($closures ?? []) as $cl)
+                                    <option value="{{ $cl->id }}" data-odc-id="{{ $cl->odc_id }}">{{ $cl->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold">{{ __('ODC (auto from Closure)') }}</label>
+                            <input type="text" id="odc_display" class="form-control bg-light" readonly>
                         </div>
 
                         <!-- Connection Type -->
@@ -353,6 +370,54 @@
         }
     }
 
+    function filterOdpByClosure(closureId) {
+        const closureList = @json($closures ?? []);
+        const odpList = @json($odps ?? []);
+        const odpSelect = document.getElementById('odp_id');
+        const odcDisplay = document.getElementById('odc_display');
+
+        let selectedClosure = null;
+        let selectedOdcId = null;
+        let selectedOdcName = '';
+
+        if (closureId) {
+            selectedClosure = closureList.find(c => String(c.id) === String(closureId));
+            selectedOdcId = selectedClosure ? selectedClosure.odc_id : null;
+        }
+
+        // Try to derive ODC name from available data
+        if (selectedClosure && selectedClosure.odc) {
+            selectedOdcName = selectedClosure.odc.name || '';
+        }
+        odcDisplay.value = selectedOdcName || (closureId ? ('ODC #' + (selectedOdcId ?? '')) : '');
+
+        // Rebuild ODP options
+        const currentValue = odpSelect.value;
+        odpSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '-- {{ __('Select ODP') }} --';
+        odpSelect.appendChild(placeholder);
+
+        const list = selectedOdcId ? odpList.filter(o => String(o.odc_id) === String(selectedOdcId)) : odpList;
+        list.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.id;
+            const cap = (o.capacity !== null && o.capacity !== undefined) ? o.capacity : '∞';
+            opt.textContent = `${o.name} (${o.filled}/${cap})${(o.capacity !== null && o.filled >= o.capacity) ? ' - Full' : ''}`;
+            if (o.capacity !== null && o.filled >= o.capacity) opt.disabled = true;
+            odpSelect.appendChild(opt);
+        });
+
+        // Try to preserve selection if still in filtered list
+        const stillExists = Array.from(odpSelect.options).some(opt => opt.value === currentValue);
+        if (stillExists) {
+            odpSelect.value = currentValue;
+        } else {
+            odpSelect.value = '';
+        }
+    }
+
     // Auto-populate from GenieACS
     document.getElementById('onu_serial').addEventListener('change', function() {
         var serial = this.value;
@@ -493,6 +558,17 @@
             });
         } catch (error) {
             console.error("Map Error:", error);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const closureSelect = document.getElementById('closure_id');
+        if (closureSelect) {
+            closureSelect.addEventListener('change', function() {
+                filterOdpByClosure(this.value);
+            });
+            // Initial build without filter
+            filterOdpByClosure(closureSelect.value || '');
         }
     });
 </script>

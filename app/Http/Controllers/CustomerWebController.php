@@ -516,6 +516,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $odps = \App\Models\Odp::all();
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
         $olts = \App\Models\Olt::where('is_active', true)->get();
+        $closures = \App\Models\Closure::with('odc')->get();
 
         // Fetch GenieACS devices
         try {
@@ -532,7 +533,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages'));
+        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
     }
 
     /**
@@ -631,6 +632,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $odps = \App\Models\Odp::all();
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
         $olts = \App\Models\Olt::where('is_active', true)->get();
+        $closures = \App\Models\Closure::with('odc')->get();
         
         // Fetch GenieACS devices
         try {
@@ -647,7 +649,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages'));
+        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
     }
 
     /**

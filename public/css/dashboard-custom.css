@@ -35,6 +35,23 @@ body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     white-space: normal;
     padding-bottom: 6px;
 }
+.toolbar-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+@media (min-width: 768px) {
+    .toolbar-stack {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+    }
+}
+.table thead th { white-space: nowrap; }
+.table td, .table th { vertical-align: middle; }
+.cell-nowrap { white-space: nowrap; }
+.cell-truncate { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.img-thumb { width: 50px; height: 50px; object-fit: cover; }
 .toolbar-scroll .btn,
 .toolbar-scroll form,
 .toolbar-scroll .form-control,
