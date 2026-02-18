@@ -41,7 +41,7 @@ class WhatsAppService
             try {
                 // Detect if using Fonnte (Popular Indonesian Provider)
                 if (str_contains($this->baseUrl, 'fonnte.com')) {
-                    $response = Http::withHeaders([
+                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->withHeaders([
                         'Authorization' => $this->apiKey,
                     ])->post($this->baseUrl . '/send', [
                         'target' => $phone,
@@ -51,7 +51,7 @@ class WhatsAppService
                 } 
                 // Default / Generic API
                 else {
-                    $response = Http::post($this->baseUrl . '/send-message', [
+                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->baseUrl . '/send-message', [
                         'api_key' => $this->apiKey,
                         'phone' => $phone,
                         'message' => $message,

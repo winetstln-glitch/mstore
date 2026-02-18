@@ -396,7 +396,7 @@ class TelegramService
         }
 
         try {
-            $response = Http::post($this->apiUrl, [
+            $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
                 'parse_mode' => 'Markdown',
