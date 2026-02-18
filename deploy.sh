@@ -6,6 +6,8 @@ REMOTE=${REMOTE:-origin}
 DEPLOY_PATH=$(pwd)
 BACKUP_DIR="$DEPLOY_PATH/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+DEPLOY_USER=${DEPLOY_USER:-deploy}
+DEPLOY_GROUP=${DEPLOY_GROUP:-$DEPLOY_USER}
 
 echo "=== Deploying $BRANCH ==="
 
@@ -51,20 +53,66 @@ export COMPOSER_ALLOW_SUPERUSER=1
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 echo "=== Building frontend ==="
-# Check Node.js version (recommend >= 20.19 or >= 22.12)
+# Check/Install Node.js (recommend >= 20.19 or >= 22.12)
 if command -v node >/dev/null 2>&1; then
   NODE_VER="$(node -v)"
   if ! echo "$NODE_VER" | grep -Eq '^v(20|22)\.'; then
-    echo "⚠️  Node.js $NODE_VER terdeteksi. Disarankan >= v20.19 atau v22.12. Lanjut build..."
+    echo "⚠️  Node.js $NODE_VER terdeteksi. Disarankan >= v20.19 atau v22.12."
+    if [ "$(id -u)" = "0" ] && command -v apt-get >/dev/null 2>&1; then
+      echo "➡️  Menginstall Node.js 20.x via NodeSource..."
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
+      echo "✅ Node.js terpasang: $(node -v)"
+    else
+      echo "ℹ️  Tidak menjalankan sebagai root atau apt-get tidak tersedia. Melanjutkan build dengan versi saat ini."
+    fi
   fi
 fi
-npm ci
+  if [ "$(id -u)" = "0" ] && command -v apt-get >/dev/null 2>&1; then
+    echo "➡️  Node.js tidak ditemukan. Menginstall Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    echo "✅ Node.js terpasang: $(node -v)"
+  else
+    echo "❌ Node.js tidak ditemukan dan tidak bisa dipasang otomatis. Install Node >=20.19 lalu jalankan ulang."
+    exit 1
+  fi
 npm run build
+# Ensure proper ownership for node modules to avoid EACCES during build
+if [ -d "node_modules" ]; then
+  echo "↪️  Memperbaiki kepemilikan node_modules untuk $DEPLOY_USER:$DEPLOY_GROUP"
+  chown -R "$DEPLOY_USER:$DEPLOY_GROUP" node_modules || true
+fi
+chown -f "$DEPLOY_USER:$DEPLOY_GROUP" package.json package-lock.json 2>/dev/null || true
 
-echo "=== Running migrations ==="
+# Run npm ci with retry and fallback
+echo "➡️  npm ci (non-interactive)"
+set +e
+npm ci --no-audit --no-fund
+NPM_STATUS=$?
+if [ $NPM_STATUS -ne 0 ]; then
+  echo "⚠️  npm ci gagal (kode $NPM_STATUS). Membersihkan dan mencoba ulang..."
+  rm -rf node_modules
+  npm ci --no-audit --no-fund
+  NPM_STATUS=$?
+  if [ $NPM_STATUS -ne 0 ]; then
+    echo "⚠️  npm ci masih gagal. Mencoba npm install..."
+    npm install --no-audit --no-fund
+    NPM_STATUS=$?
+    if [ $NPM_STATUS -ne 0 ]; then
+      echo "❌ Gagal menjalankan npm install. Periksa izin/Node.js."
+      exit $NPM_STATUS
+    fi
+  fi
+fi
+set -e
+echo "➡️  npm run build"
+npm run build
 php artisan migrate --force
 php artisan db:seed --class=PermissionSeeder --force || true
 php artisan db:seed --class=RoleSeeder --force || true
+php artisan db:seed --class=SettingSeeder --force || true
+
 php artisan db:seed --class=SettingSeeder --force || true
 
 php artisan optimize:clear
@@ -77,6 +125,10 @@ chown -R www-data:www-data storage bootstrap/cache || true
 find storage -type d -exec chmod 775 {} \; || true
 find storage -type f -exec chmod 664 {} \; || true
 chmod -R 775 bootstrap/cache || true
+
+# Ensure web server can serve built assets, but keep code owned by deploy user
+chown -R "$DEPLOY_USER:$DEPLOY_GROUP" . || true
+chown -R www-data:www-data public/build || true
 
 echo "=== Restart services ==="
 php artisan queue:restart || true
