@@ -175,19 +175,23 @@
 document.addEventListener('DOMContentLoaded', function() {
     const checkAll = document.getElementById('checkAll');
     const rowChecks = Array.from(document.querySelectorAll('.row-check'));
-    const bulkIdsInput = document.getElementById('bulkIds');
+    const bulkForm = document.getElementById('bulkDeleteForm');
     const btnBulkDelete = document.getElementById('btnBulkDelete');
     const btnSelectAll = document.getElementById('btnSelectAll');
 
     function updateBulkState() {
         const selected = rowChecks.filter(cb => cb.checked).map(cb => cb.value);
-        bulkIdsInput.parentElement.querySelectorAll('input[name=\"ids[]\"]').forEach(e => e.remove());
+        if (bulkForm) {
+            bulkForm.querySelectorAll('input[name=\"ids[]\"]').forEach(e => e.remove());
+        }
         selected.forEach(id => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'ids[]';
             input.value = id;
-            bulkIdsInput.parentElement.appendChild(input);
+            if (bulkForm) {
+                bulkForm.appendChild(input);
+            }
         });
         btnBulkDelete.disabled = selected.length === 0;
         checkAll.checked = selected.length > 0 && selected.length === rowChecks.length;
