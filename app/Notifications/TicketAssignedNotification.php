@@ -16,7 +16,6 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public $ticket;
-    public $afterCommit = true;
 
     /**
      * Create a new notification instance.
@@ -24,6 +23,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
     public function __construct(Ticket $ticket)
     {
         $this->ticket = $ticket;
+        $this->afterCommit = true;
     }
 
     /**
