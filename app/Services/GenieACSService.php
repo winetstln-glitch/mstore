@@ -662,7 +662,12 @@ class GenieACSService
             }
             Log::warning("GenieACS Refresh Immediate Failed: " . $response->body());
         } catch (\Exception $e) {
-            Log::error("GenieACS Refresh Immediate Error: " . $e->getMessage());
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'cURL error 28')) {
+                Log::warning("GenieACS Refresh Immediate Timeout: " . $msg);
+            } else {
+                Log::error("GenieACS Refresh Immediate Error: " . $msg);
+            }
         }
 
         // Attempt 2: Fallback to Queue
