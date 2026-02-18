@@ -190,6 +190,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
     Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
 
+    Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
+    Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');
+
 
     // Inventory
     Route::get('/inventory/export/pdf', [\App\Http\Controllers\InventoryController::class, 'exportPdf'])->name('inventory.export.pdf');
@@ -304,6 +307,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
         Route::get('products/export', [\App\Http\Controllers\AtkProductController::class, 'export'])->name('products.export');
         Route::post('products/import', [\App\Http\Controllers\AtkProductController::class, 'import'])->name('products.import');
+        Route::delete('products/bulk-destroy', [\App\Http\Controllers\AtkProductController::class, 'bulkDestroy'])->name('products.bulk_destroy');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show']);
     });

@@ -113,12 +113,13 @@ php artisan db:seed --class=PermissionSeeder --force || true
 php artisan db:seed --class=RoleSeeder --force || true
 php artisan db:seed --class=SettingSeeder --force || true
 
-php artisan db:seed --class=SettingSeeder --force || true
-
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+
+# Ensure code owned by deploy user (avoids EACCES during future CI runs)
+chown -R "$DEPLOY_USER:$DEPLOY_GROUP" . || true
 
 # Fix permissions for storage and cache (avoid 500 due to write issues)
 chown -R www-data:www-data storage bootstrap/cache || true
@@ -126,8 +127,7 @@ find storage -type d -exec chmod 775 {} \; || true
 find storage -type f -exec chmod 664 {} \; || true
 chmod -R 775 bootstrap/cache || true
 
-# Ensure web server can serve built assets, but keep code owned by deploy user
-chown -R "$DEPLOY_USER:$DEPLOY_GROUP" . || true
+# Ensure web server can serve built assets
 chown -R www-data:www-data public/build || true
 
 echo "=== Restart services ==="

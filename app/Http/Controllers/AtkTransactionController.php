@@ -15,6 +15,10 @@ use OpenSpout\Common\Entity\Row;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Cash;
 use App\Models\AgentDeposit;
+use App\Services\WhatsAppService;
+use App\Models\User;
+use App\Models\Coordinator;
+use App\Models\Investor;
 
 class AtkTransactionController extends Controller
 {
@@ -42,7 +46,9 @@ class AtkTransactionController extends Controller
         $products = AtkProduct::where('category', 'ATK')->where('stock', '>', 0)->get();
         $services = AtkProduct::where('category', 'JASA POTOCOPY')->get();
         $bankServices = AtkProduct::where('category', 'JASA TRANSFER BANK')->get();
-        return view('atk.pos', compact('products', 'services', 'bankServices'));
+        $coordinators = Coordinator::orderBy('name')->get(['id','name']);
+        $investors = Investor::orderBy('name')->get(['id','name','coordinator_id']);
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'coordinators', 'investors'));
     }
 
     public function store(Request $request)
@@ -67,11 +73,15 @@ class AtkTransactionController extends Controller
             $sumFee = 0;
             $sumRevenueSales = 0;
             $hpp = 0;
+            $containsService = false;
             foreach ($request->items as $itemData) {
                 $product = AtkProduct::lockForUpdate()->find($itemData['id']);
                 
                 $isService = strtoupper($product->category ?? '') === 'JASA POTOCOPY';
                 $isBank = strtoupper($product->category ?? '') === 'JASA TRANSFER BANK';
+                if ($isService) {
+                    $containsService = true;
+                }
                 if (!$isService) {
                     if ($product->stock < $itemData['quantity']) {
                         throw new \Exception("Stock for {$product->name} is insufficient.");
@@ -111,6 +121,10 @@ class AtkTransactionController extends Controller
                 ];
             }
 
+            if ($request->payment_method === 'hutang' && $containsService && empty($request->coordinator_id)) {
+                throw new \Exception("Pilih pengurus untuk transaksi hutang jasa potocopy.");
+            }
+
             $transaction = AtkTransaction::create([
                     'user_id' => Auth::id(),
                     'transaction_number' => 'TRX-' . time(),
@@ -119,6 +133,7 @@ class AtkTransactionController extends Controller
                     'payment_method' => $request->payment_method,
                     'cash_amount' => $request->cash_amount,
                     'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
+                    'coordinator_id' => $request->payment_method === 'hutang' ? ($request->coordinator_id ?? null) : null,
                 ]);
 
             foreach ($items as $item) {
@@ -302,5 +317,27 @@ class AtkTransactionController extends Controller
 
             $writer->close();
         }, 'atk_transactions.xlsx');
+    }
+
+    public function whatsappReceipt(Request $request, AtkTransaction $transaction)
+    {
+        $request->validate(['phone' => 'required|string']);
+        $phone = $this->normalizePhone($request->input('phone'));
+        $link = route('atk.transactions.receipt', $transaction);
+        $amount = 'Rp ' . number_format($transaction->total_amount, 0, ',', '.');
+        $message = "Terima kasih atas pembelian Anda.\nNo: {$transaction->transaction_number}\nTotal: {$amount}\nStruk: {$link}";
+        app(WhatsAppService::class)->sendMessage($phone, $message, 'receipt', null);
+        return response()->json(['success' => true]);
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (str_starts_with($digits, '0')) {
+            $digits = '62' . substr($digits, 1);
+        } elseif (!str_starts_with($digits, '62')) {
+            $digits = '62' . $digits;
+        }
+        return $digits;
     }
 }

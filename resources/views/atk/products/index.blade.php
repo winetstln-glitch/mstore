@@ -19,6 +19,17 @@
                 <i class="fa-solid fa-plus"></i>
                 <span class="d-none d-md-inline ms-2">{{ __('Add Product') }}</span>
             </a>
+            <button type="button" id="btnSelectAll" class="btn btn-outline-secondary" title="Select All">
+                <i class="fa-regular fa-square-check me-1"></i><span class="d-none d-md-inline">Select All</span>
+            </button>
+            <form id="bulkDeleteForm" action="{{ route('atk.products.bulk_destroy') }}" method="POST" class="d-inline">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="ids[]" id="bulkIds">
+                <button type="submit" id="btnBulkDelete" class="btn btn-outline-danger" disabled title="Hapus Terpilih" onclick="return confirm('Hapus produk terpilih?')">
+                    <i class="fa-solid fa-trash-can me-1"></i><span class="d-none d-md-inline">Hapus Terpilih</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -73,6 +84,18 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-sm-12 col-md-3">
+                    <div class="input-group">
+                        <label class="input-group-text" for="per_page">Tampil</label>
+                        <select name="per_page" id="per_page" class="form-select" onchange="this.form.submit()">
+                            @php($pp = request('per_page','10'))
+                            <option value="10" {{ $pp=='10' ? 'selected' : '' }}>10</option>
+                            <option value="50" {{ $pp=='50' ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ $pp=='100' ? 'selected' : '' }}>100</option>
+                            <option value="all" {{ $pp=='all' ? 'selected' : '' }}>All</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="col-sm-12 col-md-2">
                     <button type="submit" class="btn btn-dark w-100" title="{{ __('Filter') }}">
                         <i class="fa-solid fa-filter"></i>
@@ -81,9 +104,12 @@
                 </div>
             </form>
             <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-bordered align-middle" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
+                            <th style="width:28px;">
+                                <input type="checkbox" id="checkAll">
+                            </th>
                             <th>{{ __('Image') }}</th>
                             <th>{{ __('Code') }}</th>
                             <th>{{ __('Name') }}</th>
@@ -96,6 +122,9 @@
                     <tbody>
                         @forelse($products as $product)
                         <tr>
+                            <td>
+                                <input type="checkbox" class="row-check" value="{{ $product->id }}">
+                            </td>
                             <td>
                                 @if($product->image)
                                     <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" width="50" height="50" class="img-thumbnail object-fit-cover">
@@ -141,4 +170,44 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkAll = document.getElementById('checkAll');
+    const rowChecks = Array.from(document.querySelectorAll('.row-check'));
+    const bulkIdsInput = document.getElementById('bulkIds');
+    const btnBulkDelete = document.getElementById('btnBulkDelete');
+    const btnSelectAll = document.getElementById('btnSelectAll');
+
+    function updateBulkState() {
+        const selected = rowChecks.filter(cb => cb.checked).map(cb => cb.value);
+        bulkIdsInput.parentElement.querySelectorAll('input[name=\"ids[]\"]').forEach(e => e.remove());
+        selected.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = id;
+            bulkIdsInput.parentElement.appendChild(input);
+        });
+        btnBulkDelete.disabled = selected.length === 0;
+        checkAll.checked = selected.length > 0 && selected.length === rowChecks.length;
+        checkAll.indeterminate = selected.length > 0 && selected.length < rowChecks.length;
+    }
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            rowChecks.forEach(cb => cb.checked = checkAll.checked);
+            updateBulkState();
+        });
+    }
+    rowChecks.forEach(cb => cb.addEventListener('change', updateBulkState));
+    if (btnSelectAll) {
+        btnSelectAll.addEventListener('click', function() {
+            const allChecked = rowChecks.every(cb => cb.checked);
+            rowChecks.forEach(cb => cb.checked = !allChecked);
+            updateBulkState();
+        });
+    }
+});
+</script>
+@endpush
 @endsection

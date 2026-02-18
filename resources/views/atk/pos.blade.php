@@ -35,6 +35,7 @@
                                  data-id="{{ $product->id }}"
                                  data-name="{{ $product->name }}"
                                  data-price="{{ $product->price }}"
+                                 data-type="product"
                                  data-stock="{{ $product->stock }}">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
                                     <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
@@ -59,6 +60,7 @@
                                  data-id="{{ $service->id }}"
                                  data-name="{{ $service->name }}"
                                  data-price="{{ $service->price }}"
+                                 data-type="service"
                                  data-stock="999999">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
                                     <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
@@ -144,6 +146,7 @@
                         <span class="h4 mb-0 text-primary" id="totalAmount">Rp 0</span>
                     </div>
                     
+                    
                     <div class="mb-3">
                          <label class="form-label">Payment Method</label>
                          <select class="form-select" id="paymentMethod">
@@ -152,6 +155,29 @@
                              <option value="qris">QRIS</option>
                              <option value="hutang">Hutang</option>
                          </select>
+                    </div>
+                    
+                    <div class="mb-3 d-none" id="pengurusDiv">
+                        <label class="form-label">Coordinator / Pengurus / Investor</label>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <select class="form-select" id="coordinatorId">
+                                    <option value="">Pilih Pengurus (Coordinator)</option>
+                                    @foreach(($coordinators ?? []) as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <select class="form-select" id="investorId">
+                                    <option value="">Pilih Investor (opsional)</option>
+                                    @foreach(($investors ?? []) as $inv)
+                                        <option value="{{ $inv->id }}" data-coordinator="{{ $inv->coordinator_id }}">{{ $inv->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <small class="text-muted">Pengurus wajib saat hutang jasa potocopy; investor opsional.</small>
                     </div>
                     
                     <div class="mb-3" id="cashInputDiv">
@@ -164,6 +190,17 @@
                              <span>Change:</span>
                              <span id="changeAmount" class="fw-bold">Rp 0</span>
                         </div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label">No. WhatsApp (opsional)</label>
+                        <input type="text" class="form-control" id="customerPhone" placeholder="08xxxxxxxxxx">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" value="" id="sendWhatsapp">
+                        <label class="form-check-label" for="sendWhatsapp">
+                            Kirim struk via WhatsApp
+                        </label>
                     </div>
 
                     <button class="btn btn-success w-100 py-2" onclick="processTransaction()" id="btnCheckout" disabled>
@@ -198,7 +235,8 @@
                 const name = this.dataset.name;
                 const price = parseFloat(this.dataset.price);
                 const maxStock = parseInt(this.dataset.stock);
-                addToCart(id, name, price, maxStock);
+                const type = this.dataset.type || 'product';
+                addToCart(id, name, price, maxStock, type);
             });
         });
     });
@@ -257,7 +295,7 @@
         renderCart();
     }
 
-    function addToCart(id, name, price, maxStock) {
+    function addToCart(id, name, price, maxStock, type = 'product') {
         const existingItem = cart.find(item => item.id === id);
         if (existingItem) {
             if (existingItem.quantity < maxStock) {
@@ -266,7 +304,8 @@
                 alert('Stock limit reached!');
             }
         } else {
-            cart.push({ id, name, price, quantity: 1, maxStock });
+            const isService = (type === 'service');
+            cart.push({ id, name, price, quantity: 1, maxStock, service: isService });
         }
         renderCart();
     }
@@ -337,12 +376,14 @@
                     </div>
                 `;
                 cartList.appendChild(li);
+                
             });
         }
 
         document.getElementById('totalItems').textContent = count;
         document.getElementById('totalAmount').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
         calculateChange();
+        updatePengurusVisibility();
     }
 
     document.getElementById('cashAmount').addEventListener('input', calculateChange);
@@ -377,7 +418,52 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
     } else {
         cashDiv.style.display = 'none';
     }
+    updatePengurusVisibility();
 });
+
+function updatePengurusVisibility() {
+    const hasService = cart.some(i => i.service === true);
+    const div = document.getElementById('pengurusDiv');
+    if (!div) return;
+    if (hasService) {
+        div.classList.remove('d-none');
+        filterInvestorsByCoordinator();
+    } else {
+        div.classList.add('d-none');
+        const sel = document.getElementById('coordinatorId');
+        if (sel) sel.value = '';
+        const invSel = document.getElementById('investorId');
+        if (invSel) invSel.value = '';
+    }
+}
+
+// Filter investor option berdasarkan coordinator terpilih
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'coordinatorId') {
+        filterInvestorsByCoordinator();
+    }
+});
+
+function filterInvestorsByCoordinator() {
+    const coordId = document.getElementById('coordinatorId')?.value || '';
+    const investorSel = document.getElementById('investorId');
+    if (!investorSel) return;
+    Array.from(investorSel.options).forEach(opt => {
+        if (opt.value === '') { 
+            opt.hidden = false; 
+            return; 
+        }
+        const c = opt.getAttribute('data-coordinator') || '';
+        opt.hidden = !!coordId && c !== coordId;
+    });
+    // Reset selection jika tidak sesuai filter
+    if (investorSel.selectedOptions.length) {
+        const selOpt = investorSel.selectedOptions[0];
+        if (selOpt.hidden) {
+            investorSel.value = '';
+        }
+    }
+}
     function processTransaction() {
         if (cart.length === 0) return;
 
@@ -393,10 +479,16 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
             return;
         }
 
+        const coordEl = document.getElementById('coordinatorId');
+        const coordinatorId = (!document.getElementById('pengurusDiv').classList.contains('d-none') && coordEl && coordEl.value) ? coordEl.value : undefined;
+        const invEl = document.getElementById('investorId');
+        const investorId = (!document.getElementById('pengurusDiv').classList.contains('d-none') && invEl && invEl.value) ? invEl.value : undefined;
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
             payment_method: paymentMethod,
-            cash_amount: cashAmount
+            cash_amount: cashAmount,
+            coordinator_id: coordinatorId,
+            investor_id: investorId
         };
 
         const btn = document.getElementById('btnCheckout');
@@ -417,9 +509,24 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
                 // Open Receipt
                 window.open('{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt', '_blank', 'width=400,height=600');
                 
+                const sendWa = document.getElementById('sendWhatsapp').checked;
+                const phone = document.getElementById('customerPhone').value;
+                if (sendWa && phone) {
+                    fetch('{{ url("atk/transactions") }}/' + result.transaction_id + '/whatsapp-receipt', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: 'phone=' + encodeURIComponent(phone)
+                    }).catch(()=>{});
+                }
+                
                 // Reset Cart
                 cart = [];
                 document.getElementById('cashAmount').value = '';
+                document.getElementById('customerPhone').value = '';
+                document.getElementById('sendWhatsapp').checked = false;
                 renderCart();
                 alert('Transaction successful!');
                 location.reload(); // To update stock display

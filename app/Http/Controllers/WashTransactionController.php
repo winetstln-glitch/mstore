@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\WhatsAppService;
 
 class WashTransactionController extends Controller
 {
@@ -281,5 +282,27 @@ class WashTransactionController extends Controller
     {
         $transaction->loadMissing('user', 'items');
         return view('wash.transactions.receipt', compact('transaction'));
+    }
+
+    public function whatsappReceipt(Request $request, WashTransaction $transaction)
+    {
+        $request->validate(['phone' => 'required|string']);
+        $phone = $this->normalizePhone($request->input('phone'));
+        $link = route('wash.transactions.receipt', $transaction);
+        $amount = 'Rp ' . number_format($transaction->total_amount, 0, ',', '.');
+        $message = "Terima kasih atas kunjungan Anda.\nNo: {$transaction->transaction_number}\nTotal: {$amount}\nStruk: {$link}";
+        app(WhatsAppService::class)->sendMessage($phone, $message, 'receipt', null);
+        return response()->json(['success' => true]);
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (str_starts_with($digits, '0')) {
+            $digits = '62' . substr($digits, 1);
+        } elseif (!str_starts_with($digits, '62')) {
+            $digits = '62' . $digits;
+        }
+        return $digits;
     }
 }

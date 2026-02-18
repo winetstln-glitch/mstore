@@ -129,7 +129,16 @@ class AtkProductController extends Controller
         if ($request->filled('category')) {
             $query->where('category', $request->get('category'));
         }
-        $products = $query->latest()->paginate(10)->appends($request->query());
+        $per = $request->get('per_page', '10');
+        if ($per === 'all') {
+            $perPage = max(1, (int) $query->count());
+        } else {
+            $perPage = (int) $per;
+            if (!in_array($perPage, [10, 50, 100], true)) {
+                $perPage = 10;
+            }
+        }
+        $products = $query->latest()->paginate($perPage)->appends($request->query());
         return view('atk.products.index', compact('products', 'categories'));
     }
 
@@ -185,6 +194,11 @@ class AtkProductController extends Controller
         return view('atk.products.edit', compact('product'));
     }
 
+    public function show(AtkProduct $product)
+    {
+        return redirect()->route('atk.products.edit', $product);
+    }
+
     public function update(Request $request, AtkProduct $product)
     {
         $validated = $request->validate([
@@ -230,5 +244,21 @@ class AtkProductController extends Controller
         }
         $product->delete();
         return redirect()->route('atk.products.index')->with('success', __('Product deleted successfully.'));
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (!is_array($ids) || empty($ids)) {
+            return redirect()->route('atk.products.index')->withErrors(['ids' => __('No products selected.')]);
+        }
+        $products = AtkProduct::whereIn('id', $ids)->get();
+        foreach ($products as $product) {
+            if ($product->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+            }
+            $product->delete();
+        }
+        return redirect()->route('atk.products.index')->with('success', __('Selected products deleted successfully.'));
     }
 }
