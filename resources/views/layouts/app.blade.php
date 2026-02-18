@@ -295,55 +295,65 @@
             </div>
             @endif
 
-            {{-- Operasional Group --}}
-            <div class="sidebar-header mt-2">{{ __('Operasional') }}</div>
+            {{-- Operasional Group (guarded by permissions) --}}
+            @if(
+                Auth::user()->hasPermission('ticket.view') ||
+                Auth::user()->hasPermission('inventory.view') ||
+                Auth::user()->hasPermission('technician.view') ||
+                Auth::user()->hasPermission('attendance.view') ||
+                Auth::user()->hasPermission('attendance.report') ||
+                Auth::user()->hasPermission('schedule.view') ||
+                Auth::user()->hasPermission('leave.view')
+            )
+                <div class="sidebar-header mt-2">{{ __('Operasional') }}</div>
 
-            @if(Auth::user()->hasPermission('ticket.view'))
-            <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
-                <i class="fa fa-ticket-alt"></i> {{ __('Tiket & Gangguan') }}
-            </a>
-            @endif
+                @if(Auth::user()->hasPermission('ticket.view'))
+                <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                    <i class="fa fa-ticket-alt"></i> {{ __('Tiket & Gangguan') }}
+                </a>
+                @endif
 
-            <a class="sidebar-item {{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsCollapse" role="button" aria-expanded="{{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="opsCollapse">
-                <i class="fa fa-tools"></i> {{ __('Tools & SDM') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
-            </a>
-            <div class="collapse {{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsCollapse">
-                <div class="bg-light ps-3">
-                    @if(Auth::user()->hasPermission('inventory.view'))
-                    <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
-                        <i class="fa-solid fa-toolbox"></i> {{ __('Inventory / Tools') }}
-                    </a>
-                    <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
-                        <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('technician.view'))
-                    <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-user-gear"></i> {{ __('Teknisi') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('attendance.view'))
-                    <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ request()->routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
-                        <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('attendance.report'))
-                    <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
-                        <i class="fa-solid fa-clipboard-user"></i> {{ __('Rekap Absensi') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('schedule.view'))
-                    <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('leave.view'))
-                    <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
-                    </a>
-                    @endif
+                <a class="sidebar-item {{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsCollapse" role="button" aria-expanded="{{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="opsCollapse">
+                    <i class="fa fa-tools"></i> {{ __('Tools & SDM') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                </a>
+                <div class="collapse {{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsCollapse">
+                    <div class="bg-light ps-3">
+                        @if(Auth::user()->hasPermission('inventory.view'))
+                        <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
+                            <i class="fa-solid fa-toolbox"></i> {{ __('Inventory / Tools') }}
+                        </a>
+                        <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
+                            <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('technician.view'))
+                        <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-user-gear"></i> {{ __('Teknisi') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('attendance.view'))
+                        <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ request()->routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
+                            <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('attendance.report'))
+                        <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
+                            <i class="fa-solid fa-clipboard-user"></i> {{ __('Rekap Absensi') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('schedule.view'))
+                        <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
+                            <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('leave.view'))
+                        <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
+                            <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
+                        </a>
+                        @endif
+                    </div>
                 </div>
-            </div>
+            @endif
 
             {{-- Sistem Group --}}
             @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view'))
