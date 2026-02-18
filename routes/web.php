@@ -51,6 +51,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/profile/id-card', [ProfileController::class, 'idCard'])->name('profile.id_card');
+    Route::get('/profile/id-card/download', [ProfileController::class, 'idCardDownload'])->name('profile.id_card.download');
 
     Route::get('notifications/{notification}', [NotificationController::class, 'redirect'])->name('notifications.redirect');
     Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');

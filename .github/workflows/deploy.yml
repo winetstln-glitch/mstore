@@ -1,19 +1,42 @@
-name: Auto Deploy
+name: Deploy to Server
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: self-hosted
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Pull Latest Code
+      - name: Checkout (for metadata only)
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd "${DEPLOY_PATH:-/var/www/mstore}"
+            git fetch --all
+            git reset --hard origin/main
+            if [ -x "./deploy.sh" ]; then
+              bash ./deploy.sh
+            else
+              chmod +x ./deploy.sh
+              bash ./deploy.sh
+            fi
+
+      - name: Health Check (optional)
+        if: ${{ success() && secrets.HEALTHCHECK_URL != '' }}
         run: |
-          cd /var/www/mstore
-          git fetch --all
-          git reset --hard origin/main
-          chmod +x deploy.sh
-          ./deploy.sh
+          curl -fsSL "${{ secrets.HEALTHCHECK_URL }}" >/dev/null
+

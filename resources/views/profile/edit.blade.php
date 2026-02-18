@@ -145,7 +145,28 @@
                 </div>
             </div>
 
-            <!-- Delete Account (Optional - Add if needed or leave out for now) -->
+            <!-- Digital ID Card -->
+            <div class="card shadow-sm border-0 border-top border-4 border-info mt-4">
+                <div class="card-header bg-body py-3 d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold text-info">{{ __('Digital ID Card') }}</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('profile.id_card', ['style' => 'future', 'ar' => '1.6:1', 'grid' => 'strong', 'neon' => 'bold']) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="fa-regular fa-id-badge me-1"></i> {{ __('Preview') }}
+                        </a>
+                        <a href="{{ route('profile.id_card.download', ['style' => 'future', 'ar' => '1.6:1', 'grid' => 'strong', 'neon' => 'bold']) }}" class="btn btn-info btn-sm text-white">
+                            <i class="fa-solid fa-download me-1"></i> {{ __('Download PDF') }}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">{{ __('Your digital ID card can be previewed or downloaded as PDF.') }}</p>
+                    <div class="border rounded p-2 bg-light">
+                        <iframe src="{{ route('profile.id_card', ['style' => 'future', 'ar' => '1.6:1', 'grid' => 'strong', 'neon' => 'bold']) }}" style="width:100%; height:360px; border:none; border-radius:6px; background:#000;"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Account (Optional) -->
              <div class="card shadow-sm border-0 border-top border-4 border-danger mt-4">
                 <div class="card-header bg-body py-3">
                     <h5 class="mb-0 fw-bold text-danger">Delete Account</h5>

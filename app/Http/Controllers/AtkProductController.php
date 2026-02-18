@@ -246,19 +246,40 @@ class AtkProductController extends Controller
         return redirect()->route('atk.products.index')->with('success', __('Product deleted successfully.'));
     }
 
-    public function bulkDestroy(Request $request)
-    {
-        $ids = $request->input('ids', []);
-        if (!is_array($ids) || empty($ids)) {
-            return redirect()->route('atk.products.index')->withErrors(['ids' => __('No products selected.')]);
-        }
-        $products = AtkProduct::whereIn('id', $ids)->get();
-        foreach ($products as $product) {
-            if ($product->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
-            }
-            $product->delete();
-        }
-        return redirect()->route('atk.products.index')->with('success', __('Selected products deleted successfully.'));
+   public function bulkDestroy(Request $request)
+{
+    $ids = $request->input('ids', []);
+
+    if (!is_array($ids) || empty($ids)) {
+        return redirect()
+            ->route('atk.products.index')
+            ->withErrors(['ids' => __('No products selected.')]);
     }
+
+    \DB::transaction(function () use ($ids) {
+
+        // Ambil hanya kolom yang diperlukan
+        $products = AtkProduct::whereIn('id', $ids)
+            ->select('id', 'image')
+            ->get();
+
+        // Kumpulkan file image
+        $images = $products
+            ->pluck('image')
+            ->filter()
+            ->toArray();
+
+        if (!empty($images)) {
+            \Storage::disk('public')->delete($images);
+        }
+
+        // Single query delete
+        AtkProduct::whereIn('id', $ids)->delete();
+    });
+
+    return redirect()
+        ->route('atk.products.index')
+        ->with('success', __('Selected products deleted successfully.'));
+}
+
 }

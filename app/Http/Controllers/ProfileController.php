@@ -10,13 +10,14 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProfileController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:profile.view', only: ['edit']),
+            new Middleware('permission:profile.view', only: ['edit', 'idCard', 'idCardDownload']),
             new Middleware('permission:profile.update', only: ['update']),
         ];
     }
@@ -141,5 +142,47 @@ class ProfileController extends Controller implements HasMiddleware
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function idCard()
+    {
+        $user = Auth::user()->load('role');
+        $qrPayload = $this->buildQrPayload($user);
+        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
+        return view('profile.id_card', compact('user', 'qrUrl'));
+    }
+
+    public function idCardDownload()
+    {
+        $user = Auth::user()->load('role');
+        $qrPayload = $this->buildQrPayload($user);
+        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
+        $viewData = ['user' => $user, 'qrUrl' => $qrUrl, 'isPdf' => true];
+        $pdf = Pdf::loadView('profile.id_card', $viewData)
+                  ->setPaper('a6', 'portrait');
+        // Enable remote assets for images (logo, avatar, QR)
+        if (method_exists($pdf, 'setOptions')) {
+            $pdf->setOptions(['isRemoteEnabled' => true]);
+        }
+        $filename = 'ID-' . preg_replace('/[^A-Za-z0-9\-]+/', '-', $user->name) . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    protected function buildQrPayload($user): string
+    {
+        $company = config('app.name', 'MStore');
+        $code = 'EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT);
+        $role = $user->role?->label ?? $user->role?->name ?? 'Staff';
+        $vcard = "BEGIN:VCARD\nVERSION:3.0\nN:{$user->name}\nEMAIL:{$user->email}\nORG:{$company}\nTITLE:{$role}\nNOTE:{$code}\nEND:VCARD";
+        return $vcard;
+    }
+
+    protected function buildQrUrl(string $text, int $size = 260, string $hexColor = '1d4ed8'): string
+    {
+        $data = rawurlencode($text);
+        $sizeParam = $size . 'x' . $size;
+        $color = strtolower(ltrim($hexColor, '#'));
+        // api.qrserver.com supports &color=RRGGBB and &bgcolor=RRGGBB
+        return "https://api.qrserver.com/v1/create-qr-code/?size={$sizeParam}&margin=2&data={$data}&color={$color}&bgcolor=ffffff";
     }
 }

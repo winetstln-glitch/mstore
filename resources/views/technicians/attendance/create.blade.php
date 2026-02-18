@@ -62,7 +62,17 @@
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">{{ __('Selfie Photo (Clock Out)') }}</label>
-                                <input type="file" name="photo" accept="image/*" capture="user" class="form-control" required>
+                                <label class="custom-file-upload w-100" id="upload-area">
+                                    <img id="image-preview" class="upload-preview" src="#" alt="Preview">
+                                    <div class="upload-placeholder d-flex flex-column align-items-center" id="upload-placeholder">
+                                        <i class="fa-solid fa-camera fs-1 mb-2"></i>
+                                        <span class="upload-label-text">{{ __('Tap to take photo') }}</span>
+                                    </div>
+                                    <input type="file" name="photo" id="photo" accept="image/*" capture="user" required onchange="previewImage(event)">
+                                </label>
+                                <div class="mt-2 text-center" id="taken-preview-wrapper" style="display:none;">
+                                    <img id="taken-preview" src="#" alt="Captured" class="img-fluid rounded border" style="max-height:200px">
+                                </div>
                             </div>
 
                             <div class="mb-4">
@@ -84,7 +94,17 @@
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">{{ __('Selfie Photo (Clock In)') }}</label>
-                                <input type="file" name="photo" accept="image/*" capture="user" class="form-control" required>
+                                <label class="custom-file-upload w-100" id="upload-area">
+                                    <img id="image-preview" class="upload-preview" src="#" alt="Preview">
+                                    <div class="upload-placeholder d-flex flex-column align-items-center" id="upload-placeholder">
+                                        <i class="fa-solid fa-camera fs-1 mb-2"></i>
+                                        <span class="upload-label-text">{{ __('Ketuk untuk mengambil foto') }}</span>
+                                    </div>
+                                    <input type="file" name="photo" id="photo" accept="image/*" capture="user" required onchange="previewImage(event)">
+                                </label>
+                                <div class="mt-2 text-center" id="taken-preview-wrapper" style="display:none;">
+                                    <img id="taken-preview" src="#" alt="Captured" class="img-fluid rounded border" style="max-height:200px">
+                                </div>
                             </div>
 
                             <div class="mb-4">
@@ -102,71 +122,63 @@
     </div>
 </div>
 
+@push('styles')
+<style>
+.custom-file-upload{border:2px dashed #d1d5db;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;min-height:150px;color:#6b7280}
+.custom-file-upload input[type=file]{display:none}
+.upload-preview{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    object-fit:cover;border-radius:10px;z-index:5;
+    display:block;opacity:0;transition:opacity .2s ease;
+}
+.upload-preview.active{opacity:1}
+.custom-file-upload.bg-has-image{background-size:cover;background-position:center}
+.upload-placeholder{position:relative;z-index:2}
+.upload-placeholder i{color:#6b7280}
+.upload-label-text{color:#6b7280;font-weight:500;z-index:2}
+</style>
+@endpush
+
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Face Recognition Logic
+    // Face Detection (relaxed)
     const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights';
-    let userDescriptor = null;
-    const hasAvatar = {{ Auth::user()->avatar ? 'true' : 'false' }};
     const faceVerificationEnabled = {{ $faceVerificationEnabled == '1' ? 'true' : 'false' }};
-    const avatarUrl = "{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : '' }}";
     const statusDiv = document.getElementById('face-model-status');
     const submitBtns = document.querySelectorAll('#submitBtn');
 
     async function loadModels() {
-        if (!hasAvatar || !faceVerificationEnabled) return;
+        if (!faceVerificationEnabled) return;
         
         if(statusDiv) statusDiv.style.display = 'block';
         
         try {
             await Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL)
             ]);
 
-            // Load User Descriptor
-            const img = await faceapi.fetchImage(avatarUrl);
-            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-            
-            if (detection) {
-                userDescriptor = detection.descriptor;
-                if(statusDiv) {
-                    statusDiv.classList.remove('alert-info');
-                    statusDiv.classList.add('alert-success');
-                    statusDiv.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> {{ __("Face Recognition Ready") }}';
-                    setTimeout(() => { statusDiv.style.display = 'none'; }, 2000);
-                }
-                // Enable inputs
-                document.querySelectorAll('input[name="photo"]').forEach(input => input.disabled = false);
-            } else {
-                if(statusDiv) {
-                    statusDiv.classList.remove('alert-info');
-                    statusDiv.classList.add('alert-danger');
-                    statusDiv.innerHTML = '<i class="fa-solid fa-exclamation-circle me-2"></i> {{ __("Face not found in Profile Photo. Please update your profile photo.") }}';
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Profile Photo Error',
-                    text: '{{ __("Could not detect a face in your profile photo. Please upload a clear photo of your face in Profile settings.") }}',
-                    footer: '<a href="{{ route("profile.edit") }}">{{ __("Go to Profile") }}</a>'
-                });
+            if(statusDiv) {
+                statusDiv.classList.remove('alert-info');
+                statusDiv.classList.add('alert-success');
+                statusDiv.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> {{ __("Face Detection Ready") }}';
+                setTimeout(() => { statusDiv.style.display = 'none'; }, 2000);
             }
+            document.querySelectorAll('input[name="photo"]').forEach(input => input.disabled = false);
         } catch (error) {
             console.error(error);
             if(statusDiv) {
                 statusDiv.classList.remove('alert-info');
                 statusDiv.classList.add('alert-danger');
-                statusDiv.innerHTML = '<i class="fa-solid fa-exclamation-circle me-2"></i> {{ __("Error loading Face Recognition models.") }}';
+                statusDiv.innerHTML = '<i class="fa-solid fa-exclamation-circle me-2"></i> {{ __("Error loading Face Detection model.") }}';
             }
         }
     }
 
-    if (hasAvatar && faceVerificationEnabled) {
+    if (faceVerificationEnabled) {
         loadModels();
     } else {
-        // If verification disabled, ensure inputs are enabled
+        // If disabled, ensure inputs are enabled
         document.querySelectorAll('input[name="photo"]').forEach(input => input.disabled = false);
     }
 
@@ -175,21 +187,15 @@
         input.addEventListener('change', async function(e) {
             if (!e.target.files.length) return;
             
-            // If verification is disabled, just enable submit button
+            // If disabled, just enable submit button
             if (!faceVerificationEnabled) {
                 submitBtns.forEach(btn => btn.disabled = false);
                 return;
             }
 
-            if (!userDescriptor) {
-                Swal.fire('Error', '{{ __("System not ready or Profile Photo invalid.") }}', 'error');
-                e.target.value = '';
-                return;
-            }
-
             Swal.fire({ 
-                title: '{{ __("Verifying Face...") }}', 
-                text: '{{ __("Please wait while we verify your identity.") }}',
+                title: '{{ __("Detecting Face...") }}', 
+                text: '{{ __("Please wait while we detect a face in the photo.") }}',
                 allowOutsideClick: false, 
                 didOpen: () => Swal.showLoading() 
             });
@@ -198,38 +204,23 @@
                 const file = e.target.files[0];
                 const img = await faceapi.bufferToImage(file);
                 
-                const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+                const detection = await faceapi.detectSingleFace(img);
                 
                 if (!detection) {
-                    Swal.fire('Error', '{{ __("Face not detected in the photo. Please try again with better lighting and a clear view of your face.") }}', 'error');
+                    Swal.fire('Error', '{{ __("Face not detected. Please try again with better lighting and your face clearly visible.") }}', 'error');
                     e.target.value = '';
                     submitBtns.forEach(btn => btn.disabled = true);
                     return;
                 }
 
-                const distance = faceapi.euclideanDistance(userDescriptor, detection.descriptor);
-                // Distance < 0.6 is usually a match. 0.5 is safer.
-                const threshold = 0.55;
-                
-                if (distance > threshold) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: '{{ __("Verification Failed") }}',
-                        text: '{{ __("Face does not match your profile photo.") }}',
-                        footer: 'Match Score: ' + Math.round((1-distance)*100) + '%'
-                    });
-                    e.target.value = '';
-                    submitBtns.forEach(btn => btn.disabled = true);
-                } else {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '{{ __("Verified!") }}',
-                        text: '{{ __("Face matched successfully.") }}',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    submitBtns.forEach(btn => btn.disabled = false);
-                }
+                Swal.fire({
+                    icon: 'success',
+                    title: '{{ __("Face detected") }}',
+                    text: '{{ __("You can proceed to submit.") }}',
+                    timer: 1200,
+                    showConfirmButton: false
+                });
+                submitBtns.forEach(btn => btn.disabled = false);
             } catch (err) {
                 console.error(err);
                 Swal.fire('Error', '{{ __("An error occurred during verification.") }}', 'error');
@@ -269,4 +260,43 @@
         }
     });
 </script>
+<script>
+    function previewImage(event) {
+        const input = event.target;
+        const area = input.closest('.custom-file-upload');
+        const preview = area ? area.querySelector('.upload-preview') : document.getElementById('image-preview');
+        const placeholder = area ? area.querySelector('#upload-placeholder') : document.getElementById('upload-placeholder');
+        const uploadArea = area || document.getElementById('upload-area');
+        const takenWrapper = document.getElementById('taken-preview-wrapper');
+        const takenImg = document.getElementById('taken-preview');
+        if (!uploadArea) return;
+        if (!input.files || !input.files[0]) {
+            if (preview) { preview.src = '#'; preview.classList.remove('active'); }
+            if (placeholder) placeholder.style.display = 'flex';
+            uploadArea.classList.remove('bg-has-image');
+            uploadArea.style.backgroundImage = '';
+            uploadArea.style.borderStyle = 'dashed'; 
+            uploadArea.style.borderColor = '';
+            if (takenWrapper) takenWrapper.style.display = 'none';
+            if (takenImg) takenImg.src = '#';
+            return;
+        }
+        if (input.files && input.files[0]) {
+            const objectUrl = URL.createObjectURL(input.files[0]);
+            if (preview) {
+                preview.src = objectUrl;
+                preview.classList.add('active');
+            } else {
+                uploadArea.classList.add('bg-has-image');
+                uploadArea.style.backgroundImage = `url('${objectUrl}')`;
+            }
+            if (placeholder) placeholder.style.display = 'none';
+            uploadArea.style.borderStyle = 'solid'; 
+            uploadArea.style.borderColor = '#3b82f6'; 
+            uploadArea.style.padding = '0';
+            if (takenImg) takenImg.src = objectUrl;
+            if (takenWrapper) takenWrapper.style.display = 'block';
+        }
+    }
+    </script>
 @endsection
