@@ -157,7 +157,24 @@ class ProfileController extends Controller implements HasMiddleware
         $user = Auth::user()->load('role');
         $qrPayload = $this->buildQrPayload($user);
         $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
-        $viewData = ['user' => $user, 'qrUrl' => $qrUrl, 'isPdf' => true];
+        $qrSrc = $qrUrl;
+        // Try to embed QR as data URI for reliable PDF rendering
+        try {
+            $context = stream_context_create([
+                'http' => ['timeout' => 5],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $qrBin = @file_get_contents($qrUrl, false, $context);
+            if ($qrBin !== false) {
+                $qrSrc = 'data:image/png;base64,' . base64_encode($qrBin);
+            }
+        } catch (\Throwable $e) {
+            // Fallback keeps $qrSrc as URL
+        }
+        $viewData = ['user' => $user, 'qrUrl' => $qrUrl, 'qrSrc' => $qrSrc, 'isPdf' => true];
         $pdf = Pdf::loadView('profile.id_card', $viewData)
                   ->setPaper('a6', 'portrait');
         // Enable remote assets for images (logo, avatar, QR)

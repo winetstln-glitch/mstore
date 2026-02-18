@@ -220,14 +220,23 @@
 <body>
     <?php
         $company = config('app.name', 'MStore');
+        $isPdf = !empty($isPdf);
+        // Logo
+        $logoPublic = public_path('img/logo.png');
         $logoUrl = asset('img/logo.png');
-        $logoDiskPath = public_path('img/logo.png');
-        $logo = file_exists($logoDiskPath) ? $logoUrl : null;
-        $avatarUrl = isset($user) && $user->avatar ? asset('storage/' . $user->avatar) : null;
+        $logoSrc = file_exists($logoPublic) ? ($isPdf ? $logoPublic : $logoUrl) : null;
+        // Avatar
+        $avatarPublic = (isset($user) && $user->avatar) ? public_path('storage/' . $user->avatar) : null;
+        $avatarUrl = (isset($user) && $user->avatar) ? asset('storage/' . $user->avatar) : null;
+        $avatarSrc = ($avatarPublic && file_exists($avatarPublic)) ? ($isPdf ? $avatarPublic : $avatarUrl) : null;
+        // Role/Division
         $role = isset($user) ? ($user->role?->label ?? $user->role?->name ?? 'Staff') : 'Staff';
         $department = $role;
+        // Employee Code
         $code = isset($user) ? ('EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT)) : 'EMP-00000';
+        // QR
         $qrUrl = $qrUrl ?? "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={$code}";
+        $qrSrc = $qrSrc ?? $qrUrl;
     ?>
 
     <!-- Tombol Download -->
@@ -250,8 +259,8 @@
         <div class="content-wrapper">
             <!-- Logo -->
             <div class="header-logo">
-                @if($logo)
-                    <img src="{{ $logo }}" alt="Logo" style="width:28px;height:28px;border-radius:4px;background:#fff;padding:2px;">
+                @if($logoSrc)
+                    <img src="{{ $logoSrc }}" alt="Logo" style="width:28px;height:28px;border-radius:4px;background:#fff;padding:2px;">
                 @else
                     <span class="logo-icon">⚡</span>
                 @endif
@@ -262,8 +271,8 @@
             <div class="hex-container">
                 <div class="hex-border"></div>
                 <div class="hex-img">
-                    @if($avatarUrl)
-                        <img src="{{ $avatarUrl }}" alt="User">
+                    @if($avatarSrc)
+                        <img src="{{ $avatarSrc }}" alt="User">
                     @else
                         <img src="https://ui-avatars.com/api/?name={{ isset($user) ? urlencode($user->name) : 'User' }}&background=0b1016&color=fff" alt="User">
                     @endif
@@ -303,7 +312,7 @@
                 <div class="status-text">
                     <span class="dot"></span> STATUS: ACTIVE
                 </div>
-               
+                <img src="{{ $isPdf ? $qrSrc : $qrUrl }}" alt="QR" class="qr-img">
             </div>
         </div>
     </div>
