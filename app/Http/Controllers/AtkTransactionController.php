@@ -102,7 +102,6 @@ class AtkTransactionController extends Controller
 
                 $items[] = [
                     'product_id' => $product->id,
-                    'atk_product_id' => $product->id, // Added for compatibility
                     'product_name' => $product->name,
                     'price' => $price,
                     'quantity' => $itemData['quantity'],
