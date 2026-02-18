@@ -72,6 +72,12 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Fix permissions for storage and cache (avoid 500 due to write issues)
+chown -R www-data:www-data storage bootstrap/cache || true
+find storage -type d -exec chmod 775 {} \; || true
+find storage -type f -exec chmod 664 {} \; || true
+chmod -R 775 bootstrap/cache || true
+
 echo "=== Restart services ==="
 php artisan queue:restart || true
 systemctl restart php8.2-fpm || true
