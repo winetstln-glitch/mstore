@@ -20,18 +20,20 @@ use App\Services\SystemMetricsService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
-class DashboardController extends Controller implements HasMiddleware
+class DashboardController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('permission:dashboard.view', only: ['index']),
-        ];
-    }
-
     public function index()
     {
         $user = Auth::user();
+        if ($user && $user->hasRole('kasir-atk')) {
+            return redirect()->route('atk.dashboard');
+        }
+        if ($user && $user->hasRole('kasir-wash')) {
+            return redirect()->route('wash.dashboard');
+        }
+        if (!$user || !$user->hasPermission('dashboard.view')) {
+            abort(403);
+        }
 
         // Get User's Attendance for Today
         $todayAttendance = TechnicianAttendance::where('user_id', $user->id)
