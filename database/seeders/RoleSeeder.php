@@ -21,6 +21,8 @@ class RoleSeeder extends Seeder
             ['name' => 'coordinator', 'label' => 'Coordinator'],
             ['name' => 'customer', 'label' => 'Customer'],
             ['name' => 'finance', 'label' => 'Finance Staff'],
+            ['name' => 'kasir-atk', 'label' => 'Kasir ATK'],
+            ['name' => 'kasir-wash', 'label' => 'Kasir Wash'],
         ];
 
         foreach ($roles as $roleData) {
@@ -34,22 +36,23 @@ class RoleSeeder extends Seeder
                 // Admin gets all permissions
                 $role->permissions()->sync(Permission::all());
             } elseif (in_array($role->name, ['noc', 'network-operations-center'])) {
-                // NOC permissions
+                // NOC permissions (align with existing groups in PermissionSeeder)
                 $permissions = Permission::whereIn('group', [
                     'Dashboard',
                     'Customer Management',
                     'Ticket Management',
+                    'Installation Management',
+                    'Technician Management',
                     'Router Management',
                     'OLT Management',
                     'ODC Management',
                     'ODP Management',
                     'HTB Management',
-                    'PPPoE Management',
-                    'Radius',
+                    'Service Management', // PPPoE/Hotspot live services
                     'Map',
                     'Network Monitor',
                     'Profile',
-                    'Notification'
+                    'Notification',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'technician') {
@@ -147,6 +150,26 @@ class RoleSeeder extends Seeder
                 $viewPermissions = Permission::whereIn('name', $viewPermissionNames)->get();
 
                 $role->permissions()->sync($managePermissions->merge($viewPermissions));
+            } elseif ($role->name === 'kasir-atk') {
+                // Kasir ATK: hanya menu ATK
+                $permissions = Permission::whereIn('name', [
+                    'atk.view',
+                    'atk.pos',
+                    'atk.report',
+                    'profile.view',
+                    'profile.update',
+                ])->get();
+                $role->permissions()->sync($permissions);
+            } elseif ($role->name === 'kasir-wash') {
+                // Kasir Wash: hanya menu Wash
+                $permissions = Permission::whereIn('name', [
+                    'wash.view',
+                    'wash.pos',
+                    'wash.report',
+                    'profile.view',
+                    'profile.update',
+                ])->get();
+                $role->permissions()->sync($permissions);
             }
         }
     }

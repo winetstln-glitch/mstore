@@ -63,9 +63,11 @@
             <div class="sidebar-header mt-2">{{ __('Main Menu') }}</div>
 
             {{-- Dashboard --}}
+            @if(Auth::user()->hasPermission('dashboard.view'))
             <a href="{{ route('dashboard') }}" class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="fa fa-tachometer-alt"></i> {{ __('Dashboard') }}
             </a>
+            @endif
 
             {{-- Pelanggan & Layanan Group --}}
             <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
@@ -527,9 +529,11 @@
 <!-- /#wrapper -->
 
 <div class="mobile-bottom-nav d-lg-none">
+    @if(Auth::user()->hasPermission('dashboard.view'))
     <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
         <i class="fa fa-home"></i><span>{{ __('Home') }}</span>
     </a>
+    @endif
     @if(Auth::user()->hasPermission('customer.view'))
     <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
         <i class="fa fa-users"></i><span>{{ __('Pelanggan') }}</span>
