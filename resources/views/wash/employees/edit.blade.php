@@ -40,7 +40,7 @@
                     <label for="user_id" class="form-label">Link to Account</label>
                     <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
                         <option value="">{{ __('— Optional —') }}</option>
-                        @foreach($users as $user)
+                        @foreach(($users ?? []) as $user)
                             <option value="{{ $user->id }}" {{ old('user_id', $employee->user_id) == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }} @if($user->email) ({{ $user->email }}) @endif
                             </option>

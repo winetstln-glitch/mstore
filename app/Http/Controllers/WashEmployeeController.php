@@ -30,8 +30,12 @@ class WashEmployeeController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'email' => 'nullable|email',
         ]);
-        WashEmployee::create($request->all());
+
+        $data = $request->only(['name', 'phone', 'status', 'user_id']);
+        WashEmployee::create($data);
+
         return redirect()->route('wash.employees.index')->with('success', 'Employee created successfully.');
     }
 
@@ -45,8 +49,12 @@ class WashEmployeeController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'email' => 'nullable|email',
         ]);
-        $employee->update($request->all());
+
+        $data = $request->only(['name', 'phone', 'status', 'user_id']);
+        $employee->update($data);
+
         return redirect()->route('wash.employees.index')->with('success', 'Employee updated successfully.');
     }
 
