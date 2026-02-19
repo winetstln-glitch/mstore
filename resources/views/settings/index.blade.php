@@ -11,10 +11,41 @@
             </div>
 
             <div class="card-body">
-                {{-- Alerts handled by SweetAlert in Layout --}}
-
                 <form action="{{ route('settings.update') }}" method="POST">
                     @csrf
+                    
+                    <div class="mb-4 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-wifi me-1"></i> {{ __('MixRADIUS Connection Settings') }}
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="mixradius_base_url" class="form-label fw-medium">Base URL</label>
+                                <input type="text" class="form-control" id="mixradius_base_url" name="mixradius_base_url" value="{{ \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL')) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mixradius_billing_endpoint" class="form-label fw-medium">Billing Endpoint</label>
+                                <input type="text" class="form-control" id="mixradius_billing_endpoint" name="mixradius_billing_endpoint" value="{{ \App\Models\Setting::getValue('mixradius_billing_endpoint', env('MIXRADIUS_BILLING_ENDPOINT', '/api/invoices')) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mixradius_invoice_html_url" class="form-label fw-medium">Invoice HTML URL</label>
+                                <input type="text" class="form-control" id="mixradius_invoice_html_url" name="mixradius_invoice_html_url" value="{{ \App\Models\Setting::getValue('mixradius_invoice_html_url', env('MIXRADIUS_INVOICE_HTML_URL')) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mixradius_enforce_customer_login" class="form-label fw-medium">Enforce Customer Login via MixRADIUS</label>
+                                @php $enf = \App\Models\Setting::getValue('mixradius_enforce_customer_login', env('MIXRADIUS_ENFORCE_CUSTOMER_LOGIN', false) ? '1':'0'); @endphp
+                                <select name="mixradius_enforce_customer_login" id="mixradius_enforce_customer_login" class="form-select">
+                                    <option value="1" {{ $enf == '1' ? 'selected' : '' }}>{{ __('Yes') }}</option>
+                                    <option value="0" {{ $enf == '0' ? 'selected' : '' }}>{{ __('No') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mixradius_api_token" class="form-label fw-medium">API Token</label>
+                                <input type="password" class="form-control" id="mixradius_api_token" name="mixradius_api_token" placeholder="••••••">
+                                <div class="form-text">{{ __('Biarkan kosong jika tidak ingin mengubah token.') }}</div>
+                            </div>
+                        </div>
+                    </div>
                     
                     @foreach($settings as $group => $groupSettings)
                         <div class="mb-4 pb-3 border-bottom last:border-0">

@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Transaction;
 use App\Models\Package;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -105,6 +106,61 @@ class BillingService
         });
     }
 
+    public function syncFromMixRadius(User $user, MixRadiusService $mix): void
+    {
+        $identity = $user->radius_username ?: ($user->username ?: $user->email);
+        if (!$identity) return;
+        $items = $mix->fetchInvoices($identity);
+        if (!is_array($items)) return;
+        foreach ($items as $it) {
+            try {
+                $code = $it['code'] ?? null;
+                $amount = isset($it['amount']) ? (int)$it['amount'] : null;
+                $due = $it['due_date'] ?? null;
+                $status = $it['status'] ?? 'pending';
+                $dueDate = null;
+                if ($due) {
+                    try {
+                        $dueDate = Carbon::parse($due);
+                    } catch (\Throwable $e) {
+                        $dueDate = null;
+                    }
+                }
+                $inv = null;
+                if ($code) {
+                    $inv = Invoice::where('user_id', $user->id)->where('code', $code)->first();
+                }
+                if (!$inv && $dueDate && $amount) {
+                    $inv = Invoice::where('user_id', $user->id)
+                        ->whereDate('due_date', $dueDate->toDateString())
+                        ->where('amount', $amount)
+                        ->first();
+                }
+                if (!$inv) {
+                    $inv = new Invoice();
+                    $inv->user_id = $user->id;
+                }
+                if ($code && empty($inv->code)) $inv->code = $code;
+                if ($amount !== null) $inv->amount = $amount;
+                if ($dueDate) $inv->due_date = $dueDate;
+                if ($status) {
+                    $inv->status = $status === 'paid' ? 'paid' : 'pending';
+                    if ($inv->status === 'paid' && !$inv->paid_at) {
+                        $inv->paid_at = Carbon::now();
+                    }
+                }
+                $meta = $inv->meta ?? [];
+                if (!is_array($meta)) $meta = [];
+                if (!empty($it['package'])) $meta['package'] = $it['package'];
+                if (!empty($it['period'])) $meta['period'] = $it['period'];
+                if (!empty($meta)) $inv->meta = $meta;
+                $inv->save();
+            } catch (\Throwable $e) {
+                Log::warning('Billing sync item failed', ['message' => $e->getMessage()]);
+            }
+        }
+    }
+
     /**
      * Check Overdue and Isolate
      */
@@ -114,7 +170,6 @@ class BillingService
             ->where('due_date', '<', Carbon::now())
             ->with('customer')
             ->get();
-
         foreach ($overdueInvoices as $invoice) {
             $customer = $invoice->customer;
             

@@ -543,6 +543,7 @@
 @push('scripts')
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.3.0/dist/leaflet-ant-path.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -630,6 +631,7 @@
         // Feature Groups for bounds
         var markers = L.featureGroup().addTo(map);
         var lines = L.featureGroup().addTo(map);
+        var onlineOverlay = L.featureGroup().addTo(map);
         var editLayer = L.featureGroup().addTo(map);
         var markerMap = {}; // Store markers for easy access
         var allMarkerObjs = []; // Store all marker objects for filtering
@@ -1008,7 +1010,21 @@
                         (waypoints[key] || []).forEach(function(p){ pathPoints.push([p.lat, p.lng]); });
                         pathPoints.push([customer.latitude, customer.longitude]);
                         
-                        var poly = L.polyline(pathPoints, lineOptions).addTo(lines);
+                        var poly;
+                        if (isOnline && L.polyline && L.polyline.antPath) {
+                            poly = L.polyline.antPath(pathPoints, {
+                                color: '#00f2ff',
+                                weight: 4,
+                                opacity: 1.0,
+                                dashArray: [10, 5],
+                                delay: 400,
+                                pulseColor: '#ffffff',
+                                paused: false,
+                                reverse: false
+                            }).addTo(lines);
+                        } else {
+                            poly = L.polyline(pathPoints, lineOptions).addTo(lines);
+                        }
                         if (editMode) {
                             poly.on('click', function(e) {
                                 addWaypointMarker(key, e.latlng);
@@ -1056,6 +1072,25 @@
         
         // Initial load
         loadConnections();
+
+        fetch('{{ route("api.network.online-paths") }}')
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (!data || !data.paths) return;
+                data.paths.forEach(function(p){
+                    if (L.polyline && L.polyline.antPath) {
+                        L.polyline.antPath(p.path, {
+                            color: '#00f2ff',
+                            weight: 4,
+                            opacity: 1.0,
+                            dashArray: [10, 5],
+                            delay: 400,
+                            pulseColor: '#ffffff'
+                        }).addTo(onlineOverlay);
+                    }
+                });
+            })
+            .catch(function(e){ console.error('online-paths', e); });
 
         function deleteLocation(type, id, marker) {
             if (!confirm('Apakah Anda yakin ingin menghapus titik koordinat ini?')) {

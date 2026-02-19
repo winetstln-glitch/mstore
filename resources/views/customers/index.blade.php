@@ -84,6 +84,15 @@
                         </select>
                     </div>
                     
+                    <!-- Linked to User -->
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <select name="linked" class="form-select" onchange="this.form.submit()">
+                            <option value="">{{ __('User Link') }}</option>
+                            <option value="yes" {{ request('linked') === 'yes' ? 'selected' : '' }}>{{ __('Linked') }}</option>
+                            <option value="no" {{ request('linked') === 'no' ? 'selected' : '' }}>{{ __('Unlinked') }}</option>
+                        </select>
+                    </div>
+                    
                     <!-- HTB: Half width on mobile -->
                     <div class="col-6 col-md-3 col-lg-2">
                         <select name="htb_id" class="form-select" onchange="this.form.submit()">
@@ -126,6 +135,7 @@
                                 @endcan
                                 <th scope="col" class="@cannot('customer.delete') ps-3 @endcannot">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Contact') }}</th>
+                                <th scope="col">{{ __('User') }}</th>
                                 <th scope="col">{{ __('Service') }}</th>
                                 <th scope="col">{{ __('Modem') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
@@ -161,6 +171,17 @@
                                         <div class="text-truncate" style="max-width: 100px;">{{ $customer->phone }}</div>
                                     </td>
                                     <td>
+                                        @if($customer->user)
+                                            <div class="small text-truncate" style="max-width: 150px;">
+                                                {{ $customer->user->name }}
+                                                @if($customer->user->username) ({{ $customer->user->username }}) @endif
+                                            </div>
+                                            <div class="text-muted small text-truncate" style="max-width: 150px;">{{ $customer->user->email }}</div>
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary">{{ __('Unlinked') }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <div class="text-truncate" style="max-width: 100px;">{{ $customer->package }}</div>
                                         <div class="small text-muted text-truncate" style="max-width: 100px;">{{ $customer->ip_address }}</div>
                                     </td>
@@ -194,6 +215,14 @@
                                             <a href="{{ route('customers.edit', $customer) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
+                                            @if($customer->phone && $customer->user)
+                                            @php
+                                                $waText = 'Halo ' . $customer->name . "\nAkses Portal Pelanggan: " . route('login') . "\nUsername: " . ($customer->user->username ?: $customer->user->email) . "\nJika lupa sandi, gunakan fitur Lupa Password di halaman login.";
+                                            @endphp
+                                            <a href="https://wa.me/{{ preg_replace('/\D+/', '', $customer->phone) }}?text={{ rawurlencode($waText) }}" target="_blank" class="btn btn-sm btn-outline-success" title="{{ __('Send Portal Instructions') }}">
+                                                <i class="fa-brands fa-whatsapp"></i>
+                                            </a>
+                                            @endif
                                             @endcan
                                             @can('customer.delete')
                                             <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this customer?') }}');">

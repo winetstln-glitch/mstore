@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Technician Module
     Route::get('/technician/dashboard', [TechnicianController::class, 'dashboard']);
     Route::get('/technician/history', [TechnicianController::class, 'history']);
+
+    Route::get('/network/online-paths', [\App\Http\Controllers\MapController::class, 'onlinePaths'])->name('api.network.online-paths');
 });
 
 // External Integration API (Protected by API Key in query param)

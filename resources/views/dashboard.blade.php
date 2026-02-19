@@ -388,6 +388,24 @@
 
     <!-- Right Column: Info & Installations -->
     <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4" id="mixradius-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1 fw-bold">MixRADIUS</h6>
+                    <div class="small text-muted">
+                        <span>Konektivitas Layanan</span>
+                        <span class="ms-2" id="mixradius-meta" style="display:none"></span>
+                    </div>
+                </div>
+                <div>
+                    @if(!empty($mixRadiusOk))
+                        <span id="mixradius-badge" class="badge bg-success">Connected</span>
+                    @else
+                        <span id="mixradius-badge" class="badge bg-danger">Disconnected</span>
+                    @endif
+                </div>
+            </div>
+        </div>
         <!-- Info Card -->
         <div class="card border-0 shadow-sm mb-4 bg-primary text-white">
             <div class="card-body p-4">
@@ -576,6 +594,43 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Auto-refresh MixRADIUS status every 15s
+        const badge = document.getElementById('mixradius-badge');
+        const meta = document.getElementById('mixradius-meta');
+        async function refreshMixRadius() {
+            if (!badge) return;
+            try {
+                const res = await fetch("{{ route('health.mixradius') }}", { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
+                if (!res.ok) throw new Error('network');
+                const data = await res.json();
+                const ok = !!data.ok;
+                badge.textContent = ok ? 'Connected' : 'Disconnected';
+                badge.className = 'badge ' + (ok ? 'bg-success' : 'bg-danger');
+                if (meta) {
+                    const ts = data.checked_at ? new Date(data.checked_at) : null;
+                    const timeStr = ts ? ts.toLocaleTimeString() : '';
+                    const authStr = (data.ok_auth === true) ? 'auth: OK' : (data.ok_auth === false ? 'auth: FAIL' : 'auth: -');
+                    if (typeof data.latency_ms === 'number') {
+                        meta.style.display = '';
+                        meta.textContent = `• ${data.latency_ms} ms • ${authStr} • ${timeStr}`;
+                    } else {
+                        meta.style.display = '';
+                        meta.textContent = `• ${authStr} • ${timeStr}`;
+                    }
+                }
+            } catch (e) {
+                badge.textContent = 'Disconnected';
+                badge.className = 'badge bg-danger';
+                if (meta) {
+                    meta.style.display = '';
+                    meta.textContent = '• auth: -';
+                }
+            }
+        }
+        setInterval(refreshMixRadius, 15000);
+        // initial slight delay to avoid blocking page load
+        setTimeout(refreshMixRadius, 2000);
+
         // Sales Overview (Area)
         const salesOptions = {
             chart: { type: 'area', height: 300, toolbar: { show: false } },

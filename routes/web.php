@@ -45,6 +45,9 @@ Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::c
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
+        return response()->json($mix->health());
+    })->name('health.mixradius');
     
     // Client Portal
     Route::prefix('client')->name('client.')->group(function () {

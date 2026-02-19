@@ -31,10 +31,16 @@ class LoginController extends Controller
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $credentials = [$field => $login, 'password' => $data['password']];
 
+        $enforceCustomer = (bool) env('MIXRADIUS_ENFORCE_CUSTOMER_LOGIN', false);
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-
-            return redirect()->intended('dashboard');
+            $user = Auth::user();
+            if ($enforceCustomer && $user && $user->hasRole('customer')) {
+                Auth::logout();
+            } else {
+                $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+                return redirect()->intended($fallback);
+            }
         }
 
         $verify = $mixRadius->verifyCredentials($login, $data['password']);
@@ -69,7 +75,8 @@ class LoginController extends Controller
 
             Auth::login($user, true);
             $request->session()->regenerate();
-            return redirect()->intended('dashboard');
+            $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+            return redirect()->intended($fallback);
         }
 
         throw ValidationException::withMessages(['login' => 'Email/Username atau password salah atau akun tidak ditemukan.']);

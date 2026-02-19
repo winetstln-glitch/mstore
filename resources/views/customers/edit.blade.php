@@ -101,6 +101,23 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        
+                        <!-- Link to User (Client Portal) -->
+                        <div class="col-md-6">
+                            <label for="user_id" class="form-label small text-muted fw-bold">{{ __('Link to User (Portal)') }}</label>
+                            <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror">
+                                <option value="">{{ __('-- Optional: Select User --') }}</option>
+                                @foreach(($availableUsers ?? []) as $u)
+                                    <option value="{{ $u->id }}" {{ (string)old('user_id', $customer->user_id) === (string)$u->id ? 'selected' : '' }}>
+                                        {{ $u->name }} @if($u->username) ({{ $u->username }}) @endif @if($u->email) - {{ $u->email }} @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">{{ __('Menghubungkan customer ke akun portal (role: customer).') }}</div>
+                            @error('user_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <!-- Location -->
                         <div class="col-md-6">
@@ -169,6 +186,15 @@
                             <label for="ip_address" class="form-label small text-muted fw-bold">{{ __('IP Address') }}</label>
                             <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $customer->ip_address) }}" class="form-control @error('ip_address') is-invalid @enderror" placeholder="192.168.x.x">
                             @error('ip_address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- GenieACS Device ID -->
+                        <div class="col-md-6">
+                            <label for="genieacs_device_id" class="form-label small text-muted fw-bold">{{ __('GenieACS Device ID') }}</label>
+                            <input type="text" name="genieacs_device_id" id="genieacs_device_id" value="{{ old('genieacs_device_id', $customer->genieacs_device_id) }}" class="form-control @error('genieacs_device_id') is-invalid @enderror" placeholder="e.g. 64b8f9...">
+                            @error('genieacs_device_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

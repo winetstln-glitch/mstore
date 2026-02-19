@@ -166,6 +166,99 @@ class MapController extends Controller implements HasMiddleware
         return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin', 'closures'));
     }
 
+    public function onlinePaths(Request $request)
+    {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $regionId = null;
+
+        if (!$isAdmin) {
+            $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
+            if ($coordinator) {
+                $regionId = $coordinator->region_id;
+            }
+        }
+
+        $olts = Olt::whereNotNull('latitude')->whereNotNull('longitude')->get();
+
+        $odcQuery = Odc::query()->whereNotNull('latitude')->whereNotNull('longitude');
+        if ($regionId) {
+            $odcQuery->where('region_id', $regionId);
+        }
+        $odcs = $odcQuery->get();
+
+        $odpQuery = Odp::query()->whereNotNull('latitude')->whereNotNull('longitude');
+        if ($regionId) {
+            $odpQuery->where('region_id', $regionId);
+        }
+        $odps = $odpQuery->get();
+
+        $customerQuery = Customer::whereNotNull('latitude')->whereNotNull('longitude');
+        if ($regionId) {
+            $customerQuery->whereHas('odp', function ($q) use ($regionId) {
+                $q->where('region_id', $regionId);
+            });
+        }
+        $customers = $customerQuery
+            ->select(['id', 'name', 'latitude', 'longitude', 'odp_id', 'onu_serial'])
+            ->with('odp:id,region_id')
+            ->get();
+
+        $devices = $this->genieService->getDevices(300);
+        $genieData = [];
+        foreach ($devices as $device) {
+            $serial = $device['_deviceId']['_SerialNumber'] ?? null;
+            $lastInform = $device['_lastInform'] ?? null;
+            if ($serial) {
+                $isOnline = false;
+                if ($lastInform) {
+                    $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
+                    if ($diff < 300) {
+                        $isOnline = true;
+                    }
+                }
+                $genieData[$serial] = ['is_online' => $isOnline];
+            }
+        }
+
+        $customers->transform(function ($customer) use ($genieData) {
+            if ($customer->onu_serial && isset($genieData[$customer->onu_serial])) {
+                $customer->is_online = $genieData[$customer->onu_serial]['is_online'];
+            } else {
+                $customer->is_online = false;
+            }
+            return $customer;
+        });
+
+        $paths = [];
+        foreach ($olts as $olt) {
+            $odcsByOlt = $odcs->where('olt_id', $olt->id);
+            foreach ($odcsByOlt as $odc) {
+                $odpsByOdc = $odps->where('odc_id', $odc->id);
+                foreach ($odpsByOdc as $odp) {
+                    $custs = $customers->where('odp_id', $odp->id)->where('is_online', true);
+                    foreach ($custs as $customer) {
+                        $pathPoints = [
+                            [$olt->latitude, $olt->longitude],
+                            [$odc->latitude, $odc->longitude],
+                            [$odp->latitude, $odp->longitude],
+                            [$customer->latitude, $customer->longitude],
+                        ];
+                        $paths[] = [
+                            'olt' => ['id' => $olt->id, 'name' => $olt->name, 'latitude' => $olt->latitude, 'longitude' => $olt->longitude],
+                            'odc' => ['id' => $odc->id, 'name' => $odc->name, 'latitude' => $odc->latitude, 'longitude' => $odc->longitude],
+                            'odp' => ['id' => $odp->id, 'name' => $odp->name, 'latitude' => $odp->latitude, 'longitude' => $odp->longitude],
+                            'customer' => ['id' => $customer->id, 'name' => $customer->name, 'latitude' => $customer->latitude, 'longitude' => $customer->longitude],
+                            'path' => $pathPoints,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return response()->json(['paths' => array_values($paths)]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */

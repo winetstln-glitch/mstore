@@ -23,6 +23,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Kode</th>
+                            <th>Layanan</th>
                             <th class="text-end">Jumlah</th>
                             <th>Jatuh Tempo</th>
                             <th>Status</th>
@@ -33,6 +34,11 @@
                         @forelse($invoices as $inv)
                         <tr>
                             <td>{{ $inv->code }}</td>
+                            <td>
+                                @php $meta = $inv->meta ?? []; @endphp
+                                <div>{{ $meta['package'] ?? '-' }}</div>
+                                <small class="text-muted">{{ $meta['period'] ?? '' }}</small>
+                            </td>
                             <td class="text-end">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
                             <td>{{ optional($inv->due_date)->format('d M Y') ?? '-' }}</td>
                             <td>
@@ -52,7 +58,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center p-4 text-muted">Belum ada tagihan.</td></tr>
+                        <tr><td colspan="6" class="text-center p-4 text-muted">Belum ada tagihan.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -61,4 +67,3 @@
     </div>
 </div>
 @endsection
-

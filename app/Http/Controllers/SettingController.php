@@ -45,11 +45,24 @@ class SettingController extends Controller implements HasMiddleware
         $data = $request->except(['_token', '_method']);
 
         foreach ($data as $key => $value) {
-            // Handle array values (e.g. work_schedule) by json_encoding them
             if (is_array($value)) {
                 $value = json_encode($value);
             }
-            Setting::where('key', $key)->update(['value' => $value]);
+            if ($key === 'mixradius_api_token' && ($value === null || $value === '')) {
+                continue;
+            }
+            $affected = Setting::where('key', $key)->update(['value' => $value]);
+            if ($affected === 0) {
+                $group = str_starts_with($key, 'mixradius_') ? 'mixradius' : 'general';
+                $type = $key === 'mixradius_enforce_customer_login' ? 'boolean' : 'text';
+                Setting::create([
+                    'key' => $key,
+                    'value' => $value,
+                    'group' => $group,
+                    'type' => $type,
+                    'label' => ucwords(str_replace('_', ' ', $key)),
+                ]);
+            }
         }
 
         return redirect()->back()->with('success', __('Settings updated successfully.'));

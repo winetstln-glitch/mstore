@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\Olt;
 use App\Models\Odp;
 use App\Models\Htb;
+use App\Models\User;
+use App\Models\Role;
 use App\Models\Coordinator;
 use App\Models\Setting;
 use App\Services\GenieACSService;
@@ -44,7 +46,7 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Customer::query();
+        $query = Customer::with('user');
 
         // Filter for Coordinator (Pengurus)
         if (!Auth::user()->hasRole('admin')) {
@@ -71,6 +73,15 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         if ($request->has('htb_id') && $request->input('htb_id') != '') {
             $query->where('htb_id', $request->input('htb_id'));
+        }
+
+        // Filter by linked user
+        if ($request->filled('linked')) {
+            if ($request->input('linked') === 'yes') {
+                $query->whereNotNull('user_id');
+            } elseif ($request->input('linked') === 'no') {
+                $query->whereNull('user_id');
+            }
         }
 
         $perPage = $request->input('per_page', 10);
@@ -293,6 +304,7 @@ class CustomerWebController extends Controller implements HasMiddleware
                             'phone' => $getValue('phone'),
                             'package' => $getValue('package'),
                             'ip_address' => $getValue('ip_address'),
+                            'genieacs_device_id' => $getValue('genieacs_device_id'),
                             'vlan' => $getValue('vlan'),
                             'odp' => $odpName,
                             'odp_id' => $odpId,
@@ -533,7 +545,16 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
+        // Available users for linking (role: customer) that are not linked yet
+        $customerRoleId = Role::where('name', 'customer')->value('id');
+        $linkedUserIds = Customer::whereNotNull('user_id')->pluck('user_id')->filter()->all();
+        $availableUsers = User::query()
+            ->where('role_id', $customerRoleId)
+            ->when(!empty($linkedUserIds), fn($q) => $q->whereNotIn('id', $linkedUserIds))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'username']);
+
+        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures', 'availableUsers'));
     }
 
     /**
@@ -546,7 +567,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'package_id' => 'nullable|exists:packages,id',
+            'user_id' => 'nullable|exists:users,id|unique:customers,user_id',
             'ip_address' => 'nullable|ip',
+            'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
             'odp' => 'nullable|string|max:50',
             'odp_id' => 'nullable|exists:odps,id',
@@ -649,7 +672,20 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
+        // Available users for linking (include current linked user if present)
+        $customerRoleId = Role::where('name', 'customer')->value('id');
+        $linkedUserIds = Customer::whereNotNull('user_id')
+            ->when($customer->user_id, fn($q) => $q->where('user_id', '!=', $customer->user_id))
+            ->pluck('user_id')
+            ->filter()
+            ->all();
+        $availableUsers = User::query()
+            ->where('role_id', $customerRoleId)
+            ->when(!empty($linkedUserIds), fn($q) => $q->whereNotIn('id', $linkedUserIds))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'username']);
+
+        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures', 'availableUsers'));
     }
 
     /**
@@ -663,7 +699,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             'phone' => 'nullable|string|max:20',
             'package_id' => 'nullable|exists:packages,id',
             'package' => 'nullable|string|max:100',
+            'user_id' => 'nullable|exists:users,id|unique:customers,user_id,' . $customer->id,
             'ip_address' => 'nullable|ip',
+            'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
             'odp' => 'nullable|string|max:50',
             'odp_id' => 'nullable|exists:odps,id',

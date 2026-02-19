@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\SystemMetricsService;
+use App\Services\MixRadiusService;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -25,6 +26,9 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        if ($user && $user->hasRole('customer')) {
+            return redirect()->route('client.dashboard');
+        }
         if ($user && $user->hasRole('kasir-atk')) {
             return redirect()->route('atk.dashboard');
         }
@@ -233,6 +237,8 @@ class DashboardController extends Controller
             $financialData['expense'][] = $expenseData->get($i, 0);
         }
 
+        $mixRadiusOk = app(MixRadiusService::class)->isAvailable();
+
         return view('dashboard', compact(
             'stats',
             'recentTickets',
@@ -245,7 +251,8 @@ class DashboardController extends Controller
             'deployedAssets',
             'trafficData',
             'trafficStats',
-            'systemMetrics'
+            'systemMetrics',
+            'mixRadiusOk'
         ));
     }
 }

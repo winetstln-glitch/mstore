@@ -14,6 +14,7 @@ class InvoiceController extends Controller
     public function index()
     {
         $user = Auth::user();
+        app(\App\Services\BillingService::class)->syncFromMixRadius($user, app(\App\Services\MixRadiusService::class));
         $invoices = $user->invoices()->latest()->get();
         $clientKey = app(MidtransService::class)->getClientKey();
         $snapJs = config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION')) ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
@@ -41,4 +42,3 @@ class InvoiceController extends Controller
         abort_if($invoice->user_id !== Auth::id(), 403);
     }
 }
-
