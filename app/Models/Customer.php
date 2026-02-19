@@ -79,6 +79,11 @@ class Customer extends Model
         'path' => 'array',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function package()
     {
         return $this->belongsTo(Package::class);
@@ -112,5 +117,10 @@ class Customer extends Model
     public function installations()
     {
         return $this->hasMany(Installation::class);
+    }
+
+    public function invoicesByUser()
+    {
+        return $this->hasMany(Invoice::class, 'user_id', 'user_id');
     }
 }

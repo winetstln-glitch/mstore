@@ -8,6 +8,7 @@ use App\Services\MixRadiusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\RenewUserJob;
 
 class WebhookController extends Controller
 {
@@ -36,7 +37,8 @@ class WebhookController extends Controller
             return response()->json(['message' => 'ignored'], 200);
         }
 
-        DB::transaction(function () use ($orderId, $mix) {
+        $userId = null;
+        DB::transaction(function () use ($orderId, &$userId) {
             $invoice = Invoice::where('midtrans_order_id', $orderId)
                 ->orWhere('code', $orderId)
                 ->lockForUpdate()
@@ -49,9 +51,13 @@ class WebhookController extends Controller
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
-                $mix->renewUser($invoice->user, 'Payment settled: ' . $orderId);
+                $userId = $invoice->user_id;
             }
         });
+
+        if ($userId) {
+            RenewUserJob::dispatch($userId, 'Payment settled: ' . $orderId)->onQueue('default');
+        }
 
         return response()->json(['message' => 'ok']);
     }
