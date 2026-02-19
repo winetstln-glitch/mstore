@@ -312,7 +312,7 @@
                 <div class="status-text">
                     <span class="dot"></span> STATUS: ACTIVE
                 </div>
-                <img src="{{ $isPdf ? $qrSrc : $qrUrl }}" alt="QR" class="qr-img">
+                
             </div>
         </div>
     </div>

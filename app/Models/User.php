@@ -82,6 +82,11 @@ class User extends Authenticatable
         return $this->hasMany(Installation::class, 'technician_id');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function hasRole(string $roleName): bool
     {
         return $this->role && $this->role->name === $roleName;

@@ -46,6 +46,16 @@ Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::c
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Client Portal
+    Route::prefix('client')->name('client.')->group(function () {
+        Route::get('/dashboard', \App\Http\Controllers\Client\DashboardController::class)->name('dashboard');
+        Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices.index');
+        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\InvoiceController::class, 'pay'])->name('invoices.pay');
+    });
+    
+// Payment Webhook
+Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

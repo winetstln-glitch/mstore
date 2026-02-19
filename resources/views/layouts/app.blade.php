@@ -69,6 +69,15 @@
             </a>
             @endif
 
+            {{-- Client Portal --}}
+            <div class="sidebar-header mt-2">{{ __('Client Portal') }}</div>
+            <a href="{{ route('client.dashboard') }}" class="sidebar-item {{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-circle"></i> {{ __('Client Dashboard') }}
+            </a>
+            <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
+            </a>
+
             {{-- Pelanggan & Layanan Group --}}
             <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
 

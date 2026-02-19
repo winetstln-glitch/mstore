@@ -4,26 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Invoice extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'code',
+        'amount',
+        'due_date',
+        'status',
+        'midtrans_order_id',
+        'snap_token',
+        'paid_at',
+        'meta',
+    ];
 
     protected $casts = [
         'due_date' => 'date',
-        'period_date' => 'date',
         'paid_at' => 'datetime',
+        'meta' => 'array',
     ];
 
-    public function customer()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class);
+        return $this->belongsTo(User::class);
     }
 }
+
