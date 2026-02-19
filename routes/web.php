@@ -51,6 +51,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', \App\Http\Controllers\Client\DashboardController::class)->name('dashboard');
         Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\InvoiceController::class, 'pay'])->name('invoices.pay');
+        Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
+        Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
     });
     
 // Payment Webhook

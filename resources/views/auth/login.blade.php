@@ -67,14 +67,14 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="email" class="auth-form-label">Email atau Username</label>
+                        <label for="login" class="auth-form-label">Email atau Username</label>
                         <div class="input-group auth-input-group">
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
                             </span>
-                            <input id="email" class="form-control auth-input border-start-0 @error('email') is-invalid @enderror" type="email" name="email" value="{{ old('email') }}" required autofocus placeholder="Masukan Username" />
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Email atau Username" />
+                            @error('login')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>

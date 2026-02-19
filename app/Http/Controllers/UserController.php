@@ -99,6 +99,8 @@ class UserController extends Controller implements HasMiddleware
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'username' => ['nullable', 'string', 'max:255', 'unique:users,username'],
+            'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role_id' => ['nullable', 'exists:roles,id'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -109,7 +111,9 @@ class UserController extends Controller implements HasMiddleware
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password,
+            'username' => $request->username,
+            'radius_username' => $request->radius_username,
+            'password' => Hash::make($request->password),
             'role_id' => $request->role_id,
             'phone' => $request->phone,
             'daily_salary' => $request->daily_salary ?? 0,
@@ -130,6 +134,8 @@ class UserController extends Controller implements HasMiddleware
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
+            'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
             'role_id' => ['nullable', 'exists:roles,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
@@ -139,6 +145,8 @@ class UserController extends Controller implements HasMiddleware
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
+            'username' => $request->username,
+            'radius_username' => $request->radius_username,
             'role_id' => $request->role_id,
             'phone' => $request->phone,
             'daily_salary' => $request->daily_salary ?? 0,
@@ -150,7 +158,7 @@ class UserController extends Controller implements HasMiddleware
                 'password' => ['confirmed', Rules\Password::defaults()],
             ]);
             $user->update([
-                'password' => $request->password,
+                'password' => Hash::make($request->password),
             ]);
         }
 

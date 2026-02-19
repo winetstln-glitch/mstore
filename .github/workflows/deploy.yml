@@ -36,7 +36,11 @@ jobs:
             fi
 
       - name: Health Check (optional)
-        if: ${{ success() && secrets.HEALTHCHECK_URL != '' }}
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
         run: |
-          curl -fsSL "${{ secrets.HEALTHCHECK_URL }}" >/dev/null
-
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsSL "$HEALTHCHECK_URL" >/dev/null
+          else
+            echo "No healthcheck URL configured. Skipping."
+          fi

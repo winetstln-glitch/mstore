@@ -29,10 +29,30 @@
                     <a href="{{ route('profile.edit') }}" class="btn btn-outline-secondary">
                         <i class="fa-solid fa-user-gear me-1"></i> Profil
                     </a>
+                    <a href="{{ route('client.credentials.show') }}" class="btn btn-outline-warning">
+                        <i class="fa-solid fa-key me-1"></i> Ganti Kredensial
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+    @if(!empty($deviceSummary))
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <strong>Info Modem (GenieACS)</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4"><strong>Device ID</strong><br>{{ $deviceSummary['id'] }}</div>
+                        <div class="col-md-4"><strong>IP</strong><br>{{ $deviceSummary['ip'] ?? '-' }}</div>
+                        <div class="col-md-4"><strong>SSID</strong><br>{{ $deviceSummary['ssid'] ?? '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
-

@@ -25,6 +25,8 @@ class User extends Authenticatable
         'name',
         'email',
         'username',
+        'radius_username',
+        'radius_type',
         'password',
         'role_id',
         'phone',

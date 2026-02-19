@@ -52,4 +52,44 @@ class MixRadiusService
             return false;
         }
     }
+
+    public function verifyCredentials(string $username, string $password): array
+    {
+        $endpoint = rtrim((string) env('MIXRADIUS_BASE_URL', ''), '/') . '/api/users/auth';
+        try {
+            $resp = Http::timeout(8)->acceptJson()->post($endpoint, [
+                'username' => $username,
+                'password' => $password,
+                'api_key' => $this->token,
+            ]);
+            if ($resp->successful()) {
+                return ['ok' => true, 'data' => $resp->json()];
+            }
+            Log::warning('MixRADIUS verifyCredentials non-2xx', ['status' => $resp->status(), 'body' => $resp->body()]);
+            return ['ok' => false, 'error' => 'invalid'];
+        } catch (\Throwable $e) {
+            Log::error('MixRADIUS verifyCredentials error', ['message' => $e->getMessage()]);
+            return ['ok' => false, 'error' => 'unreachable'];
+        }
+    }
+
+    public function changeCredentials(User $user, string $newUsername, string $newPassword): bool
+    {
+        $endpoint = rtrim((string) env('MIXRADIUS_BASE_URL', ''), '/') . '/api/users/update-credentials';
+        try {
+            $resp = Http::timeout(8)->acceptJson()->withToken((string)$this->token)->post($endpoint, [
+                'old_username' => $user->username ?: $user->email,
+                'new_username' => $newUsername,
+                'new_password' => $newPassword,
+            ]);
+            if ($resp->successful()) {
+                return true;
+            }
+            Log::warning('MixRADIUS changeCredentials non-2xx', ['status' => $resp->status(), 'body' => $resp->body()]);
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('MixRADIUS changeCredentials error', ['message' => $e->getMessage()]);
+            return false;
+        }
+    }
 }
