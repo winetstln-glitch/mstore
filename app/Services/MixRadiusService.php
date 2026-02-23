@@ -134,11 +134,29 @@ class MixRadiusService
                             (isset($json['valid']) && $json['valid'] === true)
                         ));
                     if ($ok) {
-                        return ['ok' => true, 'data' => $json];
+                        return [
+                            'ok' => true,
+                            'data' => $json,
+                            'endpoint' => $cand['url'],
+                            'meta' => [
+                                'as_form' => (bool)($cand['asForm'] ?? false),
+                                'auth_header' => (bool)($cand['authHeader'] ?? false),
+                                'user_field' => (string)($cand['userField'] ?? 'username'),
+                            ],
+                        ];
                     }
                     // Some deployments return 200 with message field only
                     if (is_array($json) && isset($json['message']) && stripos((string)$json['message'], 'success') !== false) {
-                        return ['ok' => true, 'data' => $json];
+                        return [
+                            'ok' => true,
+                            'data' => $json,
+                            'endpoint' => $cand['url'],
+                            'meta' => [
+                                'as_form' => (bool)($cand['asForm'] ?? false),
+                                'auth_header' => (bool)($cand['authHeader'] ?? false),
+                                'user_field' => (string)($cand['userField'] ?? 'username'),
+                            ],
+                        ];
                     }
                     // HTML responses are treated as failure
                 }
@@ -278,6 +296,75 @@ class MixRadiusService
                             if (isset($data['username']) && is_string($data['username']) && $data['username'] !== '') {
                                 return $data['username'];
                             }
+                        }
+                    }
+                }
+                Log::info('MixRADIUS resolveUsernameById try', ['url' => $url, 'status' => $resp->status(), 'body' => $resp->body()]);
+            } catch (\Throwable $e) {
+                Log::warning('MixRADIUS resolveUsernameById exception', ['url' => $url, 'error' => $e->getMessage()]);
+            }
+        }
+        return null;
+    }
+
+    public function resolveUsernameByIdWithMeta(string $id): ?array
+    {
+        if (empty($this->baseUrl)) {
+            return null;
+        }
+        $base = rtrim((string) $this->baseUrl, '/');
+        $configured = [];
+        if (!empty($this->userInfoEndpoint)) {
+            $configured[] = $this->userInfoEndpoint;
+        }
+        $candidates = array_map(function ($url) {
+            return ['url' => $url, 'params' => []];
+        }, $configured);
+        $candidates = array_merge($candidates, [
+            ['url' => $base . '/api/users/info', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/users/info', 'params' => ['customer_id' => $id]],
+            ['url' => $base . '/api/users/detail', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/users/detail', 'params' => ['customer_id' => $id]],
+            ['url' => $base . '/api/user/info', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user/detail', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user/get', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user', 'params' => ['id' => $id]],
+        ]);
+        foreach ($candidates as $cand) {
+            try {
+                $req = Http::timeout(8)->acceptJson();
+                if (!empty($this->token)) {
+                    $req = $req->withToken((string)$this->token)
+                        ->withHeaders(array_filter([
+                            'X-Api-Key' => $this->token,
+                            'X-Api-Secret' => $this->secret,
+                        ]));
+                }
+                $params = $cand['params'] ?? [];
+                if (!empty($this->token)) {
+                    $params['api_key'] = $this->token;
+                }
+                if (!empty($this->secret)) {
+                    $params['api_secret'] = $this->secret;
+                    $params['secret'] = $this->secret;
+                    $params['api_pass'] = $this->secret;
+                }
+                $url = $cand['url'];
+                if (strpos($url, '{id}') !== false) {
+                    $url = str_replace('{id}', urlencode($id), $url);
+                }
+                $resp = $req->get($url, $params);
+                if ($resp->successful()) {
+                    $json = $resp->json();
+                    if (is_array($json)) {
+                        $username = null;
+                        if (isset($json['username']) && is_string($json['username']) && $json['username'] !== '') {
+                            $username = $json['username'];
+                        } elseif (isset($json['data']) && is_array($json['data']) && isset($json['data']['username']) && is_string($json['data']['username']) && $json['data']['username'] !== '') {
+                            $username = $json['data']['username'];
+                        }
+                        if ($username) {
+                            return ['username' => $username, 'endpoint' => $url];
                         }
                     }
                 }

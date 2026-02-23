@@ -53,10 +53,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($acceptsJson) {
                 return response()->json([
                     'message' => 'Terjadi kesalahan pada server',
-                    'error_id' => $errorId,
                 ], 500)->header('X-Error-Id', $errorId);
             }
-            $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Server Error</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8f9fa;color:#212529"><div style="text-align:center"><h1 style="font-size:22px;margin:0 0 8px">Terjadi kesalahan pada server</h1><p style="margin:0 0 10px">Silakan coba beberapa saat lagi.</p><small style="color:#6c757d">Error ID: '.$errorId.'</small></div></body></html>';
+            $html = '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Server Error</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8f9fa;color:#212529"><div style="text-align:center"><h1 style="font-size:22px;margin:0 0 8px">Terjadi kesalahan pada server</h1><p style="margin:0 0 10px">Silakan coba beberapa saat lagi.</p></div></body></html>';
             return response($html, 500)->header('X-Error-Id', $errorId);
         });
     })->create();

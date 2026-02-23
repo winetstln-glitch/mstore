@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use App\Services\MixRadiusService;
 use App\Models\User;
 use App\Models\Role;
@@ -67,53 +68,66 @@ class LoginController extends Controller
                 }
             }
 
-            $verify = $mixRadius->verifyCredentials($identity, $password);
-            if ($verify['ok'] ?? false) {
-                $email = filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($verify['data']['email'] ?? ($identity . '@local.test'));
-                $username = filter_var($identity, FILTER_VALIDATE_EMAIL) ? ($verify['data']['username'] ?? null) : $identity;
+            try {
+                $verify = $mixRadius->verifyCredentials($identity, $password);
+                if ($verify['ok'] ?? false) {
+                    $email = filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($verify['data']['email'] ?? ($identity . '@local.test'));
+                    $username = filter_var($identity, FILTER_VALIDATE_EMAIL) ? ($verify['data']['username'] ?? null) : $identity;
 
-                $user = User::query()
-                    ->when($email, fn($q) => $q->where('email', $email))
-                    ->when(!$email && $username, fn($q) => $q->orWhere('username', $username))
-                    ->first();
+                    $user = User::query()
+                        ->when($email, fn($q) => $q->where('email', $email))
+                        ->when(!$email && $username, fn($q) => $q->orWhere('username', $username))
+                        ->first();
 
-                if (!$user) {
-                    $roleId = Role::where('name', 'customer')->value('id');
-                    $user = User::create([
-                        'name' => $verify['data']['name'] ?? ($username ?: $email),
-                        'email' => $email,
-                        'username' => $username,
-                        'radius_username' => $verify['data']['radius_username'] ?? $username,
-                        'radius_type' => $verify['data']['radius_type'] ?? null,
-                        'password' => bcrypt(Str::random(32)),
-                        'role_id' => $roleId,
-                        'is_active' => true,
-                    ]);
-                    try {
-                        $cust = null;
-                        if (ctype_digit($login)) {
-                            $cust = \App\Models\Customer::find((int)$login);
-                        }
-                        if (!$cust && !empty($username)) {
-                            $cust = \App\Models\Customer::where('pppoe_user', $username)->first();
-                        }
-                        if ($cust && empty($cust->user_id)) {
-                            $cust->user_id = $user->id;
-                            $cust->save();
-                        }
-                    } catch (\Throwable $e) {}
-                } else {
-                    $user->fill([
-                        'username' => $user->username ?: $username,
-                        'radius_username' => $verify['data']['radius_username'] ?? ($user->radius_username ?: $username),
-                        'radius_type' => $verify['data']['radius_type'] ?? $user->radius_type,
-                    ])->save();
+                    if (!$user) {
+                        $roleId = Role::where('name', 'customer')->value('id');
+                        $user = User::create([
+                            'name' => $verify['data']['name'] ?? ($username ?: $email),
+                            'email' => $email,
+                            'username' => $username,
+                            'radius_username' => $verify['data']['radius_username'] ?? $username,
+                            'radius_type' => $verify['data']['radius_type'] ?? null,
+                            'password' => bcrypt(Str::random(32)),
+                            'role_id' => $roleId,
+                            'is_active' => true,
+                        ]);
+                        try {
+                            $cust = null;
+                            if (ctype_digit($login)) {
+                                $cust = \App\Models\Customer::find((int)$login);
+                            }
+                            if (!$cust && !empty($username)) {
+                                $cust = \App\Models\Customer::where('pppoe_user', $username)->first();
+                            }
+                            if ($cust && empty($cust->user_id)) {
+                                $cust->user_id = $user->id;
+                                $cust->save();
+                            }
+                        } catch (\Throwable $e) {}
+                    } else {
+                        $user->fill([
+                            'username' => $user->username ?: $username,
+                            'radius_username' => $verify['data']['radius_username'] ?? ($user->radius_username ?: $username),
+                            'radius_type' => $verify['data']['radius_type'] ?? $user->radius_type,
+                        ])->save();
+                    }
+
+                    Auth::login($user, true);
+                    $request->session()->regenerate();
+                    $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+                    return redirect()->intended($fallback);
                 }
-
-                Auth::login($user, true);
-                $request->session()->regenerate();
-                $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
-                return redirect()->intended($fallback);
+            } catch (\Throwable $e) {
+                $errId = (string) Str::uuid();
+                $reqId = $request->headers->get('X-Request-Id');
+                Log::error('Login customer failed', [
+                    'error_id' => $errId,
+                    'request_id' => $reqId,
+                    'login' => $login,
+                    'identity' => $identity,
+                    'message' => $e->getMessage(),
+                ]);
+                throw ValidationException::withMessages(['login' => 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.']);
             }
 
             throw ValidationException::withMessages(['login' => 'Username/ID atau password salah, atau tidak terdaftar di MixRADIUS.']);
