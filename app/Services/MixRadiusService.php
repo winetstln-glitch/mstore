@@ -11,6 +11,9 @@ class MixRadiusService
 {
     protected string $baseUrl;
     protected ?string $token;
+    protected ?string $secret;
+    protected ?string $authEndpoint;
+    protected ?string $userInfoEndpoint;
     protected ?string $billingEndpoint;
     protected ?string $invoiceHtmlUrl;
 
@@ -19,6 +22,9 @@ class MixRadiusService
         $base = Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
         $this->baseUrl = rtrim((string) $base, '/');
         $this->token = Setting::getValue('mixradius_api_token', env('MIXRADIUS_API_TOKEN'));
+        $this->secret = Setting::getValue('mixradius_api_secret', env('MIXRADIUS_API_SECRET'));
+        $this->authEndpoint = Setting::getValue('mixradius_auth_endpoint', env('MIXRADIUS_AUTH_ENDPOINT'));
+        $this->userInfoEndpoint = Setting::getValue('mixradius_user_info_endpoint', env('MIXRADIUS_USER_INFO_ENDPOINT'));
         $this->billingEndpoint = Setting::getValue('mixradius_billing_endpoint', env('MIXRADIUS_BILLING_ENDPOINT', '/api/invoices'));
         $this->invoiceHtmlUrl = Setting::getValue('mixradius_invoice_html_url', env('MIXRADIUS_INVOICE_HTML_URL'));
     }
@@ -61,53 +67,87 @@ class MixRadiusService
 
     public function verifyCredentials(string $username, string $password): array
     {
-        $endpoint = rtrim((string) $this->baseUrl, '/') . '/api/users/auth';
-        try {
-            $resp = Http::timeout(8)->acceptJson()->withToken((string)$this->token)->post($endpoint, [
-                'username' => $username,
-                'password' => $password,
-                'api_key' => $this->token,
-            ]);
-            if ($resp->successful()) {
-                $json = $resp->json();
-                $ok =
-                    ($json['ok'] ?? null) === true ||
-                    ($json['success'] ?? null) === true ||
-                    ($json['authenticated'] ?? null) === true ||
-                    (isset($json['status']) && (string)$json['status'] === 'success') ||
-                    (isset($json['valid']) && $json['valid'] === true);
-                if ($ok) {
-                    return ['ok' => true, 'data' => $json];
+        $base = rtrim((string) $this->baseUrl, '/');
+        $configured = [];
+        if (!empty($this->authEndpoint)) {
+            $configured[] = $this->authEndpoint;
+        }
+        $candidates = array_map(function ($url) {
+            return ['url' => $url, 'authHeader' => true, 'userField' => 'username', 'asForm' => false];
+        }, $configured);
+        $candidates = array_merge($candidates, [
+            // Common endpoints
+            ['url' => $base . '/api/users/auth', 'authHeader' => true, 'userField' => 'username', 'asForm' => false],
+            ['url' => $base . '/api/users/auth', 'authHeader' => false, 'userField' => 'username', 'asForm' => false],
+            ['url' => $base . '/api/users/auth', 'authHeader' => true, 'userField' => 'username', 'asForm' => true],
+            ['url' => $base . '/api/users/auth', 'authHeader' => false, 'userField' => 'username', 'asForm' => true],
+            // Alternate endpoints/field names
+            ['url' => $base . '/api/user/auth', 'authHeader' => true, 'userField' => 'user', 'asForm' => false],
+            ['url' => $base . '/api/user/auth', 'authHeader' => false, 'userField' => 'user', 'asForm' => false],
+            ['url' => $base . '/api/user/auth', 'authHeader' => true, 'userField' => 'user', 'asForm' => true],
+            ['url' => $base . '/api/user/auth', 'authHeader' => false, 'userField' => 'user', 'asForm' => true],
+            ['url' => $base . '/api/auth', 'authHeader' => true, 'userField' => 'username', 'asForm' => false],
+            ['url' => $base . '/api/auth', 'authHeader' => false, 'userField' => 'username', 'asForm' => false],
+            ['url' => $base . '/api/auth', 'authHeader' => true, 'userField' => 'username', 'asForm' => true],
+            ['url' => $base . '/api/auth', 'authHeader' => false, 'userField' => 'username', 'asForm' => true],
+        ]);
+
+        foreach ($candidates as $cand) {
+            try {
+                $req = Http::timeout(8)->acceptJson();
+                if ($cand['authHeader'] && !empty($this->token)) {
+                    $req = $req->withToken((string)$this->token);
+                    // Also pass key/secret headers for compatibility, without logging them
+                    $req = $req->withHeaders(array_filter([
+                        'X-Api-Key' => $this->token,
+                        'X-Api-Secret' => $this->secret,
+                    ]));
                 }
-                Log::info('MixRADIUS verifyCredentials body indicates failure', ['body' => $json]);
-                return ['ok' => false, 'error' => 'invalid'];
-            }
-            // Fallback attempt: some deployments expect token only in body without Authorization header
-            if (in_array($resp->status(), [401, 403])) {
-                $resp2 = Http::timeout(8)->acceptJson()->post($endpoint, [
-                    'username' => $username,
+                if (!empty($cand['asForm'])) {
+                    $req = $req->asForm();
+                }
+                // Compose body fields depending on available credentials
+                $fields = [
+                    $cand['userField'] => $username,
                     'password' => $password,
-                    'api_key' => $this->token,
-                ]);
-                if ($resp2->successful()) {
-                    $json = $resp2->json();
+                ];
+                if (!empty($this->token)) {
+                    $fields['api_key'] = $this->token;
+                }
+                if (!empty($this->secret)) {
+                    // Add several common aliases to maximize compatibility
+                    $fields['api_secret'] = $this->secret;
+                    $fields['secret'] = $this->secret;
+                    $fields['api_pass'] = $this->secret;
+                }
+                $resp = $req->post($cand['url'], $fields);
+                if ($resp->successful()) {
+                    $contentType = (string)($resp->header('Content-Type') ?? '');
+                    $body = (string)$resp->body();
+                    $json = @json_decode($body, true);
                     $ok =
-                        ($json['ok'] ?? null) === true ||
-                        ($json['success'] ?? null) === true ||
-                        ($json['authenticated'] ?? null) === true ||
-                        (isset($json['status']) && (string)$json['status'] === 'success') ||
-                        (isset($json['valid']) && $json['valid'] === true);
+                        (is_array($json) && (
+                            ($json['ok'] ?? null) === true ||
+                            ($json['success'] ?? null) === true ||
+                            ($json['authenticated'] ?? null) === true ||
+                            (isset($json['status']) && in_array(strtolower((string)$json['status']), ['success','ok','true'], true)) ||
+                            (isset($json['valid']) && $json['valid'] === true)
+                        ));
                     if ($ok) {
                         return ['ok' => true, 'data' => $json];
                     }
+                    // Some deployments return 200 with message field only
+                    if (is_array($json) && isset($json['message']) && stripos((string)$json['message'], 'success') !== false) {
+                        return ['ok' => true, 'data' => $json];
+                    }
+                    // HTML responses are treated as failure
                 }
+                Log::info('MixRADIUS verifyCredentials try', ['url' => $cand['url'], 'status' => $resp->status(), 'body' => $resp->body()]);
+            } catch (\Throwable $e) {
+                Log::warning('MixRADIUS verifyCredentials exception', ['url' => $cand['url'], 'error' => $e->getMessage()]);
             }
-            Log::warning('MixRADIUS verifyCredentials non-2xx', ['status' => $resp->status(), 'body' => $resp->body()]);
-            return ['ok' => false, 'error' => 'invalid'];
-        } catch (\Throwable $e) {
-            Log::error('MixRADIUS verifyCredentials error', ['message' => $e->getMessage()]);
-            return ['ok' => false, 'error' => 'unreachable'];
         }
+        return ['ok' => false, 'error' => 'invalid'];
     }
 
     public function isAvailable(): bool
@@ -177,6 +217,76 @@ class MixRadiusService
             'auth_latency_ms' => $authOk ? $authLatency : null,
             'checked_at' => $checkedAt,
         ];
+    }
+
+    public function resolveUsernameById(string $id): ?string
+    {
+        if (empty($this->baseUrl)) {
+            return null;
+        }
+        $base = rtrim((string) $this->baseUrl, '/');
+        $configured = [];
+        if (!empty($this->userInfoEndpoint)) {
+            $configured[] = $this->userInfoEndpoint;
+        }
+        $candidates = array_map(function ($url) {
+            return ['url' => $url, 'params' => []];
+        }, $configured);
+        $candidates = array_merge($candidates, [
+            // Common lookup endpoints and field names
+            ['url' => $base . '/api/users/info', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/users/info', 'params' => ['customer_id' => $id]],
+            ['url' => $base . '/api/users/detail', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/users/detail', 'params' => ['customer_id' => $id]],
+            ['url' => $base . '/api/user/info', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user/detail', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user/get', 'params' => ['id' => $id]],
+            ['url' => $base . '/api/user', 'params' => ['id' => $id]],
+        ]);
+        foreach ($candidates as $cand) {
+            try {
+                $req = Http::timeout(8)->acceptJson();
+                if (!empty($this->token)) {
+                    $req = $req->withToken((string)$this->token)
+                        ->withHeaders(array_filter([
+                            'X-Api-Key' => $this->token,
+                            'X-Api-Secret' => $this->secret,
+                        ]));
+                }
+                $params = $cand['params'] ?? [];
+                if (!empty($this->token)) {
+                    $params['api_key'] = $this->token;
+                }
+                if (!empty($this->secret)) {
+                    $params['api_secret'] = $this->secret;
+                    $params['secret'] = $this->secret;
+                    $params['api_pass'] = $this->secret;
+                }
+                $url = $cand['url'];
+                if (strpos($url, '{id}') !== false) {
+                    $url = str_replace('{id}', urlencode($id), $url);
+                }
+                $resp = $req->get($url, $params);
+                if ($resp->successful()) {
+                    $json = $resp->json();
+                    if (is_array($json)) {
+                        if (isset($json['username']) && is_string($json['username']) && $json['username'] !== '') {
+                            return $json['username'];
+                        }
+                        if (isset($json['data']) && is_array($json['data'])) {
+                            $data = $json['data'];
+                            if (isset($data['username']) && is_string($data['username']) && $data['username'] !== '') {
+                                return $data['username'];
+                            }
+                        }
+                    }
+                }
+                Log::info('MixRADIUS resolveUsernameById try', ['url' => $url, 'status' => $resp->status(), 'body' => $resp->body()]);
+            } catch (\Throwable $e) {
+                Log::warning('MixRADIUS resolveUsernameById exception', ['url' => $url, 'error' => $e->getMessage()]);
+            }
+        }
+        return null;
     }
 
     public function changeCredentials(User $user, string $newUsername, string $newPassword): bool

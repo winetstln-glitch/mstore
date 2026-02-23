@@ -24,6 +24,10 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\VpnServerController;
+use App\Models\Router as RouterModel;
+use App\Models\VpnAccount;
+use App\Services\VpnBridgeService;
 use Illuminate\Support\Facades\Route;
 
 // Locale Switcher
@@ -52,7 +56,17 @@ Route::middleware('auth')->group(function () {
     // Client Portal
     Route::prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', \App\Http\Controllers\Client\DashboardController::class)->name('dashboard');
+        Route::get('/portal', [\App\Http\Controllers\Client\MixradiusPortalController::class, 'index'])->name('portal');
+            Route::get('/mixradius', function () {
+                $url = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
+                abort_if(empty($url), 404);
+                // Normalize url to base (no trailing slash)
+                $url = rtrim((string)$url, '/');
+                return view('client.mixradius_embed', ['mixradiusUrl' => $url]);
+            })->name('mixradius');
+        Route::get('/connection', [\App\Http\Controllers\Client\ConnectionController::class, 'index'])->name('connection');
         Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\InvoiceController::class, 'show'])->name('invoices.show');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\InvoiceController::class, 'pay'])->name('invoices.pay');
         Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
         Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
@@ -143,6 +157,20 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
     Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->name('pppoe.index');
     Route::resource('routers', RouterController::class);
+
+    Route::prefix('vpn')->name('vpn.')->group(function () {
+        Route::resource('servers', VpnServerController::class)->except(['show']);
+    });
+    Route::view('/vpn/guide', 'vpn.guide')->name('vpn.guide');
+
+    Route::get('/routers/{router}/vpn/script', function (RouterModel $router) {
+        abort_unless($router->vpn_account_id, 404);
+        $account = VpnAccount::findOrFail($router->vpn_account_id);
+        $protocol = request('protocol', 'l2tp');
+        $service = app(VpnBridgeService::class);
+        $script = $service->generateScript($account, $protocol);
+        return response()->view('routers.vpn_script', compact('router', 'account', 'script', 'protocol'));
+    })->name('routers.vpn.script');
     
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
     Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');

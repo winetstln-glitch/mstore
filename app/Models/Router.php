@@ -10,6 +10,9 @@ class Router extends Model
     protected $fillable = [
         'name',
         'host',
+        'vpn_tunnel_ip',
+        'vpn_account_id',
+        'vpn_status',
         'port',
         'username',
         'location',
@@ -25,6 +28,11 @@ class Router extends Model
         'port' => 'integer',
         'password' => 'encrypted', // Securely store password
     ];
+
+    public function vpnAccount()
+    {
+        return $this->belongsTo(VpnAccount::class);
+    }
 
     public function customers(): HasMany
     {

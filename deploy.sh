@@ -132,7 +132,12 @@ chown -R www-data:www-data public/build || true
 
 echo "=== Restart services ==="
 php artisan queue:restart || true
-systemctl restart php8.2-fpm || true
-systemctl reload nginx || true
+if command -v sudo >/dev/null 2>&1; then
+  sudo systemctl restart php8.2-fpm || true
+  sudo systemctl reload nginx || true
+else
+  systemctl restart php8.2-fpm || true
+  systemctl reload nginx || true
+fi
 
 echo "✅ Deploy Finished"

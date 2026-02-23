@@ -27,54 +27,138 @@ class LoginController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $login = $data['login'];
-        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        $credentials = [$field => $login, 'password' => $data['password']];
-
+        $login = trim($data['login']);
+        $password = $data['password'];
         $enforceCustomer = (bool) env('MIXRADIUS_ENFORCE_CUSTOMER_LOGIN', false);
+
+        $isEmail = (bool) filter_var($login, FILTER_VALIDATE_EMAIL);
+        if (!$isEmail) {
+            $identity = $login;
+            try {
+                if (ctype_digit($login)) {
+                    $customer = \App\Models\Customer::with('user')->find((int)$login);
+                    if ($customer) {
+                        if (!empty($customer->pppoe_user)) {
+                            $identity = $customer->pppoe_user;
+                        } elseif ($customer->user && !empty($customer->user->username)) {
+                            $identity = $customer->user->username;
+                        } elseif ($customer->user && !empty($customer->user->email)) {
+                            $identity = $customer->user->email;
+                        }
+                    }
+                } else {
+                    $cByPppoe = \App\Models\Customer::where('pppoe_user', $login)->first();
+                    if ($cByPppoe) {
+                        $identity = $cByPppoe->pppoe_user;
+                    }
+                    // If not found locally and numeric-like ID was entered, try resolve from MixRADIUS
+                    if ($identity === $login && ctype_digit($login)) {
+                        $resolved = $mixRadius->resolveUsernameById($login);
+                        if (is_string($resolved) && $resolved !== '') {
+                            $identity = $resolved;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+            if ($identity === $login && ctype_digit($login)) {
+                $resolved = $mixRadius->resolveUsernameById($login);
+                if (is_string($resolved) && $resolved !== '') {
+                    $identity = $resolved;
+                }
+            }
+
+            $verify = $mixRadius->verifyCredentials($identity, $password);
+            if ($verify['ok'] ?? false) {
+                $email = filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($verify['data']['email'] ?? ($identity . '@local.test'));
+                $username = filter_var($identity, FILTER_VALIDATE_EMAIL) ? ($verify['data']['username'] ?? null) : $identity;
+
+                $user = User::query()
+                    ->when($email, fn($q) => $q->where('email', $email))
+                    ->when(!$email && $username, fn($q) => $q->orWhere('username', $username))
+                    ->first();
+
+                if (!$user) {
+                    $roleId = Role::where('name', 'customer')->value('id');
+                    $user = User::create([
+                        'name' => $verify['data']['name'] ?? ($username ?: $email),
+                        'email' => $email,
+                        'username' => $username,
+                        'radius_username' => $verify['data']['radius_username'] ?? $username,
+                        'radius_type' => $verify['data']['radius_type'] ?? null,
+                        'password' => bcrypt(Str::random(32)),
+                        'role_id' => $roleId,
+                        'is_active' => true,
+                    ]);
+                    try {
+                        $cust = null;
+                        if (ctype_digit($login)) {
+                            $cust = \App\Models\Customer::find((int)$login);
+                        }
+                        if (!$cust && !empty($username)) {
+                            $cust = \App\Models\Customer::where('pppoe_user', $username)->first();
+                        }
+                        if ($cust && empty($cust->user_id)) {
+                            $cust->user_id = $user->id;
+                            $cust->save();
+                        }
+                    } catch (\Throwable $e) {}
+                } else {
+                    $user->fill([
+                        'username' => $user->username ?: $username,
+                        'radius_username' => $verify['data']['radius_username'] ?? ($user->radius_username ?: $username),
+                        'radius_type' => $verify['data']['radius_type'] ?? $user->radius_type,
+                    ])->save();
+                }
+
+                Auth::login($user, true);
+                $request->session()->regenerate();
+                $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+                return redirect()->intended($fallback);
+            }
+
+            throw ValidationException::withMessages(['login' => 'Username/ID atau password salah, atau tidak terdaftar di MixRADIUS.']);
+        }
+
+        $field = 'email';
+        $credentials = [$field => $login, 'password' => $password];
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
             if ($enforceCustomer && $user && $user->hasRole('customer')) {
-                Auth::logout();
-            } else {
-                $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
-                return redirect()->intended($fallback);
+                // Build identity mapping for MixRADIUS check
+                $identity = $login;
+                try {
+                    if (ctype_digit($login)) {
+                        $customer = \App\Models\Customer::with('user')->find((int)$login);
+                        if ($customer) {
+                            if (!empty($customer->pppoe_user)) {
+                                $identity = $customer->pppoe_user;
+                            } elseif ($customer->user && !empty($customer->user->username)) {
+                                $identity = $customer->user->username;
+                            } elseif ($customer->user && !empty($customer->user->email)) {
+                                $identity = $customer->user->email;
+                            }
+                        }
+                    } else {
+                        $cByPppoe = \App\Models\Customer::where('pppoe_user', $login)->first();
+                        if ($cByPppoe) {
+                            $identity = $cByPppoe->pppoe_user;
+                        }
+                    }
+                } catch (\Throwable $e) {}
+                
+                // If MixRADIUS available, enforce verification; otherwise allow local login
+                if ($mixRadius->isAvailable()) {
+                    $verify = $mixRadius->verifyCredentials($identity, $password);
+                    if (!($verify['ok'] ?? false)) {
+                        Auth::logout();
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'login' => 'Akun pelanggan wajib diverifikasi MixRADIUS. Periksa username/ID dan password.',
+                        ]);
+                    }
+                }
             }
-        }
-
-        $verify = $mixRadius->verifyCredentials($login, $data['password']);
-        if ($verify['ok'] ?? false) {
-            $email = filter_var($login, FILTER_VALIDATE_EMAIL) ? $login : ($verify['data']['email'] ?? ($login . '@local.test'));
-            $username = filter_var($login, FILTER_VALIDATE_EMAIL) ? ($verify['data']['username'] ?? null) : $login;
-
-            $user = User::query()
-                ->when($email, fn($q) => $q->where('email', $email))
-                ->when(!$email && $username, fn($q) => $q->orWhere('username', $username))
-                ->first();
-
-            if (!$user) {
-                $roleId = Role::where('name', 'customer')->value('id');
-                $user = User::create([
-                    'name' => $verify['data']['name'] ?? ($username ?: $email),
-                    'email' => $email,
-                    'username' => $username,
-                    'radius_username' => $verify['data']['radius_username'] ?? $username,
-                    'radius_type' => $verify['data']['radius_type'] ?? null,
-                    'password' => bcrypt(Str::random(32)),
-                    'role_id' => $roleId,
-                    'is_active' => true,
-                ]);
-            } else {
-                $user->fill([
-                    'username' => $user->username ?: $username,
-                    'radius_username' => $verify['data']['radius_username'] ?? ($user->radius_username ?: $username),
-                    'radius_type' => $verify['data']['radius_type'] ?? $user->radius_type,
-                ])->save();
-            }
-
-            Auth::login($user, true);
-            $request->session()->regenerate();
             $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
             return redirect()->intended($fallback);
         }

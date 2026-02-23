@@ -294,6 +294,17 @@
                     {{ __('Status Koneksi Mikrotik') }}
                 </div>
                 <div class="card-body small">
+                    @if($router->vpn_account_id)
+                        <div class="alert alert-info d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">VPN Bridge</div>
+                                <div class="small text-muted">
+                                    {{ $router->vpn_tunnel_ip ? 'Tunnel IP: '.$router->vpn_tunnel_ip : 'Belum terdeteksi' }}
+                                </div>
+                            </div>
+                            <a href="{{ route('routers.vpn.script', $router) }}" class="btn btn-sm btn-primary">Generate Script</a>
+                        </div>
+                    @endif
                     @if($mikrotikConnected && is_array($systemResource))
                         <div class="d-flex align-items-center mb-2">
                             <span class="badge bg-success-subtle text-success me-2">

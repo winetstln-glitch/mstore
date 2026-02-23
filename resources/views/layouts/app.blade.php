@@ -69,14 +69,38 @@
             </a>
             @endif
 
-            {{-- Client Portal --}}
+            {{-- Client Portal (Grouped) --}}
+            @if(Auth::user()->hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Client Portal') }}</div>
-            <a href="{{ route('client.dashboard') }}" class="sidebar-item {{ request()->routeIs('client.dashboard') ? 'active' : '' }}">
-                <i class="fa-solid fa-user-circle"></i> {{ __('Client Dashboard') }}
+            @php
+                $clientRoutesActive = request()->routeIs('client.*') || request()->routeIs('profile.edit');
+            @endphp
+            <a class="sidebar-item {{ $clientRoutesActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#clientPortalCollapse" role="button" aria-expanded="{{ $clientRoutesActive ? 'true' : 'false' }}" aria-controls="clientPortalCollapse">
+                <i class="fa-solid fa-user-circle"></i> {{ __('Portal Pelanggan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
-            </a>
+            <div class="collapse {{ $clientRoutesActive ? 'show' : '' }}" id="clientPortalCollapse">
+                <div class="bg-light ps-2">
+                    <a href="{{ route('client.portal') }}" class="sidebar-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">
+                        <i class="fa-solid fa-house-user"></i> {{ __('Beranda Portal') }}
+                    </a>
+                    <a href="{{ route('client.connection') }}" class="sidebar-item {{ request()->routeIs('client.connection') ? 'active' : '' }}">
+                        <i class="fa fa-random"></i> {{ __('Info Koneksi') }}
+                    </a>
+                    <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
+                    </a>
+                    <a href="{{ route('profile.edit') }}" class="sidebar-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                        <i class="fa-regular fa-user"></i> {{ __('Profil Saya') }}
+                    </a>
+                    @php $mixUrl = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', '')); @endphp
+                    @if(!empty($mixUrl))
+                    <a href="{{ route('client.mixradius') }}" class="sidebar-item {{ request()->routeIs('client.mixradius') ? 'active' : '' }}">
+                        <i class="fa-solid fa-up-right-from-square"></i> {{ __('Portal MixRADIUS') }}
+                    </a>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             {{-- Pelanggan & Layanan Group --}}
             <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
@@ -131,6 +155,12 @@
             @if(Auth::user()->hasPermission('router.view'))
             <a href="{{ route('routers.index') }}" class="sidebar-item {{ (request()->routeIs('routers.*') && !request()->routeIs('routers.sessions')) ? 'active' : '' }}">
                 <i class="fa fa-server"></i> {{ __('Router / NAS') }}
+            </a>
+            <a href="{{ route('vpn.servers.index') }}" class="sidebar-item {{ request()->routeIs('vpn.servers.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-shield-halved"></i> {{ __('VPN Bridge') }}
+            </a>
+            <a href="{{ route('vpn.guide') }}" class="sidebar-item {{ request()->routeIs('vpn.guide') ? 'active' : '' }}">
+                <i class="fa-regular fa-circle-question"></i> {{ __('Panduan VPN') }}
             </a>
             @endif
 

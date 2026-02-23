@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\InstallationController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\TicketController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\VpnController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -31,3 +32,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // External Integration API (Protected by API Key in query param)
 Route::get('/integration', [\App\Http\Controllers\Api\IntegrationController::class, 'handle']);
+
+Route::match(['GET','POST'], '/vpn/report-ip', [VpnController::class, 'reportIp'])->name('api.vpn.report-ip');

@@ -17,17 +17,24 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BRANCH: main
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: DEPLOY_PATH,BRANCH
           script_stop: true
           script: |
             set -e
-            cd "${DEPLOY_PATH:-/var/www/mstore}"
-            git fetch --all
-            git reset --hard origin/main
+            if [ -z "${DEPLOY_PATH}" ]; then
+              DEPLOY_PATH="/var/www/mstore"
+            fi
+            cd "${DEPLOY_PATH}"
+            git fetch --all -p
+            git reset --hard "origin/${BRANCH}"
             if [ -x "./deploy.sh" ]; then
               bash ./deploy.sh
             else

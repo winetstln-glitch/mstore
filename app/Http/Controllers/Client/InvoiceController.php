@@ -37,6 +37,15 @@ class InvoiceController extends Controller
         return view('client.invoices.pay', compact('invoice', 'token', 'clientKey', 'snapJs'));
     }
 
+    public function show(Invoice $invoice)
+    {
+        $this->authorizeInvoice($invoice);
+        $user = Auth::user();
+        $customer = $user->customer ?? null;
+        $devicesCount = $customer ? $customer->devices()->count() : 0;
+        return view('client.invoices.show', compact('invoice', 'user', 'customer', 'devicesCount'));
+    }
+
     protected function authorizeInvoice(Invoice $invoice): void
     {
         abort_if($invoice->user_id !== Auth::id(), 403);

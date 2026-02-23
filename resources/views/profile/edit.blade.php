@@ -27,6 +27,67 @@
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-md-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header">
+                    <strong>Ringkasan Akun</strong>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="h2 fw-bold text-primary border border-2 border-primary d-inline-block px-3 py-1">{{ $statusText }}</div>
+                        <div class="h4 mt-2">{{ $currentInvoice?->code ?? '-' }}</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Id Pelanggan</label>
+                                <input class="form-control" type="text" value="{{ $idPelanggan }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Nama Lengkap</label>
+                                <input class="form-control" type="text" value="{{ $user->name }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Email</label>
+                                <input class="form-control" type="email" value="{{ $user->email }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Alamat</label>
+                                <input class="form-control" type="text" value="{{ $customer->address ?? '-' }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> NO.HP/Telepon</label>
+                                <input class="form-control" type="text" value="{{ $customer->phone ?? ($user->phone ?? '-') }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Service</label>
+                                <input class="form-control" type="text" value="{{ $serviceText }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Tipe Pembayaran</label>
+                                <input class="form-control" type="text" value="{{ $paymentType }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Tanggal Terdaftar</label>
+                                <input class="form-control" type="text" value="{{ $registeredAt ? $registeredAt->format('Y-m-d H:i:s') : '-' }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Terakhir Diupdate</label>
+                                <input class="form-control" type="text" value="{{ $updatedAt ? $updatedAt->format('Y-m-d') : '-' }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> Jatuh Tempo</label>
+                                <input class="form-control" type="text" value="{{ $dueDate ? $dueDate->format('Y-m-d') : '-' }}" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-1"><span class="text-danger">*</span> IP Address</label>
+                                <input class="form-control" type="text" value="Automatic" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Header -->
             <div class="mb-4">
                 <h2 class="fw-bold">{{ __('Profile Settings') }}</h2>

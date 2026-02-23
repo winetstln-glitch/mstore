@@ -27,9 +27,30 @@ class ProfileController extends Controller implements HasMiddleware
      */
     public function edit()
     {
-        return view('profile.edit', [
-            'user' => Auth::user(),
-        ]);
+        $user = Auth::user();
+        $customer = \App\Models\Customer::where('user_id', $user->id)->first();
+        $currentInvoice = $user->invoices()->latest()->first();
+        $devicesCount = $customer ? \App\Models\Device::where('customer_id', $customer->id)->count() : 0;
+        $statusText = $currentInvoice && $currentInvoice->status === 'paid' ? 'LUNAS' : ($currentInvoice ? strtoupper($currentInvoice->status) : '-');
+        $idPelanggan = $user->username ?: (string) $user->id;
+        $serviceText = $devicesCount > 0 ? ($devicesCount . ' Device') : '-';
+        $paymentType = 'POSTPAID';
+        $registeredAt = $customer?->created_at;
+        $updatedAt = $user->updated_at;
+        $dueDate = $currentInvoice?->due_date;
+        return view('profile.edit', compact(
+            'user',
+            'customer',
+            'currentInvoice',
+            'devicesCount',
+            'statusText',
+            'idPelanggan',
+            'serviceText',
+            'paymentType',
+            'registeredAt',
+            'updatedAt',
+            'dueDate'
+        ));
     }
 
     /**

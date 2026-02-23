@@ -18,8 +18,9 @@ class MikrotikService
         $this->router = $router;
         
         try {
+            $host = $router->vpn_tunnel_ip ?: $router->host;
             $this->client = new Client([
-                'host' => $router->host,
+                'host' => $host,
                 'user' => $router->username,
                 'pass' => $router->password,
                 'port' => (int)$router->port,

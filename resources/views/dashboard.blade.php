@@ -397,7 +397,7 @@
                         <span class="ms-2" id="mixradius-meta" style="display:none"></span>
                     </div>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-2">
                     @if(!empty($mixRadiusOk))
                         <span id="mixradius-badge" class="badge bg-success">Connected</span>
                     @else

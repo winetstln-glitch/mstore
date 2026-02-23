@@ -367,6 +367,94 @@
             </div>
         </div>
     </section>
+    <section id="features" class="section section-alt">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2 class="section-title">Fitur dan Keunggulan</h2>
+                <p class="text-muted">Sistem terintegrasi untuk pengelolaan pelanggan internet dan hotspot.</p>
+            </div>
+            <div class="row g-4 fade-up">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Terintegrasi Mikrotik</h5>
+                                <p class="text-muted mb-0">Integrasi dengan API MikroTik untuk manajemen PPPoE/Hotspot.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Database Terpusat</h5>
+                                <p class="text-muted mb-0">Manajemen data berbasis RADIUS untuk beban router lebih ringan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Engine FreeRADIUS 3</h5>
+                                <p class="text-muted mb-0">Backend FreeRADIUS-3 pada Linux untuk autentikasi yang andal.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Notifikasi Otomatis</h5>
+                                <p class="text-muted mb-0">Terhubung ke SMS, Email, dan WhatsApp untuk pemberitahuan pelanggan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Payment Gateway</h5>
+                                <p class="text-muted mb-0">Integrasi DUITKU, Xendit, Nicepay, Midtrans, iPaymu, dan PayPal.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex">
+                            <div class="feature-icon me-3">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-2">Server Stabil</h5>
+                                <p class="text-muted mb-0">Arsitektur siap klaster dengan SLA 99.5% pada DC Tier 3.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
  <!-- Stats Section -->
 
     <!-- Footer -->

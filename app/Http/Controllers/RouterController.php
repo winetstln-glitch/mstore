@@ -104,8 +104,12 @@ class RouterController extends Controller implements HasMiddleware
             'description' => 'nullable|string',
         ]);
 
-        // Note: Password encryption is handled by model casting
-        Router::create($validated);
+        $router = Router::create($validated);
+
+        try {
+            app(\App\Services\VpnBridgeService::class)->provisionForRouter($router, auth()->user());
+        } catch (\Throwable $e) {
+        }
 
         return redirect()->route('routers.index')->with('success', __('Router added successfully.'));
     }

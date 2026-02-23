@@ -67,16 +67,17 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="login" class="auth-form-label">Email atau Username</label>
+                        <label for="login" class="auth-form-label">Username atau ID Pelanggan</label>
                         <div class="input-group auth-input-group">
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
                             </span>
-                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Email atau Username" />
+                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Username PPPoE/Hotspot atau ID Pelanggan" />
                             @error('login')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
+                        <div class="form-text">Untuk pelanggan: isi Username PPPoE/Hotspot atau ID Pelanggan. Password = password PPPoE/Hotspot Anda.</div>
                     </div>
 
                     <div class="mb-3">
