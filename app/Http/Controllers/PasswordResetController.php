@@ -28,7 +28,7 @@ class PasswordResetController extends Controller
             ->orWhere('phone', $identifier)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             return back()->withErrors(['identifier' => __('User tidak ditemukan berdasarkan email atau nomor HP')]);
         }
 
@@ -51,9 +51,9 @@ class PasswordResetController extends Controller
             // ignore mail failure to allow whatsapp fallback
         }
 
-        if (!empty($user->phone)) {
+        if (! empty($user->phone)) {
             try {
-                $wa = new WhatsAppService();
+                $wa = new WhatsAppService;
                 $wa->sendMessage($user->phone, "*KODE RESET PASSWORD*\n\nKode OTP: {$code}\nBerlaku 10 menit.", 'auth');
             } catch (\Throwable $e) {
                 // ignore whatsapp failure
@@ -67,6 +67,7 @@ class PasswordResetController extends Controller
     public function showResetForm(Request $request)
     {
         $email = $request->query('email');
+
         return view('auth.reset', compact('email'));
     }
 
@@ -82,22 +83,23 @@ class PasswordResetController extends Controller
             ->where('email', $request->email)
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return back()->withErrors(['email' => __('Token reset tidak ditemukan untuk email ini.')]);
         }
 
         $isExpired = now()->diffInMinutes($record->created_at) > 10;
         if ($isExpired) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
             return back()->withErrors(['code' => __('Kode OTP telah kedaluwarsa. Silakan minta kode baru.')]);
         }
 
-        if (!Hash::check($request->code, $record->token)) {
+        if (! Hash::check($request->code, $record->token)) {
             return back()->withErrors(['code' => __('Kode OTP tidak sesuai.')]);
         }
 
         $user = User::where('email', $request->email)->first();
-        if (!$user) {
+        if (! $user) {
             return back()->withErrors(['email' => __('User tidak ditemukan.')]);
         }
 
@@ -110,4 +112,3 @@ class PasswordResetController extends Controller
         return redirect()->route('login')->with('success', __('Password berhasil direset. Silakan login kembali.'));
     }
 }
-

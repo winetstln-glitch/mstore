@@ -22,6 +22,7 @@ class VpnServerController extends Controller implements HasMiddleware
     public function index()
     {
         $servers = VpnServer::orderBy('location')->orderBy('name')->paginate(20);
+
         return view('vpn.servers.index', compact('servers'));
     }
 
@@ -41,6 +42,7 @@ class VpnServerController extends Controller implements HasMiddleware
             'status' => 'required|in:active,maintenance',
         ]);
         VpnServer::create($data);
+
         return redirect()->route('vpn.servers.index')->with('success', 'Server VPN ditambahkan');
     }
 
@@ -60,12 +62,14 @@ class VpnServerController extends Controller implements HasMiddleware
             'status' => 'required|in:active,maintenance',
         ]);
         $server->update($data);
+
         return redirect()->route('vpn.servers.index')->with('success', 'Server VPN diperbarui');
     }
 
     public function destroy(VpnServer $server)
     {
         $server->delete();
+
         return redirect()->route('vpn.servers.index')->with('success', 'Server VPN dihapus');
     }
 }

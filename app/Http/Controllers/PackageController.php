@@ -22,6 +22,7 @@ class PackageController extends Controller implements HasMiddleware
     public function index()
     {
         $packages = Package::orderBy('name')->get();
+
         return view('packages.index', compact('packages'));
     }
 
@@ -72,4 +73,3 @@ class PackageController extends Controller implements HasMiddleware
         return redirect()->route('packages.index')->with('success', __('Package deleted successfully.'));
     }
 }
-

@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
 
 class TechnicianController extends Controller implements HasMiddleware
 {
@@ -25,7 +24,7 @@ class TechnicianController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $technicians = User::whereHas('role', function($q) {
+        $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
         })->latest()->paginate(10);
 
@@ -99,7 +98,7 @@ class TechnicianController extends Controller implements HasMiddleware
             $request->validate([
                 'password' => ['confirmed', Rules\Password::defaults()],
             ]);
-            
+
             $technician->update([
                 'password' => Hash::make($request->password),
             ]);

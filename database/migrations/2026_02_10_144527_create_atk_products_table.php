@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Buat tabel hanya jika belum ada
-        if (!Schema::hasTable('atk_products')) {
+        if (! Schema::hasTable('atk_products')) {
             Schema::create('atk_products', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');

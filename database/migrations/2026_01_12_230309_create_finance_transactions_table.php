@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('transactions')) {
+        if (! Schema::hasTable('transactions')) {
             Schema::create('transactions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // Creator
@@ -26,16 +26,16 @@ return new class extends Migration
             });
         } else {
             Schema::table('transactions', function (Blueprint $table) {
-                if (!Schema::hasColumn('transactions', 'coordinator_id')) {
+                if (! Schema::hasColumn('transactions', 'coordinator_id')) {
                     $table->foreignId('coordinator_id')->nullable()->constrained()->nullOnDelete();
                 }
-                if (!Schema::hasColumn('transactions', 'category')) {
+                if (! Schema::hasColumn('transactions', 'category')) {
                     $table->string('category')->default('general');
                 }
-                if (!Schema::hasColumn('transactions', 'type')) {
+                if (! Schema::hasColumn('transactions', 'type')) {
                     $table->enum('type', ['income', 'expense'])->default('income');
                 }
-                if (!Schema::hasColumn('transactions', 'reference_number')) {
+                if (! Schema::hasColumn('transactions', 'reference_number')) {
                     $table->string('reference_number')->nullable();
                 }
             });

@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('journals', function (Blueprint $table) {
@@ -17,7 +18,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('period_id')->nullable()->index();
             $table->unsignedBigInteger('posted_by')->nullable();
             $table->timestamp('posted_at')->nullable();
-            $table->enum('status', ['draft','posted'])->default('posted');
+            $table->enum('status', ['draft', 'posted'])->default('posted');
             $table->timestamps();
         });
     }
@@ -26,4 +27,4 @@ return new class extends Migration {
     {
         Schema::dropIfExists('journals');
     }
-}; 
+};

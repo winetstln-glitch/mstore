@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Olt;
-use App\Models\Onu;
 use App\Services\Olt\OltService;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -29,6 +27,7 @@ class OnuController extends Controller implements HasMiddleware
     public function index(Olt $olt)
     {
         $onus = $olt->onus()->orderBy('interface')->paginate(10);
+
         return view('olt.onus.index', compact('olt', 'onus'));
     }
 
@@ -39,22 +38,22 @@ class OnuController extends Controller implements HasMiddleware
         try {
             // Get the appropriate driver
             $driver = $this->oltService->getDriver($olt);
-            
+
             // Connect
             $driver->connect($olt, 30); // 30s timeout for connection
-            
+
             // Fetch ONUs
             $onuDataList = $driver->getOnus();
-            
+
             // Disconnect
             $driver->disconnect();
-            
+
             // Sync logic (update DB)
             $count = 0;
-            if (!empty($onuDataList)) {
+            if (! empty($onuDataList)) {
                 // Determine existing ONUs to potentially deactivate missing ones
                 // For now, just update/create
-                
+
                 foreach ($onuDataList as $data) {
                     $olt->onus()->updateOrCreate(
                         ['interface' => $data['interface']], // Key
@@ -62,9 +61,10 @@ class OnuController extends Controller implements HasMiddleware
                     );
                     $count++;
                 }
+
                 return redirect()->route('olt.onus.index', $olt->id)->with('success', __('Synced :count ONUs successfully.', ['count' => $count]));
             }
-            
+
             // If empty, it might be due to parsing error or actually empty
             // Fallback to simulation if simulated data is requested or just show warning
             // For now, we return warning

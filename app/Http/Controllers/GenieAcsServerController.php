@@ -25,6 +25,7 @@ class GenieAcsServerController extends Controller implements HasMiddleware
     public function index()
     {
         $servers = GenieAcsServer::all();
+
         return view('genieacs.servers.index', compact('servers'));
     }
 
@@ -49,7 +50,7 @@ class GenieAcsServerController extends Controller implements HasMiddleware
 
         // Ensure only one server is active if needed, or allow multiple.
         // For now, simple creation.
-        
+
         GenieAcsServer::create($validated);
 
         return redirect()->route('genieacs.servers.index')

@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TechnicianAttendance;
-use App\Models\Setting;
-use App\Models\Transaction;
 use App\Models\SalaryAdjustment;
+use App\Models\Setting;
+use App\Models\TechnicianAttendance;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use OpenSpout\Writer\XLSX\Writer;
-use OpenSpout\Common\Entity\Row;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 class TechnicianAttendanceController extends Controller implements HasMiddleware
 {
@@ -37,13 +36,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($request->filled('date')) {
             $query->whereDate('clock_in', $request->date);
         }
-        
+
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                  ->whereYear('clock_in', date('Y', strtotime($request->month)));
+                ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -52,7 +51,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         // Calculate stats for the current filter
         $statsQuery = clone $query;
         $allAttendances = $statsQuery->get();
-        
+
         $stats = [
             'present' => $allAttendances->where('status', 'present')->count(),
             'late' => $allAttendances->where('status', 'late')->count(),
@@ -64,13 +63,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         ];
 
         $attendances = $query->latest()->paginate(15);
-        
+
         // List technicians and admins for filter
-        $techniciansQuery = \App\Models\User::whereHas('role', function($q) {
+        $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
             $q->whereIn('name', ['technician', 'admin']);
         });
 
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -89,10 +88,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                  ->whereYear('clock_in', date('Y', strtotime($request->month)));
+                ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -107,9 +106,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         if ($request->filled('month')) {
             $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                             ->whereYear('date', date('Y', strtotime($request->month)));
+                ->whereYear('date', date('Y', strtotime($request->month)));
         }
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $adjustmentsQuery->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $adjustmentsQuery->where('user_id', $request->user_id);
@@ -119,16 +118,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         // Summary by Technician
         $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
             $user = $items->first()->user;
-            
+
             // Calculate status counts
             $presentCount = $items->whereIn('status', ['present', 'late'])->count();
             $leaveCount = $items->whereIn('status', ['leave', 'permit', 'sick'])->count(); // Cuti/Izin/Sakit
-            
+
             // Calculate salary (Present + Leave/Permit/Sick considered paid)
             // You can adjust which statuses are paid
             $paidDays = $presentCount + $leaveCount;
             $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
-            
+
             // Adjustments
             $userAdjustments = $allAdjustments->get($user->id, collect());
             $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
@@ -144,12 +143,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'total_kasbon' => $totalKasbon,
                 'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
                 'dates' => $items,
-                'adjustments' => $userAdjustments
+                'adjustments' => $userAdjustments,
             ];
         });
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('technicians.attendance.pdf', compact('summary', 'request'));
-        return $pdf->stream('rekap_teknisi_' . now()->format('Y-m-d_His') . '.pdf', ['Attachment' => false]);
+
+        return $pdf->stream('rekap_teknisi_'.now()->format('Y-m-d_His').'.pdf', ['Attachment' => false]);
     }
 
     public function exportExcel(Request $request)
@@ -162,10 +162,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                  ->whereYear('clock_in', date('Y', strtotime($request->month)));
+                ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -180,9 +180,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         if ($request->filled('month')) {
             $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                             ->whereYear('date', date('Y', strtotime($request->month)));
+                ->whereYear('date', date('Y', strtotime($request->month)));
         }
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $adjustmentsQuery->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $adjustmentsQuery->where('user_id', $request->user_id);
@@ -192,14 +192,14 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         // Summary by Technician
         $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
             $user = $items->first()->user;
-            
+
             // Calculate status counts
             $presentCount = $items->whereIn('status', ['present', 'late'])->count();
             $leaveCount = $items->whereIn('status', ['leave', 'permit', 'sick'])->count(); // Cuti/Izin/Sakit
-            
+
             $paidDays = $presentCount + $leaveCount;
             $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
-            
+
             // Adjustments
             $userAdjustments = $allAdjustments->get($user->id, collect());
             $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
@@ -214,26 +214,26 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'total_bonus' => $totalBonus,
                 'total_kasbon' => $totalKasbon,
                 'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
-                'dates' => $items
+                'dates' => $items,
             ];
         });
 
         return response()->streamDownload(function () use ($summary) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             // Sheet 1: Summary
             $writer->addRow(Row::fromValues(['REKAP GAJI TEKNISI']));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues([
-                'Nama Teknisi', 
-                'Total Hadir', 
-                'Total Cuti/Izin/Sakit', 
-                'Total Hari Dibayar', 
-                'Gaji Harian', 
+                'Nama Teknisi',
+                'Total Hadir',
+                'Total Cuti/Izin/Sakit',
+                'Total Hari Dibayar',
+                'Gaji Harian',
                 'Total Bonus',
                 'Total Kasbon',
-                'Total Gaji'
+                'Total Gaji',
             ]));
 
             foreach ($summary as $data) {
@@ -245,7 +245,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                     $data['daily_salary'],
                     $data['total_bonus'],
                     $data['total_kasbon'],
-                    $data['total_salary']
+                    $data['total_salary'],
                 ]));
             }
 
@@ -259,7 +259,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'Jam Masuk',
                 'Jam Pulang',
                 'Status',
-                'Catatan'
+                'Catatan',
             ]));
 
             foreach ($summary as $data) {
@@ -270,18 +270,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                         $attendance->clock_in->format('H:i'),
                         $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
                         __(ucfirst($attendance->status)),
-                        $attendance->notes
+                        $attendance->notes,
                     ]));
                 }
             }
 
             $writer->close();
-        }, 'rekap_teknisi_' . now()->format('Y-m-d_His') . '.xlsx');
+        }, 'rekap_teknisi_'.now()->format('Y-m-d_His').'.xlsx');
     }
 
     public function recapToFinance(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
@@ -293,7 +293,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                  ->whereYear('clock_in', date('Y', strtotime($request->month)));
+                ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
 
         if ($request->filled('user_id')) {
@@ -309,7 +309,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         if ($request->filled('month')) {
             $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                             ->whereYear('date', date('Y', strtotime($request->month)));
+                ->whereYear('date', date('Y', strtotime($request->month)));
         }
         if ($request->filled('user_id')) {
             $adjustmentsQuery->where('user_id', $request->user_id);
@@ -363,12 +363,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         } else {
             $period = __('All Time');
         }
-        
+
         $description = "Pembayaran Gaji Teknisi Periode $period";
         if ($request->filled('user_id')) {
             $user = \App\Models\User::find($request->user_id);
             if ($user) {
-                $description .= " - " . $user->name;
+                $description .= ' - '.$user->name;
             }
         }
 
@@ -391,12 +391,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function sendNotification(TechnicianAttendance $attendance)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
         $user = $attendance->user;
-        if (!$user || !$user->phone) {
+        if (! $user || ! $user->phone) {
             return back()->with('error', __('User does not have a phone number.'));
         }
 
@@ -407,7 +407,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $message = "Halo {$user->name},\n\nBerikut detail absensi Anda:\n📅 Tanggal: {$date}\n⏰ Masuk: {$clockIn}\n⏰ Pulang: {$clockOut}\n📊 Status: {$status}\n\nTerima kasih.";
 
-        $wa = new WhatsAppService();
+        $wa = new WhatsAppService;
         $wa->sendMessage($user->phone, $message, 'attendance_notification');
 
         return back()->with('success', __('Notification sent via WhatsApp.'));
@@ -415,7 +415,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function storeManual(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
@@ -437,8 +437,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         TechnicianAttendance::create([
             'user_id' => $request->user_id,
-            'clock_in' => $request->date . ' 08:00:00', // Default time
-            'clock_out' => $request->date . ' 17:00:00',
+            'clock_in' => $request->date.' 08:00:00', // Default time
+            'clock_out' => $request->date.' 17:00:00',
             'status' => $request->status,
             'notes' => $request->notes,
         ]);
@@ -473,7 +473,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         // Validation: Clock In Allowed based on Settings
         $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
         $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
-        
+
         $now = now();
         $currentTime = $now->format('H:i');
 
@@ -508,7 +508,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'lat_clock_in' => $request->latitude,
             'lng_clock_in' => $request->longitude,
             'status' => 'present',
-            'notes' => $request->notes
+            'notes' => $request->notes,
         ]);
 
         return redirect()->route('attendance.create')->with('success', __('Clock In successful!'));
@@ -522,7 +522,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         // Validation: Clock Out Allowed based on Settings
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
-        
+
         $now = now();
         $currentTime = $now->format('H:i');
 
@@ -541,11 +541,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         if (! $isAllowed) {
-             return back()->withErrors(['message' => __('Clock Out only allowed between :start - :end WIB.', ['start' => $clockOutStart, 'end' => $clockOutEnd])]);
+            return back()->withErrors(['message' => __('Clock Out only allowed between :start - :end WIB.', ['start' => $clockOutStart, 'end' => $clockOutEnd])]);
         }
 
         $attendance = TechnicianAttendance::where('user_id', Auth::id())->findOrFail($id);
-        
+
         $request->validate([
             'photo' => 'required|image|max:10240',
             'latitude' => 'nullable',
@@ -571,7 +571,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'photo_clock_out' => $path,
             'lat_clock_out' => $request->latitude,
             'lng_clock_out' => $request->longitude,
-            'notes' => $attendance->notes . "\nClock Out Note: " . $request->notes
+            'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
 
         return redirect()->route('attendance.create')->with('success', __('Clock Out successful!'));
@@ -579,7 +579,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function destroy(TechnicianAttendance $attendance)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
         if ($attendance->photo_clock_in) {
@@ -589,12 +589,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             Storage::disk('public')->delete($attendance->photo_clock_out);
         }
         $attendance->delete();
+
         return back()->with('success', __('Attendance record deleted.'));
     }
 
     public function bulkDestroy(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 

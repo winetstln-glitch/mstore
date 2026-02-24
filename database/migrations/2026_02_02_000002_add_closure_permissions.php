@@ -1,10 +1,8 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -27,7 +25,7 @@ return new class extends Migration
                 ['name' => $permission],
                 [
                     'label' => ucwords(str_replace('.', ' ', $permission)),
-                    'group' => 'closure'
+                    'group' => 'closure',
                 ]
             );
             $permissionIds[] = $p->id;
@@ -38,14 +36,14 @@ return new class extends Migration
         if ($adminRole) {
             $adminRole->permissions()->syncWithoutDetaching($permissionIds);
         }
-        
+
         // Assign view to coordinator if needed
         $coordinatorRole = Role::where('name', 'coordinator')->first();
         if ($coordinatorRole) {
-             $viewPerm = Permission::where('name', 'closure.view')->first();
-             if ($viewPerm) {
-                 $coordinatorRole->permissions()->syncWithoutDetaching([$viewPerm->id]);
-             }
+            $viewPerm = Permission::where('name', 'closure.view')->first();
+            if ($viewPerm) {
+                $coordinatorRole->permissions()->syncWithoutDetaching([$viewPerm->id]);
+            }
         }
     }
 

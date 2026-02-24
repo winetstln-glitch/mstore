@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\AssetCategory;
 use App\Models\Brand;
+use Illuminate\Database\Seeder;
 
 class MasterDataSeeder extends Seeder
 {
@@ -32,7 +31,7 @@ class MasterDataSeeder extends Seeder
         $brands = [
             'ZTE', 'Huawei', 'Mikrotik', 'TP-Link', 'Ubiquiti', 'Tenda', 'Totolink', 'Ruijie',
             'Tumtec', 'Fujikura', 'Sumitomo', 'Inno', 'Joinwit',
-            'Honda', 'Toyota', 'Suzuki', 'Yamaha'
+            'Honda', 'Toyota', 'Suzuki', 'Yamaha',
         ];
 
         foreach ($brands as $brand) {

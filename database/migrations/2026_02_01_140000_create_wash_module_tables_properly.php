@@ -14,7 +14,7 @@ return new class extends Migration
         // Drop incorrectly named table if exists
         Schema::dropIfExists('wash_services_tables');
 
-        if (!Schema::hasTable('wash_services')) {
+        if (! Schema::hasTable('wash_services')) {
             Schema::create('wash_services', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -27,7 +27,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wash_transactions')) {
+        if (! Schema::hasTable('wash_transactions')) {
             Schema::create('wash_transactions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -43,7 +43,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('wash_transaction_items')) {
+        if (! Schema::hasTable('wash_transaction_items')) {
             Schema::create('wash_transaction_items', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('wash_transaction_id')->constrained('wash_transactions')->cascadeOnDelete();

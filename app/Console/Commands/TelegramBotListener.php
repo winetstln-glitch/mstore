@@ -27,13 +27,13 @@ class TelegramBotListener extends Command
      */
     public function handle(TelegramService $telegramService)
     {
-        $this->info("Starting Telegram Bot Listener...");
+        $this->info('Starting Telegram Bot Listener...');
         // Ensure webhook is disabled for long polling
         if ($telegramService->deleteWebhook()) {
-            $this->info("Deleted existing Telegram webhook (dropping pending updates).");
+            $this->info('Deleted existing Telegram webhook (dropping pending updates).');
         }
-        
-        // Get initial offset to avoid processing old messages? 
+
+        // Get initial offset to avoid processing old messages?
         // No, let's process pending ones.
         $offset = 0;
 
@@ -43,19 +43,19 @@ class TelegramBotListener extends Command
                 $updates = $telegramService->getUpdates($offset);
 
                 foreach ($updates as $update) {
-                    $this->info("Processing update ID: " . $update['update_id']);
+                    $this->info('Processing update ID: '.$update['update_id']);
                     $telegramService->processMessage($update);
                     $offset = $update['update_id'] + 1;
                 }
-                
+
                 // Prevent CPU spin if getUpdates returns immediately empty
                 if (empty($updates)) {
                     sleep(1);
                 }
 
             } catch (\Exception $e) {
-                Log::error("Telegram Listener Error: " . $e->getMessage());
-                $this->error("Error: " . $e->getMessage());
+                Log::error('Telegram Listener Error: '.$e->getMessage());
+                $this->error('Error: '.$e->getMessage());
                 sleep(5); // Wait before retrying
             }
         }

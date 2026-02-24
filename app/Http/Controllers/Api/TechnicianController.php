@@ -30,7 +30,7 @@ class TechnicianController extends Controller
                 'tickets_today' => $user->tickets()->whereDate('created_at', today())->count(),
                 'tickets_total' => $user->tickets()->count(),
                 'installations_total' => $user->installations()->count(),
-            ]
+            ],
         ]);
     }
 

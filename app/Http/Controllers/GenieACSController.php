@@ -3,17 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Models\GenieAcsServer;
 use App\Models\GenieAcsDeviceSetting;
+use App\Models\GenieAcsServer;
 use App\Models\Odp;
 use App\Models\Region;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
-
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class GenieACSController extends Controller implements HasMiddleware
 {
@@ -62,21 +60,21 @@ class GenieACSController extends Controller implements HasMiddleware
                 try {
                     $this->genieService->useServer($server);
                     $serverDevices = $this->genieService->getDevices(500, 0);
-    
+
                     foreach ($serverDevices as &$device) {
                         $device['_mstore_server_id'] = $server->id;
                         $device['_mstore_server_name'] = $server->name;
                     }
-    
+
                     $devicesArray = array_merge($devicesArray, $serverDevices);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("GenieACS Server {$server->name} Error: " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("GenieACS Server {$server->name} Error: ".$e->getMessage());
                     $errors[] = "{$server->name}: Connection Failed";
                 }
             }
 
-            if (!empty($errors)) {
-                $request->session()->flash('error', 'GenieACS Errors: ' . implode(', ', $errors));
+            if (! empty($errors)) {
+                $request->session()->flash('error', 'GenieACS Errors: '.implode(', ', $errors));
             }
 
             $totalDevices = count($devicesArray);
@@ -102,7 +100,7 @@ class GenieACSController extends Controller implements HasMiddleware
                 $activeServer = $servers->firstWhere('id', (int) $serverId);
             }
 
-            if (!$activeServer) {
+            if (! $activeServer) {
                 $activeServer = $servers->firstWhere('is_active', true) ?? $servers->first();
             }
 
@@ -113,8 +111,8 @@ class GenieACSController extends Controller implements HasMiddleware
             $query = $request->input('q');
 
             // Handle case where no servers exist
-            if (!$activeServer && $servers->isEmpty()) {
-                 $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
+            if (! $activeServer && $servers->isEmpty()) {
+                $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
             } else {
                 try {
                     $limit = $perPage;
@@ -122,7 +120,7 @@ class GenieACSController extends Controller implements HasMiddleware
 
                     $devicesList = $this->genieService->getDevices($limit, $offset, $query);
                     $total = $this->genieService->getTotalDevices($query);
-        
+
                     $perPageEffective = $perPage ?: ($total > 0 ? $total : 1);
 
                     $devices = new LengthAwarePaginator(
@@ -133,9 +131,9 @@ class GenieACSController extends Controller implements HasMiddleware
                         ['path' => $request->url(), 'query' => $request->query()]
                     );
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('GenieACS Fetch Error: ' . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error('GenieACS Fetch Error: '.$e->getMessage());
                     $devices = new LengthAwarePaginator([], 0, $perPage ?: 20, 1);
-                    $request->session()->flash('error', 'GenieACS Connection Failed: ' . $e->getMessage());
+                    $request->session()->flash('error', 'GenieACS Connection Failed: '.$e->getMessage());
                 }
             }
         }
@@ -144,9 +142,9 @@ class GenieACSController extends Controller implements HasMiddleware
         $customerMap = ['pppoe' => [], 'sn' => []];
         try {
             // Ensure columns exist to prevent 500 error if migration missing
-            if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'odp_id') && 
+            if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'odp_id') &&
                 \Illuminate\Support\Facades\Schema::hasColumn('customers', 'pppoe_user')) {
-                
+
                 $customers = Customer::with('odp:id,name')->get(['id', 'odp_id', 'pppoe_user', 'ont_sn']);
                 foreach ($customers as $customer) {
                     $odpData = $customer->odp ? ['name' => $customer->odp->name, 'id' => $customer->odp->id] : ['name' => '-', 'id' => null];
@@ -154,36 +152,37 @@ class GenieACSController extends Controller implements HasMiddleware
                         $customerMap['pppoe'][strtolower($customer->pppoe_user)] = $odpData;
                     }
                     if ($customer->ont_sn) {
-                         $customerMap['sn'][$customer->ont_sn] = $odpData;
+                        $customerMap['sn'][$customer->ont_sn] = $odpData;
                     }
                 }
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('GenieACS ODP Logic Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('GenieACS ODP Logic Error: '.$e->getMessage());
         }
 
         if ($devices) {
             $devices->getCollection()->transform(function ($device) use ($customerMap) {
                 $odpName = '-';
                 $odpId = null;
-                
+
                 // Try matching by PPPoE Username
                 $pppoe = data_get($device, 'VirtualParameters.pppoeUsername._value');
                 if ($pppoe && is_string($pppoe) && isset($customerMap['pppoe'][strtolower($pppoe)])) {
                     $odpName = $customerMap['pppoe'][strtolower($pppoe)]['name'];
                     $odpId = $customerMap['pppoe'][strtolower($pppoe)]['id'];
-                } 
+                }
                 // Try matching by Serial Number
                 else {
                     $sn = data_get($device, '_deviceId._SerialNumber');
                     if ($sn && is_string($sn) && isset($customerMap['sn'][$sn])) {
-                         $odpName = $customerMap['sn'][$sn]['name'];
-                         $odpId = $customerMap['sn'][$sn]['id'];
+                        $odpName = $customerMap['sn'][$sn]['name'];
+                        $odpId = $customerMap['sn'][$sn]['id'];
                     }
                 }
-    
+
                 $device['odp_name'] = $odpName;
                 $device['odp_id'] = $odpId;
+
                 return $device;
             });
         }
@@ -203,14 +202,14 @@ class GenieACSController extends Controller implements HasMiddleware
         // Try matching by SN
         $customer = Customer::where('ont_sn', $request->sn)->first();
 
-        if (!$customer) {
+        if (! $customer) {
             // Try matching by PPPoE (Case Insensitive)
             if ($request->pppoe) {
                 $customer = Customer::where('pppoe_user', $request->pppoe)->first();
-                
-                if (!$customer) {
-                     // Try case insensitive search for PPPoE
-                      $customer = Customer::whereRaw('LOWER(pppoe_user) = ?', [strtolower($request->pppoe)])->first();
+
+                if (! $customer) {
+                    // Try case insensitive search for PPPoE
+                    $customer = Customer::whereRaw('LOWER(pppoe_user) = ?', [strtolower($request->pppoe)])->first();
                 }
             }
         }
@@ -218,6 +217,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($customer) {
             $customer->odp_id = $request->odp_id;
             $customer->save();
+
             return back()->with('success', __('ODP assigned successfully to customer.'));
         }
 
@@ -257,8 +257,8 @@ class GenieACSController extends Controller implements HasMiddleware
         }
 
         $device = $this->genieService->getDeviceDetails($id);
-        
-        if (!$device) {
+
+        if (! $device) {
             return redirect()->route('genieacs.index')->with('error', __('Device not found or offline.'));
         }
 
@@ -281,14 +281,14 @@ class GenieACSController extends Controller implements HasMiddleware
         $wanConnections = $this->genieService->getWanConnections($id, $device);
         $selectedWanPath = $request->query('wan_path');
         $wanSettings = $this->genieService->getWanSettings($id, $selectedWanPath, $device);
-        
+
         $wlanSettings1 = $this->genieService->getWlanSettings($id, 1, $device);
         $wlanSettings2 = $this->genieService->getWlanSettings($id, 2, $device);
         $wlanSettings3 = $this->genieService->getWlanSettings($id, 3, $device);
         $wlanSettings4 = $this->genieService->getWlanSettings($id, 4, $device);
 
         $wifiClients = $this->genieService->getWifiClients($id, $device);
-        
+
         return view('genieacs.show', compact(
             'device', 'id', 'config', 'parameters', 'deviceIp', 'customer', 'odps', 'regions', 'serverId',
             'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4',
@@ -314,6 +314,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($status === 2) {
             // Wait a few seconds to allow GenieACS to update the LastInform timestamp
             sleep(3);
+
             return back()->with('success', __('Device Connected & Refreshed Successfully.'));
         } elseif ($status === 1) {
             return back()->with('warning', __('Command Queued. Device is online but busy. Task will run shortly.'));
@@ -339,6 +340,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($success) {
             return back()->with('success', 'Reboot command sent to device.');
         }
+
         return back()->with('error', 'Failed to reboot device.');
     }
 
@@ -356,7 +358,7 @@ class GenieACSController extends Controller implements HasMiddleware
         }
 
         $request->validate([
-            'host' => 'required|string|ipv4'
+            'host' => 'required|string|ipv4',
         ]);
 
         $result = $this->genieService->ping($id, $request->host);
@@ -364,6 +366,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($result['success']) {
             return back()->with('success', $result['message']);
         }
+
         return back()->with('error', $result['message']);
     }
 
@@ -391,8 +394,8 @@ class GenieACSController extends Controller implements HasMiddleware
         ]);
 
         $data = $request->only([
-            'enable', 'conn_name', 'vlan', 'conn_type', 'service', 
-            'username', 'password', 'nat', 'lan_bind'
+            'enable', 'conn_name', 'vlan', 'conn_type', 'service',
+            'username', 'password', 'nat', 'lan_bind',
         ]);
 
         // Convert checkbox to boolean
@@ -406,6 +409,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($success) {
             return back()->with('success', __('WAN settings update queued.'));
         }
+
         return back()->with('error', __('Failed to update WAN settings. Device might be offline or model unsupported.'));
     }
 
@@ -438,8 +442,11 @@ class GenieACSController extends Controller implements HasMiddleware
         $success = $this->genieService->updateWlanAdvanced($id, $data, $index);
 
         if ($success) {
-            return back()->with('success', __('WiFi settings update queued for SSID ' . $index));
+            $this->genieService->refreshObject($id);
+
+            return back()->with('success', __('WiFi settings update queued for SSID '.$index));
         }
+
         return back()->with('error', __('Failed to update WiFi settings. Device might be offline or model unsupported.'));
     }
 
@@ -454,7 +461,7 @@ class GenieACSController extends Controller implements HasMiddleware
         ]);
 
         $params = [
-            $request->parameter_name => $request->parameter_value
+            $request->parameter_name => $request->parameter_value,
         ];
 
         $success = $this->genieService->setParameterValues($id, $params);
@@ -462,6 +469,7 @@ class GenieACSController extends Controller implements HasMiddleware
         if ($success) {
             return back()->with('success', __('Parameter update queued.'));
         }
+
         return back()->with('error', __('Failed to update parameter.'));
     }
 }

@@ -9,7 +9,6 @@ use App\Models\TechnicianSchedule;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class DataVisibilityTest extends TestCase
@@ -17,7 +16,9 @@ class DataVisibilityTest extends TestCase
     use RefreshDatabase;
 
     protected $admin;
+
     protected $techA;
+
     protected $techB;
 
     protected function setUp(): void
@@ -33,8 +34,8 @@ class DataVisibilityTest extends TestCase
         // Actually the code doesn't seem to enforce middleware permission checks on index explicitly in the snippet I saw,
         // but maybe global middleware or the test user needs them.
         // Let's create generic permissions.
-        
-        foreach(['ticket.view', 'attendance.view', 'schedule.view'] as $pName) {
+
+        foreach (['ticket.view', 'attendance.view', 'schedule.view'] as $pName) {
             $p = Permission::create(['name' => $pName, 'label' => $pName, 'group' => 'test']);
             $techRole->permissions()->attach($p);
             $adminRole->permissions()->attach($p);
@@ -65,7 +66,7 @@ class DataVisibilityTest extends TestCase
             'priority' => 'high',
             'status' => 'assigned',
             'description' => 'Test',
-            'ticket_number' => 'T-001'
+            'ticket_number' => 'T-001',
         ]);
         $ticketA->technicians()->attach($this->techA->id);
 
@@ -76,7 +77,7 @@ class DataVisibilityTest extends TestCase
             'priority' => 'high',
             'status' => 'assigned',
             'description' => 'Test',
-            'ticket_number' => 'T-002'
+            'ticket_number' => 'T-002',
         ]);
         $ticketB->technicians()->attach($this->techB->id);
 
@@ -99,26 +100,26 @@ class DataVisibilityTest extends TestCase
         $attendanceA = TechnicianAttendance::create([
             'user_id' => $this->techA->id,
             'clock_in' => now(),
-            'status' => 'present'
+            'status' => 'present',
         ]);
 
         $attendanceB = TechnicianAttendance::create([
             'user_id' => $this->techB->id,
             'clock_in' => now(),
-            'status' => 'present'
+            'status' => 'present',
         ]);
 
         // Tech A should see their attendance but not Tech B's
         // Note: The view might show user names, so we check for that or specific IDs if possible.
         // Or check the data passed to the view.
-        
+
         $response = $this->actingAs($this->techA)->get(route('attendance.index'));
         $response->assertStatus(200);
         // The view likely lists attendance records.
-        // We can check if Tech B's name appears in the table rows? 
+        // We can check if Tech B's name appears in the table rows?
         // But Tech B might appear in the filter dropdown if not filtered correctly.
         // Let's check if the attendance record ID or unique data is visible.
-        
+
         // Actually, easiest is to check if Tech B's name is in the response body IF the table shows names.
         // Assuming table shows names.
         $response->assertSee($this->techA->name);
@@ -138,14 +139,14 @@ class DataVisibilityTest extends TestCase
             'user_id' => $this->techA->id,
             'week_number' => 10,
             'year' => 2026,
-            'status' => 'piket'
+            'status' => 'piket',
         ]);
 
         TechnicianSchedule::create([
             'user_id' => $this->techB->id,
             'week_number' => 10,
             'year' => 2026,
-            'status' => 'piket'
+            'status' => 'piket',
         ]);
 
         // Tech A should see their row (Tech A name) but not Tech B's row

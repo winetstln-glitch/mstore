@@ -36,6 +36,7 @@ class Closure extends Model
         if ($this->capacity === null) {
             return false;
         }
+
         return $this->filled >= $this->capacity;
     }
 }

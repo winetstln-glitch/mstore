@@ -3,23 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\AtkTransaction;
 use App\Models\Coordinator;
 use App\Models\Customer;
-use App\Models\AtkTransaction;
-use App\Models\WashTransaction;
 use App\Models\Installation;
 use App\Models\InventoryItem;
 use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
 use App\Models\Transaction;
-use Illuminate\Http\Request;
+use App\Models\WashTransaction;
+use App\Services\MixRadiusService;
+use App\Services\SystemMetricsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\SystemMetricsService;
-use App\Services\MixRadiusService;
-
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class DashboardController extends Controller
 {
@@ -35,7 +31,7 @@ class DashboardController extends Controller
         if ($user && $user->hasRole('kasir-wash')) {
             return redirect()->route('wash.dashboard');
         }
-        if (!$user || !$user->hasPermission('dashboard.view')) {
+        if (! $user || ! $user->hasPermission('dashboard.view')) {
             abort(403);
         }
 
@@ -50,7 +46,7 @@ class DashboardController extends Controller
                 'assigned_installations' => $user->installations()->whereIn('status', ['assigned', 'survey'])->count(),
                 'completed_tickets_today' => $user->tickets()->where('status', 'solved')->whereDate('tickets.updated_at', today())->count(),
             ];
-            
+
             $activeTickets = $user->tickets()
                 ->with('customer')
                 ->whereIn('status', ['assigned', 'in_progress'])
@@ -75,21 +71,21 @@ class DashboardController extends Controller
         $installationQuery = Installation::query();
 
         // Filter Logic: Exclude Admin and Finance Staff from filtering
-        if (!$user->hasRole('admin') && !$user->hasRole('finance')) {
+        if (! $user->hasRole('admin') && ! $user->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', $user->id)->first();
             if ($coordinator && $coordinator->region_id) {
                 // Filter Customers by Region
-                $customerQuery->whereHas('odp', function($q) use ($coordinator) {
+                $customerQuery->whereHas('odp', function ($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
-                
+
                 // Filter Tickets (Linked to Customer in Region)
-                $ticketQuery->whereHas('customer.odp', function($q) use ($coordinator) {
+                $ticketQuery->whereHas('customer.odp', function ($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
 
                 // Filter Installations (Linked to Customer in Region)
-                $installationQuery->whereHas('customer.odp', function($q) use ($coordinator) {
+                $installationQuery->whereHas('customer.odp', function ($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
             }
@@ -111,23 +107,29 @@ class DashboardController extends Controller
         $trafficData = [
             'labels' => [],
             'orders' => [],
-            'tickets' => []
+            'tickets' => [],
         ];
 
         $atkMonthly = AtkTransaction::whereYear('created_at', now()->year)
             ->get()
-            ->groupBy(function($t) { return $t->created_at->format('n'); })
+            ->groupBy(function ($t) {
+                return $t->created_at->format('n');
+            })
             ->map->count();
 
         $washMonthly = WashTransaction::whereYear('created_at', now()->year)
             ->get()
-            ->groupBy(function($t) { return $t->created_at->format('n'); })
+            ->groupBy(function ($t) {
+                return $t->created_at->format('n');
+            })
             ->map->count();
 
         $ticketsMonthly = $ticketQuery->clone()
             ->whereYear('created_at', now()->year)
             ->get()
-            ->groupBy(function($ticket) { return $ticket->created_at->format('n'); })
+            ->groupBy(function ($ticket) {
+                return $ticket->created_at->format('n');
+            })
             ->map->count();
 
         for ($i = 1; $i <= 12; $i++) {
@@ -148,11 +150,11 @@ class DashboardController extends Controller
             ? round((($ordersCurrentMonth - $ordersPrevMonth) / $ordersPrevMonth) * 100, 1)
             : ($ordersCurrentMonth > 0 ? 100.0 : 0.0);
         $trafficStats = [
-            'orders_growth_percent' => $ordersGrowthPercent
+            'orders_growth_percent' => $ordersGrowthPercent,
         ];
 
         // System Metrics (CPU/RAM/Swap) to power SupportTracker & RevenueSources charts
-        $metricsService = new SystemMetricsService();
+        $metricsService = new SystemMetricsService;
         $systemMetrics = $metricsService->getMetrics();
 
         $recentTickets = $ticketQuery->clone()
@@ -173,7 +175,7 @@ class DashboardController extends Controller
         $monthlyTickets = $ticketQuery->clone()
             ->whereYear('created_at', now()->year)
             ->get()
-            ->groupBy(function($ticket) {
+            ->groupBy(function ($ticket) {
                 return $ticket->created_at->format('m');
             });
 
@@ -182,7 +184,7 @@ class DashboardController extends Controller
             $monthNum = str_pad($i, 2, '0', STR_PAD_LEFT);
             $monthName = \Carbon\Carbon::create(null, $i, 1)->format('F');
             $ticketsInMonth = $monthlyTickets->get($monthNum, collect());
-            
+
             $ticketRecap[] = [
                 'month' => $monthName,
                 'total' => $ticketsInMonth->count(),
@@ -194,7 +196,7 @@ class DashboardController extends Controller
         // Inventory & Assets Data
         $inventoryItems = InventoryItem::orderBy('stock', 'asc')->take(5)->get();
         $totalInventoryValue = InventoryItem::sum(DB::raw('stock * price'));
-        
+
         $deployedAssets = Asset::with(['item', 'holder'])
             ->where('status', 'deployed')
             ->whereIn('holder_type', ['App\Models\User', 'App\Models\Coordinator'])
@@ -206,25 +208,25 @@ class DashboardController extends Controller
         $financialData = [
             'labels' => [],
             'income' => [],
-            'expense' => []
+            'expense' => [],
         ];
-        
+
         // Fetch Income Data (Collection-based grouping for DB compatibility)
         $incomeData = Transaction::where('type', 'income')
             ->whereYear('transaction_date', now()->year)
             ->get()
-            ->groupBy(function($transaction) {
+            ->groupBy(function ($transaction) {
                 return $transaction->transaction_date->format('n'); // Group by month number (1-12)
             })
             ->map(function ($transactions) {
                 return $transactions->sum('amount');
             });
-            
+
         // Fetch Expense Data
         $expenseData = Transaction::where('type', 'expense')
             ->whereYear('transaction_date', now()->year)
             ->get()
-            ->groupBy(function($transaction) {
+            ->groupBy(function ($transaction) {
                 return $transaction->transaction_date->format('n'); // Group by month number (1-12)
             })
             ->map(function ($transactions) {

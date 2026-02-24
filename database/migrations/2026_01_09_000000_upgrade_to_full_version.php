@@ -14,35 +14,35 @@ return new class extends Migration
         // 1. Update Customers Table
         Schema::table('customers', function (Blueprint $table) {
             // router_id, pppoe_user, pppoe_password, onu_serial already exist
-            
-            if (!Schema::hasColumn('customers', 'pppoe_profile')) {
+
+            if (! Schema::hasColumn('customers', 'pppoe_profile')) {
                 $table->string('pppoe_profile')->nullable();
             }
-            if (!Schema::hasColumn('customers', 'pppoe_ip_local')) {
+            if (! Schema::hasColumn('customers', 'pppoe_ip_local')) {
                 $table->string('pppoe_ip_local')->nullable();
             }
-            if (!Schema::hasColumn('customers', 'pppoe_ip_remote')) {
+            if (! Schema::hasColumn('customers', 'pppoe_ip_remote')) {
                 $table->string('pppoe_ip_remote')->nullable();
             }
-            if (!Schema::hasColumn('customers', 'billing_cycle_date')) {
+            if (! Schema::hasColumn('customers', 'billing_cycle_date')) {
                 $table->integer('billing_cycle_date')->default(1); // Date of month (1-28)
             }
-            if (!Schema::hasColumn('customers', 'latitude')) {
+            if (! Schema::hasColumn('customers', 'latitude')) {
                 $table->decimal('latitude', 10, 8)->nullable();
             }
-            if (!Schema::hasColumn('customers', 'longitude')) {
+            if (! Schema::hasColumn('customers', 'longitude')) {
                 $table->decimal('longitude', 11, 8)->nullable();
             }
-            if (!Schema::hasColumn('customers', 'identity_number')) {
+            if (! Schema::hasColumn('customers', 'identity_number')) {
                 $table->string('identity_number')->nullable(); // NIK/KTP
             }
-            if (!Schema::hasColumn('customers', 'auto_isolate')) {
+            if (! Schema::hasColumn('customers', 'auto_isolate')) {
                 $table->boolean('auto_isolate')->default(true);
             }
         });
 
         // 2. Invoices Table (Keuangan - Tagihan)
-        if (!Schema::hasTable('invoices')) {
+        if (! Schema::hasTable('invoices')) {
             Schema::create('invoices', function (Blueprint $table) {
                 $table->id();
                 $table->string('invoice_number')->unique();
@@ -58,7 +58,7 @@ return new class extends Migration
         }
 
         // 3. Transactions Table (Keuangan - Kas)
-        if (!Schema::hasTable('transactions')) {
+        if (! Schema::hasTable('transactions')) {
             Schema::create('transactions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
@@ -75,7 +75,7 @@ return new class extends Migration
         }
 
         // 4. Technician Attendance (Fitur Teknisi)
-        if (!Schema::hasTable('technician_attendances')) {
+        if (! Schema::hasTable('technician_attendances')) {
             Schema::create('technician_attendances', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained(); // The technician
@@ -94,7 +94,7 @@ return new class extends Migration
         }
 
         // 5. WhatsApp/Notification Logs (Fitur Chat/Notif)
-        if (!Schema::hasTable('notification_logs')) {
+        if (! Schema::hasTable('notification_logs')) {
             Schema::create('notification_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
@@ -118,12 +118,12 @@ return new class extends Migration
         Schema::dropIfExists('technician_attendances');
         Schema::dropIfExists('transactions');
         Schema::dropIfExists('invoices');
-        
+
         Schema::table('customers', function (Blueprint $table) {
             $table->dropColumn([
                 'pppoe_profile', 'pppoe_ip_local', 'pppoe_ip_remote',
-                'billing_cycle_date', 'latitude', 'longitude', 
-                'identity_number', 'auto_isolate'
+                'billing_cycle_date', 'latitude', 'longitude',
+                'identity_number', 'auto_isolate',
             ]);
         });
     }

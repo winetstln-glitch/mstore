@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +31,7 @@ class SidebarMenuTest extends TestCase
             __('Pelanggan & Layanan'),
             __('Jaringan'),
             __('Operasional'),
-            __('Sistem')
+            __('Sistem'),
         ]);
 
         $response->assertSee(__('Network Monitor'));

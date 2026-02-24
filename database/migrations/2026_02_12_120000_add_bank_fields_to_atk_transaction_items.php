@@ -13,10 +13,10 @@ return new class extends Migration
     {
         if (Schema::hasTable('atk_transaction_items')) {
             Schema::table('atk_transaction_items', function (Blueprint $table) {
-                if (!Schema::hasColumn('atk_transaction_items', 'nominal_transaksi')) {
+                if (! Schema::hasColumn('atk_transaction_items', 'nominal_transaksi')) {
                     $table->decimal('nominal_transaksi', 15, 2)->nullable()->after('subtotal');
                 }
-                if (!Schema::hasColumn('atk_transaction_items', 'fee')) {
+                if (! Schema::hasColumn('atk_transaction_items', 'fee')) {
                     $table->decimal('fee', 15, 2)->nullable()->after('nominal_transaksi');
                 }
             });

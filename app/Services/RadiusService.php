@@ -32,12 +32,14 @@ class RadiusService
                     'username' => $username,
                     'attribute' => 'Cleartext-Password',
                     'op' => ':=',
-                    'value' => $password
+                    'value' => $password,
                 ]);
             }
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Radius Add User Error: " . $e->getMessage());
+            Log::error('Radius Add User Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -59,13 +61,14 @@ class RadiusService
                 'username' => $username,
                 'attribute' => 'Auth-Type',
                 'op' => ':=',
-                'value' => 'Reject'
+                'value' => 'Reject',
             ]);
-            
+
             // Disconnect active session (need Mikrotik/CoA for this, Radius just updates DB)
             return true;
         } catch (\Exception $e) {
-            Log::error("Radius Block User Error: " . $e->getMessage());
+            Log::error('Radius Block User Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -80,9 +83,11 @@ class RadiusService
                 ->where('username', $username)
                 ->where('attribute', 'Auth-Type')
                 ->delete();
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Radius Unblock User Error: " . $e->getMessage());
+            Log::error('Radius Unblock User Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -94,6 +99,7 @@ class RadiusService
     {
         try {
             DB::connection($this->connection)->getPdo();
+
             return true;
         } catch (\Exception $e) {
             return false;

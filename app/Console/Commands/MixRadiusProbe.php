@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\MixRadiusService;
+use Illuminate\Console\Command;
 
 class MixRadiusProbe extends Command
 {
@@ -23,7 +23,7 @@ class MixRadiusProbe extends Command
         $this->info('=== MixRADIUS Probe ===');
 
         if ($id !== '') {
-            $this->line('-> Mencoba lookup username dari ID: ' . $id);
+            $this->line('-> Mencoba lookup username dari ID: '.$id);
             $res = $service->resolveUsernameByIdWithMeta($id);
             if (is_array($res) && ($res['username'] ?? '') !== '') {
                 $this->info('OK USERINFO');
@@ -37,7 +37,7 @@ class MixRadiusProbe extends Command
         }
 
         if ($username !== '' && $password !== '') {
-            $this->line('-> Mencoba autentikasi username: ' . $username);
+            $this->line('-> Mencoba autentikasi username: '.$username);
             $res = $service->verifyCredentials($username, $password);
             if (($res['ok'] ?? false) === true) {
                 $this->info('OK AUTH');

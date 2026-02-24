@@ -6,9 +6,9 @@ use App\Models\Closure;
 use App\Models\Odc;
 use App\Models\Region;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Storage;
 
 class ClosureController extends Controller implements HasMiddleware
 {
@@ -29,7 +29,7 @@ class ClosureController extends Controller implements HasMiddleware
         if ($request->has('search')) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%");
         }
 
         if ($request->has('odc_id') && $request->odc_id != '') {
@@ -51,6 +51,7 @@ class ClosureController extends Controller implements HasMiddleware
     {
         $odcs = Odc::all();
         $regions = Region::all();
+
         return view('closures.create', compact('odcs', 'regions'));
     }
 
@@ -84,6 +85,7 @@ class ClosureController extends Controller implements HasMiddleware
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return back()->withErrors($e->getMessage())->withInput();
         }
     }
@@ -97,6 +99,7 @@ class ClosureController extends Controller implements HasMiddleware
     {
         $odcs = Odc::all();
         $regions = Region::all();
+
         return view('closures.edit', compact('closure', 'odcs', 'regions'));
     }
 
@@ -104,7 +107,7 @@ class ClosureController extends Controller implements HasMiddleware
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255|unique:closures,name,' . $closure->id,
+                'name' => 'required|string|max:255|unique:closures,name,'.$closure->id,
                 'odc_id' => 'nullable|exists:odcs,id',
                 'region_id' => 'nullable|exists:regions,id',
                 'latitude' => 'nullable|numeric',
@@ -133,6 +136,7 @@ class ClosureController extends Controller implements HasMiddleware
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+
             return back()->withErrors($e->getMessage())->withInput();
         }
     }
@@ -142,7 +146,7 @@ class ClosureController extends Controller implements HasMiddleware
         if ($closure->image) {
             Storage::disk('public')->delete($closure->image);
         }
-        
+
         $closure->delete();
 
         if (request()->wantsJson()) {

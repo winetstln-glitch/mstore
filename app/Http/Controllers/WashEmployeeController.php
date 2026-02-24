@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WashEmployee;
 use App\Models\User;
+use App\Models\WashEmployee;
 use Illuminate\Http\Request;
 
 class WashEmployeeController extends Controller
@@ -11,14 +11,15 @@ class WashEmployeeController extends Controller
     public function index()
     {
         $employees = WashEmployee::all();
+
         return view('wash.employees.index', compact('employees'));
     }
 
     public function create()
     {
         // 1. Create an empty instance so the form has a model to bind to
-        $employee = new WashEmployee();
-        
+        $employee = new WashEmployee;
+
         // 2. Get users for the dropdown (like in the edit method)
         $users = User::all();
 
@@ -42,6 +43,7 @@ class WashEmployeeController extends Controller
     public function edit(WashEmployee $employee)
     {
         $users = User::all();
+
         return view('wash.employees.edit', compact('employee', 'users'));
     }
 
@@ -61,6 +63,7 @@ class WashEmployeeController extends Controller
     public function destroy(WashEmployee $employee)
     {
         $employee->delete();
+
         return redirect()->route('wash.employees.index')->with('success', 'Employee deleted successfully.');
     }
 }

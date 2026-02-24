@@ -5,12 +5,11 @@ namespace Tests\Feature;
 use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Olt;
+use App\Models\Permission;
 use App\Models\Region;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use App\Models\Permission;
-use App\Models\Role;
 use Tests\TestCase;
 
 class OdpAutoNameTest extends TestCase
@@ -22,12 +21,12 @@ class OdpAutoNameTest extends TestCase
         // Setup permissions
         $role = Role::create([
             'name' => 'admin',
-            'label' => 'Administrator'
+            'label' => 'Administrator',
         ]);
         $permission = Permission::create([
             'name' => 'odp.create',
             'label' => 'Create ODP',
-            'group' => 'odp'
+            'group' => 'odp',
         ]);
         $role->permissions()->attach($permission);
         $user = User::factory()->create();
@@ -36,7 +35,7 @@ class OdpAutoNameTest extends TestCase
         // Setup Data
         $region = Region::create([
             'name' => 'Cibadak',
-            'abbreviation' => 'CBD'
+            'abbreviation' => 'CBD',
         ]);
 
         $olt = Olt::create([
@@ -59,7 +58,7 @@ class OdpAutoNameTest extends TestCase
             'area' => 'CIBADAK',
             'color' => 'LIGHT BLUE',
             'cable_no' => '01',
-            'capacity' => 144
+            'capacity' => 144,
         ]);
 
         // Act
@@ -87,7 +86,7 @@ class OdpAutoNameTest extends TestCase
             // Name format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]
             // Area: XYZ (from input), Cable: 99 (from input), Color: B (from input), Seq: 01
             // ODP-XYZ-99-B/01
-            'name' => 'ODP-XYZ-99-B/01'
+            'name' => 'ODP-XYZ-99-B/01',
         ]);
     }
 
@@ -96,12 +95,12 @@ class OdpAutoNameTest extends TestCase
         // Setup permissions
         $role = Role::create([
             'name' => 'admin',
-            'label' => 'Administrator'
+            'label' => 'Administrator',
         ]);
         $permission = Permission::create([
             'name' => 'odp.create',
             'label' => 'Create ODP',
-            'group' => 'odp'
+            'group' => 'odp',
         ]);
         $role->permissions()->attach($permission);
         $user = User::factory()->create();
@@ -133,7 +132,7 @@ class OdpAutoNameTest extends TestCase
             'area' => 'SUKABUMI',
             'color' => 'RED',
             'cable_no' => '02',
-            'capacity' => 144
+            'capacity' => 144,
         ]);
 
         // Act
@@ -154,7 +153,7 @@ class OdpAutoNameTest extends TestCase
             // Name format: ODP-[AREA]-[CABLE]-[COLOR]/[SEQ]
             // Area: SU, Cable: 02, Color: R, Seq: 01
             // ODP-SU-02-R/01
-            'name' => 'ODP-SU-02-R/01'
+            'name' => 'ODP-SU-02-R/01',
         ]);
     }
 }

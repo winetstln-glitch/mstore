@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Log;
 class GenieACSService
 {
     protected $baseUrl;
+
     protected $timeout = 30;
 
     public function __construct()
     {
         $server = GenieAcsServer::where('is_active', true)->first();
-        
+
         if ($server) {
             $this->baseUrl = rtrim($server->url, '/');
         } else {
@@ -41,20 +42,22 @@ class GenieACSService
         try {
             // Encode ID if needed, but usually NBI accepts raw ID in path
             $encodedId = urlencode($deviceId);
-            
+
             $response = $this->request()
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
                     'name' => 'setParameterValues',
-                    'parameterValues' => $params
+                    'parameterValues' => $params,
                 ]);
 
             if ($response->successful()) {
                 return $response->json();
             }
-            Log::error("GenieACS SetParams Failed: " . $response->body());
+            Log::error('GenieACS SetParams Failed: '.$response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error("GenieACS SetParams Error: " . $e->getMessage());
+            Log::error('GenieACS SetParams Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -72,10 +75,12 @@ class GenieACSService
             if ($response->successful()) {
                 return $response->json();
             }
-            Log::error("GenieACS AddTags Failed: " . $response->body());
+            Log::error('GenieACS AddTags Failed: '.$response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error("GenieACS AddTags Error: " . $e->getMessage());
+            Log::error('GenieACS AddTags Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -91,9 +96,11 @@ class GenieACSService
                 // DELETE /devices/{id}/tags/{tag}
                 $this->request()->delete("{$this->baseUrl}/devices/{$encodedId}/tags/{$tag}");
             }
+
             return true;
         } catch (\Exception $e) {
-            Log::error("GenieACS RemoveTags Error: " . $e->getMessage());
+            Log::error('GenieACS RemoveTags Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -107,31 +114,33 @@ class GenieACSService
             $encodedId = urlencode($deviceId);
             $response = $this->request()
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
-                    'name' => 'reboot'
+                    'name' => 'reboot',
                 ]);
 
             if ($response->successful()) {
                 return $response->json();
             }
-            Log::error("GenieACS Reboot Failed: " . $response->body());
+            Log::error('GenieACS Reboot Failed: '.$response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error("GenieACS Reboot Error: " . $e->getMessage());
+            Log::error('GenieACS Reboot Error: '.$e->getMessage());
+
             return null;
         }
     }
-
-
 
     /**
      * Get WiFi Connected Clients
      */
     public function getWifiClients($deviceId, $device = null)
     {
-        if (!$device) {
+        if (! $device) {
             $device = $this->getDeviceDetails($deviceId);
         }
-        if (!$device) return [];
+        if (! $device) {
+            return [];
+        }
 
         $clients = [];
 
@@ -139,75 +148,94 @@ class GenieACSService
         if (isset($device['InternetGatewayDevice'])) {
             $wlanConfigs = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'] ?? [];
             foreach ($wlanConfigs as $index => $config) {
-                if (!is_numeric($index)) continue;
-                
+                if (! is_numeric($index)) {
+                    continue;
+                }
+
                 $ssidClients = [];
                 $associatedDevices = $config['AssociatedDevice'] ?? [];
-                
+
                 foreach ($associatedDevices as $key => $client) {
-                    if (!is_numeric($key)) continue;
-                    
+                    if (! is_numeric($key)) {
+                        continue;
+                    }
+
                     $mac = $this->getValue($client['AssociatedDeviceMACAddress'] ?? $client['MACAddress'] ?? '');
-                    if (!$mac) continue;
+                    if (! $mac) {
+                        continue;
+                    }
 
                     // Try to resolve hostname from Hosts table if available
                     $hostname = '';
-                    
+
                     $rssi = $this->getValue($client['X_Huawei_RSSI'] ?? $client['SignalStrength'] ?? $client['RSSI'] ?? '');
-                    
+
                     $ssidClients[] = [
                         'mac' => $mac,
                         'ip' => $this->getValue($client['AssociatedDeviceIPAddress'] ?? $client['IPAddress'] ?? $client['X_Huawei_IPAddress'] ?? ''),
                         'rssi' => $rssi,
                         'mode' => 'on', // Placeholder or extract from Standard
-                        'description' => $hostname, 
+                        'description' => $hostname,
                         'status' => $this->getValue($client['Active'] ?? true) ? 'on' : 'off',
                     ];
                 }
-                
+
                 $clients[$index] = $ssidClients;
             }
 
             // Fallback: Check Hosts table
             $hosts = $device['InternetGatewayDevice']['LANDevice'][1]['Hosts']['Host'] ?? [];
             foreach ($hosts as $key => $host) {
-                if (!is_numeric($key)) continue;
-                
+                if (! is_numeric($key)) {
+                    continue;
+                }
+
                 $active = $this->getValue($host['Active'] ?? 'false');
                 $isActive = ($active === 'true' || $active === true || $active === '1' || $active === 1);
-                if (!$isActive) continue;
+                if (! $isActive) {
+                    continue;
+                }
 
                 $mac = $this->getValue($host['MACAddress'] ?? $host['PhysAddress'] ?? '');
-                if (!$mac) continue;
-                
+                if (! $mac) {
+                    continue;
+                }
+
                 $l2Ref = $this->getValue($host['Layer2Interface'] ?? '');
                 $type = $this->getValue($host['InterfaceType'] ?? '');
-                
+
                 $index = 0;
-                if (strpos($l2Ref, 'WLANConfiguration.1') !== false) $index = 1;
-                elseif (strpos($l2Ref, 'WLANConfiguration.2') !== false) $index = 2;
-                elseif (strpos($l2Ref, 'WLANConfiguration.3') !== false) $index = 3;
-                elseif (strpos($l2Ref, 'WLANConfiguration.4') !== false) $index = 4;
-                
+                if (strpos($l2Ref, 'WLANConfiguration.1') !== false) {
+                    $index = 1;
+                } elseif (strpos($l2Ref, 'WLANConfiguration.2') !== false) {
+                    $index = 2;
+                } elseif (strpos($l2Ref, 'WLANConfiguration.3') !== false) {
+                    $index = 3;
+                } elseif (strpos($l2Ref, 'WLANConfiguration.4') !== false) {
+                    $index = 4;
+                }
+
                 if ($index === 0) {
                     if (stripos($type, '802.11') !== false || stripos($type, 'Wireless') !== false) {
-                        $index = 1; 
+                        $index = 1;
                     } else {
-                        continue; 
+                        continue;
                     }
                 }
 
-                if (!isset($clients[$index])) $clients[$index] = [];
-                
+                if (! isset($clients[$index])) {
+                    $clients[$index] = [];
+                }
+
                 $exists = false;
                 foreach ($clients[$index] as $c) {
                     if ($c['mac'] === $mac) {
-                        $exists = true; 
+                        $exists = true;
                         break;
                     }
                 }
-                
-                if (!$exists) {
+
+                if (! $exists) {
                     $clients[$index][] = [
                         'mac' => $mac,
                         'ip' => $this->getValue($host['IPAddress'] ?? ''),
@@ -223,22 +251,28 @@ class GenieACSService
         elseif (isset($device['Device']['WiFi']['AccessPoint'])) {
             $accessPoints = $device['Device']['WiFi']['AccessPoint'] ?? [];
             foreach ($accessPoints as $index => $ap) {
-                if (!is_numeric($index)) continue;
+                if (! is_numeric($index)) {
+                    continue;
+                }
 
                 $ssidClients = [];
                 $associatedDevices = $ap['AssociatedDevice'] ?? [];
 
                 foreach ($associatedDevices as $key => $client) {
-                    if (!is_numeric($key)) continue;
+                    if (! is_numeric($key)) {
+                        continue;
+                    }
 
                     $mac = $this->getValue($client['MACAddress'] ?? '');
-                    if (!$mac) continue;
+                    if (! $mac) {
+                        continue;
+                    }
 
                     $rssi = $this->getValue($client['SignalStrength'] ?? $client['RSSI'] ?? '');
 
                     $ssidClients[] = [
                         'mac' => $mac,
-                        'ip' => $this->getValue($client['IPAddress'] ?? ''), 
+                        'ip' => $this->getValue($client['IPAddress'] ?? ''),
                         'rssi' => $rssi,
                         'mode' => 'on',
                         'description' => '',
@@ -251,43 +285,56 @@ class GenieACSService
             // Fallback: Check Hosts table for TR-181
             $hosts = $device['Device']['Hosts']['Host'] ?? [];
             foreach ($hosts as $key => $host) {
-                if (!is_numeric($key)) continue;
-                
+                if (! is_numeric($key)) {
+                    continue;
+                }
+
                 $active = $this->getValue($host['Active'] ?? 'false');
                 $isActive = ($active === 'true' || $active === true || $active === '1' || $active === 1);
-                if (!$isActive) continue;
+                if (! $isActive) {
+                    continue;
+                }
 
                 $mac = $this->getValue($host['MACAddress'] ?? $host['PhysAddress'] ?? '');
-                if (!$mac) continue;
-                
+                if (! $mac) {
+                    continue;
+                }
+
                 $l2Ref = $this->getValue($host['Layer2Interface'] ?? '');
                 $type = $this->getValue($host['InterfaceType'] ?? '');
-                
+
                 $index = 0;
-                if (strpos($l2Ref, 'SSID.1') !== false || strpos($l2Ref, 'AccessPoint.1') !== false) $index = 1;
-                elseif (strpos($l2Ref, 'SSID.2') !== false || strpos($l2Ref, 'AccessPoint.2') !== false) $index = 2;
-                elseif (strpos($l2Ref, 'SSID.3') !== false || strpos($l2Ref, 'AccessPoint.3') !== false) $index = 3;
-                elseif (strpos($l2Ref, 'SSID.4') !== false || strpos($l2Ref, 'AccessPoint.4') !== false) $index = 4;
-                
+                if (strpos($l2Ref, 'SSID.1') !== false || strpos($l2Ref, 'AccessPoint.1') !== false) {
+                    $index = 1;
+                } elseif (strpos($l2Ref, 'SSID.2') !== false || strpos($l2Ref, 'AccessPoint.2') !== false) {
+                    $index = 2;
+                } elseif (strpos($l2Ref, 'SSID.3') !== false || strpos($l2Ref, 'AccessPoint.3') !== false) {
+                    $index = 3;
+                } elseif (strpos($l2Ref, 'SSID.4') !== false || strpos($l2Ref, 'AccessPoint.4') !== false) {
+                    $index = 4;
+                }
+
                 if ($index === 0) {
                     if (stripos($type, '802.11') !== false || stripos($type, 'Wireless') !== false) {
-                        $index = 1; 
+                        $index = 1;
                     } else {
-                        continue; 
+                        continue;
                     }
                 }
 
-                if (!isset($clients[$index])) $clients[$index] = [];
-                
+                if (! isset($clients[$index])) {
+                    $clients[$index] = [];
+                }
+
                 $exists = false;
                 foreach ($clients[$index] as $c) {
                     if ($c['mac'] === $mac) {
-                        $exists = true; 
+                        $exists = true;
                         break;
                     }
                 }
-                
-                if (!$exists) {
+
+                if (! $exists) {
                     $clients[$index][] = [
                         'mac' => $mac,
                         'ip' => $this->getValue($host['IPAddress'] ?? ''),
@@ -308,10 +355,12 @@ class GenieACSService
      */
     public function getWlanSettings($deviceId, $index = 1, $device = null)
     {
-        if (!$device) {
+        if (! $device) {
             $device = $this->getDeviceDetails($deviceId);
         }
-        if (!$device) return null;
+        if (! $device) {
+            return null;
+        }
 
         $settings = [
             'enable' => false,
@@ -328,11 +377,11 @@ class GenieACSService
         // TR-098
         if (isset($device['InternetGatewayDevice'])) {
             $wlan = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][$index] ?? null;
-            
+
             if ($wlan) {
                 $settings['enable'] = filter_var($this->getValue($wlan['Enable'] ?? false), FILTER_VALIDATE_BOOLEAN);
                 $settings['ssid'] = $this->getValue($wlan['SSID'] ?? '');
-                
+
                 if (isset($wlan['PreSharedKey'][1]['KeyPassphrase'])) {
                     $settings['password'] = $this->getValue($wlan['PreSharedKey'][1]['KeyPassphrase']);
                 } elseif (isset($wlan['KeyPassphrase'])) {
@@ -353,13 +402,13 @@ class GenieACSService
         elseif (isset($device['Device'])) {
             $ssidObj = $device['Device']['WiFi']['SSID'][$index] ?? null;
             $apObj = $device['Device']['WiFi']['AccessPoint'][$index] ?? null;
-            
+
             if ($ssidObj) {
                 $settings['enable'] = filter_var($this->getValue($ssidObj['Enable'] ?? false), FILTER_VALIDATE_BOOLEAN);
                 $settings['ssid'] = $this->getValue($ssidObj['SSID'] ?? '');
                 $settings['bssid'] = $this->getValue($ssidObj['BSSID'] ?? $ssidObj['MACAddress'] ?? '');
             }
-            
+
             if ($apObj) {
                 if (isset($apObj['Security'])) {
                     $settings['password'] = $this->getValue($apObj['Security']['KeyPassphrase'] ?? '');
@@ -367,11 +416,18 @@ class GenieACSService
                 }
                 $settings['connected_devices'] = $this->getValue($apObj['AssociatedDeviceNumberOfEntries'] ?? 0);
             }
-            
-            // Channel/Radio info usually in Device.WiFi.Radio.{i}
-            // For simplicity, we skip radio mapping for now or assume 1-to-1 mapping if indices match
-            if (isset($device['Device']['WiFi']['Radio'][$index])) {
-                $radio = $device['Device']['WiFi']['Radio'][$index];
+
+            $radioIndex = $index;
+            if ($ssidObj && isset($ssidObj['LowerLayers'])) {
+                $ll = $this->getValue($ssidObj['LowerLayers']);
+                if (preg_match('/Radio\.(\d+)/', (string) $ll, $m)) {
+                    $radioIndex = (int) $m[1];
+                }
+            } elseif ($index === 2 && isset($device['Device']['WiFi']['Radio'][2])) {
+                $radioIndex = 2;
+            }
+            if (isset($device['Device']['WiFi']['Radio'][$radioIndex])) {
+                $radio = $device['Device']['WiFi']['Radio'][$radioIndex];
                 $settings['channel'] = $this->getValue($radio['Channel'] ?? '');
                 $settings['auto_channel'] = filter_var($this->getValue($radio['AutoChannelEnable'] ?? false), FILTER_VALIDATE_BOOLEAN);
                 $settings['power'] = $this->getValue($radio['TransmitPower'] ?? '');
@@ -447,7 +503,7 @@ class GenieACSService
                         ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
                         ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
                         ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
-                    ]
+                    ],
                 ];
                 $queryParams['query'] = json_encode($searchQuery);
             }
@@ -455,7 +511,7 @@ class GenieACSService
             if ($limit !== null) {
                 $queryParams['limit'] = $limit;
             }
-            
+
             if ($skip > 0) {
                 $queryParams['skip'] = $skip;
             }
@@ -466,10 +522,12 @@ class GenieACSService
             if ($response->successful()) {
                 return $response->json();
             }
-            Log::error("GenieACS API Error: " . $response->body());
+            Log::error('GenieACS API Error: '.$response->body());
+
             return [];
         } catch (\Exception $e) {
-            Log::error("GenieACS Connection Error: " . $e->getMessage());
+            Log::error('GenieACS Connection Error: '.$e->getMessage());
+
             return [];
         }
     }
@@ -482,7 +540,7 @@ class GenieACSService
         try {
             $queryParams = [
                 'projection' => '_id',
-                'limit' => 1
+                'limit' => 1,
             ];
 
             if ($search) {
@@ -491,7 +549,7 @@ class GenieACSService
                         ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
                         ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
                         ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
-                    ]
+                    ],
                 ];
                 $queryParams['query'] = json_encode($searchQuery);
             }
@@ -502,21 +560,23 @@ class GenieACSService
 
             if ($response->successful()) {
                 if ($response->header('Total')) {
-                    return (int)$response->header('Total');
+                    return (int) $response->header('Total');
                 }
-                
+
                 // Fallback: Fetch all IDs (up to 2000) to count manually
                 $queryParams['limit'] = 2000;
                 $response = Http::timeout($this->timeout)
                     ->get("{$this->baseUrl}/devices", $queryParams);
-                    
+
                 if ($response->successful()) {
                     return count($response->json());
                 }
             }
+
             return 0;
         } catch (\Exception $e) {
-            Log::error("GenieACS Count Error: " . $e->getMessage());
+            Log::error('GenieACS Count Error: '.$e->getMessage());
+
             return 0;
         }
     }
@@ -540,20 +600,22 @@ class GenieACSService
             // This handles cases where ID might have special chars that URL path doesn't like
             $response = Http::timeout($this->timeout)
                 ->get("{$this->baseUrl}/devices", [
-                    'query' => json_encode(['_id' => $deviceId])
+                    'query' => json_encode(['_id' => $deviceId]),
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (!empty($data) && is_array($data)) {
+                if (! empty($data) && is_array($data)) {
                     return $data[0];
                 }
             }
 
-            Log::error("GenieACS Details Failed: " . $response->body());
+            Log::error('GenieACS Details Failed: '.$response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error("GenieACS Details Error: " . $e->getMessage());
+            Log::error('GenieACS Details Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -582,23 +644,24 @@ class GenieACSService
             ]);
 
             $query = json_encode(['_deviceId._SerialNumber' => $serial]);
-            
+
             $response = Http::timeout($this->timeout)
                 ->get("{$this->baseUrl}/devices", [
                     'query' => $query,
-                    'projection' => $projection
+                    'projection' => $projection,
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (!empty($data) && is_array($data)) {
+                if (! empty($data) && is_array($data)) {
                     return $data[0];
                 }
             }
-            
+
             return null;
         } catch (\Exception $e) {
-            Log::error("GenieACS Find By Serial Error: " . $e->getMessage());
+            Log::error('GenieACS Find By Serial Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -608,28 +671,30 @@ class GenieACSService
      */
     public function getIpAddress($device)
     {
-        if (!$device) return null;
+        if (! $device) {
+            return null;
+        }
 
         // 1. Try VirtualParameters (Custom scripts often put real IP here)
         if (isset($device['VirtualParameters']['pppIP']['_value']) && filter_var($device['VirtualParameters']['pppIP']['_value'], FILTER_VALIDATE_IP)) {
             return $device['VirtualParameters']['pppIP']['_value'];
         }
-        
+
         if (isset($device['VirtualParameters']['pppoeIP']['_value']) && filter_var($device['VirtualParameters']['pppoeIP']['_value'], FILTER_VALIDATE_IP)) {
             return $device['VirtualParameters']['pppoeIP']['_value'];
         }
-        
+
         if (isset($device['VirtualParameters']['IPTR069']['_value']) && filter_var($device['VirtualParameters']['IPTR069']['_value'], FILTER_VALIDATE_IP)) {
             return $device['VirtualParameters']['IPTR069']['_value'];
         }
 
         // 2. Try Standard TR-098
         if (isset($device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['ExternalIPAddress']['_value'])) {
-             return $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['ExternalIPAddress']['_value'];
+            return $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['ExternalIPAddress']['_value'];
         }
-        
+
         if (isset($device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']['_value'])) {
-             return $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']['_value'];
+            return $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']['_value'];
         }
 
         // 3. Try TR-181
@@ -654,19 +719,19 @@ class GenieACSService
             $response = Http::timeout(25)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=20000&connection_request", [
                     'name' => 'refreshObject',
-                    'objectName' => $objectName
+                    'objectName' => $objectName,
                 ]);
 
             if ($response->successful()) {
                 return 2; // Immediate Success
             }
-            Log::warning("GenieACS Refresh Immediate Failed: " . $response->body());
+            Log::warning('GenieACS Refresh Immediate Failed: '.$response->body());
         } catch (\Exception $e) {
             $msg = $e->getMessage();
             if (str_contains($msg, 'cURL error 28')) {
-                Log::warning("GenieACS Refresh Immediate Timeout: " . $msg);
+                Log::warning('GenieACS Refresh Immediate Timeout: '.$msg);
             } else {
-                Log::error("GenieACS Refresh Immediate Error: " . $msg);
+                Log::error('GenieACS Refresh Immediate Error: '.$msg);
             }
         }
 
@@ -676,21 +741,22 @@ class GenieACSService
             $response = Http::timeout($this->timeout)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
                     'name' => 'refreshObject',
-                    'objectName' => $objectName
+                    'objectName' => $objectName,
                 ]);
 
             if ($response->successful()) {
                 return 1; // Queued Success
             }
-            Log::error("GenieACS Refresh Queue Failed: " . $response->body());
-            
+            Log::error('GenieACS Refresh Queue Failed: '.$response->body());
+
             // Check for cURL 52 (Empty Reply) which sometimes happens on success
             return 0;
         } catch (\Exception $e) {
-            Log::error("GenieACS Refresh Queue Error: " . $e->getMessage());
+            Log::error('GenieACS Refresh Queue Error: '.$e->getMessage());
             if (str_contains($e->getMessage(), 'cURL error 52')) {
                 return 1; // Assumed Queued Success
             }
+
             return 0;
         }
     }
@@ -706,15 +772,15 @@ class GenieACSService
             // Use a longer timeout (10s) for the immediate attempt
             $response = Http::timeout(10)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
-                    'name' => 'reboot'
+                    'name' => 'reboot',
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
-            Log::warning("GenieACS Reboot Immediate Failed: " . $response->body());
+            Log::warning('GenieACS Reboot Immediate Failed: '.$response->body());
         } catch (\Exception $e) {
-            Log::error("GenieACS Reboot Immediate Error: " . $e->getMessage());
+            Log::error('GenieACS Reboot Immediate Error: '.$e->getMessage());
         }
 
         try {
@@ -722,22 +788,25 @@ class GenieACSService
 
             $response = Http::timeout($this->timeout)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
-                    'name' => 'reboot'
+                    'name' => 'reboot',
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
 
-            Log::error("GenieACS Reboot Queue Failed: " . $response->body());
+            Log::error('GenieACS Reboot Queue Failed: '.$response->body());
+
             return false;
         } catch (\Exception $e) {
-            Log::error("GenieACS Reboot Queue Error: " . $e->getMessage());
+            Log::error('GenieACS Reboot Queue Error: '.$e->getMessage());
             $message = $e->getMessage();
             if (str_contains($message, 'cURL error 28') || str_contains($message, 'cURL error 52')) {
                 Log::warning("GenieACS Reboot Queue assumed success after cURL timeout for $deviceId");
+
                 return true;
             }
+
             return false;
         }
     }
@@ -751,16 +820,18 @@ class GenieACSService
             $encodedId = urlencode($deviceId);
             $response = Http::timeout(10)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
-                    'name' => 'factoryReset'
+                    'name' => 'factoryReset',
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
-            Log::error("GenieACS Reset Failed: " . $response->body());
+            Log::error('GenieACS Reset Failed: '.$response->body());
+
             return false;
         } catch (\Exception $e) {
-            Log::error("GenieACS Reset Error: " . $e->getMessage());
+            Log::error('GenieACS Reset Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -788,15 +859,15 @@ class GenieACSService
             $response = Http::timeout(10)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
                     'name' => 'setParameterValues',
-                    'parameterValues' => $parameterValues
+                    'parameterValues' => $parameterValues,
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
-            Log::warning("GenieACS SetParam Immediate Failed: " . $response->body());
+            Log::warning('GenieACS SetParam Immediate Failed: '.$response->body());
         } catch (\Exception $e) {
-            Log::error("GenieACS SetParam Immediate Error: " . $e->getMessage());
+            Log::error('GenieACS SetParam Immediate Error: '.$e->getMessage());
         }
 
         // Attempt 2: Fallback to Queue only (no connection_request)
@@ -807,31 +878,33 @@ class GenieACSService
             $response = Http::timeout($this->timeout)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
                     'name' => 'setParameterValues',
-                    'parameterValues' => $parameterValues
+                    'parameterValues' => $parameterValues,
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
-            
+
             // If even queuing fails, it might be a server issue, but let's try one more thing:
             // Sometimes empty reply means it worked but connection dropped.
             // Check if we got an empty body but 200 OK? No, successful() checks status.
             // cURL 52 usually means the server dropped the connection.
-            
-            Log::error("GenieACS SetParam Queue Failed: " . $response->body());
-            
+
+            Log::error('GenieACS SetParam Queue Failed: '.$response->body());
+
             // If the error is cURL 52 (Empty Reply), it's possible the server is just overloaded/badly configured
             // but the request MIGHT have been processed.
             // However, we can't be sure.
-            
+
             return false;
         } catch (\Exception $e) {
-            Log::error("GenieACS SetParam Queue Error: " . $e->getMessage());
+            Log::error('GenieACS SetParam Queue Error: '.$e->getMessage());
             if (str_contains($e->getMessage(), 'cURL error 52')) {
                 Log::warning("GenieACS SetParam Queue assumed success after cURL 52 for $deviceId");
+
                 return true;
             }
+
             return false;
         }
     }
@@ -843,10 +916,12 @@ class GenieACSService
     {
         // 1. Get device to check model type
         $device = $this->getDeviceDetails($deviceId);
-        if (!$device) return false;
+        if (! $device) {
+            return false;
+        }
 
         $params = [];
-        
+
         // 2. Detect Root (IGD vs Device)
         if (isset($device['InternetGatewayDevice'])) {
             // TR-098
@@ -855,7 +930,7 @@ class GenieACSService
 
             $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1';
             $connNode = $wanBase['WANIPConnection'][1] ?? [];
-            
+
             // Check if PPP exists instead of IP
             if (isset($wanBase['WANPPPConnection'][1])) {
                 $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1';
@@ -901,8 +976,9 @@ class GenieACSService
     public function updateWlanSettings($deviceId, $data)
     {
         $device = $this->getDeviceDetails($deviceId);
-        if (!$device) {
+        if (! $device) {
             Log::error("GenieACS UpdateWlan: Device not found $deviceId");
+
             return false;
         }
 
@@ -952,14 +1028,14 @@ class GenieACSService
                     Log::warning("GenieACS: 5GHz WLAN requested but not found at index 2 for $deviceId");
                 }
             }
-            
+
         } elseif (isset($device['Device'])) {
             // TR-181
             // 2.4GHz (Index 1)
             if (isset($data['ssid_2g'])) {
                 $base = 'Device.WiFi.SSID.1';
                 $params["$base.SSID"] = $data['ssid_2g'];
-                
+
                 if (isset($data['password_2g'])) {
                     $apBase = 'Device.WiFi.AccessPoint.1.Security';
                     // Check if KeyPassphrase exists (TR-181 usually uses KeyPassphrase)
@@ -973,7 +1049,7 @@ class GenieACSService
                 if (isset($device['Device']['WiFi']['SSID'][2])) {
                     $base = 'Device.WiFi.SSID.2';
                     $params["$base.SSID"] = $data['ssid_5g'];
-                    
+
                     if (isset($data['password_5g'])) {
                         $apBase = 'Device.WiFi.AccessPoint.2.Security';
                         $params["$apBase.KeyPassphrase"] = $data['password_5g'];
@@ -983,12 +1059,14 @@ class GenieACSService
                 }
             }
         } else {
-            Log::error("GenieACS UpdateWlan: Unknown device model structure");
+            Log::error('GenieACS UpdateWlan: Unknown device model structure');
+
             return false;
         }
 
         if (empty($params)) {
             Log::warning("GenieACS UpdateWlan: No parameters to update for $deviceId");
+
             return false;
         }
 
@@ -1003,6 +1081,7 @@ class GenieACSService
         if (is_array($node)) {
             return $node['_value'] ?? '';
         }
+
         return (string) $node;
     }
 
@@ -1024,13 +1103,15 @@ class GenieACSService
             'wlan_pass_5g' => '',
         ];
 
-        if (!$device) return $config;
+        if (! $device) {
+            return $config;
+        }
 
         // TR-098 (IGD)
         if (isset($device['InternetGatewayDevice'])) {
             // WAN
             $wanBase = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1] ?? [];
-            
+
             if (isset($wanBase['WANPPPConnection'][1])) {
                 $conn = $wanBase['WANPPPConnection'][1];
                 $config['wan_user'] = $this->getValue($conn['Username'] ?? '');
@@ -1057,7 +1138,7 @@ class GenieACSService
             $wlan1 = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1] ?? [];
             $config['wlan_ssid_2g'] = $this->getValue($wlan1['SSID'] ?? '');
             $config['wifi_enabled'] = filter_var($this->getValue($wlan1['Enable'] ?? false), FILTER_VALIDATE_BOOLEAN);
-            
+
             // Wifi Password 1
             if (isset($wlan1['PreSharedKey'][1])) {
                 $config['wlan_pass_2g'] = $this->getValue($wlan1['PreSharedKey'][1]['PreSharedKey'] ?? '');
@@ -1069,7 +1150,7 @@ class GenieACSService
             if (isset($device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][2])) {
                 $wlan2 = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][2];
                 $config['wlan_ssid_5g'] = $this->getValue($wlan2['SSID'] ?? '');
-                
+
                 // Wifi Password 2
                 if (isset($wlan2['PreSharedKey'][1])) {
                     $config['wlan_pass_5g'] = $this->getValue($wlan2['PreSharedKey'][1]['PreSharedKey'] ?? '');
@@ -1082,7 +1163,7 @@ class GenieACSService
             $config['ssid'] = $config['wlan_ssid_2g'];
             $config['wifi_pass'] = $config['wlan_pass_2g'];
 
-        } 
+        }
         // TR-181 (Device)
         elseif (isset($device['Device'])) {
             // WAN (PPP)
@@ -1126,43 +1207,49 @@ class GenieACSService
      */
     public function getWanConnections($deviceId, $device = null)
     {
-        if (!$device) {
+        if (! $device) {
             $device = $this->getDeviceDetails($deviceId);
         }
-        if (!$device) return [];
+        if (! $device) {
+            return [];
+        }
 
         $connections = [];
-        
+
         // TR-098
         if (isset($device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1])) {
             $wanDev = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1];
-            
+
             // Check IP Connections
             if (isset($wanDev['WANIPConnection'])) {
                 foreach ($wanDev['WANIPConnection'] as $index => $conn) {
-                    if (!is_numeric($index)) continue;
+                    if (! is_numeric($index)) {
+                        continue;
+                    }
                     $name = $this->getValue($conn['Name'] ?? "wan_ip_$index");
                     $connections[] = [
                         'id' => "IP:$index",
                         'index' => $index,
                         'type' => 'IP',
                         'name' => $name,
-                        'path' => "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.$index"
+                        'path' => "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.$index",
                     ];
                 }
             }
-            
+
             // Check PPP Connections
             if (isset($wanDev['WANPPPConnection'])) {
                 foreach ($wanDev['WANPPPConnection'] as $index => $conn) {
-                     if (!is_numeric($index)) continue;
-                     $name = $this->getValue($conn['Name'] ?? "wan_ppp_$index");
-                     $connections[] = [
+                    if (! is_numeric($index)) {
+                        continue;
+                    }
+                    $name = $this->getValue($conn['Name'] ?? "wan_ppp_$index");
+                    $connections[] = [
                         'id' => "PPP:$index",
                         'index' => $index,
                         'type' => 'PPP',
                         'name' => $name,
-                        'path' => "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.$index"
+                        'path' => "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.$index",
                     ];
                 }
             }
@@ -1170,11 +1257,13 @@ class GenieACSService
         // TR-181 (Basic Support)
         elseif (isset($device['Device']['IP']['Interface'])) {
             foreach ($device['Device']['IP']['Interface'] as $index => $conn) {
-                if (!is_numeric($index)) continue;
+                if (! is_numeric($index)) {
+                    continue;
+                }
                 // Heuristic: Check if it looks like a WAN interface (e.g., has IPv4Address and is enabled)
                 // or just list all for now.
                 $name = $this->getValue($conn['Name'] ?? "ip_interface_$index");
-                $alias = $this->getValue($conn['Alias'] ?? "");
+                $alias = $this->getValue($conn['Alias'] ?? '');
                 $displayName = $alias ?: $name;
 
                 $connections[] = [
@@ -1182,11 +1271,11 @@ class GenieACSService
                     'index' => $index,
                     'type' => 'IP',
                     'name' => $displayName,
-                    'path' => "Device.IP.Interface.$index"
+                    'path' => "Device.IP.Interface.$index",
                 ];
             }
         }
-        
+
         return $connections;
     }
 
@@ -1195,10 +1284,12 @@ class GenieACSService
      */
     public function getWanSettings($deviceId, $path = null, $device = null)
     {
-        if (!$device) {
+        if (! $device) {
             $device = $this->getDeviceDetails($deviceId);
         }
-        if (!$device) return null;
+        if (! $device) {
+            return null;
+        }
 
         $settings = [
             'enable' => false,
@@ -1218,9 +1309,9 @@ class GenieACSService
         // TR-098
         if (isset($device['InternetGatewayDevice'])) {
             $wanBase = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1] ?? [];
-            
+
             $conn = null;
-            
+
             if ($path && strpos($path, 'InternetGatewayDevice') === 0) {
                 $parts = explode('.', $path);
                 if (count($parts) >= 6) {
@@ -1230,13 +1321,13 @@ class GenieACSService
                     $settings['path'] = $path;
                 }
             } else {
-                // Default heuristic for TR-098
-                $conn = $wanBase['WANIPConnection'][1] ?? null;
-                $settings['path'] = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1';
-                
-                if (!$conn && isset($wanBase['WANPPPConnection'][1])) {
+                // Default heuristic for TR-098 (prefer PPP first for Huawei/ZTE)
+                if (isset($wanBase['WANPPPConnection'][1])) {
                     $conn = $wanBase['WANPPPConnection'][1];
                     $settings['path'] = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1';
+                } else {
+                    $conn = $wanBase['WANIPConnection'][1] ?? null;
+                    $settings['path'] = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1';
                 }
             }
 
@@ -1247,9 +1338,9 @@ class GenieACSService
                 $settings['conn_type'] = $this->getValue($conn['ConnectionType'] ?? '');
                 $settings['service'] = $this->getValue($conn['X_HW_SERVICELIST'] ?? $conn['X_HW_ServiceList'] ?? '');
                 $settings['username'] = $this->getValue($conn['Username'] ?? '');
-                $settings['password'] = $this->getValue($conn['Password'] ?? ''); 
+                $settings['password'] = $this->getValue($conn['Password'] ?? '');
                 $settings['nat'] = filter_var($this->getValue($conn['NATEnabled'] ?? false), FILTER_VALIDATE_BOOLEAN);
-                
+
                 // Detailed Bindings
                 if (isset($conn['X_HW_LANBIND'])) {
                     $binds = $conn['X_HW_LANBIND'];
@@ -1273,18 +1364,18 @@ class GenieACSService
         elseif (isset($device['Device'])) {
             $conn = null;
             if ($path && strpos($path, 'Device') === 0) {
-                 // Path: Device.IP.Interface.1
-                 $parts = explode('.', $path); // Device, IP, Interface, 1
-                 if (count($parts) >= 4) {
-                     $type = $parts[1]; // IP or PPP
-                     $index = $parts[3];
-                     $conn = $device['Device'][$type]['Interface'][$index] ?? null;
-                     $settings['path'] = $path;
-                 }
+                // Path: Device.IP.Interface.1
+                $parts = explode('.', $path); // Device, IP, Interface, 1
+                if (count($parts) >= 4) {
+                    $type = $parts[1]; // IP or PPP
+                    $index = $parts[3];
+                    $conn = $device['Device'][$type]['Interface'][$index] ?? null;
+                    $settings['path'] = $path;
+                }
             } else {
                 // Default heuristic for TR-181 (First IP Interface)
-                 $conn = $device['Device']['IP']['Interface'][1] ?? null;
-                 $settings['path'] = 'Device.IP.Interface.1';
+                $conn = $device['Device']['IP']['Interface'][1] ?? null;
+                $settings['path'] = 'Device.IP.Interface.1';
             }
 
             if ($conn) {
@@ -1296,7 +1387,7 @@ class GenieACSService
                 $settings['conn_type'] = 'IP'; // Simplified
             }
         }
-        
+
         return $settings;
     }
 
@@ -1306,7 +1397,9 @@ class GenieACSService
     public function updateWanAdvanced($deviceId, $data, $path = null)
     {
         $device = $this->getDeviceDetails($deviceId);
-        if (!$device) return false;
+        if (! $device) {
+            return false;
+        }
 
         $params = [];
         $base = '';
@@ -1315,30 +1408,64 @@ class GenieACSService
             $base = $path;
         } else {
             if (isset($device['InternetGatewayDevice'])) {
-                 $wanBase = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1] ?? [];
-                 if (isset($wanBase['WANPPPConnection'][1])) {
-                     $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1';
-                 } else {
-                     $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1';
-                 }
+                $wanBase = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1] ?? [];
+                if (isset($wanBase['WANPPPConnection'][1])) {
+                    $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1';
+                } else {
+                    $base = 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1';
+                }
             } else {
                 return false;
             }
         }
 
-        if (isset($data['enable'])) $params["$base.Enable"] = $data['enable'];
-        if (isset($data['conn_name'])) $params["$base.Name"] = $data['conn_name'];
-        if (isset($data['vlan'])) {
-             $params["$base.X_HW_VLAN"] = $data['vlan'];
-             $params["$base.X_BROADCOM_COM_VlanMuxID"] = $data['vlan'];
+        if (isset($data['enable'])) {
+            $params["$base.Enable"] = $data['enable'];
         }
-        if (isset($data['conn_type'])) $params["$base.ConnectionType"] = $data['conn_type'];
-        if (isset($data['service'])) $params["$base.X_HW_ServiceList"] = $data['service'];
-        if (isset($data['username'])) $params["$base.Username"] = $data['username'];
-        if (isset($data['password'])) $params["$base.Password"] = $data['password'];
-        if (isset($data['nat'])) $params["$base.NATEnabled"] = $data['nat'];
-        if (isset($data['lan_bind'])) $params["$base.X_HW_LANBinding"] = $data['lan_bind'];
-        
+        if (isset($data['conn_name'])) {
+            $params["$base.Name"] = $data['conn_name'];
+        }
+        if (isset($data['vlan'])) {
+            $params["$base.X_HW_VLAN"] = $data['vlan'];
+            $params["$base.X_BROADCOM_COM_VlanMuxID"] = $data['vlan'];
+        }
+        if (isset($data['conn_type'])) {
+            $params["$base.ConnectionType"] = $data['conn_type'];
+        }
+        if (isset($data['service'])) {
+            $params["$base.X_HW_ServiceList"] = $data['service'];
+        }
+        if (isset($data['username'])) {
+            $params["$base.Username"] = $data['username'];
+        }
+        if (isset($data['password'])) {
+            $params["$base.Password"] = $data['password'];
+        }
+        if (isset($data['nat'])) {
+            $params["$base.NATEnabled"] = $data['nat'];
+        }
+        if (isset($data['lan_bind'])) {
+            $params["$base.X_HW_LANBinding"] = $data['lan_bind'];
+        }
+        if (isset($data['bindings']) && is_array($data['bindings'])) {
+            $bindBase = "$base.X_HW_LANBIND";
+            $map = [
+                'Lan1' => 'Lan1Enable',
+                'Lan2' => 'Lan2Enable',
+                'Lan3' => 'Lan3Enable',
+                'Lan4' => 'Lan4Enable',
+                'SSID1' => 'SSID1Enable',
+                'SSID2' => 'SSID2Enable',
+                'SSID3' => 'SSID3Enable',
+                'SSID4' => 'SSID4Enable',
+            ];
+            foreach ($map as $k => $p) {
+                if (array_key_exists($k, $data['bindings'])) {
+                    $params["$bindBase.$p"] = (bool) $data['bindings'][$k];
+                }
+            }
+        }
+
         return $this->setParameterValues($deviceId, $params);
     }
 
@@ -1348,27 +1475,33 @@ class GenieACSService
     public function updateWlanAdvanced($deviceId, $data, $index = 1)
     {
         $device = $this->getDeviceDetails($deviceId);
-        if (!$device) return false;
+        if (! $device) {
+            return false;
+        }
 
         $params = [];
-        
+
         // Check TR-098 (InternetGatewayDevice)
         if (isset($device['InternetGatewayDevice'])) {
             $base = "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$index";
             $wlan = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][$index] ?? [];
-            
+
             // Get Manufacturer for heuristics
             $manufacturer = $device['_deviceId']['_Manufacturer'] ?? '';
             if (empty($manufacturer) && isset($device['InternetGatewayDevice']['DeviceInfo']['Manufacturer'])) {
-                 $manufacturer = $this->getValue($device['InternetGatewayDevice']['DeviceInfo']['Manufacturer']);
+                $manufacturer = $this->getValue($device['InternetGatewayDevice']['DeviceInfo']['Manufacturer']);
             }
 
-            // Remove strict check: if (!$wlan) return false; 
+            // Remove strict check: if (!$wlan) return false;
             // We allow proceeding even if local data is missing, to support devices that haven't fully informed yet.
 
-            if (isset($data['enable'])) $params["$base.Enable"] = $data['enable'];
-            if (isset($data['ssid'])) $params["$base.SSID"] = $data['ssid'];
-            
+            if (isset($data['enable'])) {
+                $params["$base.Enable"] = $data['enable'];
+            }
+            if (isset($data['ssid'])) {
+                $params["$base.SSID"] = $data['ssid'];
+            }
+
             if (isset($data['password'])) {
                 if (isset($wlan['PreSharedKey'][1]['KeyPassphrase'])) {
                     $params["$base.PreSharedKey.1.KeyPassphrase"] = $data['password'];
@@ -1377,33 +1510,75 @@ class GenieACSService
                 } else {
                     // Fallback heuristics based on manufacturer
                     if (stripos($manufacturer, 'Huawei') !== false) {
-                         // Huawei usually prefers KeyPassphrase for WPA2
-                         $params["$base.KeyPassphrase"] = $data['password'];
+                        // Huawei usually prefers KeyPassphrase for WPA2
+                        $params["$base.KeyPassphrase"] = $data['password'];
                     } else {
-                         // Fallback default for ZTE/Others
-                         $params["$base.PreSharedKey.1.PreSharedKey"] = $data['password'];
+                        // Fallback default for ZTE/Others
+                        $params["$base.PreSharedKey.1.PreSharedKey"] = $data['password'];
                     }
                 }
             }
 
-            if (isset($data['security'])) $params["$base.BeaconType"] = $data['security'];
-            if (isset($data['channel'])) $params["$base.Channel"] = $data['channel'];
-            if (isset($data['auto_channel'])) $params["$base.AutoChannelEnable"] = $data['auto_channel'];
-            if (isset($data['power'])) $params["$base.TransmitPower"] = $data['power'];
-        } 
+            if (isset($data['security'])) {
+                $mode = $data['security'];
+                $params["$base.BeaconType"] = $mode;
+                if (stripos($mode, 'WPA') !== false) {
+                    $params["$base.WPAEncryptionModes"] = 'AESEncryption';
+                    $params["$base.BasicEncryptionModes"] = 'None';
+                } elseif (stripos($mode, 'WEP') !== false) {
+                    $params["$base.BasicEncryptionModes"] = 'WEPEncryption';
+                } else {
+                    $params["$base.BasicEncryptionModes"] = 'None';
+                }
+            }
+            if (isset($data['channel'])) {
+                $params["$base.Channel"] = $data['channel'];
+            }
+            if (isset($data['auto_channel'])) {
+                $params["$base.AutoChannelEnable"] = $data['auto_channel'];
+            }
+            if (isset($data['power'])) {
+                $params["$base.TransmitPower"] = $data['power'];
+            }
+        }
         // Check TR-181 (Device)
         elseif (isset($device['Device'])) {
             $baseSSID = "Device.WiFi.SSID.$index";
             $baseAP = "Device.WiFi.AccessPoint.$index";
-            
-            if (isset($data['enable'])) $params["$baseSSID.Enable"] = $data['enable'];
-            if (isset($data['ssid'])) $params["$baseSSID.SSID"] = $data['ssid'];
-            
+
+            if (isset($data['enable'])) {
+                $params["$baseSSID.Enable"] = $data['enable'];
+            }
+            if (isset($data['ssid'])) {
+                $params["$baseSSID.SSID"] = $data['ssid'];
+            }
+
             if (isset($data['password'])) {
                 $params["$baseAP.Security.KeyPassphrase"] = $data['password'];
             }
-            
-            if (isset($data['channel'])) $params["Device.WiFi.Radio.1.Channel"] = $data['channel']; // Simplified, usually Radio 1 is 2.4G
+            if (isset($data['security'])) {
+                $params["$baseAP.Security.ModeEnabled"] = $data['security'];
+            }
+
+            $radioIndex = 1;
+            $ssidObj = $device['Device']['WiFi']['SSID'][$index] ?? null;
+            if ($ssidObj && isset($ssidObj['LowerLayers'])) {
+                $ll = $this->getValue($ssidObj['LowerLayers']);
+                if (preg_match('/Radio\.(\d+)/', (string) $ll, $m)) {
+                    $radioIndex = (int) $m[1];
+                }
+            } elseif ($index === 2 && isset($device['Device']['WiFi']['Radio'][2])) {
+                $radioIndex = 2;
+            }
+            if (isset($data['channel'])) {
+                $params["Device.WiFi.Radio.$radioIndex.Channel"] = $data['channel'];
+            }
+            if (isset($data['auto_channel'])) {
+                $params["Device.WiFi.Radio.$radioIndex.AutoChannelEnable"] = $data['auto_channel'];
+            }
+            if (isset($data['power'])) {
+                $params["Device.WiFi.Radio.$radioIndex.TransmitPower"] = $data['power'];
+            }
         }
 
         return $this->setParameterValues($deviceId, $params);
@@ -1414,9 +1589,6 @@ class GenieACSService
      * Supports multiple SSIDs (index 1-4)
      */
 
-
-
-
     /**
      * Get device status by Serial Number (or OUI+ProductClass+Serial)
      */
@@ -1426,35 +1598,36 @@ class GenieACSService
             // Mocking the query structure for GenieACS NBI
             // Usually: /devices/?query={"_id":"<device_id>"} or by serial
             // GenieACS ID is often OUI-ProductClass-SerialNumber
-            
+
             // For implementation simplicity, assuming we search by Serial
             $response = Http::timeout($this->timeout)
                 ->get("{$this->baseUrl}/devices", [
                     'query' => json_encode(['_deviceId._SerialNumber' => $serialNumber]),
-                    'projection' => '_lastInform'
+                    'projection' => '_lastInform',
                 ]);
 
             if ($response->successful()) {
                 $devices = $response->json();
-                if (!empty($devices)) {
+                if (! empty($devices)) {
                     $device = $devices[0];
                     // Check if last inform was recent (e.g., within 5 minutes)
                     $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
                     $isOnline = (time() - $lastInform) < 300; // 5 mins
-                    
+
                     return [
                         'online' => $isOnline,
                         'last_inform' => $device['_lastInform'] ?? null,
                         'raw' => $device,
-                        'id' => $device['_id'] // Return ID for linking
+                        'id' => $device['_id'], // Return ID for linking
                     ];
                 }
             }
-            
+
             return ['online' => false, 'error' => 'Device not found'];
 
         } catch (\Exception $e) {
-            Log::error("GenieACS Error: " . $e->getMessage());
+            Log::error('GenieACS Error: '.$e->getMessage());
+
             return ['online' => false, 'error' => $e->getMessage()];
         }
     }
@@ -1465,7 +1638,9 @@ class GenieACSService
     public function ping($deviceId, $host)
     {
         $device = $this->getDeviceDetails($deviceId);
-        if (!$device) return ['success' => false, 'message' => __('Device not found')];
+        if (! $device) {
+            return ['success' => false, 'message' => __('Device not found')];
+        }
 
         $params = [];
         $base = '';
@@ -1489,7 +1664,7 @@ class GenieACSService
         if ($this->setParameterValues($deviceId, $params)) {
             // We successfully requested ping.
             // In a real scenario, we'd need to poll for results (SuccessCount, FailureCount, etc.)
-            // For now, we'll return success and the user might need to refresh to see results 
+            // For now, we'll return success and the user might need to refresh to see results
             // if we displayed the diagnostics parameters.
             return ['success' => true, 'message' => __('Ping requested. Check device logs/diagnostics for results.')];
         }
@@ -1503,11 +1678,13 @@ class GenieACSService
     public function flattenParameters($device, $prefix = '', &$result = [])
     {
         foreach ($device as $key => $value) {
-            if (str_starts_with($key, '_')) continue; // Skip metadata
+            if (str_starts_with($key, '_')) {
+                continue;
+            } // Skip metadata
 
             $currentKey = $prefix ? "$prefix.$key" : $key;
 
-            if (is_array($value) && !isset($value['_value'])) {
+            if (is_array($value) && ! isset($value['_value'])) {
                 // It's a node, recurse
                 $this->flattenParameters($value, $currentKey, $result);
             } else {
@@ -1517,10 +1694,11 @@ class GenieACSService
                 $result[] = [
                     'path' => $currentKey,
                     'value' => $val,
-                    'writable' => $writable
+                    'writable' => $writable,
                 ];
             }
         }
+
         return $result;
     }
 }

@@ -11,4 +11,3 @@ class Package extends Model
 
     protected $guarded = ['id'];
 }
-

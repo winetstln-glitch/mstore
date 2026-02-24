@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Models\Customer;
 use App\Models\Ticket;
 use App\Services\GenieACSService;
-use App\Services\MikrotikService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -42,9 +41,9 @@ class NetworkMonitorJob implements ShouldQueue
             // 1. Check ONU Status via GenieACS (if serial exists)
             if ($customer->onu_serial) {
                 $onuStatus = $genieService->getDeviceStatus($customer->onu_serial);
-                if (!$onuStatus['online']) {
+                if (! $onuStatus['online']) {
                     $isDown = true;
-                    $reason = "ONU Offline (Last seen: " . ($onuStatus['last_inform'] ?? 'Never') . ")";
+                    $reason = 'ONU Offline (Last seen: '.($onuStatus['last_inform'] ?? 'Never').')';
                 }
             }
 
@@ -63,16 +62,16 @@ class NetworkMonitorJob implements ShouldQueue
             ->where('subject', 'like', 'Auto-Alert: %')
             ->exists();
 
-        if (!$existingTicket) {
+        if (! $existingTicket) {
             Ticket::create([
                 'customer_id' => $customer->id,
                 'subject' => "Auto-Alert: Service Down - $reason",
-                'description' => "System detected service interruption.\nReason: $reason\nTimestamp: " . now(),
+                'description' => "System detected service interruption.\nReason: $reason\nTimestamp: ".now(),
                 'status' => 'open',
                 'priority' => 'high',
                 // Assign to default technician or leave unassigned
             ]);
-            
+
             Log::info("Auto-ticket created for customer {$customer->name} ($reason)");
         }
     }

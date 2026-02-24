@@ -4,13 +4,15 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class MidtransService
 {
     protected string $serverKey;
+
     protected string $clientKey;
+
     protected bool $isProduction;
 
     public function __construct()
@@ -27,7 +29,7 @@ class MidtransService
 
     public function createSnapToken(Invoice $invoice): string
     {
-        $orderId = $invoice->code ?: ('INV-' . $invoice->id . '-' . Str::random(6));
+        $orderId = $invoice->code ?: ('INV-'.$invoice->id.'-'.Str::random(6));
         $params = [
             'transaction_details' => [
                 'order_id' => $orderId,
@@ -39,7 +41,7 @@ class MidtransService
                     'id' => $invoice->id,
                     'price' => (int) $invoice->amount,
                     'quantity' => 1,
-                    'name' => 'Invoice ' . $orderId,
+                    'name' => 'Invoice '.$orderId,
                 ],
             ],
             'callbacks' => [
@@ -59,7 +61,7 @@ class MidtransService
             $base = $this->isProduction ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
             $resp = Http::withBasicAuth($this->serverKey, '')
                 ->acceptJson()
-                ->post($base . '/snap/v1/transactions', $params)
+                ->post($base.'/snap/v1/transactions', $params)
                 ->throw();
             $token = (string) $resp->json('token');
         }
@@ -76,7 +78,8 @@ class MidtransService
     public function verifySignature(array $payload): bool
     {
         // signature_key = sha512(order_id + status_code + gross_amount + server_key)
-        $calc = hash('sha512', ($payload['order_id'] ?? '') . ($payload['status_code'] ?? '') . ($payload['gross_amount'] ?? '') . $this->serverKey);
+        $calc = hash('sha512', ($payload['order_id'] ?? '').($payload['status_code'] ?? '').($payload['gross_amount'] ?? '').$this->serverKey);
+
         return hash_equals($calc, $payload['signature_key'] ?? '');
     }
 
@@ -89,4 +92,3 @@ class MidtransService
         ];
     }
 }
-

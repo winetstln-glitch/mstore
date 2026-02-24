@@ -6,7 +6,6 @@ use App\Models\Customer;
 use App\Models\Installation;
 use App\Models\User;
 use Illuminate\Http\Request;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -31,9 +30,9 @@ class InstallationWebController extends Controller implements HasMiddleware
 
         if ($request->has('search') && $request->input('search') != '') {
             $search = $request->input('search');
-            $query->whereHas('customer', function($q) use ($search) {
+            $query->whereHas('customer', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('address', 'like', "%{$search}%");
             });
         }
 
@@ -92,6 +91,7 @@ class InstallationWebController extends Controller implements HasMiddleware
     public function show(Installation $installation)
     {
         $installation->load(['customer', 'technician']);
+
         return view('installations.show', compact('installation'));
     }
 
@@ -102,6 +102,7 @@ class InstallationWebController extends Controller implements HasMiddleware
     {
         $customers = Customer::all();
         $technicians = User::where('role_id', 3)->get();
+
         return view('installations.edit', compact('installation', 'customers', 'technicians'));
     }
 
@@ -129,6 +130,7 @@ class InstallationWebController extends Controller implements HasMiddleware
     public function destroy(Installation $installation)
     {
         $installation->delete();
+
         return redirect()->route('installations.index')->with('success', __('Installation deleted successfully.'));
     }
 }

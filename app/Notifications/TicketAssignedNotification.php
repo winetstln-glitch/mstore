@@ -4,11 +4,10 @@ namespace App\Notifications;
 
 use App\Models\Setting;
 use App\Models\Ticket;
-use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\Channels\TelegramChannel;
+use App\Notifications\Channels\WhatsAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class TicketAssignedNotification extends Notification implements ShouldQueue
@@ -48,14 +47,14 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
         // Fetch template from settings or use default
         $template = Setting::where('key', 'whatsapp_ticket_template')->value('value');
 
-        if (!$template) {
-            return "*TUGAS BARU (TICKET ASSIGNED)*\n\n" .
-                   "Halo {$notifiable->name},\n" .
-                   "Anda telah ditugaskan untuk tiket berikut:\n\n" .
-                   "🎫 *No Tiket:* {$this->ticket->ticket_number}\n" .
-                   "📝 *Subject:* {$this->ticket->subject}\n" .
-                   "👤 *Customer:* {$customerName}\n" .
-                   "📍 *Lokasi:* {$location}\n\n" .
+        if (! $template) {
+            return "*TUGAS BARU (TICKET ASSIGNED)*\n\n".
+                   "Halo {$notifiable->name},\n".
+                   "Anda telah ditugaskan untuk tiket berikut:\n\n".
+                   "🎫 *No Tiket:* {$this->ticket->ticket_number}\n".
+                   "📝 *Subject:* {$this->ticket->subject}\n".
+                   "👤 *Customer:* {$customerName}\n".
+                   "📍 *Lokasi:* {$location}\n\n".
                    "Segera proses tiket ini melalui link berikut:\n{$url}";
         }
 

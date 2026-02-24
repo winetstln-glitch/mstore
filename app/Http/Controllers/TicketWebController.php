@@ -2,22 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coordinator;
 use App\Models\Customer;
+use App\Models\Odp;
 use App\Models\Ticket;
 use App\Models\TicketLog;
 use App\Models\User;
-use App\Models\Odp;
-use App\Models\Coordinator;
+use App\Notifications\TicketAssignedNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\DatabaseNotification;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-
-use App\Notifications\TicketAssignedNotification;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TicketWebController extends Controller implements HasMiddleware
 {
@@ -45,25 +42,25 @@ class TicketWebController extends Controller implements HasMiddleware
         if ($request->has('priority') && $request->input('priority') != '') {
             $query->where('priority', $request->input('priority'));
         }
-        
+
         if ($request->has('search') && $request->input('search') != '') {
-             $search = $request->input('search');
-             $query->where(function($q) use ($search) {
-                 $q->where('ticket_number', 'like', "%{$search}%")
-                   ->orWhere('subject', 'like', "%{$search}%");
-             });
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('ticket_number', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%");
+            });
         }
 
-        if (!Auth::user()->hasRole('admin')) {
-            $query->whereHas('technicians', function($q) {
+        if (! Auth::user()->hasRole('admin')) {
+            $query->whereHas('technicians', function ($q) {
                 $q->where('users.id', Auth::id());
             });
         }
 
-        // If technician, show only assigned tickets? Or all? 
+        // If technician, show only assigned tickets? Or all?
         // For MVP let's assume technicians see all or maybe filtered.
         // But dashboard handles "My Tickets". Here is global list.
-        
+
         $tickets = $query->latest()->paginate(10)->withQueryString();
 
         return view('tickets.index', compact('tickets'));
@@ -75,19 +72,20 @@ class TicketWebController extends Controller implements HasMiddleware
     public function create()
     {
         $customers = Customer::where('status', 'active')->orderBy('name')->get();
-        $technicians = User::whereHas('role', function($q) {
+        $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
         })->whereExists(function ($q) {
             $q->selectRaw(1)
-              ->from('technician_attendances as ta')
-              ->whereColumn('ta.user_id', 'users.id')
-              ->whereDate('ta.clock_in', today())
-              ->where('ta.status', 'present');
-        })->whereDoesntHave('tickets', function($q) {
+                ->from('technician_attendances as ta')
+                ->whereColumn('ta.user_id', 'users.id')
+                ->whereDate('ta.clock_in', today())
+                ->where('ta.status', 'present');
+        })->whereDoesntHave('tickets', function ($q) {
             $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
         })->get();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
+
         return view('tickets.create', compact('customers', 'technicians', 'odps', 'coordinators'));
     }
 
@@ -114,20 +112,20 @@ class TicketWebController extends Controller implements HasMiddleware
         ]);
 
         if ($request->filled('technicians')) {
-            $allowedIds = User::whereHas('role', function($q) {
+            $allowedIds = User::whereHas('role', function ($q) {
                 $q->where('name', 'technician');
             })->whereExists(function ($q) {
                 $q->selectRaw(1)
-                  ->from('technician_attendances as ta')
-                  ->whereColumn('ta.user_id', 'users.id')
-                  ->whereDate('ta.clock_in', today())
-                  ->where('ta.status', 'present');
-            })->whereDoesntHave('tickets', function($q) {
+                    ->from('technician_attendances as ta')
+                    ->whereColumn('ta.user_id', 'users.id')
+                    ->whereDate('ta.clock_in', today())
+                    ->where('ta.status', 'present');
+            })->whereDoesntHave('tickets', function ($q) {
                 $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
             })->pluck('id')->toArray();
 
             $invalid = array_diff($request->technicians, $allowedIds);
-            if (!empty($invalid) && !Auth::user()->hasRole('admin')) {
+            if (! empty($invalid) && ! Auth::user()->hasRole('admin')) {
                 return back()
                     ->withErrors(['technicians' => __('Only available and present technicians can be assigned today.')])
                     ->withInput();
@@ -143,7 +141,7 @@ class TicketWebController extends Controller implements HasMiddleware
                 'address' => $request->new_customer_address,
                 'phone' => $request->new_customer_phone,
                 // Assuming latitude/longitude columns exist on customers table as per view usage
-                'latitude' => $request->new_customer_lat, 
+                'latitude' => $request->new_customer_lat,
                 'longitude' => $request->new_customer_lng,
                 'status' => 'active',
             ]);
@@ -166,7 +164,7 @@ class TicketWebController extends Controller implements HasMiddleware
 
         if ($request->has('technicians')) {
             $ticket->technicians()->sync($request->technicians);
-            
+
             // Notify each assigned technician
             foreach ($ticket->technicians as $technician) {
                 $technician->notify(new TicketAssignedNotification($ticket));
@@ -182,11 +180,11 @@ class TicketWebController extends Controller implements HasMiddleware
 
         // Notify Technician Group via Telegram
         try {
-            $telegramService = new \App\Services\TelegramService();
+            $telegramService = new \App\Services\TelegramService;
             $customerName = $ticket->customer ? $ticket->customer->name : 'N/A';
             // Clean location string for link
-            $locationLink = $ticket->location ? "https://maps.google.com/?q=" . urlencode($ticket->location) : '#';
-            
+            $locationLink = $ticket->location ? 'https://maps.google.com/?q='.urlencode($ticket->location) : '#';
+
             // Get Template from Settings
             $templateSetting = \App\Models\Setting::where('key', 'telegram_ticket_template')->first();
             $template = $templateSetting ? $templateSetting->value : null;
@@ -202,17 +200,17 @@ class TicketWebController extends Controller implements HasMiddleware
 
             if (empty($template)) {
                 // Fallback if template is missing
-                $template = "🔔 *TIKET BARU (NEW TICKET)*\n\n" .
-                           "🆔 *No:* `{ticket_number}`\n" .
-                           "📝 *Subject:* `{subject}`\n" .
-                           "👤 *Customer:* `{customer_name}`\n" .
-                           "👷 *Teknisi:* `{technicians}`\n" .
-                           "👔 *Koordinator:* `{coordinator}`\n" .
-                           "📍 *Lokasi:* `{location}`\n" .
-                           "⚠️ *Prioritas:* `{priority}`\n" .
-                           "📄 *Deskripsi:* `{description}`\n\n" .
-                           "Silakan cek aplikasi untuk detail lebih lanjut.\n" .
-                           "[Lihat Lokasi]({location_link})";
+                $template = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
+                           "🆔 *No:* `{ticket_number}`\n".
+                           "📝 *Subject:* `{subject}`\n".
+                           "👤 *Customer:* `{customer_name}`\n".
+                           "👷 *Teknisi:* `{technicians}`\n".
+                           "👔 *Koordinator:* `{coordinator}`\n".
+                           "📍 *Lokasi:* `{location}`\n".
+                           "⚠️ *Prioritas:* `{priority}`\n".
+                           "📄 *Deskripsi:* `{description}`\n\n".
+                           "Silakan cek aplikasi untuk detail lebih lanjut.\n".
+                           '[Lihat Lokasi]({location_link})';
             }
 
             // Replace Placeholders
@@ -225,14 +223,14 @@ class TicketWebController extends Controller implements HasMiddleware
                 '{location}' => $ticket->location ?? '-',
                 '{priority}' => ucfirst($ticket->priority),
                 '{description}' => $ticket->description ?? '-',
-                '{location_link}' => $locationLink
+                '{location_link}' => $locationLink,
             ];
 
             $message = str_replace(array_keys($replacements), array_values($replacements), $template);
-            
+
             $telegramService->sendToTechnicianGroup($message);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send Telegram notification: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Failed to send Telegram notification: '.$e->getMessage());
         }
 
         return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
@@ -244,18 +242,18 @@ class TicketWebController extends Controller implements HasMiddleware
     public function show(Ticket $ticket)
     {
         $ticket->load(['customer', 'technicians', 'logs.user', 'odp', 'coordinator.region']);
-        $technicians = User::whereHas('role', function($q) {
+        $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
         })->whereExists(function ($q) {
             $q->selectRaw(1)
-              ->from('technician_attendances as ta')
-              ->whereColumn('ta.user_id', 'users.id')
-              ->whereDate('ta.clock_in', today())
-              ->where('ta.status', 'present');
+                ->from('technician_attendances as ta')
+                ->whereColumn('ta.user_id', 'users.id')
+                ->whereDate('ta.clock_in', today())
+                ->where('ta.status', 'present');
         })->get();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
-        
+
         return view('tickets.show', compact('ticket', 'technicians', 'odps', 'coordinators'));
     }
 
@@ -266,17 +264,17 @@ class TicketWebController extends Controller implements HasMiddleware
     {
         $customers = Customer::all();
         $currentTechIds = $ticket->technicians->pluck('id')->toArray();
-        $technicians = User::whereHas('role', function($q) {
+        $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
-        })->where(function($query) use ($currentTechIds, $ticket) {
-            $query->where(function($q) use ($ticket) {
+        })->where(function ($query) use ($currentTechIds, $ticket) {
+            $query->where(function ($q) use ($ticket) {
                 $q->whereExists(function ($sub) {
                     $sub->selectRaw(1)
                         ->from('technician_attendances as ta')
                         ->whereColumn('ta.user_id', 'users.id')
                         ->whereDate('ta.clock_in', today())
                         ->where('ta.status', 'present');
-                })->whereDoesntHave('tickets', function($sub) use ($ticket) {
+                })->whereDoesntHave('tickets', function ($sub) use ($ticket) {
                     $sub->whereIn('status', ['assigned', 'in_progress', 'pending'])
                         ->where('tickets.id', '<>', $ticket->id);
                 });
@@ -297,7 +295,7 @@ class TicketWebController extends Controller implements HasMiddleware
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
-        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
+        if (! ($isAdmin || $canEdit || $canComplete || $isAssigned)) {
             abort(403);
         }
         $validated = $request->validate([
@@ -327,31 +325,31 @@ class TicketWebController extends Controller implements HasMiddleware
                 'description' => "Status changed from {$oldStatus} to {$ticket->status}",
             ]);
 
-            if ($ticket->status === 'closed' && !$ticket->closed_at) {
+            if ($ticket->status === 'closed' && ! $ticket->closed_at) {
                 $ticket->update(['closed_at' => now()]);
             }
         }
-        
+
         // Handle Technician Assignment
         if ($canEdit && $request->has('technicians')) {
-            if (!empty($request->technicians)) {
+            if (! empty($request->technicians)) {
                 $currentTechIds = $ticket->technicians->pluck('id')->toArray();
-                $presentAndFreeIds = User::whereHas('role', function($q) {
+                $presentAndFreeIds = User::whereHas('role', function ($q) {
                     $q->where('name', 'technician');
                 })->whereExists(function ($q) {
                     $q->selectRaw(1)
-                      ->from('technician_attendances as ta')
-                      ->whereColumn('ta.user_id', 'users.id')
-                      ->whereDate('ta.clock_in', today())
-                      ->where('ta.status', 'present');
-                })->whereDoesntHave('tickets', function($q) use ($ticket) {
+                        ->from('technician_attendances as ta')
+                        ->whereColumn('ta.user_id', 'users.id')
+                        ->whereDate('ta.clock_in', today())
+                        ->where('ta.status', 'present');
+                })->whereDoesntHave('tickets', function ($q) use ($ticket) {
                     $q->whereIn('status', ['assigned', 'in_progress', 'pending'])
-                      ->where('tickets.id', '<>', $ticket->id);
+                        ->where('tickets.id', '<>', $ticket->id);
                 })->pluck('id')->toArray();
 
                 $allowedIds = array_unique(array_merge($presentAndFreeIds, $currentTechIds));
                 $invalid = array_diff($request->technicians, $allowedIds);
-                if (!empty($invalid) && !Auth::user()->hasRole('admin')) {
+                if (! empty($invalid) && ! Auth::user()->hasRole('admin')) {
                     return back()
                         ->withErrors(['technicians' => __('Only available and present technicians can be assigned today.')])
                         ->withInput();
@@ -359,7 +357,7 @@ class TicketWebController extends Controller implements HasMiddleware
             }
 
             $newTechnicianIds = $request->technicians ?? [];
-            
+
             // Check if assignment changed
             sort($oldTechnicianIds);
             $sortedNewIds = $newTechnicianIds;
@@ -367,14 +365,14 @@ class TicketWebController extends Controller implements HasMiddleware
 
             if ($oldTechnicianIds !== $sortedNewIds) {
                 $ticket->technicians()->sync($newTechnicianIds);
-                
+
                 // Determine added technicians to notify
                 $addedTechnicianIds = array_diff($newTechnicianIds, $oldTechnicianIds);
-                
-                if (!empty($addedTechnicianIds)) {
-                     $newTechNames = User::whereIn('id', $addedTechnicianIds)->pluck('name')->join(', ');
-                     
-                     TicketLog::create([
+
+                if (! empty($addedTechnicianIds)) {
+                    $newTechNames = User::whereIn('id', $addedTechnicianIds)->pluck('name')->join(', ');
+
+                    TicketLog::create([
                         'ticket_id' => $ticket->id,
                         'user_id' => Auth::id(),
                         'action' => 'assigned',
@@ -403,7 +401,7 @@ class TicketWebController extends Controller implements HasMiddleware
         $isAdmin = Auth::user()->hasRole('admin');
         $hasPermission = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
-        if (!($isAdmin || $hasPermission || $isAssigned)) {
+        if (! ($isAdmin || $hasPermission || $isAssigned)) {
             abort(403);
         }
         $request->validate([
@@ -430,7 +428,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'ticket_id' => $ticket->id,
             'user_id' => Auth::id(),
             'action' => 'completed',
-            'description' => 'Ticket marked as solved with photos.' . ($request->description ? " Note: {$request->description}" : ''),
+            'description' => 'Ticket marked as solved with photos.'.($request->description ? " Note: {$request->description}" : ''),
         ]);
 
         DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
@@ -447,7 +445,7 @@ class TicketWebController extends Controller implements HasMiddleware
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
-        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
+        if (! ($isAdmin || $canEdit || $canComplete || $isAssigned)) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -464,7 +462,7 @@ class TicketWebController extends Controller implements HasMiddleware
             if (count($parts) >= 2) {
                 $lat = trim($parts[0]);
                 $lng = trim($parts[1]);
-                
+
                 // Basic validation for coordinates
                 if (is_numeric($lat) && is_numeric($lng)) {
                     $ticket->customer->update([
@@ -479,7 +477,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'ticket_id' => $ticket->id,
             'user_id' => Auth::id(),
             'action' => 'location_updated',
-            'description' => 'Ticket location updated to: ' . $request->location,
+            'description' => 'Ticket location updated to: '.$request->location,
         ]);
 
         return redirect()->route('tickets.show', $ticket)->with('success', __('Location updated successfully.'));
@@ -491,10 +489,10 @@ class TicketWebController extends Controller implements HasMiddleware
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
-        if (!($isAdmin || $canEdit || $canComplete || $isAssigned)) {
+        if (! ($isAdmin || $canEdit || $canComplete || $isAssigned)) {
             abort(403);
         }
-        if ($ticket->type !== 'pasang_baru' || !$ticket->customer) {
+        if ($ticket->type !== 'pasang_baru' || ! $ticket->customer) {
             abort(403);
         }
         $validated = $request->validate([
@@ -516,6 +514,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'action' => 'customer_updated',
             'description' => 'Customer data updated during installation.',
         ]);
+
         return redirect()->route('tickets.show', $ticket)->with('success', __('Customer updated successfully.'));
     }
 
@@ -524,7 +523,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function sendNotification(Ticket $ticket, \App\Services\WhatsAppService $whatsappService)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -546,13 +545,14 @@ class TicketWebController extends Controller implements HasMiddleware
                 if (empty($technician->phone)) {
                     $failCount++;
                     $errors[] = "Technician {$technician->name} has no phone number.";
+
                     continue;
                 }
 
                 // Send directly via service to get immediate feedback
                 // sendMessage throws exception if config missing or API error
                 $whatsappService->sendMessage($technician->phone, $message, 'ticket_assignment', null);
-                
+
                 $successCount++;
 
             } catch (\Exception $e) {
@@ -563,18 +563,18 @@ class TicketWebController extends Controller implements HasMiddleware
                     $msg = 'WhatsApp Configuration Missing (.env)';
                 }
                 $errors[] = $msg;
-                
-                \Log::error("Failed to send manual notification to user {$technician->id}: " . $e->getMessage());
+
+                \Log::error("Failed to send manual notification to user {$technician->id}: ".$e->getMessage());
             }
         }
 
         if ($successCount == 0 && $failCount > 0) {
-            return back()->with('error', __('Failed to send notifications. Errors: ') . implode(', ', array_unique($errors)));
+            return back()->with('error', __('Failed to send notifications. Errors: ').implode(', ', array_unique($errors)));
         } elseif ($failCount > 0) {
             return back()->with('warning', __('Sent to :success technicians, but failed for :fail. Errors: :errors', [
-                'success' => $successCount, 
+                'success' => $successCount,
                 'fail' => $failCount,
-                'errors' => implode(', ', array_unique($errors))
+                'errors' => implode(', ', array_unique($errors)),
             ]));
         }
 

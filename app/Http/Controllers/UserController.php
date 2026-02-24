@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
-use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 class UserController extends Controller implements HasMiddleware
 {
@@ -24,19 +24,21 @@ class UserController extends Controller implements HasMiddleware
             new Middleware('permission:user.delete', only: ['destroy']),
         ];
     }
+
     public function index(Request $request)
     {
         $query = User::with('role')->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         $users = $query->paginate(10)->withQueryString();
+
         return view('users.index', compact('users'));
     }
 
@@ -46,51 +48,52 @@ class UserController extends Controller implements HasMiddleware
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         $users = $query->get();
 
         return response()->streamDownload(function () use ($users) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues([
-                    'ID',
-                    'Name',
-                    'Email',
-                    'Password',
-                    'Role',
-                    'Phone',
-                    'Daily Salary',
-                    'Status',
-                    'Created At',
-                ]));
+                'ID',
+                'Name',
+                'Email',
+                'Password',
+                'Role',
+                'Phone',
+                'Daily Salary',
+                'Status',
+                'Created At',
+            ]));
 
-                foreach ($users as $user) {
-                    $writer->addRow(Row::fromValues([
-                        $user->id,
-                        $user->name,
-                        $user->email,
-                        $user->password,
-                        $user->role ? $user->role->label : 'No Role',
-                        $user->phone,
-                        $user->daily_salary,
-                        $user->is_active ? 'Active' : 'Inactive',
-                        $user->created_at->format('Y-m-d H:i:s'),
-                    ]));
-                }
+            foreach ($users as $user) {
+                $writer->addRow(Row::fromValues([
+                    $user->id,
+                    $user->name,
+                    $user->email,
+                    $user->password,
+                    $user->role ? $user->role->label : 'No Role',
+                    $user->phone,
+                    $user->daily_salary,
+                    $user->is_active ? 'Active' : 'Inactive',
+                    $user->created_at->format('Y-m-d H:i:s'),
+                ]));
+            }
 
             $writer->close();
-        }, 'users-' . date('Y-m-d-His') . '.xlsx');
+        }, 'users-'.date('Y-m-d-His').'.xlsx');
     }
 
     public function create()
     {
         $roles = Role::all();
+
         return view('users.create', compact('roles'));
     }
 
@@ -126,6 +129,7 @@ class UserController extends Controller implements HasMiddleware
     public function edit(User $user)
     {
         $roles = Role::all();
+
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -173,6 +177,7 @@ class UserController extends Controller implements HasMiddleware
 
         try {
             $user->delete();
+
             return redirect()->route('users.index')->with('success', __('User deleted successfully.'));
         } catch (\Illuminate\Database\QueryException $e) {
             if ($e->getCode() === '23000') {

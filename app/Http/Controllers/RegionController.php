@@ -25,6 +25,7 @@ class RegionController extends Controller implements HasMiddleware
     public function index()
     {
         $regions = Region::withCount(['coordinators', 'odps'])->latest()->paginate(10);
+
         return view('regions.index', compact('regions'));
     }
 
@@ -65,7 +66,7 @@ class RegionController extends Controller implements HasMiddleware
     public function update(Request $request, Region $region)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+            'name' => 'required|string|max:255|unique:regions,name,'.$region->id,
             'abbreviation' => 'nullable|string|max:10',
             'description' => 'nullable|string',
         ]);

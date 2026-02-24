@@ -36,9 +36,9 @@ class OdcController extends Controller implements HasMiddleware
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('area', 'like', "%{$search}%");
+                    ->orWhere('area', 'like', "%{$search}%");
             });
         }
 
@@ -55,6 +55,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
+
         return view('odcs.create', compact('olts', 'regions'));
     }
 
@@ -98,6 +99,7 @@ class OdcController extends Controller implements HasMiddleware
         if (request()->wantsJson()) {
             return response()->json($odc);
         }
+
         return view('odcs.show', compact('odc'));
     }
 
@@ -108,6 +110,7 @@ class OdcController extends Controller implements HasMiddleware
     {
         $olts = Olt::all();
         $regions = Region::orderBy('name')->get();
+
         return view('odcs.edit', compact('odc', 'olts', 'regions'));
     }
 
@@ -117,7 +120,7 @@ class OdcController extends Controller implements HasMiddleware
     public function update(Request $request, Odc $odc)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,' . $odc->id,
+            'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,'.$odc->id,
             'olt_id' => 'sometimes|required|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'sometimes|required|string',
@@ -166,7 +169,7 @@ class OdcController extends Controller implements HasMiddleware
                 ob_end_clean();
             }
 
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues([
@@ -202,14 +205,14 @@ class OdcController extends Controller implements HasMiddleware
             });
 
             $writer->close();
-        }, 'odcs_' . date('Y-m-d_H-i-s') . '.xlsx');
+        }, 'odcs_'.date('Y-m-d_H-i-s').'.xlsx');
     }
 
     private function generateOdcName($data)
     {
         // Format: ODC-[PORT]-[AREA_2]-[COLOR_1]-[CABLE]
         // Example: ODC-01-CI-L-01
-        
+
         // PON Port: PON 01 -> 01
         $ponRaw = preg_replace('/[^0-9]/', '', $data['pon_port']);
         $pon = str_pad($ponRaw, 2, '0', STR_PAD_LEFT);
@@ -224,7 +227,7 @@ class OdcController extends Controller implements HasMiddleware
             $last = substr($areaRaw, -1);
             $middleIndex = floor($length / 2);
             $middle = substr($areaRaw, $middleIndex, 1);
-            $area = $first . $middle . $last;
+            $area = $first.$middle.$last;
         }
 
         // Color: Take first 1 character
@@ -234,7 +237,7 @@ class OdcController extends Controller implements HasMiddleware
         // Cable: 01 -> 01
         $cableRaw = preg_replace('/[^0-9]/', '', $data['cable_no']);
         $cable = str_pad($cableRaw, 2, '0', STR_PAD_LEFT);
-        
+
         return "ODC-{$pon}-{$area}-{$color}-{$cable}";
     }
 }

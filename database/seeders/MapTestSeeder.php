@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Customer;
+use Illuminate\Database\Seeder;
 
 class MapTestSeeder extends Seeder
 {
@@ -15,7 +15,7 @@ class MapTestSeeder extends Seeder
             'latitude' => -6.175392,
             'longitude' => 106.827153,
             'status' => 'active',
-            'phone' => '081234567890'
+            'phone' => '081234567890',
         ]);
 
         Customer::create([
@@ -24,16 +24,16 @@ class MapTestSeeder extends Seeder
             'latitude' => -6.244220,
             'longitude' => 106.801648,
             'status' => 'active',
-            'phone' => '081234567891'
+            'phone' => '081234567891',
         ]);
-        
+
         Customer::create([
             'name' => 'Customer Offline',
             'address' => 'Mangga Dua, Jakarta Utara',
             'latitude' => -6.137452,
             'longitude' => 106.829375,
             'status' => 'suspend',
-            'phone' => '081234567892'
+            'phone' => '081234567892',
         ]);
     }
 }

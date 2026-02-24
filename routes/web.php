@@ -9,21 +9,21 @@ use App\Http\Controllers\GenieACSController;
 use App\Http\Controllers\GenieAcsServerController;
 use App\Http\Controllers\HotspotController;
 use App\Http\Controllers\InstallationWebController;
+use App\Http\Controllers\InvestorController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OLTController;
 use App\Http\Controllers\OnuController;
-use App\Http\Controllers\TechnicianController;
-use App\Http\Controllers\TechnicianAttendanceController;
-use App\Http\Controllers\TicketWebController;
-use App\Http\Controllers\RouterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RouterController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TechnicianAttendanceController;
+use App\Http\Controllers\TechnicianController;
+use App\Http\Controllers\TicketWebController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\InvestorController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\LandingController;
 use App\Http\Controllers\VpnServerController;
 use App\Models\Router as RouterModel;
 use App\Models\VpnAccount;
@@ -35,6 +35,7 @@ Route::get('locale/{lang}', function ($lang) {
     if (in_array($lang, ['en', 'id'])) {
         session()->put('locale', $lang);
     }
+
     return redirect()->back();
 })->name('locale.switch');
 
@@ -52,18 +53,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
         return response()->json($mix->health());
     })->name('health.mixradius');
-    
+
     // Client Portal
     Route::prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', \App\Http\Controllers\Client\DashboardController::class)->name('dashboard');
         Route::get('/portal', [\App\Http\Controllers\Client\MixradiusPortalController::class, 'index'])->name('portal');
-            Route::get('/mixradius', function () {
-                $url = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
-                abort_if(empty($url), 404);
-                // Normalize url to base (no trailing slash)
-                $url = rtrim((string)$url, '/');
-                return view('client.mixradius_embed', ['mixradiusUrl' => $url]);
-            })->name('mixradius');
+        Route::get('/mixradius', function () {
+            $url = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
+            abort_if(empty($url), 404);
+            // Normalize url to base (no trailing slash)
+            $url = rtrim((string) $url, '/');
+
+            return view('client.mixradius_embed', ['mixradiusUrl' => $url]);
+        })->name('mixradius');
         Route::get('/connection', [\App\Http\Controllers\Client\ConnectionController::class, 'index'])->name('connection');
         Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\InvoiceController::class, 'show'])->name('invoices.show');
@@ -71,9 +73,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
         Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
     });
-    
-// Payment Webhook
-Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+
+    // Payment Webhook
+    Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -88,7 +90,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
 
     // Role Management
     Route::resource('roles', RoleController::class);
-    
+
     // User Management
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class);
@@ -112,16 +114,16 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::post('customers/{customer}/settings/wlan', [CustomerWebController::class, 'updateWlan'])->name('customers.settings.wlan');
     Route::delete('customers/bulk-destroy', [CustomerWebController::class, 'bulkDestroy'])->name('customers.bulkDestroy');
     Route::resource('customers', CustomerWebController::class);
-    
+
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');
     Route::post('tickets/{ticket}/notify', [TicketWebController::class, 'sendNotification'])->name('tickets.notify');
     Route::patch('tickets/{ticket}/location', [TicketWebController::class, 'updateLocation'])->name('tickets.updateLocation');
     Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');
     Route::resource('tickets', TicketWebController::class);
-    
+
     Route::resource('installations', InstallationWebController::class);
     Route::resource('technicians', TechnicianController::class);
-    
+
     // Technician Attendance
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
     Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
@@ -148,10 +150,10 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     // ... kode router lainnya ...
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
-    
+
     // TAMBAHKAN BARIS INI (Route untuk halaman list PPPoE Active)
     Route::get('routers/{router}/pppoe-active', [RouterController::class, 'pppoeActive'])->name('routers.pppoe.active');
-    
+
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
@@ -169,9 +171,10 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
         $protocol = request('protocol', 'l2tp');
         $service = app(VpnBridgeService::class);
         $script = $service->generateScript($account, $protocol);
+
         return response()->view('routers.vpn_script', compact('router', 'account', 'script', 'protocol'));
     })->name('routers.vpn.script');
-    
+
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
     Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
@@ -188,7 +191,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');
-    
+
     Route::get('finance/income-breakdown/pdf', [FinanceController::class, 'downloadIncomeBreakdownPdf'])->name('finance.income_breakdown.pdf');
     Route::get('finance/investor-share/pdf', [FinanceController::class, 'downloadInvestorSharePdf'])->name('finance.investor_share.pdf');
     Route::get('finance/investor-report', [FinanceController::class, 'investorReport'])->name('finance.investor_report');
@@ -201,13 +204,13 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::get('finance/coordinator/{coordinator}/pdf', [FinanceController::class, 'downloadCoordinatorPdf'])->name('finance.coordinator.pdf');
     Route::delete('finance/bulk-destroy', [FinanceController::class, 'bulkDestroy'])->name('finance.bulkDestroy');
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
-    
+
     Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])->name('map.update_location');
     Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])->name('map.update_path');
     Route::post('map/connections/save', [\App\Http\Controllers\MapConnectionController::class, 'save'])->name('map.connections.save');
     Route::get('map/connections', [\App\Http\Controllers\MapConnectionController::class, 'index'])->name('map.connections.index');
     Route::resource('map', MapController::class);
-    
+
     // Tools
     Route::get('/calculator/pon', [CalculatorController::class, 'index'])->name('calculator.pon');
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
@@ -224,7 +227,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::get('investors/export/excel', [InvestorController::class, 'exportExcel'])->name('investors.export.excel');
     Route::resource('investors', InvestorController::class);
     Route::resource('chat', ChatController::class);
-    
+
     // Telegram Settings
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');
     Route::post('/telegram/update', [\App\Http\Controllers\TelegramController::class, 'update'])->name('telegram.update');
@@ -237,7 +240,6 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
 
     Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
     Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');
-
 
     // Inventory
     Route::get('/inventory/export/pdf', [\App\Http\Controllers\InventoryController::class, 'exportPdf'])->name('inventory.export.pdf');
@@ -280,7 +282,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
         Route::get('/ledger/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportLedgerExcel'])->name('ledger.excel');
         Route::get('/cash-flow/pdf', [\App\Http\Controllers\AccountingReportController::class, 'exportCashFlowPdf'])->name('cash_flow.pdf');
         Route::get('/cash-flow/excel', [\App\Http\Controllers\AccountingReportController::class, 'exportCashFlowExcel'])->name('cash_flow.excel');
-        
+
         // Period management
         Route::get('/periods', [\App\Http\Controllers\PeriodController::class, 'index'])->name('periods.index');
         Route::get('/periods/create', [\App\Http\Controllers\PeriodController::class, 'create'])->name('periods.create');
@@ -294,7 +296,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
     Route::prefix('genieacs')->name('genieacs.')->group(function () {
         // Server Management
         Route::resource('servers', GenieAcsServerController::class);
-        
+
         Route::get('/', [GenieACSController::class, 'index'])->name('index');
         Route::get('/device/{id}', [GenieACSController::class, 'show'])->name('show'); // Changed param to avoid conflict if any, though {id} is safe
         Route::post('/assign-odp', [GenieACSController::class, 'assignOdp'])->name('assign_odp');
@@ -335,7 +337,7 @@ Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::clas
         'destroy' => 'wash.services.destroy',
     ])->except(['show']);
     Route::resource('wash/employees', \App\Http\Controllers\WashEmployeeController::class)->names('wash.employees');
-    
+
     // ATK Store Routes
     Route::prefix('atk')->name('atk.')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('dashboard');

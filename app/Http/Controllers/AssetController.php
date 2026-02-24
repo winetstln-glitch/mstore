@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\Coordinator;
 use App\Models\InventoryItem;
 use App\Models\User;
-use App\Models\Coordinator;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class AssetController extends Controller implements HasMiddleware
 {
@@ -67,8 +67,8 @@ class AssetController extends Controller implements HasMiddleware
     public function update(Request $request, Asset $asset)
     {
         $validated = $request->validate([
-            'asset_code' => 'required|unique:assets,asset_code,' . $asset->id,
-            'serial_number' => 'nullable|unique:assets,serial_number,' . $asset->id,
+            'asset_code' => 'required|unique:assets,asset_code,'.$asset->id,
+            'serial_number' => 'nullable|unique:assets,serial_number,'.$asset->id,
             'condition' => 'required|in:good,damaged',
             'status' => 'required|in:in_stock,deployed,maintenance,broken,lost',
             'latitude' => 'nullable|string',
@@ -91,9 +91,9 @@ class AssetController extends Controller implements HasMiddleware
         // In this system, Coordinator is a separate model but might be linked to User.
         // Based on `InventoryTransaction`, `coordinator_id` refers to `coordinators` table.
         // `holder` is polymorphic.
-        
+
         $coordinators = Coordinator::all();
-        
+
         return view('inventory.assets.assign', compact('asset', 'users', 'coordinators'));
     }
 
@@ -114,7 +114,7 @@ class AssetController extends Controller implements HasMiddleware
             'meta_data' => array_merge($asset->meta_data ?? [], [
                 'assignment_note' => $request->notes,
                 'assigned_at' => now()->toDateTimeString(),
-                'assigned_by' => Auth::id()
+                'assigned_by' => Auth::id(),
             ]),
         ]);
 
@@ -127,7 +127,7 @@ class AssetController extends Controller implements HasMiddleware
         $user = Auth::user();
         // Check if user has management permission
         $isManager = $user->hasPermission('inventory.manage') || $user->hasRole('admin');
-        
+
         // Check if user is the holder
         $isHolder = false;
         if ($asset->holder_type === User::class && $asset->holder_id === $user->id) {
@@ -139,7 +139,7 @@ class AssetController extends Controller implements HasMiddleware
             }
         }
 
-        if (!$isManager && !$isHolder) {
+        if (! $isManager && ! $isHolder) {
             abort(403, __('You are not authorized to return this asset.'));
         }
 
@@ -159,11 +159,11 @@ class AssetController extends Controller implements HasMiddleware
     public function myAssets()
     {
         $user = Auth::user();
-        
+
         $query = Asset::with('item')
-            ->where(function($q) use ($user) {
+            ->where(function ($q) use ($user) {
                 // Assets assigned to the User
-                $q->where(function($sub) use ($user) {
+                $q->where(function ($sub) use ($user) {
                     $sub->where('holder_type', User::class)
                         ->where('holder_id', $user->id);
                 });
@@ -171,7 +171,7 @@ class AssetController extends Controller implements HasMiddleware
                 // Assets assigned to the Coordinator (if linked)
                 $coordinator = Coordinator::where('user_id', $user->id)->first();
                 if ($coordinator) {
-                    $q->orWhere(function($sub) use ($coordinator) {
+                    $q->orWhere(function ($sub) use ($coordinator) {
                         $sub->where('holder_type', Coordinator::class)
                             ->where('holder_id', $coordinator->id);
                     });
@@ -186,6 +186,7 @@ class AssetController extends Controller implements HasMiddleware
     public function destroy(Asset $asset)
     {
         $asset->delete();
+
         return redirect()->back()->with('success', __('Asset deleted successfully.'));
     }
 }

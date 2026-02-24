@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wash_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('wash_transactions', 'vehicle_plate')) {
+            if (! Schema::hasColumn('wash_transactions', 'vehicle_plate')) {
                 $table->string('vehicle_plate')->nullable()->after('customer_name');
             }
-            if (!Schema::hasColumn('wash_transactions', 'customer_name')) {
+            if (! Schema::hasColumn('wash_transactions', 'customer_name')) {
                 $table->string('customer_name')->nullable()->after('transaction_number');
             }
-            if (!Schema::hasColumn('wash_transactions', 'notes')) {
+            if (! Schema::hasColumn('wash_transactions', 'notes')) {
                 $table->text('notes')->nullable()->after('change_amount');
             }
         });

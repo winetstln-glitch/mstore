@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
-use App\Models\Installation;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Ticket;
@@ -17,8 +16,11 @@ class WorkflowTest extends TestCase
     use RefreshDatabase;
 
     protected $admin;
+
     protected $technician;
+
     protected $adminRole;
+
     protected $techRole;
 
     protected function setUp(): void
@@ -102,7 +104,7 @@ class WorkflowTest extends TestCase
         $response->assertRedirect(route('tickets.show', $ticket));
         $this->assertDatabaseHas('tickets', [
             'id' => $ticket->id,
-            'status' => 'assigned'
+            'status' => 'assigned',
         ]);
         $this->assertDatabaseHas('ticket_user', [
             'ticket_id' => $ticket->id,

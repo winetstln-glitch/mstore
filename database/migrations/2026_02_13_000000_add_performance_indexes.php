@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -16,7 +16,7 @@ return new class extends Migration
                 ->where('index_name', $indexName)
                 ->exists();
 
-            if (!$exists && Schema::hasTable($table)) {
+            if (! $exists && Schema::hasTable($table)) {
                 Schema::table($table, function (Blueprint $table) use ($indexName, $columns) {
                     $table->index($columns, $indexName);
                 });

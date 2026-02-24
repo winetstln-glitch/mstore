@@ -5,19 +5,18 @@ namespace Tests\Feature;
 use App\Models\LeaveRequest;
 use App\Models\Permission;
 use App\Models\Role;
-use App\Models\TechnicianSchedule;
-use App\Models\User;
 use App\Models\Setting;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class PiketAndLeaveTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $admin;
+
     protected $technician;
 
     protected function setUp(): void
@@ -77,8 +76,8 @@ class PiketAndLeaveTest extends TestCase
         $this->assertDatabaseHas('schedule_periods', [
             'year' => $year,
             'week_number' => $week,
-            'start_date' => $start . ' 00:00:00',
-            'end_date' => $end . ' 00:00:00',
+            'start_date' => $start.' 00:00:00',
+            'end_date' => $end.' 00:00:00',
         ]);
     }
 
@@ -96,7 +95,7 @@ class PiketAndLeaveTest extends TestCase
             'week_number' => 10,
             'year' => 2026,
             'status' => 'piket',
-            'notes' => 'Test Note'
+            'notes' => 'Test Note',
         ]);
 
         $response->assertRedirect();
@@ -155,7 +154,7 @@ class PiketAndLeaveTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('error'); // Should have error message
-        
+
         // Assert NOT created
         $this->assertDatabaseMissing('leave_requests', [
             'reason' => 'Over quota',
@@ -177,7 +176,7 @@ class PiketAndLeaveTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        
+
         $this->assertEquals('approved', $leave->fresh()->status);
         $this->assertEquals($this->admin->id, $leave->fresh()->approved_by);
     }

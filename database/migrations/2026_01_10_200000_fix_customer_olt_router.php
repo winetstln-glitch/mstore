@@ -23,7 +23,7 @@ return new class extends Migration
                 }
                 $table->dropColumn('router_id');
             }
-            if (!Schema::hasColumn('customers', 'olt_id')) {
+            if (! Schema::hasColumn('customers', 'olt_id')) {
                 $table->foreignId('olt_id')->nullable()->constrained('olts')->nullOnDelete()->after('odp');
             }
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('wash_transactions', function (Blueprint $table) {
             if (Schema::hasColumn('wash_transactions', 'transaction_code')) {
-                 try {
+                try {
                     $table->dropUnique('wash_transactions_transaction_code_unique');
                 } catch (\Exception $e) {
                 }
@@ -28,7 +28,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wash_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('wash_transactions', 'transaction_code')) {
+            if (! Schema::hasColumn('wash_transactions', 'transaction_code')) {
                 $table->string('transaction_code')->nullable()->unique();
             }
         });

@@ -29,6 +29,7 @@ class OLTController extends Controller implements HasMiddleware
     public function index()
     {
         $olts = Olt::paginate(10);
+
         return view('olt.index', compact('olts'));
     }
 
@@ -43,7 +44,7 @@ class OLTController extends Controller implements HasMiddleware
         $onlineOnus = $olt->onus()->where('status', 'online')->count();
         $offlineOnus = $olt->onus()->where('status', 'offline')->count();
         $losOnus = $olt->onus()->where('status', 'los')->count();
-        
+
         // Signal distribution
         $goodSignal = $olt->onus()->where('signal', '>=', -25)->count();
         $warningSignal = $olt->onus()->whereBetween('signal', [-27, -25.1])->count();
@@ -52,17 +53,18 @@ class OLTController extends Controller implements HasMiddleware
         // --- TAMBAHKAN KODE INI (PENTING) ---
         // Ambil daftar ONU yang terkait dengan OLT ini, sekaligus pagination
         // Pastikan model Olt punya relasi hasMany('onus')
-        $onus = $olt->onus()->orderBy('interface')->paginate(20); 
+        $onus = $olt->onus()->orderBy('interface')->paginate(20);
         // ---------------------------------------
 
         // 2. Kirim variabel $onus ke View melalui compact
         return view('olt.show', compact(
-            'olt', 
+            'olt',
             'onus', // <-- Jangan lupa tambahkan ini agar data masuk ke View
             'totalOnus', 'onlineOnus', 'offlineOnus', 'losOnus',
             'goodSignal', 'warningSignal', 'badSignal'
         ));
     }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -101,8 +103,6 @@ class OLTController extends Controller implements HasMiddleware
 
         return redirect()->route('olt.index')->with('success', __('OLT created successfully.'));
     }
-
-
 
     /**
      * Show the form for editing the specified resource.
@@ -181,6 +181,7 @@ class OLTController extends Controller implements HasMiddleware
 
             if ($connection) {
                 fclose($connection);
+
                 return response()->json(['status' => 'online', 'message' => __('Online')]);
             } else {
                 return response()->json(['status' => 'offline', 'message' => __('Offline')]);
@@ -196,12 +197,12 @@ class OLTController extends Controller implements HasMiddleware
     public function getSystemInfo(Olt $olt)
     {
         try {
-            $service = new \App\Services\Olt\OltService();
+            $service = new \App\Services\Olt\OltService;
             $driver = $service->getDriver($olt);
             $driver->connect($olt);
             $info = $driver->getSystemInfo();
             $driver->disconnect();
-            
+
             return response()->json($info);
         } catch (\Throwable $e) {
             return response()->json([
@@ -209,8 +210,8 @@ class OLTController extends Controller implements HasMiddleware
                 'version' => 'Error',
                 'temp' => 'Error',
                 'cpu' => 'Error',
-                'error' => $e->getMessage()
-            ], 200); 
+                'error' => $e->getMessage(),
+            ], 200);
         }
     }
 
@@ -234,17 +235,19 @@ class OLTController extends Controller implements HasMiddleware
         if ($request->filled('id')) {
             try {
                 $olt = Olt::findOrFail($request->id);
-                $service = new \App\Services\Olt\OltService();
+                $service = new \App\Services\Olt\OltService;
                 $result = $service->testLogin($olt, 20); // 20s timeout
 
                 if ($result['success']) {
                     return response()->json(['success' => true, 'message' => __('Connection and Login successful!')]);
                 } else {
-                    \Illuminate\Support\Facades\Log::error("OLT Test Connection Failed (ID: {$olt->id}): " . $result['message']);
+                    \Illuminate\Support\Facades\Log::error("OLT Test Connection Failed (ID: {$olt->id}): ".$result['message']);
+
                     return response()->json(['success' => false, 'message' => __('Login failed: :message', ['message' => $result['message']])], 500);
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error("OLT Test Connection Error (ID: {$request->id}): " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("OLT Test Connection Error (ID: {$request->id}): ".$e->getMessage());
+
                 return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
             }
         }
@@ -254,8 +257,8 @@ class OLTController extends Controller implements HasMiddleware
 
         if ($request->filled(['username', 'password', 'brand'])) {
             try {
-                $service = new \App\Services\Olt\OltService();
-                
+                $service = new \App\Services\Olt\OltService;
+
                 // Create a temporary OLT object
                 $tempOlt = new Olt([
                     'host' => $host,
@@ -264,17 +267,19 @@ class OLTController extends Controller implements HasMiddleware
                     'password' => $request->password,
                     'brand' => $request->brand,
                 ]);
-                
+
                 $result = $service->testLogin($tempOlt, 20); // 20s timeout
-                
+
                 if ($result['success']) {
                     return response()->json(['success' => true, 'message' => __('Connection and Login successful!')]);
                 } else {
-                    \Illuminate\Support\Facades\Log::error("OLT Manual Test Failed: " . $result['message']);
+                    \Illuminate\Support\Facades\Log::error('OLT Manual Test Failed: '.$result['message']);
+
                     return response()->json(['success' => false, 'message' => __('Login failed: :message', ['message' => $result['message']])], 500);
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error("OLT Manual Test Error: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('OLT Manual Test Error: '.$e->getMessage());
+
                 return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
             }
         }
@@ -285,6 +290,7 @@ class OLTController extends Controller implements HasMiddleware
 
             if ($connection) {
                 fclose($connection);
+
                 return response()->json(['success' => true, 'message' => __('Connection successful! Port is open. (Login not tested)')]);
             } else {
                 return response()->json(['success' => false, 'message' => __('Connection failed: :message', ['message' => "$errstr ($errno)"])], 500);

@@ -2,25 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
-use App\Models\Olt;
-use App\Models\Odp;
-use App\Models\Htb;
-use App\Models\User;
-use App\Models\Role;
 use App\Models\Coordinator;
-use App\Models\Setting;
+use App\Models\Customer;
+use App\Models\Htb;
+use App\Models\Odp;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
-use OpenSpout\Writer\XLSX\Writer;
-use OpenSpout\Common\Entity\Row;
-use OpenSpout\Reader\XLSX\Reader as XLSXReader;
-use OpenSpout\Reader\CSV\Reader as CSVReader;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\CSV\Reader as CSVReader;
+use OpenSpout\Reader\XLSX\Reader as XLSXReader;
+use OpenSpout\Writer\XLSX\Writer;
 
 class CustomerWebController extends Controller implements HasMiddleware
 {
@@ -49,10 +46,10 @@ class CustomerWebController extends Controller implements HasMiddleware
         $query = Customer::with('user');
 
         // Filter for Coordinator (Pengurus)
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator && $coordinator->region_id) {
-                $query->whereHas('odp', function($q) use ($coordinator) {
+                $query->whereHas('odp', function ($q) use ($coordinator) {
                     $q->where('region_id', $coordinator->region_id);
                 });
             }
@@ -60,10 +57,10 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         if ($request->has('search') && $request->input('search') != '') {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
             });
         }
 
@@ -88,9 +85,9 @@ class CustomerWebController extends Controller implements HasMiddleware
         if ($perPage === 'all') {
             $customers = $query->latest()->paginate(10000)->withQueryString();
         } else {
-            $customers = $query->latest()->paginate((int)$perPage)->withQueryString();
+            $customers = $query->latest()->paginate((int) $perPage)->withQueryString();
         }
-        
+
         $modemStatuses = [];
         // Optimized: Disable auto-fetch status to improve performance
         // foreach ($customers as $c) {
@@ -117,7 +114,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
     public function export(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -125,10 +122,10 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         if ($request->has('search') && $request->input('search') != '') {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
             });
         }
 
@@ -139,7 +136,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $customers = $query->orderBy('name')->get();
 
         return response()->streamDownload(function () use ($customers) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues([
@@ -187,12 +184,12 @@ class CustomerWebController extends Controller implements HasMiddleware
             }
 
             $writer->close();
-        }, 'customers_' . now()->format('Y-m-d_His') . '.xlsx');
+        }, 'customers_'.now()->format('Y-m-d_His').'.xlsx');
     }
 
     public function importFile(Request $request)
     {
-        if (!Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -209,9 +206,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             $extension = strtolower($file->getClientOriginalExtension());
 
             if ($extension === 'csv') {
-                $reader = new CSVReader();
+                $reader = new CSVReader;
             } else {
-                $reader = new XLSXReader();
+                $reader = new XLSXReader;
             }
 
             $reader->open($file->getRealPath());
@@ -239,9 +236,10 @@ class CustomerWebController extends Controller implements HasMiddleware
                             $header = array_map(function ($value) {
                                 return strtolower(trim((string) $value));
                             }, $values);
-                            if (!in_array('name', $header, true)) {
+                            if (! in_array('name', $header, true)) {
                                 throw new \Exception("Missing 'name' column in header.");
                             }
+
                             continue;
                         }
 
@@ -256,24 +254,26 @@ class CustomerWebController extends Controller implements HasMiddleware
 
                         if (empty($rowMap['name'])) {
                             $skipped++;
+
                             continue;
                         }
 
                         // Helper to get value or null
-                        $getValue = function($key) use ($rowMap) {
+                        $getValue = function ($key) use ($rowMap) {
                             $val = $rowMap[$key] ?? null;
                             if (is_string($val)) {
                                 $val = trim($val);
                             }
+
                             return $val === '' ? null : $val;
                         };
 
                         // Check for existing customer by ID, Name, or Phone to update
                         $existingCustomer = null;
-                        if (!empty($rowMap['id'])) {
+                        if (! empty($rowMap['id'])) {
                             $existingCustomer = Customer::find($rowMap['id']);
-                        } elseif (!empty($rowMap['name'])) {
-                             $existingCustomer = Customer::where('name', $rowMap['name'])->first();
+                        } elseif (! empty($rowMap['name'])) {
+                            $existingCustomer = Customer::where('name', $rowMap['name'])->first();
                         }
 
                         // Resolve Relations
@@ -321,18 +321,18 @@ class CustomerWebController extends Controller implements HasMiddleware
                         ];
 
                         // If status is empty or invalid, default to active
-                        if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
+                        if (! in_array($data['status'], ['active', 'suspend', 'terminated'])) {
                             $data['status'] = 'active';
                         }
-                        
+
                         // Check Unique Constraints manually to avoid SQL crash
                         if ($data['pppoe_user']) {
                             $conflict = Customer::where('pppoe_user', $data['pppoe_user'])
-                                ->when($existingCustomer, function($q) use ($existingCustomer) {
+                                ->when($existingCustomer, function ($q) use ($existingCustomer) {
                                     $q->where('id', '!=', $existingCustomer->id);
                                 })->exists();
                             if ($conflict) {
-                                // Option: Skip this field or Skip row? 
+                                // Option: Skip this field or Skip row?
                                 // Let's skip the field but import the user, adding a warning note?
                                 // Or better: Fail the row so user knows to fix it.
                                 throw new \Exception("PPPoE User '{$data['pppoe_user']}' already exists.");
@@ -350,9 +350,9 @@ class CustomerWebController extends Controller implements HasMiddleware
                         $failed++;
                         // Keep only first 10 errors to avoid huge session data
                         if (count($errors) < 10) {
-                            $errors[] = "Row $rowNumber: " . $e->getMessage();
+                            $errors[] = "Row $rowNumber: ".$e->getMessage();
                         } elseif (count($errors) == 10) {
-                            $errors[] = "... and more errors.";
+                            $errors[] = '... and more errors.';
                         }
                     }
                 }
@@ -361,21 +361,26 @@ class CustomerWebController extends Controller implements HasMiddleware
             $reader->close();
 
             $message = __('Imported: :created created, :updated updated.', ['created' => $created, 'updated' => $updated]);
-            if ($skipped > 0) $message .= " " . __('Skipped :count rows (empty name).', ['count' => $skipped]);
-            if ($failed > 0) $message .= " " . __('Failed :count rows.', ['count' => $failed]);
+            if ($skipped > 0) {
+                $message .= ' '.__('Skipped :count rows (empty name).', ['count' => $skipped]);
+            }
+            if ($failed > 0) {
+                $message .= ' '.__('Failed :count rows.', ['count' => $failed]);
+            }
 
             $redirect = redirect()->route('customers.index')->with('success', $message);
-            
-            if (!empty($errors)) {
+
+            if (! empty($errors)) {
                 $redirect->withErrors(['import_errors' => $errors]);
             }
-            
+
             return $redirect;
 
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Import Failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Import Failed: '.$e->getMessage());
+
             return redirect()->route('customers.index')->withErrors([
-                'error' => __('Import failed: :message', ['message' => $e->getMessage()])
+                'error' => __('Import failed: :message', ['message' => $e->getMessage()]),
             ]);
         }
     }
@@ -388,62 +393,66 @@ class CustomerWebController extends Controller implements HasMiddleware
         $search = $request->query('search');
 
         // 1. Get all devices from GenieACS
-        $devices = $this->genieService->getDevices(100, 0, $search); 
+        $devices = $this->genieService->getDevices(100, 0, $search);
 
         // 2. Get existing ONU Serials
         $existingSerials = Customer::whereNotNull('onu_serial')->pluck('onu_serial')->toArray();
 
         // 3. Filter and Map devices
-        $newDevices = collect($devices)->filter(function($device) use ($existingSerials) {
-             $serial = $device['_deviceId']['_SerialNumber'] ?? null;
-             return $serial && !in_array($serial, $existingSerials);
-        })->map(function($device) {
-             $getValue = function($node) {
-                 if (is_array($node)) {
-                     return $node['_value'] ?? '';
-                 }
-                 return (string) $node;
-             };
+        $newDevices = collect($devices)->filter(function ($device) use ($existingSerials) {
+            $serial = $device['_deviceId']['_SerialNumber'] ?? null;
 
-             $serial = $device['_deviceId']['_SerialNumber'] ?? 'Unknown';
-             
-             // Extract IP
-             $ipNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress'] 
-                      ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress'] 
-                      ?? 'N/A';
-             $ip = $getValue($ipNode);
+            return $serial && ! in_array($serial, $existingSerials);
+        })->map(function ($device) {
+            $getValue = function ($node) {
+                if (is_array($node)) {
+                    return $node['_value'] ?? '';
+                }
 
-             // Extract Model
-             $modelNode = $device['InternetGatewayDevice']['DeviceInfo']['ModelName']
-                      ?? $device['Device']['DeviceInfo']['ModelName']
-                      ?? 'N/A';
-             $model = $getValue($modelNode);
+                return (string) $node;
+            };
 
-             // Extract SSID (WLAN)
-             $ssidNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['SSID']
-                      ?? $device['Device']['WiFi']['SSID'][1]['SSID']
-                      ?? '';
-             $ssid = $getValue($ssidNode);
+            $serial = $device['_deviceId']['_SerialNumber'] ?? 'Unknown';
 
-             // Extract Wifi Password
-             $passNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['PreSharedKey'][1]['KeyPassphrase']
-                      ?? $device['Device']['WiFi']['AccessPoint'][1]['Security']['KeyPassphrase']
-                      ?? '';
-             $wifiPass = $getValue($passNode);
+            // Extract IP (prefer VirtualParameters, then TR-098, then TR-181)
+            $ipNode = $device['VirtualParameters']['pppoeIP']
+                     ?? $device['VirtualParameters']['IPTR069']
+                     ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']
+                     ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']
+                     ?? 'N/A';
+            $ip = $getValue($ipNode);
 
-             // Extract Last Inform
-             $lastInformRaw = $device['_lastInform'] ?? null;
-             $lastInform = $lastInformRaw ? \Carbon\Carbon::parse($lastInformRaw)->format('d M Y H:i') : 'N/A';
+            // Extract Model
+            $modelNode = $device['InternetGatewayDevice']['DeviceInfo']['ModelName']
+                     ?? $device['Device']['DeviceInfo']['ModelName']
+                     ?? 'N/A';
+            $model = $getValue($modelNode);
 
-             return (object) [
-                 'serial' => $serial,
-                 'ip' => $ip,
-                 'lastInform' => $lastInform,
-                 'name' => $ssid ? $ssid : $serial, // Use SSID as name if available
-                 'device_model' => $model,
-                 'ssid_name' => $ssid,
-                 'ssid_password' => $wifiPass,
-             ];
+            // Extract SSID (WLAN)
+            $ssidNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['SSID']
+                     ?? $device['Device']['WiFi']['SSID'][1]['SSID']
+                     ?? '';
+            $ssid = $getValue($ssidNode);
+
+            // Extract Wifi Password
+            $passNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['PreSharedKey'][1]['KeyPassphrase']
+                     ?? $device['Device']['WiFi']['AccessPoint'][1]['Security']['KeyPassphrase']
+                     ?? '';
+            $wifiPass = $getValue($passNode);
+
+            // Extract Last Inform
+            $lastInformRaw = $device['_lastInform'] ?? null;
+            $lastInform = $lastInformRaw ? \Carbon\Carbon::parse($lastInformRaw)->format('d M Y H:i') : 'N/A';
+
+            return (object) [
+                'serial' => $serial,
+                'ip' => $ip,
+                'lastInform' => $lastInform,
+                'name' => $ssid ? $ssid : $serial, // Use SSID as name if available
+                'device_model' => $model,
+                'ssid_name' => $ssid,
+                'ssid_password' => $wifiPass,
+            ];
         });
 
         return view('customers.import', compact('newDevices', 'search'));
@@ -455,40 +464,44 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function getGenieDevice(Request $request)
     {
         $serial = $request->query('serial');
-        if (!$serial) {
+        if (! $serial) {
             return response()->json(['error' => 'Serial number required'], 400);
         }
 
         $device = $this->genieService->findDeviceBySerial($serial);
-        
-        if (!$device) {
+
+        if (! $device) {
             return response()->json(['error' => 'Device not found'], 404);
         }
 
-        $getValue = function($node) {
+        $getValue = function ($node) {
             if (is_array($node)) {
                 return $node['_value'] ?? '';
             }
+
             return (string) $node;
         };
 
         // Extract fields
-        $ipNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress'] 
-                 ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress'] 
+        $ipNode = $device['VirtualParameters']['pppoeIP']
+                 ?? $device['VirtualParameters']['IPTR069']
+                 ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']
+                 ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']
                  ?? '';
         $ip = $getValue($ipNode);
 
-        $vlanNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['X_HW_VLAN'] 
+        $vlanNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['X_HW_VLAN']
                  ?? '';
         $vlan = $getValue($vlanNode);
 
-        $wanMacNode = $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['MACAddress'] 
+        $wanMacNode = $device['VirtualParameters']['pppoeMac']
+                 ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['MACAddress']
                  ?? '';
         $wanMac = $getValue($wanMacNode);
 
-        $modelNode = $device['_deviceId']['_ProductClass'] 
+        $modelNode = $device['_deviceId']['_ProductClass']
                  ?? ($device['Device']['DeviceInfo']['ModelName']['_value'] ?? 'Unknown');
-        
+
         $ssidNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['SSID']
                  ?? $device['Device']['WiFi']['SSID'][1]['SSID']
                  ?? '';
@@ -533,12 +546,14 @@ class CustomerWebController extends Controller implements HasMiddleware
         // Fetch GenieACS devices
         try {
             $genieDevices = $this->genieService->getDevices(200);
-            $onuDevices = collect($genieDevices)->map(function($d) {
+            $onuDevices = collect($genieDevices)->map(function ($d) {
                 return [
                     'serial' => $d['_deviceId']['_SerialNumber'] ?? '',
                     'model' => $d['_deviceId']['_ProductClass'] ?? ($d['Device']['DeviceInfo']['ModelName']['_value'] ?? 'Unknown'),
                 ];
-            })->filter(function($d) { return !empty($d['serial']); })->values();
+            })->filter(function ($d) {
+                return ! empty($d['serial']);
+            })->values();
         } catch (\Exception $e) {
             $onuDevices = [];
         }
@@ -550,7 +565,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $linkedUserIds = Customer::whereNotNull('user_id')->pluck('user_id')->filter()->all();
         $availableUsers = User::query()
             ->where('role_id', $customerRoleId)
-            ->when(!empty($linkedUserIds), fn($q) => $q->whereNotIn('id', $linkedUserIds))
+            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'username']);
 
@@ -587,14 +602,14 @@ class CustomerWebController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
         ]);
 
-        if (!empty($validated['package_id'])) {
+        if (! empty($validated['package_id'])) {
             $pkg = \App\Models\Package::find($validated['package_id']);
             if ($pkg) {
                 $validated['package'] = $pkg->name;
             }
         }
 
-        if (!empty($validated['htb_id'])) {
+        if (! empty($validated['htb_id'])) {
             $htb = Htb::with('odp')->find($validated['htb_id']);
             if ($htb) {
                 if ($htb->isFull()) {
@@ -606,7 +621,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             }
         }
 
-        if (!empty($validated['odp_id'])) {
+        if (! empty($validated['odp_id'])) {
             $odp = Odp::find($validated['odp_id']);
             if ($odp && $odp->isFull()) {
                 return back()->withInput()->withErrors(['odp_id' => __('Selected ODP (or HTB parent ODP) is full.')]);
@@ -619,7 +634,8 @@ class CustomerWebController extends Controller implements HasMiddleware
         try {
             Customer::create($validated);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error creating customer: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error creating customer: '.$e->getMessage());
+
             return back()->withInput()->withErrors(['error' => __('Failed to create customer: :message', ['message' => $e->getMessage()])]);
         }
 
@@ -633,14 +649,14 @@ class CustomerWebController extends Controller implements HasMiddleware
     {
         $customer->load(['tickets', 'installations', 'olt', 'odp', 'htb']);
 
-        $genieDeviceId = null;
+        $genieDeviceId = $customer->genieacs_device_id ?: null;
         $modemStatus = ['online' => false, 'last_inform' => null];
-        if ($customer->onu_serial) {
+        if ($customer->onu_serial && ! $genieDeviceId) {
             $status = $this->genieService->getDeviceStatus($customer->onu_serial);
             if (isset($status['id'])) {
                 $genieDeviceId = $status['id'];
             }
-            $modemStatus['online'] = (bool)($status['online'] ?? false);
+            $modemStatus['online'] = (bool) ($status['online'] ?? false);
             $modemStatus['last_inform'] = $status['last_inform'] ?? null;
         }
 
@@ -656,16 +672,18 @@ class CustomerWebController extends Controller implements HasMiddleware
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
         $olts = \App\Models\Olt::where('is_active', true)->get();
         $closures = \App\Models\Closure::with('odc')->get();
-        
+
         // Fetch GenieACS devices
         try {
             $genieDevices = $this->genieService->getDevices(200);
-            $onuDevices = collect($genieDevices)->map(function($d) {
+            $onuDevices = collect($genieDevices)->map(function ($d) {
                 return [
                     'serial' => $d['_deviceId']['_SerialNumber'] ?? '',
                     'model' => $d['_deviceId']['_ProductClass'] ?? ($d['Device']['DeviceInfo']['ModelName']['_value'] ?? 'Unknown'),
                 ];
-            })->filter(function($d) { return !empty($d['serial']); })->values();
+            })->filter(function ($d) {
+                return ! empty($d['serial']);
+            })->values();
         } catch (\Exception $e) {
             $onuDevices = [];
         }
@@ -675,13 +693,13 @@ class CustomerWebController extends Controller implements HasMiddleware
         // Available users for linking (include current linked user if present)
         $customerRoleId = Role::where('name', 'customer')->value('id');
         $linkedUserIds = Customer::whereNotNull('user_id')
-            ->when($customer->user_id, fn($q) => $q->where('user_id', '!=', $customer->user_id))
+            ->when($customer->user_id, fn ($q) => $q->where('user_id', '!=', $customer->user_id))
             ->pluck('user_id')
             ->filter()
             ->all();
         $availableUsers = User::query()
             ->where('role_id', $customerRoleId)
-            ->when(!empty($linkedUserIds), fn($q) => $q->whereNotIn('id', $linkedUserIds))
+            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'username']);
 
@@ -699,7 +717,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'phone' => 'nullable|string|max:20',
             'package_id' => 'nullable|exists:packages,id',
             'package' => 'nullable|string|max:100',
-            'user_id' => 'nullable|exists:users,id|unique:customers,user_id,' . $customer->id,
+            'user_id' => 'nullable|exists:users,id|unique:customers,user_id,'.$customer->id,
             'ip_address' => 'nullable|ip',
             'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
@@ -708,7 +726,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'htb_id' => 'nullable|exists:htbs,id',
             'olt_id' => 'nullable|exists:olts,id',
             'status' => 'sometimes|required|in:active,suspend,terminated',
-            'pppoe_user' => 'nullable|string|unique:customers,pppoe_user,' . $customer->id,
+            'pppoe_user' => 'nullable|string|unique:customers,pppoe_user,'.$customer->id,
             'pppoe_password' => 'nullable|string',
             'onu_serial' => 'nullable|string',
             'wan_mac' => 'nullable|string|max:20',
@@ -719,7 +737,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric',
         ]);
 
-        if (!empty($validated['package_id'])) {
+        if (! empty($validated['package_id'])) {
             $pkg = \App\Models\Package::find($validated['package_id']);
             if ($pkg) {
                 $validated['package'] = $pkg->name;
@@ -731,11 +749,11 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         // Handle HTB/ODP logic
         // We prioritize HTB selection if provided. If HTB is empty, we check ODP selection.
-        
+
         $newHtbId = $validated['htb_id'] ?? null;
         $newOdpId = $validated['odp_id'] ?? null;
 
-        if (!empty($newHtbId)) {
+        if (! empty($newHtbId)) {
             // "Via HTB" mode
             $newHtb = Htb::with('odp')->find($newHtbId);
             if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
@@ -745,10 +763,10 @@ class CustomerWebController extends Controller implements HasMiddleware
                 $validated['odp_id'] = $newHtb->odp_id;
                 $validated['odp'] = $newHtb->odp->name ?? null;
             }
-        } elseif (!empty($newOdpId)) {
+        } elseif (! empty($newOdpId)) {
             // "Direct ODP" mode (HTB is empty)
             $validated['htb_id'] = null; // Ensure HTB is cleared
-            
+
             // Only validate ODP capacity if connecting directly (no HTB)
             $newOdp = Odp::find($newOdpId);
             if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
@@ -770,7 +788,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => __('Customer updated successfully.'),
-                'data' => $customer
+                'data' => $customer,
             ]);
         }
 
@@ -783,21 +801,24 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function destroy(Customer $customer)
     {
         $customer->delete();
+
         return redirect()->route('customers.index')->with('success', __('Customer deleted successfully.'));
     }
 
     public function settings(Request $request, Customer $customer)
     {
-        if (!$customer->onu_serial) {
-            return redirect()->back()->withErrors(['error' => __('Customer has no ONU Serial assigned.')]);
+        // Resolve device ID: prefer stored GenieACS ID, fallback to lookup by serial
+        $deviceId = $customer->genieacs_device_id;
+        if (! $deviceId) {
+            if (! $customer->onu_serial) {
+                return redirect()->back()->withErrors(['error' => __('Customer has no GenieACS Device ID or ONU Serial assigned.')]);
+            }
+            $status = $this->genieService->getDeviceStatus($customer->onu_serial);
+            if (! isset($status['id'])) {
+                return redirect()->back()->withErrors(['error' => __('Device not found in GenieACS.')]);
+            }
+            $deviceId = $status['id'];
         }
-
-        // Find device ID
-        $status = $this->genieService->getDeviceStatus($customer->onu_serial);
-        if (!isset($status['id'])) {
-            return redirect()->back()->withErrors(['error' => __('Device not found in GenieACS.')]);
-        }
-        $deviceId = $status['id'];
 
         // Optimize: Fetch device details once
         $deviceData = $this->genieService->getDeviceDetails($deviceId);
@@ -805,7 +826,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $wanConnections = $this->genieService->getWanConnections($deviceId, $deviceData);
         $selectedWanPath = $request->query('wan_path');
         $wanSettings = $this->genieService->getWanSettings($deviceId, $selectedWanPath, $deviceData);
-        
+
         $wlanSettings1 = $this->genieService->getWlanSettings($deviceId, 1, $deviceData);
         $wlanSettings2 = $this->genieService->getWlanSettings($deviceId, 2, $deviceData);
         $wlanSettings3 = $this->genieService->getWlanSettings($deviceId, 3, $deviceData);
@@ -817,42 +838,60 @@ class CustomerWebController extends Controller implements HasMiddleware
     public function updateWan(Request $request, Customer $customer)
     {
         $deviceId = $request->input('device_id');
-        if (!$deviceId) return back()->withErrors(['error' => 'Device ID missing']);
+        if (! $deviceId) {
+            return back()->withErrors(['error' => 'Device ID missing']);
+        }
 
         $data = $request->only(['enable', 'conn_name', 'vlan', 'conn_type', 'service', 'username', 'password', 'nat', 'lan_bind']);
-        
+
         $data['enable'] = $request->has('enable');
         $data['nat'] = $request->has('nat');
-        
+
+        $bindingsInput = $request->input('bindings', []);
+        if (is_array($bindingsInput)) {
+            $bindings = [];
+            $keys = ['Lan1', 'Lan2', 'Lan3', 'Lan4', 'SSID1', 'SSID2', 'SSID3', 'SSID4'];
+            foreach ($keys as $k) {
+                $bindings[$k] = isset($bindingsInput[$k]) && ($bindingsInput[$k] === '1' || $bindingsInput[$k] === 'on' || $bindingsInput[$k] === 1 || $bindingsInput[$k] === true);
+            }
+            $data['bindings'] = $bindings;
+        }
+
         $path = $request->input('wan_path');
 
         if ($this->genieService->updateWanAdvanced($deviceId, $data, $path)) {
             return redirect()->back()->with('success', __('WAN Settings updated successfully.'));
         }
+
         return redirect()->back()->withErrors(['error' => __('Failed to update WAN Settings.')]);
     }
 
     public function updateWlan(Request $request, Customer $customer)
     {
         $deviceId = $request->input('device_id');
-        if (!$deviceId) return back()->withErrors(['error' => 'Device ID missing']);
+        if (! $deviceId) {
+            return back()->withErrors(['error' => 'Device ID missing']);
+        }
 
         $index = $request->input('index', 1);
         $data = $request->only(['enable', 'ssid', 'password', 'security', 'channel', 'auto_channel', 'power']);
-        
+
         $data['enable'] = $request->has('enable');
         $data['auto_channel'] = $request->has('auto_channel');
 
         if ($this->genieService->updateWlanAdvanced($deviceId, $data, $index)) {
-             // Only update local DB if it's the primary SSID (Index 1)
-             if ($index == 1) {
-                 $customer->update([
-                     'ssid_name' => $data['ssid'],
-                     'ssid_password' => $data['password']
-                 ]);
-             }
-            return redirect()->back()->with('success', __('WLAN Settings (SSID ' . $index . ') updated successfully.'));
+            // Only update local DB if it's the primary SSID (Index 1)
+            if ($index == 1) {
+                $customer->update([
+                    'ssid_name' => $data['ssid'],
+                    'ssid_password' => $data['password'],
+                ]);
+            }
+            $this->genieService->refreshObject($deviceId);
+
+            return redirect()->back()->with('success', __('WLAN Settings (SSID '.$index.') updated successfully.'));
         }
+
         return redirect()->back()->withErrors(['error' => __('Failed to update WLAN Settings.')]);
     }
 
@@ -867,7 +906,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         foreach ($customers as $customer) {
             $customer->delete();
         }
-        
-        return redirect()->back()->with('success', count($ids) . ' customers deleted successfully.');
+
+        return redirect()->back()->with('success', count($ids).' customers deleted successfully.');
     }
 }

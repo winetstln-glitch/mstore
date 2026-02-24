@@ -33,7 +33,7 @@ class Htb extends Model
                 }
 
                 // If switched to HTB parent, and previously was on ODP (directly), decrement ODP
-                // Logic: 
+                // Logic:
                 // Case 1: Null -> HTB (Decrement ODP? No, created handled it. Wait, update.)
                 // Case 2: ODP -> HTB (Decrement ODP, Increment HTB)
                 // Case 3: HTB -> ODP (Decrement HTB, Increment ODP)
@@ -53,7 +53,7 @@ class Htb extends Model
             // 1. Revert old state effects
             // 2. Apply new state effects
             // But we must be careful not to double count if logic overlaps.
-            
+
             $oldParentId = $htb->getOriginal('parent_htb_id');
             $newParentId = $htb->parent_htb_id;
             $oldOdpId = $htb->getOriginal('odp_id');
@@ -61,9 +61,9 @@ class Htb extends Model
 
             // Detect if "Uplink" changed context
             // An Uplink is either (Parent HTB) OR (Parent ODP [if parent_htb is null])
-            
-            $oldUplinkIsHtb = !is_null($oldParentId);
-            $newUplinkIsHtb = !is_null($newParentId);
+
+            $oldUplinkIsHtb = ! is_null($oldParentId);
+            $newUplinkIsHtb = ! is_null($newParentId);
 
             // Revert Old
             if ($oldUplinkIsHtb) {
@@ -74,16 +74,16 @@ class Htb extends Model
             } else {
                 // Old uplink was ODP
                 if ($oldOdpId && ($htb->isDirty('odp_id') || $newUplinkIsHtb)) {
-                     // If ODP changed OR we switched to HTB uplink, decrement old ODP
-                     Odp::where('id', $oldOdpId)->decrement('filled');
+                    // If ODP changed OR we switched to HTB uplink, decrement old ODP
+                    Odp::where('id', $oldOdpId)->decrement('filled');
                 }
             }
 
             // Apply New
             if ($newUplinkIsHtb) {
-                 if ($htb->isDirty('parent_htb_id')) {
+                if ($htb->isDirty('parent_htb_id')) {
                     Htb::where('id', $newParentId)->increment('filled');
-                 }
+                }
             } else {
                 // New uplink is ODP
                 if ($newOdpId && ($htb->isDirty('odp_id') || $oldUplinkIsHtb)) {
@@ -144,6 +144,7 @@ class Htb extends Model
         if ($this->capacity === null) {
             return false;
         }
+
         return $this->filled >= $this->capacity;
     }
 }

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('closures_table_and_update_topology');
-        
-        if (!Schema::hasTable('closures')) {
+
+        if (! Schema::hasTable('closures')) {
             Schema::create('closures', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');

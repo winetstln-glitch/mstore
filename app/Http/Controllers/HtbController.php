@@ -30,12 +30,13 @@ class HtbController extends Controller implements HasMiddleware
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhereHas('odp', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhereHas('odp', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
         }
 
         $htbs = $query->latest()->paginate(10);
+
         return view('htbs.index', compact('htbs'));
     }
 
@@ -46,6 +47,7 @@ class HtbController extends Controller implements HasMiddleware
     {
         $odps = Odp::all();
         $parentHtbs = Htb::with('odp')->get();
+
         return view('htbs.create', compact('odps', 'parentHtbs'));
     }
 
@@ -70,7 +72,7 @@ class HtbController extends Controller implements HasMiddleware
 
         if ($validated['uplink_type'] === 'odp') {
             $odp = Odp::find($validated['uplink_id']);
-            if (!$odp) {
+            if (! $odp) {
                 return back()->withInput()->withErrors(['uplink_id' => __('Selected ODP not found.')]);
             }
             if ($odp->isFull()) {
@@ -79,7 +81,7 @@ class HtbController extends Controller implements HasMiddleware
             $odpId = $odp->id;
         } else {
             $parentHtb = Htb::find($validated['uplink_id']);
-            if (!$parentHtb) {
+            if (! $parentHtb) {
                 return back()->withInput()->withErrors(['uplink_id' => __('Selected Parent HTB not found.')]);
             }
             if ($parentHtb->isFull()) {
@@ -110,7 +112,7 @@ class HtbController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => __('HTB created successfully.'),
-                'data' => $htb
+                'data' => $htb,
             ]);
         }
 
@@ -125,9 +127,10 @@ class HtbController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $htb
+                'data' => $htb,
             ]);
         }
+
         return view('htbs.show', compact('htb'));
     }
 
@@ -139,7 +142,8 @@ class HtbController extends Controller implements HasMiddleware
         $odps = Odp::all();
         // Prevent selecting self or children as parent to avoid cycles
         // A simple check is to exclude self. Deep cycle check is harder but simple exclude is often enough for UI.
-        $parentHtbs = Htb::with('odp')->where('id', '!=', $htb->id)->get(); 
+        $parentHtbs = Htb::with('odp')->where('id', '!=', $htb->id)->get();
+
         return view('htbs.edit', compact('htb', 'odps', 'parentHtbs'));
     }
 
@@ -149,7 +153,7 @@ class HtbController extends Controller implements HasMiddleware
     public function update(Request $request, Htb $htb)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|nullable|string|max:255|unique:htbs,name,' . $htb->id,
+            'name' => 'sometimes|nullable|string|max:255|unique:htbs,name,'.$htb->id,
             'uplink_type' => 'required|in:odp,htb',
             'uplink_id' => 'required|integer',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -164,13 +168,17 @@ class HtbController extends Controller implements HasMiddleware
 
         if ($validated['uplink_type'] === 'odp') {
             $odp = Odp::find($validated['uplink_id']);
-            if (!$odp) return back()->withInput()->withErrors(['uplink_id' => __('Selected ODP not found.')]);
-            
+            if (! $odp) {
+                return back()->withInput()->withErrors(['uplink_id' => __('Selected ODP not found.')]);
+            }
+
             // Check capacity only if changing uplink
             if ($htb->odp_id != $odp->id || $htb->parent_htb_id != null) {
-                if ($odp->isFull()) return back()->withInput()->withErrors(['uplink_id' => __('Selected ODP is full.')]);
+                if ($odp->isFull()) {
+                    return back()->withInput()->withErrors(['uplink_id' => __('Selected ODP is full.')]);
+                }
             }
-            
+
             $odpId = $odp->id;
         } else {
             // Check for circular dependency: Parent cannot be one of its own children
@@ -180,10 +188,14 @@ class HtbController extends Controller implements HasMiddleware
             }
 
             $parentHtb = Htb::find($validated['uplink_id']);
-            if (!$parentHtb) return back()->withInput()->withErrors(['uplink_id' => __('Selected Parent HTB not found.')]);
-            
+            if (! $parentHtb) {
+                return back()->withInput()->withErrors(['uplink_id' => __('Selected Parent HTB not found.')]);
+            }
+
             if ($htb->parent_htb_id != $parentHtb->id) {
-                 if ($parentHtb->isFull()) return back()->withInput()->withErrors(['uplink_id' => __('Selected Parent HTB is full.')]);
+                if ($parentHtb->isFull()) {
+                    return back()->withInput()->withErrors(['uplink_id' => __('Selected Parent HTB is full.')]);
+                }
             }
 
             $parentHtbId = $parentHtb->id;
@@ -201,11 +213,11 @@ class HtbController extends Controller implements HasMiddleware
         ];
 
         if (array_key_exists('name', $validated)) {
-             $data['name'] = $validated['name'];
+            $data['name'] = $validated['name'];
         }
 
         if (empty($data['name']) && empty($htb->name)) {
-             $data['name'] = $this->generateHtbName(array_merge($htb->toArray(), $data));
+            $data['name'] = $this->generateHtbName(array_merge($htb->toArray(), $data));
         }
 
         $htb->update($data);
@@ -214,7 +226,7 @@ class HtbController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => __('HTB updated successfully.'),
-                'data' => $htb
+                'data' => $htb,
             ]);
         }
 
@@ -231,7 +243,7 @@ class HtbController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('HTB deleted successfully.')
+                'message' => __('HTB deleted successfully.'),
             ]);
         }
 
@@ -241,10 +253,12 @@ class HtbController extends Controller implements HasMiddleware
     private function generateHtbName($data)
     {
         $odp = Odp::find($data['odp_id']);
-        if (!$odp) return 'HTB-' . time();
+        if (! $odp) {
+            return 'HTB-'.time();
+        }
 
         $sequence = $this->calculateSequence($odp->id);
-        
+
         // Format: HTB-{ODP_NAME}-{SEQ}
         return "HTB-{$odp->name}-{$sequence}";
     }
@@ -256,9 +270,12 @@ class HtbController extends Controller implements HasMiddleware
         foreach ($existingHtbs as $htb) {
             if (preg_match('/(\d+)$/', $htb->name, $matches)) {
                 $seq = intval($matches[1]);
-                if ($seq > $maxSequence) $maxSequence = $seq;
+                if ($seq > $maxSequence) {
+                    $maxSequence = $seq;
+                }
             }
         }
+
         return str_pad($maxSequence + 1, 2, '0', STR_PAD_LEFT);
     }
 }

@@ -67,8 +67,9 @@ class Ticket extends Model
     public static function generateNumber(): string
     {
         do {
-            $number = 'TKT-' . Str::upper(Str::random(6));
+            $number = 'TKT-'.Str::upper(Str::random(6));
         } while (self::where('ticket_number', $number)->exists());
+
         return $number;
     }
 }

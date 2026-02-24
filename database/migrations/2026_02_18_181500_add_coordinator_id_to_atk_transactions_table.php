@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('atk_transactions')) {
             Schema::table('atk_transactions', function (Blueprint $table) {
-                if (!Schema::hasColumn('atk_transactions', 'coordinator_id')) {
+                if (! Schema::hasColumn('atk_transactions', 'coordinator_id')) {
                     if (Schema::hasTable('coordinators')) {
                         $table->foreignId('coordinator_id')->nullable()->after('change_amount')->constrained('coordinators')->nullOnDelete();
                     } else {
@@ -37,4 +37,3 @@ return new class extends Migration
         }
     }
 };
-

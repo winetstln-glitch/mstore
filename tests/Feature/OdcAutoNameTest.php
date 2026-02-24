@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Role;
-use App\Models\Permission;
-use App\Models\Olt;
 use App\Models\Odc;
+use App\Models\Olt;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,6 +15,7 @@ class OdcAutoNameTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $olt;
 
     protected function setUp(): void
@@ -24,18 +25,18 @@ class OdcAutoNameTest extends TestCase
         // Create Admin User
         $this->user = User::factory()->create();
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        
+
         // Assign all permissions
         $permissions = [
-            'odc.view', 'odc.create', 'odc.edit', 'odc.delete'
+            'odc.view', 'odc.create', 'odc.edit', 'odc.delete',
         ];
-        
+
         $permissionIds = [];
         foreach ($permissions as $perm) {
             $p = Permission::create(['name' => $perm, 'label' => $perm, 'group' => 'ODC']);
             $permissionIds[] = $p->id;
         }
-        
+
         $role->permissions()->attach($permissionIds);
         $this->user->assignRole($role);
 
@@ -106,7 +107,7 @@ class OdcAutoNameTest extends TestCase
         ]);
 
         $response->assertRedirect(route('odcs.index'));
-        
+
         $this->assertDatabaseHas('odcs', [
             'id' => $odc->id,
             'name' => 'ODC-02-NAA-R-02', // First, Middle, Last format

@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Package;
 use App\Models\AtkProduct;
-use App\Models\WashService;
-use App\Models\Setting;
 use App\Models\Odp;
-use Illuminate\Http\Request;
+use App\Models\Package;
+use App\Models\Setting;
+use App\Models\WashService;
 use Illuminate\Support\Facades\Schema;
 
 class LandingController extends Controller
@@ -20,7 +19,7 @@ class LandingController extends Controller
         } catch (\Exception $e) {
             $packages = collect([]);
         }
-        
+
         // Safely fetch ATK Products
         try {
             if (class_exists(AtkProduct::class) && Schema::hasTable('atk_products')) {
@@ -47,7 +46,7 @@ class LandingController extends Controller
         } catch (\Exception $e) {
             $washServices = collect([]);
         }
-            
+
         // Get WA Number from settings or default
         try {
             $waNumber = Setting::getValue('whatsapp_number', '6281234567890');
@@ -59,9 +58,9 @@ class LandingController extends Controller
         try {
             if (class_exists(Odp::class) && Schema::hasTable('odps')) {
                 $odps = Odp::select('name', 'latitude', 'longitude', 'capacity', 'filled')
-                           ->whereNotNull('latitude')
-                           ->whereNotNull('longitude')
-                           ->get();
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->get();
             } else {
                 $odps = collect([]);
             }

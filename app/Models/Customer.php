@@ -42,11 +42,11 @@ class Customer extends Model
             $oldOdpId = $customer->getOriginal('odp_id');
             $newOdpId = $customer->odp_id;
 
-            $oldIsHtb = !is_null($oldHtbId);
-            $newIsHtb = !is_null($newHtbId);
+            $oldIsHtb = ! is_null($oldHtbId);
+            $newIsHtb = ! is_null($newHtbId);
 
             // Revert Old
-            if (!$oldIsHtb && $oldOdpId) {
+            if (! $oldIsHtb && $oldOdpId) {
                 // Was direct ODP, so decrement ODP
                 // Only if we changed ODP OR switched to HTB
                 if ($customer->isDirty('odp_id') || $newIsHtb) {
@@ -55,7 +55,7 @@ class Customer extends Model
             }
 
             // Apply New
-            if (!$newIsHtb && $newOdpId) {
+            if (! $newIsHtb && $newOdpId) {
                 // Is direct ODP, so increment ODP
                 // Only if we changed ODP OR switched from HTB
                 if ($customer->isDirty('odp_id') || $oldIsHtb) {

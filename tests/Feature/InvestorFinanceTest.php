@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Coordinator;
 use App\Models\Investor;
-use App\Models\Transaction;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Setting;
+use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,7 +17,9 @@ class InvestorFinanceTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $coordinator;
+
     protected $investor;
 
     protected function setUp(): void
@@ -30,11 +32,11 @@ class InvestorFinanceTest extends TestCase
         Permission::create(['name' => 'investor.manage', 'label' => 'Manage Investor']);
         Permission::create(['name' => 'finance.view', 'label' => 'View Finance']);
         Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance']);
-        
+
         $role->permissions()->attach(Permission::all()->pluck('id'));
 
         $this->user = User::factory()->create(['role_id' => $role->id]);
-        
+
         $region = \App\Models\Region::create(['name' => 'Test Region']);
 
         $this->coordinator = Coordinator::create([
@@ -86,19 +88,19 @@ class InvestorFinanceTest extends TestCase
 
         $response = $this->get(route('investors.index'));
         $response->assertOk();
-        
+
         // Assert view has investors data
         $response->assertViewHas('investors');
-        
+
         $investors = $response->viewData('investors');
         $investor = $investors->first();
-        
+
         $this->assertEquals(1000000, $investor->income_transactions_sum_amount);
         $this->assertEquals(200000, $investor->expense_transactions_sum_amount);
-        
+
         // Net Balance check
         $this->assertEquals(800000, $investor->income_transactions_sum_amount - $investor->expense_transactions_sum_amount);
-        
+
         // Check if text appears in response
         $response->assertSee(number_format(1000000, 0, ',', '.'));
         $response->assertSee(number_format(800000, 0, ',', '.'));
@@ -143,7 +145,7 @@ class InvestorFinanceTest extends TestCase
             'amount' => 3386718.75, // 5% of Rem3
             'coordinator_id' => $this->coordinator->id,
             'investor_id' => null, // Should not be linked to investor
-            'type' => 'expense'
+            'type' => 'expense',
         ]);
 
         // Verify Investor Profit Share
@@ -188,7 +190,7 @@ class InvestorFinanceTest extends TestCase
             'amount' => 270937.5,
             'coordinator_id' => $this->coordinator->id,
             'investor_id' => null,
-            'type' => 'expense'
+            'type' => 'expense',
         ]);
 
         // Verify Investor Profit Share

@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Transaction;
 use App\Models\Package;
+use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,41 +20,43 @@ class BillingService
     {
         $month = $month ?: Carbon::now()->month;
         $year = $year ?: Carbon::now()->year;
-        
+
         $periodDate = Carbon::createFromDate($year, $month, 1);
-        
+
         // Check if already exists
         $exists = Invoice::where('customer_id', $customer->id)
             ->whereYear('period_date', $year)
             ->whereMonth('period_date', $month)
             ->exists();
-            
-        if ($exists) return null;
+
+        if ($exists) {
+            return null;
+        }
 
         // Calculate Due Date (e.g., 10th of the month or based on customer cycle)
         $dueDay = $customer->billing_cycle_date ?? 10;
         $dueDate = Carbon::createFromDate($year, $month, $dueDay);
-        
-        $price = 100000; 
+
+        $price = 100000;
         if ($customer->package_id) {
             $pkg = Package::find($customer->package_id);
             if ($pkg) {
-                $price = (int)$pkg->price;
+                $price = (int) $pkg->price;
             }
         }
         if ($price === 100000 && $customer->package) {
             if (preg_match('/(\d+)/', str_replace('.', '', $customer->package), $matches)) {
-                $price = (int)$matches[1];
+                $price = (int) $matches[1];
             }
         }
 
         $invoice = Invoice::create([
-            'invoice_number' => 'INV/' . $year . $month . '/' . $customer->id,
+            'invoice_number' => 'INV/'.$year.$month.'/'.$customer->id,
             'customer_id' => $customer->id,
             'period_date' => $periodDate,
             'due_date' => $dueDate,
             'amount' => $price,
-            'status' => 'unpaid'
+            'status' => 'unpaid',
         ]);
 
         // Send Notification (Stub)
@@ -79,29 +81,29 @@ class BillingService
                 'reference_number' => $ref,
                 'category' => 'Internet Payment',
                 'transaction_date' => Carbon::now(),
-                'description' => "Payment for Invoice #{$invoice->invoice_number}"
+                'description' => "Payment for Invoice #{$invoice->invoice_number}",
             ]);
 
             // Update Invoice
             $paidTotal = $invoice->transactions()->sum('amount') + $amount; // + current amount since transaction created above? No, wait.
             // Transaction is created inside transaction block.
             // Let's re-query or just add.
-            
+
             if ($paidTotal >= $invoice->amount) {
                 $invoice->update([
                     'status' => 'paid',
-                    'paid_at' => Carbon::now()
+                    'paid_at' => Carbon::now(),
                 ]);
 
                 // Auto Open Isolir
                 if ($invoice->customer->status === 'suspend' && $invoice->customer->auto_isolate) {
                     $this->unblockCustomer($invoice->customer);
                 }
-                
+
                 // Send Notification
                 // WhatsAppService::sendPaymentSuccess($invoice->customer, $invoice);
             }
-            
+
             return $invoice;
         });
     }
@@ -109,13 +111,17 @@ class BillingService
     public function syncFromMixRadius(User $user, MixRadiusService $mix): void
     {
         $identity = $user->radius_username ?: ($user->username ?: $user->email);
-        if (!$identity) return;
+        if (! $identity) {
+            return;
+        }
         $items = $mix->fetchInvoices($identity);
-        if (!is_array($items)) return;
+        if (! is_array($items)) {
+            return;
+        }
         foreach ($items as $it) {
             try {
                 $code = $it['code'] ?? null;
-                $amount = isset($it['amount']) ? (int)$it['amount'] : null;
+                $amount = isset($it['amount']) ? (int) $it['amount'] : null;
                 $due = $it['due_date'] ?? null;
                 $status = $it['status'] ?? 'pending';
                 $dueDate = null;
@@ -130,30 +136,44 @@ class BillingService
                 if ($code) {
                     $inv = Invoice::where('user_id', $user->id)->where('code', $code)->first();
                 }
-                if (!$inv && $dueDate && $amount) {
+                if (! $inv && $dueDate && $amount) {
                     $inv = Invoice::where('user_id', $user->id)
                         ->whereDate('due_date', $dueDate->toDateString())
                         ->where('amount', $amount)
                         ->first();
                 }
-                if (!$inv) {
-                    $inv = new Invoice();
+                if (! $inv) {
+                    $inv = new Invoice;
                     $inv->user_id = $user->id;
                 }
-                if ($code && empty($inv->code)) $inv->code = $code;
-                if ($amount !== null) $inv->amount = $amount;
-                if ($dueDate) $inv->due_date = $dueDate;
+                if ($code && empty($inv->code)) {
+                    $inv->code = $code;
+                }
+                if ($amount !== null) {
+                    $inv->amount = $amount;
+                }
+                if ($dueDate) {
+                    $inv->due_date = $dueDate;
+                }
                 if ($status) {
                     $inv->status = $status === 'paid' ? 'paid' : 'pending';
-                    if ($inv->status === 'paid' && !$inv->paid_at) {
+                    if ($inv->status === 'paid' && ! $inv->paid_at) {
                         $inv->paid_at = Carbon::now();
                     }
                 }
                 $meta = $inv->meta ?? [];
-                if (!is_array($meta)) $meta = [];
-                if (!empty($it['package'])) $meta['package'] = $it['package'];
-                if (!empty($it['period'])) $meta['period'] = $it['period'];
-                if (!empty($meta)) $inv->meta = $meta;
+                if (! is_array($meta)) {
+                    $meta = [];
+                }
+                if (! empty($it['package'])) {
+                    $meta['package'] = $it['package'];
+                }
+                if (! empty($it['period'])) {
+                    $meta['period'] = $it['period'];
+                }
+                if (! empty($meta)) {
+                    $inv->meta = $meta;
+                }
                 $inv->save();
             } catch (\Throwable $e) {
                 Log::warning('Billing sync item failed', ['message' => $e->getMessage()]);
@@ -172,14 +192,14 @@ class BillingService
             ->get();
         foreach ($overdueInvoices as $invoice) {
             $customer = $invoice->customer;
-            
+
             if ($customer->status === 'active' && $customer->auto_isolate) {
                 // Block/Isolate
                 $this->isolateCustomer($customer);
-                
+
                 // Update Invoice Status
                 $invoice->update(['status' => 'overdue']);
-                
+
                 // Send Notification
                 // WhatsAppService::sendIsolationNotification($customer);
             }
@@ -188,8 +208,10 @@ class BillingService
 
     protected function unblockCustomer(Customer $customer)
     {
-        if (!$customer->router) return;
-        
+        if (! $customer->router) {
+            return;
+        }
+
         $mikrotik = new MikrotikService($customer->router);
         if ($mikrotik->toggleSecret($customer->pppoe_user, true)) {
             $customer->update(['status' => 'active']);
@@ -198,7 +220,9 @@ class BillingService
 
     protected function isolateCustomer(Customer $customer)
     {
-        if (!$customer->router) return;
+        if (! $customer->router) {
+            return;
+        }
 
         $mikrotik = new MikrotikService($customer->router);
         // Option 1: Disable Secret

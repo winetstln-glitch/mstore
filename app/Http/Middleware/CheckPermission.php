@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckPermission
 {
@@ -16,7 +16,7 @@ class CheckPermission
      */
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect('login');
         }
 
@@ -28,7 +28,7 @@ class CheckPermission
         }
 
         $permissions = explode('|', $permission);
-        
+
         foreach ($permissions as $perm) {
             if ($user->hasPermission($perm)) {
                 return $next($request);

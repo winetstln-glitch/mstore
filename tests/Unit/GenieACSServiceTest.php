@@ -2,11 +2,11 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Services\GenieACSService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class GenieACSServiceTest extends TestCase
 {
@@ -21,7 +21,7 @@ class GenieACSServiceTest extends TestCase
         Log::shouldReceive('warning')->byDefault();
     }
 
-    public function testUpdateWlanSettingsTr098DualBand()
+    public function test_update_wlan_settings_tr098_dual_band()
     {
         Http::fake([
             // Mock getDeviceDetails
@@ -32,23 +32,23 @@ class GenieACSServiceTest extends TestCase
                             'WLANConfiguration' => [
                                 1 => [
                                     'SSID' => ['_value' => 'OldSSID2G'],
-                                    'PreSharedKey' => [1 => ['PreSharedKey' => ['_value' => 'OldPass2G']]]
+                                    'PreSharedKey' => [1 => ['PreSharedKey' => ['_value' => 'OldPass2G']]],
                                 ],
                                 2 => [
                                     'SSID' => ['_value' => 'OldSSID5G'],
-                                    'PreSharedKey' => [1 => ['PreSharedKey' => ['_value' => 'OldPass5G']]]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                    'PreSharedKey' => [1 => ['PreSharedKey' => ['_value' => 'OldPass5G']]],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ], 200),
-            
+
             // Mock setParameterValues
             '*/devices/device-123/tasks?timeout=8000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWlanSettings('device-123', [
             'ssid_2g' => 'NewSSID2G',
             'password_2g' => 'NewPass2G',
@@ -60,7 +60,7 @@ class GenieACSServiceTest extends TestCase
 
         // Verify the request sent to GenieACS
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/tasks')) {
+            if (! str_contains($request->url(), '/tasks')) {
                 return false;
             }
 
@@ -83,7 +83,7 @@ class GenieACSServiceTest extends TestCase
         });
     }
 
-    public function testUpdateWlanSettingsTr098KeyPassphrase()
+    public function test_update_wlan_settings_tr098_key_passphrase()
     {
         Http::fake([
             '*/devices/device-kp' => Http::response([
@@ -93,17 +93,17 @@ class GenieACSServiceTest extends TestCase
                             'WLANConfiguration' => [
                                 1 => [
                                     'SSID' => ['_value' => 'OldSSID'],
-                                    'KeyPassphrase' => ['_value' => 'OldPass']
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                    'KeyPassphrase' => ['_value' => 'OldPass'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ], 200),
             '*/devices/device-kp/tasks*' => Http::response([], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWlanSettings('device-kp', [
             'ssid_2g' => 'NewSSID',
             'password_2g' => 'NewPass',
@@ -112,7 +112,7 @@ class GenieACSServiceTest extends TestCase
         $this->assertTrue($result);
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/tasks')) {
+            if (! str_contains($request->url(), '/tasks')) {
                 return false;
             }
 
@@ -125,10 +125,10 @@ class GenieACSServiceTest extends TestCase
 
             return isset($params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase']) &&
                 $params['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase'] === 'NewPass';
-            });
+        });
     }
 
-    public function testUpdateWlanSettingsTr098PreSharedKeyKeyPassphrase()
+    public function test_update_wlan_settings_tr098_pre_shared_key_key_passphrase()
     {
         Http::fake([
             '*/devices/device-psk-kp' => Http::response([
@@ -152,7 +152,7 @@ class GenieACSServiceTest extends TestCase
             '*/devices/device-psk-kp/tasks*' => Http::response([], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWlanSettings('device-psk-kp', [
             'ssid_2g' => 'NewSSID',
             'password_2g' => 'NewPass',
@@ -161,7 +161,7 @@ class GenieACSServiceTest extends TestCase
         $this->assertTrue($result);
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/tasks')) {
+            if (! str_contains($request->url(), '/tasks')) {
                 return false;
             }
 
@@ -177,7 +177,7 @@ class GenieACSServiceTest extends TestCase
         });
     }
 
-    public function testUpdateWlanSettingsTr181()
+    public function test_update_wlan_settings_tr181()
     {
         Http::fake([
             '*/devices/device-181' => Http::response([
@@ -185,19 +185,19 @@ class GenieACSServiceTest extends TestCase
                     'WiFi' => [
                         'SSID' => [
                             1 => ['SSID' => ['_value' => 'OldSSID2G']],
-                            2 => ['SSID' => ['_value' => 'OldSSID5G']]
+                            2 => ['SSID' => ['_value' => 'OldSSID5G']],
                         ],
                         'AccessPoint' => [
                             1 => ['Security' => ['KeyPassphrase' => ['_value' => 'OldPass2G']]],
-                            2 => ['Security' => ['KeyPassphrase' => ['_value' => 'OldPass5G']]]
-                        ]
-                    ]
-                ]
+                            2 => ['Security' => ['KeyPassphrase' => ['_value' => 'OldPass5G']]],
+                        ],
+                    ],
+                ],
             ], 200),
             '*/tasks*' => Http::response([], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWlanSettings('device-181', [
             'ssid_2g' => 'NewSSID2G',
             'password_2g' => 'NewPass2G',
@@ -209,7 +209,7 @@ class GenieACSServiceTest extends TestCase
 
     }
 
-    public function testUpdateWlanSettingsMissing5G()
+    public function test_update_wlan_settings_missing5_g()
     {
         Http::fake([
             '*/devices/device-no-5g' => Http::response([
@@ -217,16 +217,16 @@ class GenieACSServiceTest extends TestCase
                     'LANDevice' => [
                         1 => [
                             'WLANConfiguration' => [
-                                1 => ['SSID' => ['_value' => 'OldSSID']]
-                            ]
-                        ]
-                    ]
-                ]
+                                1 => ['SSID' => ['_value' => 'OldSSID']],
+                            ],
+                        ],
+                    ],
+                ],
             ], 200),
             '*/tasks*' => Http::response([], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWlanSettings('device-no-5g', [
             'ssid_2g' => 'NewSSID',
             'ssid_5g' => 'NewSSID5G', // Should be ignored
@@ -236,7 +236,7 @@ class GenieACSServiceTest extends TestCase
 
     }
 
-    public function testUpdateWanSettingsUsesVendorSpecificVlanParametersWhenAvailable()
+    public function test_update_wan_settings_uses_vendor_specific_vlan_parameters_when_available()
     {
         Http::fake([
             '*/devices/device-vlan' => Http::response([
@@ -253,26 +253,26 @@ class GenieACSServiceTest extends TestCase
                                             'X_CU_VLANEnabled' => ['_value' => true],
                                             'X_CU_VLAN' => ['_value' => 100],
                                             'X_CMCC_VLANIDMark' => ['_value' => 100],
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ], 200),
             '*/tasks*' => Http::response([
                 'name' => 'setParameterValues',
             ], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->updateWanSettings('device-vlan', 'newuser', 'newpass', 200);
 
         $this->assertTrue($result);
     }
 
-    public function testSetParameterValuesTreatsCurl52AsSuccess()
+    public function test_set_parameter_values_treats_curl52_as_success()
     {
         Http::fake([
             '*/devices/device-error/tasks?timeout=3000&connection_request' => Http::response([], 500),
@@ -281,7 +281,7 @@ class GenieACSServiceTest extends TestCase
             },
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->setParameterValues('device-error', [
             'Device.Test.Param' => 'value',
         ]);
@@ -289,14 +289,14 @@ class GenieACSServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function testRebootDeviceFallsBackToQueueOnFailure()
+    public function test_reboot_device_falls_back_to_queue_on_failure()
     {
         Http::fake([
             '*/devices/device-reboot/tasks?timeout=3000&connection_request' => Http::response([], 500),
             '*/devices/device-reboot/tasks' => Http::response([], 200),
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->rebootDevice('device-reboot');
 
         $this->assertTrue($result);
@@ -306,7 +306,7 @@ class GenieACSServiceTest extends TestCase
         });
     }
 
-    public function testRebootDeviceTreatsCurlTimeoutAsSuccess()
+    public function test_reboot_device_treats_curl_timeout_as_success()
     {
         Http::fake([
             '*/devices/device-reboot-timeout/tasks?timeout=3000&connection_request' => Http::response([], 500),
@@ -315,7 +315,7 @@ class GenieACSServiceTest extends TestCase
             },
         ]);
 
-        $service = new GenieACSService();
+        $service = new GenieACSService;
         $result = $service->rebootDevice('device-reboot-timeout');
 
         $this->assertTrue($result);

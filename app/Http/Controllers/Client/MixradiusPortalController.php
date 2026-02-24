@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\Device;
-use App\Models\Invoice;
 use App\Models\Customer;
-use Illuminate\Support\Facades\Auth;
-use App\Services\GenieACSService;
+use App\Models\Device;
 use App\Models\Ticket;
+use App\Services\GenieACSService;
+use Illuminate\Support\Facades\Auth;
 
 class MixradiusPortalController extends Controller
 {

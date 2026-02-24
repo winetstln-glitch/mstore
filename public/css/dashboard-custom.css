@@ -84,7 +84,7 @@ body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     z-index: 1000;
     overflow-y: auto;
     scrollbar-width: thin;
-    background: var(--dark-sidebar-bg);
+    background: #ffffff;
     box-shadow: 2px 0 20px rgba(0,0,0,0.1);
 }
 
@@ -165,7 +165,7 @@ body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 
 /* Submenu (Collapse) */
 .collapse .bg-light {
-    background-color: rgba(0,0,0,0.1) !important; /* Darken submenu bg */
+    background-color: #f8f9fa !important;
 }
 .collapse .sidebar-item {
     padding-left: 55px;
@@ -333,6 +333,9 @@ body.sb-sidenav-toggled #page-content-wrapper {
 }
 [data-bs-theme="dark"] #sidebar-wrapper {
     background: #283046; /* Vuexy dark sidebar */
+}
+[data-bs-theme="dark"] .collapse .bg-light {
+    background-color: rgba(0,0,0,0.1) !important;
 }
 [data-bs-theme="dark"] .card {
     background-color: #1e293b;

@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ApiKey;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Str;
 
 class ApiKeyController extends Controller implements HasMiddleware
 {
@@ -21,6 +21,7 @@ class ApiKeyController extends Controller implements HasMiddleware
     public function index()
     {
         $keys = ApiKey::latest()->paginate(10);
+
         return view('settings.apikeys.index', compact('keys'));
     }
 
@@ -42,12 +43,14 @@ class ApiKeyController extends Controller implements HasMiddleware
     public function destroy(ApiKey $apiKey)
     {
         $apiKey->delete();
+
         return redirect()->back()->with('success', 'API Key deleted successfully.');
     }
 
     public function toggle(ApiKey $apiKey)
     {
-        $apiKey->update(['is_active' => !$apiKey->is_active]);
+        $apiKey->update(['is_active' => ! $apiKey->is_active]);
+
         return redirect()->back()->with('success', 'API Key status updated.');
     }
 }

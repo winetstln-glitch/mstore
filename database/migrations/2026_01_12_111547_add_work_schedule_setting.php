@@ -1,9 +1,7 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use App\Models\Setting;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -37,7 +35,7 @@ return new class extends Migration
             'type' => 'number',
             'label' => 'Allowed Radius (meters)',
         ]);
-        
+
         Setting::create([
             'key' => 'attendance_late_tolerance',
             'value' => '15', // minutes

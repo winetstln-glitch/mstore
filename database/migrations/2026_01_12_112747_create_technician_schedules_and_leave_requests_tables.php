@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Setting;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Models\Setting;
 
 return new class extends Migration
 {
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('status', ['piket', 'off', 'backup'])->default('piket');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             // Prevent duplicate schedule for same user in same week
             $table->unique(['user_id', 'week_number', 'year']);
         });

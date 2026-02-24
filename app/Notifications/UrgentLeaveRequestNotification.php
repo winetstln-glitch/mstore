@@ -26,10 +26,9 @@ class UrgentLeaveRequestNotification extends Notification
     {
         return [
             'subject' => 'Urgent leave request',
-            'message' => $this->leave->user->name . ' mengajukan izin mendadak: ' . $this->leave->reason,
+            'message' => $this->leave->user->name.' mengajukan izin mendadak: '.$this->leave->reason,
             'url' => route('leave-requests.index', ['reason_keyword' => 'mendadak']),
             'leave_request_id' => $this->leave->id,
         ];
     }
 }
-

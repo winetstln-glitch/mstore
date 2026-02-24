@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
 use App\Models\Account;
+use App\Models\Transaction;
 use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +16,7 @@ class WashExpenseController extends Controller
             ->where('reference_number', 'like', 'WASH-EXP-%')
             ->latest('transaction_date')
             ->paginate(15);
+
         return view('wash.expenses.index', compact('expenses'));
     }
 
@@ -39,7 +40,7 @@ class WashExpenseController extends Controller
             'amount' => $data['amount'],
             'description' => $data['description'],
             'transaction_date' => $data['transaction_date'],
-            'reference_number' => 'WASH-EXP-' . now()->format('YmdHis'),
+            'reference_number' => 'WASH-EXP-'.now()->format('YmdHis'),
         ]);
 
         $expAccId = Account::where('code', '6005')->value('id');
@@ -47,7 +48,7 @@ class WashExpenseController extends Controller
         if ($expAccId && $cashAccId) {
             $poster = app(AccountingPoster::class);
             $poster->post(
-                'WASH-EXP-' . now()->format('YmdHis'),
+                'WASH-EXP-'.now()->format('YmdHis'),
                 $data['transaction_date'],
                 $data['description'],
                 [

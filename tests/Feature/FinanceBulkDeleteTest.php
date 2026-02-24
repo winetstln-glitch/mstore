@@ -3,12 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Coordinator;
+use App\Models\Region;
+use App\Models\Role;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Models\Region;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Role;
-use App\Models\Permission;
 use Tests\TestCase;
 
 class FinanceBulkDeleteTest extends TestCase
@@ -16,8 +15,11 @@ class FinanceBulkDeleteTest extends TestCase
     use RefreshDatabase;
 
     protected $admin;
+
     protected $coordinatorUser;
+
     protected $coordinator;
+
     protected $region;
 
     protected function setUp(): void
@@ -57,8 +59,8 @@ class FinanceBulkDeleteTest extends TestCase
                 'category' => 'Salary',
                 'amount' => 100000,
                 'transaction_date' => now(),
-                'description' => 'Test Transaction ' . $i,
-                'reference_number' => 'REF-' . $i,
+                'description' => 'Test Transaction '.$i,
+                'reference_number' => 'REF-'.$i,
             ]));
         }
 
@@ -81,7 +83,7 @@ class FinanceBulkDeleteTest extends TestCase
         $this->actingAs($this->admin);
 
         // Create transaction with related commission/isp/tool
-        
+
         $mainTransaction = Transaction::create([
             'user_id' => $this->admin->id,
             'type' => 'income',
@@ -93,10 +95,10 @@ class FinanceBulkDeleteTest extends TestCase
         ]);
 
         $related = [
-            'COM-' . $mainTransaction->id,
-            'ISP-' . $mainTransaction->id,
-            'TOOL-' . $mainTransaction->id,
-            'INV-' . $mainTransaction->id,
+            'COM-'.$mainTransaction->id,
+            'ISP-'.$mainTransaction->id,
+            'TOOL-'.$mainTransaction->id,
+            'INV-'.$mainTransaction->id,
         ];
 
         foreach ($related as $ref) {
@@ -145,7 +147,7 @@ class FinanceBulkDeleteTest extends TestCase
     public function test_admin_sees_checkboxes()
     {
         $this->actingAs($this->admin);
-        
+
         Transaction::create([
             'user_id' => $this->admin->id,
             'type' => 'income',
@@ -165,7 +167,7 @@ class FinanceBulkDeleteTest extends TestCase
     public function test_coordinator_does_not_see_checkboxes()
     {
         $this->actingAs($this->coordinatorUser);
-        
+
         Transaction::create([
             'user_id' => $this->coordinatorUser->id,
             'coordinator_id' => $this->coordinator->id,

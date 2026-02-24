@@ -111,6 +111,63 @@
                                     </div>
 
                                     <div class="col-12">
+                                        <div class="border rounded p-3">
+                                            <div class="fw-bold mb-2">{{ __('Port / WLAN Binding') }}</div>
+                                            <div class="row g-2">
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_lan1" name="bindings[Lan1]" value="1" {{ !empty($wanSettings['bindings']['Lan1']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_lan1">LAN 1</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_lan2" name="bindings[Lan2]" value="1" {{ !empty($wanSettings['bindings']['Lan2']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_lan2">LAN 2</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_lan3" name="bindings[Lan3]" value="1" {{ !empty($wanSettings['bindings']['Lan3']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_lan3">LAN 3</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_lan4" name="bindings[Lan4]" value="1" {{ !empty($wanSettings['bindings']['Lan4']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_lan4">LAN 4</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_ssid1" name="bindings[SSID1]" value="1" {{ !empty($wanSettings['bindings']['SSID1']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_ssid1">SSID 1</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_ssid2" name="bindings[SSID2]" value="1" {{ !empty($wanSettings['bindings']['SSID2']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_ssid2">SSID 2</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_ssid3" name="bindings[SSID3]" value="1" {{ !empty($wanSettings['bindings']['SSID3']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_ssid3">SSID 3</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="bind_ssid4" name="bindings[SSID4]" value="1" {{ !empty($wanSettings['bindings']['SSID4']) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="bind_ssid4">SSID 4</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+
+                                    <div class="col-12">
                                         <div class="alert alert-info py-2 mb-0">
                                             <small><strong>{{ __('Current Status') }}:</strong> {{ $wanSettings['status'] ?? 'Unknown' }}</small>
                                         </div>

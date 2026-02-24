@@ -16,7 +16,7 @@ class DashboardAttendanceTest extends TestCase
     public function test_admin_dashboard_shows_attendance_widget()
     {
         app()->setLocale('id');
-        
+
         // Create Admin with attendance permission
         $role = Role::create(['name' => 'admin', 'label' => 'Admin']);
         $permission = Permission::firstOrCreate(
@@ -24,7 +24,7 @@ class DashboardAttendanceTest extends TestCase
             ['label' => 'View Attendance', 'group' => 'Attendance']
         );
         $role->permissions()->attach($permission);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
@@ -50,7 +50,7 @@ class DashboardAttendanceTest extends TestCase
             ['label' => 'View Dashboard', 'group' => 'Dashboard']
         );
         $role->permissions()->attach([$permission->id, $dashboardPermission->id]);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
@@ -76,7 +76,7 @@ class DashboardAttendanceTest extends TestCase
             ['label' => 'View Dashboard', 'group' => 'Dashboard']
         );
         $role->permissions()->attach([$permission->id, $dashboardPermission->id]);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
 
         // Create attendance record
@@ -87,7 +87,7 @@ class DashboardAttendanceTest extends TestCase
             'status' => 'present',
             'latitude' => -6.2,
             'longitude' => 106.8,
-            'photo_in' => 'test.jpg'
+            'photo_in' => 'test.jpg',
         ]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));

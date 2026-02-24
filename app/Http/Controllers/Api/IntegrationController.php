@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\ApiKey;
 use App\Models\Olt;
-use App\Models\Router; // Assuming Router model exists for Mikrotik
+use App\Models\Router;
+use App\Services\MikrotikService; // Assuming Router model exists for Mikrotik
 use App\Services\Olt\OltService;
-use App\Services\MikrotikService;
+use Illuminate\Http\Request;
 
 class IntegrationController extends Controller
 {
@@ -24,13 +24,13 @@ class IntegrationController extends Controller
         $apiKeyStr = $request->query('api_key');
         $endpoint = $request->query('endpoint');
 
-        if (!$apiKeyStr) {
+        if (! $apiKeyStr) {
             return response()->json(['error' => 'API Key required'], 401);
         }
 
         $apiKey = ApiKey::where('key', $apiKeyStr)->where('is_active', true)->first();
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return response()->json(['error' => 'Invalid or inactive API Key'], 401);
         }
 
@@ -65,12 +65,12 @@ class IntegrationController extends Controller
         $deviceId = $request->query('device_id');
         $pon = $request->query('pon');
 
-        if (!$deviceId) {
+        if (! $deviceId) {
             return response()->json(['error' => 'device_id required'], 400);
         }
 
         $olt = Olt::find($deviceId);
-        if (!$olt) {
+        if (! $olt) {
             return response()->json(['error' => 'OLT not found'], 404);
         }
 
@@ -83,7 +83,7 @@ class IntegrationController extends Controller
             // Filter by PON if provided
             if ($pon) {
                 // PON filtering logic:
-                // User might send '1', '0/1', 'EPON0/1'. 
+                // User might send '1', '0/1', 'EPON0/1'.
                 // We'll do a loose match on the interface name.
                 $onus = array_values(array_filter($onus, function ($onu) use ($pon) {
                     // Check if interface contains the pon string (e.g. "0/1" in "EPON0/1:1")
@@ -98,7 +98,7 @@ class IntegrationController extends Controller
                 'device_id' => $olt->id,
                 'name' => $olt->name,
                 'total_onus' => count($onus),
-                'data' => $onus
+                'data' => $onus,
             ]);
 
         } catch (\Exception $e) {
@@ -110,18 +110,18 @@ class IntegrationController extends Controller
     {
         $deviceId = $request->query('device_id');
 
-        if (!$deviceId) {
+        if (! $deviceId) {
             return response()->json(['error' => 'device_id required'], 400);
         }
 
         $router = Router::find($deviceId);
-        if (!$router) {
+        if (! $router) {
             return response()->json(['error' => 'Router not found'], 404);
         }
 
         try {
             $service = new MikrotikService($router);
-            if (!$service->isConnected()) {
+            if (! $service->isConnected()) {
                 return response()->json(['error' => 'Could not connect to Mikrotik'], 500);
             }
 
@@ -133,8 +133,8 @@ class IntegrationController extends Controller
                 'device_id' => $router->id,
                 'name' => $router->name,
                 'uptime' => $resource['uptime'] ?? 'N/A',
-                'cpu_load' => ($resource['cpu-load'] ?? 0) . '%',
-                'memory_usage' => $this->formatBytes(($resource['total-memory'] ?? 0) - ($resource['free-memory'] ?? 0)) . ' / ' . $this->formatBytes($resource['total-memory'] ?? 0),
+                'cpu_load' => ($resource['cpu-load'] ?? 0).'%',
+                'memory_usage' => $this->formatBytes(($resource['total-memory'] ?? 0) - ($resource['free-memory'] ?? 0)).' / '.$this->formatBytes($resource['total-memory'] ?? 0),
                 'pppoe_active' => $pppoeCount,
                 'hotspot_active' => $hotspotCount,
                 'version' => $resource['version'] ?? 'N/A',
@@ -153,6 +153,7 @@ class IntegrationController extends Controller
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
-        return round($bytes, $precision) . ' ' . $units[$pow];
+
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }

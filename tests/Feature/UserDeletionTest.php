@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
-use App\Models\Permission;
 
 class UserDeletionTest extends TestCase
 {
@@ -18,14 +18,14 @@ class UserDeletionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         $permission = Permission::firstOrCreate(
             ['name' => 'user.delete'],
             ['label' => 'Delete User', 'group' => 'User Management']
         );
         $adminRole->permissions()->attach($permission);
-        
+
         $this->admin = User::create([
             'name' => 'Admin',
             'email' => 'admin@example.com',
@@ -59,7 +59,7 @@ class UserDeletionTest extends TestCase
 
         $response->assertRedirect(route('users.index'));
         $response->assertSessionHas('success');
-        
+
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
         // Attendance should be cascaded (deleted)
         $this->assertDatabaseMissing('technician_attendances', ['user_id' => $user->id]);
@@ -89,7 +89,7 @@ class UserDeletionTest extends TestCase
         $response = $this->actingAs($this->admin)->delete(route('users.destroy', $user));
 
         $response->assertRedirect(route('users.index'));
-        
+
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
         // Transaction should be kept but user_id set to null
         $this->assertDatabaseHas('transactions', ['user_id' => null, 'amount' => 100000]);

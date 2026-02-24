@@ -52,12 +52,13 @@ class Odp extends Model
     {
         return $this->hasMany(Htb::class);
     }
-    
+
     public function isFull(): bool
     {
         if ($this->capacity === null) {
             return false;
         }
+
         return $this->filled >= $this->capacity;
     }
 }

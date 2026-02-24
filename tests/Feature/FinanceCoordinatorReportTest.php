@@ -6,7 +6,6 @@ use App\Models\Coordinator;
 use App\Models\Permission;
 use App\Models\Region;
 use App\Models\Role;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,6 +15,7 @@ class FinanceCoordinatorReportTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $coordinator;
 
     protected function setUp(): void
@@ -25,7 +25,7 @@ class FinanceCoordinatorReportTest extends TestCase
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         $permission = Permission::create(['name' => 'finance.view', 'label' => 'View Finance', 'group' => 'Finance']);
         $role->permissions()->attach($permission);
-        
+
         $this->user = User::factory()->create(['role_id' => $role->id]);
 
         $region = Region::create(['name' => 'Test Region', 'code' => 'TR']);
@@ -33,7 +33,7 @@ class FinanceCoordinatorReportTest extends TestCase
             'name' => 'Test Coordinator',
             'phone' => '08123456789',
             'address' => 'Test Address',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ]);
     }
 

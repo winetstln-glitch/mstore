@@ -24,13 +24,14 @@ class MixradiusImportUsers extends Command
         $update = (bool) $this->option('update-existing');
         $dry = (bool) $this->option('dry-run');
 
-        if (!$file || !is_file($file)) {
+        if (! $file || ! is_file($file)) {
             $this->error('File tidak ditemukan. Gunakan --file=path/to/file.csv');
+
             return self::INVALID;
         }
 
         $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-        $reader = $ext === 'csv' ? new CSVReader() : new XLSXReader();
+        $reader = $ext === 'csv' ? new CSVReader : new XLSXReader;
 
         $created = 0;
         $updated = 0;
@@ -54,10 +55,12 @@ class MixradiusImportUsers extends Command
                             $header = array_map(function ($v) {
                                 return strtolower(trim((string) $v));
                             }, $values);
-                            if (!in_array('login', $header, true) && !in_array('pppoe_user', $header, true) && !in_array('name', $header, true)) {
+                            if (! in_array('login', $header, true) && ! in_array('pppoe_user', $header, true) && ! in_array('name', $header, true)) {
                                 $this->error('Header minimal harus memuat kolom Login atau PPPoE_User atau Name');
+
                                 return self::INVALID;
                             }
+
                             continue;
                         }
 
@@ -67,21 +70,26 @@ class MixradiusImportUsers extends Command
                             $values = array_pad($values, count($header), null);
                         }
                         $rowMap = array_combine($header, $values);
-                        if (!$rowMap) {
+                        if (! $rowMap) {
                             $skipped++;
+
                             continue;
                         }
 
                         $get = function ($key) use ($rowMap) {
                             $val = $rowMap[$key] ?? null;
-                            if (is_string($val)) $val = trim($val);
+                            if (is_string($val)) {
+                                $val = trim($val);
+                            }
+
                             return $val === '' ? null : $val;
                         };
 
                         $pppoeUser = $get('login') ?? $get('pppoe_user');
                         $name = $get('fullname') ?? $get('full_name') ?? $get('name') ?? $pppoeUser;
-                        if (!$name && !$pppoeUser) {
+                        if (! $name && ! $pppoeUser) {
                             $skipped++;
+
                             continue;
                         }
 
@@ -89,7 +97,9 @@ class MixradiusImportUsers extends Command
                         $odpId = null;
                         if ($odpName) {
                             $o = Odp::where('name', $odpName)->first();
-                            if ($o) $odpId = $o->id;
+                            if ($o) {
+                                $odpId = $o->id;
+                            }
                         }
 
                         $htbId = null;
@@ -125,15 +135,15 @@ class MixradiusImportUsers extends Command
                             'genieacs_device_id' => $get('genieacs_device_id'),
                         ];
 
-                        if (!in_array($data['status'], ['active', 'suspend', 'terminated'])) {
+                        if (! in_array($data['status'], ['active', 'suspend', 'terminated'])) {
                             $data['status'] = 'active';
                         }
 
                         $existing = null;
-                        if (!empty($data['pppoe_user'])) {
+                        if (! empty($data['pppoe_user'])) {
                             $existing = Customer::where('pppoe_user', $data['pppoe_user'])->first();
                         }
-                        if (!$existing && !empty($name)) {
+                        if (! $existing && ! empty($name)) {
                             $existing = Customer::where('name', $name)->first();
                         }
 
@@ -165,11 +175,12 @@ class MixradiusImportUsers extends Command
             $reader->close();
 
             $this->info("Selesai. created={$created}, updated={$updated}, skipped={$skipped}, failed={$failed}, dry={$dry}");
+
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error('Gagal import: ' . $e->getMessage());
+            $this->error('Gagal import: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }
 }
-

@@ -13,19 +13,19 @@ return new class extends Migration
     {
         // Fix Wash Transactions
         Schema::table('wash_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('wash_transactions', 'cash_amount')) {
+            if (! Schema::hasColumn('wash_transactions', 'cash_amount')) {
                 $table->decimal('cash_amount', 15, 2)->nullable()->after('payment_method');
             }
-            if (!Schema::hasColumn('wash_transactions', 'change_amount')) {
+            if (! Schema::hasColumn('wash_transactions', 'change_amount')) {
                 $table->decimal('change_amount', 15, 2)->nullable()->after('cash_amount');
             }
-            if (!Schema::hasColumn('wash_transactions', 'discount_amount')) {
+            if (! Schema::hasColumn('wash_transactions', 'discount_amount')) {
                 $table->decimal('discount_amount', 15, 2)->default(0)->after('total_amount');
             }
-            if (!Schema::hasColumn('wash_transactions', 'wash_customer_id')) {
+            if (! Schema::hasColumn('wash_transactions', 'wash_customer_id')) {
                 $table->foreignId('wash_customer_id')->nullable()->after('user_id')->constrained('wash_customers')->nullOnDelete();
             }
-            if (!Schema::hasColumn('wash_transactions', 'vehicle_brand')) {
+            if (! Schema::hasColumn('wash_transactions', 'vehicle_brand')) {
                 $table->string('vehicle_brand')->nullable()->after('vehicle_plate');
             }
         });
@@ -36,9 +36,9 @@ return new class extends Migration
                 // Make it nullable so we can use product_id instead
                 $table->unsignedBigInteger('atk_product_id')->nullable()->change();
             }
-            
-            if (!Schema::hasColumn('atk_transaction_items', 'product_id')) {
-                 $table->foreignId('product_id')->nullable()->after('atk_transaction_id')->constrained('atk_products')->nullOnDelete();
+
+            if (! Schema::hasColumn('atk_transaction_items', 'product_id')) {
+                $table->foreignId('product_id')->nullable()->after('atk_transaction_id')->constrained('atk_products')->nullOnDelete();
             }
         });
     }

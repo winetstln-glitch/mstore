@@ -3,30 +3,31 @@
 namespace App\Services;
 
 use App\Models\Router;
-use RouterOS\Client;
-use RouterOS\Query;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use RouterOS\Client;
+use RouterOS\Query;
 
 class MikrotikService
 {
     protected $client;
+
     protected $router;
 
     public function __construct(Router $router)
     {
         $this->router = $router;
-        
+
         try {
             $host = $router->vpn_tunnel_ip ?: $router->host;
             $this->client = new Client([
                 'host' => $host,
                 'user' => $router->username,
                 'pass' => $router->password,
-                'port' => (int)$router->port,
+                'port' => (int) $router->port,
             ]);
         } catch (Exception $e) {
-            Log::error("Failed to connect to Mikrotik {$router->name}: " . $e->getMessage());
+            Log::error("Failed to connect to Mikrotik {$router->name}: ".$e->getMessage());
             $this->client = null;
         }
     }
@@ -44,9 +45,12 @@ class MikrotikService
      */
     public function getSecrets()
     {
-        if (!$this->client) return [];
-        
+        if (! $this->client) {
+            return [];
+        }
+
         $query = new Query('/ppp/secret/print');
+
         return $this->client->query($query)->read();
     }
 
@@ -55,7 +59,9 @@ class MikrotikService
      */
     public function createSecret($name, $password, $profile = 'default', $localAddress = null, $remoteAddress = null, $service = 'pppoe')
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             $query = new Query('/ppp/secret/add');
@@ -63,14 +69,20 @@ class MikrotikService
             $query->equal('password', $password);
             $query->equal('profile', $profile);
             $query->equal('service', $service);
-            
-            if ($localAddress) $query->equal('local-address', $localAddress);
-            if ($remoteAddress) $query->equal('remote-address', $remoteAddress);
+
+            if ($localAddress) {
+                $query->equal('local-address', $localAddress);
+            }
+            if ($remoteAddress) {
+                $query->equal('remote-address', $remoteAddress);
+            }
 
             $this->client->query($query)->read();
+
             return true;
         } catch (Exception $e) {
-            Log::error("Mikrotik Add Secret Error: " . $e->getMessage());
+            Log::error('Mikrotik Add Secret Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -80,7 +92,9 @@ class MikrotikService
      */
     public function updateSecret($oldName, $data)
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             // Find ID first
@@ -88,21 +102,25 @@ class MikrotikService
             $query->where('name', $oldName);
             $secrets = $this->client->query($query)->read();
 
-            if (empty($secrets)) return false;
+            if (empty($secrets)) {
+                return false;
+            }
 
             $id = $secrets[0]['.id'];
 
             $query = new Query('/ppp/secret/set');
             $query->equal('.id', $id);
-            
+
             foreach ($data as $key => $value) {
                 $query->equal($key, $value);
             }
 
             $this->client->query($query)->read();
+
             return true;
         } catch (Exception $e) {
-            Log::error("Mikrotik Update Secret Error: " . $e->getMessage());
+            Log::error('Mikrotik Update Secret Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -112,30 +130,35 @@ class MikrotikService
      */
     public function toggleSecret($name, $enable = true)
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             $query = new Query('/ppp/secret/print');
             $query->where('name', $name);
             $secrets = $this->client->query($query)->read();
 
-            if (empty($secrets)) return false;
+            if (empty($secrets)) {
+                return false;
+            }
             $id = $secrets[0]['.id'];
 
             $action = $enable ? 'enable' : 'disable';
             $query = new Query("/ppp/secret/$action");
             $query->equal('.id', $id);
-            
+
             $this->client->query($query)->read();
-            
+
             // If disabling, also kill active connection
-            if (!$enable) {
+            if (! $enable) {
                 $this->killActive($name);
             }
-            
+
             return true;
         } catch (Exception $e) {
-            Log::error("Mikrotik Toggle Secret Error: " . $e->getMessage());
+            Log::error('Mikrotik Toggle Secret Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -145,7 +168,9 @@ class MikrotikService
      */
     public function killActive($name)
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             $query = new Query('/ppp/active/print');
@@ -157,9 +182,11 @@ class MikrotikService
                 $kill->equal('.id', $conn['.id']);
                 $this->client->query($kill)->read();
             }
+
             return true;
         } catch (Exception $e) {
-            Log::error("Mikrotik Kill Active Error: " . $e->getMessage());
+            Log::error('Mikrotik Kill Active Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -169,15 +196,19 @@ class MikrotikService
      */
     public function isPppoeActive($username)
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             $query = new Query('/ppp/active/print');
             $query->where('name', $username);
             $response = $this->client->query($query)->read();
+
             return count($response) > 0;
         } catch (Exception $e) {
-            Log::error("Mikrotik query error: " . $e->getMessage());
+            Log::error('Mikrotik query error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -187,31 +218,37 @@ class MikrotikService
      */
     public function getInterfaceTraffic($interfaceName)
     {
-        if (!$this->client) return null;
+        if (! $this->client) {
+            return null;
+        }
 
         try {
             $query = new Query('/interface/monitor-traffic');
             $query->equal('interface', $interfaceName);
             $query->equal('once', 'true');
-            
+
             $response = $this->client->query($query)->read();
-            
-            if (!empty($response)) {
+
+            if (! empty($response)) {
                 return $response[0]; // rx-bits-per-second, tx-bits-per-second
             }
+
             return null;
         } catch (Exception $e) {
             return null;
         }
     }
-    
+
     /**
      * Get Profiles
      */
     public function getProfiles()
     {
-        if (!$this->client) return [];
+        if (! $this->client) {
+            return [];
+        }
         $query = new Query('/ppp/profile/print');
+
         return $this->client->query($query)->read();
     }
 
@@ -220,11 +257,14 @@ class MikrotikService
      */
     public function getSystemResource()
     {
-        if (!$this->client) return null;
+        if (! $this->client) {
+            return null;
+        }
         try {
             $query = new Query('/system/resource/print');
             $response = $this->client->query($query)->read();
-            return !empty($response) ? $response[0] : null;
+
+            return ! empty($response) ? $response[0] : null;
         } catch (Exception $e) {
             return null;
         }
@@ -235,10 +275,13 @@ class MikrotikService
      */
     public function getPppoeActiveCount()
     {
-        if (!$this->client) return 0;
+        if (! $this->client) {
+            return 0;
+        }
         try {
             $query = new Query('/ppp/active/print');
             $query->where('service', 'pppoe');
+
             return count($this->client->query($query)->read());
         } catch (Exception $e) {
             return 0;
@@ -247,10 +290,13 @@ class MikrotikService
 
     public function getPppoeActiveList()
     {
-        if (!$this->client) return [];
+        if (! $this->client) {
+            return [];
+        }
         try {
             $query = new Query('/ppp/active/print');
             $query->where('service', 'pppoe');
+
             return $this->client->query($query)->read();
         } catch (Exception $e) {
             return [];
@@ -262,9 +308,12 @@ class MikrotikService
      */
     public function getHotspotActiveCount()
     {
-        if (!$this->client) return 0;
+        if (! $this->client) {
+            return 0;
+        }
         try {
             $query = new Query('/ip/hotspot/active/print');
+
             return count($this->client->query($query)->read());
         } catch (Exception $e) {
             return 0;
@@ -273,9 +322,12 @@ class MikrotikService
 
     public function getHotspotActiveList()
     {
-        if (!$this->client) return [];
+        if (! $this->client) {
+            return [];
+        }
         try {
             $query = new Query('/ip/hotspot/active/print');
+
             return $this->client->query($query)->read();
         } catch (Exception $e) {
             return [];
@@ -284,22 +336,28 @@ class MikrotikService
 
     public function disconnectHotspotById(string $id): bool
     {
-        if (!$this->client) return false;
+        if (! $this->client) {
+            return false;
+        }
 
         try {
             $query = new Query('/ip/hotspot/active/remove');
             $query->equal('.id', $id);
             $this->client->query($query)->read();
+
             return true;
         } catch (Exception $e) {
-            Log::error("Mikrotik Hotspot Disconnect Error: " . $e->getMessage());
+            Log::error('Mikrotik Hotspot Disconnect Error: '.$e->getMessage());
+
             return false;
         }
     }
 
     public function getInterfacesTrafficSnapshot(int $limit = 4)
     {
-        if (!$this->client) return [];
+        if (! $this->client) {
+            return [];
+        }
 
         try {
             $query = new Query('/interface/print');
@@ -309,7 +367,7 @@ class MikrotikService
             $count = 0;
 
             foreach ($interfaces as $interface) {
-                if (!is_array($interface) || empty($interface['name'])) {
+                if (! is_array($interface) || empty($interface['name'])) {
                     continue;
                 }
 

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
+use App\Models\User;
+use App\Services\MixRadiusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use App\Services\MixRadiusService;
-use App\Models\User;
-use App\Models\Role;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
@@ -33,17 +33,17 @@ class LoginController extends Controller
         $enforceCustomer = (bool) env('MIXRADIUS_ENFORCE_CUSTOMER_LOGIN', false);
 
         $isEmail = (bool) filter_var($login, FILTER_VALIDATE_EMAIL);
-        if (!$isEmail) {
+        if (! $isEmail) {
             $identity = $login;
             try {
                 if (ctype_digit($login)) {
-                    $customer = \App\Models\Customer::with('user')->find((int)$login);
+                    $customer = \App\Models\Customer::with('user')->find((int) $login);
                     if ($customer) {
-                        if (!empty($customer->pppoe_user)) {
+                        if (! empty($customer->pppoe_user)) {
                             $identity = $customer->pppoe_user;
-                        } elseif ($customer->user && !empty($customer->user->username)) {
+                        } elseif ($customer->user && ! empty($customer->user->username)) {
                             $identity = $customer->user->username;
-                        } elseif ($customer->user && !empty($customer->user->email)) {
+                        } elseif ($customer->user && ! empty($customer->user->email)) {
                             $identity = $customer->user->email;
                         }
                     }
@@ -60,7 +60,8 @@ class LoginController extends Controller
                         }
                     }
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
             if ($identity === $login && ctype_digit($login)) {
                 $resolved = $mixRadius->resolveUsernameById($login);
                 if (is_string($resolved) && $resolved !== '') {
@@ -71,15 +72,15 @@ class LoginController extends Controller
             try {
                 $verify = $mixRadius->verifyCredentials($identity, $password);
                 if ($verify['ok'] ?? false) {
-                    $email = filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($verify['data']['email'] ?? ($identity . '@local.test'));
+                    $email = filter_var($identity, FILTER_VALIDATE_EMAIL) ? $identity : ($verify['data']['email'] ?? ($identity.'@local.test'));
                     $username = filter_var($identity, FILTER_VALIDATE_EMAIL) ? ($verify['data']['username'] ?? null) : $identity;
 
                     $user = User::query()
-                        ->when($email, fn($q) => $q->where('email', $email))
-                        ->when(!$email && $username, fn($q) => $q->orWhere('username', $username))
+                        ->when($email, fn ($q) => $q->where('email', $email))
+                        ->when(! $email && $username, fn ($q) => $q->orWhere('username', $username))
                         ->first();
 
-                    if (!$user) {
+                    if (! $user) {
                         $roleId = Role::where('name', 'customer')->value('id');
                         $user = User::create([
                             'name' => $verify['data']['name'] ?? ($username ?: $email),
@@ -94,16 +95,17 @@ class LoginController extends Controller
                         try {
                             $cust = null;
                             if (ctype_digit($login)) {
-                                $cust = \App\Models\Customer::find((int)$login);
+                                $cust = \App\Models\Customer::find((int) $login);
                             }
-                            if (!$cust && !empty($username)) {
+                            if (! $cust && ! empty($username)) {
                                 $cust = \App\Models\Customer::where('pppoe_user', $username)->first();
                             }
                             if ($cust && empty($cust->user_id)) {
                                 $cust->user_id = $user->id;
                                 $cust->save();
                             }
-                        } catch (\Throwable $e) {}
+                        } catch (\Throwable $e) {
+                        }
                     } else {
                         $user->fill([
                             'username' => $user->username ?: $username,
@@ -115,6 +117,7 @@ class LoginController extends Controller
                     Auth::login($user, true);
                     $request->session()->regenerate();
                     $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+
                     return redirect()->intended($fallback);
                 }
             } catch (\Throwable $e) {
@@ -144,13 +147,13 @@ class LoginController extends Controller
                 $identity = $login;
                 try {
                     if (ctype_digit($login)) {
-                        $customer = \App\Models\Customer::with('user')->find((int)$login);
+                        $customer = \App\Models\Customer::with('user')->find((int) $login);
                         if ($customer) {
-                            if (!empty($customer->pppoe_user)) {
+                            if (! empty($customer->pppoe_user)) {
                                 $identity = $customer->pppoe_user;
-                            } elseif ($customer->user && !empty($customer->user->username)) {
+                            } elseif ($customer->user && ! empty($customer->user->username)) {
                                 $identity = $customer->user->username;
-                            } elseif ($customer->user && !empty($customer->user->email)) {
+                            } elseif ($customer->user && ! empty($customer->user->email)) {
                                 $identity = $customer->user->email;
                             }
                         }
@@ -160,12 +163,13 @@ class LoginController extends Controller
                             $identity = $cByPppoe->pppoe_user;
                         }
                     }
-                } catch (\Throwable $e) {}
-                
+                } catch (\Throwable $e) {
+                }
+
                 // If MixRADIUS available, enforce verification; otherwise allow local login
                 if ($mixRadius->isAvailable()) {
                     $verify = $mixRadius->verifyCredentials($identity, $password);
-                    if (!($verify['ok'] ?? false)) {
+                    if (! ($verify['ok'] ?? false)) {
                         Auth::logout();
                         throw \Illuminate\Validation\ValidationException::withMessages([
                             'login' => 'Akun pelanggan wajib diverifikasi MixRADIUS. Periksa username/ID dan password.',
@@ -174,6 +178,7 @@ class LoginController extends Controller
                 }
             }
             $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+
             return redirect()->intended($fallback);
         }
 

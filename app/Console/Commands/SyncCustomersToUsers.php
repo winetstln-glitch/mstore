@@ -10,11 +10,12 @@ use Illuminate\Support\Str;
 class SyncCustomersToUsers extends Command
 {
     protected $signature = 'customers:sync-users {--dry-run}';
+
     protected $description = 'Sinkronkan customers ke users dan tautkan customers.user_id';
 
     public function handle(): int
     {
-        $dry = (bool)$this->option('dry-run');
+        $dry = (bool) $this->option('dry-run');
         $created = 0;
         $linked = 0;
 
@@ -26,10 +27,10 @@ class SyncCustomersToUsers extends Command
                 $user = User::find($customer->user_id);
             }
 
-            if (!$user) {
+            if (! $user) {
                 $email = 'customer'.$customer->id.'@local.test';
                 $user = User::where('email', $email)->first();
-                if (!$user && !$dry) {
+                if (! $user && ! $dry) {
                     $password = Str::password(12);
                     $user = User::create([
                         'name' => $customer->name ?: 'Customer '.$customer->id,
@@ -45,7 +46,7 @@ class SyncCustomersToUsers extends Command
             }
 
             if ($user && $customer->user_id !== $user->id) {
-                if (!$dry) {
+                if (! $dry) {
                     $customer->user_id = $user->id;
                     $customer->save();
                 }
@@ -55,6 +56,7 @@ class SyncCustomersToUsers extends Command
         }
 
         $this->info("done. created={$created}, linked={$linked}, dry={$dry}");
+
         return self::SUCCESS;
     }
 }

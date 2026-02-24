@@ -9,15 +9,13 @@ use App\Models\InventoryTransaction;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-
-use OpenSpout\Writer\XLSX\Writer;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader;
+use OpenSpout\Writer\XLSX\Writer;
 
 class InventoryController extends Controller implements HasMiddleware
 {
@@ -49,30 +47,30 @@ class InventoryController extends Controller implements HasMiddleware
         $categories = InventoryItem::select('category')->distinct()->pluck('category');
 
         // Dashboard Stats
-        $totalStockValue = $items->sum(function($item) {
+        $totalStockValue = $items->sum(function ($item) {
             return $item->stock * $item->price;
         });
         $totalItems = $items->count();
-        
+
         // Total Pembelian (Purchases) - Expense 'Pembelian Alat'
         $totalPurchases = Transaction::where('category', 'Pembelian Alat')->sum('amount');
-        
+
         // Total Penjualan/Pemakaian (Sales) - Expense 'Pengeluaran Pengurus' linked to Inventory
         $totalSales = Transaction::where('category', 'Pengeluaran Pengurus')
             ->where('reference_number', 'like', 'INV-OUT-%')
             ->sum('amount');
-        
+
         // Transaction History
         $query = InventoryTransaction::with(['user', 'item', 'coordinator'])
             ->where('type', 'out');
 
         if ($request->has('type_group') && $request->type_group != '') {
-            $query->whereHas('item', function($q) use ($request) {
+            $query->whereHas('item', function ($q) use ($request) {
                 $q->where('type_group', $request->type_group);
             });
         }
 
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             $query->where('user_id', Auth::id());
         }
 
@@ -81,21 +79,21 @@ class InventoryController extends Controller implements HasMiddleware
         // My Assigned Assets (For Technicians/Coordinators)
         $user = Auth::user();
         $myAssetsQuery = Asset::with('item')
-            ->where(function($q) use ($user) {
-                $q->where(function($sub) use ($user) {
+            ->where(function ($q) use ($user) {
+                $q->where(function ($sub) use ($user) {
                     $sub->where('holder_type', User::class)
                         ->where('holder_id', $user->id);
                 });
 
                 $coordinator = Coordinator::where('user_id', $user->id)->first();
                 if ($coordinator) {
-                    $q->orWhere(function($sub) use ($coordinator) {
+                    $q->orWhere(function ($sub) use ($coordinator) {
                         $sub->where('holder_type', Coordinator::class)
                             ->where('holder_id', $coordinator->id);
                     });
                 }
             });
-            
+
         $myAssets = $myAssetsQuery->get();
 
         return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalSales', 'categories', 'myAssets'));
@@ -111,6 +109,7 @@ class InventoryController extends Controller implements HasMiddleware
 
         $items = $query->orderBy('type_group', 'desc')->orderBy('name')->get();
         $coordinators = Coordinator::orderBy('name')->get();
+
         return view('inventory.pickup', compact('items', 'coordinators'));
     }
 
@@ -129,7 +128,7 @@ class InventoryController extends Controller implements HasMiddleware
 
             $path = $request->file('proof_image')->store('inventory_proofs', 'public');
 
-            $finalDescription = '[' . __($data['usage']) . '] ' . ($data['description'] ?? '');
+            $finalDescription = '['.__($data['usage']).'] '.($data['description'] ?? '');
 
             $hasTools = false;
             DB::transaction(function () use ($data, $path, $finalDescription, &$hasTools) {
@@ -137,7 +136,7 @@ class InventoryController extends Controller implements HasMiddleware
                 foreach ($data['items'] as $row) {
                     $itemId = $row['inventory_item_id'];
                     $qty = $row['quantity'];
-                    if (!isset($totals[$itemId])) {
+                    if (! isset($totals[$itemId])) {
                         $totals[$itemId] = 0;
                     }
                     $totals[$itemId] += $qty;
@@ -145,7 +144,7 @@ class InventoryController extends Controller implements HasMiddleware
 
                 foreach ($totals as $itemId => $qty) {
                     $item = InventoryItem::find($itemId);
-                    if (!$item || $item->stock < $qty) {
+                    if (! $item || $item->stock < $qty) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
                             'items' => [__('Not enough stock available.')],
                         ]);
@@ -168,7 +167,7 @@ class InventoryController extends Controller implements HasMiddleware
                     if ($item) {
                         $item->decrement('stock', $row['quantity']);
 
-                        if (!empty($data['coordinator_id']) && $item->price > 0) {
+                        if (! empty($data['coordinator_id']) && $item->price > 0) {
                             Transaction::create([
                                 'user_id' => Auth::id(),
                                 'coordinator_id' => $data['coordinator_id'],
@@ -176,21 +175,21 @@ class InventoryController extends Controller implements HasMiddleware
                                 'category' => 'Pengeluaran Pengurus',
                                 'amount' => $item->price * $row['quantity'],
                                 'transaction_date' => now()->toDateString(),
-                                'description' => 'Pengurus mengambil ' . $row['quantity'] . ' ' . $item->unit . ' ' . $item->name,
-                                'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+                                'description' => 'Pengurus mengambil '.$row['quantity'].' '.$item->unit.' '.$item->name,
+                                'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
                             ]);
                         }
 
                         // Auto-create Asset records for Tools
                         if ($item->type_group === 'tool') {
                             $hasTools = true;
-                            $holderType = !empty($data['coordinator_id']) ? Coordinator::class : User::class;
+                            $holderType = ! empty($data['coordinator_id']) ? Coordinator::class : User::class;
                             $holderId = $data['coordinator_id'] ?? Auth::id();
 
                             for ($i = 0; $i < $row['quantity']; $i++) {
                                 Asset::create([
                                     'inventory_item_id' => $item->id,
-                                    'asset_code' => 'TOOL-' . $item->id . '-' . time() . '-' . uniqid(),
+                                    'asset_code' => 'TOOL-'.$item->id.'-'.time().'-'.uniqid(),
                                     'status' => 'deployed',
                                     'condition' => 'good',
                                     'holder_type' => $holderType,
@@ -233,7 +232,7 @@ class InventoryController extends Controller implements HasMiddleware
                     'type' => 'out',
                     'quantity' => $request->quantity,
                     'proof_image' => $path,
-                    'description' => '[' . __($request->usage) . '] ' . $request->description,
+                    'description' => '['.__($request->usage).'] '.$request->description,
                 ]);
 
                 $item->decrement('stock', $request->quantity);
@@ -247,7 +246,7 @@ class InventoryController extends Controller implements HasMiddleware
                     for ($i = 0; $i < $request->quantity; $i++) {
                         Asset::create([
                             'inventory_item_id' => $item->id,
-                            'asset_code' => 'TOOL-' . $item->id . '-' . time() . '-' . uniqid(),
+                            'asset_code' => 'TOOL-'.$item->id.'-'.time().'-'.uniqid(),
                             'status' => 'deployed',
                             'condition' => 'good',
                             'holder_type' => $holderType,
@@ -267,8 +266,8 @@ class InventoryController extends Controller implements HasMiddleware
                         'category' => 'Pengeluaran Pengurus',
                         'amount' => $item->price * $request->quantity,
                         'transaction_date' => now()->toDateString(),
-                        'description' => 'Pengurus mengambil ' . $request->quantity . ' ' . $item->unit . ' ' . $item->name,
-                        'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+                        'description' => 'Pengurus mengambil '.$request->quantity.' '.$item->unit.' '.$item->name,
+                        'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
                     ]);
                 }
             });
@@ -301,8 +300,8 @@ class InventoryController extends Controller implements HasMiddleware
                 'category' => 'Pembelian Alat',
                 'amount' => $item->stock * $item->price,
                 'transaction_date' => now()->toDateString(),
-                'description' => 'Pembelian stok awal ' . $item->name,
-                'reference_number' => 'INV-IN-' . $item->id,
+                'description' => 'Pembelian stok awal '.$item->name,
+                'reference_number' => 'INV-IN-'.$item->id,
             ]);
         }
 
@@ -335,8 +334,8 @@ class InventoryController extends Controller implements HasMiddleware
                 'category' => 'Pembelian Alat',
                 'amount' => $diff * $validated['price'],
                 'transaction_date' => now()->toDateString(),
-                'description' => 'Penambahan stok ' . $item->name,
-                'reference_number' => 'INV-ADD-' . $item->id . '-' . time(),
+                'description' => 'Penambahan stok '.$item->name,
+                'reference_number' => 'INV-ADD-'.$item->id.'-'.time(),
             ]);
         }
 
@@ -346,6 +345,7 @@ class InventoryController extends Controller implements HasMiddleware
     public function destroyItem(InventoryItem $item)
     {
         $item->delete();
+
         return redirect()->route('inventory.index')->with('success', __('Item deleted successfully.'));
     }
 
@@ -363,6 +363,7 @@ class InventoryController extends Controller implements HasMiddleware
         // Check new stock availability (old + current stock)
         if ($item->stock < $validated['quantity']) {
             $item->decrement('stock', $transaction->quantity); // Re-revert if failed
+
             return back()->withErrors(['quantity' => __('Not enough stock available.')]);
         }
 
@@ -375,11 +376,11 @@ class InventoryController extends Controller implements HasMiddleware
         ]);
 
         // Update Finance Transaction if exists
-        $financeTx = Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)->first();
+        $financeTx = Transaction::where('reference_number', 'INV-OUT-'.$transaction->id)->first();
         if ($financeTx && $item->price > 0) {
             $financeTx->update([
                 'amount' => $validated['quantity'] * $item->price,
-                'description' => 'Pengurus mengambil ' . $validated['quantity'] . ' ' . $item->unit . ' ' . $item->name,
+                'description' => 'Pengurus mengambil '.$validated['quantity'].' '.$item->unit.' '.$item->name,
             ]);
         }
 
@@ -390,12 +391,12 @@ class InventoryController extends Controller implements HasMiddleware
     {
         // Return stock
         $transaction->item->increment('stock', $transaction->quantity);
-        
+
         // Delete auto-created assets
         Asset::whereJsonContains('meta_data->source_transaction_id', $transaction->id)->delete();
 
         // Delete related finance transaction if exists
-        Transaction::where('reference_number', 'INV-OUT-' . $transaction->id)->delete();
+        Transaction::where('reference_number', 'INV-OUT-'.$transaction->id)->delete();
 
         $transaction->delete();
 
@@ -406,18 +407,19 @@ class InventoryController extends Controller implements HasMiddleware
     {
         $items = InventoryItem::all();
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('inventory.pdf', compact('items'));
+
         return $pdf->download('inventory_report.pdf');
     }
 
     public function exportExcel()
     {
         return response()->streamDownload(function () {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
-            
+
             // Header
             $writer->addRow(Row::fromValues(['Name', 'Category', 'Type', 'Brand', 'Model', 'Description', 'Stock', 'Unit', 'Price']));
-            
+
             // Data
             InventoryItem::chunk(100, function ($items) use ($writer) {
                 foreach ($items as $item) {
@@ -430,40 +432,40 @@ class InventoryController extends Controller implements HasMiddleware
                         $item->description,
                         $item->stock,
                         $item->unit,
-                        $item->price
+                        $item->price,
                     ]));
                 }
             });
-            
+
             $writer->close();
         }, 'inventory_report.xlsx');
     }
 
     public function downloadTemplate()
     {
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
         return response()->streamDownload(function () {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
-            
+
             // Header
             $writer->addRow(Row::fromValues(['Name', 'Category', 'Type', 'Brand', 'Model', 'Description', 'Stock', 'Unit', 'Price']));
-            
+
             // Sample Data
             $writer->addRow(Row::fromValues(['Kabel Fiber Optic 1 Core', 'Fiber', 'Cable', 'Zte', 'Generic', 'Kabel dropcore 1 core', '1000', 'meter', '1500']));
             $writer->addRow(Row::fromValues(['Router ZTE F609', 'Device', 'Router', 'ZTE', 'F609', 'Router bekas layak pakai', '10', 'pcs', '150000']));
             $writer->addRow(Row::fromValues(['Splicer Tumtec', 'Tool', 'Splicer', 'Tumtec', 'V9', 'Mesin Splicing', '1', 'unit', '15000000']));
-            
+
             $writer->close();
         }, 'inventory_import_template.xlsx');
     }
 
     public function importExcel(Request $request)
     {
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -471,16 +473,20 @@ class InventoryController extends Controller implements HasMiddleware
             'file' => 'required|file|mimes:xlsx',
         ]);
 
-        $reader = new Reader();
+        $reader = new Reader;
         $reader->open($request->file('file')->getRealPath());
 
         $count = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $index => $row) {
-                if ($index === 1) continue; // Skip header
+                if ($index === 1) {
+                    continue;
+                } // Skip header
 
                 $cells = $row->getCells();
-                if (count($cells) < 9) continue;
+                if (count($cells) < 9) {
+                    continue;
+                }
 
                 $category = $cells[1]->getValue();
                 // Auto-detect type_group based on category if possible
@@ -495,9 +501,9 @@ class InventoryController extends Controller implements HasMiddleware
                         'brand' => $cells[3]->getValue(),
                         'model' => $cells[4]->getValue(),
                         'description' => $cells[5]->getValue(),
-                        'stock' => (int)$cells[6]->getValue(),
+                        'stock' => (int) $cells[6]->getValue(),
                         'unit' => $cells[7]->getValue(),
-                        'price' => (float)$cells[8]->getValue(),
+                        'price' => (float) $cells[8]->getValue(),
                     ]
                 );
                 $count++;

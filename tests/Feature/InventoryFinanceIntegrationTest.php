@@ -7,7 +7,6 @@ use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\Region;
 use App\Models\Role;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -58,7 +57,7 @@ class InventoryFinanceIntegrationTest extends TestCase
             'type' => 'expense',
             'category' => 'Pengeluaran Pengurus',
             'coordinator_id' => $coordinator->id,
-            'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+            'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
             'amount' => 500000,
         ]);
     }
@@ -103,7 +102,7 @@ class InventoryFinanceIntegrationTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('transactions', [
-            'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+            'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
             'amount' => 300000,
         ]);
     }
@@ -143,14 +142,14 @@ class InventoryFinanceIntegrationTest extends TestCase
         $inventoryTransaction = InventoryTransaction::first();
 
         $this->assertDatabaseHas('transactions', [
-            'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+            'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
             'category' => 'Pengeluaran Pengurus',
         ]);
 
         $this->delete(route('inventory.pickup.destroy', $inventoryTransaction));
 
         $this->assertDatabaseMissing('transactions', [
-            'reference_number' => 'INV-OUT-' . $inventoryTransaction->id,
+            'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
         ]);
     }
 
@@ -180,7 +179,7 @@ class InventoryFinanceIntegrationTest extends TestCase
         $this->assertDatabaseHas('transactions', [
             'type' => 'expense',
             'category' => 'Pembelian Alat',
-            'reference_number' => 'INV-IN-' . $item->id,
+            'reference_number' => 'INV-IN-'.$item->id,
             'amount' => 1000000,
         ]);
     }

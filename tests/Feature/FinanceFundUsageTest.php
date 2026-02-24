@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Coordinator;
-use App\Models\Transaction;
-use App\Models\Setting;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Setting;
+use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,6 +16,7 @@ class FinanceFundUsageTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $coordinator;
 
     protected function setUp(): void
@@ -26,12 +27,12 @@ class FinanceFundUsageTest extends TestCase
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         Permission::create(['name' => 'finance.view', 'label' => 'View Finance']);
         Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance']);
-        
+
         // Custom Role/Permission pivot if needed, but Role model has permissions() relation
         $role->permissions()->attach(Permission::whereIn('name', ['finance.view', 'finance.manage'])->pluck('id'));
 
         $this->user = User::factory()->create(['role_id' => $role->id]);
-        
+
         // Create Region
         $region = \App\Models\Region::create(['name' => 'Test Region']);
 
@@ -41,7 +42,6 @@ class FinanceFundUsageTest extends TestCase
             'region_id' => $region->id,
             'address' => 'Test Address',
         ]);
-
 
         // Seed settings
         Setting::create(['key' => 'commission_coordinator_percent', 'value' => '15', 'type' => 'number', 'group' => 'finance']);
@@ -60,7 +60,7 @@ class FinanceFundUsageTest extends TestCase
         // ISP (25%): 21,250
         // Rem2: 63,750
         // Tool (15%): 9,562.5
-        
+
         $response = $this->post(route('finance.store'), [
             'type' => 'income',
             'category' => 'Member Income',
@@ -79,7 +79,7 @@ class FinanceFundUsageTest extends TestCase
         // Check Dashboard Data (via Index)
         $response = $this->get(route('finance.index'));
         $response->assertOk();
-        
+
         // Assert initial balances
         // Total Income: 100,000
         // Total Expense (Allocations): 15,000 + 21,250 + 9,562.5 = 45,812.5
@@ -113,11 +113,11 @@ class FinanceFundUsageTest extends TestCase
 
         // Check Dashboard Data again
         $response = $this->get(route('finance.index'));
-        
+
         // Assertions:
         // Total Expense should NOT increase (because usages are excluded)
-        $response->assertViewHas('totalExpense', 45812.5); 
-        
+        $response->assertViewHas('totalExpense', 45812.5);
+
         // Balance should NOT change
         $response->assertViewHas('balance', 54187.5);
 
@@ -130,14 +130,14 @@ class FinanceFundUsageTest extends TestCase
         // 4. Check Profit & Loss Report
         $response = $this->get(route('finance.profit_loss'));
         $response->assertOk();
-        
+
         // Operating Expenses should be 0 (Usages should not be counted here)
         $response->assertViewHas('operatingExpenses', 0);
-        
+
         // COGS should include Allocations
         // 15,000 (Coord) + 21,250 (ISP) + 9,562.5 (Tool) = 45,812.5
         $response->assertViewHas('totalCOGS', 45812.5);
-        
+
         // Net Profit should match Net Balance
         $response->assertViewHas('netProfit', 54187.5);
     }

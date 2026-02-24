@@ -33,7 +33,8 @@ class MapConnectionController extends Controller
 
             return response()->json(['success' => true, 'data' => $connection]);
         } catch (\Exception $e) {
-            Log::error('Error saving map connection: ' . $e->getMessage());
+            Log::error('Error saving map connection: '.$e->getMessage());
+
             return response()->json(['success' => false, 'message' => 'Failed to save connection'], 500);
         }
     }
@@ -41,6 +42,7 @@ class MapConnectionController extends Controller
     public function index()
     {
         $connections = MapConnection::all();
+
         return response()->json($connections);
     }
 }

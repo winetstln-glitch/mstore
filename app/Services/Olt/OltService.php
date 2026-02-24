@@ -3,8 +3,8 @@
 namespace App\Services\Olt;
 
 use App\Models\Olt;
-use App\Services\Olt\Drivers\HsgqDriver;
 use App\Services\Olt\Drivers\CDataDriver;
+use App\Services\Olt\Drivers\HsgqDriver;
 use Exception;
 
 class OltService
@@ -15,16 +15,16 @@ class OltService
 
         switch ($brand) {
             case 'hsgq':
-                return new HsgqDriver();
+                return new HsgqDriver;
             case 'cdata':
             case 'c-data':
-                return new CDataDriver();
+                return new CDataDriver;
             case 'vsol':
             case 'zte':
             case 'huawei':
-                return new HsgqDriver();
+                return new HsgqDriver;
             default:
-                return new HsgqDriver();
+                return new HsgqDriver;
         }
     }
 
@@ -34,6 +34,7 @@ class OltService
             $driver = $this->getDriver($olt);
             $driver->connect($olt, $timeout);
             $driver->disconnect();
+
             return ['success' => true, 'message' => 'Login successful!'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];

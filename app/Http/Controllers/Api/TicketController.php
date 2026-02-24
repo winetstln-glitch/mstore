@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\TicketLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class TicketController extends Controller
 {
@@ -75,7 +74,7 @@ class TicketController extends Controller
      */
     public function update(Request $request, Ticket $ticket)
     {
-        if (!$request->user() || !$request->user()->hasPermission('ticket.edit')) {
+        if (! $request->user() || ! $request->user()->hasPermission('ticket.edit')) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
         $validated = $request->validate([
@@ -107,13 +106,13 @@ class TicketController extends Controller
         }
 
         if ($ticket->wasChanged('technician_id')) {
-             TicketLog::create([
+            TicketLog::create([
                 'ticket_id' => $ticket->id,
                 'user_id' => $request->user()->id,
                 'action' => 'assigned',
-                'description' => "Technician assigned/changed",
+                'description' => 'Technician assigned/changed',
             ]);
-            
+
             if ($ticket->status === 'open' && $ticket->technician_id) {
                 $ticket->update(['status' => 'assigned']);
             }

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Models\Asset;
+use App\Models\Closure;
+use App\Models\Customer;
+use App\Models\Htb;
 use App\Models\Odc;
 use App\Models\Odp;
-use App\Models\Htb;
-use App\Models\Closure;
 use App\Models\Olt;
 use App\Models\Region;
 use App\Services\GenieACSService;
@@ -39,17 +39,17 @@ class MapController extends Controller implements HasMiddleware
     {
         $user = auth()->user();
         $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
-        
+
         $coordinators = [];
         $regionId = null;
 
         if ($isAdmin) {
-             $coordinators = \App\Models\Coordinator::with('region')->get();
+            $coordinators = \App\Models\Coordinator::with('region')->get();
         } else {
-             $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
-             if ($coordinator) {
-                 $regionId = $coordinator->region_id;
-             }
+            $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
+            if ($coordinator) {
+                $regionId = $coordinator->region_id;
+            }
         }
 
         // Fetch OLTs
@@ -72,7 +72,7 @@ class MapController extends Controller implements HasMiddleware
         // Fetch HTBs
         $htbQuery = Htb::with(['parent', 'odp']);
         if ($regionId) {
-            $htbQuery->whereHas('odp', function($q) use ($regionId) {
+            $htbQuery->whereHas('odp', function ($q) use ($regionId) {
                 $q->where('region_id', $regionId);
             });
         }
@@ -93,7 +93,7 @@ class MapController extends Controller implements HasMiddleware
             ->whereNotNull('longitude');
 
         if ($regionId) {
-            $customerQuery->whereHas('odp', function($q) use ($regionId) {
+            $customerQuery->whereHas('odp', function ($q) use ($regionId) {
                 $q->where('region_id', $regionId);
             });
         }
@@ -104,14 +104,14 @@ class MapController extends Controller implements HasMiddleware
 
         // Fetch GenieACS devices to get live status
         // We fetch a larger limit to cover active devices. In production, this should be paginated or optimized.
-        $devices = $this->genieService->getDevices(300); 
-        
+        $devices = $this->genieService->getDevices(300);
+
         // Map GenieACS data to customers
         $genieData = [];
         foreach ($devices as $device) {
             $serial = $device['_deviceId']['_SerialNumber'] ?? null;
             $lastInform = $device['_lastInform'] ?? null;
-            
+
             if ($serial) {
                 // Extract RX Power
                 // Handle different potential structures of the value (direct or object with _value)
@@ -119,10 +119,10 @@ class MapController extends Controller implements HasMiddleware
                 if (is_array($rxPower) && isset($rxPower['_value'])) {
                     $rxPower = $rxPower['_value'];
                 }
-                
+
                 // Extract PPPoE Username (as potential "Full Name" from GenieACS)
                 $pppoeUser = $device['VirtualParameters']['pppoeUsername'] ?? null;
-                 if (is_array($pppoeUser) && isset($pppoeUser['_value'])) {
+                if (is_array($pppoeUser) && isset($pppoeUser['_value'])) {
                     $pppoeUser = $pppoeUser['_value'];
                 }
 
@@ -138,7 +138,7 @@ class MapController extends Controller implements HasMiddleware
                 $genieData[$serial] = [
                     'is_online' => $isOnline,
                     'rx_power' => $rxPower,
-                    'genie_name' => $pppoeUser
+                    'genie_name' => $pppoeUser,
                 ];
             }
         }
@@ -154,6 +154,7 @@ class MapController extends Controller implements HasMiddleware
                 $customer->rx_power = null;
                 $customer->genie_name = null;
             }
+
             return $customer;
         });
 
@@ -172,7 +173,7 @@ class MapController extends Controller implements HasMiddleware
         $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
         $regionId = null;
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
             if ($coordinator) {
                 $regionId = $coordinator->region_id;
@@ -227,6 +228,7 @@ class MapController extends Controller implements HasMiddleware
             } else {
                 $customer->is_online = false;
             }
+
             return $customer;
         });
 
@@ -311,19 +313,27 @@ class MapController extends Controller implements HasMiddleware
 
         $model = null;
         switch ($type) {
-            case 'olt': $model = Olt::find($id); break;
-            case 'odc': $model = Odc::find($id); break;
-            case 'odp': $model = Odp::find($id); break;
-            case 'htb': $model = Htb::find($id); break;
-            case 'closure': $model = Closure::find($id); break;
-            case 'customer': $model = Customer::find($id); break;
-            case 'asset': $model = Asset::find($id); break;
+            case 'olt': $model = Olt::find($id);
+                break;
+            case 'odc': $model = Odc::find($id);
+                break;
+            case 'odp': $model = Odp::find($id);
+                break;
+            case 'htb': $model = Htb::find($id);
+                break;
+            case 'closure': $model = Closure::find($id);
+                break;
+            case 'customer': $model = Customer::find($id);
+                break;
+            case 'asset': $model = Asset::find($id);
+                break;
         }
 
         if ($model) {
             $model->latitude = $request->latitude;
             $model->longitude = $request->longitude;
             $model->save();
+
             return response()->json(['success' => true]);
         }
 
@@ -341,16 +351,22 @@ class MapController extends Controller implements HasMiddleware
 
         $model = null;
         switch ($type) {
-            case 'olt': $model = Olt::find($id); break;
-            case 'odc': $model = Odc::find($id); break;
-            case 'odp': $model = Odp::find($id); break;
-            case 'htb': $model = Htb::find($id); break;
-            case 'customer': $model = Customer::find($id); break;
+            case 'olt': $model = Olt::find($id);
+                break;
+            case 'odc': $model = Odc::find($id);
+                break;
+            case 'odp': $model = Odp::find($id);
+                break;
+            case 'htb': $model = Htb::find($id);
+                break;
+            case 'customer': $model = Customer::find($id);
+                break;
         }
 
         if ($model) {
             $model->path = $request->path;
             $model->save();
+
             return response()->json(['success' => true]);
         }
 

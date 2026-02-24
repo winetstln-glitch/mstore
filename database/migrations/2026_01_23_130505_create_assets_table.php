@@ -17,22 +17,22 @@ return new class extends Migration
             $table->string('asset_code')->nullable()->unique(); // ISP-CODE-001
             $table->string('serial_number')->nullable()->unique();
             $table->string('mac_address')->nullable();
-            
+
             // Status and Condition
             $table->enum('status', ['in_stock', 'deployed', 'maintenance', 'broken', 'lost'])->default('in_stock');
             $table->enum('condition', ['good', 'damaged'])->default('good');
-            
+
             // Polymorphic relation for Holder (Customer, User/Technician, or Null for Warehouse)
             // holder_type: App\Models\Customer, App\Models\User
             // holder_id: ID of the holder
-            $table->nullableMorphs('holder'); 
-            
+            $table->nullableMorphs('holder');
+
             // Flexible metadata for device specifics (firmware, IP, etc)
             $table->json('meta_data')->nullable();
-            
+
             $table->date('purchase_date')->nullable();
             $table->date('warranty_expiry')->nullable();
-            
+
             $table->timestamps();
         });
     }

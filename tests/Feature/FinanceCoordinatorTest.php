@@ -21,7 +21,7 @@ class FinanceCoordinatorTest extends TestCase
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
         $role->permissions()->attach($permission);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
         // $user->roles()->attach($role);
 
@@ -31,7 +31,7 @@ class FinanceCoordinatorTest extends TestCase
             'name' => 'Test Coordinator',
             'phone' => '08123456789',
             'address' => 'Test Address',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ]);
 
         // Act: Submit Income Transaction
@@ -42,7 +42,7 @@ class FinanceCoordinatorTest extends TestCase
             'transaction_date' => now()->format('Y-m-d'),
             'description' => 'Income from members',
             'coordinator_id' => $coordinator->id,
-            'reference_number' => 'REF001'
+            'reference_number' => 'REF001',
         ]);
 
         $response->assertRedirect(route('finance.index'));
@@ -70,7 +70,7 @@ class FinanceCoordinatorTest extends TestCase
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
         $role->permissions()->attach($permission);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
         // $user->roles()->attach($role);
 

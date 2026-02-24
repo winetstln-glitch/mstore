@@ -2,8 +2,8 @@
 
 namespace App\Notifications\Channels;
 
-use Illuminate\Notifications\Notification;
 use App\Services\TelegramService;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 class TelegramChannel
@@ -20,16 +20,17 @@ class TelegramChannel
      */
     public function send($notifiable, Notification $notification)
     {
-        if (!method_exists($notification, 'toTelegram')) {
+        if (! method_exists($notification, 'toTelegram')) {
             return;
         }
 
         $message = $notification->toTelegram($notifiable);
-        
+
         $chatId = $notifiable->telegram_chat_id;
 
         if (empty($chatId)) {
             Log::warning("TelegramChannel: No Chat ID for user {$notifiable->id} - {$notifiable->name}");
+
             return;
         }
 

@@ -15,6 +15,7 @@ class RenewUserJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $userId;
+
     public string $reason;
 
     public function __construct(int $userId, string $reason)
@@ -26,7 +27,7 @@ class RenewUserJob implements ShouldQueue
     public function handle(MixRadiusService $mix): void
     {
         $user = User::find($this->userId);
-        if (!$user) {
+        if (! $user) {
             return;
         }
         $mix->renewUser($user, $this->reason);

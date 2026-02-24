@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TechnicianSchedule;
 use App\Models\SchedulePeriod;
+use App\Models\TechnicianSchedule;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
-
-use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class TechnicianScheduleController extends Controller implements HasMiddleware
 {
@@ -27,13 +24,13 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     {
         $year = $request->input('year', now()->year);
         $month = $request->input('month', now()->month);
-        
+
         // Get all technicians
-        $techniciansQuery = User::whereHas('role', function($q) {
+        $techniciansQuery = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
         });
 
-        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -56,7 +53,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function updatePeriod(Request $request)
     {
-        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
@@ -83,7 +80,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        if (!Auth::user()->hasPermission('schedule.manage') && !Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
 
@@ -113,6 +110,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     public function destroy(TechnicianSchedule $schedule)
     {
         $schedule->delete();
+
         return redirect()->back()->with('success', __('Schedule removed successfully.'));
     }
 }

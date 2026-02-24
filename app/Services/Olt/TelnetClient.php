@@ -5,13 +5,15 @@ namespace App\Services\Olt;
 class TelnetClient
 {
     protected $socket;
+
     protected array $prompt = ['#', '>', '$'];
+
     protected string $buffer = '';
 
     public function connect(string $host, int $port = 23, int $timeout = 10): void
     {
         $this->socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
-        if (!$this->socket) {
+        if (! $this->socket) {
             throw new \Exception("Telnet connect failed: {$errstr} ({$errno})");
         }
 
@@ -43,7 +45,7 @@ class TelnetClient
         $this->buffer = '';
         $maxLength = 1024 * 1024;
 
-        while (!feof($this->socket)) {
+        while (! feof($this->socket)) {
             $char = fgetc($this->socket);
             if ($char === false) {
                 break;
@@ -51,6 +53,7 @@ class TelnetClient
 
             if (ord($char) === 255) {
                 $this->handleIac();
+
                 continue;
             }
 
@@ -94,25 +97,25 @@ class TelnetClient
 
             if ($cmdOrd === 251) {
                 if (in_array($optOrd, $supported, true)) {
-                    fwrite($this->socket, chr(255) . chr(253) . chr($optOrd));
+                    fwrite($this->socket, chr(255).chr(253).chr($optOrd));
                 } else {
-                    fwrite($this->socket, chr(255) . chr(254) . chr($optOrd));
+                    fwrite($this->socket, chr(255).chr(254).chr($optOrd));
                 }
             } elseif ($cmdOrd === 253) {
                 if (in_array($optOrd, $supported, true)) {
-                    fwrite($this->socket, chr(255) . chr(251) . chr($optOrd));
+                    fwrite($this->socket, chr(255).chr(251).chr($optOrd));
                 } else {
-                    fwrite($this->socket, chr(255) . chr(252) . chr($optOrd));
+                    fwrite($this->socket, chr(255).chr(252).chr($optOrd));
                 }
             } else {
-                fwrite($this->socket, chr(255) . chr(252) . chr($optOrd));
+                fwrite($this->socket, chr(255).chr(252).chr($optOrd));
             }
 
             return;
         }
 
         if ($cmdOrd === 250) {
-            while (!feof($this->socket)) {
+            while (! feof($this->socket)) {
                 $ch = fgetc($this->socket);
                 if ($ch === false) {
                     break;
@@ -130,7 +133,7 @@ class TelnetClient
 
     public function write(string $buffer): void
     {
-        if (!$this->socket) {
+        if (! $this->socket) {
             throw new \Exception('Not connected');
         }
 
@@ -141,6 +144,7 @@ class TelnetClient
     public function exec(string $command): string
     {
         $this->write($command);
+
         return $this->waitPrompt($this->prompt);
     }
 

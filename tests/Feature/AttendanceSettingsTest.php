@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,9 +18,9 @@ class AttendanceSettingsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        
+
         // Create permissions required for settings
         $viewPerm = Permission::firstOrCreate(
             ['name' => 'setting.view'],
@@ -30,9 +30,9 @@ class AttendanceSettingsTest extends TestCase
             ['name' => 'setting.update'],
             ['label' => 'Update Settings', 'group' => 'Settings']
         );
-        
+
         $adminRole->permissions()->attach([$viewPerm->id, $updatePerm->id]);
-        
+
         $this->admin = User::create([
             'name' => 'Admin',
             'email' => 'admin@example.com',
@@ -63,14 +63,14 @@ class AttendanceSettingsTest extends TestCase
         $newSchedule = [
             'Monday' => ['enabled' => '1', 'start' => '09:00', 'end' => '18:00'],
             'Tuesday' => ['enabled' => '1', 'start' => '09:00', 'end' => '18:00'],
-            // ... other days can be omitted if the controller handles partial updates, 
-            // but our controller replaces the value. 
+            // ... other days can be omitted if the controller handles partial updates,
+            // but our controller replaces the value.
             // The form submission sends ALL days.
         ];
-        
+
         // We need to simulate the full form submission structure
         // The view sends: work_schedule[Monday][enabled], work_schedule[Monday][start], etc.
-        
+
         $payload = [
             'work_schedule' => [
                 'Monday' => ['enabled' => '1', 'start' => '09:00', 'end' => '18:00'],
@@ -96,11 +96,11 @@ class AttendanceSettingsTest extends TestCase
         $this->assertEquals('09:00', $schedule['Monday']['start']);
         $this->assertEquals('18:00', $schedule['Monday']['end']);
         $this->assertEquals('1', $schedule['Monday']['enabled']);
-        
+
         // Verify other setting
         $this->assertDatabaseHas('settings', [
             'key' => 'attendance_radius',
-            'value' => '200'
+            'value' => '200',
         ]);
     }
 }

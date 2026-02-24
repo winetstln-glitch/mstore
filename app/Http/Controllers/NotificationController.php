@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller implements HasMiddleware
 {
@@ -21,7 +21,7 @@ class NotificationController extends Controller implements HasMiddleware
     {
         $user = Auth::user();
         $model = $user->notifications()->find($notification);
-        if (!$model) {
+        if (! $model) {
             return redirect()->route('dashboard');
         }
 
@@ -30,7 +30,7 @@ class NotificationController extends Controller implements HasMiddleware
         if (isset($data['ticket_id'])) {
             $url = route('tickets.show', $data['ticket_id']);
         }
-        if (!$url) {
+        if (! $url) {
             $url = url('/');
         }
 

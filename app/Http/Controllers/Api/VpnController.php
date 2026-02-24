@@ -13,11 +13,11 @@ class VpnController extends Controller
     {
         $token = $request->query('token') ?: $request->input('token');
         $ip = $request->query('ip') ?: $request->input('ip');
-        if (!$token || !$ip) {
+        if (! $token || ! $ip) {
             return response()->json(['ok' => false], 400);
         }
         $account = VpnAccount::where('token', $token)->first();
-        if (!$account) {
+        if (! $account) {
             return response()->json(['ok' => false], 404);
         }
         DB::transaction(function () use ($account, $ip) {
@@ -28,6 +28,7 @@ class VpnController extends Controller
                 $router->save();
             }
         });
+
         return response()->json(['ok' => true]);
     }
 }

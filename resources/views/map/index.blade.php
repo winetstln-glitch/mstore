@@ -494,8 +494,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        background: #06d4feff;
+        border-radius: 20%;
+        background: #16202280;
         border: 1px solid white;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
@@ -512,18 +512,21 @@
     .icon-customer-offline { color: #dc3545; border-color: #dc3545; }
     .icon-asset { color: #d63384; border-color: #d63384; }
 
-    /* Animation for online lines (Flowing Gradient & Glow) */
-    .connection-online {
-        stroke: #00f2ff; /* Cyan Neon Color */
-        stroke-dasharray: 12, 12;
-        filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.8)); /* Glow Effect */
-        animation: flow 1.0s linear infinite; /* Faster, smoother flow */
-    }
+    /* Online connection line */
+     
 
-    /* Gradient simulation via animation */
-    @keyframes flow {
-        0% { stroke-dashoffset: 24; }
-        100% { stroke-dashoffset: 0; }
+    /* Neon animation for online customer icon */
+    .neon-online {
+        box-shadow: 0 0 6px rgba(0, 240, 255, 0.6), 0 0 12px rgba(0, 240, 255, 0.4);
+        animation: neon-pulse 1.2s ease-in-out infinite alternate;
+    }
+    .neon-online i {
+        color: #00f2ff !important;
+        text-shadow: 0 0 4px #00f2ff, 0 0 8px #00f2ff, 0 0 12px rgba(0, 242, 255, 0.8);
+    }
+    @keyframes neon-pulse {
+        0% { box-shadow: 0 0 4px rgba(0, 240, 255, 0.5), 0 0 8px rgba(0, 240, 255, 0.3); }
+        100% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 18px rgba(0, 240, 255, 0.6); }
     }
 
     /* Shining Arrow Icon */
@@ -613,6 +616,9 @@
             "Street (OSM)": osm
         };
         L.control.layers(baseMaps).addTo(map);
+
+        var onlineColor = currentTheme === 'dark' ? '#00f2ff' : '#00a3ff';
+        var onlinePulseColor = currentTheme === 'dark' ? '#00d8ff' : '#66caff';
 
         // Listen for theme changes to auto-switch map layer
         window.addEventListener('themeChanged', function(e) {
@@ -991,7 +997,7 @@
                         var lineOptions = {};
                         if (isOnline) {
                             lineOptions = {
-                                color: '#00f2ff', // Cyan Neon
+                                color: '#00f2fff3', // Cyan Neon
                                 weight: 4,
                                 opacity: 1.0,
                                 className: 'connection-online'
@@ -1013,12 +1019,12 @@
                         var poly;
                         if (isOnline && L.polyline && L.polyline.antPath) {
                             poly = L.polyline.antPath(pathPoints, {
-                                color: '#00f2ff',
+                                color: onlineColor,
                                 weight: 4,
                                 opacity: 1.0,
-                                dashArray: [10, 5],
-                                delay: 400,
-                                pulseColor: '#ffffff',
+                                dashArray: [2, 12],
+                                delay: 320,
+                                pulseColor: onlinePulseColor,
                                 paused: false,
                                 reverse: false
                             }).addTo(lines);
@@ -1080,12 +1086,23 @@
                 data.paths.forEach(function(p){
                     if (L.polyline && L.polyline.antPath) {
                         L.polyline.antPath(p.path, {
-                            color: '#00f2ff',
+                            color: onlineColor,
                             weight: 4,
                             opacity: 1.0,
-                            dashArray: [10, 5],
-                            delay: 400,
-                            pulseColor: '#ffffff'
+                            dashArray: [2, 12],
+                            delay: 320,
+                            pulseColor: onlinePulseColor,
+                            paused: false
+                        }).addTo(onlineOverlay);
+                    } else {
+                        L.polyline(p.path, {
+                            color: onlineColor,
+                            weight: 4,
+                            opacity: 0.95,
+                            dashArray: '2, 12',
+                            lineCap: 'round',
+                            lineJoin: 'round',
+                            className: 'connection-online'
                         }).addTo(onlineOverlay);
                     }
                 });
@@ -1262,9 +1279,10 @@
             else if (type === 'online') { iconClass = 'fa-wifi'; colorClass = 'icon-customer-online'; size = 26; }
             else { iconClass = 'fa-user-slash'; colorClass = 'icon-customer-offline'; size = 26; }
 
+            const onlineClass = type === 'online' ? 'neon-online' : '';
             return L.divIcon({
                 html: `<i class="fa ${iconClass}" style="font-size: ${size/1.5}px;"></i>`,
-                className: `custom-icon ${colorClass}`,
+                className: `custom-icon ${colorClass} ${onlineClass}`,
                 iconSize: [size, size],
                 iconAnchor: [size/2, size/2],
                 popupAnchor: [0, -size/2]

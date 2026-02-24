@@ -15,7 +15,9 @@ class AdminDashboardTest extends TestCase
     use RefreshDatabase;
 
     protected $admin;
+
     protected $adminRole;
+
     protected $customer;
 
     protected function setUp(): void
@@ -24,7 +26,7 @@ class AdminDashboardTest extends TestCase
 
         // Create Roles
         $this->adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        
+
         // Create Delete Permission and attach to admin (admin usually has all, but explicit for test)
         $deletePermission = Permission::firstOrCreate(
             ['name' => 'ticket.delete'],
@@ -100,26 +102,26 @@ class AdminDashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('ticketRecap');
-        
+
         // Check if data is correct
         $recap = $response->viewData('ticketRecap');
-        
+
         // Find current month
         $currentMonthName = now()->format('F');
         $currentMonthData = collect($recap)->firstWhere('month', $currentMonthName);
-        
+
         $this->assertNotNull($currentMonthData);
         $this->assertEquals(1, $currentMonthData['total']);
-        
+
         // Find last month
         $lastMonthName = now()->subMonth()->format('F');
         $lastMonthData = collect($recap)->firstWhere('month', $lastMonthName);
-        
+
         // Only check if it's the same year
         if (now()->year == now()->subMonth()->year) {
-             $this->assertNotNull($lastMonthData);
-             $this->assertEquals(1, $lastMonthData['total']);
-             $this->assertEquals(1, $lastMonthData['resolved']);
+            $this->assertNotNull($lastMonthData);
+            $this->assertEquals(1, $lastMonthData['total']);
+            $this->assertEquals(1, $lastMonthData['resolved']);
         }
     }
 }

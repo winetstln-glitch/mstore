@@ -13,6 +13,7 @@ class WashController extends Controller
     public function index()
     {
         $services = WashService::all();
+
         return view('wash.services.index', compact('services'));
     }
 
@@ -96,7 +97,7 @@ class WashController extends Controller
         if ($service->image) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($service->image);
         }
-        
+
         $service->delete();
 
         return redirect()->route('wash.services.index')

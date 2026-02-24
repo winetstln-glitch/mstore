@@ -104,7 +104,7 @@ class InventoryItemSeeder extends Seeder
                 'unit' => 'unit',
                 'stock' => 1,
                 'price' => 150000000,
-            ]
+            ],
         ];
 
         foreach ($items as $data) {
@@ -115,4 +115,3 @@ class InventoryItemSeeder extends Seeder
         }
     }
 }
-

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Customer;
 use App\Services\GenieACSService;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -28,6 +28,7 @@ class DashboardController extends Controller
                 ];
             }
         }
+
         return view('client.dashboard', compact('user', 'connectionStatus', 'deviceSummary'));
     }
 }

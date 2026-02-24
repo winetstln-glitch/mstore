@@ -26,7 +26,7 @@ class TechnicianService
             'lat_clock_in' => $lat,
             'lng_clock_in' => $lng,
             'photo_clock_in' => $photoPath,
-            'status' => 'present'
+            'status' => 'present',
         ]);
     }
 
@@ -38,7 +38,7 @@ class TechnicianService
             ->whereNull('clock_out')
             ->first();
 
-        if (!$attendance) {
+        if (! $attendance) {
             return false; // Not clocked in or already clocked out
         }
 
@@ -46,7 +46,7 @@ class TechnicianService
             'clock_out' => Carbon::now(),
             'lat_clock_out' => $lat,
             'lng_clock_out' => $lng,
-            'photo_clock_out' => $photoPath
+            'photo_clock_out' => $photoPath,
         ]);
 
         return $attendance;

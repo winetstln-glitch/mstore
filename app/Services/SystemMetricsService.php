@@ -54,6 +54,7 @@ class SystemMetricsService
                 return preg_match_all('/^processor\\s*:\\s*\\d+/m', $data);
             }
         }
+
         // Fallback: 1 core
         return 1;
     }
@@ -65,10 +66,11 @@ class SystemMetricsService
             $lines = @file('/proc/meminfo', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
             foreach ($lines as $line) {
                 if (preg_match('/^(\\w+):\\s+(\\d+)\\s*kB$/', $line, $m)) {
-                    $result[$m[1]] = (int)$m[2];
+                    $result[$m[1]] = (int) $m[2];
                 }
             }
         }
+
         return $result;
     }
 }

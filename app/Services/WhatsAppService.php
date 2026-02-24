@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class WhatsAppService
 {
     protected $apiKey;
+
     protected $baseUrl;
 
     public function __construct()
@@ -43,15 +44,15 @@ class WhatsAppService
                 if (str_contains($this->baseUrl, 'fonnte.com')) {
                     $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->withHeaders([
                         'Authorization' => $this->apiKey,
-                    ])->post($this->baseUrl . '/send', [
+                    ])->post($this->baseUrl.'/send', [
                         'target' => $phone,
                         'message' => $message,
                         'countryCode' => '62', // Optional, default to Indonesia
                     ]);
-                } 
+                }
                 // Default / Generic API
                 else {
-                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->baseUrl . '/send-message', [
+                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->baseUrl.'/send-message', [
                         'api_key' => $this->apiKey,
                         'phone' => $phone,
                         'message' => $message,
@@ -60,24 +61,24 @@ class WhatsAppService
 
                 DB::table('notification_logs')->where('id', $logId)->update([
                     'status' => $response->successful() ? 'sent' : 'failed',
-                    'response' => $response->body()
+                    'response' => $response->body(),
                 ]);
 
                 return $response->successful();
             } catch (\Exception $e) {
-                Log::error("WhatsApp Error: " . $e->getMessage());
+                Log::error('WhatsApp Error: '.$e->getMessage());
                 DB::table('notification_logs')->where('id', $logId)->update([
                     'status' => 'failed',
-                    'response' => $e->getMessage()
+                    'response' => $e->getMessage(),
                 ]);
                 throw $e; // Re-throw to let caller know
             }
         } else {
-            $errorMsg = "WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env";
+            $errorMsg = 'WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env';
             Log::error($errorMsg);
             DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => 'failed',
-                'response' => $errorMsg
+                'response' => $errorMsg,
             ]);
             throw new \Exception($errorMsg);
         }
@@ -85,22 +86,25 @@ class WhatsAppService
 
     public function sendInvoice(Customer $customer, $invoice)
     {
-        $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp " . number_format($invoice->amount, 0, ',', '.') . " telah terbit.\nJatuh tempo: {$invoice->due_date->format('d-m-Y')}.\n\nMohon segera lakukan pembayaran.";
+        $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah terbit.\nJatuh tempo: {$invoice->due_date->format('d-m-Y')}.\n\nMohon segera lakukan pembayaran.";
+
         return $this->sendMessage($customer->phone, $message, 'invoice', $customer->id);
     }
 
     public function sendPaymentSuccess(Customer $customer, $invoice)
     {
-        $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp " . number_format($invoice->amount, 0, ',', '.') . " telah kami terima.\nLayanan internet Anda aktif.";
+        $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah kami terima.\nLayanan internet Anda aktif.";
+
         return $this->sendMessage($customer->phone, $message, 'payment', $customer->id);
     }
 
     public function sendIsolationNotification(Customer $customer)
     {
         $message = "Halo {$customer->name},\nLayanan internet Anda sementara kami ISOLIR karena belum melakukan pembayaran.\nMohon segera lunasi tagihan Anda agar layanan kembali normal.";
+
         return $this->sendMessage($customer->phone, $message, 'isolate', $customer->id);
     }
-    
+
     public function broadcastMessage($area, $message)
     {
         // Logic to find customers in area/odp
@@ -111,6 +115,7 @@ class WhatsAppService
                 $count++;
             }
         }
+
         return $count;
     }
 }

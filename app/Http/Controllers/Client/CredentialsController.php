@@ -12,6 +12,7 @@ class CredentialsController extends Controller
     public function show()
     {
         $user = Auth::user();
+
         return view('client.credentials', compact('user'));
     }
 
@@ -27,7 +28,7 @@ class CredentialsController extends Controller
 
         $user = Auth::user();
         $ok = $mix->changeCredentials($user, $data['new_username'], $data['new_password']);
-        if (!$ok) {
+        if (! $ok) {
             return back()->withErrors(['new_username' => 'Gagal mengubah kredensial di server RADIUS.']);
         }
 

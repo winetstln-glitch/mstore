@@ -12,19 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('olts', function (Blueprint $table) {
-            if (!Schema::hasColumn('olts', 'type')) {
+            if (! Schema::hasColumn('olts', 'type')) {
                 $table->enum('type', ['epon', 'gpon', 'xpon'])->default('epon');
             }
-            if (!Schema::hasColumn('olts', 'brand')) {
+            if (! Schema::hasColumn('olts', 'brand')) {
                 $table->string('brand')->default('zte');
             }
-            if (!Schema::hasColumn('olts', 'is_active')) {
+            if (! Schema::hasColumn('olts', 'is_active')) {
                 $table->boolean('is_active')->default(true);
             }
-            if (!Schema::hasColumn('olts', 'description')) {
+            if (! Schema::hasColumn('olts', 'description')) {
                 $table->text('description')->nullable();
             }
-            if (!Schema::hasColumn('olts', 'port')) {
+            if (! Schema::hasColumn('olts', 'port')) {
                 $table->integer('port')->default(23);
             }
         });

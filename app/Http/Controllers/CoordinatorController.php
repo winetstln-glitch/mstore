@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Coordinator;
 use App\Models\Region;
-use App\Models\User;
-use App\Models\Router;
 use App\Models\Role;
-use Illuminate\Support\Facades\Hash;
+use App\Models\Router;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Hash;
 
 class CoordinatorController extends Controller implements HasMiddleware
 {
@@ -30,6 +30,7 @@ class CoordinatorController extends Controller implements HasMiddleware
     public function index()
     {
         $coordinators = Coordinator::with(['region', 'user', 'router'])->latest()->paginate(10);
+
         return view('coordinators.index', compact('coordinators'));
     }
 
@@ -41,6 +42,7 @@ class CoordinatorController extends Controller implements HasMiddleware
         $regions = Region::orderBy('name')->get();
         $users = User::orderBy('name')->get();
         $routers = Router::where('is_active', true)->orderBy('name')->get();
+
         return view('coordinators.create', compact('regions', 'users', 'routers'));
     }
 
@@ -66,7 +68,7 @@ class CoordinatorController extends Controller implements HasMiddleware
         }
 
         $validated = $request->validate($rules);
-        
+
         $userId = $request->user_id;
 
         if ($request->input('user_option') === 'new') {
@@ -100,6 +102,7 @@ class CoordinatorController extends Controller implements HasMiddleware
         $regions = Region::orderBy('name')->get();
         $users = User::orderBy('name')->get();
         $routers = Router::where('is_active', true)->orderBy('name')->get();
+
         return view('coordinators.edit', compact('coordinator', 'regions', 'users', 'routers'));
     }
 
@@ -128,7 +131,7 @@ class CoordinatorController extends Controller implements HasMiddleware
     public function destroy(Coordinator $coordinator)
     {
         if ($coordinator->tickets()->exists()) {
-             return back()->with('error', 'Cannot delete coordinator associated with tickets.');
+            return back()->with('error', 'Cannot delete coordinator associated with tickets.');
         }
 
         $coordinator->delete();

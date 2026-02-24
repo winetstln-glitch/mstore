@@ -2,29 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
+use App\Models\WashCustomer;
+use App\Models\WashService;
 use App\Models\WashTransaction;
 use App\Models\WashTransactionItem;
-use App\Models\WashService;
-use App\Models\WashCustomer;
-use App\Models\Account;
 use App\Services\AccountingPoster;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use OpenSpout\Writer\XLSX\Writer;
-use OpenSpout\Common\Entity\Row;
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\WhatsAppService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 class WashTransactionController extends Controller
 {
     private $brands = [
         'Motor' => [
-            'Honda', 'Yamaha', 'Suzuki', 'Kawasaki', 'Vespa', 'KTM', 'Harley Davidson', 'BMW Motorrad', 'Ducati', 'Triumph', 'Royal Enfield', 'TVS', 'Benelli', 'Sym', 'Kymco', 'Viar', 'Gesits', 'Volta', 'Alva', 'Polytron', 'Davigo', 'Smoot', 'Selis', 'United', 'Zero', 'Aprilia', 'Moto Guzzi', 'Husqvarna', 'Bajaj', 'Minerva', 'Happy', 'Kaisar', 'Nozomi'
+            'Honda', 'Yamaha', 'Suzuki', 'Kawasaki', 'Vespa', 'KTM', 'Harley Davidson', 'BMW Motorrad', 'Ducati', 'Triumph', 'Royal Enfield', 'TVS', 'Benelli', 'Sym', 'Kymco', 'Viar', 'Gesits', 'Volta', 'Alva', 'Polytron', 'Davigo', 'Smoot', 'Selis', 'United', 'Zero', 'Aprilia', 'Moto Guzzi', 'Husqvarna', 'Bajaj', 'Minerva', 'Happy', 'Kaisar', 'Nozomi',
         ],
         'Mobil' => [
-            'Toyota', 'Honda', 'Daihatsu', 'Mitsubishi', 'Suzuki', 'Nissan', 'Mazda', 'Wuling', 'Hyundai', 'Kia', 'Isuzu', 'BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen', 'Lexus', 'Land Rover', 'Jeep', 'Ford', 'Chevrolet', 'Peugeot', 'Renault', 'Chery', 'DFSK', 'MG', 'Subaru', 'Volvo', 'Mini', 'Porsche', 'Ferrari', 'Lamborghini', 'Jaguar', 'Maserati', 'McLaren', 'Aston Martin', 'Bentley', 'Rolls-Royce', 'Tesla', 'BYD', 'Neta', 'Citroen', 'Tata', 'Proton', 'Holden', 'Opel', 'Fiat', 'Alfa Romeo', 'Datsun', 'Hino', 'UD Trucks', 'Scania', 'Foton'
-        ]
+            'Toyota', 'Honda', 'Daihatsu', 'Mitsubishi', 'Suzuki', 'Nissan', 'Mazda', 'Wuling', 'Hyundai', 'Kia', 'Isuzu', 'BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen', 'Lexus', 'Land Rover', 'Jeep', 'Ford', 'Chevrolet', 'Peugeot', 'Renault', 'Chery', 'DFSK', 'MG', 'Subaru', 'Volvo', 'Mini', 'Porsche', 'Ferrari', 'Lamborghini', 'Jaguar', 'Maserati', 'McLaren', 'Aston Martin', 'Bentley', 'Rolls-Royce', 'Tesla', 'BYD', 'Neta', 'Citroen', 'Tata', 'Proton', 'Holden', 'Opel', 'Fiat', 'Alfa Romeo', 'Datsun', 'Hino', 'UD Trucks', 'Scania', 'Foton',
+        ],
     ];
 
     public function dashboard()
@@ -35,7 +35,7 @@ class WashTransactionController extends Controller
         $dailySales = WashTransaction::whereDate('created_at', $today)->sum('total_amount');
         $monthlySales = WashTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
         $transactionCount = WashTransaction::whereDate('created_at', $today)->count();
-        
+
         // Top selling services
         $topServices = WashTransactionItem::select('service_name', DB::raw('sum(quantity) as total_qty'))
             ->groupBy('service_name')
@@ -50,7 +50,8 @@ class WashTransactionController extends Controller
     {
         $services = WashService::where('is_active', true)->orderBy('vehicle_type')->orderBy('name')->get();
         $brands = $this->brands;
-        $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id','name']);
+        $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+
         return view('wash.pos', compact('services', 'brands', 'employees'));
     }
 
@@ -64,7 +65,7 @@ class WashTransactionController extends Controller
                 'found' => true,
                 'name' => $customer->name,
                 'visit_count' => $customer->visit_count,
-                'free_wash_eligibility' => $customer->free_wash_eligibility
+                'free_wash_eligibility' => $customer->free_wash_eligibility,
             ]);
         }
 
@@ -96,7 +97,7 @@ class WashTransactionController extends Controller
                     ['phone' => $request->customer_phone],
                     ['name' => $request->customer_name ?? 'Guest']
                 );
-                
+
                 // Update name if provided
                 if ($request->customer_name && $customer->name === 'Guest') {
                     $customer->update(['name' => $request->customer_name]);
@@ -108,18 +109,18 @@ class WashTransactionController extends Controller
 
             foreach ($request->items as $itemData) {
                 $service = WashService::find($itemData['id']);
-                
+
                 $price = $service->price;
                 $subtotal = $price * $itemData['quantity'];
                 $total += $subtotal;
 
                 $items[] = [
                     'wash_service_id' => $service->id,
-                    'service_name'    => $service->name,
-                    'price'           => $price,
-                    'quantity'        => $itemData['quantity'],
-                    'subtotal'        => $subtotal,
-                    'employee_id'     => $itemData['employee_id'] ?? null,
+                    'service_name' => $service->name,
+                    'price' => $price,
+                    'quantity' => $itemData['quantity'],
+                    'subtotal' => $subtotal,
+                    'employee_id' => $itemData['employee_id'] ?? null,
                 ];
 
             }
@@ -127,7 +128,7 @@ class WashTransactionController extends Controller
             // Handle Voucher
             $discountAmount = 0;
             if ($customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
-                // Apply discount (assuming 1 free wash = value of first item or fixed amount? 
+                // Apply discount (assuming 1 free wash = value of first item or fixed amount?
                 // Let's assume it makes the transaction free or deducts the most expensive item?
                 // Simplest: Deduct the price of the first item found)
                 if (count($items) > 0) {
@@ -154,7 +155,7 @@ class WashTransactionController extends Controller
             $transaction = WashTransaction::create([
                 'user_id' => Auth::id(),
                 'wash_customer_id' => $customer ? $customer->id : null,
-                'transaction_number' => 'WASH-' . time(),
+                'transaction_number' => 'WASH-'.time(),
                 'queue_number' => $queueNumber,
                 'total_amount' => $finalTotal,
                 'discount_amount' => $discountAmount,
@@ -177,7 +178,7 @@ class WashTransactionController extends Controller
             if ($cashAccId && $revAccId && $finalTotal > 0) {
                 $poster = app(AccountingPoster::class);
                 $poster->post(
-                    'WASH-' . $transaction->transaction_number,
+                    'WASH-'.$transaction->transaction_number,
                     now()->toDateString(),
                     'Wash POS',
                     [
@@ -196,11 +197,12 @@ class WashTransactionController extends Controller
                 'success' => true,
                 'transaction_id' => $transaction->id,
                 'queue_number' => $queueNumber,
-                'message' => 'Transaction successful' . ($discountAmount > 0 ? ' (Voucher Applied)' : '')
+                'message' => 'Transaction successful'.($discountAmount > 0 ? ' (Voucher Applied)' : ''),
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
@@ -211,12 +213,13 @@ class WashTransactionController extends Controller
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->start_date.' 00:00:00',
+                $request->end_date.' 23:59:59',
             ]);
         }
 
         $transactions = $query->latest()->paginate(10);
+
         return view('wash.transactions.index', compact('transactions'));
     }
 
@@ -231,14 +234,15 @@ class WashTransactionController extends Controller
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->start_date.' 00:00:00',
+                $request->end_date.' 23:59:59',
             ]);
         }
 
         $transactions = $query->latest()->get();
 
         $pdf = Pdf::loadView('wash.transactions.pdf', compact('transactions'));
+
         return $pdf->download('wash_transactions.pdf');
     }
 
@@ -248,15 +252,15 @@ class WashTransactionController extends Controller
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->start_date.' 00:00:00',
+                $request->end_date.' 23:59:59',
             ]);
         }
 
         $transactions = $query->latest()->get();
-        
+
         return response()->streamDownload(function () use ($transactions) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues(['Date', 'Transaction Number', 'Customer', 'Vehicle', 'Services', 'Total Amount', 'Payment Method']));
@@ -270,7 +274,7 @@ class WashTransactionController extends Controller
                     $trx->vehicle_type,
                     $services,
                     $trx->total_amount,
-                    $trx->payment_method
+                    $trx->payment_method,
                 ]));
             }
 
@@ -281,6 +285,7 @@ class WashTransactionController extends Controller
     public function receipt(WashTransaction $transaction)
     {
         $transaction->loadMissing('user', 'items');
+
         return view('wash.transactions.receipt', compact('transaction'));
     }
 
@@ -289,9 +294,10 @@ class WashTransactionController extends Controller
         $request->validate(['phone' => 'required|string']);
         $phone = $this->normalizePhone($request->input('phone'));
         $link = route('wash.transactions.receipt', $transaction);
-        $amount = 'Rp ' . number_format($transaction->total_amount, 0, ',', '.');
+        $amount = 'Rp '.number_format($transaction->total_amount, 0, ',', '.');
         $message = "Terima kasih atas kunjungan Anda.\nNo: {$transaction->transaction_number}\nTotal: {$amount}\nStruk: {$link}";
         app(WhatsAppService::class)->sendMessage($phone, $message, 'receipt', null);
+
         return response()->json(['success' => true]);
     }
 
@@ -299,10 +305,11 @@ class WashTransactionController extends Controller
     {
         $digits = preg_replace('/\D+/', '', $phone);
         if (str_starts_with($digits, '0')) {
-            $digits = '62' . substr($digits, 1);
-        } elseif (!str_starts_with($digits, '62')) {
-            $digits = '62' . $digits;
+            $digits = '62'.substr($digits, 1);
+        } elseif (! str_starts_with($digits, '62')) {
+            $digits = '62'.$digits;
         }
+
         return $digits;
     }
 }

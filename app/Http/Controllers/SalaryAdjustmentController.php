@@ -10,7 +10,7 @@ class SalaryAdjustmentController extends Controller
 {
     public function store(Request $request)
     {
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized');
         }
 
@@ -24,12 +24,12 @@ class SalaryAdjustmentController extends Controller
 
         SalaryAdjustment::create($request->all());
 
-        return back()->with('success', __(ucfirst($request->type) . ' added successfully.'));
+        return back()->with('success', __(ucfirst($request->type).' added successfully.'));
     }
 
     public function destroy(SalaryAdjustment $salaryAdjustment)
     {
-        if (!Auth::user()->hasRole('admin') && !Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
             abort(403, 'Unauthorized');
         }
 

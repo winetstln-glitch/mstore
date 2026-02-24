@@ -5,23 +5,22 @@ namespace Tests\Feature;
 use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Olt;
-use App\Models\User;
 use App\Models\Role;
-use App\Models\Permission;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MapUpdateTest extends TestCase
 {
-    // use RefreshDatabase; // Don't use this if you want to keep data, but for testing it's safer. 
-    // However, since I don't want to wipe the user's DB, I'll be careful. 
+    // use RefreshDatabase; // Don't use this if you want to keep data, but for testing it's safer.
+    // However, since I don't want to wipe the user's DB, I'll be careful.
     // Actually, RefreshDatabase wraps in transaction, so it rolls back. Safe.
-    use RefreshDatabase; 
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Seed permissions and roles since we use RefreshDatabase
         $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->seed(\Database\Seeders\RoleSeeder::class);
@@ -116,7 +115,7 @@ class MapUpdateTest extends TestCase
             ]);
 
         $response->assertStatus(200)
-             ->assertJson(['success' => true]);
+            ->assertJson(['success' => true]);
 
         $this->assertDatabaseHas('odps', [
             'id' => $odp->id,
@@ -234,7 +233,7 @@ class MapUpdateTest extends TestCase
 
         // OLT update redirects to index
         $response->assertStatus(302);
-        
+
         $this->assertDatabaseHas('olts', [
             'id' => $olt->id,
             'latitude' => -6.5,
@@ -276,7 +275,7 @@ class MapUpdateTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
-        
+
         $this->assertDatabaseHas('olts', [
             'id' => $olt->id,
             'latitude' => -6.6,

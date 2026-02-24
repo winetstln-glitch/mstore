@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Router;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Auth;
 use App\Services\MikrotikService;
-
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class RouterController extends Controller implements HasMiddleware
 {
@@ -39,25 +37,25 @@ class RouterController extends Controller implements HasMiddleware
             ]);
 
             $client = new \RouterOS\Client($config);
-            
+
             // Try to get identity to verify connection
             $response = $client->query('/system/identity/print')->read();
             $identity = $response[0]['name'] ?? 'Unknown';
 
             return response()->json([
-                'success' => true, 
-                'message' => __('Connected successfully! Router Identity: :identity', ['identity' => $identity])
+                'success' => true,
+                'message' => __('Connected successfully! Router Identity: :identity', ['identity' => $identity]),
             ]);
 
         } catch (\Exception $e) {
             $message = $e->getMessage();
             if (str_contains($message, 'socket')) {
-                $message .= " (Check IP, Port, or if API service is enabled on Mikrotik)";
+                $message .= ' (Check IP, Port, or if API service is enabled on Mikrotik)';
             }
-            
+
             return response()->json([
-                'success' => false, 
-                'message' => __('Connection failed: :message', ['message' => $message])
+                'success' => false,
+                'message' => __('Connection failed: :message', ['message' => $message]),
             ], 500);
         }
     }
@@ -70,11 +68,12 @@ class RouterController extends Controller implements HasMiddleware
         $user = Auth::user();
 
         // If user is not admin and is a coordinator with an assigned router, redirect to details directly
-        if (!$user->hasRole('admin') && $user->coordinator && $user->coordinator->router_id) {
+        if (! $user->hasRole('admin') && $user->coordinator && $user->coordinator->router_id) {
             return redirect()->route('routers.sessions', $user->coordinator->router_id);
         }
 
         $routers = Router::latest()->paginate(10);
+
         return view('routers.index', compact('routers'));
     }
 
@@ -147,34 +146,34 @@ class RouterController extends Controller implements HasMiddleware
 
             $pppoeProfiles = $mikrotik->getProfiles();
 
-                if (is_array($systemResource)) {
-                    $totalMemory = isset($systemResource['total-memory']) ? (int)$systemResource['total-memory'] : 0;
-                    $freeMemory = isset($systemResource['free-memory']) ? (int)$systemResource['free-memory'] : 0;
-                    $usedMemory = max($totalMemory - $freeMemory, 0);
+            if (is_array($systemResource)) {
+                $totalMemory = isset($systemResource['total-memory']) ? (int) $systemResource['total-memory'] : 0;
+                $freeMemory = isset($systemResource['free-memory']) ? (int) $systemResource['free-memory'] : 0;
+                $usedMemory = max($totalMemory - $freeMemory, 0);
 
-                    if ($totalMemory > 0) {
-                        $memoryUsage = $this->formatBytes($usedMemory) . ' / ' . $this->formatBytes($totalMemory);
-                        $memoryPercent = (int)round(($usedMemory / $totalMemory) * 100);
-                    }
+                if ($totalMemory > 0) {
+                    $memoryUsage = $this->formatBytes($usedMemory).' / '.$this->formatBytes($totalMemory);
+                    $memoryPercent = (int) round(($usedMemory / $totalMemory) * 100);
                 }
-
-                $interfacesTraffic = $mikrotik->getInterfacesTrafficSnapshot(4);
             }
 
-            return view('routers.show', [
-                'router' => $router,
-                'mikrotikConnected' => $mikrotikConnected,
-                'systemResource' => $systemResource,
-                'pppoeActiveCount' => $pppoeActiveCount,
-                'hotspotActiveCount' => $hotspotActiveCount,
-                'memoryUsage' => $memoryUsage,
-                'memoryPercent' => $memoryPercent,
-                'pppoeSecrets' => $pppoeSecrets,
-                'pppoeProfiles' => $pppoeProfiles,
-                'pppoeActiveSessions' => $pppoeActiveSessions,
-                'hotspotActiveSessions' => $hotspotActiveSessions,
-                'interfacesTraffic' => $interfacesTraffic,
-            ]);
+            $interfacesTraffic = $mikrotik->getInterfacesTrafficSnapshot(4);
+        }
+
+        return view('routers.show', [
+            'router' => $router,
+            'mikrotikConnected' => $mikrotikConnected,
+            'systemResource' => $systemResource,
+            'pppoeActiveCount' => $pppoeActiveCount,
+            'hotspotActiveCount' => $hotspotActiveCount,
+            'memoryUsage' => $memoryUsage,
+            'memoryPercent' => $memoryPercent,
+            'pppoeSecrets' => $pppoeSecrets,
+            'pppoeProfiles' => $pppoeProfiles,
+            'pppoeActiveSessions' => $pppoeActiveSessions,
+            'hotspotActiveSessions' => $hotspotActiveSessions,
+            'interfacesTraffic' => $interfacesTraffic,
+        ]);
     }
 
     public function sessions(Router $router)
@@ -239,6 +238,7 @@ class RouterController extends Controller implements HasMiddleware
     public function destroy(Router $router)
     {
         $router->delete();
+
         return redirect()->route('routers.index')->with('success', __('Router deleted successfully.'));
     }
 
@@ -249,7 +249,7 @@ class RouterController extends Controller implements HasMiddleware
         ]);
 
         $mikrotik = new MikrotikService($router);
-        if (!$mikrotik->isConnected()) {
+        if (! $mikrotik->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => __('Router is offline or cannot connect to Mikrotik.'),
@@ -277,7 +277,7 @@ class RouterController extends Controller implements HasMiddleware
         ]);
 
         $mikrotik = new MikrotikService($router);
-        if (!$mikrotik->isConnected()) {
+        if (! $mikrotik->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => __('Router is offline or cannot connect to Mikrotik.'),
@@ -306,7 +306,7 @@ class RouterController extends Controller implements HasMiddleware
         ]);
 
         $mikrotik = new MikrotikService($router);
-        if (!$mikrotik->isConnected()) {
+        if (! $mikrotik->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => __('Router is offline or cannot connect to Mikrotik.'),
@@ -339,6 +339,6 @@ class RouterController extends Controller implements HasMiddleware
 
         $bytes /= pow(1024, $pow);
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }

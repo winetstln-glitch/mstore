@@ -22,7 +22,7 @@ class FinanceCascadeTest extends TestCase
         $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
         $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
         $role->permissions()->attach($permission);
-        
+
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $region = Region::create(['name' => 'Test Region', 'code' => 'TR']);
@@ -30,7 +30,7 @@ class FinanceCascadeTest extends TestCase
             'name' => 'Test Coordinator',
             'phone' => '08123456789',
             'address' => 'Test Address',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ]);
 
         // 2. Configure Settings
@@ -46,13 +46,13 @@ class FinanceCascadeTest extends TestCase
             'transaction_date' => now()->format('Y-m-d'),
             'description' => 'Test Income',
             'coordinator_id' => $coordinator->id,
-            'reference_number' => 'REF-TEST-001'
+            'reference_number' => 'REF-TEST-001',
         ]);
 
         $response->assertRedirect(route('finance.index'));
 
         // 4. Assert: Check Calculations
-        
+
         // Coordinator Commission: 15% of 100,000 = 15,000
         $this->assertDatabaseHas('transactions', [
             'category' => 'Coordinator Commission',
@@ -92,7 +92,7 @@ class FinanceCascadeTest extends TestCase
             'name' => 'Test Coordinator',
             'phone' => '08123456789',
             'address' => 'Test Address',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ]);
         Setting::updateOrCreate(['key' => 'commission_coordinator_percent'], ['value' => '15']);
         Setting::updateOrCreate(['key' => 'commission_isp_percent'], ['value' => '25']);
@@ -106,7 +106,7 @@ class FinanceCascadeTest extends TestCase
             'transaction_date' => now()->format('Y-m-d'),
             'description' => 'Test Income',
             'coordinator_id' => $coordinator->id,
-            'reference_number' => 'REF-TEST-001'
+            'reference_number' => 'REF-TEST-001',
         ]);
 
         $transaction = Transaction::where('category', 'Member Income')->first();
@@ -119,7 +119,7 @@ class FinanceCascadeTest extends TestCase
             'transaction_date' => now()->format('Y-m-d'),
             'description' => 'Updated Income',
             'coordinator_id' => $coordinator->id,
-            'reference_number' => 'REF-TEST-001'
+            'reference_number' => 'REF-TEST-001',
         ]);
 
         // Assert New Values
@@ -127,7 +127,7 @@ class FinanceCascadeTest extends TestCase
         // Coord: 15% of 200k = 30,000 (Rem: 170,000)
         // ISP: 25% of 170k = 42,500 (Rem: 127,500)
         // Tool: 15% of 127,500 = 19,125
-        
+
         $this->assertDatabaseHas('transactions', [
             'category' => 'Coordinator Commission',
             'amount' => 30000,

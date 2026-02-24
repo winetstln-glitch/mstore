@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Router;
 use App\Services\MikrotikService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PppoeController extends Controller

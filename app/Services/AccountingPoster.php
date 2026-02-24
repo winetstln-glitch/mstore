@@ -16,15 +16,15 @@ class AccountingPoster
         $sumDebit = 0;
         $sumCredit = 0;
         foreach ($lines as $l) {
-            $sumDebit += (float)($l['debit'] ?? 0);
-            $sumCredit += (float)($l['credit'] ?? 0);
+            $sumDebit += (float) ($l['debit'] ?? 0);
+            $sumCredit += (float) ($l['credit'] ?? 0);
         }
-        if (round($sumDebit,2) !== round($sumCredit,2)) {
+        if (round($sumDebit, 2) !== round($sumCredit, 2)) {
             throw new InvalidArgumentException('Unbalanced journal');
         }
 
         return DB::transaction(function () use ($journalNo, $date, $description, $lines, $periodId, $sourceType, $sourceId) {
-            if (!$periodId) {
+            if (! $periodId) {
                 $d = \Carbon\Carbon::parse($date);
                 $name = $d->format('Y-m');
                 $start = $d->copy()->startOfMonth()->toDateString();
@@ -61,6 +61,7 @@ class AccountingPoster
                     'cost_center' => $l['cost_center'] ?? null,
                 ]);
             }
+
             return $j;
         });
     }

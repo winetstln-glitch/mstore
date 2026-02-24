@@ -2,18 +2,20 @@
 
 namespace App\Services\Olt;
 
-use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Cookie\CookieJar;
+use Illuminate\Support\Facades\Http;
 
 class OltHttpClient
 {
     protected $baseUrl;
+
     protected $cookieJar;
+
     protected $timeout = 10;
 
     public function __construct()
     {
-        $this->cookieJar = new CookieJar();
+        $this->cookieJar = new CookieJar;
     }
 
     public function connect($host, $port = 80, $timeout = 10)
@@ -21,7 +23,7 @@ class OltHttpClient
         $scheme = $port == 443 ? 'https' : 'http';
         $this->baseUrl = "{$scheme}://{$host}:{$port}";
         $this->timeout = $timeout;
-        
+
         // Simple reachability check
         try {
             $response = Http::withOptions([
@@ -32,14 +34,14 @@ class OltHttpClient
 
             return true;
         } catch (\Exception $e) {
-            throw new \Exception("HTTP Connection failed: " . $e->getMessage());
+            throw new \Exception('HTTP Connection failed: '.$e->getMessage());
         }
     }
 
     public function get($path, $params = [])
     {
-        $url = $this->baseUrl . '/' . ltrim($path, '/');
-        
+        $url = $this->baseUrl.'/'.ltrim($path, '/');
+
         try {
             $response = Http::withOptions([
                 'cookies' => $this->cookieJar,
@@ -49,13 +51,13 @@ class OltHttpClient
 
             return $response;
         } catch (\Exception $e) {
-            throw new \Exception("HTTP GET failed: " . $e->getMessage());
+            throw new \Exception('HTTP GET failed: '.$e->getMessage());
         }
     }
 
     public function post($path, $data = [])
     {
-        $url = $this->baseUrl . '/' . ltrim($path, '/');
+        $url = $this->baseUrl.'/'.ltrim($path, '/');
 
         try {
             $response = Http::withOptions([
@@ -66,7 +68,7 @@ class OltHttpClient
 
             return $response;
         } catch (\Exception $e) {
-            throw new \Exception("HTTP POST failed: " . $e->getMessage());
+            throw new \Exception('HTTP POST failed: '.$e->getMessage());
         }
     }
 

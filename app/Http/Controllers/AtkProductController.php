@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\AtkProduct;
 use Illuminate\Http\Request;
-use OpenSpout\Writer\XLSX\Writer;
-use OpenSpout\Reader\XLSX\Reader;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\XLSX\Reader;
+use OpenSpout\Writer\XLSX\Writer;
 
 class AtkProductController extends Controller
 {
     public function export()
     {
         $products = AtkProduct::all();
-        
+
         return response()->streamDownload(function () use ($products) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues(['Code', 'Name', 'Category', 'Price', 'Cost Price', 'Stock', 'Unit', 'Description']));
@@ -45,56 +45,62 @@ class AtkProductController extends Controller
 
         try {
             $file = $request->file('file');
-            $reader = new Reader();
+            $reader = new Reader;
             $reader->open($file->getRealPath());
 
             $count = 0;
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $index => $row) {
-                    if ($index === 1) continue; // Skip header
+                    if ($index === 1) {
+                        continue;
+                    } // Skip header
 
                     $cells = $row->getCells();
-                    if (empty($cells)) continue;
+                    if (empty($cells)) {
+                        continue;
+                    }
 
                     // Detect format:
                     // Format A: Code, Name, Category, Price, Cost Price, Stock, Unit, Description
                     // Format B (minimal): Name, Category, Price, Cost Price, Stock, Unit, Description
-                    $first = trim((string)($cells[0]->getValue() ?? ''));
-                    $second = isset($cells[1]) ? trim((string)($cells[1]->getValue() ?? '')) : '';
+                    $first = trim((string) ($cells[0]->getValue() ?? ''));
+                    $second = isset($cells[1]) ? trim((string) ($cells[1]->getValue() ?? '')) : '';
 
                     $isFormatA = $second !== ''; // assume second cell holds Name when present
 
                     if ($isFormatA) {
                         $code = $first;
                         $name = $second;
-                        $category = isset($cells[2]) ? trim((string)($cells[2]->getValue() ?? '')) : '';
+                        $category = isset($cells[2]) ? trim((string) ($cells[2]->getValue() ?? '')) : '';
                         $price = isset($cells[3]) ? (float) ($cells[3]->getValue() ?? 0) : 0;
                         $costPrice = isset($cells[4]) ? (float) ($cells[4]->getValue() ?? 0) : 0;
                         $stock = isset($cells[5]) ? (int) ($cells[5]->getValue() ?? 0) : 0;
-                        $unit = isset($cells[6]) ? trim((string)($cells[6]->getValue() ?? 'pcs')) : 'pcs';
-                        $description = isset($cells[7]) ? trim((string)($cells[7]->getValue() ?? '')) : '';
+                        $unit = isset($cells[6]) ? trim((string) ($cells[6]->getValue() ?? 'pcs')) : 'pcs';
+                        $description = isset($cells[7]) ? trim((string) ($cells[7]->getValue() ?? '')) : '';
                     } else {
                         $code = '';
                         $name = $first;
-                        $category = isset($cells[1]) ? trim((string)($cells[1]->getValue() ?? '')) : '';
+                        $category = isset($cells[1]) ? trim((string) ($cells[1]->getValue() ?? '')) : '';
                         $price = isset($cells[2]) ? (float) ($cells[2]->getValue() ?? 0) : 0;
                         $costPrice = isset($cells[3]) ? (float) ($cells[3]->getValue() ?? 0) : 0;
                         $stock = isset($cells[4]) ? (int) ($cells[4]->getValue() ?? 0) : 0;
-                        $unit = isset($cells[5]) ? trim((string)($cells[5]->getValue() ?? 'pcs')) : 'pcs';
-                        $description = isset($cells[6]) ? trim((string)($cells[6]->getValue() ?? '')) : '';
+                        $unit = isset($cells[5]) ? trim((string) ($cells[5]->getValue() ?? 'pcs')) : 'pcs';
+                        $description = isset($cells[6]) ? trim((string) ($cells[6]->getValue() ?? '')) : '';
                     }
 
                     // Minimal requirement: name
-                    if ($name === '') continue;
+                    if ($name === '') {
+                        continue;
+                    }
 
                     // Generate code if missing
                     if ($code === '') {
                         $base = strtoupper(\Illuminate\Support\Str::slug($name, '_'));
                         $suffix = substr(uniqid('', true), -6);
-                        $code = $base ? ($base . '_' . $suffix) : ('ITEM_' . $suffix);
+                        $code = $base ? ($base.'_'.$suffix) : ('ITEM_'.$suffix);
                         while (\App\Models\AtkProduct::where('code', $code)->exists()) {
                             $suffix = substr(uniqid('', true), -6);
-                            $code = $base ? ($base . '_' . $suffix) : ('ITEM_' . $suffix);
+                            $code = $base ? ($base.'_'.$suffix) : ('ITEM_'.$suffix);
                         }
                     }
 
@@ -134,11 +140,12 @@ class AtkProductController extends Controller
             $perPage = max(1, (int) $query->count());
         } else {
             $perPage = (int) $per;
-            if (!in_array($perPage, [10, 50, 100], true)) {
+            if (! in_array($perPage, [10, 50, 100], true)) {
                 $perPage = 10;
             }
         }
         $products = $query->latest()->paginate($perPage)->appends($request->query());
+
         return view('atk.products.index', compact('products', 'categories'));
     }
 
@@ -164,11 +171,11 @@ class AtkProductController extends Controller
         if (empty($validated['code'])) {
             $base = strtoupper(\Illuminate\Support\Str::slug($validated['name'], '_'));
             $suffix = substr(uniqid('', true), -6);
-            $code = $base ? ($base . '_' . $suffix) : ('ITEM_' . $suffix);
+            $code = $base ? ($base.'_'.$suffix) : ('ITEM_'.$suffix);
             // ensure unique
             while (\App\Models\AtkProduct::where('code', $code)->exists()) {
                 $suffix = substr(uniqid('', true), -6);
-                $code = $base ? ($base . '_' . $suffix) : ('ITEM_' . $suffix);
+                $code = $base ? ($base.'_'.$suffix) : ('ITEM_'.$suffix);
             }
             $validated['code'] = $code;
         }
@@ -203,7 +210,7 @@ class AtkProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:atk_products,code,' . $product->id,
+            'code' => 'nullable|string|unique:atk_products,code,'.$product->id,
             'category' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
@@ -243,43 +250,43 @@ class AtkProductController extends Controller
             \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
         }
         $product->delete();
+
         return redirect()->route('atk.products.index')->with('success', __('Product deleted successfully.'));
     }
 
-   public function bulkDestroy(Request $request)
-{
-    $ids = $request->input('ids', []);
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
 
-    if (!is_array($ids) || empty($ids)) {
-        return redirect()
-            ->route('atk.products.index')
-            ->withErrors(['ids' => __('No products selected.')]);
-    }
-
-    \DB::transaction(function () use ($ids) {
-
-        // Ambil hanya kolom yang diperlukan
-        $products = AtkProduct::whereIn('id', $ids)
-            ->select('id', 'image')
-            ->get();
-
-        // Kumpulkan file image
-        $images = $products
-            ->pluck('image')
-            ->filter()
-            ->toArray();
-
-        if (!empty($images)) {
-            \Storage::disk('public')->delete($images);
+        if (! is_array($ids) || empty($ids)) {
+            return redirect()
+                ->route('atk.products.index')
+                ->withErrors(['ids' => __('No products selected.')]);
         }
 
-        // Single query delete
-        AtkProduct::whereIn('id', $ids)->delete();
-    });
+        \DB::transaction(function () use ($ids) {
 
-    return redirect()
-        ->route('atk.products.index')
-        ->with('success', __('Selected products deleted successfully.'));
-}
+            // Ambil hanya kolom yang diperlukan
+            $products = AtkProduct::whereIn('id', $ids)
+                ->select('id', 'image')
+                ->get();
 
+            // Kumpulkan file image
+            $images = $products
+                ->pluck('image')
+                ->filter()
+                ->toArray();
+
+            if (! empty($images)) {
+                \Storage::disk('public')->delete($images);
+            }
+
+            // Single query delete
+            AtkProduct::whereIn('id', $ids)->delete();
+        });
+
+        return redirect()
+            ->route('atk.products.index')
+            ->with('success', __('Selected products deleted successfully.'));
+    }
 }

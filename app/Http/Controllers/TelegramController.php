@@ -31,7 +31,7 @@ class TelegramController extends Controller implements HasMiddleware
                 'value' => env('TELEGRAM_BOT_TOKEN', ''),
                 'group' => 'telegram',
                 'type' => 'text',
-                'label' => 'Telegram Bot Token'
+                'label' => 'Telegram Bot Token',
             ]
         );
 
@@ -41,21 +41,21 @@ class TelegramController extends Controller implements HasMiddleware
                 'value' => '',
                 'group' => 'telegram',
                 'type' => 'text',
-                'label' => 'Technician Group Chat ID'
+                'label' => 'Technician Group Chat ID',
             ]
         );
 
-        $defaultTemplate = "🔔 *TIKET BARU (NEW TICKET)*\n\n" .
-                           "🆔 *No:* `{ticket_number}`\n" .
-                           "📝 *Subject:* `{subject}`\n" .
-                           "👤 *Customer:* `{customer_name}`\n" .
-                           "👷 *Teknisi:* `{technicians}`\n" .
-                           "👔 *Koordinator:* `{coordinator}`\n" .
-                           "📍 *Lokasi:* `{location}`\n" .
-                           "⚠️ *Prioritas:* `{priority}`\n" .
-                           "📄 *Deskripsi:* `{description}`\n\n" .
-                           "Silakan cek aplikasi untuk detail lebih lanjut.\n" .
-                           "[Lihat Lokasi]({location_link})";
+        $defaultTemplate = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
+                           "🆔 *No:* `{ticket_number}`\n".
+                           "📝 *Subject:* `{subject}`\n".
+                           "👤 *Customer:* `{customer_name}`\n".
+                           "👷 *Teknisi:* `{technicians}`\n".
+                           "👔 *Koordinator:* `{coordinator}`\n".
+                           "📍 *Lokasi:* `{location}`\n".
+                           "⚠️ *Prioritas:* `{priority}`\n".
+                           "📄 *Deskripsi:* `{description}`\n\n".
+                           "Silakan cek aplikasi untuk detail lebih lanjut.\n".
+                           '[Lihat Lokasi]({location_link})';
 
         $template = Setting::firstOrCreate(
             ['key' => 'telegram_ticket_template'],
@@ -63,7 +63,7 @@ class TelegramController extends Controller implements HasMiddleware
                 'value' => $defaultTemplate,
                 'group' => 'telegram',
                 'type' => 'textarea',
-                'label' => 'Ticket Notification Template'
+                'label' => 'Ticket Notification Template',
             ]
         );
 
@@ -82,15 +82,15 @@ class TelegramController extends Controller implements HasMiddleware
         ]);
 
         Setting::where('key', 'telegram_bot_token')->update([
-            'value' => $request->telegram_bot_token
+            'value' => $request->telegram_bot_token,
         ]);
 
         Setting::where('key', 'telegram_technician_group_chat_id')->update([
-            'value' => $request->telegram_technician_group_chat_id
+            'value' => $request->telegram_technician_group_chat_id,
         ]);
 
         Setting::where('key', 'telegram_ticket_template')->update([
-            'value' => $request->telegram_ticket_template
+            'value' => $request->telegram_ticket_template,
         ]);
 
         return redirect()->route('telegram.index')->with('success', __('Telegram settings updated successfully.'));
@@ -98,9 +98,9 @@ class TelegramController extends Controller implements HasMiddleware
 
     public function test(Request $request)
     {
-        $telegramService = new \App\Services\TelegramService();
+        $telegramService = new \App\Services\TelegramService;
         $message = "🔔 *TEST NOTIFICATION*\n\nThis is a test message from your application.\nConnection is successful!";
-        
+
         if ($telegramService->sendToTechnicianGroup($message)) {
             return back()->with('success', 'Test message sent successfully!');
         } else {

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Odc;
 use App\Models\Odp;
 use App\Models\Region;
-use App\Models\Odc;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -36,15 +36,15 @@ class OdpController extends Controller implements HasMiddleware
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('kampung', 'like', "%{$search}%");
+                    ->orWhere('kampung', 'like', "%{$search}%");
             });
         }
 
         $odps = $query->latest()->paginate(10);
         $regions = Region::orderBy('name')->get();
-        
+
         return view('odps.index', compact('odps', 'regions'));
     }
 
@@ -55,6 +55,7 @@ class OdpController extends Controller implements HasMiddleware
     {
         $regions = Region::all();
         $odcs = Odc::all();
+
         return view('odps.create', compact('regions', 'odcs'));
     }
 
@@ -90,7 +91,7 @@ class OdpController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => __('ODP created successfully.'),
-                'data' => $odp
+                'data' => $odp,
             ]);
         }
 
@@ -100,6 +101,7 @@ class OdpController extends Controller implements HasMiddleware
     public function getNextSequence(Odc $odc)
     {
         $sequence = $this->calculateSequence($odc->id);
+
         return response()->json(['sequence' => $sequence]);
     }
 
@@ -107,7 +109,7 @@ class OdpController extends Controller implements HasMiddleware
     {
         $maxSequence = 0;
         $existingOdps = Odp::where('odc_id', $odcId)->get();
-        
+
         foreach ($existingOdps as $existingOdp) {
             // Assume format .../{SEQ}
             $parts = explode('/', $existingOdp->name);
@@ -118,8 +120,9 @@ class OdpController extends Controller implements HasMiddleware
                 }
             }
         }
-        
+
         $count = $maxSequence + 1;
+
         return str_pad($count, 2, '0', STR_PAD_LEFT);
     }
 
@@ -128,12 +131,12 @@ class OdpController extends Controller implements HasMiddleware
         // Area: Take first 2 characters from Input Area (fallback to ODC if not provided, though inputs are preferred now)
         $areaRaw = isset($data['odp_area']) ? $data['odp_area'] : '';
         if (empty($areaRaw)) {
-             // Fallback to ODC Area if input is missing (backward compatibility or safety)
-             $odc = Odc::find($data['odc_id']);
-             $areaRaw = $odc->area;
+            // Fallback to ODC Area if input is missing (backward compatibility or safety)
+            $odc = Odc::find($data['odc_id']);
+            $areaRaw = $odc->area;
         }
         $areaRaw = strtoupper(preg_replace('/\s+/', '', $areaRaw));
-        
+
         // Take First, Middle, and Last characters
         $length = strlen($areaRaw);
         if ($length <= 3) {
@@ -143,14 +146,16 @@ class OdpController extends Controller implements HasMiddleware
             $last = substr($areaRaw, -1);
             $middleIndex = floor($length / 2);
             $middle = substr($areaRaw, $middleIndex, 1);
-            $area = $first . $middle . $last;
+            $area = $first.$middle.$last;
         }
 
         // Cable: 2 digits from Input Cable (fallback to ODC)
         $cableRaw = isset($data['odp_cable']) ? $data['odp_cable'] : '';
         if (empty($cableRaw)) {
-             if (!isset($odc)) $odc = Odc::find($data['odc_id']);
-             $cableRaw = $odc->cable_no;
+            if (! isset($odc)) {
+                $odc = Odc::find($data['odc_id']);
+            }
+            $cableRaw = $odc->cable_no;
         }
         $cableRaw = preg_replace('/[^0-9]/', '', $cableRaw);
         $cable = str_pad($cableRaw, 2, '0', STR_PAD_LEFT);
@@ -176,9 +181,10 @@ class OdpController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $odp
+                'data' => $odp,
             ]);
         }
+
         return view('odps.show', compact('odp'));
     }
 
@@ -189,6 +195,7 @@ class OdpController extends Controller implements HasMiddleware
     {
         $regions = Region::all();
         $odcs = Odc::all();
+
         return view('odps.edit', compact('odp', 'regions', 'odcs'));
     }
 
@@ -198,7 +205,7 @@ class OdpController extends Controller implements HasMiddleware
     public function update(Request $request, Odp $odp)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:odps,name,' . $odp->id,
+            'name' => 'sometimes|required|string|max:255|unique:odps,name,'.$odp->id,
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'nullable|integer|min:1',
@@ -215,7 +222,7 @@ class OdpController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => true,
                 'message' => __('ODP updated successfully.'),
-                'data' => $odp
+                'data' => $odp,
             ]);
         }
 
@@ -232,7 +239,7 @@ class OdpController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('ODP deleted successfully.')
+                'message' => __('ODP deleted successfully.'),
             ]);
         }
 
@@ -246,7 +253,7 @@ class OdpController extends Controller implements HasMiddleware
                 ob_end_clean();
             }
 
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $writer->addRow(Row::fromValues([
@@ -278,6 +285,6 @@ class OdpController extends Controller implements HasMiddleware
             });
 
             $writer->close();
-        }, 'odps_' . date('Y-m-d_H-i-s') . '.xlsx');
+        }, 'odps_'.date('Y-m-d_H-i-s').'.xlsx');
     }
 }

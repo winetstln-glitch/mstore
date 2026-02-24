@@ -2,11 +2,10 @@
 
 use App\Models\Permission;
 use App\Models\Role;
-use Illuminate\Support\Facades\DB;
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
 
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
@@ -20,7 +19,7 @@ try {
     } else {
         echo "Found closure permissions:\n";
         foreach ($permissions as $p) {
-            echo "- " . $p->name . "\n";
+            echo '- '.$p->name."\n";
         }
     }
 
@@ -30,12 +29,12 @@ try {
         echo "\nAdmin role permissions for closure:\n";
         foreach ($permissions as $p) {
             $has = $adminRole->hasPermissionTo($p->name);
-            echo "- " . $p->name . ": " . ($has ? 'YES' : 'NO') . "\n";
+            echo '- '.$p->name.': '.($has ? 'YES' : 'NO')."\n";
         }
     } else {
         echo "\nAdmin role not found.\n";
     }
 
 } catch (\Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+    echo 'Error: '.$e->getMessage()."\n";
 }

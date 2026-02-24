@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Journal extends Model
 {
-    protected $fillable = ['journal_no','date','description','source_type','source_id','period_id','posted_by','posted_at','status'];
+    protected $fillable = ['journal_no', 'date', 'description', 'source_type', 'source_id', 'period_id', 'posted_by', 'posted_at', 'status'];
 
     public function entries(): HasMany
     {

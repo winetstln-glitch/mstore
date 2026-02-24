@@ -99,15 +99,15 @@ class RoleSeeder extends Seeder
                 // Finance Staff permissions
                 // Grant access to all major operational modules for visibility (Audit/Reporting)
                 // and full management for Finance-specific modules.
-                
+
                 // 1. Full Management Access
                 $manageGroups = [
                     'Finance',
                     'Investor Management',
-                    'Package Management', 
+                    'Package Management',
                     'Inventory',
                     'Profile',
-                    'Notification'
+                    'Notification',
                 ];
                 $managePermissions = Permission::whereIn('group', $manageGroups)->get();
 
@@ -115,7 +115,7 @@ class RoleSeeder extends Seeder
                 $viewPermissionNames = [
                     // Core
                     'dashboard.view',
-                    
+
                     // Operations
                     'customer.view',
                     'ticket.view',
@@ -123,13 +123,13 @@ class RoleSeeder extends Seeder
                     'technician.view',
                     'coordinator.view',
                     'region.view',
-                    
+
                     // HR / Payroll
                     'attendance.view',
                     'attendance.report',
                     'leave.view',
                     'schedule.view',
-                    
+
                     // Network Assets (for Asset Tracking/Audit)
                     'map.view',
                     'olt.view',
@@ -138,12 +138,12 @@ class RoleSeeder extends Seeder
                     'htb.view',
                     'router.view',
                     'genieacs.view',
-                    
+
                     // Communications & Tools
                     'chat.view',     // WhatsApp
                     'telegram.view', // Telegram
                     'calculator.view',
-                    
+
                     // Settings (View only)
                     'setting.view',
                 ];
