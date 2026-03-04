@@ -13,33 +13,6 @@
     </div>
 
     <div class="card-body">
-        @php
-            if (!isset($waApiUrl)) {
-                $waApiUrl = (object)[
-                    'value' => \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL'))
-                ];
-            }
-            if (!isset($atkReceiptTemplate)) {
-                $atkReceiptTemplate = (object)[
-                    'value' => \App\Models\Setting::getValue('whatsapp_atk_receipt_template', '')
-                ];
-            }
-            if (!isset($washReceiptTemplate)) {
-                $washReceiptTemplate = (object)[
-                    'value' => \App\Models\Setting::getValue('whatsapp_wash_receipt_template', '')
-                ];
-            }
-            if (!isset($ispBillTemplate)) {
-                $ispBillTemplate = (object)[
-                    'value' => \App\Models\Setting::getValue('whatsapp_isp_bill_template', '')
-                ];
-            }
-            if (!isset($ispReminderTemplate)) {
-                $ispReminderTemplate = (object)[
-                    'value' => \App\Models\Setting::getValue('whatsapp_isp_reminder_template', '')
-                ];
-            }
-        @endphp
 
         {{-- NAV TABS --}}
         <ul class="nav nav-tabs mb-4" id="waTab" role="tablist">
@@ -75,7 +48,7 @@
                     </div>
                     <div class="mb-3">
                         <label>API URL</label>
-                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ $waApiUrl->value }}">
+                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL')) }}">
                     </div>
                     <div class="mb-3">
                         <label>API Key</label>
@@ -99,7 +72,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label>ATK Receipt Template</label>
-                            <textarea class="form-control" rows="12" name="whatsapp_atk_receipt_template" id="atkTpl">{{ $atkReceiptTemplate->value }}</textarea>
+                            <textarea class="form-control" rows="12" name="whatsapp_atk_receipt_template" id="atkTpl">{{ \App\Models\Setting::getValue('whatsapp_atk_receipt_template', '') }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
@@ -110,7 +83,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label>Wash Receipt Template</label>
-                            <textarea class="form-control" rows="12" name="whatsapp_wash_receipt_template" id="washTpl">{{ $washReceiptTemplate->value }}</textarea>
+                            <textarea class="form-control" rows="12" name="whatsapp_wash_receipt_template" id="washTpl">{{ \App\Models\Setting::getValue('whatsapp_wash_receipt_template', '') }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
@@ -130,9 +103,9 @@
                 <form method="POST" action="{{ route('whatsapp.update') }}">
                     @csrf
                     <label>Monthly Bill Template</label>
-                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_bill_template">{{ $ispBillTemplate->value }}</textarea>
+                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_bill_template">{{ \App\Models\Setting::getValue('whatsapp_isp_bill_template', '') }}</textarea>
                     <label>Reminder Template</label>
-                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_reminder_template">{{ $ispReminderTemplate->value }}</textarea>
+                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_reminder_template">{{ \App\Models\Setting::getValue('whatsapp_isp_reminder_template', '') }}</textarea>
                     <button type="submit" class="btn btn-primary">
                         Save ISP Templates
                     </button>
