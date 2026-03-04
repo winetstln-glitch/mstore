@@ -167,11 +167,13 @@
                                     <a href="{{ route('routers.show', $router) }}" class="btn btn-outline-secondary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Detail') }}">
                                         <i class="fa-solid fa-circle-info"></i> <span class="d-none d-sm-inline ms-1">{{ __('Detail') }}</span>
                                     </a>
+                                    @if(Route::has('routers.test-connection'))
                                     <button type="button"
                                         class="btn btn-outline-success btn-sm me-1"
                                         onclick="testConnection('{{ route('routers.test-connection', $router) }}', this)">
                                         <i class="fa-solid fa-plug-circle-bolt"></i> <span class="d-none d-sm-inline ms-1">{{ __('Test') }}</span>
                                     </button>
+                                    @endif
                                     <a href="{{ route('routers.edit', $router) }}" class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Edit') }}">
                                         <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">{{ __('Edit') }}</span>
                                     </a>
