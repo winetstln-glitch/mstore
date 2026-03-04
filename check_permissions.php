@@ -28,7 +28,7 @@ try {
     if ($adminRole) {
         echo "\nAdmin role permissions for closure:\n";
         foreach ($permissions as $p) {
-            $has = $adminRole->hasPermissionTo($p->name);
+            $has = $adminRole->hasPermission($p->name);
             echo '- '.$p->name.': '.($has ? 'YES' : 'NO')."\n";
         }
     } else {

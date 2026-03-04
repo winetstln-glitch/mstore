@@ -95,7 +95,7 @@
             <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
         </div>
         <div class="item">
-            <span>CHANGE</span>
+            <span>KEMBALIAN</span>
             <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
         </div>
         @else

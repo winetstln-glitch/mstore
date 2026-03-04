@@ -66,7 +66,7 @@ body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     }
     .card .card-body { padding: .75rem; }
     .main-header { padding: .5rem .75rem; }
-    .container-fluid .row > [class*="col-"] { margin-bottom: .75rem; }
+    .container-fluid .row > [class*="col-"] { margin-bottom: .25rem; }
 }
 
 .mobile-btns .btn { padding: 2px 6px; font-size: 16px; }

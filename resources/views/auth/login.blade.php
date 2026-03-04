@@ -52,11 +52,6 @@
                 </div>
             </div>
             <div class="auth-right">
-                <div class="mb-4 w-100 text-center">
-                    <div class="auth-header-title">Selamat Datang! <span>👋</span></div>
-                    <div class="auth-header-sub">Silakan sign-in ke akun Anda dan mulai petualangan</div>
-                </div>
-
                 @if (session('status'))
                     <div class="alert alert-success mb-3 w-100" role="alert">
                         {{ session('status') }}
@@ -67,7 +62,7 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="login" class="auth-form-label">Username atau ID Pelanggan</label>
+                        <label for="login" class="auth-form-label">Username | Email</label>
                         <div class="input-group auth-input-group">
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
@@ -77,7 +72,6 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="form-text">Untuk pelanggan: isi Username PPPoE/Hotspot atau ID Pelanggan. Password = password PPPoE/Hotspot Anda.</div>
                     </div>
 
                     <div class="mb-3">

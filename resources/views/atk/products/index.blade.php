@@ -15,6 +15,10 @@
                 <i class="fa-solid fa-file-export"></i>
                 <span class="d-none d-md-inline ms-2">{{ __('Export Excel') }}</span>
             </a>
+            <a href="{{ route('atk.products.barcodes') }}" class="btn btn-dark" title="{{ __('Barcodes') }}">
+                <i class="fa-solid fa-barcode"></i>
+                <span class="d-none d-md-inline ms-2">{{ __('Barcodes') }}</span>
+            </a>
             <a href="{{ route('atk.products.create') }}" class="btn btn-primary" title="{{ __('Add Product') }}">
                 <i class="fa-solid fa-plus"></i>
                 <span class="d-none d-md-inline ms-2">{{ __('Add Product') }}</span>

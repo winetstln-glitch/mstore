@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Setting;
 use App\Models\WashCustomer;
 use App\Models\WashService;
 use App\Models\WashTransaction;
@@ -294,9 +295,36 @@ class WashTransactionController extends Controller
         $request->validate(['phone' => 'required|string']);
         $phone = $this->normalizePhone($request->input('phone'));
         $link = route('wash.transactions.receipt', $transaction);
-        $amount = 'Rp '.number_format($transaction->total_amount, 0, ',', '.');
-        $message = "Terima kasih atas kunjungan Anda.\nNo: {$transaction->transaction_number}\nTotal: {$amount}\nStruk: {$link}";
-        app(WhatsAppService::class)->sendMessage($phone, $message, 'receipt', null);
+        $date = $transaction->created_at ? $transaction->created_at->format('d-m-Y H:i') : now()->format('d-m-Y H:i');
+        $items = $transaction->items()->get()->map(function ($it) {
+            return [
+                'nama_layanan' => $it->service_name,
+                'harga' => number_format($it->price, 0, ',', '.'),
+            ];
+        })->toArray();
+        $subtotal = (float) $transaction->items()->sum('subtotal');
+        $vars = [
+            'nama_usaha' => config('app.name'),
+            'alamat' => Setting::getValue('store_address', ''),
+            'no_hp' => Setting::getValue('store_phone', ''),
+            'invoice' => $transaction->transaction_number,
+            'tanggal' => $date,
+            'nama_customer' => $transaction->customer_name ?? '-',
+            'jenis_kendaraan' => $transaction->vehicle_brand ?? '-',
+            'plat_nomor' => $transaction->vehicle_plate ?? '-',
+            'subtotal' => number_format($subtotal, 0, ',', '.'),
+            'diskon' => number_format($transaction->discount_amount ?? 0, 0, ',', '.'),
+            'total' => number_format($transaction->total_amount, 0, ',', '.'),
+            'metode_bayar' => strtoupper($transaction->payment_method),
+            'status' => 'LUNAS',
+            'items' => $items,
+            'receipt_url' => $link,
+        ];
+        $tpl = Setting::where('key', 'whatsapp_wash_receipt_template')->value('value')
+            ?? "*STRUK LAYANAN CUCI KENDARAAN*\nNo: {{invoice}}\nTanggal: {{tanggal}}\n\n{{#each items}}• {{nama_layanan}} - Rp{{harga}}\n{{/each}}\n\nTotal Bayar: Rp{{total}}";
+        $wa = app(WhatsAppService::class);
+        $message = $wa->renderTemplate($tpl, $vars);
+        $wa->sendMessage($phone, $message, 'receipt', null);
 
         return response()->json(['success' => true]);
     }

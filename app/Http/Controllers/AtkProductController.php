@@ -10,6 +10,84 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class AtkProductController extends Controller
 {
+    public function barcodes(Request $request)
+    {
+        $query = AtkProduct::query();
+        if ($request->filled('category')) {
+            $query->where('category', $request->get('category'));
+        }
+        $products = $query->orderBy('name')->get();
+        return view('atk.products.barcodes', compact('products'));
+    }
+
+    public function barcodesPdf(Request $request)
+{
+    $query = AtkProduct::query();
+
+    if ($request->filled('category')) {
+        $query->where('category', $request->get('category'));
+    }
+
+    $products = $query->orderBy('name')->get();
+
+    $htmlGen = new \Picqer\Barcode\BarcodeGeneratorHTML();
+    $barcodes = [];
+
+    foreach ($products as $product) {
+        $code = $product->code ?: ('ITEM_' . substr(uniqid('', true), -6));
+        $barcodes[$product->id] = $htmlGen->getBarcode(
+            $code,
+            $htmlGen::TYPE_CODE_128,
+            2,
+            60
+        );
+    }
+
+    // 🔹 PILIH UKURAN KERTAS
+    $paper = $request->get('paper', 'a4'); // default a4
+    $mode  = $request->get('mode', 'preview'); // preview | download | print
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+        'atk.products.barcodes_pdf',
+        compact('products', 'barcodes')
+    )->setPaper($paper, 'portrait');
+
+    if ($mode === 'download') {
+        return $pdf->download('atk_barcodes.pdf');
+    }
+
+    if ($mode === 'print') {
+        return response(
+            $pdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="atk_barcodes.pdf"'
+            ]
+        );
+    }
+
+    // default preview
+    return $pdf->stream('atk_barcodes.pdf');
+}
+
+    public function barcodesPreview(Request $request)
+    {
+        $query = AtkProduct::query();
+        if ($request->filled('category')) {
+            $query->where('category', $request->get('category'));
+        }
+        $products = $query->orderBy('name')->get();
+        $htmlGen = new \Picqer\Barcode\BarcodeGeneratorHTML();
+        $barcodes = [];
+        foreach ($products as $product) {
+            $code = $product->code ?: ('ITEM_'.substr(uniqid('', true), -6));
+            $barcodes[$product->id] = $htmlGen->getBarcode($code, $htmlGen::TYPE_CODE_128, 2, 60);
+        }
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('atk.products.barcodes_pdf', compact('products', 'barcodes'))->setPaper('a4', 'portrait');
+        return $pdf->stream('atk_barcodes.pdf');
+    }
+
     public function export()
     {
         $products = AtkProduct::all();

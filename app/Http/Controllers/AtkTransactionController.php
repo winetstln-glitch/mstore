@@ -10,6 +10,7 @@ use App\Models\AtkTransactionItem;
 use App\Models\Cash;
 use App\Models\Coordinator;
 use App\Models\Investor;
+use App\Models\Setting;
 use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -328,9 +329,37 @@ class AtkTransactionController extends Controller
         $request->validate(['phone' => 'required|string']);
         $phone = $this->normalizePhone($request->input('phone'));
         $link = route('atk.transactions.receipt', $transaction);
-        $amount = 'Rp '.number_format($transaction->total_amount, 0, ',', '.');
-        $message = "Terima kasih atas pembelian Anda.\nNo: {$transaction->transaction_number}\nTotal: {$amount}\nStruk: {$link}";
-        app(WhatsAppService::class)->sendMessage($phone, $message, 'receipt', null);
+        $date = $transaction->created_at ? $transaction->created_at->format('d-m-Y H:i') : now()->format('d-m-Y H:i');
+        $items = $transaction->items()->get()->map(function ($it) {
+            return [
+                'nama_produk' => $it->product_name,
+                'qty' => $it->quantity,
+                'harga' => number_format($it->price, 0, ',', '.'),
+                'total' => number_format($it->subtotal, 0, ',', '.'),
+            ];
+        })->toArray();
+        $subtotal = (float) $transaction->items()->sum('subtotal');
+        $vars = [
+            'nama_toko' => config('app.name'),
+            'alamat_toko' => Setting::getValue('store_address', ''),
+            'no_toko' => Setting::getValue('store_phone', ''),
+            'invoice' => $transaction->invoice_number ?? $transaction->transaction_number,
+            'tanggal' => $date,
+            'nama_customer' => '-',
+            'subtotal' => number_format($subtotal, 0, ',', '.'),
+            'diskon' => number_format(0, 0, ',', '.'),
+            'pajak' => number_format(0, 0, ',', '.'),
+            'grand_total' => number_format($transaction->total_amount, 0, ',', '.'),
+            'metode_bayar' => strtoupper($transaction->payment_method),
+            'status' => $transaction->payment_method === 'hutang' ? 'HUTANG' : 'LUNAS',
+            'link_pdf' => $link,
+            'items' => $items,
+        ];
+        $tpl = Setting::where('key', 'whatsapp_atk_receipt_template')->value('value')
+            ?? "*STRUK PEMBELIAN*\nNo: {{invoice}}\nTanggal: {{tanggal}}\n\n{{#each items}}• {{nama_produk}}\n{{qty}} x Rp{{harga}} = Rp{{total}}\n{{/each}}\n\nTotal: Rp{{grand_total}}";
+        $wa = app(WhatsAppService::class);
+        $message = $wa->renderTemplate($tpl, $vars);
+        $wa->sendMessage($phone, $message, 'receipt', null);
 
         return response()->json(['success' => true]);
     }

@@ -9,7 +9,7 @@
     /* Brand Colors */
     --primary: #2563eb;       /* Electric Blue */
     --primary-hover: #1d4ed8;
-    --primary-light: #dbeafe;
+    --primary-light: #0e2a4f;
     --secondary: #64748b;     /* Slate Grey */
     --accent: #10b981;        /* Success Emerald */
 
@@ -620,7 +620,7 @@ ul { list-style: none; }
 
 .stat-card {
     background: var(--bg-card);
-    padding: 1.25rem;
+    padding: 0.25rem;
     border-radius: 1.25rem;
     box-shadow: var(--shadow-md);
     text-align: center;
@@ -639,23 +639,30 @@ ul { list-style: none; }
 .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
 
 /* Scroll Snap Container (App-Like Carousel) */
+/* MODIFIKASI: Agar Auto-Scroll Mulus */
 .scroll-container {
+    /* Properti yang sudah ada */
     display: flex;
     gap: 1.5rem;
-    padding: 1rem 0.5rem 2.5rem 0.5rem; /* Extra bottom padding for shadow space */
+    padding: 1rem 1rem 2.5rem 1rem; /* Tambah padding kiri-kanan sedikit */
     overflow-x: auto;
-    scroll-snap-type: x mandatory; /* KEY: Native feel */
+    scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    /* Hide scrollbar */
-    scrollbar-width: none; /* Firefox */
+    scroll-behavior: smooth; /* Penting untuk gerakan halus */
+    scrollbar-width: none;
 }
-.scroll-container::-webkit-scrollbar { display: none; }
 
+/* PENTING: Ubah snap ke 'start' agar tidak melawan script auto-scroll */
 .scroll-item {
-    flex: 0 0 85%; /* Mobile: Show partial of next item */
+    flex: 0 0 85%; 
     max-width: 340px;
-    scroll-snap-align: center; /* KEY: Snap to center */
+    scroll-snap-align: start; /* Diubah dari 'center' ke 'start' */
+    scroll-snap-stop: always; /* Memastikan card tidak nyangkut di tengah */
+}
+
+/* Tambahkan margin kiri untuk item pertama agar rapi */
+.scroll-container .scroll-item:first-child {
+    margin-left: 0.5rem;
 }
 
 /* Card Styles */
@@ -680,7 +687,7 @@ ul { list-style: none; }
 .pricing-header {
     background: linear-gradient(135deg, var(--primary), var(--primary-hover));
     color: white;
-    padding: 2rem 1rem;
+    padding: 1rem 0.5rem;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -698,13 +705,13 @@ ul { list-style: none; }
 .pricing-body { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; }
 .price { font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem; }
 .price-period { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-left: 0.25rem; }
-.features { text-align: left; margin: 1.5rem 0; font-size: 0.95rem; color: var(--text-muted); flex-grow: 1; }
+.features { text-align: left; margin: 0.5rem 0; font-size: 0.95rem; color: var(--text-muted); flex-grow: 1; }
 .features li { margin-bottom: 0.75rem; display: flex; align-items: flex-start; gap: 0.75rem; }
 .features i { color: var(--accent); margin-top: 4px; }
 
 /* Product Card Specific */
 .product-img {
-    width: 100%; height: 200px; object-fit: cover;
+    width: 100%; height: 180px; object-fit: cover;
     background: var(--border-color);
 }
 .product-body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }

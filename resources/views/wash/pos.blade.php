@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="col-12">
     <div class="row">
         <!-- Service Selection -->
         <div class="col-md-8">
@@ -21,9 +21,9 @@
                             <button class="nav-link filter-btn" data-filter="motor" type="button">Motor</button>
                         </li>
                     </ul>
-                    <div class="row" id="services-container">
+                    <div class="row g-3" id="services-container">
                         @foreach($services as $service)
-                        <div class="col-md-4 mb-3 service-item" data-type="{{ strtolower($service->vehicle_type) }}">
+                        <div class="col-6 col-md-6 col-lg-6 mb-3 service-item" data-type="{{ strtolower($service->vehicle_type) }}">
                             <div class="card h-100 service-card" data-fasttap
                                  data-id="{{ $service->id }}"
                                  data-name="{{ $service->name }}"

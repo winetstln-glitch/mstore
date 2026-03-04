@@ -15,7 +15,8 @@
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^1.1",
         "openspout/openspout": "^4.28",
-        "phpseclib/phpseclib": "3.0"
+        "phpseclib/phpseclib": "3.0",
+        "picqer/php-barcode-generator": "^3.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

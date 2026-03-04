@@ -24,7 +24,140 @@
     
     <!-- Landing Lite CSS -->
     <link href="{{ asset('css/landing-lite.css') }}" rel="stylesheet">
+<style>
+    /* Konfigurasi Container Scroll */
+    .scroll-container {
+        display: flex;
+        overflow-x: auto; /* Scroll horizontal */
+        gap: 1.5rem;
+        padding-bottom: 1rem; /* Ruang untuk shadow card */
+        scroll-snap-type: x mandatory; /* Snap effect di mobile */
+        -webkit-overflow-scrolling: touch; /* Smooth scroll di iOS */
+        scrollbar-width: none; /* Sembunyikan scrollbar Firefox */
+        position: relative;
+    }
 
+    /* Sembunyikan scrollbar Chrome/Safari */
+    .scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Edge fade indikasi konten scrollable (desktop) */
+    .scroll-container::before,
+    .scroll-container::after {
+        content: "";
+        position: sticky;
+        top: 0;
+        width: 48px;
+        min-height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .scroll-container::before {
+        left: 0;
+        background: linear-gradient(to right, rgba(0,0,0,.25), rgba(0,0,0,0));
+    }
+    .scroll-container::after {
+        right: 0;
+        background: linear-gradient(to left, rgba(0,0,0,.25), rgba(0,0,0,0));
+    }
+    @media (max-width: 768px) {
+        .scroll-container::before,
+        .scroll-container::after {
+            display: none;
+        }
+    }
+
+    /* Konfigurasi Item Card */
+    .scroll-item {
+        flex: 0 0 auto; /* Jangan biarkan card menyusut */
+        width: 280px; /* Lebar default desktop */
+        scroll-snap-align: start; /* Snap ke awal card */
+        display: flex;
+    }
+
+    .scroll-item .card {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px;
+        transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+        box-shadow: 0 6px 16px rgba(0,0,0,.15);
+        will-change: transform;
+        transform-style: preserve-3d;
+        perspective: 800px;
+    }
+
+    .scroll-item .card:hover {
+        transform: translateY(-6px) scale(1.01);
+        box-shadow: 0 12px 28px rgba(0,0,0,.2);
+    }
+
+    /* Inner elemen untuk efek kedalaman */
+    .scroll-item .card .pricing-header,
+    .scroll-item .card .pricing-body,
+    .scroll-item .card .product-body {
+        transform: translateZ(12px);
+    }
+
+    .fade-up {
+        opacity: 0;
+        transform: translateY(16px);
+        transition: opacity .6s ease, transform .6s ease;
+    }
+    .fade-up.visible {
+        opacity: 1;
+        transform: none;
+    }
+
+    /* Responsif Mobile - Lebar card 85% layar agar terlihat sebagian card berikutnya */
+    @media (max-width: 768px) {
+        .scroll-item {
+            width: 70vw;
+            max-width: 260px;
+        }
+        .scroll-item .card {
+            box-shadow: 0 4px 12px rgba(0,0,0,.12);
+            border-radius: 14px;
+            padding: 0rem;
+        }
+        .pricing-header .speed { font-size: 2rem; }
+        .pricing-header .unit { font-size: 0.85rem; }
+        .pricing-body .price { font-size: 1.1rem; }
+        .pricing-body h4 { font-size: 1rem; }
+        .features li { font-size: 0.9rem; }
+        .product-body .product-title { font-size: 1rem; }
+        .product-body .product-price { font-size: 0.95rem; }
+        .product-body .product-desc { font-size: 0.9rem; }
+    }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .fade-up {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+        .scroll-item .card {
+            transition: none;
+        }
+    }
+
+    /* Desktop: bungkus menjadi grid agar tidak kepotong */
+    @media (min-width: 992px) {
+        .scroll-container {
+            overflow-x: visible;
+            flex-wrap: wrap;
+        }
+        .scroll-container::before,
+        .scroll-container::after {
+            display: none;
+        }
+        .scroll-item {
+            width: calc(25% - 1.5rem);
+        }
+    }
+</style>
     
 </head>
 <body>
@@ -101,16 +234,13 @@
                     <p class="hero-desc">Dari internet super cepat, perlengkapan kantor berkualitas, hingga perawatan kendaraan Anda. Semua ada di sini.</p>
                     
                     <div class="hero-actions d-flex">
-                        <a href="#packages" class="btn btn-primary">
-                            <i class="fas fa-wifi"></i> &nbsp; Paket Internet
-                        </a>
-                        <a href="#atk-promo" class="btn btn-primary">
-                            <i class="fas fa-shopping-bag"></i>&nbsp; Belanja ATK
+                        <a href="https://buymstore.online" class="btn btn-primary">
+                            <i class="fas fa-user"></i> &nbsp; Logi Area Client
                         </a>
                         <a href="https://cctv.mstore.id/" target="_blank" rel="noopener" class="btn btn-primary">
                             <i class="fas fa-video"></i>&nbsp; Monitoring CCTV Online
                         </a>
-                        <a href="{{ asset('apk/mstore-webview.apk') }}" class="btn btn-outline-light" download>
+                        <a href="{{ asset('apk/mstore-webview.apk') }}" class="btn btn-primary" download>
                             <i class="fa-brands fa-android"></i>&nbsp; Download Aplikasi Android
                         </a>
                     </div>
@@ -367,7 +497,7 @@
             </div>
         </div>
     </section>
-    <section id="features" class="section section-alt">
+   <!-- <section id="features" class="section section-alt">
         <div class="container">
             <div class="section-header fade-up">
                 <h2 class="section-title">Fitur dan Keunggulan</h2>
@@ -454,7 +584,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
  <!-- Stats Section -->
 
     <!-- Footer -->
@@ -469,6 +599,8 @@
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
                         <a href="https://wa.me/{{ $waNumber }}" target="_blank"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
@@ -655,5 +787,141 @@
             });
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pengaturan Auto Scroll
+        const scrollContainers = document.querySelectorAll('.scroll-container');
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+        scrollContainers.forEach(container => {
+            let scrollSpeed = isMobile ? 0.6 : 1.4;
+            let userInteracted = false;
+            let interactionTimeout;
+            let rafId = null;
+            let isVisible = false;
+
+            function autoScroll() {
+                if (userInteracted || !isVisible || prefersReduced) return; // Stop jika tidak perlu
+
+                // Logic: Gulir ke kanan
+                container.scrollLeft += scrollSpeed;
+                
+                // Jika sudah di ujung, kembali ke awal (Infinite Loop Effect)
+                if (container.scrollLeft >= (container.scrollWidth - container.clientWidth)) {
+                    // Reset instan untuk menghindari "jank"
+                    container.scrollTo({ left: 0, behavior: 'auto' });
+                }
+
+                rafId = requestAnimationFrame(autoScroll);
+            }
+
+            // Observer agar hanya auto-scroll saat container terlihat
+            const enableAuto = isMobile && !prefersReduced;
+            if (enableAuto) {
+                const containerObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        isVisible = entry.isIntersecting;
+                        if (isVisible && !userInteracted && rafId === null) {
+                            rafId = requestAnimationFrame(autoScroll);
+                        } else if (!isVisible && rafId) {
+                            cancelAnimationFrame(rafId);
+                            rafId = null;
+                        }
+                    });
+                }, { threshold: 0.15 });
+                containerObserver.observe(container);
+            }
+
+            // --- Event Listener untuk Mobile ---
+            
+            // 1. Saat user menyentuh layar (Touch Start) -> STOP Auto Scroll
+            if (enableAuto) {
+                container.addEventListener('touchstart', () => {
+                    userInteracted = true;
+                    clearTimeout(interactionTimeout);
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                });
+            }
+
+            // 2. Saat user melepas layar (Touch End) -> Tunggu 3 detik lalu LANJUTKAN Auto Scroll
+            if (enableAuto) {
+                container.addEventListener('touchend', () => {
+                    interactionTimeout = setTimeout(() => {
+                        userInteracted = false;
+                        if (isVisible) {
+                            rafId = requestAnimationFrame(autoScroll); // Mulai lagi
+                        }
+                    }, 3000);
+                });
+            }
+
+            // 3. Saat mouse hover (Desktop) -> STOP
+            if (enableAuto) {
+                container.addEventListener('mouseenter', () => {
+                    userInteracted = true;
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                });
+            }
+
+            // 4. Saat mouse keluar (Desktop) -> LANJUTKAN
+            if (enableAuto) {
+                container.addEventListener('mouseleave', () => {
+                    userInteracted = false;
+                    if (isVisible) {
+                        rafId = requestAnimationFrame(autoScroll);
+                    }
+                });
+            }
+            
+            window.addEventListener('resize', () => {
+                scrollSpeed = window.matchMedia('(max-width: 768px)').matches ? 0.6 : 1.4;
+            });
+
+            // Double-click untuk toggle pause/play
+            if (enableAuto) {
+                container.addEventListener('dblclick', () => {
+                    userInteracted = !userInteracted;
+                    if (!userInteracted && isVisible) {
+                        rafId = requestAnimationFrame(autoScroll);
+                    } else if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                });
+            }
+        });
+
+        // Efek tilt 3D di desktop
+        if (!isMobile) {
+            const tiltCards = document.querySelectorAll('.scroll-item .card');
+            tiltCards.forEach(card => {
+                let hover = false;
+                card.addEventListener('mouseenter', () => { hover = true; });
+                card.addEventListener('mouseleave', () => {
+                    hover = false;
+                    card.style.transform = 'translateY(-6px) scale(1.01) rotateX(0deg) rotateY(0deg)';
+                });
+                card.addEventListener('mousemove', (e) => {
+                    if (!hover) return;
+                    const rect = card.getBoundingClientRect();
+                    const cx = e.clientX - rect.left;
+                    const cy = e.clientY - rect.top;
+                    const px = (cx / rect.width) - 0.5;  // -0.5 .. 0.5
+                    const py = (cy / rect.height) - 0.5; // -0.5 .. 0.5
+                    const rotateY = px * 6; // derajat
+                    const rotateX = -py * 6;
+                    card.style.transform = `translateY(-6px) scale(1.01) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+            });
+        }
+    });
+</script>
 </body>
 </html>

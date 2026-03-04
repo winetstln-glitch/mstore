@@ -3,9 +3,14 @@
 @section('title', 'Manage Wash Services')
 
 @section('content')
-<div class="container-fluid">
+<div class="col-12 pb-5 pb-md-0">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Wash Services</h1>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 mb-0 text-gray-800">Wash Services</h1>
+            <a href="{{ route('wash.services.create') }}" class="btn btn-primary d-inline d-sm-none rounded-circle" aria-label="Add Wash Service" style="width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;">
+                <i class="fas fa-plus"></i>
+            </a>
+        </div>
         <a href="{{ route('wash.services.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
             <i class="fas fa-plus fa-sm text-white-50"></i> Add New Service
         </a>

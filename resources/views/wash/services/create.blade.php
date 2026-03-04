@@ -3,12 +3,19 @@
 @section('title', 'Add Wash Service')
 
 @section('content')
-<div class="container-fluid">
+<div class="col-12">
     <h1 class="h3 mb-4 text-gray-800">Add New Service</h1>
 
     <div class="card shadow mb-4">
+        <div class="card-header d-none d-md-flex justify-content-between align-items-center">
+            <div class="fw-semibold">Form Service</div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" form="createServiceForm">Add Wash Service</button>
+            </div>
+        </div>
         <div class="card-body">
-            <form action="{{ route('wash.services.store') }}" method="POST" enctype="multipart/form-data">
+            <form id="createServiceForm" action="{{ route('wash.services.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
                     <label for="name" class="form-label">Service Name</label>
@@ -62,6 +69,15 @@
                 <button type="submit" class="btn btn-primary">Save Service</button>
                 <a href="{{ route('wash.services.index') }}" class="btn btn-secondary">Cancel</a>
             </form>
+        </div>
+    </div>
+</div>
+<!-- Sticky Mobile Action Bar -->
+<div class="position-fixed bottom-0 start-0 end-0 bg-body border-top shadow d-md-none" style="z-index: 1030;">
+    <div class="container py-2">
+        <div class="d-flex gap-2">
+            <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary w-50">Cancel</a>
+            <button type="submit" class="btn btn-primary w-50" form="createServiceForm">Add Wash Service</button>
         </div>
     </div>
 </div>

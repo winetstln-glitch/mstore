@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -15,9 +16,50 @@ class WhatsAppService
 
     public function __construct()
     {
-        // Configure these in .env
-        $this->apiKey = config('services.whatsapp.key');
-        $this->baseUrl = config('services.whatsapp.url');
+        // Prefer DB settings, fallback to .env
+        $this->apiKey = Setting::getValue('whatsapp_api_key', config('services.whatsapp.key'));
+        $this->baseUrl = Setting::getValue('whatsapp_api_url', config('services.whatsapp.url'));
+        if (empty($this->baseUrl) && !empty($this->apiKey)) {
+            $this->baseUrl = 'https://api.fonnte.com';
+        }
+    }
+
+    /**
+     * Simple template renderer supporting {{key}} and {{#each items}}...{{/each}}
+     */
+    public function renderTemplate(string $template, array $vars = []): string
+    {
+        // Handle loops
+        if (preg_match('/\{\{\#each\s+items\}\}([\s\S]*?)\{\{\/each\}\}/', $template, $m)) {
+            $loopTpl = $m[1];
+            $items = $vars['items'] ?? [];
+            $built = '';
+            foreach ($items as $item) {
+                $seg = $loopTpl;
+                foreach ($item as $k => $v) {
+                    $seg = str_replace('{{'.$k.'}}', (string) $v, $seg);
+                }
+                $built .= $seg;
+            }
+            $template = str_replace($m[0], $built, $template);
+        }
+        // Replace simple keys
+        foreach ($vars as $k => $v) {
+            if ($k === 'items') {
+                continue;
+            }
+            $template = str_replace('{{'.$k.'}}', (string) $v, $template);
+        }
+        return $template;
+    }
+
+    private function normalizeMessage(string $message): string
+    {
+        $msg = str_replace(["\r\n", "\r"], "\n", $message);
+        $lines = array_map(function ($l) {
+            return rtrim($l, " \t");
+        }, explode("\n", $msg));
+        return implode("\n", $lines);
     }
 
     /**
@@ -40,6 +82,11 @@ class WhatsAppService
         // 2. Send to API
         if ($this->baseUrl && $this->apiKey) {
             try {
+                // Format message neatly
+                $message = $this->normalizeMessage((string) $message);
+                if (trim($message) === '') {
+                    throw new \Exception('Pesan WhatsApp kosong setelah render');
+                }
                 // Detect if using Fonnte (Popular Indonesian Provider)
                 if (str_contains($this->baseUrl, 'fonnte.com')) {
                     $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->withHeaders([
@@ -86,21 +133,56 @@ class WhatsAppService
 
     public function sendInvoice(Customer $customer, $invoice)
     {
-        $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah terbit.\nJatuh tempo: {$invoice->due_date->format('d-m-Y')}.\n\nMohon segera lakukan pembayaran.";
+        $tpl = Setting::where('key', 'whatsapp_isp_bill_template')->value('value');
+        if ($tpl) {
+            $vars = [
+                'nama_customer' => $customer->name,
+                'customer_id' => $customer->customer_id ?? ($customer->id ?? ''),
+                'periode' => $invoice->period ?? '',
+                'nama_paket' => $invoice->package_name ?? '',
+                'harga_paket' => isset($invoice->amount) ? number_format($invoice->amount, 0, ',', '.') : '',
+                'biaya_admin' => isset($invoice->admin_fee) ? number_format($invoice->admin_fee, 0, ',', '.') : '0',
+                'total' => isset($invoice->total) ? number_format($invoice->total, 0, ',', '.') : (isset($invoice->amount) ? number_format($invoice->amount, 0, ',', '.') : ''),
+                'jatuh_tempo' => method_exists($invoice->due_date ?? null, 'format') ? $invoice->due_date->format('d-m-Y') : ($invoice->due_date ?? ''),
+                'status' => $invoice->status ?? 'Belum Dibayar',
+            ];
+            $message = $this->renderTemplate($tpl, $vars);
+        } else {
+            $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah terbit.\nJatuh tempo: ".(method_exists($invoice->due_date ?? null, 'format') ? $invoice->due_date->format('d-m-Y') : $invoice->due_date).".\n\nMohon segera lakukan pembayaran.";
+        }
 
         return $this->sendMessage($customer->phone, $message, 'invoice', $customer->id);
     }
 
     public function sendPaymentSuccess(Customer $customer, $invoice)
     {
-        $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah kami terima.\nLayanan internet Anda aktif.";
+        $tpl = Setting::where('key', 'whatsapp_isp_payment_success_template')->value('value');
+        if ($tpl) {
+            $vars = [
+                'nama_customer' => $customer->name,
+                'periode' => $invoice->period ?? '',
+                'total' => isset($invoice->amount) ? number_format($invoice->amount, 0, ',', '.') : (isset($invoice->total) ? number_format($invoice->total, 0, ',', '.') : ''),
+            ];
+            $message = $this->renderTemplate($tpl, $vars);
+        } else {
+            $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".number_format($invoice->amount ?? ($invoice->total ?? 0), 0, ',', '.')." telah kami terima.\nLayanan internet Anda aktif.";
+        }
 
         return $this->sendMessage($customer->phone, $message, 'payment', $customer->id);
     }
 
     public function sendIsolationNotification(Customer $customer)
     {
-        $message = "Halo {$customer->name},\nLayanan internet Anda sementara kami ISOLIR karena belum melakukan pembayaran.\nMohon segera lunasi tagihan Anda agar layanan kembali normal.";
+        $tpl = Setting::where('key', 'whatsapp_isp_suspend_template')->value('value');
+        if ($tpl) {
+            $vars = [
+                'nama_customer' => $customer->name,
+                'total' => isset($customer->outstanding_total) ? number_format($customer->outstanding_total, 0, ',', '.') : '',
+            ];
+            $message = $this->renderTemplate($tpl, $vars);
+        } else {
+            $message = "Halo {$customer->name},\nLayanan internet Anda sementara kami ISOLIR karena belum melakukan pembayaran.\nMohon segera lunasi tagihan Anda agar layanan kembali normal.";
+        }
 
         return $this->sendMessage($customer->phone, $message, 'isolate', $customer->id);
     }

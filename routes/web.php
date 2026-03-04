@@ -151,8 +151,7 @@ Route::middleware('auth')->group(function () {
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
 
-    // TAMBAHKAN BARIS INI (Route untuk halaman list PPPoE Active)
-    Route::get('routers/{router}/pppoe-active', [RouterController::class, 'pppoeActive'])->name('routers.pppoe.active');
+    // PPPoE Active sudah disediakan lewat PppoeController@index
 
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
@@ -174,15 +173,6 @@ Route::middleware('auth')->group(function () {
 
         return response()->view('routers.vpn_script', compact('router', 'account', 'script', 'protocol'));
     })->name('routers.vpn.script');
-
-    Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
-    Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
-    Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
-    Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
-    Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
-    Route::get('hotspot/online', [RouterController::class, 'index'])->name('hotspot.online');
-    Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
-    Route::resource('routers', RouterController::class);
 
     // Business & Operations
     Route::get('finance/material-report', [FinanceController::class, 'materialReport'])->name('finance.material_report');
@@ -353,6 +343,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/transactions/export/excel', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
         Route::get('products/export', [\App\Http\Controllers\AtkProductController::class, 'export'])->name('products.export');
+        Route::get('products/barcodes', [\App\Http\Controllers\AtkProductController::class, 'barcodes'])->name('products.barcodes');
+        Route::get('products/barcodes/pdf', [\App\Http\Controllers\AtkProductController::class, 'barcodesPdf'])->name('products.barcodes.pdf');
         Route::post('products/import', [\App\Http\Controllers\AtkProductController::class, 'import'])->name('products.import');
         Route::delete('products/bulk-destroy', [\App\Http\Controllers\AtkProductController::class, 'bulkDestroy'])->name('products.bulk_destroy');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
