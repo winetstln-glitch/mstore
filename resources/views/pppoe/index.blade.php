@@ -201,6 +201,17 @@
             </div>
         </div>
         <div class="d-flex gap-2">
+            @if(isset($routers) && count($routers) > 0 && !(Auth::user()->coordinator && Auth::user()->coordinator->router_id))
+                <form method="GET" action="{{ route('pppoe.index') }}" class="d-flex align-items-center">
+                    <select name="router_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 200px;">
+                        @foreach($routers as $r)
+                            <option value="{{ $r->id }}" {{ $router && $router->id == $r->id ? 'selected' : '' }}>
+                                {{ $r->name }} ({{ $r->host }})
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
             <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="window.location.reload()">
                 <i class="fa-solid fa-arrows-rotate me-1"></i> {{ __('Refresh') }}
             </button>
