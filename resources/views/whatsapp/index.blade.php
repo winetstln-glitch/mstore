@@ -48,7 +48,7 @@
                     </div>
                     <div class="mb-3">
                         <label>API URL</label>
-                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ optional($waApiUrl)->value ?? \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL')) }}">
+                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ $waApiUrl->value ?? \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL')) }}">
                     </div>
                     <div class="mb-3">
                         <label>API Key</label>
@@ -72,7 +72,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label>ATK Receipt Template</label>
-                            <textarea class="form-control" rows="12" name="whatsapp_atk_receipt_template" id="atkTpl">{{ optional($atkReceiptTemplate)->value ?? \App\Models\Setting::getValue('whatsapp_atk_receipt_template', '') }}</textarea>
+                            <textarea class="form-control" rows="12" name="whatsapp_atk_receipt_template" id="atkTpl">{{ $atkReceiptTemplate->value ?? \App\Models\Setting::getValue('whatsapp_atk_receipt_template', '') }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
@@ -83,7 +83,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label>Wash Receipt Template</label>
-                            <textarea class="form-control" rows="12" name="whatsapp_wash_receipt_template" id="washTpl">{{ optional($washReceiptTemplate)->value ?? \App\Models\Setting::getValue('whatsapp_wash_receipt_template', '') }}</textarea>
+                            <textarea class="form-control" rows="12" name="whatsapp_wash_receipt_template" id="washTpl">{{ $washReceiptTemplate->value ?? \App\Models\Setting::getValue('whatsapp_wash_receipt_template', '') }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
@@ -103,9 +103,9 @@
                 <form method="POST" action="{{ route('whatsapp.update') }}">
                     @csrf
                     <label>Monthly Bill Template</label>
-                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_bill_template">{{ optional($ispBillTemplate)->value ?? \App\Models\Setting::getValue('whatsapp_isp_bill_template', '') }}</textarea>
+                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_bill_template">{{ $ispBillTemplate->value ?? \App\Models\Setting::getValue('whatsapp_isp_bill_template', '') }}</textarea>
                     <label>Reminder Template</label>
-                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_reminder_template">{{ optional($ispReminderTemplate)->value ?? \App\Models\Setting::getValue('whatsapp_isp_reminder_template', '') }}</textarea>
+                    <textarea class="form-control mb-3" rows="6" name="whatsapp_isp_reminder_template">{{ $ispReminderTemplate->value ?? \App\Models\Setting::getValue('whatsapp_isp_reminder_template', '') }}</textarea>
                     <button type="submit" class="btn btn-primary">
                         Save ISP Templates
                     </button>
