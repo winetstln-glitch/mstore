@@ -154,8 +154,9 @@ Route::middleware('auth')->group(function () {
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
     
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
-
-    // PPPoE Active sudah disediakan lewat PppoeController@index
+    
+    // Route for sessions view
+    Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
 
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
