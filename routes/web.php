@@ -149,6 +149,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('olt', OLTController::class);
     // ... kode router lainnya ...
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
+    // Route untuk test koneksi router
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
 
