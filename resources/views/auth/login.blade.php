@@ -7,8 +7,8 @@
     <title>Login Masuk - {{ config('app.name', 'MStore') }}</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ app()->environment('production') ? secure_asset('favicon.svg') : asset('favicon.svg') }}">
+    <link rel="alternate icon" href="{{ app()->environment('production') ? secure_asset('favicon.ico') : asset('favicon.ico') }}">
 
     <!-- Public Sans Font (Vuexy-like) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <!-- Custom Auth CSS -->
-    <link rel="stylesheet" href="{{ asset('css/auth-custom.css') }}">
+    <link rel="stylesheet" href="{{ app()->environment('production') ? secure_asset('css/auth-custom.css') : asset('css/auth-custom.css') }}">
     
     <script>
         (function() {
@@ -44,7 +44,7 @@
             <div class="auth-left">
                 <div>
                     <div class="auth-left-title"> 
-                        <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET">
+                        <img src="{{ app()->environment('production') ? secure_asset('img/logo.png') : asset('img/logo.png') }}" alt="MSTORE.NET">
                     </div>
                     <div class="auth-left-sub">
                         Platform monitoring jaringan fiber optic tercanggih. Kelola infrastruktur Anda dengan mudah.

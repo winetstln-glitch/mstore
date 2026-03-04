@@ -8,8 +8,8 @@
     <title>@yield('title', config('app.name', 'MStore'))</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ app()->environment('production') ? secure_asset('favicon.svg') : asset('favicon.svg') }}">
+    <link rel="alternate icon" href="{{ app()->environment('production') ? secure_asset('favicon.ico') : asset('favicon.ico') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -26,8 +26,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
     <!-- Custom Dashboard CSS -->
-    <link href="{{ asset('css/dashboard-custom.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/app-android.css') }}" rel="stylesheet">
+    <link href="{{ app()->environment('production') ? secure_asset('css/dashboard-custom.css') : asset('css/dashboard-custom.css') }}" rel="stylesheet">
+    <link href="{{ app()->environment('production') ? secure_asset('css/app-android.css') : asset('css/app-android.css') }}" rel="stylesheet">
 
     @stack('styles')
 
@@ -48,7 +48,7 @@
     <div id="sidebar-wrapper">
         <div class="sidebar-heading py-3 position-relative d-flex align-items-center justify-content-center">
             <div class="sidebar-brand-icon">
-                <img src="{{ asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
+                <img src="{{ app()->environment('production') ? secure_asset('img/logo.png') : asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
             </div>
             <span class="sidebar-brand-text ms-2 text-white"></span>
             <!-- Close Button for Mobile -->
@@ -658,7 +658,7 @@
 </script>
 
 <!-- Custom Dashboard JS -->
-<script src="{{ asset('js/dashboard-custom.js') }}"></script>
+<script src="{{ app()->environment('production') ? secure_asset('js/dashboard-custom.js') : asset('js/dashboard-custom.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.feather) {

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Permission;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +26,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+        $shouldForceHttps = app()->environment('production') || (bool) env('FORCE_HTTPS', false);
+        if ($shouldForceHttps) {
+            URL::forceScheme('https');
+            $root = config('app.url');
+            if (is_string($root) && strlen($root) > 0) {
+                URL::forceRootUrl($root);
+            }
+        }
 
         try {
             if (Schema::hasTable('permissions')) {
