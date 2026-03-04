@@ -201,7 +201,7 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            @if(isset($routers) && count($routers) > 0 && !(Auth::user()->coordinator && Auth::user()->coordinator->router_id))
+            @if(isset($routers) && count($routers) > 0 && (Auth::user()->hasRole('admin') || !(Auth::user()->coordinator && Auth::user()->coordinator->router_id)))
                 <form method="GET" action="{{ route('pppoe.index') }}" class="d-flex align-items-center">
                     <select name="router_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 200px;">
                         @foreach($routers as $r)
