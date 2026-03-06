@@ -1,55 +1,314 @@
-/* Android Modern UI tweaks for app-wide pages (dashboard, tables, forms) */
+/* Android Modern UI tweaks for app-wide pages */
 :root {
-  --android-radius: 12px;
+  --android-radius: 16px;
+  --nav-height: 65px;
+  --bottom-safe-area: env(safe-area-inset-bottom);
 }
 
 /* Typography scaling for mobile */
 @media (max-width: 991px) {
-  h1 { font-size: 1.6rem; }
-  h2 { font-size: 1.4rem; }
-  h3 { font-size: 1.25rem; }
-  h4 { font-size: 1.15rem; }
-  h5 { font-size: 1.05rem; }
-  h6 { font-size: 0.95rem; }
-  .btn { padding: 0.6rem; border-radius: 10px; font-weight: 600; }
-  .form-control, .form-select { font-size: 16px; border-radius: var(--android-radius); }
-  .card, .modal-content { border-radius: var(--android-radius); }
-  .table { font-size: 0.95rem; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.35rem; }
+  h3 { font-size: 1.2rem; }
+  h4 { font-size: 1.1rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.9rem; }
+  
+  /* Body Padding for Bottom Nav */
+  body {
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 20px) !important;
+  }
+  
+  /* Container Padding */
+  .container-fluid {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
 }
 
 html, body {
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh on body if handled by app wrapper */
 }
 
-button, .btn, .sidebar-item, .nav-link, .page-link, .product-card, .service-card, .mobile-bottom-nav .mbn-item {
+/* Interactive Elements Touch Targets */
+button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select {
   touch-action: manipulation;
   -webkit-user-select: none;
-          user-select: none;
+  user-select: none;
 }
 
-/* Ripple effect for interactive elements without JS */
-.btn, .list-group-item-action, .sidebar-item, .nav-link, .page-link {
-  position: relative; overflow: hidden;
+/* -------------------------------------------------------------------------- */
+/*                               Bottom Navigation                            */
+/* -------------------------------------------------------------------------- */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--nav-height) + var(--bottom-safe-area));
+  background-color: var(--card-bg, #ffffff);
+  border-top: 1px solid var(--sidebar-border, #e2e8f0);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding-top: 8px;
+  padding-bottom: var(--bottom-safe-area);
+  z-index: 1040;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+  backdrop-filter: blur(10px);
 }
-.btn::after, .list-group-item-action::after, .sidebar-item::after, .nav-link::after, .page-link::after {
+
+[data-bs-theme="dark"] .mobile-bottom-nav {
+  background-color: rgba(30, 41, 59, 0.95);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.mbn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-muted, #64748b);
+  flex: 1;
+  height: 100%;
+  transition: all 0.2s ease;
+  padding-bottom: 8px; /* Alignment fix */
+}
+
+.mbn-item .mbn-icon {
+  font-size: 1.35rem;
+  margin-bottom: 4px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.mbn-item .mbn-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.mbn-item.active {
+  color: var(--primary-color, #2563eb);
+}
+
+.mbn-item.active .mbn-icon {
+  transform: translateY(-2px);
+}
+
+.mbn-item:active .mbn-icon {
+  transform: scale(0.9);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Cards & Containers                           */
+/* -------------------------------------------------------------------------- */
+.card {
+  border: none;
+  border-radius: var(--android-radius);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:active {
+  transform: scale(0.995);
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  background-color: transparent;
+  padding: 1rem 1.25rem;
+}
+
+[data-bs-theme="dark"] .card {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-content {
+  border-radius: var(--android-radius);
+  border: none;
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Buttons & Inputs                             */
+/* -------------------------------------------------------------------------- */
+.btn {
+  border-radius: 12px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.btn-lg {
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+.btn-icon-only {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Floating Action Button (FAB) */
+.btn-fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 20px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+  z-index: 1030;
+  font-size: 1.5rem;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-fab:active {
+  transform: scale(0.9) rotate(90deg);
+}
+
+/* Form Controls */
+.form-control, .form-select {
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  border-color: #e2e8f0;
+  background-color: var(--card-bg, #fff);
+  color: var(--text-main, #1e293b);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+[data-bs-theme="dark"] .form-control, 
+[data-bs-theme="dark"] .form-select {
+  border-color: #334155;
+  background-color: #1e293b;
+}
+
+/* Select2 Customization for Mobile */
+.select2-container--bootstrap-5 .select2-selection {
+  border-radius: 10px !important;
+  padding: 0.5rem 0.75rem !important;
+  min-height: 48px !important; /* Larger touch target */
+  border-color: #e2e8f0 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  line-height: 32px !important;
+  padding-left: 0 !important;
+}
+
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  color: #f8fafc !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Tables (Card View)                           */
+/* -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Force tables to not look like tables */
+  .table-responsive-mobile table, 
+  .table-responsive-mobile thead, 
+  .table-responsive-mobile tbody, 
+  .table-responsive-mobile th, 
+  .table-responsive-mobile td, 
+  .table-responsive-mobile tr { 
+    display: block; 
+  }
+
+  /* Hide table headers (but not display: none;, for accessibility) */
+  .table-responsive-mobile thead tr { 
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .table-responsive-mobile tr { 
+    margin-bottom: 1rem;
+    background-color: var(--card-bg, #fff);
+    border: 1px solid var(--sidebar-border, #e2e8f0);
+    border-radius: var(--android-radius);
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  
+  [data-bs-theme="dark"] .table-responsive-mobile tr {
+    border-color: #334155;
+  }
+
+  .table-responsive-mobile td { 
+    /* Behave  like a "row" */
+    border: none;
+    border-bottom: 1px solid var(--sidebar-border, #eee); 
+    position: relative;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+  }
+  
+  [data-bs-theme="dark"] .table-responsive-mobile td {
+    border-bottom-color: #334155;
+  }
+
+  .table-responsive-mobile td:last-child {
+    border-bottom: 0;
+  }
+
+  /*
+  Label the data
+  Requires JS to copy th text to data-label attribute
+  */
+  .table-responsive-mobile td:before { 
+    content: attr(data-label);
+    float: left;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    margin-right: 1rem;
+    text-align: left;
+    max-width: 40%;
+  }
+}
+
+/* Ripple Animation */
+.btn::after, .list-group-item-action::after, .sidebar-item::after, .nav-link::after, .page-link::after, .mbn-item::after {
   content: ""; position: absolute; left: 50%; top: 50%;
-  width: 8px; height: 8px; border-radius: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
-  background: currentColor; opacity: .15;
+  background: currentColor; opacity: .2;
+  transition: none;
 }
-.btn:active::after, .list-group-item-action:active::after, .sidebar-item:active::after, .nav-link:active::after, .page-link:active::after {
-  animation: android-ripple .35s ease-out;
+.btn:active::after, .list-group-item-action:active::after, .sidebar-item:active::after, .nav-link:active::after, .page-link:active::after, .mbn-item:active::after {
+  animation: android-ripple .4s ease-out;
 }
 @keyframes android-ripple {
-  to { transform: translate(-50%, -50%) scale(35); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(40); opacity: 0; }
 }
-
-/* Subtle elevated containers */
-.card { box-shadow: 0 4px 10px rgba(0,0,0,.05); }
-.modal-content { box-shadow: 0 6px 20px rgba(0,0,0,.12); }
-
-/* Pill badges for status chips */
-.badge { border-radius: 9999px; padding: .35rem .6rem; }
-
-/* Touch-friendly pagination */
-.pagination .page-item .page-link { border-radius: 9999px; padding: .45rem .75rem; }

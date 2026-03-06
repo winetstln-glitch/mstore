@@ -1,14 +1,22 @@
 /* Custom Auth CSS */
 :root {
-    --auth-bg: #f8f9fa;
+    /* Colors - Modern SaaS Palette (Consistent with Dashboard) */
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success-color: #10b981; /* Emerald 500 */
+    --auth-bg: #f1f5f9; /* Slate 100 */
     --auth-card-bg: #ffffff;
-    --auth-text: #212529;
+    --auth-text: #0f172a;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
 }
 
 [data-bs-theme="dark"] {
-    --auth-bg: #212529;
-    --auth-card-bg: #343a40;
-    --auth-text: #f8f9fa;
+    --auth-bg: #0f172a; /* Slate 900 */
+    --auth-card-bg: #1e293b; /* Slate 800 */
+    --auth-text: #f8fafc; /* Slate 50 */
+    --input-bg: #1e293b;
+    --input-border: #334155;
 }
 
 body {
@@ -18,7 +26,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    font-family: 'Instrument Sans', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .auth-shell {
@@ -200,54 +208,55 @@ body {
 
 /* Login Button Styling */
 .btn-auth-primary {
-    background-color: #7367F0;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
     font-weight: 600;
     border-radius: 0.5rem;
     transition: all 0.3s;
+    font-family: inherit;
 }
 
 .btn-auth-primary:hover {
-    background-color: #6a63ea;
+    background-color: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(115, 103, 240, 0.25);
+    box-shadow: 0 4px 6px rgba(99, 102, 241, 0.25);
     color: white;
 }
 
-/* Dark mode refinements to mimic Vuexy */
+/* Dark mode refinements to mimic Modern SaaS (Slate) */
 [data-bs-theme="dark"] body {
-    background-color: #161D31;
+    background-color: var(--auth-bg);
 }
 [data-bs-theme="dark"] .auth-card {
-    background-color: #283046;
-    border: 1px solid #2d3748;
+    background-color: var(--auth-card-bg);
+    border: 1px solid var(--input-border);
     box-shadow: none;
 }
 [data-bs-theme="dark"] .auth-right {
-    color: #e6e8f0;
+    color: var(--auth-text);
 }
 [data-bs-theme="dark"] .auth-header-sub,
 [data-bs-theme="dark"] .auth-separator span {
-    color: #b4b7bd;
+    color: var(--text-muted, #94a3b8);
 }
 [data-bs-theme="dark"] .auth-separator::before,
 [data-bs-theme="dark"] .auth-separator::after {
-    background: #3a4256;
+    background: var(--input-border);
 }
 [data-bs-theme="dark"] .auth-input-group .input-group-text,
 [data-bs-theme="dark"] .auth-input-group .form-control {
-    background-color: #1f2637;
-    border-color: #2d3748;
-    color: #e6e8f0;
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--auth-text);
 }
 [data-bs-theme="dark"] .auth-input-group .form-control:focus {
-    border-color: #7367F0;
+    border-color: var(--primary-color);
 }
 [data-bs-theme="dark"] .back-home-btn,
 [data-bs-theme="dark"] .theme-toggle-btn {
-    color: #e6e8f0;
+    color: var(--auth-text);
 }
 
 @media (max-width: 768px) {
