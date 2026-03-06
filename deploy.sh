@@ -67,7 +67,7 @@ if command -v node >/dev/null 2>&1; then
       echo "ℹ️  Tidak menjalankan sebagai root atau apt-get tidak tersedia. Melanjutkan build dengan versi saat ini."
     fi
   fi
-fi
+else
   if [ "$(id -u)" = "0" ] && command -v apt-get >/dev/null 2>&1; then
     echo "➡️  Node.js tidak ditemukan. Menginstall Node.js 20.x..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -77,6 +77,7 @@ fi
     echo "❌ Node.js tidak ditemukan dan tidak bisa dipasang otomatis. Install Node >=20.19 lalu jalankan ulang."
     exit 1
   fi
+fi
 npm run build
 # Ensure proper ownership for node modules to avoid EACCES during build
 if [ -d "node_modules" ]; then
