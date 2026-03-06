@@ -78,7 +78,6 @@ else
     exit 1
   fi
 fi
-npm run build
 # Ensure proper ownership for node modules to avoid EACCES during build
 if [ -d "node_modules" ]; then
   echo "↪️  Memperbaiki kepemilikan node_modules untuk $DEPLOY_USER:$DEPLOY_GROUP"
