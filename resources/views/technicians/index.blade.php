@@ -6,7 +6,7 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold">{{ __('Technician Management') }}</h5>
-                <a href="{{ route('technicians.create') }}" class="btn btn-primary btn-sm">
+                <a href="{{ route('technicians.create') }}" class="btn btn-primary">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Add Technician') }}
                 </a>
             </div>
@@ -15,8 +15,8 @@
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-body-tertiary">
+                    <table class="table table-hover align-middle table-responsive-mobile">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Contact') }}</th>

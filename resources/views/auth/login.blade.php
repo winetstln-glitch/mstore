@@ -10,10 +10,10 @@
     <link rel="icon" type="image/svg+xml" href="{{ app()->environment('production') ? secure_asset('favicon.svg') : asset('favicon.svg') }}">
     <link rel="alternate icon" href="{{ app()->environment('production') ? secure_asset('favicon.ico') : asset('favicon.ico') }}">
 
-    <!-- Public Sans Font (Vuexy-like) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -23,10 +23,12 @@
     
     <script>
         (function() {
-            try {
-                const theme = localStorage.getItem('nms_theme');
-                if (theme === 'dark') document.documentElement.classList.add('dark-mode');
-            } catch (e) {}
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme) {
+                document.documentElement.setAttribute('data-bs-theme', storedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            }
         })();
     </script>
 </head>
@@ -130,7 +132,7 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script>
-        const savedTheme = localStorage.getItem('theme') || 'light';
+        const savedTheme = document.documentElement.getAttribute('data-bs-theme') || localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
         const themeToggleLogin = document.getElementById('themeToggleLogin');
         
@@ -154,13 +156,7 @@
                 const current = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
                 const next = current === 'dark' ? 'light' : 'dark';
                 document.documentElement.setAttribute('data-bs-theme', next);
-                if (next === 'dark') {
-                    document.documentElement.classList.add('dark-mode');
-                } else {
-                    document.documentElement.classList.remove('dark-mode');
-                }
                 localStorage.setItem('theme', next);
-                localStorage.setItem('nms_theme', next);
                 updateThemeIcon(next);
             });
         }

@@ -6,10 +6,6 @@
 <style>
     /* Mobile specific tweaks */
     @media (max-width: 767.98px) {
-        /* Make action buttons in table larger for touch targets */
-        .btn-group .btn {
-            padding: 0.25rem 0.5rem;
-        }
         /* Ensure modal inputs are large enough */
         .form-control, .form-select {
             font-size: 16px; /* Prevents iOS zoom on focus */
@@ -17,52 +13,54 @@
     }
 </style>
 
+<div class="mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h4 class="fw-bold text-primary mb-1">{{ __('Customer Management') }}</h4>
+            <p class="text-muted small mb-0">{{ __('Manage your customers, services, and devices.') }}</p>
+        </div>
+        
+        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center mobile-btns">
+            @can('customer.delete')
+            <button type="button" class="btn btn-danger w-100 w-md-auto d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
+                <i class="fa-solid fa-trash me-1"></i> <span class="d-none d-sm-inline">{{ __('Delete Selected') }}</span> (<span id="selectedCount">0</span>)
+            </button>
+            <form id="bulkDeleteForm" action="{{ route('customers.bulkDestroy') }}" method="POST" class="d-none">
+                @csrf
+                @method('DELETE')
+            </form>
+            @endcan
+            
+            @can('customer.view')
+            @if(Auth::user()->hasRole('admin'))
+                <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary" title="{{ __('Export Customers') }}">
+                    <i class="fa-solid fa-file-export me-1"></i> <span class="d-none d-sm-inline">{{ __('Export') }}</span>
+                </a>
+            @endif
+            @endcan
+            
+            @can('customer.create')
+            @if(Auth::user()->hasRole('admin'))
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importCustomersModal" title="{{ __('Import Customers') }}">
+                    <i class="fa-solid fa-file-import me-1"></i> <span class="d-none d-sm-inline">{{ __('Import') }}</span>
+                </button>
+            @endif
+                
+                <a href="{{ route('customers.import') }}" class="btn btn-outline-success" title="{{ __('Import from GenieACS') }}">
+                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> <span class="d-none d-sm-inline">{{ __('Genie') }}</span>
+                </a>
+                
+                <a href="{{ route('customers.create') }}" class="btn btn-primary flex-grow-0" title="{{ __('Add Customer') }}">
+                    <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Customer') }}</span>
+                </a>
+            @endcan
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <!-- Card Header: Stacked on Mobile, Row on Desktop -->
-            <div class="card-header py-3">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
-                    <h5 class="mb-0 fw-bold text-primary">{{ __('Customer Management') }}</h5>
-                    
-                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center mobile-btns">
-                        @can('customer.delete')
-                        <button type="button" class="btn btn-danger btn-sm w-100 w-md-auto d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
-                            <i class="fa-solid fa-trash me-1"></i> <span class="d-none d-sm-inline">{{ __('Delete Selected') }}</span> (<span id="selectedCount">0</span>)
-                        </button>
-                        <form id="bulkDeleteForm" action="{{ route('customers.bulkDestroy') }}" method="POST" class="d-none">
-                            @csrf
-                            @method('DELETE')
-                        </form>
-                        @endcan
-                        
-                        @can('customer.view')
-                        @if(Auth::user()->hasRole('admin'))
-                            <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary btn-sm" title="{{ __('Export Customers') }}">
-                                <i class="fa-solid fa-file-export me-1"></i> <span class="d-none d-sm-inline">{{ __('Export') }}</span>
-                            </a>
-                        @endif
-                        @endcan
-                        
-                        @can('customer.create')
-                        @if(Auth::user()->hasRole('admin'))
-                            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importCustomersModal" title="{{ __('Import Customers') }}">
-                                <i class="fa-solid fa-file-import me-1"></i> <span class="d-none d-sm-inline">{{ __('Import') }}</span>
-                            </button>
-                        @endif
-                            
-                            <a href="{{ route('customers.import') }}" class="btn btn-outline-success btn-sm" title="{{ __('Import from GenieACS') }}">
-                                <i class="fa-solid fa-cloud-arrow-down me-1"></i> <span class="d-none d-sm-inline">{{ __('Genie') }}</span>
-                            </a>
-                            
-                            <a href="{{ route('customers.create') }}" class="btn btn-primary btn-sm flex-grow-0" title="{{ __('Add Customer') }}">
-                                <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Customer') }}</span>
-                            </a>
-                        @endcan
-                    </div>
-                </div>
-            </div>
-            
             <div class="card-body">
                 <!-- Search and Filter: Optimized for Mobile (2 columns on small screens) -->
                 <form method="GET" action="{{ route('customers.index') }}" class="row g-2 g-md-3 mb-4">
@@ -123,7 +121,7 @@
 
                 <!-- Table -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" style="min-width: 800px;"> <!-- Ensures table doesn't squash too much -->
+                    <table class="table table-hover align-middle table-responsive-mobile"> 
                         <thead class="table-light">
                             <tr>
                                 @can('customer.delete')
@@ -189,7 +187,7 @@
                                         <div class="d-flex align-items-center justify-content-between">
                                             <span class="me-2 text-truncate" style="max-width: 80px;">{{ $customer->onu_serial ?? '-' }}</span>
                                             @if($customer->onu_serial)
-                                                <a href="{{ route('customers.settings', $customer->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('Check Status') }}">
+                                                <a href="{{ route('customers.settings', $customer->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="{{ __('Check Status') }}">
                                                     <i class="fa-solid fa-stethoscope"></i>
                                                 </a>
                                             @endif
@@ -205,7 +203,7 @@
                                         @endif
                                     </td>
                                     <td class="text-end pe-3">
-                                        <div class="btn-group" role="group">
+                                        <div class="d-flex justify-content-end gap-1">
                                             @can('customer.view')
                                             <a href="{{ route('customers.show', $customer) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                                 <i class="fa-solid fa-eye"></i>

@@ -30,7 +30,7 @@
                         <!-- Personal Info -->
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">{{ __('Personal Information') }}</h6>
-                            <div class="p-3 bg-light rounded border dark:bg-dark dark:border-secondary">
+                            <div class="p-3  rounded border dark:bg-dark dark:border-secondary">
                                 <dl class="row mb-0">
                                     <dt class="col-sm-4">{{ __('Full Name') }}</dt>
                                     <dd class="col-sm-8">{{ $customer->name }}</dd>
@@ -67,7 +67,7 @@
                         <!-- Technical Info -->
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">{{ __('Service Information') }}</h6>
-                            <div class="p-3 bg-light rounded border dark:bg-dark dark:border-secondary">
+                            <div class="p-3  rounded border dark:bg-dark dark:border-secondary">
                                 <dl class="row mb-0">
                                     <dt class="col-sm-4">{{ __('Package') }}</dt>
                                     <dd class="col-sm-8">{{ $customer->package ?? 'N/A' }}</dd>

@@ -45,36 +45,41 @@
     --glass-border: 1px solid rgba(255, 255, 255, 0.5);
     --blur: blur(12px);
     --content-max-width: 1400px;
+    --neon-glow: 0 0 0 rgba(0, 0, 0, 0);
 }
 
 [data-bs-theme="dark"] {
-    --body-bg: #0f172a; /* Slate 900 */
-    --card-bg: #1e293b; /* Slate 800 */
-    --text-main: #f8fafc; /* Slate 50 */
-    --text-muted: #94a3b8; /* Slate 400 */
-    --bs-body-color: #f8fafc;
-    --bs-emphasis-color: #f8fafc;
-    --bs-secondary-color: #94a3b8;
+    --primary-color: #00e5ff;
+    --primary-hover: #00b8d9;
+    --body-bg: #050816;
+    --card-bg: #0f172a;
+    --text-main: #e6f1ff;
+    --text-muted: #86a4c7;
+    --bs-body-color: #e6f1ff;
+    --bs-emphasis-color: #f4fbff;
+    --bs-secondary-color: #86a4c7;
     
     /* Dark Mode Sidebar */
-    --sidebar-bg: #1e293b; /* Slate 800 */
-    --sidebar-text: #94a3b8; /* Slate 400 */
-    --sidebar-text-hover: #f8fafc; /* Slate 50 */
-    --sidebar-border: rgba(255, 255, 255, 0.05);
-    --sidebar-header-bg: rgba(15, 23, 42, 0.45);
-    --sidebar-brand-color: #ffffff;
-    --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+    --sidebar-bg: #070b1d;
+    --sidebar-text: #9ab4d6;
+    --sidebar-text-hover: #f4fbff;
+    --sidebar-active-bg: #00b8ff;
+    --sidebar-active-text: #041024;
+    --sidebar-border: rgba(0, 229, 255, 0.25);
+    --sidebar-header-bg: rgba(10, 15, 34, 0.8);
+    --sidebar-brand-color: #7df9ff;
+    --sidebar-hover-bg: rgba(0, 229, 255, 0.1);
     --bs-light-rgb: rgba(255, 255, 255, 0.012);
-    --glass-bg: rgba(15, 23, 42, 0.85);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(8, 12, 28, 0.72);
+    --glass-border: 1px solid rgba(125, 249, 255, 0.35);
     --bs-body-bg: rgba(255, 255, 255, 0);
     --bs-btn-active-bg: rgba(255, 255, 255, 0);
     --bs-table-striped-bg: rgba(255, 255, 255, 0);
-    /* Dark mode specific overrides */
-    --input-bg: #1e293b;
-    --input-border: #334155;
-    --table-header-bg: #1e293b;
-    --table-border: #334155;
+    --input-bg: #0b1228;
+    --input-border: #1f3b6d;
+    --table-header-bg: #0b1228;
+    --table-border: #1f3b6d;
+    --neon-glow: 0 0 18px rgba(0, 229, 255, 0.35);
 }
 
 body {
@@ -219,7 +224,7 @@ body {
 .sidebar-item.active {
     background-color: var(--sidebar-active-bg);
     color: var(--sidebar-active-text);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); /* Glow */
+    box-shadow: var(--neon-glow);
     font-weight: 600;
 }
 

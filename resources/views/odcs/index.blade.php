@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3">
+            <div class="card-header  py-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                     <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('ODC Management') }}</h5>
                     <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
@@ -28,7 +28,7 @@
                 <form method="GET" action="{{ route('odcs.index') }}" class="row g-2 g-md-3 mb-3">
                     <div class="col-12 col-md-4 col-lg-4">
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                            <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
                             <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search...') }}">
                         </div>
                     </div>
@@ -50,7 +50,7 @@
                 </form>
                 <div class="table-responsive">
                     <table class="table table-hover table-sm align-middle">
-                        <thead class="bg-body-tertiary">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Region') }}</th>
@@ -66,10 +66,10 @@
                                     <td class="ps-3 cell-truncate" title="{{ $odc->name }}">
                                         <div class="fw-bold">{{ $odc->name }}</div>
                                         <div class="small text-muted my-1">
-                                            @if($odc->pon_port) <span class="badge bg-light text-dark border me-1" title="PON Port">{{ $odc->pon_port }}</span> @endif
-                                            @if($odc->area) <span class="badge bg-light text-dark border me-1" title="Area">{{ $odc->area }}</span> @endif
-                                            @if($odc->color) <span class="badge bg-light text-dark border me-1" title="Color">{{ $odc->color }}</span> @endif
-                                            @if($odc->cable_no) <span class="badge bg-light text-dark border" title="Cable No">{{ $odc->cable_no }}</span> @endif
+                                            @if($odc->pon_port) <span class="badge  text-dark border me-1" title="PON Port">{{ $odc->pon_port }}</span> @endif
+                                            @if($odc->area) <span class="badge  text-dark border me-1" title="Area">{{ $odc->area }}</span> @endif
+                                            @if($odc->color) <span class="badge  text-dark border me-1" title="Color">{{ $odc->color }}</span> @endif
+                                            @if($odc->cable_no) <span class="badge  text-dark border" title="Cable No">{{ $odc->cable_no }}</span> @endif
                                         </div>
                                         <div class="small text-muted">{{ $odc->description }}</div>
                                     </td>

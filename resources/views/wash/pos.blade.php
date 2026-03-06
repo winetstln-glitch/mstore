@@ -30,7 +30,7 @@
                                  data-price="{{ $service->price }}"
                                  data-vehicletype="{{ strtolower($service->vehicle_type) }}">
                                 <div class="card-body text-center">
-                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
+                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded " style="height: 100px; overflow: hidden;">
                                         @if($service->image)
                                             <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
                                         @else

@@ -11,7 +11,7 @@
                     <form action="{{ route('attendance.index') }}" method="GET" class="w-100">
                         <div class="row g-2">
                             <div class="col-12 col-md-auto">
-                                <select name="user_id" class="form-select form-select-sm" data-bs-toggle="tooltip" title="{{ __('All Staff (Tech & Admin)') }}">
+                                <select name="user_id" class="form-select" data-bs-toggle="tooltip" title="{{ __('All Staff (Tech & Admin)') }}">
                                     <option value="">{{ __('All Staff (Tech & Admin)') }}</option>
                                     @foreach($technicians as $tech)
                                         <option value="{{ $tech->id }}" {{ request('user_id') == $tech->id ? 'selected' : '' }}>
@@ -23,34 +23,34 @@
                         </div>
                         <div class="row g-2 mt-1">
                             <div class="col-6 col-md-auto">
-                                <input type="month" name="month" value="{{ request('month') }}" class="form-control form-control-sm" placeholder="{{ __('Month') }}" data-bs-toggle="tooltip" title="{{ __('Month') }}">
+                                <input type="month" name="month" value="{{ request('month') }}" class="form-control" placeholder="{{ __('Month') }}" data-bs-toggle="tooltip" title="{{ __('Month') }}">
                             </div>
                             <div class="col-6 col-md-auto">
-                                <input type="date" name="date" value="{{ request('date') }}" class="form-control form-control-sm" placeholder="{{ __('Date') }}" data-bs-toggle="tooltip" title="{{ __('Date') }}">
+                                <input type="date" name="date" value="{{ request('date') }}" class="form-control" placeholder="{{ __('Date') }}" data-bs-toggle="tooltip" title="{{ __('Date') }}">
                             </div>
                         </div>
                         <div class="row g-2 mt-2">
                             <div class="col-12 d-flex flex-wrap gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Filter') }}"><i class="fa-solid fa-filter"></i> <span class="d-none d-sm-inline ms-1">{{ __('Filter') }}</span></button>
+                                <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Filter') }}"><i class="fa-solid fa-filter"></i> <span class="d-none d-sm-inline ms-1">{{ __('Filter') }}</span></button>
                                 @if(Auth::user()->hasRole('admin'))
-                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal" data-bs-toggle="tooltip" title="{{ __('Add') }}">
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal" data-bs-toggle="tooltip" title="{{ __('Add') }}">
                                     <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add') }}</span>
                                 </button>
-                                <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal" data-bs-target="#salaryAdjustmentModal" data-bs-toggle="tooltip" title="{{ __('Bonus/Kasbon') }}">
+                                <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#salaryAdjustmentModal" data-bs-toggle="tooltip" title="{{ __('Bonus/Kasbon') }}">
                                     <i class="fa-solid fa-money-bill-transfer"></i> <span class="d-none d-sm-inline ms-1">{{ __('Bonus/Kasbon') }}</span>
                                 </button>
                                 @endif
-                                <a href="{{ route('attendance.pdf', request()->all()) }}" class="btn btn-danger btn-sm" target="_blank" data-bs-toggle="tooltip" title="{{ __('PDF') }}">
+                                <a href="{{ route('attendance.pdf', request()->all()) }}" class="btn btn-danger" target="_blank" data-bs-toggle="tooltip" title="{{ __('PDF') }}">
                                     <i class="fa-solid fa-file-pdf"></i> <span class="d-none d-sm-inline ms-1">{{ __('PDF') }}</span>
                                 </a>
-                                <a href="{{ route('attendance.excel', request()->all()) }}" class="btn btn-success btn-sm" target="_blank" data-bs-toggle="tooltip" title="{{ __('Excel') }}">
+                                <a href="{{ route('attendance.excel', request()->all()) }}" class="btn btn-success" target="_blank" data-bs-toggle="tooltip" title="{{ __('Excel') }}">
                                     <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Excel') }}</span>
                                 </a>
                                 @if(Auth::user()->hasRole('admin'))
-                                <button type="button" class="btn btn-warning btn-sm text-dark" onclick="confirmRecapFinance()" data-bs-toggle="tooltip" title="{{ __('Pay Salary') }}">
+                                <button type="button" class="btn btn-warning text-dark" onclick="confirmRecapFinance()" data-bs-toggle="tooltip" title="{{ __('Pay Salary') }}">
                                     <i class="fa-solid fa-money-bill-wave"></i> <span class="d-none d-sm-inline ms-1">{{ __('Pay Salary') }}</span>
                                 </button>
-                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="submitBulkDelete()" data-bs-toggle="tooltip" title="{{ __('Delete Selected') }}">
+                                <button type="button" class="btn btn-outline-danger" onclick="submitBulkDelete()" data-bs-toggle="tooltip" title="{{ __('Delete Selected') }}">
                                     <i class="fa-regular fa-trash-can"></i> <span class="d-none d-sm-inline ms-1">{{ __('Delete Selected') }}</span>
                                 </button>
                                 @endif
@@ -103,7 +103,7 @@
 
                 {{-- Alerts handled by SweetAlert in Layout --}}
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle table-responsive-mobile">
                         <thead class="table-light">
                             <tr>
                                 @if(Auth::user()->hasRole('admin'))

@@ -62,7 +62,7 @@
         .col-amount { width: 40%; text-align: right; font-family: 'Courier New', monospace; }
 
         /* WARNA BARIS (Hanya untuk Screen, Print akan jadi BW) */
-        .bg-light { background-color: #f9f9f9; }
+        . { background-color: #f9f9f9; }
         .bg-header { background-color: #e0e0e0; }
         .bg-total { background-color: #ddd; font-weight: bold; }
 
@@ -236,7 +236,7 @@
                 <th style="width:35%">Nama Investor</th>
                 <th class="text-right">Bagi Hasil (Profit)</th>
                 <th class="text-right">Dana Kas (Simpanan)</th>
-                <th class="text-right bg-light">Total Alokasi</th>
+                <th class="text-right ">Total Alokasi</th>
             </tr>
         </thead>
         <tbody>
@@ -249,7 +249,7 @@
                 <td>{{ $row->investor_name }}</td>
                 <td class="text-right">{{ number_format($row->profit_share, 0, ',', '.') }}</td>
                 <td class="text-right text-muted">{{ number_format($row->cash_fund, 0, ',', '.') }}</td>
-                <td class="text-right text-bold bg-light">{{ number_format($totalAllocation, 0, ',', '.') }}</td>
+                <td class="text-right text-bold ">{{ number_format($totalAllocation, 0, ',', '.') }}</td>
             </tr>
             @endforeach
         </tbody>

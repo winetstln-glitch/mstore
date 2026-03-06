@@ -48,7 +48,7 @@
                                     @if($service->image)
                                         <img src="{{ Storage::url($service->image) }}" alt="{{ $service->name }}" width="50" height="50" class="img-thumbnail object-fit-cover">
                                     @else
-                                        <div class="bg-light d-flex align-items-center justify-content-center text-muted border rounded" style="width: 50px; height: 50px;">
+                                        <div class=" d-flex align-items-center justify-content-center text-muted border rounded" style="width: 50px; height: 50px;">
                                             <i class="fas fa-image"></i>
                                         </div>
                                     @endif

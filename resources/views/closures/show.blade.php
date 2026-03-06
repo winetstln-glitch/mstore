@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Closure Details') }}</h5>
                 <div class="d-flex gap-2">
                     <a href="{{ route('closures.edit', $closure->id) }}" class="btn btn-warning btn-sm">
@@ -22,7 +22,7 @@
                         @if($closure->image)
                             <img src="{{ Storage::url($closure->image) }}" alt="{{ $closure->name }}" class="img-fluid rounded shadow-sm border">
                         @else
-                            <div class="bg-light d-flex align-items-center justify-content-center text-muted border rounded" style="width: 100%; height: 200px;">
+                            <div class=" d-flex align-items-center justify-content-center text-muted border rounded" style="width: 100%; height: 200px;">
                                 <div class="text-center">
                                     <i class="fa-solid fa-image fa-3x mb-2"></i>
                                     <p class="mb-0 small">{{ __('No Image Available') }}</p>

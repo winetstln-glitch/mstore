@@ -10,6 +10,7 @@ use App\Models\AtkTransactionItem;
 use App\Models\Cash;
 use App\Models\Coordinator;
 use App\Models\Investor;
+use App\Models\Journal;
 use App\Models\Setting;
 use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
@@ -248,6 +249,58 @@ class AtkTransactionController extends Controller
         $transaction->load('items');
 
         return view('atk.transactions.show', compact('transaction'));
+    }
+
+    public function destroy(AtkTransaction $transaction)
+    {
+        if (! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $transaction->load(['items.product']);
+
+        DB::transaction(function () use ($transaction) {
+            $sumBankNominal = 0;
+
+            foreach ($transaction->items as $item) {
+                $product = $item->product;
+                $category = strtoupper($product->category ?? '');
+                $isService = $category === 'JASA POTOCOPY';
+                $isBank = $category === 'JASA TRANSFER BANK';
+
+                if (! $isService && ! $isBank && $product) {
+                    $product->increment('stock', $item->quantity);
+                }
+
+                if ($isBank) {
+                    $sumBankNominal += (float) ($item->nominal_transaksi ?? 0);
+                }
+            }
+
+            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+            $cash->balance = (float) $cash->balance - (float) $transaction->total_amount;
+            $cash->save();
+
+            if ($sumBankNominal > 0) {
+                $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);
+                $deposit->balance = (float) $deposit->balance + (float) $sumBankNominal;
+                $deposit->save();
+            }
+
+            $journals = Journal::where('source_type', 'atk_transaction')
+                ->where('source_id', $transaction->id)
+                ->get();
+
+            foreach ($journals as $journal) {
+                $journal->entries()->delete();
+                $journal->delete();
+            }
+
+            $transaction->items()->delete();
+            $transaction->delete();
+        });
+
+        return back()->with('success', __('Transaction deleted successfully.'));
     }
 
     public function receipt(AtkTransaction $transaction)

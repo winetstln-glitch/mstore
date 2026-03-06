@@ -7,27 +7,33 @@
             <h5 class="mb-0">Laporan Arus Kas (Metode Langsung)</h5>
         </div>
         <div class="card-body">
-            <form method="get" class="row g-2 align-items-end mb-3">
-                <div class="col-auto">
-                    <label class="form-label">Dari</label>
-                    <input type="date" name="start_date" value="{{ $start }}" class="form-control">
+            <form method="get" class="row g-3 align-items-end mb-4">
+                <div class="col-12 col-md-auto">
+                    <label class="form-label fw-bold small text-muted">Dari Tanggal</label>
+                    <input type="date" name="start_date" value="{{ $start }}" class="form-control form-control-lg">
                 </div>
-                <div class="col-auto">
-                    <label class="form-label">Sampai</label>
-                    <input type="date" name="end_date" value="{{ $end }}" class="form-control">
+                <div class="col-12 col-md-auto">
+                    <label class="form-label fw-bold small text-muted">Sampai Tanggal</label>
+                    <input type="date" name="end_date" value="{{ $end }}" class="form-control form-control-lg">
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-primary">Terapkan</button>
+                <div class="col-12 col-md-auto">
+                    <button class="btn btn-primary btn-lg w-100 w-md-auto">
+                        <i class="fas fa-filter me-1"></i> Terapkan
+                    </button>
                 </div>
-                <div class="col-auto ms-auto">
-                    <div class="btn-group">
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('accounting.cash_flow.pdf', request()->all()) }}">Export PDF</a>
-                        <a class="btn btn-outline-success btn-sm" href="{{ route('accounting.cash_flow.excel', request()->all()) }}">Export Excel</a>
+                <div class="col-12 col-md-auto ms-md-auto">
+                    <div class="d-flex flex-column flex-md-row gap-2">
+                        <a class="btn btn-outline-danger btn-lg w-100 w-md-auto" href="{{ route('accounting.cash_flow.pdf', request()->all()) }}">
+                            <i class="fas fa-file-pdf me-1"></i> PDF
+                        </a>
+                        <a class="btn btn-outline-success btn-lg w-100 w-md-auto" href="{{ route('accounting.cash_flow.excel', request()->all()) }}">
+                            <i class="fas fa-file-excel me-1"></i> Excel
+                        </a>
                     </div>
                 </div>
             </form>
             <div class="table-responsive">
-                <table class="table table-bordered align-middle">
+                <table class="table table-bordered align-middle table-responsive-mobile">
                     <tbody>
                         <tr class="table-light"><th colspan="2">Arus Kas dari Aktivitas Operasi</th></tr>
                         <tr><td>Penerimaan dari pelanggan</td><td class="text-end">{{ number_format($operatingIn,0,',','.') }}</td></tr>

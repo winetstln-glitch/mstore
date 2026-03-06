@@ -5,7 +5,7 @@
     <div class="col-12 col-lg-12 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <!-- Responsive Header -->
-            <div class="card-header bg-body-tertiary border-0 py-3">
+            <div class="card-header  border-0 py-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                     <h5 class="mb-0 fw-bold text-body-emphasis text-truncate" style="max-width: 100%;">
                         <i class="fa-solid fa-cloud-arrow-down me-2 text-primary"></i>
@@ -21,7 +21,7 @@
                 <!-- Search Form -->
                 <form action="{{ route('customers.import') }}" method="GET" class="mb-4">
                     <div class="input-group">
-                        <span class="input-group-text bg-light"><i class="fa-solid fa-search text-muted"></i></span>
+                        <span class="input-group-text "><i class="fa-solid fa-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control" placeholder="{{ __('Search Serial, Username, Model...') }}" value="{{ $search ?? '' }}">
                         <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
                         @if(request('search'))
@@ -53,7 +53,7 @@
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead class="bg-body-tertiary">
+                            <thead class="">
                                 <tr>
                                     <th scope="col" class="ps-3">{{ __('Serial') }}</th>
                                     <!-- Hidden on mobile to save space -->

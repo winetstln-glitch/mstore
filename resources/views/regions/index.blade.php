@@ -16,7 +16,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
+                        <thead class="">
                             <tr>
                                 <th class="ps-4 py-3">{{ __('Name') }}</th>
                                 <th class="py-3">{{ __('Description') }}</th>

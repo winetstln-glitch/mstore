@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Add New ODC') }}</h5>
                 <a href="{{ route('odcs.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
@@ -102,7 +102,7 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <label for="name" class="form-label">{{ __('ODC Name (Auto-generated)') }}</label>
-                            <input type="text" class="form-control bg-light" id="name" name="name" value="{{ old('name') }}" readonly placeholder="{{ __('Auto-generated: ODC-[PON]-[AREA]-[COLOR]-[CABLE]') }}">
+                            <input type="text" class="form-control " id="name" name="name" value="{{ old('name') }}" readonly placeholder="{{ __('Auto-generated: ODC-[PON]-[AREA]-[COLOR]-[CABLE]') }}">
                             <div class="form-text">{{ __('Format: ODC PON AREA WARNA KABEL') }}</div>
                         </div>
                     </div>

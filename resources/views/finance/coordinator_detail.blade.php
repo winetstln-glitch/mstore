@@ -6,12 +6,12 @@
 <div class="container-fluid">
     <!-- HEADER FILTER (Sesuai saran tambahan sebelumnya) -->
     <div class="card shadow-sm mb-4">
-        <div class="card-body py-2">
+        <div class="card-body">
             <form action="{{ route('finance.coordinator.detail', $coordinator->id) }}" method="GET" class="row g-3 align-items-end">
                 
                 <div class="col-md-4">
                     <label class="form-label small text-muted fw-bold">Pilih Periode</label>
-                    <select name="month" class="form-select form-select-sm">
+                    <select name="month" class="form-select form-select-lg">
                         <option value="{{ \Carbon\Carbon::parse($startDate)->format('Y-m') }}">{{ \Carbon\Carbon::parse($startDate)->format('F Y') }}</option>
                         @for($i = 1; $i <= 6; $i++)
                         @php
@@ -25,15 +25,15 @@
 
                 <div class="col-md-3">
                     <label class="form-label small text-muted fw-bold">Filter Tipe</label>
-                    <select name="type" class="form-select form-select-sm">
+                    <select name="type" class="form-select form-select-lg">
                         <option value="">{{ __('Semua') }}</option>
-                        <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}">{{ __('Pemasukan') }}</option>
-                        <option value="expense" {{ request('type') == 'expenses' ? 'selected' : '' }}">{{ __('Pengeluaran') }}</option>
+                        <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}>{{ __('Pemasukan') }}</option>
+                        <option value="expense" {{ request('type') == 'expenses' ? 'selected' : '' }}>{{ __('Pengeluaran') }}</option>
                     </select>
                 </div>
 
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
                         <i class="fa-solid fa-filter me-1"></i> Filter
                     </button>
                 </div>
@@ -70,7 +70,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered table-responsive-mobile">
                     <thead>
                         <tr>
                             <th style="width: 70%;">Keterangan Pendapatan</th>
@@ -105,7 +105,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered table-responsive-mobile">
                     <thead>
                         <tr>
                             <th style="width: 70%;">Keterangan Potongan</th>
@@ -123,7 +123,7 @@
                         </tr>
                         @if(isset($operationalExpenses) && count($operationalExpenses) > 0)
                             @foreach($operationalExpenses as $exp)
-                            <tr class="bg-light small">
+                            <tr class=" small">
                                 <td class="ps-5 text-muted fst-italic">
                                     <i class="fa-solid fa-angle-right me-1"></i> 
                                     {{ $exp->category }} 
@@ -139,7 +139,7 @@
                             <td class="text-end text-warning">({{ number_format($inventoryUsageValue ?? 0, 0, ',', '.') }})</td>
                         </tr>
                             @foreach($inventoryItems as $item)
-                            <tr class="bg-light small">
+                            <tr class=" small">
                                 <td class="ps-5 text-muted fst-italic">
                                     <i class="fa-solid fa-box me-1"></i> 
                                     {{ $item->item->name ?? 'Unknown Item' }} ({{ $item->quantity }} x {{ number_format($item->item->price ?? 0, 0, ',', '.') }})
@@ -167,7 +167,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered table-responsive-mobile">
                     <thead>
                         <tr>
                             <th style="width: 70%;">Keterangan Arus Kas</th>
@@ -205,7 +205,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-sm">
+                <table class="table table-bordered table-responsive-mobile">
                     <thead>
                         <tr>
                             <th>Nama Investor</th>
@@ -239,7 +239,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-sm">
+                <table class="table table-bordered table-responsive-mobile">
                     <thead>
                         <tr>
                             <th width="70" class="text-center">Tanggal</th>
@@ -273,7 +273,7 @@
                                 @if($transaction->type != 'income') ) @endif
                             </td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-primary" 
+                                <button type="button" class="btn btn-primary" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#editTransactionModal"
                                     data-action="{{ route('finance.update', $transaction->id) }}"
@@ -289,7 +289,7 @@
                                 <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
+                                    <button type="submit" class="btn btn-danger">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </form>

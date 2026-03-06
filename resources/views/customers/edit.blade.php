@@ -123,7 +123,7 @@
                         <div class="col-md-6">
                             <label for="latitude" class="form-label small text-muted">{{ __('Latitude') }}</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
+                                <span class="input-group-text "><i class="fa-solid fa-map-pin text-muted"></i></span>
                                 <input type="text" name="latitude" id="latitude" value="{{ old('latitude', $customer->latitude) }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
                             </div>
                             @error('latitude')
@@ -134,7 +134,7 @@
                         <div class="col-md-6">
                             <label for="longitude" class="form-label small text-muted">{{ __('Longitude') }}</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
+                                <span class="input-group-text "><i class="fa-solid fa-map-pin text-muted"></i></span>
                                 <input type="text" name="longitude" id="longitude" value="{{ old('longitude', $customer->longitude) }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
                             </div>
                             @error('longitude')
@@ -161,7 +161,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-muted fw-bold">{{ __('ODC (auto from Closure)') }}</label>
-                            <input type="text" id="odc_display" class="form-control bg-light" readonly>
+                            <input type="text" id="odc_display" class="form-control " readonly>
                         </div>
                     </div>
                     <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
@@ -266,7 +266,7 @@
                         <!-- Device Model -->
                         <div class="col-md-6">
                             <label for="device_model" class="form-label small text-muted">{{ __('Device Model') }}</label>
-                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $customer->device_model) }}" class="form-control bg-light @error('device_model') is-invalid @enderror" readonly>
+                            <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $customer->device_model) }}" class="form-control  @error('device_model') is-invalid @enderror" readonly>
                             @error('device_model')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

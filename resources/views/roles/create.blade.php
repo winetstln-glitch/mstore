@@ -62,7 +62,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        <div class="tab-content border rounded p-3 bg-body-tertiary">
+                        <div class="tab-content border rounded p-3 ">
                             @foreach($tabs as $i => $tab)
                                 @php $tid = \Illuminate\Support\Str::slug($tab); @endphp
                                 <div class="tab-pane fade {{ $i===0?'show active':'' }}" id="pane-{{ $tid }}" role="tabpanel" aria-labelledby="tab-{{ $tid }}">

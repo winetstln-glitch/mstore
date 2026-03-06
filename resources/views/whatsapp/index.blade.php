@@ -3,9 +3,9 @@
 @section('title', 'WhatsApp Admin Panel')
 
 @section('content')
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm">
 
-    <div class="card-header bg-dark text-white">
+    <div class="card-header">
         <h5 class="mb-0">
             <i class="fa-brands fa-whatsapp me-2"></i>
             WhatsApp System Configuration (Admin)
@@ -76,7 +76,7 @@
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
-                            <div class="border p-3 bg-light" style="min-height:300px;" id="atkPreview"></div>
+                            <div class="border p-3 " style="min-height:300px;" id="atkPreview"></div>
                         </div>
                     </div>
                     <hr>
@@ -87,7 +87,7 @@
                         </div>
                         <div class="col-md-6">
                             <label>Live Preview</label>
-                            <div class="border p-3 bg-light" style="min-height:300px;" id="washPreview"></div>
+                            <div class="border p-3 " style="min-height:300px;" id="washPreview"></div>
                         </div>
                     </div>
                     <div class="mt-3 d-flex gap-2">

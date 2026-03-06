@@ -8,13 +8,13 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">{{ __('Packages') }}</h5>
-                <a href="{{ route('packages.create') }}" class="btn btn-primary btn-sm">
+                <a href="{{ route('packages.create') }}" class="btn btn-primary">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Add Package') }}
                 </a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle table-responsive-mobile">
                         <thead>
                             <tr>
                                 <th>{{ __('Name') }}</th>

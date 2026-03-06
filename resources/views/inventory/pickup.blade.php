@@ -39,7 +39,7 @@
                             <div class="table-responsive border rounded overflow-hidden" style="border-color: var(--border-color) !important;">
                                 <table class="table table-hover align-middle mb-0">
                                     <!-- Thead: Dipaksa pakai warna tema -->
-                                    <thead class="bg-body-secondary" style="background-color: var(--table-head-bg) !important;">
+                                    <thead class="" style="background-color: var(--table-head-bg) !important;">
                                         <tr>
                                             <th style="color: var(--text-main) !important;">{{ __('Item') }}</th>
                                             <th style="width: 200px; color: var(--text-main) !important;">{{ __('Quantity') }}</th>
@@ -198,7 +198,7 @@
         color: var(--text-main) !important;
     }
     .border-primary { border-color: var(--primary) !important; }
-    .bg-body-secondary { background-color: var(--table-head-bg) !important; color: var(--text-main) !important; }
+    . { background-color: var(--table-head-bg) !important; color: var(--text-main) !important; }
     .btn-primary { background-color: var(--primary) !important; border-color: var(--primary) !important; color: var(--primary-contrast) !important; }
     .btn-outline-primary { color: var(--primary) !important; border-color: var(--primary) !important; }
     .btn-outline-primary:hover { background-color: var(--primary) !important; color: var(--primary-contrast) !important; }

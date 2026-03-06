@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GenieAcsServer;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -1700,5 +1701,58 @@ class GenieACSService
         }
 
         return $result;
+    }
+
+    /**
+     * Get network health summary - lightweight aggregated device status for AI insights
+     * Returns online/offline counts and average RX power
+     */
+    public function getNetworkHealthSummary(): array
+    {
+        try {
+            $devices = $this->getDevices(500, 0);
+            $now = Carbon::now();
+            $onlineThreshold = 10; // minutes
+
+            $online = 0;
+            $offline = 0;
+            $rxPowers = [];
+
+            foreach ($devices as $device) {
+                $lastInform = isset($device['_lastInform'])
+                    ? Carbon::parse($device['_lastInform']) : null;
+
+                if ($lastInform && $lastInform->diffInMinutes($now) <= $onlineThreshold) {
+                    $online++;
+                } else {
+                    $offline++;
+                }
+
+                // Collect RX Power from VirtualParameters
+                $rxPower = $device['VirtualParameters']['RXPower']['_value'] ??
+                           $device['VirtualParameters']['RXPower'] ?? null;
+                if (is_numeric($rxPower)) {
+                    $rxPowers[] = (float) $rxPower;
+                }
+            }
+
+            return [
+                'total_devices' => count($devices),
+                'online' => $online,
+                'offline' => $offline,
+                'avg_rx_power' => ! empty($rxPowers)
+                    ? round(array_sum($rxPowers) / count($rxPowers), 2) : null,
+            ];
+        } catch (\Exception $e) {
+            \Log::warning('GenieACS getNetworkHealthSummary failed: '.$e->getMessage());
+
+            return [
+                'total_devices' => 0,
+                'online' => 0,
+                'offline' => 0,
+                'avg_rx_power' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 }

@@ -74,7 +74,7 @@
 
                 <div class="mb-4">
                     <h6 class="fw-bold border-bottom pb-2 mb-3">{{ __('Description') }}</h6>
-                    <div class="bg-body-tertiary p-3 rounded text-body-secondary small" style="white-space: pre-line;">
+                    <div class=" p-3 rounded text-body-secondary small" style="white-space: pre-line;">
                         {{ $ticket->description ?? __('No description provided.') }}
                     </div>
                 </div>
@@ -116,7 +116,7 @@
                             @if($ticket->photo_before)
                             <div class="col-6 col-md-6">
                                 <div class="card h-100">
-                                    <div class="card-header bg-light py-2">
+                                    <div class="card-header  py-2">
                                         <small class="fw-bold text-uppercase">{{ __('Before') }}</small>
                                     </div>
                                     <div class="card-body p-1 text-center">
@@ -129,7 +129,7 @@
                             @if($ticket->photo_proof)
                             <div class="col-6 col-md-6">
                                 <div class="card h-100">
-                                    <div class="card-header bg-light py-2">
+                                    <div class="card-header  py-2">
                                         <small class="fw-bold text-uppercase">{{ __('After') }}</small>
                                     </div>
                                     <div class="card-body p-1 text-center">
@@ -146,7 +146,7 @@
                     @endif
 
                     @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
-                        <div class="bg-light p-3 rounded border border-success-subtle">
+                        <div class=" p-3 rounded border border-success-subtle">
                             <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-check-circle me-1"></i> {{ __('Mark as Completed') }}</h6>
                             <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
                                 @csrf

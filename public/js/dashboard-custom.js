@@ -58,15 +58,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarClose = document.getElementById('sidebarClose');
     const body = document.body;
 
-    // Create Overlay if it doesn't exist
-    if (!document.getElementById('sidebar-overlay')) {
-        const overlay = document.createElement('div');
+    // Sidebar Overlay Logic
+    let overlay = document.getElementById('sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
         overlay.id = 'sidebar-overlay';
-        overlay.addEventListener('click', function() {
-            body.classList.remove('sb-sidenav-toggled');
-        });
         document.body.appendChild(overlay);
     }
+    
+    // Ensure click listener is attached
+    overlay.addEventListener('click', function() {
+        body.classList.remove('sb-sidenav-toggled');
+    });
 
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function(e) {
@@ -85,6 +88,23 @@ document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
     }
+
+    const responsiveTables = document.querySelectorAll('.table-responsive-mobile table');
+    responsiveTables.forEach(function(table) {
+        const headers = Array.from(table.querySelectorAll('thead th')).map(function(th) {
+            return th.textContent.trim();
+        });
+        if (!headers.length) {
+            return;
+        }
+        table.querySelectorAll('tbody tr').forEach(function(row) {
+            Array.from(row.children).forEach(function(cell, index) {
+                if (!cell.getAttribute('data-label') && headers[index]) {
+                    cell.setAttribute('data-label', headers[index]);
+                }
+            });
+        });
+    });
 });
 
 ;(function(){

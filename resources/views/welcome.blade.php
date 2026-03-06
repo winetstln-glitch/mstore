@@ -90,7 +90,7 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-body-tertiary shadow-sm">
+    <nav class="navbar navbar-expand-lg fixed-top  shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="#">
                 <i class="fa-solid fa-server me-2"></i> {{ config('app.name', 'MStore') }}
@@ -171,7 +171,7 @@
         </div>
     </div>
 
-    <footer class="py-3 text-center text-body-secondary small bg-body-tertiary">
+    <footer class="py-3 text-center text-body-secondary small ">
         <div class="container">
             &copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. All rights reserved.
         </div>

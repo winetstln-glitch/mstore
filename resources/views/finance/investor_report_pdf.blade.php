@@ -51,7 +51,7 @@
         .text-primary {
             color: #4e73df;
         }
-        .bg-light {
+        . {
             background-color: #f8f9fc;
         }
         .bg-primary {

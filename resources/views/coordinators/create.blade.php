@@ -54,7 +54,7 @@
 
                         <!-- New User Form -->
                         <div id="new_user_section" style="display: none;">
-                            <div class="card bg-light border-0 p-3">
+                            <div class="card  border-0 p-3">
                                 <div class="mb-3">
                                     <label for="email" class="form-label">{{ __('Email Address') }} <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">

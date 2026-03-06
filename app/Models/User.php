@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->hasOne(Coordinator::class);
     }
 
+    public function customer(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Customer::class);
+    }
+
     public function assignedTickets(): BelongsToMany
     {
         return $this->belongsToMany(Ticket::class, 'ticket_user');

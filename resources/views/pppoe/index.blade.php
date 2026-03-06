@@ -261,10 +261,10 @@
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-0 rounded-start-pill">
+                            <span class="input-group-text  border-0 rounded-start-pill">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
                             </span>
-                            <input type="text" class="form-control border-0 bg-light rounded-end-pill" id="pppoeSearch" placeholder="{{ __('Cari username atau IP...') }}">
+                            <input type="text" class="form-control border-0  rounded-end-pill" id="pppoeSearch" placeholder="{{ __('Cari username atau IP...') }}">
                         </div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@
                 @if($mikrotikConnected && !empty($pppoeActiveSessions))
                     <div class="table-responsive">
                         <table class="table table-hover mb-0 align-middle session-table" id="pppoeTable">
-                            <thead class="bg-body-tertiary">
+                            <thead class="">
                                 <tr>
                                     <th class="session-index">#</th>
                                     <th>{{ __('Username') }}</th>

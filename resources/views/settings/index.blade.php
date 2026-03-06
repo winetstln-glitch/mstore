@@ -77,7 +77,7 @@
                                                 @endphp
                                                 <div class="table-responsive">
                                                     <table class="table table-bordered table-sm align-middle">
-                                                        <thead class="bg-body-tertiary">
+                                                        <thead class="">
                                                             <tr>
                                                                 <th>{{ __('Day') }}</th>
                                                                 <th class="text-center" style="width: 100px">{{ __('Working Day') }}</th>
@@ -128,7 +128,7 @@
                                             @endphp
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-sm align-middle mb-0">
-                                                    <thead class="bg-body-tertiary">
+                                                    <thead class="">
                                                         <tr>
                                                             <th style="width: 60%">{{ __('Name') }}</th>
                                                             <th style="width: 40%">{{ __('Price') }}</th>

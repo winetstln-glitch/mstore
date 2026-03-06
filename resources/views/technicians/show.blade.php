@@ -20,7 +20,7 @@
                 <div class="row g-4">
                     <!-- Personal Info -->
                     <div class="col-md-6">
-                        <div class="card h-100 border bg-body-tertiary">
+                        <div class="card h-100 border ">
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('Personal Information') }}</h6>
                                 <div class="row g-3">
@@ -53,7 +53,7 @@
 
                     <!-- Stats/Summary -->
                     <div class="col-md-6">
-                        <div class="card h-100 border bg-body-tertiary">
+                        <div class="card h-100 border ">
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('Performance Summary') }}</h6>
                                 <div class="row g-3">
@@ -84,7 +84,7 @@
                             <!-- Active Tickets -->
                             <div class="col-lg-6">
                                 <div class="card border">
-                                    <div class="card-header bg-body-tertiary py-2">
+                                    <div class="card-header  py-2">
                                         <h6 class="mb-0 fw-bold">{{ __('Active Tickets') }}</h6>
                                     </div>
                                     <div class="list-group list-group-flush">
@@ -108,7 +108,7 @@
                             <!-- Active Installations -->
                             <div class="col-lg-6">
                                 <div class="card border">
-                                    <div class="card-header bg-body-tertiary py-2">
+                                    <div class="card-header  py-2">
                                         <h6 class="mb-0 fw-bold">{{ __('Active Installations') }}</h6>
                                     </div>
                                     <div class="list-group list-group-flush">

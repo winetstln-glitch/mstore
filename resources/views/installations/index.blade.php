@@ -8,7 +8,7 @@
                 <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
                     <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Installation Management') }}</h5>
                     <div class="toolbar-scroll">
-                        <a href="{{ route('installations.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add Installation') }}">
+                        <a href="{{ route('installations.create') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Add Installation') }}">
                             <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add Installation') }}</span>
                         </a>
                     </div>
@@ -43,7 +43,7 @@
                     <div class="row g-3 mt-1">
                         <div class="col-12 col-md-4">
                             <div class="input-group">
-                                <span class="input-group-text bg-body-secondary border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
+                                <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
                                 <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search customer...') }}">
                             </div>
                         </div>
@@ -60,8 +60,8 @@
 
                 <!-- Table -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-body-tertiary">
+                    <table class="table table-hover align-middle table-responsive-mobile">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">ID</th>
                                 <th scope="col">{{ __('Customer') }}</th>

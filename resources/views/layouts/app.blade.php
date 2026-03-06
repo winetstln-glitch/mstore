@@ -50,9 +50,9 @@
             <div class="sidebar-brand-icon">
                 <img src="{{ app()->environment('production') ? secure_asset('img/logo.png') : asset('img/logo.png') }}" alt="MSTORE.NET" class="img-fluid">
             </div>
-            <span class="sidebar-brand-text ms-2 text-white"></span>
+            <span class="sidebar-brand-text ms-2"></span>
             <!-- Close Button for Mobile -->
-            <button class="btn btn-link text-white position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
+            <button class="btn btn-link position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
                 <i class="fa-solid fa-times fa-lg"></i>
             </button>
         </div>
@@ -69,6 +69,13 @@
             </a>
             @endif
 
+            {{-- AI Center --}}
+            @if(Auth::user()->hasRole('admin'))
+            <a href="{{ route('ai.index') }}" class="sidebar-item {{ request()->routeIs('ai.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-robot"></i> {{ __('Pusat AI') }} <span class="badge bg-primary ms-auto" style="font-size: 0.6rem;">BETA</span>
+            </a>
+            @endif
+
             {{-- Client Portal (Grouped) --}}
             @if(Auth::user()->hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Client Portal') }}</div>
@@ -79,7 +86,7 @@
                 <i class="fa-solid fa-user-circle"></i> {{ __('Portal Pelanggan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ $clientRoutesActive ? 'show' : '' }}" id="clientPortalCollapse">
-                <div class="bg-light ps-2">
+                <div class="ps-2">
                     <a href="{{ route('client.portal') }}" class="sidebar-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">
                         <i class="fa-solid fa-house-user"></i> {{ __('Beranda Portal') }}
                     </a>
@@ -122,7 +129,7 @@
                 <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'show' : '' }}" id="servicesCollapse">
-                <div class="bg-light ps-2">
+                <div class="ps-2">
                     @if(Auth::user()->hasPermission('hotspot.view'))
                     <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Active') }}
@@ -216,7 +223,7 @@
                 <i class="fa-solid fa-book-open"></i> {{ __('Akuntansi') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('accounting.*')) ? 'show' : '' }}" id="accountingCollapse">
-                <div class="bg-light ps-3">
+                <div class="ps-3">
                     <a href="{{ route('accounting.trial_balance') }}" class="sidebar-item {{ request()->routeIs('accounting.trial_balance') ? 'active' : '' }}">
                         <i class="fa-regular fa-file-lines"></i> {{ __('Neraca Saldo') }}
                     </a>
@@ -253,7 +260,7 @@
                 <i class="fa fa-store"></i> {{ __('Kasir & Produk') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('atk.*')) ? 'show' : '' }}" id="atkCollapse">
-                <div class="bg-light ps-3">
+                <div class="ps-3">
                     @if(Auth::user()->hasPermission('atk.view'))
                     <a href="{{ route('atk.dashboard') }}" class="sidebar-item {{ request()->routeIs('atk.dashboard') ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-line"></i> {{ __('Dashboard Toko') }}
@@ -296,7 +303,7 @@
                 <i class="fa fa-car"></i> {{ __('Kasir & Layanan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('wash.*')) ? 'show' : '' }}" id="washCollapse">
-                <div class="bg-light ps-3">
+                <div class="ps-3">
                     @if(Auth::user()->hasPermission('wash.view'))
                     <a href="{{ route('wash.dashboard') }}" class="sidebar-item {{ request()->routeIs('wash.dashboard') ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard Cuci') }}
@@ -356,7 +363,7 @@
                     <i class="fa fa-tools"></i> {{ __('Tools & SDM') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
                 <div class="collapse {{ (request()->routeIs('inventory.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsCollapse">
-                    <div class="bg-light ps-3">
+                    <div class="ps-3">
                         @if(Auth::user()->hasPermission('inventory.view'))
                         <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
                             <i class="fa-solid fa-toolbox"></i> {{ __('Inventory / Tools') }}
@@ -402,7 +409,7 @@
                 <i class="fa fa-cogs"></i> {{ __('Pengaturan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('packages.*')) ? 'show' : '' }}" id="settingsCollapse">
-                <div class="bg-light ps-3">
+                <div class="ps-3">
                     <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Umum') }}
                     </a>
@@ -461,7 +468,7 @@
     <div id="page-content-wrapper" class="d-flex flex-column min-vh-100">
         <nav class="navbar navbar-expand-lg main-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <button class="btn btn-link text-white" id="sidebarToggle">
+                <button class="btn btn-link text-body" id="sidebarToggle">
                     <i class="fa-solid fa-bars fa-lg"></i>
                 </button>
             </div>
@@ -469,7 +476,7 @@
             <div class="d-flex align-items-center gap-3"> 
                 <!-- Language Switcher -->
                 <div class="dropdown">
-                    <button class="btn btn-link text-white border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link text-body border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa-solid fa-globe"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
@@ -480,7 +487,7 @@
 
                 <!-- Notifications -->
                 <div class="dropdown">
-                    <button class="btn btn-link text-white border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link text-body border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa-regular fa-bell"></i>
                         @if(Auth::user()->unreadNotifications->count() > 0)
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -516,13 +523,13 @@
                 </div>
 
                 <!-- Theme Toggle -->
-                <button class="btn btn-link text-white border-0" id="themeToggle">
+                <button class="btn btn-link text-body border-0" id="themeToggle">
                     <i class="fa-solid fa-moon" id="themeIcon"></i>
                 </button>
 
                 <!-- Profile Dropdown -->
                 <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-body" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'User') . '&background=3f6ad8&color=fff' }}" alt="Avatar" width="32" height="32" class="rounded-circle me-2" style="object-fit: cover;">
                         <span class="d-none d-md-inline fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
                     </a>
@@ -565,7 +572,7 @@
 
             @yield('content')
         </div>
-        <footer class="py-3 bg-light mt-auto border-top" style="z-index: 10; position: relative;">
+        <footer class="py-3 mt-auto border-top main-footer" style="z-index: 10; position: relative;">
             <div class="container-fluid px-4">
                 <div class="d-flex align-items-center justify-content-center small">
                     <div class="text-muted">Copyright {{ date('Y') }} &copy; ds-winets.id <span class="mx-1">&middot;</span> {{ config('app.version') }}</div>
@@ -577,38 +584,7 @@
 </div>
 <!-- /#wrapper -->
 
-<div class="mobile-bottom-nav d-lg-none">
-    @if(Auth::user()->hasPermission('dashboard.view'))
-    <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-        <i class="fa fa-home"></i><span>{{ __('Home') }}</span>
-    </a>
-    @endif
-    @if(Auth::user()->hasPermission('customer.view'))
-    <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
-        <i class="fa fa-users"></i><span>{{ __('Pelanggan') }}</span>
-    </a>
-    @endif
-    @if(Auth::user()->hasPermission('ticket.view'))
-    <a href="{{ route('tickets.index') }}" class="mbn-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
-        <i class="fa fa-ticket-alt"></i><span>{{ __('Tiket') }}</span>
-    </a>
-    @endif
-    @if(Auth::user()->hasPermission('atk.pos'))
-    <a href="{{ route('atk.pos') }}" class="mbn-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
-        <i class="fa fa-cash-register"></i><span>{{ __('ATK') }}</span>
-    </a>
-    @endif
-    @if(Auth::user()->hasPermission('wash.pos'))
-    <a href="{{ route('wash.pos') }}" class="mbn-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
-        <i class="fa fa-car"></i><span>{{ __('Wash') }}</span>
-    </a>
-    @endif
-    @if(Auth::user()->hasPermission('setting.view'))
-    <a href="{{ route('settings.index') }}" class="mbn-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-        <i class="fa fa-cogs"></i><span>{{ __('Setting') }}</span>
-    </a>
-    @endif
-</div>
+@include('layouts.partials.mobile-nav')
 
 <!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -627,6 +603,17 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
 <script>
+    // Mobile Menu Toggle Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.body.classList.toggle('sb-sidenav-toggled');
+            });
+        }
+    });
+
     // SweetAlert2 Flash Messages
     @if(session('success'))
         Swal.fire({
@@ -659,6 +646,7 @@
 
 <!-- Custom Dashboard JS -->
 <script src="{{ app()->environment('production') ? secure_asset('js/dashboard-custom.js') : asset('js/dashboard-custom.js') }}"></script>
+<script src="{{ app()->environment('production') ? secure_asset('js/android-interact.js') : asset('js/android-interact.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.feather) {

@@ -4,9 +4,9 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('atk.transactions.export.pdf', request()->all()) }}" class="btn btn-danger" title="{{ __('Export PDF') }}">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span class="d-none d-md-inline ms-2">{{ __('Export PDF') }}</span>
@@ -25,22 +25,22 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <form action="{{ route('atk.transactions.index') }}" method="GET" class="row g-3 align-items-center">
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <label for="start_date" class="col-form-label">{{ __('Start Date') }}</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <label for="end_date" class="col-form-label">{{ __('End Date') }}</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <label for="category" class="col-form-label">{{ __('Category') }}</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     @php($opts = isset($categories) ? $categories : ['ATK','JASA POTOCOPY','JASA TRANSFER BANK'])
                     <select id="category" name="category" class="form-select">
                         <option value="">{{ __('All') }}</option>
@@ -49,7 +49,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
                         <i class="fa-solid fa-filter"></i>
                         <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
@@ -67,7 +67,7 @@
                     {{ __('Total Pendapatan') }}: Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}
                 </span>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
@@ -88,12 +88,26 @@
                             <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
                             <td><span class="badge bg-secondary">{{ strtoupper($transaction->payment_method) }}</span></td>
                             <td>
-                                <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-info">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>
-                                <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-warning">
-                                    <i class="fa-solid fa-print"></i>
-                                </a>
+                                <div class="d-flex flex-wrap gap-1 justify-content-end">
+                                    <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
+                                        <i class="fa-solid fa-eye"></i>
+                                        <span class="d-none d-md-inline ms-1">{{ __('View') }}</span>
+                                    </a>
+                                    <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-warning" title="{{ __('Print') }}">
+                                        <i class="fa-solid fa-print"></i>
+                                        <span class="d-none d-md-inline ms-1">{{ __('Print') }}</span>
+                                    </a>
+                                    @if(Auth::user()->hasRole('admin'))
+                                    <form action="{{ route('atk.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
+                                            <i class="fa-solid fa-trash"></i>
+                                            <span class="d-none d-md-inline ms-1">{{ __('Delete') }}</span>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach

@@ -20,7 +20,7 @@
                     <div class="row g-4">
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">Customer Information</h6>
-                            <div class="p-3 bg-light rounded border dark:bg-dark dark:border-secondary">
+                            <div class="p-3  rounded border dark:bg-dark dark:border-secondary">
                                 <p class="mb-2">
                                     <span class="fw-bold">Name:</span> 
                                     <a href="{{ route('customers.show', $installation->customer) }}" class="text-decoration-none">
@@ -44,7 +44,7 @@
 
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-3">Installation Status</h6>
-                            <div class="p-3 bg-light rounded border dark:bg-dark dark:border-secondary">
+                            <div class="p-3  rounded border dark:bg-dark dark:border-secondary">
                                 <p class="mb-2">
                                     <span class="fw-bold">Status:</span> 
                                     <span class="badge 
@@ -73,7 +73,7 @@
 
                         <div class="col-12">
                             <h6 class="fw-bold mb-3">Notes</h6>
-                            <div class="p-3 bg-light rounded border dark:bg-dark dark:border-secondary">
+                            <div class="p-3  rounded border dark:bg-dark dark:border-secondary">
                                 <p class="mb-0 text-break" style="white-space: pre-line;">{{ $installation->notes ?? 'No notes available.' }}</p>
                             </div>
                         </div>

@@ -49,6 +49,12 @@ Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::cl
 Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
 
 Route::middleware('auth')->group(function () {
+    // AI Center
+    Route::get('/ai-center', [\App\Http\Controllers\AiController::class, 'index'])->name('ai.index');
+    Route::post('/ai-center/chat', [\App\Http\Controllers\AiController::class, 'chat'])
+        ->middleware('throttle:30,1')
+        ->name('ai.chat');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
         return response()->json($mix->health());
@@ -149,12 +155,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('olt', OLTController::class);
     // ... kode router lainnya ...
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
-    
+
     // Route untuk test koneksi router (Explicitly defined)
     Route::post('routers/{router}/test-connection', [RouterController::class, 'testConnection'])->name('routers.test-connection');
-    
+
     Route::post('routers/{router}/pppoe/toggle-secret', [RouterController::class, 'togglePppoeSecret'])->name('routers.pppoe.toggle-secret');
-    
+
     // Route for sessions view
     Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
 
@@ -319,7 +325,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
-        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show']);
+        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show', 'destroy']);
     });
 
     // Wash Services (Auto Wash)
@@ -353,6 +359,6 @@ Route::middleware('auth')->group(function () {
         Route::post('products/import', [\App\Http\Controllers\AtkProductController::class, 'import'])->name('products.import');
         Route::delete('products/bulk-destroy', [\App\Http\Controllers\AtkProductController::class, 'bulkDestroy'])->name('products.bulk_destroy');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
-        Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show']);
+        Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show', 'destroy']);
     });
 });

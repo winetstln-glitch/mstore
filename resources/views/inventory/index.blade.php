@@ -19,15 +19,15 @@
                 <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
                     <!-- Filter Group: Stays together but allows wrapping if needed -->
                     <div class="btn-group" role="group">
-                        <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }} btn-sm">{{ __('All') }}</a>
-                        <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'tool' ? 'active' : '' }} btn-sm">{{ __('Tools') }}</a>
-                        <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'material' ? 'active' : '' }} btn-sm">{{ __('Materials') }}</a>
+                        <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }}">{{ __('All') }}</a>
+                        <a href="{{ route('inventory.index', ['type_group' => 'tool']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'tool' ? 'active' : '' }}">{{ __('Tools') }}</a>
+                        <a href="{{ route('inventory.index', ['type_group' => 'material']) }}" class="btn btn-outline-secondary {{ request('type_group') == 'material' ? 'active' : '' }}">{{ __('Materials') }}</a>
                     </div>
 
                     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
                     <!-- Category Dropdown: Icon only on small screens to save space -->
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-filter d-md-none"></i>
                             <span class="d-none d-md-inline">{{ request('category') ? ucfirst(request('category')) : __('Categories') }}</span>
                         </button>
@@ -41,7 +41,7 @@
 
                     <!-- Export/Import Dropdown -->
                     <div class="dropdown">
-                        <button type="button" class="btn btn-secondary dropdown-toggle btn-sm" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-ellipsis-vertical d-md-none"></i>
                             <span class="d-none d-md-inline"><i class="fa-solid fa-file-export me-1"></i> {{ __('Actions') }}</span>
                         </button>
@@ -54,18 +54,18 @@
                     </div>
                     
                     <!-- Add Button -->
-                    <button type="button" class="btn btn-success btn-sm flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <button type="button" class="btn btn-success flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#addItemModal">
                         <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Item') }}</span>
                     </button>
                     @endif
                     
                     <!-- Return Button: Icon only on mobile -->
-                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning btn-sm" title="{{ __('Return Tool') }}">
+                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning" title="{{ __('Return Tool') }}">
                         <i class="fa-solid fa-rotate-left"></i> <span class="d-none d-sm-inline ms-1">{{ __('Return') }}</span>
                     </a>
                     
                     <!-- Pickup Button: Icon only on mobile -->
-                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0" title="{{ __('Pickup Item') }}">
+                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-primary flex-grow-1 flex-md-grow-0" title="{{ __('Pickup Item') }}">
                         <i class="fa-solid fa-box-open me-1"></i> <span class="d-none d-sm-inline">{{ __('Pickup') }}</span>
                     </a>
                 </div>
@@ -152,8 +152,8 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-body-secondary">
+                        <table class="table table-hover align-middle mb-0 table-responsive-mobile">
+                            <thead class="">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Asset Name') }}</th>
                                     <!-- Hidden on mobile to save space -->
@@ -212,8 +212,8 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
+                        <table class="table table-hover align-middle mb-0 table-responsive-mobile">
+                            <thead class="">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Type') }}</th>
                                     <th class="py-3">{{ __('Name') }}</th>
@@ -242,7 +242,7 @@
                                             <div class="small text-muted d-none d-md-block text-truncate" style="max-width: 200px;">{{ Str::limit($item->description, 30) ?: '-' }}</div>
                                         </td>
                                         <td class="d-none d-md-table-cell">
-                                            <span class="badge bg-light text-dark border small">{{ ucfirst($item->category) }}</span>
+                                            <span class="badge  text-dark border small">{{ ucfirst($item->category) }}</span>
                                         </td>
                                         <td class="d-none d-md-table-cell">
                                             {{ $item->brand ?: '-' }}
@@ -310,7 +310,7 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
+                            <thead class="">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Date') }}</th>
                                     <!-- Hidden on mobile -->

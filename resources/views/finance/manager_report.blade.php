@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Laba Rugi & Kas') }}</h1>
             <nav aria-label="breadcrumb">
@@ -15,14 +15,14 @@
             </nav>
         </div>
         
-        <div class="d-flex gap-2">
-            <a href="{{ route('finance.index') }}" class="btn btn-secondary">
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
             </a>
-            <a href="{{ route('finance.manager_report.excel', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-success">
+            <a href="{{ route('finance.manager_report.excel', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-success btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
             </a>
-            <a href="{{ route('finance.manager_report.pdf', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-danger">
+            <a href="{{ route('finance.manager_report.pdf', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-danger btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-file-pdf me-1"></i> {{ __('PDF') }}
             </a>
         </div>
@@ -34,7 +34,7 @@
             <form action="{{ route('finance.manager_report') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small text-muted fw-bold">Pilih Koordinator</label>
-                    <select name="coordinator_id" class="form-select form-select-sm">
+                    <select name="coordinator_id" class="form-select form-select-lg">
                         <option value="">{{ __('Semua Pengurus (Global)') }}</option>
                         @foreach($coordinators as $coordinator)
                             <option value="{{ $coordinator->id }}" {{ request('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
@@ -45,10 +45,10 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted fw-bold">Periode Laporan</label>
-                    <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month') ?? date('Y-m') }}" required>
+                    <input type="month" name="month" class="form-control form-control-lg" value="{{ request('month') ?? date('Y-m') }}" required>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
                         <i class="fa-solid fa-filter me-1"></i> Tampilkan
                     </button>
                 </div>
@@ -72,7 +72,7 @@
             
             <!-- TABEL 1: PENDAPATAN -->
             <h6 class="text-uppercase text-muted small fw-bold mb-2">A. Pendapatan (Revenue)</h6>
-            <table class="table table-bordered table-sm mb-4">
+            <table class="table table-bordered table-responsive-mobile mb-4">
                 <tbody>
                     <tr>
                         <td style="width: 70%">{{ __('Pendapatan Member') }}</td>
@@ -91,7 +91,7 @@
 
             <!-- TABEL 2: POTONGAN & PENGELUARAN -->
             <h6 class="text-uppercase text-muted small fw-bold mb-2">B. Potongan & Beban Operasional</h6>
-            <table class="table table-bordered table-sm mb-4">
+            <table class="table table-bordered table-responsive-mobile mb-4">
                 <tbody>
                     <!-- Komisi (Otomatis) -->
                     <tr>
@@ -132,11 +132,11 @@
 
             <!-- TABEL 3: POSISI SALDO (NET INCOME & SETORAN) -->
             <h6 class="text-uppercase text-muted small fw-bold mb-2">C. Posisi Saldo Akhir</h6>
-            <table class="table table-bordered table-sm mb-0">
+            <table class="table table-bordered mb-0 table-responsive-mobile">
                 <tbody>
                     <tr>
-                        <td style="width: 70%" class="fw-bold bg-light">LABA BERSIH (NET INCOME)</td>
-                        <td class="text-end fw-bold bg-light">
+                        <td style="width: 70%" class="fw-bold ">LABA BERSIH (NET INCOME)</td>
+                        <td class="text-end fw-bold ">
                             {{ number_format($totalRevenue - ($coordCommission + $operatingExpenses), 0, ',', '.') }}
                         </td>
                     </tr>

@@ -4,12 +4,16 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Operasional & Setoran') }}</h1>
         <!-- Tombol Download PDF/Excel -->
-        <div class="d-flex gap-2">
-             <a href="{{ route('finance.index') }}" class="btn btn-secondary">Kembali</a>
-             <button onclick="window.print()" class="btn btn-primary">Cetak</button>
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+             <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
+                <i class="fas fa-arrow-left me-1"></i> Kembali
+             </a>
+             <button onclick="window.print()" class="btn btn-primary btn-lg w-100 w-md-auto">
+                <i class="fas fa-print me-1"></i> Cetak
+             </button>
         </div>
     </div>
 
@@ -66,13 +70,14 @@
             <h6 class="m-0 font-weight-bold text-primary">Rincian Alur Dana Pengurus</h6>
         </div>
         <div class="card-body">
-            <table class="table table-bordered table-sm">
-                <thead>
-                    <tr>
-                        <th style="width: 60%;">Uraian Transaksi</th>
-                        <th class="text-end">Nominal (Rp)</th>
-                    </tr>
-                </thead>
+            <div class="table-responsive">
+                <table class="table table-bordered table-responsive-mobile">
+                    <thead>
+                        <tr>
+                            <th style="width: 60%;">Uraian Transaksi</th>
+                            <th class="text-end">Nominal (Rp)</th>
+                        </tr>
+                    </thead>
                 <tbody>
                     <!-- A. PENDAPATAN -->
                     <tr style="background-color: #d1e7dd;">
@@ -82,7 +87,7 @@
 
                     <!-- B. PENGELUARAN OPERASIONAL -->
                     <tr>
-                        <td colspan="2" class="bg-body-secondary small fw-bold text-muted px-2">BIAYA OPERASIONAL (REALISASI)</td>
+                        <td colspan="2" class=" small fw-bold text-muted px-2">BIAYA OPERASIONAL (REALISASI)</td>
                     </tr>
                     @foreach($operationalExpenses as $expense)
                     <tr>
@@ -103,7 +108,7 @@
                     </tr>
 
                     <!-- D. SISA HASIL USAHA -->
-                    <tr class="fw-bold bg-light">
+                    <tr class="fw-bold ">
                         <td>SISA HASIL USAHA (NET INCOME)</td>
                         <td class="text-end">{{ number_format($netIncome, 0, ',', '.') }}</td>
                     </tr>

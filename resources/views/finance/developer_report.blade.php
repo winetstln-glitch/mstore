@@ -3,13 +3,13 @@
 @section('content')
 <div class="container-fluid">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h1 class="h3 mb-0 text-gray-800 fw-bold">{{ __('Laporan Pembukuan Pengembang') }}</h1>
             <p class="text-muted mb-0">{{ __('Laporan pendapatan dan pengeluaran untuk manajemen/pengembang.') }}</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('finance.developer.pdf', request()->all()) }}" class="btn btn-danger" target="_blank">
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <a href="{{ route('finance.developer.pdf', request()->all()) }}" class="btn btn-danger btn-lg w-100 w-md-auto" target="_blank">
                 <i class="fas fa-file-pdf me-1"></i> {{ __('Export PDF') }}
             </a>
         </div>
@@ -17,14 +17,14 @@
 
     <!-- Filter Section -->
     <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body bg-light rounded-3">
+        <div class="card-body rounded-3">
             <form action="{{ route('finance.developer') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label for="month" class="form-label fw-bold">{{ __('Pilih Bulan') }}</label>
-                    <input type="month" id="month" name="month" class="form-control" value="{{ $selectedMonth }}">
+                    <label for="month" class="form-label fw-bold small text-muted">{{ __('Pilih Bulan') }}</label>
+                    <input type="month" id="month" name="month" class="form-control form-control-lg" value="{{ $selectedMonth }}">
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">
                         <i class="fas fa-filter me-1"></i> {{ __('Filter') }}
                     </button>
                 </div>
@@ -95,8 +95,8 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead class="bg-light">
+                        <table class="table table-bordered table-responsive-mobile" width="100%" cellspacing="0">
+                            <thead>
                                 <tr>
                                     <th>{{ __('Sumber Pendapatan') }}</th>
                                     <th class="text-end">{{ __('Jumlah') }}</th>
@@ -123,7 +123,7 @@
                                     <td>Penjualan ATK</td>
                                     <td class="text-end text-success fw-bold">Rp {{ number_format($incomeATK, 0, ',', '.') }}</td>
                                 </tr>
-                                <tr class="bg-light fw-bold">
+                                <tr class=" fw-bold">
                                     <td>TOTAL PENDAPATAN</td>
                                     <td class="text-end">Rp {{ number_format($totalIncome, 0, ',', '.') }}</td>
                                 </tr>
@@ -142,8 +142,8 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead class="bg-light">
+                        <table class="table table-bordered table-responsive-mobile" width="100%" cellspacing="0">
+                            <thead class="">
                                 <tr>
                                     <th>{{ __('Jenis Pengeluaran') }}</th>
                                     <th class="text-end">{{ __('Jumlah') }}</th>
@@ -174,7 +174,7 @@
                                     <td>Pengeluaran Lainnya</td>
                                     <td class="text-end text-danger fw-bold">Rp {{ number_format($expenseOthers, 0, ',', '.') }}</td>
                                 </tr>
-                                <tr class="bg-light fw-bold">
+                                <tr class=" fw-bold">
                                     <td>TOTAL PENGELUARAN</td>
                                     <td class="text-end">Rp {{ number_format($totalExpenses, 0, ',', '.') }}</td>
                                 </tr>

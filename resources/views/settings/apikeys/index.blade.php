@@ -108,25 +108,25 @@
                     
                     <h5 class="mt-4">1. Get All Devices</h5>
                     <p>{{ __('Get list of all registered devices (OLT & Mikrotik).') }}</p>
-                    <div class="bg-light p-3 rounded mb-3">
+                    <div class=" p-3 rounded mb-3">
                         <code>GET {{ url('/api/integration') }}?api_key=YOUR_KEY&endpoint=devices</code>
                     </div>
 
                     <h5 class="mt-4">2. Get OLT Status (Filter PON)</h5>
                     <p>{{ __('Get ONU data on a specific PON. Requires device_id & pon.') }}</p>
-                    <div class="bg-light p-3 rounded mb-3">
+                    <div class=" p-3 rounded mb-3">
                         <code>GET {{ url('/api/integration') }}?api_key=YOUR_KEY&endpoint=olt/status&device_id=10&pon=1</code>
                     </div>
 
                     <h5 class="mt-4">3. Get OLT Status (All PONs)</h5>
                     <p>{{ __('Get ALL ONU data from all PON ports. Requires device_id only.') }}</p>
-                    <div class="bg-light p-3 rounded mb-3">
+                    <div class=" p-3 rounded mb-3">
                         <code>GET {{ url('/api/integration') }}?api_key=YOUR_KEY&endpoint=olt/status&device_id=10</code>
                     </div>
 
                     <h5 class="mt-4">4. Get Mikrotik Status</h5>
                     <p>{{ __('Get Resource status (CPU, Uptime, Memory) and PPPoE & Hotspot user statistics.') }}</p>
-                    <div class="bg-light p-3 rounded mb-3">
+                    <div class=" p-3 rounded mb-3">
                         <code>GET {{ url('/api/integration') }}?api_key=YOUR_KEY&endpoint=mikrotik/status&device_id=2</code>
                     </div>
                 </div>

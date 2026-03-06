@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Journal;
 use App\Models\Setting;
 use App\Models\WashCustomer;
 use App\Models\WashService;
@@ -227,6 +228,29 @@ class WashTransactionController extends Controller
     public function show(WashTransaction $transaction)
     {
         return view('wash.transactions.show', compact('transaction'));
+    }
+
+    public function destroy(WashTransaction $transaction)
+    {
+        if (! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        DB::transaction(function () use ($transaction) {
+            $journals = Journal::where('source_type', 'wash_transaction')
+                ->where('source_id', $transaction->id)
+                ->get();
+
+            foreach ($journals as $journal) {
+                $journal->entries()->delete();
+                $journal->delete();
+            }
+
+            $transaction->items()->delete();
+            $transaction->delete();
+        });
+
+        return back()->with('success', __('Transaction deleted successfully.'));
     }
 
     public function exportPdf(Request $request)

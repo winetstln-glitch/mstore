@@ -8,9 +8,9 @@
         <!-- Product & Service List -->
         <div class="col-md-8">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3">
+                <div class="card-header py-3">
                     <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <span class="input-group-text  border-end-0"><i class="fas fa-search text-body-secondary"></i></span>
                         <input type="text" id="productSearch" class="form-control border-start-0 ps-0" placeholder="Search products by name or code...">
                     </div>
                     <div class="mt-2">
@@ -38,16 +38,16 @@
                                  data-type="product"
                                  data-stock="{{ $product->stock }}">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
-                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
+                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded " style="height: 100px; overflow: hidden;">
                                         @if($product->image)
                                             <img src="{{ Storage::url($product->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $product->name }}">
                                         @else
-                                            <i class="fas fa-image fa-2x text-muted"></i>
+                                            <i class="fas fa-image fa-2x text-body-secondary"></i>
                                         @endif
                                     </div>
                                     <h6 class="card-title mb-1 text-truncate" title="{{ $product->name }}">{{ $product->name }}</h6>
                                     <p class="card-text text-primary fw-bold mb-0">Rp {{ number_format($product->price, 0, ',', '.') }}</p>
-                                    <small class="text-muted">Stock: {{ $product->stock }}</small>
+                                    <small class="text-body-secondary">Stock: {{ $product->stock }}</small>
                                 </div>
                             </div>
                         </div>
@@ -63,23 +63,23 @@
                                  data-type="service"
                                  data-stock="999999">
                                 <div class="card-body text-center p-2 d-flex flex-column justify-content-center">
-                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded bg-light" style="height: 100px; overflow: hidden;">
+                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded " style="height: 100px; overflow: hidden;">
                                         @if($service->image)
                                             <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
                                         @else
-                                            <i class="fas fa-print fa-2x text-muted"></i>
+                                            <i class="fas fa-print fa-2x text-body-secondary"></i>
                                         @endif
                                     </div>
                                     <h6 class="card-title mb-1 text-truncate" title="{{ $service->name }}">{{ $service->name }}</h6>
                                     <p class="card-text text-primary fw-bold mb-0">Rp {{ number_format($service->price, 0, ',', '.') }}</p>
-                                    <small class="text-muted">Jasa</small>
+                                    <small class="text-body-secondary">Jasa</small>
                                 </div>
                             </div>
                         </div>
                         @endforeach
                         @if(empty($services) || count($services)===0)
                             <div class="text-center py-5">
-                                <p class="text-muted">Belum ada jasa. <a href="{{ route('atk.products.create') }}">Tambah Jasa</a></p>
+                                <p class="text-body-secondary">Belum ada jasa. <a href="{{ route('atk.products.create') }}">Tambah Jasa</a></p>
                             </div>
                         @endif
                     </div>
@@ -119,78 +119,78 @@
                             <p class="text-muted">No products available. <a href="{{ route('atk.products.create') }}">Add Product</a></p>
                         </div>
                     @endif
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Cart -->
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100 d-flex flex-column">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Current Order</h5>
-                </div>
-                <div class="card-body p-0 overflow-auto flex-grow-1" id="cartItems" style="max-height: 50vh;">
-                    <div class="text-center py-5 text-muted" id="emptyCartMessage">
-                        <i class="fas fa-shopping-basket fa-3x mb-3"></i>
-                        <p>Cart is empty</p>
-                    </div>
-                    <ul class="list-group list-group-flush" id="cartList"></ul>
-                </div>
-                <div class="card-footer border-top">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Items:</span>
-                        <span class="fw-bold" id="totalItems">0</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="h5 mb-0">Total:</span>
-                        <span class="h4 mb-0 text-primary" id="totalAmount">Rp 0</span>
-                    </div>
-                    
-                    
-                    <div class="mb-3">
-                         <label class="form-label">Payment Method</label>
-                         <select class="form-select" id="paymentMethod">
-                             <option value="cash">Cash</option>
-                             <option value="transfer">Transfer</option>
-                             <option value="qris">QRIS</option>
-                             <option value="hutang">Hutang</option>
-                         </select>
-                    </div>
-                    
-                    <div class="mb-3 d-none" id="pengurusDiv">
-                        <label class="form-label">Coordinator / Pengurus / Investor</label>
-                        <div class="row g-2">
-                            <div class="col-12">
-                                <select class="form-select" id="coordinatorId">
-                                    <option value="">Pilih Pengurus (Coordinator)</option>
-                                    @foreach(($coordinators ?? []) as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
-                                    @endforeach
-                                </select>
+                <!-- Cart -->
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100 d-flex flex-column">
+                        <div class="card-header bg-primary text-white py-3">
+                            <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Current Order</h5>
+                        </div>
+                        <div class="card-body p-0 overflow-auto flex-grow-1" id="cartItems" style="max-height: 50vh;">
+                            <div class="text-center py-5 text-body-secondary" id="emptyCartMessage">
+                                <i class="fas fa-shopping-basket fa-3x mb-3"></i>
+                                <p>Cart is empty</p>
                             </div>
-                            <div class="col-12">
-                                <select class="form-select" id="investorId">
-                                    <option value="">Pilih Investor (opsional)</option>
-                                    @foreach(($investors ?? []) as $inv)
-                                        <option value="{{ $inv->id }}" data-coordinator="{{ $inv->coordinator_id }}">{{ $inv->name }}</option>
-                                    @endforeach
-                                </select>
+                            <ul class="list-group list-group-flush" id="cartList"></ul>
+                        </div>
+                        <div class="card-footer border-top">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-body-secondary">Total Items:</span>
+                                <span class="fw-bold" id="totalItems">0</span>
                             </div>
-                        </div>
-                        <small class="text-muted">Pengurus wajib saat hutang jasa potocopy; investor opsional.</small>
-                    </div>
-                    
-                    <div class="mb-3" id="cashInputDiv">
-                        <label class="form-label">Cash Received</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" class="form-control" id="cashAmount" placeholder="0">
-                        </div>
-                        <div class="mt-1 d-flex justify-content-between text-muted small">
-                             <span>Change:</span>
-                             <span id="changeAmount" class="fw-bold">Rp 0</span>
-                        </div>
-                    </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="h5 mb-0">Total:</span>
+                                <span class="h4 mb-0 text-primary" id="totalAmount">Rp 0</span>
+                            </div>
+                            
+                            
+                            <div class="mb-3">
+                                 <label class="form-label">Payment Method</label>
+                                 <select class="form-select" id="paymentMethod">
+                                     <option value="cash">Cash</option>
+                                     <option value="transfer">Transfer</option>
+                                     <option value="qris">QRIS</option>
+                                     <option value="hutang">Hutang</option>
+                                 </select>
+                            </div>
+                            
+                            <div class="mb-3 d-none" id="pengurusDiv">
+                                <label class="form-label">Coordinator / Pengurus / Investor</label>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <select class="form-select" id="coordinatorId">
+                                            <option value="">Pilih Pengurus (Coordinator)</option>
+                                            @foreach(($coordinators ?? []) as $c)
+                                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <select class="form-select" id="investorId">
+                                            <option value="">Pilih Investor (opsional)</option>
+                                            @foreach(($investors ?? []) as $inv)
+                                                <option value="{{ $inv->id }}" data-coordinator="{{ $inv->coordinator_id }}">{{ $inv->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <small class="text-body-secondary">Pengurus wajib saat hutang jasa potocopy; investor opsional.</small>
+                            </div>
+                            
+                            <div class="mb-3" id="cashInputDiv">
+                                <label class="form-label">Cash Received</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" id="cashAmount" placeholder="0">
+                                </div>
+                                <div class="mt-1 d-flex justify-content-between text-body-secondary small">
+                                     <span>Change:</span>
+                                     <span id="changeAmount" class="fw-bold">Rp 0</span>
+                                </div>
+                            </div>
                     
                     <div class="mb-2">
                         <label class="form-label">No. WhatsApp (opsional)</label>

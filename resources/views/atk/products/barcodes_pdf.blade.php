@@ -25,23 +25,23 @@ table {
 
 td.cell {
     width: 10mm;
-    height: 25mm;
+    height: 20mm;
     padding: 0;
 }
 
 .item {
-    width: 10mm;
-    height: 25mm;
+    width: 30mm;
+    height: 22mm;
     padding: 1mm;
     box-sizing: border-box;
     page-break-inside: avoid;
 }
 
 .name {
-    font-size: 8pt;
-    font-weight: bold;
-    margin-bottom: 1mm;
+    font-size: 4pt;
+    margin-bottom: 0.5mm;
     line-height: 1.1;
+    text-align: center;
 }
 
 .code {
@@ -49,9 +49,16 @@ td.cell {
     margin-bottom: 1mm;
 }
 
+.price {
+    font-size: 5pt;
+    font-weight: bold;
+    margin-top: 1mm;
+    text-align: center;
+}
+
 svg {
     width: 100%;
-    height: 12mm;
+    height: 3mm;
 }
 
 </style>
@@ -66,14 +73,15 @@ svg {
     @foreach($row as $product)
     <td class="cell">
         <div class="item">
-            <!-- <div class="name">
+            <div class="name">
                 {{ \Illuminate\Support\Str::limit($product->name, 40) }}
-            </div> -->
-            <div class="code">
-                {{ $product->code }}
             </div>
-
+            
             {!! $barcodes[$product->id] ?? '' !!}
+
+            <div class="price">
+                Rp {{ number_format($product->price, 0, ',', '.') }}
+            </div>
         </div>
     </td>
     @endforeach

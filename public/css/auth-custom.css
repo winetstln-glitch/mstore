@@ -12,11 +12,13 @@
 }
 
 [data-bs-theme="dark"] {
-    --auth-bg: #0f172a; /* Slate 900 */
-    --auth-card-bg: #1e293b; /* Slate 800 */
-    --auth-text: #f8fafc; /* Slate 50 */
-    --input-bg: #1e293b;
-    --input-border: #334155;
+    --primary-color: #00e5ff;
+    --primary-hover: #00b8d9;
+    --auth-bg: #040712;
+    --auth-card-bg: #0d152c;
+    --auth-text: #ecf7ff;
+    --input-bg: #0b1228;
+    --input-border: #1f3b6d;
 }
 
 body {
@@ -232,7 +234,7 @@ body {
 [data-bs-theme="dark"] .auth-card {
     background-color: var(--auth-card-bg);
     border: 1px solid var(--input-border);
-    box-shadow: none;
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.18);
 }
 [data-bs-theme="dark"] .auth-right {
     color: var(--auth-text);
@@ -253,6 +255,7 @@ body {
 }
 [data-bs-theme="dark"] .auth-input-group .form-control:focus {
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.16);
 }
 [data-bs-theme="dark"] .back-home-btn,
 [data-bs-theme="dark"] .theme-toggle-btn {

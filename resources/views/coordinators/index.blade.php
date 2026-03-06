@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Coordinators') }}</h5>
                 <a href="{{ route('coordinators.create') }}" class="btn btn-primary btn-sm">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Add Coordinator') }}
@@ -16,7 +16,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-body-secondary">
+                        <thead class="">
                             <tr>
                                 <th class="ps-4 py-3">{{ __('Name') }}</th>
                                 <th class="py-3">{{ __('User Account') }}</th>

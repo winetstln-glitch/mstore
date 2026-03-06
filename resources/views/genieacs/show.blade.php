@@ -36,7 +36,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-body-tertiary border-bottom-0 pt-3 px-3">
+            <div class="card-header  border-bottom-0 pt-3 px-3">
                 <ul class="nav nav-tabs card-header-tabs" id="deviceTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
@@ -83,31 +83,31 @@
                         <h5 class="fw-bold mb-4">{{ __('Device Overview') }}</h5>
                         <div class="row g-4">
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('Product Class') }}</small>
                                     <span class="fw-bold fs-5">{{ $device['_deviceId']['_ProductClass'] ?? '-' }}</span>
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('Serial Number') }}</small>
                                     <span class="fw-bold fs-5">{{ $device['_deviceId']['_SerialNumber'] ?? '-' }}</span>
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('Manufacturer') }}</small>
                                     <span class="fw-bold fs-5">{{ $device['_deviceId']['_Manufacturer'] ?? $device['_deviceId']['_OUI'] ?? '-' }}</span>
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('MAC Address') }}</small>
                                     <span class="fw-bold fs-5">{{ $device['VirtualParameters']['MacAddress']['_value'] ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['MACAddress']['_value'] ?? '-' }}</span>
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('IP Address') }}</small>
                                     <div class="d-flex align-items-center">
                                         <span class="fw-bold fs-5 me-2">{{ $deviceIp ?? '-' }}</span>
@@ -120,7 +120,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-3">
-                                <div class="p-3 bg-body-tertiary rounded border">
+                                <div class="p-3  rounded border">
                                     <small class="text-body-secondary d-block mb-1">{{ __('Last Inform') }}</small>
                                     <span class="fw-bold fs-5">{{ $device['_lastInform'] ?? __('Never') }}</span>
                                 </div>
@@ -344,7 +344,7 @@
                         @else
                             @foreach($wifiClients as $ssidIndex => $clients)
                                 <div class="card mb-4 border-0 shadow-sm">
-                                    <div class="card-header bg-body-tertiary fw-bold">
+                                    <div class="card-header  fw-bold">
                                         SSID {{ $ssidIndex }}
                                     </div>
                                     <div class="card-body p-0">
@@ -505,7 +505,7 @@
                                                     </div>
                                                 </div>
                                                 
-                                                <div class="mt-3 p-3 bg-light rounded border">
+                                                <div class="mt-3 p-3  rounded border">
                                                     <div class="d-flex align-items-center mb-2">
                                                         <i class="fa-solid fa-route me-2 text-primary"></i>
                                                         <span class="fw-bold">Cable Status:</span>
@@ -534,7 +534,7 @@
                         
                         <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                             <table class="table table-sm table-striped table-hover font-monospace small border" id="paramsTable">
-                                <thead class="bg-body-tertiary sticky-top z-1">
+                                <thead class=" sticky-top z-1">
                                     <tr>
                                         <th scope="col" style="width: 50%;">Parameter</th>
                                         <th scope="col" style="width: 40%;">Value</th>
@@ -595,7 +595,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Parameter</label>
-                        <input type="text" name="parameter_name" id="modalParamPath" class="form-control bg-body-tertiary" readonly>
+                        <input type="text" name="parameter_name" id="modalParamPath" class="form-control " readonly>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Value</label>

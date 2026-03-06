@@ -7,27 +7,33 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0 fw-bold">Neraca Saldo</h5>
             </div>
-            <form method="get" class="row g-2 align-items-end mb-3">
-                <div class="col-auto">
-                    <label class="form-label">Dari</label>
-                    <input type="date" name="start_date" value="{{ $start }}" class="form-control">
+            <form method="get" class="row g-3 align-items-end mb-4">
+                <div class="col-12 col-md-auto">
+                    <label class="form-label fw-bold small text-muted">Dari Tanggal</label>
+                    <input type="date" name="start_date" value="{{ $start }}" class="form-control form-control-lg">
                 </div>
-                <div class="col-auto">
-                    <label class="form-label">Sampai</label>
-                    <input type="date" name="end_date" value="{{ $end }}" class="form-control">
+                <div class="col-12 col-md-auto">
+                    <label class="form-label fw-bold small text-muted">Sampai Tanggal</label>
+                    <input type="date" name="end_date" value="{{ $end }}" class="form-control form-control-lg">
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-primary">Terapkan</button>
+                <div class="col-12 col-md-auto">
+                    <button class="btn btn-primary btn-lg w-100 w-md-auto">
+                        <i class="fas fa-filter me-1"></i> Terapkan
+                    </button>
                 </div>
-                <div class="col-auto ms-auto">
-                    <div class="btn-group">
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('accounting.trial_balance.pdf', request()->all()) }}">Export PDF</a>
-                        <a class="btn btn-outline-success btn-sm" href="{{ route('accounting.trial_balance.excel', request()->all()) }}">Export Excel</a>
+                <div class="col-12 col-md-auto ms-md-auto">
+                    <div class="d-flex flex-column flex-md-row gap-2">
+                        <a class="btn btn-outline-danger btn-lg w-100 w-md-auto" href="{{ route('accounting.trial_balance.pdf', request()->all()) }}">
+                            <i class="fas fa-file-pdf me-1"></i> PDF
+                        </a>
+                        <a class="btn btn-outline-success btn-lg w-100 w-md-auto" href="{{ route('accounting.trial_balance.excel', request()->all()) }}">
+                            <i class="fas fa-file-excel me-1"></i> Excel
+                        </a>
                     </div>
                 </div>
             </form>
             <div class="table-responsive">
-                <table class="table table-bordered table-striped align-middle">
+                <table class="table table-bordered table-striped align-middle table-responsive-mobile">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 15%;">Kode</th>
@@ -61,8 +67,8 @@
         Total Debit harus sama dengan Total Kredit. Jika tidak seimbang, ada jurnal yang tidak balanced.
     </div>
     <div class="mt-2">
-        <a href="{{ route('wash.reports.index') }}" class="btn btn-outline-secondary btn-sm">Kembali ke Laporan Wash</a>
-        <a href="{{ route('atk.reports.index') }}" class="btn btn-outline-secondary btn-sm">Kembali ke Laporan ATK</a>
+        <a href="{{ route('wash.reports.index') }}" class="btn btn-outline-secondary">Kembali ke Laporan Wash</a>
+        <a href="{{ route('atk.reports.index') }}" class="btn btn-outline-secondary">Kembali ke Laporan ATK</a>
     </div>
     </div>
 </div>

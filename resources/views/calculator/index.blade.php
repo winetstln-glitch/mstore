@@ -167,7 +167,7 @@
                             <span><i class="fa-solid fa-share-nodes text-muted me-2"></i> Loss Splitter</span>
                             <span class="text-danger" id="detail_splitter">-10.50 dB</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-body-secondary">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 ">
                             <span class="fw-bold">Total Link Loss</span>
                             <span class="fw-bold text-danger" id="total_loss">11.95 dB</span>
                         </li>

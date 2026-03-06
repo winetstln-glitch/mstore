@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">ODP Details: {{ $odp->name }}</h5>
                 <a href="{{ route('odps.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> Back
@@ -36,7 +36,7 @@
                     </div>
                     <div class="col-md-6">
                         <h6 class="text-muted text-uppercase small fw-bold">Description</h6>
-                        <p class="text-muted bg-body-secondary p-3 rounded small">
+                        <p class="text-muted  p-3 rounded small">
                             {{ $odp->description ?? 'No description available.' }}
                         </p>
                     </div>

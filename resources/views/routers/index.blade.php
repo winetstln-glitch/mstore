@@ -66,10 +66,10 @@
             </div>
         </div>
         <div class="toolbar-scroll">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshRouters" data-bs-toggle="tooltip" title="{{ __('Refresh Status') }}">
+            <button type="button" class="btn btn-outline-secondary" id="refreshRouters" data-bs-toggle="tooltip" title="{{ __('Refresh Status') }}">
                 <i class="fa-solid fa-arrows-rotate"></i> <span class="d-none d-sm-inline ms-1">{{ __('Refresh Status') }}</span>
             </button>
-            <a href="{{ route('routers.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Tambah Router VPN') }}">
+            <a href="{{ route('routers.create') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Tambah Router VPN') }}">
                 <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Tambah Router VPN') }}</span>
             </a>
         </div>
@@ -125,7 +125,7 @@
             </div>
             <div class="d-flex gap-2">
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light border-0">
+                    <span class="input-group-text  border-0">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
                     <input type="text" class="form-control border-0" id="routerSearch" placeholder="{{ __('Cari nama atau host router...') }}">
@@ -134,7 +134,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
+                <table class="table table-hover mb-0 align-middle table-responsive-mobile">
                     <thead class="table-light">
                         <tr>
                             <th>{{ __('Nama Router') }}</th>

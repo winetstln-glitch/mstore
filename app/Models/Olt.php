@@ -24,6 +24,11 @@ class Olt extends Model
         'snmp_port',
     ];
 
+    protected $hidden = [
+        'password',
+        'snmp_community',
+    ];
+
     protected $casts = [
         'is_active' => 'boolean',
         'port' => 'integer',

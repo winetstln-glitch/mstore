@@ -4,36 +4,69 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Finance Dashboard') }}</h1>
-        <div class="toolbar-scroll">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h1 class="h3 mb-0 text-body">{{ __('Finance Dashboard') }}</h1>
+        <div class="row g-2 row-cols-2 row-cols-md-auto justify-content-md-end w-100 w-md-auto">
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <!-- PERBAIKAN: Ganti label menjadi sesuai konteks agar tidak menyesatkan auditor -->
-            <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary" data-bs-toggle="tooltip" title="{{ __('Laporan Manajemen') }}">
-                <i class="fa-solid fa-file-lines"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Manajemen') }}</span>
-            </a>
-            <a href="{{ route('finance.investor_report') }}" class="btn btn-warning text-dark" data-bs-toggle="tooltip" title="{{ __('Laporan Investor') }}">
-                <i class="fa-solid fa-hand-holding-dollar"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Investor') }}</span>
-            </a>
-            <a href="{{ route('finance.profit_loss') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Laba Rugi (P&L)') }}">
-                <i class="fa-solid fa-chart-line"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laba Rugi (P&L)') }}</span>
-            </a>
-            <a href="{{ route('finance.material_report') }}" class="btn btn-info" data-bs-toggle="tooltip" title="{{ __('Laporan Aset') }}">
-                <i class="fa-solid fa-boxes-stacked"></i> <span class="d-none d-sm-inline ms-1">{{ __('Laporan Aset') }}</span>
-            </a>
-            <a href="{{ route('finance.export_accounting') }}" class="btn btn-success" data-bs-toggle="tooltip" title="{{ __('Export Jurnal') }}">
-                <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Jurnal') }}</span>
-            </a>
-            <a href="{{ route('finance.settings') }}" class="btn btn-dark" data-bs-toggle="tooltip" title="{{ __('Settings') }}">
-                <i class="fa-solid fa-cog"></i> <span class="d-none d-sm-inline ms-1">{{ __('Settings') }}</span>
-            </a>
+            <div class="col">
+                <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Laporan Manajemen') }}">
+                    <i class="fa-solid fa-file-lines me-1"></i> <span>{{ __('Manajemen') }}</span>
+                </a>
+            </div>
+            <div class="col">
+                <a href="{{ route('finance.investor_report') }}" class="btn btn-warning text-dark w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Laporan Investor') }}">
+                    <i class="fa-solid fa-hand-holding-dollar me-1"></i> <span>{{ __('Investor') }}</span>
+                </a>
+            </div>
+            <div class="col">
+                <a href="{{ route('finance.profit_loss') }}" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Laba Rugi (P&L)') }}">
+                    <i class="fa-solid fa-chart-line me-1"></i> <span>{{ __('P&L') }}</span>
+                </a>
+            </div>
+            <div class="col">
+                <a href="{{ route('finance.material_report') }}" class="btn btn-info w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Laporan Aset') }}">
+                    <i class="fa-solid fa-boxes-stacked me-1"></i> <span>{{ __('Aset') }}</span>
+                </a>
+            </div>
+            
+            <!-- Integration: Accounting Reports Dropdown -->
+            <div class="col">
+                <div class="dropdown w-100 h-100">
+                    <button class="btn btn-orange border dropdown-toggle w-100 h-100 d-flex align-items-center justify-content-center" type="button" id="accountingDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="{{ __('Laporan Akuntansi') }}">
+                        <i class="fa-solid fa-book-open me-1"></i> <span>{{ __('Akuntansi') }}</span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="accountingDropdown">
+                        <li><a class="dropdown-item" href="{{ route('accounting.balance_sheet') }}"><i class="fa-solid fa-scale-balanced me-2"></i>{{ __('Neraca') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('accounting.cash_flow') }}"><i class="fa-solid fa-money-bill-wave me-2"></i>{{ __('Arus Kas') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('accounting.income_statement') }}"><i class="fa-solid fa-file-invoice-dollar me-2"></i>{{ __('Laba Rugi') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('accounting.ledger') }}"><i class="fa-solid fa-book me-2"></i>{{ __('Buku Besar') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('accounting.trial_balance') }}"><i class="fa-solid fa-table-list me-2"></i>{{ __('Neraca Saldo') }}</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col">
+                <a href="{{ route('finance.export_accounting') }}" class="btn btn-success w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Export Jurnal') }}">
+                    <i class="fa-solid fa-file-excel me-1"></i> <span>{{ __('Jurnal') }}</span>
+                </a>
+            </div>
+            <div class="col">
+                <a href="{{ route('finance.settings') }}" class="btn btn-dark border borderw-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Settings') }}">
+                    <i class="fa-solid fa-cog me-1"></i> <span>{{ __('Settings') }}</span>
+                </a>
+            </div>
             @endif
-            <button class="btn btn-light border" data-bs-toggle="modal" data-bs-target="#helpModal" data-bs-toggle="tooltip" title="{{ __('Panduan Audit') }}">
-                <i class="fa-solid fa-circle-question"></i> <span class="d-none d-sm-inline ms-1">{{ __('Panduan Audit') }}</span>
-            </button>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal" data-bs-toggle="tooltip" title="{{ __('Add Transaction') }}">
-                <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add Transaction') }}</span>
-            </button>
+            <div class="col">
+                <button class="btn btn-light border w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#helpModal" data-bs-toggle="tooltip" title="{{ __('Panduan Audit') }}">
+                    <i class="fa-solid fa-circle-question me-1"></i> <span>{{ __('Panduan') }}</span>
+                </button>
+            </div>
+            <div class="col">
+                <button class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addTransactionModal" data-bs-toggle="tooltip" title="{{ __('Add Transaction') }}">
+                    <i class="fa-solid fa-plus me-1"></i> <span>{{ __('Transaksi') }}</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -42,16 +75,16 @@
         <div class="row">
             <!-- Total Income (Gross) -->
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-success shadow h-100 py-2">
+                <div class="card border-start border-4 border-success shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                     {{ __('Total Pendapatan Kotor') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalIncome, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalIncome, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-sack-dollar fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-sack-dollar fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -60,16 +93,16 @@
 
             <!-- Total Expenses (Outflow) -->
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card border-start border-4 border-danger shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                     {{ __('Total Kas Keluar') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800 text-danger">-{{ number_format($totalExpense, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-danger">-{{ number_format($totalExpense, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-money-bill-transfer fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-money-bill-transfer fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -78,19 +111,19 @@
 
             <!-- Company Balance (Net Cash) -->
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card border-start border-4 border-primary shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                     {{ __('Saldo Kas Perusahaan') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($balance, 0, ',', '.') }}</div>
-                                <small class="text-muted" style="font-size: 0.75rem;">
+                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($balance, 0, ',', '.') }}</div>
+                                <small class="text-body-secondary" style="font-size: 0.75rem;">
                                     <span class="text-success">Gross</span> - <span class="text-danger">Exp</span>
                                 </small>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-building-columns fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-building-columns fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -99,18 +132,18 @@
 
             <!-- Accumulated Tool Fund (Asset/Liability) -->
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card border-start border-4 border-warning shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                     {{ __('Akumulasi Dana Peralatan') }}</div>
                                 <!-- PERBAIKAN AUDIT: Tampilkan nilai positif, ini adalah Dana yang "ditahan", bukan biaya -->
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
-                                <small class="text-muted">{{ __('Tersimpan (Belum Dipakai)') }}</small>
+                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
+                                <small class="text-body-secondary">{{ __('Tersimpan (Belum Dipakai)') }}</small>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-piggy-bank fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-piggy-bank fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -122,18 +155,18 @@
         <div class="row mb-4">
                 <!-- ISP Fund Liability -->
             <div class="col-xl-6 col-md-6 mb-4">
-                <div class="card border-left-purple shadow h-100 py-2">
+                <div class="card border-start border-4 border-secondary shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                     {{ __('Dana ISP (Kewajiban)') }} <span class="badge bg-secondary">{{ $ispRate ?? 0 }}%</span></div>
                                 <!-- PERBAIKAN AUDIT: Hilangkan tanda minus di sini, tampilkan sebagai akumulasi kewajiban -->
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalIspShare ?? 0, 0, ',', '.') }}</div>
-                                <small class="text-muted">{{ __('Perlu dibayarkan ke ISP') }}</small>
+                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalIspShare ?? 0, 0, ',', '.') }}</div>
+                                <small class="text-body-secondary">{{ __('Perlu dibayarkan ke ISP') }}</small>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-wifi fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-wifi fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -142,17 +175,17 @@
 
             <!-- Tool Fund Accumulation -->
             <div class="col-xl-6 col-md-6 mb-4">
-                <div class="card border-left-teal shadow h-100 py-2">
+                <div class="card border-start border-4 border-info shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                     {{ __('Akumulasi Dana Peralatan') }} <span class="badge bg-info text-white">{{ $toolRate ?? 0 }}%</span></div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalToolFund ?? 0, 0, ',', '.') }}</div>
-                                <small class="text-muted">{{ __('Dana Cadangan Perbaikan/Beli Alat') }}</small>
+                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalToolFund ?? 0, 0, ',', '.') }}</div>
+                                <small class="text-body-secondary">{{ __('Dana Cadangan Perbaikan/Beli Alat') }}</small>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-toolbox fa-2x text-gray-300"></i>
+                                <i class="fa-solid fa-toolbox fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -172,15 +205,15 @@
                     Laporan ini hanya menghitung <strong>Arus Kas Tunai</strong>. Biaya "Ambil Barang" tidak memotong target setoran.
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-sm table-striped" width="100%" cellspacing="0">
-                        <thead >
+                    <table class="table table-bordered table-striped table-responsive-mobile" width="100%" cellspacing="0">
+                        <thead class="bg-body-tertiary">
                             <tr>
                                 <th rowspan="2" class="text-end">{{ __('Koordinator') }}</th>
                                 <th rowspan="2" class="text-end">{{ __('Pendapatan') }}</th>
                                 <th rowspan="2" class="text-end text-danger">{{ __('Komisi') }}</th>
                                 <th rowspan="2" class="text-end text-danger">
                                     {{ __('Pengeluaran Tunai') }}
-                                    <br><small class="font-weight-normal text-muted">(Ops & Beli Luar)</small>
+                                    <br><small class="font-weight-normal text-body-secondary">(Ops & Beli Luar)</small>
                                 </th>
                                 <th colspan="2" class="text-center fw-bold">{{ __('Setoran') }}</th>
                                 <th rowspan="2" class="text-end fw-bold">{{ __('Sisa Setor') }}</th>
@@ -233,7 +266,7 @@
                                 </td>
                                 
                                 <td class="text-center align-middle">
-                                    <a href="{{ route('finance.coordinator.detail', $summary->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat Detail Transaksi') }}">
+                                    <a href="{{ route('finance.coordinator.detail', $summary->id) }}" class="btn btn-outline-primary" title="{{ __('Lihat Detail Transaksi') }}">
                                         <i class="fas fa-magnifying-glass"></i>
                                     </a>
                                 </td>
@@ -255,16 +288,16 @@
             <!-- VIEW KOORDINATOR: Sederhana dan Fokus ke Kas -->
             <div class="row mb-4">
                 <div class="col-xl-4 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card border-start border-4 border-success shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         {{ __('Total Pendapatan Kotor') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fa-solid fa-coins fa-2x text-gray-300"></i>
+                                    <i class="fa-solid fa-coins fa-2x text-body-tertiary"></i>
                                 </div>
                             </div>
                         </div>
@@ -272,13 +305,13 @@
                 </div>
 
                 <div class="col-xl-4 col-md-6 mb-4">
-                    <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card border-start border-4 border-info shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         {{ __('Komisi Saya') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->commission, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->commission, 0, ',', '.') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -286,16 +319,16 @@
                 </div>
 
                 <div class="col-xl-4 col-md-6 mb-4">
-                    <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card border-start border-4 border-danger shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         {{ __('Pengeluaran Tunai') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->cash_expenses ?? 0, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->cash_expenses ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fa-solid fa-receipt fa-2x text-gray-300"></i>
+                                    <i class="fa-solid fa-receipt fa-2x text-body-tertiary"></i>
                                 </div>
                             </div>
                         </div>
@@ -305,18 +338,18 @@
 
             <div class="row mb-4">
                 <div class="col-xl-6 col-md-6 mb-4">
-                    <div class="card border-left-secondary shadow h-100 py-2">
+                    <div class="card border-start border-4 border-secondary shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                         {{ __('Uang Kas Ditahan') }}</div>
                                     <!-- PERBAIKAN: Ini adalah uang investor yang ditahan, bukan pengeluaran koordinator -->
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</div>
-                                    <small class="text-muted">Dana Investor (Dicatat)</small>
+                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</div>
+                                    <small class="text-body-secondary">Dana Investor (Dicatat)</small>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fa-solid fa-piggy-bank fa-2x text-gray-300"></i>
+                                    <i class="fa-solid fa-piggy-bank fa-2x text-body-tertiary"></i>
                                 </div>
                             </div>
                         </div>
@@ -324,16 +357,16 @@
                 </div>
 
                 <div class="col-xl-6 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card border-start border-4 border-primary shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         {{ __('Wajib Setor') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($summary->net_balance ?? 0, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->net_balance ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fa-solid fa-hand-holding-dollar fa-2x text-gray-300"></i>
+                                    <i class="fa-solid fa-hand-holding-dollar fa-2x text-body-tertiary"></i>
                                 </div>
                             </div>
                         </div>
@@ -348,40 +381,50 @@
 
     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
         <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary me-3">{{ __('Jurnal Transaksi (General Ledger)') }}</h6>
-                    <button type="button" id="toggleSelectMode" class="btn btn-sm btn-outline-secondary me-2">
-                        <i class="fa-solid fa-list-check me-1"></i> {{ __('Pilih Banyak') }}
-                    </button>
-                    <button type="button" id="bulkDeleteBtn" class="btn btn-sm btn-danger d-none" onclick="submitBulkDelete()">
-                        <i class="fa-solid fa-trash me-1"></i> {{ __('Hapus Terpilih') }}
-                    </button>
+            <div class="card-header py-3">
+                <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 w-100 w-xl-auto">
+                        <h6 class="m-0 font-weight-bold text-primary">{{ __('Jurnal Transaksi (General Ledger)') }}</h6>
+                        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+                            <button type="button" id="toggleSelectMode" class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
+                                <i class="fa-solid fa-list-check me-1"></i> {{ __('Pilih Banyak') }}
+                            </button>
+                            <button type="button" id="bulkDeleteBtn" class="btn btn-danger btn-sm d-none w-100 w-md-auto" onclick="submitBulkDelete()">
+                                <i class="fa-solid fa-trash me-1"></i> {{ __('Hapus Terpilih') }}
+                            </button>
+                        </div>
+                    </div>
+                    <form action="{{ route('finance.index') }}" method="GET" class="w-100 w-xl-auto">
+                        <div class="row g-2 align-items-stretch align-items-xl-center row-cols-1 row-cols-sm-2 row-cols-lg-auto">
+                            <div class="col">
+                                <input type="month" name="month" class="form-control form-control-sm w-100" value="{{ request('month') }}">
+                            </div>
+                            <div class="col">
+                                <select name="coordinator_id" class="form-select form-select-sm w-100">
+                                    <option value="">Semua Koordinator</option>
+                                    @foreach($coordinators as $c)
+                                        <option value="{{ $c->id }}" @selected((string) request('coordinator_id') === (string) $c->id)>{{ $c->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col">
+                                <select name="type" class="form-select form-select-sm w-100">
+                                    <option value="">Semua Jenis</option>
+                                    <option value="income" @selected(request('type') === 'income')>Pemasukan</option>
+                                    <option value="expense" @selected(request('type') === 'expense')>Pengeluaran</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <form action="{{ route('finance.index') }}" method="GET" class="d-flex align-items-center">
-                    <input type="month" name="month" class="form-control form-control-sm me-2" value="{{ request('month') }}">
-                    
-                    <select name="coordinator_id" class="form-select form-select-sm me-2" style="max-width: 150px;">
-                        <option value="">{{ __('Semua Koordinator') }}</option>
-                        @foreach($coordinators ?? [] as $coordinator)
-                            <option value="{{ $coordinator->id }}" {{ request('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
-                                {{ $coordinator->name }}
-                            </option>
-                        @endforeach
-                    </select>
-
-                    <select name="type" class="form-select form-select-sm me-2">
-                        <option value="">{{ __('Semua Jenis') }}</option>
-                        <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}>{{ __('Pemasukan') }}</option>
-                        <option value="expense" {{ request('type') == 'expense' ? 'selected' : '' }}>{{ __('Pengeluaran') }}</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
-                </form>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle" width="100%" cellspacing="0">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle table-responsive-mobile" width="100%" cellspacing="0">
+                        <thead class="bg-body-tertiary">
                             <tr>
                                 <th class="text-center select-column d-none" width="40">
                                     <input type="checkbox" id="selectAll" class="form-check-input">
@@ -410,14 +453,14 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary text-white">{{ ucfirst($transaction->category) }}</span>
+                                    <span class="badge bg-secondary">{{ ucfirst($transaction->category) }}</span>
                                 </td>
                                 <td>{{ $transaction->description }}</td>
                                 <td>
                                     @if($transaction->coordinator)
                                         <span class="badge bg-info text-dark">{{ $transaction->coordinator->name }}</span>
                                     @else
-                                        <span class="text-muted">Pusat</span>
+                                        <span class="text-body-secondary">Pusat</span>
                                     @endif
                                 </td>
                                 <td class="text-end fw-bold text-success">

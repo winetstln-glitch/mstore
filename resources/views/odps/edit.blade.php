@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Edit ODP') }}: {{ $odp->name }}</h5>
                 <a href="{{ route('odps.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}

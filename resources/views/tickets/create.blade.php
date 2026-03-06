@@ -52,7 +52,7 @@
 
                         <!-- New Customer Form (Hidden by default) -->
                         <div id="new-customer-section" class="col-12" style="display: none;">
-                            <div class="card bg-light border-0">
+                            <div class="card  border-0">
                                 <div class="card-body">
                                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-1"></i> {{ __('New Customer Details') }}</h6>
                                     <div class="row g-3">

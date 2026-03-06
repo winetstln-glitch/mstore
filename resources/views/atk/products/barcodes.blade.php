@@ -18,13 +18,18 @@
        target="_blank"
        class="btn btn-warning">
         Print A4
-    </a>
+    </a>  
+    <a href="{{ route('atk.products.index') }}" class="btn btn-secondary" title="{{ __('Back') }}">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="d-none d-md-inline ms-2">{{ __('Back') }}</span>
+     </a>
+
  </div>
     
 </div>
 
     {{-- Quantity Form --}}
-    <form method="GET" class="mb-3 no-print">
+    <!-- <form method="GET" class="mb-3 no-print">
         <div class="row g-2">
             @foreach($products as $product)
                 <div class="col-md-3">
@@ -41,7 +46,7 @@
         <button type="submit" class="btn btn-primary btn-sm mt-2">
             Generate Labels
         </button>
-    </form>
+    </form> -->
 
     {{-- PRINT AREA --}}
     <div id="printArea">

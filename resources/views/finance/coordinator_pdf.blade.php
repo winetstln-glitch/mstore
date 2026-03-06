@@ -114,8 +114,8 @@
                 <td class="text-right">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td class="text-right text-bold bg-light">TOTAL PENDAPATAN KOTOR</td>
-                <td class="text-right text-bold bg-light">{{ number_format($grossRevenue, 0, ',', '.') }}</td>
+                <td class="text-right text-bold ">TOTAL PENDAPATAN KOTOR</td>
+                <td class="text-right text-bold ">{{ number_format($grossRevenue, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
@@ -140,8 +140,8 @@
                 <td class="text-right brackets">({{ number_format($expenses, 0, ',', '.') }})</td>
             </tr>
             <tr>
-                <td class="text-right text-bold bg-light">SISA HASIL USAHA (NETTO)</td>
-                <td class="text-right text-bold bg-light">{{ number_format($grossRevenue - $commission - $expenses, 0, ',', '.') }}</td>
+                <td class="text-right text-bold ">SISA HASIL USAHA (NETTO)</td>
+                <td class="text-right text-bold ">{{ number_format($grossRevenue - $commission - $expenses, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>

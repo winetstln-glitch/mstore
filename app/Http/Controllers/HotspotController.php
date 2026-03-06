@@ -19,7 +19,7 @@ class HotspotController extends Controller
         $router = null;
 
         // If user is coordinator, get their assigned router (unless they are admin)
-        if ($user->coordinator && $user->coordinator->router_id && !$user->hasRole('admin')) {
+        if ($user->coordinator && $user->coordinator->router_id && ! $user->hasRole('admin')) {
             $router = Router::find($user->coordinator->router_id);
         } elseif ($request->has('router_id')) {
             $router = Router::find($request->router_id);

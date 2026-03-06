@@ -4,9 +4,9 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">Wash Transactions</h1>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm" title="Generate PDF">
                 <i class="fas fa-file-pdf fa-sm text-white-50"></i>
                 <span class="d-none d-md-inline ms-1">Generate PDF</span>
@@ -24,19 +24,19 @@
                 <h6 class="m-0 font-weight-bold text-primary">Transaction List</h6>
             </div>
             <form action="{{ route('wash.transactions.index') }}" method="GET" class="row g-3 align-items-center">
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <label for="start_date" class="col-form-label">{{ __('Start Date') }}</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <label for="end_date" class="col-form-label">{{ __('End Date') }}</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto">
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
-                <div class="col-auto">
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
                         <i class="fas fa-filter"></i>
                         <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
@@ -49,7 +49,7 @@
             </form>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
@@ -74,9 +74,26 @@
                                 <td>{{ ucfirst($transaction->payment_method) }}</td>
                                 <td>{{ $transaction->user->name ?? 'Unknown' }}</td>
                                 <td>
-                                    <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+                                        <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
+                                            <i class="fas fa-eye"></i>
+                                            <span class="d-none d-md-inline ms-1">{{ __('View') }}</span>
+                                        </a>
+                                        <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-warning" title="{{ __('Print') }}">
+                                            <i class="fas fa-print"></i>
+                                            <span class="d-none d-md-inline ms-1">{{ __('Print') }}</span>
+                                        </a>
+                                        @if(Auth::user()->hasRole('admin'))
+                                        <form action="{{ route('wash.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
+                                                <i class="fas fa-trash"></i>
+                                                <span class="d-none d-md-inline ms-1">{{ __('Delete') }}</span>
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty

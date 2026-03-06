@@ -3,44 +3,48 @@
 @section('title', __('User Management'))
 
 @section('content')
+<div class="mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h4 class="fw-bold text-primary mb-1">{{ __('User Management') }}</h4>
+            <p class="text-muted small mb-0">{{ __('Manage system users and their roles.') }}</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
+            <form action="{{ route('users.index') }}" method="GET" class="d-flex gap-2 me-2">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search users...') }}" value="{{ request('search') }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <a href="{{ route('users.export', request()->query()) }}" class="btn btn-success text-nowrap">
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
+            </a>
+
+            <a href="{{ route('users.create') }}" class="btn btn-primary text-nowrap">
+                <i class="fa-solid fa-plus me-1"></i> {{ __('Create New User') }}
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
-        <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold">{{ __('User Management') }}</h5>
-                
-                <div class="d-flex gap-2 align-items-center">
-                    <form action="{{ route('users.index') }}" method="GET" class="d-flex gap-2">
-                        <div class="input-group input-group-sm">
-                            <input type="text" name="search" class="form-control" placeholder="{{ __('Search users...') }}" value="{{ request('search') }}">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="fa-solid fa-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <a href="{{ route('users.export', request()->query()) }}" class="btn btn-success btn-sm text-nowrap">
-                        <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
-                    </a>
-
-                    <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm text-nowrap">
-                        <i class="fa-solid fa-plus me-1"></i> {{ __('Create New User') }}
-                    </a>
-                </div>
-            </div>
-
+        <div class="card border-0 shadow-sm">
             <div class="card-body">
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-body-tertiary">
+                    <table class="table table-hover align-middle mb-0 table-responsive-mobile">
+                        <thead class="bg-light">
                             <tr>
-                                <th scope="col" class="ps-3">{{ __('Name') }}</th>
-                                <th scope="col">{{ __('Email') }}</th>
-                                <th scope="col">{{ __('Role') }}</th>
-                                <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
+                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Name') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Email') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
+                                <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,7 +75,7 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group">
+                                    <div class="d-flex justify-content-end gap-1">
                                         <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
@@ -80,7 +84,7 @@
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this user?') }}');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="{{ __('Delete') }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>

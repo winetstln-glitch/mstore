@@ -4,11 +4,11 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Laba Bersih Investor') }}</h1>
-        <div class="d-flex gap-2">
-            <form action="{{ route('finance.investor_report') }}" method="GET" class="d-flex align-items-center gap-2">
-                <select name="coordinator_id" class="form-select" onchange="this.form.submit()">
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <form action="{{ route('finance.investor_report') }}" method="GET" class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+                <select name="coordinator_id" class="form-select form-control-lg" onchange="this.form.submit()">
                     <option value="">{{ __('Semua Pengurus') }}</option>
                     @foreach($coordinators as $coordinator)
                         <option value="{{ $coordinator->id }}" {{ $coordinatorId == $coordinator->id ? 'selected' : '' }}>
@@ -16,14 +16,16 @@
                         </option>
                     @endforeach
                 </select>
-                <input type="month" name="month" class="form-control" value="{{ $selectedMonth }}" onchange="this.form.submit()">
+                <input type="month" name="month" class="form-control form-control-lg" value="{{ $selectedMonth }}" onchange="this.form.submit()">
             </form>
-            <a href="{{ route('finance.investor_report.pdf', ['month' => $selectedMonth, 'coordinator_id' => $coordinatorId]) }}" class="btn btn-danger" target="_blank">
-                <i class="fas fa-file-pdf me-1"></i> {{ __('Export PDF') }}
-            </a>
-            <a href="{{ route('finance.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> {{ __('Back') }}
-            </a>
+            <div class="d-flex flex-column flex-md-row gap-2">
+                <a href="{{ route('finance.investor_report.pdf', ['month' => $selectedMonth, 'coordinator_id' => $coordinatorId]) }}" class="btn btn-danger btn-lg w-100 w-md-auto" target="_blank">
+                    <i class="fas fa-file-pdf me-1"></i> {{ __('Export PDF') }}
+                </a>
+                <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
+                    <i class="fas fa-arrow-left me-1"></i> {{ __('Back') }}
+                </a>
+            </div>
         </div>
     </div>
 
@@ -33,8 +35,8 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead class="bg-body-secondary">
+                <table class="table table-bordered table-striped table-responsive-mobile">
+                    <thead class="">
                         <tr>
                             <th>{{ __('Keterangan') }}</th>
                             <th class="text-end">{{ __('Nilai (IDR)') }}</th>
@@ -48,7 +50,7 @@
                         
                         <!-- Deductions Section -->
                         <tr>
-                            <td colspan="2" class="bg-body-secondary font-weight-bold text-danger">{{ __('Potongan / Alokasi Dana') }}</td>
+                            <td colspan="2" class=" font-weight-bold text-danger">{{ __('Potongan / Alokasi Dana') }}</td>
                         </tr>
                         <tr>
                             <td class="ps-4">{{ __('Komisi Pengurus') }}</td>
@@ -65,7 +67,7 @@
                         
                         <!-- Expenses Section -->
                         <tr>
-                            <td colspan="2" class="bg-body-secondary font-weight-bold text-danger">{{ __('Pengeluaran Operasional & Lainnya') }}</td>
+                            <td colspan="2" class=" font-weight-bold text-danger">{{ __('Pengeluaran Operasional & Lainnya') }}</td>
                         </tr>
                         <tr>
                             <td class="ps-4">
@@ -88,11 +90,11 @@
                         
                         <!-- Split Section -->
                         <tr>
-                            <td colspan="2" class="bg-body-secondary font-weight-bold text-primary">{{ __('Pembagian Per Investor') }}</td>
+                            <td colspan="2" class=" font-weight-bold text-primary">{{ __('Pembagian Per Investor') }}</td>
                         </tr>
                         <tr>
                             <td class="ps-4">{{ __('Jumlah Investor') }}</td>
-                            <td class="text-end fw-bold">{{ $investorCount }}</td>
+                            <td class="text-end text-muted fw-bold">{{ $investorCount }}</td>
                         </tr>
                         <tr class="table-primary">
                             <td class="h5 font-weight-bold text-primary">{{ __('Laba Per Investor') }}</td>
@@ -106,13 +108,13 @@
             <div class="mt-4">
                 <h5 class="font-weight-bold text-gray-800 mb-3">{{ __('Rincian Pembagian Per Investor') }}</h5>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
+                    <table class="table table-bordered table-hover table-responsive-mobile">
                         <thead class="bg-primary text-white">
                             <tr>
                                 <th style="width: 50px;">#</th>
                                 <th>{{ __('Nama Investor') }}</th>
                                 <th>{{ __('Role') }}</th>
-                                <th class="text-end">{{ __('Pembagian Laba (IDR)') }}</th>
+                                <th class="text-end text-muted">{{ __('Pembagian Laba (IDR)') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -128,7 +130,7 @@
                                     <td>
                                         <span class="badge bg-secondary">{{ __('Investor') }}</span>
                                     </td>
-                                    <td class="text-end fw-bold">{{ number_format($profitPerInvestor, 0, ',', '.') }}</td>
+                                    <td class="text-end text-muted fw-bold">{{ number_format($profitPerInvestor, 0, ',', '.') }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -136,8 +138,8 @@
                                 </tr>
                             @endforelse
                             <tr class="table-secondary fw-bold">
-                                <td colspan="3" class="text-end">{{ __('Total Dibagikan') }}</td>
-                                <td class="text-end">{{ number_format($profitPerInvestor * $investors->count(), 0, ',', '.') }}</td>
+                                <td colspan="3" class="text-end text-muted">{{ __('Total Dibagikan') }}</td>
+                                <td class="text-end text-muted">{{ number_format($profitPerInvestor * $investors->count(), 0, ',', '.') }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('ATK Store Dashboard') }}</h1>
         <a href="{{ route('atk.pos') }}" class="btn btn-primary">
             <i class="fa-solid fa-cash-register me-2"></i> {{ __('Open POS') }}

@@ -16,7 +16,7 @@
 
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="bg-body-tertiary">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">URL</th>

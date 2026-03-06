@@ -6,7 +6,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body-tertiary py-3">
+            <div class="card-header  py-3">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Add New HTB') }}</h5>
             </div>
 

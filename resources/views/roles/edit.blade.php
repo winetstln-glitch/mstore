@@ -11,7 +11,7 @@
                 </a>
             </div>
 
-            <div class="card-body bg-body-secondary bg-opacity-50">
+            <div class="card-body  bg-opacity-50">
                 <form action="{{ route('roles.update', $role) }}" method="POST" id="roleForm">
                     @csrf
                     @method('PUT')
@@ -93,7 +93,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        <div class="tab-content border rounded p-3 bg-body-tertiary">
+                        <div class="tab-content border rounded p-3 ">
                             @foreach($tabs as $i => $tab)
                                 @php $tid = \Illuminate\Support\Str::slug($tab); @endphp
                                 <div class="tab-pane fade {{ $i===0?'show active':'' }}" id="pane-{{ $tid }}" role="tabpanel" aria-labelledby="tab-{{ $tid }}">
@@ -179,7 +179,7 @@
                 checkboxes.forEach(cb => {
                     cb.checked = this.checked;
                     // Add visual highlight for checked items if desired
-                    cb.closest('.form-check').classList.toggle('bg-light-subtle', this.checked);
+                    cb.closest('.form-check').classList.toggle('-subtle', this.checked);
                 });
             });
         });
@@ -191,7 +191,7 @@
                 updateGroupStatus(group);
                 
                 // Visual feedback
-                this.closest('.form-check').classList.toggle('bg-light-subtle', this.checked);
+                this.closest('.form-check').classList.toggle('-subtle', this.checked);
             });
         });
 
@@ -245,7 +245,7 @@
             // Uncheck everything first
             document.querySelectorAll('.permission-checkbox').forEach(cb => {
                 cb.checked = false;
-                cb.closest('.form-check').classList.remove('bg-light-subtle');
+                cb.closest('.form-check').classList.remove('-subtle');
             });
             
             // Check specified IDs
@@ -253,7 +253,7 @@
                 const cb = document.getElementById('perm_' + id);
                 if (cb) {
                     cb.checked = true;
-                    cb.closest('.form-check').classList.add('bg-light-subtle');
+                    cb.closest('.form-check').classList.add('-subtle');
                 }
             });
             

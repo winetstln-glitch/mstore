@@ -9,7 +9,7 @@
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body">{{ __('OLT Management') }}</h5>
                 @if(Auth::user()->hasPermission('olt.create'))
-                <a href="{{ route('olt.create') }}" class="btn btn-primary btn-sm">
+                <a href="{{ route('olt.create') }}" class="btn btn-primary">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Add OLT') }}
                 </a>
                 @endif
@@ -19,8 +19,8 @@
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-body-secondary">
+                    <table class="table table-hover align-middle table-responsive-mobile">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Name') }}</th>
                                 <th scope="col">{{ __('Host / IP Address') }}</th>

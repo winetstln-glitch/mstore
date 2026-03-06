@@ -5,9 +5,9 @@ namespace App\Providers;
 use App\Models\Permission;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

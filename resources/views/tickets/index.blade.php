@@ -9,7 +9,7 @@
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Ticket Management') }}</h5>
                 @if(Auth::user()->hasPermission('ticket.create'))
-                <a href="{{ route('tickets.create') }}" class="btn btn-primary btn-sm">
+                <a href="{{ route('tickets.create') }}" class="btn btn-primary">
                     <i class="fa-solid fa-plus me-1"></i> {{ __('Create Ticket') }}
                 </a>
                 @endif
@@ -20,7 +20,7 @@
                 <form method="GET" action="{{ route('tickets.index') }}" class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="input-group">
-                            <span class="input-group-text bg-body-secondary border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
+                            <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
                             <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search ID or subject...') }}">
                         </div>
                     </div>
@@ -49,8 +49,8 @@
 
                 <!-- Table -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-body-tertiary">
+                    <table class="table table-hover align-middle table-responsive-mobile">
+                        <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Ticket Info') }}</th>
                                 <th scope="col">{{ __('Customer') }}</th>

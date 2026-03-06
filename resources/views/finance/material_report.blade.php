@@ -4,17 +4,17 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Pendapatan Material') }}</h1>
             <p class="mb-0 text-muted small">Laporan penjualan barang & potongan komisi pengurus</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('finance.index') }}" class="btn btn-secondary">
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
             </a>
             <!-- Tombol Download Excel/PDF disarankan ditambahkan di sini jika ada -->
-            <button onclick="window.print()" class="btn btn-primary">
+            <button onclick="window.print()" class="btn btn-primary btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-print me-1"></i> {{ __('Cetak') }}
             </button>
         </div>
@@ -29,15 +29,15 @@
             <form action="{{ route('finance.material_report') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label small text-muted fw-bold">Tanggal Awal</label>
-                    <input type="date" class="form-control form-control-sm" name="start_date" value="{{ request('start_date') }}">
+                    <input type="date" class="form-control form-control-lg" name="start_date" value="{{ request('start_date') }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted fw-bold">Tanggal Akhir</label>
-                    <input type="date" class="form-control form-control-sm" name="end_date" value="{{ request('end_date') }}">
+                    <input type="date" class="form-control form-control-lg" name="end_date" value="{{ request('end_date') }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted fw-bold">Pengurus</label>
-                    <select class="form-select form-select-sm" name="coordinator_id">
+                    <select class="form-select form-select-lg" name="coordinator_id">
                         <option value="">{{ __('Semua Pengurus') }}</option>
                         @foreach($coordinators as $coord)
                             <option value="{{ $coord->id }}" {{ request('coordinator_id') == $coord->id ? 'selected' : '' }}>
@@ -47,7 +47,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
                         <i class="fa-solid fa-magnifying-glass me-1"></i> Tampilkan Data
                     </button>
                 </div>
@@ -96,8 +96,8 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle" width="100%" cellspacing="0">
-                    <thead class="bg-body-secondary">
+                <table class="table table-hover align-middle table-responsive-mobile" width="100%" cellspacing="0">
+                    <thead class="">
                         <tr>
                             <th width="100">{{ __('Tanggal') }}</th>
                             <th>{{ __('Item / Barang') }}</th>
@@ -132,7 +132,7 @@
                             </td>
                             <td class="text-end fw-bold text-success">{{ number_format($gross, 0, ',', '.') }}</td>
                             <!-- Kolom Net -->
-                            <td class="text-end fw-bold text-primary bg-light">
+                            <td class="text-end fw-bold text-primary ">
                                 {{ number_format($net, 0, ',', '.') }}
                             </td>
                         </tr>

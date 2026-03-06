@@ -221,7 +221,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">{{ __('Your digital ID card can be previewed or downloaded as PDF.') }}</p>
-                    <div class="border rounded p-2 bg-light">
+                    <div class="border rounded p-2 ">
                         <iframe src="{{ route('profile.id_card', ['style' => 'future', 'ar' => '1.6:1', 'grid' => 'strong', 'neon' => 'bold']) }}" style="width:100%; height:360px; border:none; border-radius:6px; background:#000;"></iframe>
                     </div>
                 </div>

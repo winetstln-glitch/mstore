@@ -202,7 +202,7 @@
                     <div class="list-group-item px-4 py-3 border-0 border-bottom">
                         <div class="d-flex align-items-start">
                             <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-body-tertiary d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
+                                <div class="avatar-sm rounded-circle  d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
                                     <span class="fw-bold text-body-secondary">{{ substr($ticket->customer->name ?? 'U', 0, 1) }}</span>
                                 </div>
                             </div>

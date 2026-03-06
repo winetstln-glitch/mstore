@@ -121,16 +121,16 @@
                 </tr>
                 <tr>
                     <!-- Sub Header Pendapatan -->
-                    <th class="bg-light">Kotor</th>
+                    <th class="">Kotor</th>
                     
                     <!-- Sub Header Potongan -->
-                    <th class="bg-light">Komisi ({{ $coordRate }}%)</th>
-                    <th class="bg-light">ISP ({{ $ispRate }}%)</th>
-                    <th class="bg-light">Alat ({{ $toolRate }}%)</th>
+                    <th class="">Komisi ({{ $coordRate }}%)</th>
+                    <th class="">ISP ({{ $ispRate }}%)</th>
+                    <th class="">Alat ({{ $toolRate }}%)</th>
                     
                     <!-- Sub Header Distribusi -->
-                    <th class="bg-light">Dana Kas</th>
-                    <th class="bg-light" style="background-color: #cfe2ff !important;">Income Investor</th>
+                    <th class="">Dana Kas</th>
+                    <th class="" style="background-color: #cfe2ff !important;">Income Investor</th>
                 </tr>
             </thead>
             <tbody>

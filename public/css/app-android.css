@@ -60,8 +60,9 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 }
 
 [data-bs-theme="dark"] .mobile-bottom-nav {
-  background-color: rgba(30, 41, 59, 0.95);
-  border-top-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(8, 14, 30, 0.94);
+  border-top-color: rgba(0, 229, 255, 0.3);
+  box-shadow: 0 -8px 24px rgba(0, 229, 255, 0.12);
 }
 
 .mbn-item {
@@ -92,6 +93,7 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 
 .mbn-item.active {
   color: var(--primary-color, #2563eb);
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
 }
 
 .mbn-item.active .mbn-icon {
@@ -197,8 +199,8 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 
 [data-bs-theme="dark"] .form-control, 
 [data-bs-theme="dark"] .form-select {
-  border-color: #334155;
-  background-color: #1e293b;
+  border-color: #1f3b6d;
+  background-color: #0b1228;
 }
 
 /* Select2 Customization for Mobile */
@@ -215,8 +217,8 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 }
 
 [data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
+  background-color: #0b1228 !important;
+  border-color: #1f3b6d !important;
   color: #f8fafc !important;
 }
 
@@ -255,7 +257,7 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
   }
   
   [data-bs-theme="dark"] .table-responsive-mobile tr {
-    border-color: #334155;
+    border-color: #1f3b6d;
   }
 
   .table-responsive-mobile td { 

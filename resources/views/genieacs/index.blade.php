@@ -56,7 +56,7 @@
                     </div>
                     <div class="col-12 col-md-4">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-body-secondary border-end-0">
+                            <span class="input-group-text  border-end-0">
                                 <i class="fa-solid fa-search text-body-secondary"></i>
                             </span>
                             <input type="text" id="deviceSearch" class="form-control border-start-0 ps-1" placeholder="{{ __('Search ID, SN, PPPoE, IP...') }}">
@@ -276,7 +276,7 @@
                                             @if(isset($connectedMacs) && count($connectedMacs) > 0)
                                                 <div class="d-flex flex-column gap-1">
                                                     @foreach($connectedMacs as $mac)
-                                                        <span class="badge bg-light text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;">{{ $mac }}</span>
+                                                        <span class="badge  text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;">{{ $mac }}</span>
                                                     @endforeach
                                                 </div>
                                             @endif
@@ -514,7 +514,7 @@
                                                 @if(isset($deviceMacs) && count($deviceMacs) > 0)
                                                     <div class="mt-1 d-flex flex-wrap gap-1">
                                                         @foreach($deviceMacs as $label => $mac)
-                                                            <span class="badge bg-light text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;" title="{{ $label }}">
+                                                            <span class="badge  text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;" title="{{ $label }}">
                                                                 {{ $mac }}
                                                             </span>
                                                         @endforeach
@@ -523,7 +523,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center small text-muted">
+                                    <div class="card-footer  py-2 d-flex justify-content-between align-items-center small text-muted">
                                         <div title="{{ __('Connected Devices') }}">
                                             <i class="fa-solid fa-wifi me-1"></i> {{ $displayCount }}
                                         </div>

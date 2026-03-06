@@ -4,6 +4,11 @@
 
 @section('content')
 
+<div class="mb-4">
+    <h4 class="fw-bold text-primary mb-1">{{ __('Dashboard') }}</h4>
+    <p class="text-muted small mb-0">{{ __('Welcome back to your dashboard overview.') }}</p>
+</div>
+
 @if(Auth::user()->hasPermission('attendance.view'))
 <div class="row mb-4">
     <div class="col-12">
@@ -185,11 +190,11 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
                             <tr>
-                                <th>{{ __('Item') }}</th>
-                                <th class="text-end">{{ __('Stock') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Item') }}</th>
+                                <th class="text-end text-uppercase small text-muted border-0">{{ __('Stock') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -304,13 +309,13 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-body-tertiary">
+                        <thead class="bg-light">
                             <tr>
-                                <th class="ps-3">{{ __('Month') }}</th>
-                                <th class="text-center">{{ __('Total') }}</th>
-                                <th class="text-center">{{ __('Resolved') }}</th>
-                                <th class="text-center">{{ __('Open/Pending') }}</th>
-                                <th class="text-end pe-3">{{ __('Completion Rate') }}</th>
+                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Month') }}</th>
+                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Total') }}</th>
+                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Resolved') }}</th>
+                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Open/Pending') }}</th>
+                                <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Completion Rate') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -349,13 +354,13 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-body-tertiary">
+                    <thead class="bg-light">
                         <tr>
-                            <th class="ps-4">{{ __('Ticket ID') }}</th>
-                            <th>{{ __('Customer') }}</th>
-                            <th>{{ __('Subject') }}</th>
-                            <th>{{ __('Status') }}</th>
-                            <th>{{ __('Date') }}</th>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Ticket ID') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Customer') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Subject') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Date') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -468,14 +473,14 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-body-tertiary">
+                    <thead class="bg-light">
                         <tr>
-                            <th class="ps-4">{{ __('Asset Code') }}</th>
-                            <th>{{ __('Item Name') }}</th>
-                            <th>{{ __('Holder') }}</th>
-                            <th>{{ __('Role') }}</th>
-                            <th>{{ __('Status') }}</th>
-                            <th>{{ __('Condition') }}</th>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Asset Code') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Item Name') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Holder') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Condition') }}</th>
                         </tr>
                     </thead>
                     <tbody>

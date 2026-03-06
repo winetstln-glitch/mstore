@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Setting;
 use App\Models\Customer;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,7 @@ class WhatsAppService
         // Prefer DB settings, fallback to .env
         $this->apiKey = Setting::getValue('whatsapp_api_key', config('services.whatsapp.key'));
         $this->baseUrl = Setting::getValue('whatsapp_api_url', config('services.whatsapp.url'));
-        if (empty($this->baseUrl) && !empty($this->apiKey)) {
+        if (empty($this->baseUrl) && ! empty($this->apiKey)) {
             $this->baseUrl = 'https://api.fonnte.com';
         }
     }
@@ -50,6 +50,7 @@ class WhatsAppService
             }
             $template = str_replace('{{'.$k.'}}', (string) $v, $template);
         }
+
         return $template;
     }
 
@@ -59,6 +60,7 @@ class WhatsAppService
         $lines = array_map(function ($l) {
             return rtrim($l, " \t");
         }, explode("\n", $msg));
+
         return implode("\n", $lines);
     }
 
