@@ -490,6 +490,120 @@
 <script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.min.js"></script>
 
 <style>
+    .leaflet-popup-content-wrapper {
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 18px 46px rgba(15, 23, 42, 0.16);
+    }
+    .leaflet-popup-tip {
+        background: #ffffff;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+    .leaflet-popup-content {
+        margin: 0;
+        padding: 14px;
+        color: #0f172a;
+    }
+    .leaflet-container a.leaflet-popup-close-button {
+        color: #334155;
+        width: 26px;
+        height: 26px;
+        line-height: 26px;
+        border-radius: 999px;
+        transition: all 0.2s ease;
+    }
+    .leaflet-container a.leaflet-popup-close-button:hover {
+        background: rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+    }
+    .map-popup {
+        min-width: 230px;
+        color: #0f172a;
+    }
+    .map-popup-title {
+        margin-bottom: 0.5rem;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: 0.01em;
+    }
+    .map-popup-table {
+        margin-bottom: 0.55rem;
+        font-size: 0.81rem;
+        color: #0f172a;
+    }
+    .map-popup-table td {
+        padding: 0.16rem 0;
+        border: none;
+        vertical-align: top;
+    }
+    .map-popup-label {
+        color: #64748b;
+        width: 40%;
+    }
+    .map-popup-value {
+        text-align: left;
+        color: #0f172a;
+        font-weight: 600;
+        padding-left: 0.5rem;
+        word-break: break-word;
+    }
+    .map-popup-desc {
+        margin-bottom: 0.5rem;
+        color: #64748b;
+        font-size: 0.79rem;
+        font-style: italic;
+    }
+    .map-popup-actions {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 0.35rem;
+        flex-wrap: wrap;
+    }
+    .map-popup-btn {
+        font-size: 0.74rem;
+        padding: 0.28rem 0.62rem;
+        border-radius: 10px;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+        border: none;
+        transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .map-popup-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+    }
+    [data-bs-theme="dark"] .leaflet-popup-content-wrapper {
+        background: linear-gradient(150deg, #0f172a 0%, #111f35 100%);
+        border-color: rgba(125, 249, 255, 0.3);
+        box-shadow: 0 20px 52px rgba(2, 6, 23, 0.72);
+    }
+    [data-bs-theme="dark"] .leaflet-popup-tip {
+        background: #0f172a;
+        border-color: rgba(125, 249, 255, 0.35);
+    }
+    [data-bs-theme="dark"] .leaflet-popup-content,
+    [data-bs-theme="dark"] .map-popup,
+    [data-bs-theme="dark"] .map-popup-title,
+    [data-bs-theme="dark"] .map-popup-table,
+    [data-bs-theme="dark"] .map-popup-value {
+        color: #e6f1ff;
+    }
+    [data-bs-theme="dark"] .map-popup-label,
+    [data-bs-theme="dark"] .map-popup-desc {
+        color: #8aa5c9;
+    }
+    [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
+        color: #c7def7;
+    }
+    [data-bs-theme="dark"] .leaflet-container a.leaflet-popup-close-button:hover {
+        background: rgba(125, 249, 255, 0.12);
+        color: #e6f1ff;
+    }
+    [data-bs-theme="dark"] .map-popup-btn {
+        box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+    }
     .custom-icon {
         display: flex;
         align-items: center;
@@ -1293,23 +1407,29 @@
         olts.forEach(function(olt) {
             if (olt.latitude && olt.longitude) {
                 var popupContent = document.createElement('div');
-                popupContent.innerHTML = `<strong>OLT: ${olt.name}</strong><br>${olt.host}<br>`;
+                popupContent.innerHTML = `
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">OLT: ${olt.name}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Host:</td><td class="map-popup-value">${olt.host || '-'}</td></tr>
+                        </table>
+                    </div>`;
                 
                 var editLink = document.createElement('a');
                 editLink.href = `/olt/${olt.id}/edit`;
-                editLink.className = 'btn btn-sm btn-primary text-white mt-2';
-                editLink.style.fontSize = '0.8rem';
-                editLink.style.padding = '2px 6px';
+                editLink.className = 'btn btn-sm btn-primary text-white map-popup-btn';
                 editLink.innerText = '{{ __('Edit OLT') }}';
-                popupContent.appendChild(editLink);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('olt', olt.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editLink);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([olt.latitude, olt.longitude], {
                     icon: createIcon('olt'),
@@ -1345,34 +1465,34 @@
 
                 var popupContent = document.createElement('div');
                 popupContent.innerHTML = `
-                    <div style="min-width: 200px;">
-                        <h6 class="mb-2">ODC: ${odc.name}</h6>
-                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Kapasitas:</td><td class="p-0 text-end">${odc.capacity}</td></tr>
-                            <tr><td class="p-0 text-muted">OLT:</td><td class="p-0 text-end">${oltName}</td></tr>
-                            <tr><td class="p-0 text-muted">Port PON:</td><td class="p-0 text-end">${odc.pon_port || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odc.area || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Warna:</td><td class="p-0 text-end">${odc.color || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">No Kabel:</td><td class="p-0 text-end">${odc.cable_no || '-'}</td></tr>
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">ODC: ${odc.name}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Kapasitas:</td><td class="map-popup-value">${odc.capacity}</td></tr>
+                            <tr><td class="map-popup-label">OLT:</td><td class="map-popup-value">${oltName}</td></tr>
+                            <tr><td class="map-popup-label">Port PON:</td><td class="map-popup-value">${odc.pon_port || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${odc.area || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odc.color || '-'}</td></tr>
+                            <tr><td class="map-popup-label">No Kabel:</td><td class="map-popup-value">${odc.cable_no || '-'}</td></tr>
                         </table>
-                        <div class="text-muted small mb-2" style="font-style: italic;">${odc.description || ''}</div>
+                        <div class="map-popup-desc">${odc.description || ''}</div>
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary mt-2';
-                editBtn.style.fontSize = '0.8rem';
-                editBtn.style.padding = '2px 6px';
+                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit ODC') }}';
                 editBtn.onclick = function() { editOdc(odc.id); };
-                popupContent.appendChild(editBtn);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('odc', odc.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editBtn);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([odc.latitude, odc.longitude], {
                     icon: createIcon('odc'),
@@ -1408,32 +1528,32 @@
 
                 var popupContent = document.createElement('div');
                 popupContent.innerHTML = `
-                    <div style="min-width: 200px;">
-                        <h6 class="mb-2">ODP: ${odp.name}</h6>
-                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Kapasitas:</td><td class="p-0 text-end">${odp.filled || 0}/${odp.capacity}</td></tr>
-                            <tr><td class="p-0 text-muted">ODC:</td><td class="p-0 text-end">${odcName}</td></tr>
-                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${odp.kampung || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Warna:</td><td class="p-0 text-end">${odp.color || '-'}</td></tr>
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">ODP: ${odp.name}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Kapasitas:</td><td class="map-popup-value">${odp.filled || 0}/${odp.capacity}</td></tr>
+                            <tr><td class="map-popup-label">ODC:</td><td class="map-popup-value">${odcName}</td></tr>
+                            <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${odp.kampung || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odp.color || '-'}</td></tr>
                         </table>
-                        <div class="text-muted small mb-2" style="font-style: italic;">${odp.description || ''}</div>
+                        <div class="map-popup-desc">${odp.description || ''}</div>
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary mt-2';
-                editBtn.style.fontSize = '0.8rem';
-                editBtn.style.padding = '2px 6px';
+                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit ODP') }}';
                 editBtn.onclick = function() { editOdp(odp.id); };
-                popupContent.appendChild(editBtn);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('odp', odp.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editBtn);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([odp.latitude, odp.longitude], {
                     icon: createIcon('odp'),
@@ -1472,30 +1592,30 @@
 
                 var popupContent = document.createElement('div');
                 popupContent.innerHTML = `
-                    <div style="min-width: 200px;">
-                        <h6 class="mb-2">HTB: ${htb.name}</h6>
-                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Uplink:</td><td class="p-0 text-end">${uplinkName}</td></tr>
-                            <tr><td class="p-0 text-muted">Area:</td><td class="p-0 text-end">${htb.odp && htb.odp.kampung ? htb.odp.kampung : '-'}</td></tr>
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">HTB: ${htb.name}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Uplink:</td><td class="map-popup-value">${uplinkName}</td></tr>
+                            <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${htb.odp && htb.odp.kampung ? htb.odp.kampung : '-'}</td></tr>
                         </table>
-                        <div class="text-muted small mb-2" style="font-style: italic;">${htb.description || ''}</div>
+                        <div class="map-popup-desc">${htb.description || ''}</div>
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary mt-2';
-                editBtn.style.fontSize = '0.8rem';
-                editBtn.style.padding = '2px 6px';
+                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit HTB') }}';
                 editBtn.onclick = function() { editHtb(htb.id); };
-                popupContent.appendChild(editBtn);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('htb', htb.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editBtn);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([htb.latitude, htb.longitude], {
                     icon: createIcon('htb'),
@@ -1531,31 +1651,31 @@
 
                 var popupContent = document.createElement('div');
                 popupContent.innerHTML = `
-                    <div style="min-width: 200px;">
-                        <h6 class="mb-2">Closure: ${closure.name}</h6>
-                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Kapasitas:</td><td class="p-0 text-end">${closure.filled || 0}/${closure.capacity}</td></tr>
-                            <tr><td class="p-0 text-muted">Uplink ODC:</td><td class="p-0 text-end">${odcName}</td></tr>
-                            <tr><td class="p-0 text-muted">Wilayah:</td><td class="p-0 text-end">${closure.region ? closure.region.name : '-'}</td></tr>
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">Closure: ${closure.name}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Kapasitas:</td><td class="map-popup-value">${closure.filled || 0}/${closure.capacity}</td></tr>
+                            <tr><td class="map-popup-label">Uplink ODC:</td><td class="map-popup-value">${odcName}</td></tr>
+                            <tr><td class="map-popup-label">Wilayah:</td><td class="map-popup-value">${closure.region ? closure.region.name : '-'}</td></tr>
                         </table>
-                        <div class="text-muted small mb-2" style="font-style: italic;">${closure.description || ''}</div>
+                        <div class="map-popup-desc">${closure.description || ''}</div>
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary mt-2';
-                editBtn.style.fontSize = '0.8rem';
-                editBtn.style.padding = '2px 6px';
+                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit Closure') }}';
                 editBtn.onclick = function() { editClosure(closure.id); };
-                popupContent.appendChild(editBtn);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('closure', closure.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editBtn);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([closure.latitude, closure.longitude], {
                     icon: createIcon('closure'),
@@ -1589,32 +1709,32 @@
                 
                 var popupContent = document.createElement('div');
                 popupContent.innerHTML = `
-                    <div style="min-width: 200px;">
-                        <h6 class="mb-2">Aset: ${itemName}</h6>
-                        <table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">
-                            <tr><td class="p-0 text-muted">Pemegang:</td><td class="p-0 text-end fw-bold">${holderName}</td></tr>
-                            <tr><td class="p-0 text-muted">Status:</td><td class="p-0 text-end">${status}</td></tr>
-                            <tr><td class="p-0 text-muted">Kondisi:</td><td class="p-0 text-end">${asset.condition || '-'}</td></tr>
-                            <tr><td class="p-0 text-muted">Serial:</td><td class="p-0 text-end small">${asset.serial_number || '-'}</td></tr>
+                    <div class="map-popup">
+                        <h6 class="map-popup-title">Aset: ${itemName}</h6>
+                        <table class="table table-sm table-borderless map-popup-table">
+                            <tr><td class="map-popup-label">Pemegang:</td><td class="map-popup-value">${holderName}</td></tr>
+                            <tr><td class="map-popup-label">Status:</td><td class="map-popup-value">${status}</td></tr>
+                            <tr><td class="map-popup-label">Kondisi:</td><td class="map-popup-value">${asset.condition || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Serial:</td><td class="map-popup-value font-monospace">${asset.serial_number || '-'}</td></tr>
                         </table>
-                        <div class="text-muted small mb-2" style="font-style: italic;">${asset.description || ''}</div>
+                        <div class="map-popup-desc">${asset.description || ''}</div>
                     </div>`;
                 
                 var editLink = document.createElement('a');
                 editLink.href = `/inventory/assets/${asset.id}/edit`; // Assumed route
-                editLink.className = 'btn btn-sm btn-primary mt-2 text-white';
-                editLink.style.fontSize = '0.8rem';
-                editLink.style.padding = '2px 6px';
+                editLink.className = 'btn btn-sm btn-primary text-white map-popup-btn';
                 editLink.innerText = '{{ __('Edit Aset') }}';
-                popupContent.appendChild(editLink);
 
                 var deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-danger mt-2 ms-1';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.padding = '2px 6px';
+                deleteBtn.className = 'btn btn-sm btn-danger map-popup-btn';
                 deleteBtn.innerText = 'Hapus Lokasi';
                 deleteBtn.onclick = function() { deleteLocation('asset', asset.id, marker); };
-                popupContent.appendChild(deleteBtn);
+
+                var actionRow = document.createElement('div');
+                actionRow.className = 'map-popup-actions';
+                actionRow.appendChild(editLink);
+                actionRow.appendChild(deleteBtn);
+                popupContent.querySelector('.map-popup').appendChild(actionRow);
 
                 var marker = L.marker([asset.latitude, asset.longitude], {
                     icon: createIcon('asset'),
@@ -1661,25 +1781,25 @@
             })
             .addTo(markers)
             .bindPopup(
-                `<div style="min-width: 200px;">` +
-                `<h6 class="mb-2">${customer.name}</h6>` +
+                `<div class="map-popup">` +
+                `<h6 class="map-popup-title">${customer.name}</h6>` +
                 `<div class="mb-2">` +
                 `<span class="badge ${isOnline ? 'bg-success' : 'bg-danger'} me-1">${isOnline ? 'Online' : 'Offline'}</span>` +
                 `<span class="badge bg-secondary">${customer.status}</span>` +
                 `</div>` +
-                `<table class="table table-sm table-borderless mb-2" style="font-size: 0.85rem;">` +
-                `<tr><td class="p-0 text-muted">ID:</td><td class="p-0 text-end">${customer.id}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Alamat:</td><td class="p-0 text-end text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Telepon:</td><td class="p-0 text-end">${customer.phone || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Paket:</td><td class="p-0 text-end">${customer.package || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">ODP:</td><td class="p-0 text-end">${odpName}</td></tr>` +
-                `<tr><td class="p-0 text-muted">SN:</td><td class="p-0 text-end font-monospace small">${customer.onu_serial || '-'}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Nama Genie:</td><td class="p-0 text-end">${genieName}</td></tr>` +
-                `<tr><td class="p-0 text-muted">Daya RX:</td><td class="p-0 text-end fw-bold">${rxPower}</td></tr>` +
+                `<table class="table table-sm table-borderless map-popup-table">` +
+                `<tr><td class="map-popup-label">ID:</td><td class="map-popup-value">${customer.id}</td></tr>` +
+                `<tr><td class="map-popup-label">Alamat:</td><td class="map-popup-value text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
+                `<tr><td class="map-popup-label">Telepon:</td><td class="map-popup-value">${customer.phone || '-'}</td></tr>` +
+                `<tr><td class="map-popup-label">Paket:</td><td class="map-popup-value">${customer.package || '-'}</td></tr>` +
+                `<tr><td class="map-popup-label">ODP:</td><td class="map-popup-value">${odpName}</td></tr>` +
+                `<tr><td class="map-popup-label">SN:</td><td class="map-popup-value font-monospace">${customer.onu_serial || '-'}</td></tr>` +
+                `<tr><td class="map-popup-label">Nama Genie:</td><td class="map-popup-value">${genieName}</td></tr>` +
+                `<tr><td class="map-popup-label">Daya RX:</td><td class="map-popup-value">${rxPower}</td></tr>` +
                 `</table>` +
-                `<div class="d-flex gap-2 mt-2">` +
-                `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white" style="font-size: 0.8rem; padding: 2px 6px;">Detail</a>` +
-                `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-primary text-white" style="font-size: 0.8rem; padding: 2px 6px;">Edit</a>` +
+                `<div class="map-popup-actions">` +
+                `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white map-popup-btn">Detail</a>` +
+                `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-primary text-white map-popup-btn">Edit</a>` +
                 `</div></div>`
             );
 

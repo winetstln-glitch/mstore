@@ -7,6 +7,7 @@ use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller implements HasMiddleware
 {
@@ -26,7 +27,8 @@ class SettingController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        // Exclude 'telegram' group and 'subscription_packages' from general settings
+        $this->ensureReceiptIdentitySettings();
+
         $settings = Setting::where('group', '!=', 'telegram')
             ->where('key', '!=', 'subscription_packages')
             ->orderBy('group')
@@ -43,7 +45,72 @@ class SettingController extends Controller implements HasMiddleware
      */
     public function update(Request $request)
     {
-        $data = $request->except(['_token', '_method']);
+        $logoUploads = [
+            'store_logo_file' => 'store_logo',
+            'atk_store_logo_file' => 'atk_store_logo',
+            'wash_store_logo_file' => 'wash_store_logo',
+        ];
+        $logoClearFlags = [
+            'clear_store_logo' => 'store_logo',
+            'clear_atk_store_logo' => 'atk_store_logo',
+            'clear_wash_store_logo' => 'wash_store_logo',
+        ];
+        $data = $request->except([
+            '_token',
+            '_method',
+            ...array_keys($logoUploads),
+            ...array_keys($logoClearFlags),
+        ]);
+
+        $request->validate([
+            'store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'atk_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'wash_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'clear_store_logo' => 'nullable|boolean',
+            'clear_atk_store_logo' => 'nullable|boolean',
+            'clear_wash_store_logo' => 'nullable|boolean',
+            'pos_printer_auto_reconnect' => 'nullable|in:0,1',
+            'pos_print_logo_enabled' => 'nullable|in:0,1',
+            'pos_bluetooth_chunk_size' => 'nullable|integer|min:90|max:512',
+            'pos_bluetooth_chunk_delay_ms' => 'nullable|integer|min:0|max:100',
+            'pos_qris_text' => 'nullable|string|max:2000',
+            'pos_preferred_printer_name' => 'nullable|string|max:120',
+            'pos_preferred_printer_id' => 'nullable|string|max:120',
+            'pos_performance_profile' => 'nullable|in:ultrafast,balanced,stable',
+        ]);
+
+        foreach ($logoClearFlags as $clearKey => $settingKey) {
+            if (! $request->boolean($clearKey)) {
+                continue;
+            }
+
+            $oldValue = Setting::getValue($settingKey, '');
+            if (is_string($oldValue) && str_starts_with($oldValue, 'storage/settings-logos/')) {
+                $oldPath = str_replace('storage/', '', $oldValue);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            $data[$settingKey] = '';
+        }
+
+        foreach ($logoUploads as $fileKey => $settingKey) {
+            if (! $request->hasFile($fileKey)) {
+                continue;
+            }
+
+            $oldValue = Setting::getValue($settingKey, '');
+            if (is_string($oldValue) && str_starts_with($oldValue, 'storage/settings-logos/')) {
+                $oldPath = str_replace('storage/', '', $oldValue);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            $storedPath = $request->file($fileKey)->store('settings-logos', 'public');
+            $data[$settingKey] = 'storage/'.$storedPath;
+        }
 
         foreach ($data as $key => $value) {
             if (is_array($value)) {
@@ -67,5 +134,163 @@ class SettingController extends Controller implements HasMiddleware
         }
 
         return redirect()->back()->with('success', __('Settings updated successfully.'));
+    }
+
+    private function ensureReceiptIdentitySettings(): void
+    {
+        $defaults = [
+            [
+                'key' => 'store_name',
+                'value' => config('app.name', 'MStore'),
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Toko Umum',
+            ],
+            [
+                'key' => 'store_address',
+                'value' => 'Jl. Contoh No. 1',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Alamat Toko Umum',
+            ],
+            [
+                'key' => 'store_phone',
+                'value' => '081234567890',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Telepon Toko Umum',
+            ],
+            [
+                'key' => 'store_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Toko Umum',
+            ],
+            [
+                'key' => 'atk_store_name',
+                'value' => 'ATK STORE',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Toko ATK',
+            ],
+            [
+                'key' => 'atk_store_address',
+                'value' => 'Jl. Raya Contoh No. 123',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Alamat Toko ATK',
+            ],
+            [
+                'key' => 'atk_store_phone',
+                'value' => '0812-3456-7890',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Telepon Toko ATK',
+            ],
+            [
+                'key' => 'atk_store_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Toko ATK',
+            ],
+            [
+                'key' => 'wash_store_name',
+                'value' => 'AUTO WASH',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Toko Wash',
+            ],
+            [
+                'key' => 'wash_store_address',
+                'value' => 'Jl. Contoh Bersih No. 123',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Alamat Toko Wash',
+            ],
+            [
+                'key' => 'wash_store_phone',
+                'value' => '0812-0000-0000',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Telepon Toko Wash',
+            ],
+            [
+                'key' => 'wash_store_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Toko Wash',
+            ],
+            [
+                'key' => 'pos_printer_auto_reconnect',
+                'value' => '1',
+                'group' => 'general',
+                'type' => 'boolean',
+                'label' => 'Auto Reconnect Printer',
+            ],
+            [
+                'key' => 'pos_print_logo_enabled',
+                'value' => '1',
+                'group' => 'general',
+                'type' => 'boolean',
+                'label' => 'Cetak Logo ESC/POS',
+            ],
+            [
+                'key' => 'pos_bluetooth_chunk_size',
+                'value' => '256',
+                'group' => 'general',
+                'type' => 'number',
+                'label' => 'Ukuran Paket Bluetooth',
+            ],
+            [
+                'key' => 'pos_bluetooth_chunk_delay_ms',
+                'value' => '0',
+                'group' => 'general',
+                'type' => 'number',
+                'label' => 'Delay Antar Paket Bluetooth',
+            ],
+            [
+                'key' => 'pos_qris_text',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Data String QRIS',
+            ],
+            [
+                'key' => 'pos_preferred_printer_name',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Printer Pilihan',
+            ],
+            [
+                'key' => 'pos_preferred_printer_id',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'ID Printer Pilihan',
+            ],
+            [
+                'key' => 'pos_performance_profile',
+                'value' => 'ultrafast',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Profil Performa Printer',
+            ],
+        ];
+
+        foreach ($defaults as $setting) {
+            Setting::firstOrCreate(
+                ['key' => $setting['key']],
+                [
+                    'value' => $setting['value'],
+                    'group' => $setting['group'],
+                    'type' => $setting['type'],
+                    'label' => $setting['label'],
+                ]
+            );
+        }
     }
 }

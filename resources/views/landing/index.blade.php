@@ -84,7 +84,7 @@
                         <a href="https://buymstore.online" class="btn btn-primary">
                             <i class="fas fa-rocket me-2"></i> Client Area
                         </a>
-                        <a href="{{ asset('apk/mstore-webview.apk') }}" class="btn btn-outline-light" download>
+                        <a href="https://clud.mstore.id/index.php/s/R5GNCGHRfJXrjzo" class="btn btn-outline-light" download>
                             <i class="fa-brands fa-android me-2"></i> Get App
                         </a>
                     </div>
@@ -115,7 +115,61 @@
                     <div class="card">
                         <div class="pricing-header">
                             <div class="speed">Basic</div>
+                            <div class="text-muted">1 Kamera HD</div>
+                        </div>
+                        <div class="pricing-body d-flex flex-column">
+                            <div class="price">Rp 600Rb<small class="fs-6 text-muted">/paket</small></div>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> Camera 1 Channel</li>
+                                <li><i class="fas fa-check-circle"></i> HDD 250GB</li>
+                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
+                            </ul>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                        </div>
+                    </div>
+                </div>
+                 <!-- CCTV Package 2 -->
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Basic</div>
                             <div class="text-muted">2 Kamera HD</div>
+                        </div>
+                        <div class="pricing-body d-flex flex-column">
+                            <div class="price">Rp 1.1jt<small class="fs-6 text-muted">/paket</small></div>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> Camera 2 Channel</li>
+                                <li><i class="fas fa-check-circle"></i> HDD 125GB</li>
+                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
+                            </ul>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                        </div>
+                    </div>
+                </div>
+                 <!-- CCTV Package 3 -->
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Basic</div>
+                            <div class="text-muted">2 Kamera HD</div>
+                        </div>
+                        <div class="pricing-body d-flex flex-column">
+                            <div class="price">Rp 1.9jt<small class="fs-6 text-muted">/paket</small></div>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> DVR 4 Channel</li>
+                                <li><i class="fas fa-check-circle"></i> HDD 500GB</li>
+                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
+                            </ul>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                        </div>
+                    </div>
+                </div>
+                 <!-- CCTV Package 4 -->
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">Basic</div>
+                            <div class="text-muted">4 Kamera HD</div>
                         </div>
                         <div class="pricing-body d-flex flex-column">
                             <div class="price">Rp 1.9jt<small class="fs-6 text-muted">/paket</small></div>
@@ -253,6 +307,62 @@
                     <p class="text-muted">Layanan belum tersedia.</p>
                 </div>
                 @endforelse
+            </div>
+        </div>
+    </section>
+
+    <section id="wedding-services" class="py-5">
+        <div class="container py-4">
+            <div class="section-header text-center mb-5 fade-up">
+                <h6 class="text-primary fw-bold text-uppercase">Event Services</h6>
+                <h2 class="display-6 fw-800">Layanan Wedding & Event</h2>
+            </div>
+
+            <div class="scroll-container fade-up">
+                <div class="scroll-item">
+                    <div class="card position-relative overflow-hidden border-0">
+                        <img src="{{ asset('storage/wash-services/SWCzU7EyNG0o3NCUZRdSxMXEPR19TqlaSxgSP26k.jpg') }}" alt="Hias Pengantin" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(8, 20, 43, 0.25) 0%, rgba(2, 10, 25, 0.85) 100%);"></div>
+                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
+                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Wedding</div>
+                            <h4 class="product-title mb-1">Hias Pengantin</h4>
+                            <p class="small text-white-50 mb-3">Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.</p>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Hias%20Pengantin" class="btn btn-light text-dark w-100 mt-auto">
+                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scroll-item">
+                    <div class="card position-relative overflow-hidden border-0">
+                        <img src="{{ asset('storage/wash-services/JNp0g77R9K9equSk3DaVUIvE5GZjsIMqUeb6OEVm.jpg') }}" alt="Poto Moment" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(43, 8, 32, 0.28) 0%, rgba(25, 2, 18, 0.86) 100%);"></div>
+                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
+                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Photography</div>
+                            <h4 class="product-title mb-1">Poto Moment</h4>
+                            <p class="small text-white-50 mb-3">Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.</p>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Poto%20Moment" class="btn btn-light text-dark w-100 mt-auto">
+                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scroll-item">
+                    <div class="card position-relative overflow-hidden border-0">
+                        <img src="{{ asset('storage/wash-services/fUlfmV40jz1rCp0CC2WTtXnazm1or6ANVVJs9SI8.jpg') }}" alt="Sewa Auning" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(9, 42, 40, 0.25) 0%, rgba(2, 24, 22, 0.84) 100%);"></div>
+                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
+                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Event Support</div>
+                            <h4 class="product-title mb-1">Sewa Auning</h4>
+                            <p class="small text-white-50 mb-3">Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.</p>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Sewa%20Auning" class="btn btn-light text-dark w-100 mt-auto">
+                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
