@@ -100,89 +100,68 @@
         </div>
     </section>
 
-    <!-- CCTV Section -->
+    @php
+        $cctvPackages = [
+            [
+                'speed' => \App\Models\Setting::getValue('cctv_package_1_speed', 'Basic'),
+                'subtitle' => \App\Models\Setting::getValue('cctv_package_1_subtitle', '1 Kamera HD'),
+                'price' => \App\Models\Setting::getValue('cctv_package_1_price', 'Rp 600Rb'),
+                'features' => \App\Models\Setting::getValue('cctv_package_1_features', "Camera 1 Channel\nHDD 250GB\nFree Instalasi"),
+            ],
+            [
+                'speed' => \App\Models\Setting::getValue('cctv_package_2_speed', 'Basic'),
+                'subtitle' => \App\Models\Setting::getValue('cctv_package_2_subtitle', '2 Kamera HD'),
+                'price' => \App\Models\Setting::getValue('cctv_package_2_price', 'Rp 1.1jt'),
+                'features' => \App\Models\Setting::getValue('cctv_package_2_features', "Camera 2 Channel\nHDD 125GB\nFree Instalasi"),
+            ],
+            [
+                'speed' => \App\Models\Setting::getValue('cctv_package_3_speed', 'Basic'),
+                'subtitle' => \App\Models\Setting::getValue('cctv_package_3_subtitle', '2 Kamera HD'),
+                'price' => \App\Models\Setting::getValue('cctv_package_3_price', 'Rp 1.9jt'),
+                'features' => \App\Models\Setting::getValue('cctv_package_3_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi"),
+            ],
+            [
+                'speed' => \App\Models\Setting::getValue('cctv_package_4_speed', 'Basic'),
+                'subtitle' => \App\Models\Setting::getValue('cctv_package_4_subtitle', '4 Kamera HD'),
+                'price' => \App\Models\Setting::getValue('cctv_package_4_price', 'Rp 1.9jt'),
+                'features' => \App\Models\Setting::getValue('cctv_package_4_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi"),
+            ],
+        ];
+    @endphp
     <section id="cctv" class="py-5">
         <div class="container py-4">
             <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Security Solutions</h6>
-                <h2 class="display-6 fw-800">Paket Instalasi CCTV</h2>
+                <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('cctv_section_badge', 'Security Solutions') }}</h6>
+                <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('cctv_section_title', 'Paket Instalasi CCTV') }}</h2>
                 <div class="mx-auto bg-primary mt-2" style="width: 50px; height: 3px;"></div>
             </div>
             
             <div class="scroll-container fade-up">
-                <!-- CCTV Package 1 -->
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">Basic</div>
-                            <div class="text-muted">1 Kamera HD</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price">Rp 600Rb<small class="fs-6 text-muted">/paket</small></div>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle"></i> Camera 1 Channel</li>
-                                <li><i class="fas fa-check-circle"></i> HDD 250GB</li>
-                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
-                        </div>
-                    </div>
-                </div>
-                 <!-- CCTV Package 2 -->
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">Basic</div>
-                            <div class="text-muted">2 Kamera HD</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price">Rp 1.1jt<small class="fs-6 text-muted">/paket</small></div>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle"></i> Camera 2 Channel</li>
-                                <li><i class="fas fa-check-circle"></i> HDD 125GB</li>
-                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                @foreach($cctvPackages as $package)
+                    @php
+                        $features = collect(preg_split('/\r\n|\r|\n/', (string) $package['features']))
+                            ->map(fn ($item) => trim($item))
+                            ->filter()
+                            ->values();
+                    @endphp
+                    <div class="scroll-item">
+                        <div class="card">
+                            <div class="pricing-header">
+                                <div class="speed">{{ $package['speed'] }}</div>
+                                <div class="text-muted">{{ $package['subtitle'] }}</div>
+                            </div>
+                            <div class="pricing-body d-flex flex-column">
+                                <div class="price">{{ $package['price'] }}<small class="fs-6 text-muted">/paket</small></div>
+                                <ul class="features">
+                                    @foreach($features as $feature)
+                                        <li><i class="fas fa-check-circle"></i> {{ $feature }}</li>
+                                    @endforeach
+                                </ul>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20{{ urlencode($package['speed']) }}" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-                 <!-- CCTV Package 3 -->
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">Basic</div>
-                            <div class="text-muted">2 Kamera HD</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price">Rp 1.9jt<small class="fs-6 text-muted">/paket</small></div>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle"></i> DVR 4 Channel</li>
-                                <li><i class="fas fa-check-circle"></i> HDD 500GB</li>
-                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
-                        </div>
-                    </div>
-                </div>
-                 <!-- CCTV Package 4 -->
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">Basic</div>
-                            <div class="text-muted">4 Kamera HD</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price">Rp 1.9jt<small class="fs-6 text-muted">/paket</small></div>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle"></i> DVR 4 Channel</li>
-                                <li><i class="fas fa-check-circle"></i> HDD 500GB</li>
-                                <li><i class="fas fa-check-circle"></i> Free Instalasi</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20Basic" class="btn btn-primary mt-auto">Pesan Sekarang</a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Repeat for other CCTV packages... -->
+                @endforeach
             </div>
         </div>
     </section>
@@ -311,58 +290,57 @@
         </div>
     </section>
 
+    @php
+        $weddingServices = [
+            [
+                'badge' => \App\Models\Setting::getValue('wedding_service_1_badge', 'Wedding'),
+                'name' => \App\Models\Setting::getValue('wedding_service_1_name', 'Hias Pengantin'),
+                'description' => \App\Models\Setting::getValue('wedding_service_1_desc', 'Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.'),
+                'image' => \App\Models\Setting::getValue('wedding_service_1_image', 'storage/wash-services/SWCzU7EyNG0o3NCUZRdSxMXEPR19TqlaSxgSP26k.jpg'),
+            ],
+            [
+                'badge' => \App\Models\Setting::getValue('wedding_service_2_badge', 'Photography'),
+                'name' => \App\Models\Setting::getValue('wedding_service_2_name', 'Poto Moment'),
+                'description' => \App\Models\Setting::getValue('wedding_service_2_desc', 'Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.'),
+                'image' => \App\Models\Setting::getValue('wedding_service_2_image', 'storage/wash-services/JNp0g77R9K9equSk3DaVUIvE5GZjsIMqUeb6OEVm.jpg'),
+            ],
+            [
+                'badge' => \App\Models\Setting::getValue('wedding_service_3_badge', 'Event Support'),
+                'name' => \App\Models\Setting::getValue('wedding_service_3_name', 'Sewa Auning'),
+                'description' => \App\Models\Setting::getValue('wedding_service_3_desc', 'Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.'),
+                'image' => \App\Models\Setting::getValue('wedding_service_3_image', 'storage/wash-services/fUlfmV40jz1rCp0CC2WTtXnazm1or6ANVVJs9SI8.jpg'),
+            ],
+        ];
+        $weddingOverlayStyles = [
+            'background: linear-gradient(160deg, rgba(8, 20, 43, 0.25) 0%, rgba(2, 10, 25, 0.85) 100%);',
+            'background: linear-gradient(160deg, rgba(43, 8, 32, 0.28) 0%, rgba(25, 2, 18, 0.86) 100%);',
+            'background: linear-gradient(160deg, rgba(9, 42, 40, 0.25) 0%, rgba(2, 24, 22, 0.84) 100%);',
+        ];
+    @endphp
     <section id="wedding-services" class="py-5">
         <div class="container py-4">
             <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Event Services</h6>
-                <h2 class="display-6 fw-800">Layanan Wedding & Event</h2>
+                <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('wedding_section_badge', 'Event Services') }}</h6>
+                <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('wedding_section_title', 'Layanan Wedding & Event') }}</h2>
             </div>
 
             <div class="scroll-container fade-up">
-                <div class="scroll-item">
-                    <div class="card position-relative overflow-hidden border-0">
-                        <img src="{{ asset('storage/wash-services/SWCzU7EyNG0o3NCUZRdSxMXEPR19TqlaSxgSP26k.jpg') }}" alt="Hias Pengantin" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
-                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(8, 20, 43, 0.25) 0%, rgba(2, 10, 25, 0.85) 100%);"></div>
-                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
-                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Wedding</div>
-                            <h4 class="product-title mb-1">Hias Pengantin</h4>
-                            <p class="small text-white-50 mb-3">Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Hias%20Pengantin" class="btn btn-light text-dark w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
-                            </a>
+                @foreach($weddingServices as $index => $service)
+                    <div class="scroll-item">
+                        <div class="card position-relative overflow-hidden border-0">
+                            <img src="{{ str_starts_with($service['image'], 'http') ? $service['image'] : asset($service['image']) }}" alt="{{ $service['name'] }}" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="{{ $weddingOverlayStyles[$index] ?? $weddingOverlayStyles[0] }}"></div>
+                            <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
+                                <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">{{ $service['badge'] }}</div>
+                                <h4 class="product-title mb-1">{{ $service['name'] }}</h4>
+                                <p class="small text-white-50 mb-3">{{ $service['description'] }}</p>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20{{ urlencode($service['name']) }}" class="btn btn-light text-dark w-100 mt-auto">
+                                    <i class="fab fa-whatsapp me-2"></i> Konsultasi
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="scroll-item">
-                    <div class="card position-relative overflow-hidden border-0">
-                        <img src="{{ asset('storage/wash-services/JNp0g77R9K9equSk3DaVUIvE5GZjsIMqUeb6OEVm.jpg') }}" alt="Poto Moment" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
-                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(43, 8, 32, 0.28) 0%, rgba(25, 2, 18, 0.86) 100%);"></div>
-                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
-                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Photography</div>
-                            <h4 class="product-title mb-1">Poto Moment</h4>
-                            <p class="small text-white-50 mb-3">Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Poto%20Moment" class="btn btn-light text-dark w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="scroll-item">
-                    <div class="card position-relative overflow-hidden border-0">
-                        <img src="{{ asset('storage/wash-services/fUlfmV40jz1rCp0CC2WTtXnazm1or6ANVVJs9SI8.jpg') }}" alt="Sewa Auning" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
-                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(160deg, rgba(9, 42, 40, 0.25) 0%, rgba(2, 24, 22, 0.84) 100%);"></div>
-                        <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
-                            <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">Event Support</div>
-                            <h4 class="product-title mb-1">Sewa Auning</h4>
-                            <p class="small text-white-50 mb-3">Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20Sewa%20Auning" class="btn btn-light text-dark w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Konsultasi
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>

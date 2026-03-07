@@ -35,6 +35,38 @@
                             'pos_preferred_printer_name',
                             'pos_preferred_printer_id',
                             'pos_performance_profile',
+                            'cctv_section_badge',
+                            'cctv_section_title',
+                            'cctv_package_1_speed',
+                            'cctv_package_1_subtitle',
+                            'cctv_package_1_price',
+                            'cctv_package_1_features',
+                            'cctv_package_2_speed',
+                            'cctv_package_2_subtitle',
+                            'cctv_package_2_price',
+                            'cctv_package_2_features',
+                            'cctv_package_3_speed',
+                            'cctv_package_3_subtitle',
+                            'cctv_package_3_price',
+                            'cctv_package_3_features',
+                            'cctv_package_4_speed',
+                            'cctv_package_4_subtitle',
+                            'cctv_package_4_price',
+                            'cctv_package_4_features',
+                            'wedding_section_badge',
+                            'wedding_section_title',
+                            'wedding_service_1_badge',
+                            'wedding_service_1_name',
+                            'wedding_service_1_desc',
+                            'wedding_service_1_image',
+                            'wedding_service_2_badge',
+                            'wedding_service_2_name',
+                            'wedding_service_2_desc',
+                            'wedding_service_2_image',
+                            'wedding_service_3_badge',
+                            'wedding_service_3_name',
+                            'wedding_service_3_desc',
+                            'wedding_service_3_image',
                         ];
                     @endphp
                     <div class="mb-4 pb-3 border-bottom">
@@ -173,6 +205,194 @@
                                     <option value="balanced" {{ $posPerformanceProfile === 'balanced' ? 'selected' : '' }}>Balanced</option>
                                     <option value="stable" {{ $posPerformanceProfile === 'stable' ? 'selected' : '' }}>Stable</option>
                                 </select>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-2">Landing Paket CCTV</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cctv_section_badge" class="form-label fw-medium">Badge Section CCTV</label>
+                                <input type="text" class="form-control" id="cctv_section_badge" name="cctv_section_badge" value="{{ \App\Models\Setting::getValue('cctv_section_badge', 'Security Solutions') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cctv_section_title" class="form-label fw-medium">Judul Section CCTV</label>
+                                <input type="text" class="form-control" id="cctv_section_title" name="cctv_section_title" value="{{ \App\Models\Setting::getValue('cctv_section_title', 'Paket Instalasi CCTV') }}">
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Paket CCTV 1</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_1_speed" class="form-label fw-medium">Label Paket 1</label>
+                                <input type="text" class="form-control" id="cctv_package_1_speed" name="cctv_package_1_speed" value="{{ \App\Models\Setting::getValue('cctv_package_1_speed', 'Basic') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_1_subtitle" class="form-label fw-medium">Subjudul Paket 1</label>
+                                <input type="text" class="form-control" id="cctv_package_1_subtitle" name="cctv_package_1_subtitle" value="{{ \App\Models\Setting::getValue('cctv_package_1_subtitle', '1 Kamera HD') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_1_price" class="form-label fw-medium">Harga Paket 1</label>
+                                <input type="text" class="form-control" id="cctv_package_1_price" name="cctv_package_1_price" value="{{ \App\Models\Setting::getValue('cctv_package_1_price', 'Rp 600Rb') }}">
+                            </div>
+                            <div class="col-12">
+                                <label for="cctv_package_1_features" class="form-label fw-medium">Fitur Paket 1</label>
+                                <textarea class="form-control" id="cctv_package_1_features" name="cctv_package_1_features" rows="3">{{ \App\Models\Setting::getValue('cctv_package_1_features', "Camera 1 Channel\nHDD 250GB\nFree Instalasi") }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Paket CCTV 2</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_2_speed" class="form-label fw-medium">Label Paket 2</label>
+                                <input type="text" class="form-control" id="cctv_package_2_speed" name="cctv_package_2_speed" value="{{ \App\Models\Setting::getValue('cctv_package_2_speed', 'Basic') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_2_subtitle" class="form-label fw-medium">Subjudul Paket 2</label>
+                                <input type="text" class="form-control" id="cctv_package_2_subtitle" name="cctv_package_2_subtitle" value="{{ \App\Models\Setting::getValue('cctv_package_2_subtitle', '2 Kamera HD') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_2_price" class="form-label fw-medium">Harga Paket 2</label>
+                                <input type="text" class="form-control" id="cctv_package_2_price" name="cctv_package_2_price" value="{{ \App\Models\Setting::getValue('cctv_package_2_price', 'Rp 1.1jt') }}">
+                            </div>
+                            <div class="col-12">
+                                <label for="cctv_package_2_features" class="form-label fw-medium">Fitur Paket 2</label>
+                                <textarea class="form-control" id="cctv_package_2_features" name="cctv_package_2_features" rows="3">{{ \App\Models\Setting::getValue('cctv_package_2_features', "Camera 2 Channel\nHDD 125GB\nFree Instalasi") }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Paket CCTV 3</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_3_speed" class="form-label fw-medium">Label Paket 3</label>
+                                <input type="text" class="form-control" id="cctv_package_3_speed" name="cctv_package_3_speed" value="{{ \App\Models\Setting::getValue('cctv_package_3_speed', 'Basic') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_3_subtitle" class="form-label fw-medium">Subjudul Paket 3</label>
+                                <input type="text" class="form-control" id="cctv_package_3_subtitle" name="cctv_package_3_subtitle" value="{{ \App\Models\Setting::getValue('cctv_package_3_subtitle', '2 Kamera HD') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_3_price" class="form-label fw-medium">Harga Paket 3</label>
+                                <input type="text" class="form-control" id="cctv_package_3_price" name="cctv_package_3_price" value="{{ \App\Models\Setting::getValue('cctv_package_3_price', 'Rp 1.9jt') }}">
+                            </div>
+                            <div class="col-12">
+                                <label for="cctv_package_3_features" class="form-label fw-medium">Fitur Paket 3</label>
+                                <textarea class="form-control" id="cctv_package_3_features" name="cctv_package_3_features" rows="3">{{ \App\Models\Setting::getValue('cctv_package_3_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi") }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Paket CCTV 4</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_4_speed" class="form-label fw-medium">Label Paket 4</label>
+                                <input type="text" class="form-control" id="cctv_package_4_speed" name="cctv_package_4_speed" value="{{ \App\Models\Setting::getValue('cctv_package_4_speed', 'Basic') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_4_subtitle" class="form-label fw-medium">Subjudul Paket 4</label>
+                                <input type="text" class="form-control" id="cctv_package_4_subtitle" name="cctv_package_4_subtitle" value="{{ \App\Models\Setting::getValue('cctv_package_4_subtitle', '4 Kamera HD') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cctv_package_4_price" class="form-label fw-medium">Harga Paket 4</label>
+                                <input type="text" class="form-control" id="cctv_package_4_price" name="cctv_package_4_price" value="{{ \App\Models\Setting::getValue('cctv_package_4_price', 'Rp 1.9jt') }}">
+                            </div>
+                            <div class="col-12">
+                                <label for="cctv_package_4_features" class="form-label fw-medium">Fitur Paket 4</label>
+                                <textarea class="form-control" id="cctv_package_4_features" name="cctv_package_4_features" rows="3">{{ \App\Models\Setting::getValue('cctv_package_4_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi") }}</textarea>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-2">Landing Wedding & Event</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wedding_section_badge" class="form-label fw-medium">Badge Section</label>
+                                <input type="text" class="form-control" id="wedding_section_badge" name="wedding_section_badge" value="{{ \App\Models\Setting::getValue('wedding_section_badge', 'Event Services') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wedding_section_title" class="form-label fw-medium">Judul Section</label>
+                                <input type="text" class="form-control" id="wedding_section_title" name="wedding_section_title" value="{{ \App\Models\Setting::getValue('wedding_section_title', 'Layanan Wedding & Event') }}">
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Kartu 1</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_1_badge" class="form-label fw-medium">Badge Kartu 1</label>
+                                <input type="text" class="form-control" id="wedding_service_1_badge" name="wedding_service_1_badge" value="{{ \App\Models\Setting::getValue('wedding_service_1_badge', 'Wedding') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_1_name" class="form-label fw-medium">Nama Kartu 1</label>
+                                <input type="text" class="form-control" id="wedding_service_1_name" name="wedding_service_1_name" value="{{ \App\Models\Setting::getValue('wedding_service_1_name', 'Hias Pengantin') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_1_image_file" class="form-label fw-medium">Upload Gambar Kartu 1</label>
+                                <input type="file" class="form-control" id="wedding_service_1_image_file" name="wedding_service_1_image_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('wedding_service_1_image'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('wedding_service_1_image'), 'http') ? \App\Models\Setting::getValue('wedding_service_1_image') : asset(\App\Models\Setting::getValue('wedding_service_1_image')) }}" alt="Wedding Service 1" class="img-thumbnail mt-2" style="max-height: 70px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_wedding_service_1_image" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_wedding_service_1_image" name="clear_wedding_service_1_image">
+                                        <label class="form-check-label text-danger" for="clear_wedding_service_1_image">Hapus gambar kartu 1</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-12">
+                                <label for="wedding_service_1_desc" class="form-label fw-medium">Deskripsi Kartu 1</label>
+                                <textarea class="form-control" id="wedding_service_1_desc" name="wedding_service_1_desc" rows="2">{{ \App\Models\Setting::getValue('wedding_service_1_desc', 'Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.') }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Kartu 2</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_2_badge" class="form-label fw-medium">Badge Kartu 2</label>
+                                <input type="text" class="form-control" id="wedding_service_2_badge" name="wedding_service_2_badge" value="{{ \App\Models\Setting::getValue('wedding_service_2_badge', 'Photography') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_2_name" class="form-label fw-medium">Nama Kartu 2</label>
+                                <input type="text" class="form-control" id="wedding_service_2_name" name="wedding_service_2_name" value="{{ \App\Models\Setting::getValue('wedding_service_2_name', 'Poto Moment') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_2_image_file" class="form-label fw-medium">Upload Gambar Kartu 2</label>
+                                <input type="file" class="form-control" id="wedding_service_2_image_file" name="wedding_service_2_image_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('wedding_service_2_image'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('wedding_service_2_image'), 'http') ? \App\Models\Setting::getValue('wedding_service_2_image') : asset(\App\Models\Setting::getValue('wedding_service_2_image')) }}" alt="Wedding Service 2" class="img-thumbnail mt-2" style="max-height: 70px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_wedding_service_2_image" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_wedding_service_2_image" name="clear_wedding_service_2_image">
+                                        <label class="form-check-label text-danger" for="clear_wedding_service_2_image">Hapus gambar kartu 2</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-12">
+                                <label for="wedding_service_2_desc" class="form-label fw-medium">Deskripsi Kartu 2</label>
+                                <textarea class="form-control" id="wedding_service_2_desc" name="wedding_service_2_desc" rows="2">{{ \App\Models\Setting::getValue('wedding_service_2_desc', 'Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.') }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="mb-2">Kartu 3</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_3_badge" class="form-label fw-medium">Badge Kartu 3</label>
+                                <input type="text" class="form-control" id="wedding_service_3_badge" name="wedding_service_3_badge" value="{{ \App\Models\Setting::getValue('wedding_service_3_badge', 'Event Support') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_3_name" class="form-label fw-medium">Nama Kartu 3</label>
+                                <input type="text" class="form-control" id="wedding_service_3_name" name="wedding_service_3_name" value="{{ \App\Models\Setting::getValue('wedding_service_3_name', 'Sewa Auning') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="wedding_service_3_image_file" class="form-label fw-medium">Upload Gambar Kartu 3</label>
+                                <input type="file" class="form-control" id="wedding_service_3_image_file" name="wedding_service_3_image_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('wedding_service_3_image'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('wedding_service_3_image'), 'http') ? \App\Models\Setting::getValue('wedding_service_3_image') : asset(\App\Models\Setting::getValue('wedding_service_3_image')) }}" alt="Wedding Service 3" class="img-thumbnail mt-2" style="max-height: 70px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_wedding_service_3_image" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_wedding_service_3_image" name="clear_wedding_service_3_image">
+                                        <label class="form-check-label text-danger" for="clear_wedding_service_3_image">Hapus gambar kartu 3</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-12">
+                                <label for="wedding_service_3_desc" class="form-label fw-medium">Deskripsi Kartu 3</label>
+                                <textarea class="form-control" id="wedding_service_3_desc" name="wedding_service_3_desc" rows="2">{{ \App\Models\Setting::getValue('wedding_service_3_desc', 'Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.') }}</textarea>
                             </div>
                         </div>
                     </div>

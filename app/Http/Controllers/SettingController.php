@@ -49,11 +49,17 @@ class SettingController extends Controller implements HasMiddleware
             'store_logo_file' => 'store_logo',
             'atk_store_logo_file' => 'atk_store_logo',
             'wash_store_logo_file' => 'wash_store_logo',
+            'wedding_service_1_image_file' => 'wedding_service_1_image',
+            'wedding_service_2_image_file' => 'wedding_service_2_image',
+            'wedding_service_3_image_file' => 'wedding_service_3_image',
         ];
         $logoClearFlags = [
             'clear_store_logo' => 'store_logo',
             'clear_atk_store_logo' => 'atk_store_logo',
             'clear_wash_store_logo' => 'wash_store_logo',
+            'clear_wedding_service_1_image' => 'wedding_service_1_image',
+            'clear_wedding_service_2_image' => 'wedding_service_2_image',
+            'clear_wedding_service_3_image' => 'wedding_service_3_image',
         ];
         $data = $request->except([
             '_token',
@@ -66,9 +72,15 @@ class SettingController extends Controller implements HasMiddleware
             'store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'atk_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'wash_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'wedding_service_1_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'wedding_service_2_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'wedding_service_3_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'clear_store_logo' => 'nullable|boolean',
             'clear_atk_store_logo' => 'nullable|boolean',
             'clear_wash_store_logo' => 'nullable|boolean',
+            'clear_wedding_service_1_image' => 'nullable|boolean',
+            'clear_wedding_service_2_image' => 'nullable|boolean',
+            'clear_wedding_service_3_image' => 'nullable|boolean',
             'pos_printer_auto_reconnect' => 'nullable|in:0,1',
             'pos_print_logo_enabled' => 'nullable|in:0,1',
             'pos_bluetooth_chunk_size' => 'nullable|integer|min:90|max:512',
@@ -85,7 +97,7 @@ class SettingController extends Controller implements HasMiddleware
             }
 
             $oldValue = Setting::getValue($settingKey, '');
-            if (is_string($oldValue) && str_starts_with($oldValue, 'storage/settings-logos/')) {
+            if (is_string($oldValue) && (str_starts_with($oldValue, 'storage/settings-logos/') || str_starts_with($oldValue, 'storage/landing-wedding/'))) {
                 $oldPath = str_replace('storage/', '', $oldValue);
                 if (Storage::disk('public')->exists($oldPath)) {
                     Storage::disk('public')->delete($oldPath);
@@ -101,14 +113,16 @@ class SettingController extends Controller implements HasMiddleware
             }
 
             $oldValue = Setting::getValue($settingKey, '');
-            if (is_string($oldValue) && str_starts_with($oldValue, 'storage/settings-logos/')) {
+            if (is_string($oldValue) && (str_starts_with($oldValue, 'storage/settings-logos/') || str_starts_with($oldValue, 'storage/landing-wedding/'))) {
                 $oldPath = str_replace('storage/', '', $oldValue);
                 if (Storage::disk('public')->exists($oldPath)) {
                     Storage::disk('public')->delete($oldPath);
                 }
             }
 
-            $storedPath = $request->file($fileKey)->store('settings-logos', 'public');
+            $storedPath = str_starts_with($fileKey, 'wedding_service_')
+                ? $request->file($fileKey)->store('landing-wedding', 'public')
+                : $request->file($fileKey)->store('settings-logos', 'public');
             $data[$settingKey] = 'storage/'.$storedPath;
         }
 
@@ -278,6 +292,230 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Profil Performa Printer',
+            ],
+            [
+                'key' => 'cctv_section_badge',
+                'value' => 'Security Solutions',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Badge Section CCTV',
+            ],
+            [
+                'key' => 'cctv_section_title',
+                'value' => 'Paket Instalasi CCTV',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Section CCTV',
+            ],
+            [
+                'key' => 'cctv_package_1_speed',
+                'value' => 'Basic',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Paket CCTV 1',
+            ],
+            [
+                'key' => 'cctv_package_1_subtitle',
+                'value' => '1 Kamera HD',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Subjudul Paket CCTV 1',
+            ],
+            [
+                'key' => 'cctv_package_1_price',
+                'value' => 'Rp 600Rb',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Harga Paket CCTV 1',
+            ],
+            [
+                'key' => 'cctv_package_1_features',
+                'value' => "Camera 1 Channel\nHDD 250GB\nFree Instalasi",
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Fitur Paket CCTV 1',
+            ],
+            [
+                'key' => 'cctv_package_2_speed',
+                'value' => 'Basic',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Paket CCTV 2',
+            ],
+            [
+                'key' => 'cctv_package_2_subtitle',
+                'value' => '2 Kamera HD',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Subjudul Paket CCTV 2',
+            ],
+            [
+                'key' => 'cctv_package_2_price',
+                'value' => 'Rp 1.1jt',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Harga Paket CCTV 2',
+            ],
+            [
+                'key' => 'cctv_package_2_features',
+                'value' => "Camera 2 Channel\nHDD 125GB\nFree Instalasi",
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Fitur Paket CCTV 2',
+            ],
+            [
+                'key' => 'cctv_package_3_speed',
+                'value' => 'Basic',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Paket CCTV 3',
+            ],
+            [
+                'key' => 'cctv_package_3_subtitle',
+                'value' => '2 Kamera HD',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Subjudul Paket CCTV 3',
+            ],
+            [
+                'key' => 'cctv_package_3_price',
+                'value' => 'Rp 1.9jt',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Harga Paket CCTV 3',
+            ],
+            [
+                'key' => 'cctv_package_3_features',
+                'value' => "DVR 4 Channel\nHDD 500GB\nFree Instalasi",
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Fitur Paket CCTV 3',
+            ],
+            [
+                'key' => 'cctv_package_4_speed',
+                'value' => 'Basic',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Paket CCTV 4',
+            ],
+            [
+                'key' => 'cctv_package_4_subtitle',
+                'value' => '4 Kamera HD',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Subjudul Paket CCTV 4',
+            ],
+            [
+                'key' => 'cctv_package_4_price',
+                'value' => 'Rp 1.9jt',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Harga Paket CCTV 4',
+            ],
+            [
+                'key' => 'cctv_package_4_features',
+                'value' => "DVR 4 Channel\nHDD 500GB\nFree Instalasi",
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Fitur Paket CCTV 4',
+            ],
+            [
+                'key' => 'wedding_section_badge',
+                'value' => 'Event Services',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Badge Section Wedding',
+            ],
+            [
+                'key' => 'wedding_section_title',
+                'value' => 'Layanan Wedding & Event',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Judul Section Wedding',
+            ],
+            [
+                'key' => 'wedding_service_1_badge',
+                'value' => 'Wedding',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Badge Layanan Wedding 1',
+            ],
+            [
+                'key' => 'wedding_service_1_name',
+                'value' => 'Hias Pengantin',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Layanan Wedding 1',
+            ],
+            [
+                'key' => 'wedding_service_1_desc',
+                'value' => 'Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Deskripsi Layanan Wedding 1',
+            ],
+            [
+                'key' => 'wedding_service_1_image',
+                'value' => 'storage/wash-services/SWCzU7EyNG0o3NCUZRdSxMXEPR19TqlaSxgSP26k.jpg',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Gambar Layanan Wedding 1',
+            ],
+            [
+                'key' => 'wedding_service_2_badge',
+                'value' => 'Photography',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Badge Layanan Wedding 2',
+            ],
+            [
+                'key' => 'wedding_service_2_name',
+                'value' => 'Poto Moment',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Layanan Wedding 2',
+            ],
+            [
+                'key' => 'wedding_service_2_desc',
+                'value' => 'Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Deskripsi Layanan Wedding 2',
+            ],
+            [
+                'key' => 'wedding_service_2_image',
+                'value' => 'storage/wash-services/JNp0g77R9K9equSk3DaVUIvE5GZjsIMqUeb6OEVm.jpg',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Gambar Layanan Wedding 2',
+            ],
+            [
+                'key' => 'wedding_service_3_badge',
+                'value' => 'Event Support',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Badge Layanan Wedding 3',
+            ],
+            [
+                'key' => 'wedding_service_3_name',
+                'value' => 'Sewa Auning',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nama Layanan Wedding 3',
+            ],
+            [
+                'key' => 'wedding_service_3_desc',
+                'value' => 'Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Deskripsi Layanan Wedding 3',
+            ],
+            [
+                'key' => 'wedding_service_3_image',
+                'value' => 'storage/wash-services/fUlfmV40jz1rCp0CC2WTtXnazm1or6ANVVJs9SI8.jpg',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Gambar Layanan Wedding 3',
             ],
         ];
 
