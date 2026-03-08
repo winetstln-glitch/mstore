@@ -15,11 +15,8 @@ class LandingController extends Controller
 {
     public function index()
     {
-        $attendanceEnabledRoles = ['technician', 'kasir-atk', 'kasir-wash'];
         $user = Auth::user();
-        $userRoleName = $user?->role?->name;
         $canAttendanceFromLanding = $user &&
-            in_array($userRoleName, $attendanceEnabledRoles, true) &&
             $user->hasPermission('attendance.create');
         $todayAttendance = null;
 

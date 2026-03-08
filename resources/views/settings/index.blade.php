@@ -18,6 +18,7 @@
                             'store_name',
                             'store_address',
                             'store_phone',
+                            'whatsapp_number',
                             'store_logo',
                             'atk_store_name',
                             'atk_store_address',
@@ -89,6 +90,10 @@
                             <div class="col-md-6">
                                 <label for="store_phone" class="form-label fw-medium">Telepon Toko</label>
                                 <input type="text" class="form-control" id="store_phone" name="store_phone" value="{{ \App\Models\Setting::getValue('store_phone', '081234567890') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="whatsapp_number" class="form-label fw-medium">Nomor WhatsApp Landing</label>
+                                <input type="text" class="form-control" id="whatsapp_number" name="whatsapp_number" value="{{ \App\Models\Setting::getValue('whatsapp_number', '6281234567890') }}">
                             </div>
                             <div class="col-md-6">
                                 <label for="store_logo_file" class="form-label fw-medium">Upload Logo Toko</label>

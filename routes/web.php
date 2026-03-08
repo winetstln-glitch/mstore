@@ -13,6 +13,7 @@ use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\NetworkAnalyzerController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OLTController;
 use App\Http\Controllers\OnuController;
@@ -219,6 +220,11 @@ Route::middleware('auth')->group(function () {
 
     // Tools
     Route::get('/calculator/pon', [CalculatorController::class, 'index'])->name('calculator.pon');
+    Route::get('/network/analyzer', [NetworkAnalyzerController::class, 'index'])->name('network.analyzer');
+    Route::get('/network/analyzer/ping', [NetworkAnalyzerController::class, 'ping'])->name('network.analyzer.ping');
+    Route::get('/network/analyzer/info', [NetworkAnalyzerController::class, 'networkInfo'])->name('network.analyzer.info');
+    Route::get('/network/analyzer/speed/download', [NetworkAnalyzerController::class, 'speedDownload'])->name('network.analyzer.speed.download');
+    Route::post('/network/analyzer/speed/upload', [NetworkAnalyzerController::class, 'speedUpload'])->name('network.analyzer.speed.upload');
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::get('odps/export/excel', [\App\Http\Controllers\OdpController::class, 'exportExcel'])->name('odps.export.excel');

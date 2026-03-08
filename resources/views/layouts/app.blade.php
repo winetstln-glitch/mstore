@@ -217,6 +217,11 @@
                 <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
             </a>
             @endif
+            @if(Auth::user()->hasPermission('router.view'))
+            <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ request()->routeIs('network.analyzer') ? 'active' : '' }}">
+                <i class="fa-solid fa-gauge-high"></i> {{ __('Network Analyzer') }}
+            </a>
+            @endif
             @endif
 
             {{-- Keuangan Group --}}

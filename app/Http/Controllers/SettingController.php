@@ -225,6 +225,13 @@ class SettingController extends Controller implements HasMiddleware
                 'label' => 'Telepon Toko Umum',
             ],
             [
+                'key' => 'whatsapp_number',
+                'value' => '6281234567890',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Nomor WhatsApp Landing',
+            ],
+            [
                 'key' => 'store_logo',
                 'value' => '',
                 'group' => 'general',
