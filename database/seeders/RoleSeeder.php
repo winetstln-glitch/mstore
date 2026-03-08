@@ -65,6 +65,7 @@ class RoleSeeder extends Seeder
                     'installation.edit', // Can update status/photos
                     'attendance.view',
                     'attendance.create',
+                    'attendance.edit',
                     'attendance.report',
                     'map.view',
                     'odp.view',
@@ -156,6 +157,9 @@ class RoleSeeder extends Seeder
                     'atk.view',
                     'atk.pos',
                     'atk.report',
+                    'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
                     'profile.view',
                     'profile.update',
                 ])->get();
@@ -166,6 +170,9 @@ class RoleSeeder extends Seeder
                     'wash.view',
                     'wash.pos',
                     'wash.report',
+                    'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
                     'profile.view',
                     'profile.update',
                 ])->get();

@@ -104,6 +104,10 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('/settings/atk', [SettingController::class, 'atk'])->name('settings.atk.index');
+    Route::post('/settings/atk', [SettingController::class, 'update'])->name('settings.atk.update');
+    Route::get('/settings/wash', [SettingController::class, 'wash'])->name('settings.wash.index');
+    Route::post('/settings/wash', [SettingController::class, 'update'])->name('settings.wash.update');
 
     // API Keys Management
     Route::get('settings/apikeys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('apikeys.index');
@@ -139,6 +143,8 @@ Route::middleware('auth')->group(function () {
     Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual');
     Route::delete('attendance/bulk-destroy', [TechnicianAttendanceController::class, 'bulkDestroy'])->name('attendance.bulkDestroy');
     Route::post('attendance/{attendance}/notify', [TechnicianAttendanceController::class, 'sendNotification'])->name('attendance.notify');
+    Route::post('landing/attendance/clock-in', [TechnicianAttendanceController::class, 'store'])->name('landing.attendance.store');
+    Route::put('landing/attendance/{attendance}/clock-out', [TechnicianAttendanceController::class, 'update'])->name('landing.attendance.update');
     Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);
 
     // Schedules & Leaves
@@ -188,7 +194,6 @@ Route::middleware('auth')->group(function () {
     // Business & Operations
     Route::get('finance/material-report', [FinanceController::class, 'materialReport'])->name('finance.material_report');
     Route::get('finance/export-accounting', [FinanceController::class, 'exportAccounting'])->name('finance.export_accounting');
-    Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
     Route::get('finance/profit-loss', [FinanceController::class, 'profitLoss'])->name('finance.profit_loss');
     Route::get('finance/profit-loss/pdf', [FinanceController::class, 'downloadProfitLossPdf'])->name('finance.profit_loss.pdf');
     Route::get('finance/profit-loss/excel', [FinanceController::class, 'downloadProfitLossExcel'])->name('finance.profit_loss.excel');

@@ -2356,9 +2356,4 @@ class FinanceController extends Controller implements HasMiddleware
     {
         return redirect()->back()->with('info', __('Fitur Laporan Pembukuan sedang dalam pengembangan.'));
     }
-
-    public function settings()
-    {
-        return redirect()->route('settings.index');
-    }
 }

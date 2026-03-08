@@ -51,11 +51,6 @@
                     <i class="fa-solid fa-file-excel me-1"></i> <span>{{ __('Jurnal') }}</span>
                 </a>
             </div>
-            <div class="col">
-                <a href="{{ route('finance.settings') }}" class="btn btn-dark border borderw-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Settings') }}">
-                    <i class="fa-solid fa-cog me-1"></i> <span>{{ __('Settings') }}</span>
-                </a>
-            </div>
             @endif
             <div class="col">
                 <button class="btn btn-light border w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#helpModal" data-bs-toggle="tooltip" title="{{ __('Panduan Audit') }}">

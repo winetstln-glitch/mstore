@@ -653,8 +653,6 @@
     <div class="receipt-actions">
         <button type="button" onclick="printReceipt()">Print</button>
         <button type="button" onclick="printBluetooth()">Print Bluetooth</button>
-        <button type="button" onclick="selectBluetoothPrinter()">Pilih Printer</button>
-        <button type="button" onclick="retryPrintQueue()">Retry Queue</button>
         <span id="printQueueInfo"></span>
     </div>
     <div class="header">

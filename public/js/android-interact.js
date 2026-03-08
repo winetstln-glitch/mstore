@@ -3,7 +3,6 @@
  * - Ripple effects
  * - Responsive table labeling
  * - Bottom sheet interactions (future)
- * - FAB Interaction
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -64,53 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // -------------------------------------------------------------------------
-    // 3. Floating Action Button (FAB) Interaction
-    // -------------------------------------------------------------------------
-    const fabBtn = document.getElementById('mainFabBtn');
-    const fabMenu = document.getElementById('fabMenu');
-    
-    if (fabBtn && fabMenu) {
-        fabBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation(); // Prevent document click from closing immediately
-            
-            fabMenu.classList.toggle('active');
-            
-            // Toggle Icon
-            const icon = this.querySelector('i');
-            if (icon) {
-                if (fabMenu.classList.contains('active')) {
-                    icon.classList.remove('fa-plus');
-                    icon.classList.add('fa-times');
-                    // Add rotation effect via class if desired
-                    icon.style.transform = 'rotate(90deg)';
-                    icon.style.transition = 'transform 0.2s';
-                } else {
-                    icon.classList.remove('fa-times');
-                    icon.classList.add('fa-plus');
-                    icon.style.transform = 'rotate(0deg)';
-                }
-            }
-        });
-        
-        // Close FAB when clicking outside
-        document.addEventListener('click', function(e) {
-            if (fabMenu.classList.contains('active')) {
-                if (!fabBtn.contains(e.target) && !fabMenu.contains(e.target)) {
-                    fabMenu.classList.remove('active');
-                    const icon = fabBtn.querySelector('i');
-                    if (icon) {
-                        icon.classList.remove('fa-times');
-                        icon.classList.add('fa-plus');
-                        icon.style.transform = 'rotate(0deg)';
-                    }
-                }
-            }
-        });
-    }
-
-    // -------------------------------------------------------------------------
-    // 4. Input Focus Effects
+    // 3. Input Focus Effects
     // -------------------------------------------------------------------------
     const formControls = document.querySelectorAll('.form-control, .form-select');
     formControls.forEach(input => {

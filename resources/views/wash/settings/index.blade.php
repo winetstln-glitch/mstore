@@ -1,0 +1,57 @@
+@extends('layouts.app')
+
+@section('title', __('Pengaturan Wash'))
+
+@section('content')
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 border-top border-4 border-primary">
+            <div class="card-header py-3">
+                <h5 class="mb-0 fw-bold">{{ __('Pengaturan Wash') }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('settings.wash.update') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-store me-1"></i> Identitas Toko Wash
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="wash_store_name" class="form-label fw-medium">Nama Toko Wash</label>
+                                <input type="text" class="form-control" id="wash_store_name" name="wash_store_name" value="{{ \App\Models\Setting::getValue('wash_store_name', \App\Models\Setting::getValue('store_name', config('app.name', 'MStore'))) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_store_phone" class="form-label fw-medium">Telepon Toko Wash</label>
+                                <input type="text" class="form-control" id="wash_store_phone" name="wash_store_phone" value="{{ \App\Models\Setting::getValue('wash_store_phone', \App\Models\Setting::getValue('store_phone', '081234567890')) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_store_logo_file" class="form-label fw-medium">Upload Logo Toko Wash</label>
+                                <input type="file" class="form-control" id="wash_store_logo_file" name="wash_store_logo_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('wash_store_logo'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('wash_store_logo'), 'http') ? \App\Models\Setting::getValue('wash_store_logo') : asset(\App\Models\Setting::getValue('wash_store_logo')) }}" alt="Logo Toko Wash" class="img-thumbnail mt-2" style="max-height: 56px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_wash_store_logo" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_wash_store_logo" name="clear_wash_store_logo">
+                                        <label class="form-check-label text-danger" for="clear_wash_store_logo">Hapus logo toko Wash</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_store_address" class="form-label fw-medium">Alamat Toko Wash</label>
+                                <textarea class="form-control" id="wash_store_address" name="wash_store_address" rows="3">{{ \App\Models\Setting::getValue('wash_store_address', \App\Models\Setting::getValue('store_address', 'Jl. Contoh No. 1')) }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end pt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengaturan') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

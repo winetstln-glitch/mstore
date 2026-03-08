@@ -17,7 +17,7 @@ class SettingController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:setting.view', only: ['index']),
+            new Middleware('permission:setting.view', only: ['index', 'atk', 'wash']),
             new Middleware('permission:setting.update', only: ['update']),
         ];
     }
@@ -29,7 +29,7 @@ class SettingController extends Controller implements HasMiddleware
     {
         $this->ensureReceiptIdentitySettings();
 
-        $settings = Setting::where('group', '!=', 'telegram')
+        $settings = Setting::whereNotIn('group', ['telegram', 'whatsapp'])
             ->where('key', '!=', 'subscription_packages')
             ->orderBy('group')
             ->orderBy('id')
@@ -38,6 +38,20 @@ class SettingController extends Controller implements HasMiddleware
         $accountOptions = Account::orderBy('code')->get();
 
         return view('settings.index', compact('settings', 'accountOptions'));
+    }
+
+    public function atk()
+    {
+        $this->ensureReceiptIdentitySettings();
+
+        return view('atk.settings.index');
+    }
+
+    public function wash()
+    {
+        $this->ensureReceiptIdentitySettings();
+
+        return view('wash.settings.index');
     }
 
     /**

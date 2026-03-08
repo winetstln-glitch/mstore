@@ -21,7 +21,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:attendance.view', only: ['index', 'exportPdf', 'exportExcel']),
             new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut']),
-            new Middleware('permission:attendance.edit', only: ['update', 'edit']),
+            new Middleware('permission:attendance.create|attendance.edit', only: ['update']),
+            new Middleware('permission:attendance.edit', only: ['edit']),
             new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
         ];
     }
@@ -511,7 +512,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'notes' => $request->notes,
         ]);
 
-        return redirect()->route('attendance.create')->with('success', __('Clock In successful!'));
+        return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
     }
 
     /**
@@ -574,7 +575,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
 
-        return redirect()->route('attendance.create')->with('success', __('Clock Out successful!'));
+        return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
     }
 
     public function destroy(TechnicianAttendance $attendance)
@@ -641,5 +642,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c;
+    }
+
+    private function attendanceRedirectRoute(Request $request): string
+    {
+        return $request->routeIs('landing.attendance.*') ? 'landing' : 'attendance.create';
     }
 }

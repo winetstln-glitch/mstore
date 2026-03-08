@@ -51,6 +51,9 @@
 
                 <div class="d-none d-lg-flex gap-4" id="navMenu">
                     <a class="nav-link" href="#home">Beranda</a>
+                    @if(($canAttendanceFromLanding ?? false) === true)
+                        <a class="nav-link" href="#absensi-karyawan">Absensi</a>
+                    @endif
                     <a class="nav-link" href="#packages">Internet</a>
                     <a class="nav-link" href="#atk-promo">ATK Store</a>
                     <a class="nav-link" href="#wash-services">Auto Wash</a>
@@ -99,6 +102,94 @@
             </div>
         </div>
     </section>
+
+    @if(($canAttendanceFromLanding ?? false) === true)
+    <section id="absensi-karyawan" class="py-5 bg-black bg-opacity-25">
+        <div class="container py-4">
+            <div class="section-header text-center mb-5 fade-up">
+                <h6 class="text-primary fw-bold text-uppercase">Employee Attendance</h6>
+                <h2 class="display-6 fw-800">Absensi Karyawan</h2>
+                <p class="text-secondary mb-0">Teknisi, kasir ATK, dan kasir Wash bisa absen langsung dari landing page.</p>
+            </div>
+
+            @if($errors->any())
+                <div class="alert alert-danger fade-up">
+                    <ul class="mb-0 ps-3">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="card border-0 shadow-sm fade-up">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-1">Halo, {{ auth()->user()->name }}</h5>
+                            <div class="text-muted small">
+                                Clock In: <span class="fw-semibold">{{ $clockInStart }} - {{ $clockInEnd }} WIB</span> ·
+                                Clock Out: <span class="fw-semibold">{{ $clockOutStart }} - {{ $clockOutEnd }} WIB</span>
+                            </div>
+                        </div>
+                        <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
+                            {{ now()->translatedFormat('l, d F Y') }}
+                        </div>
+                    </div>
+
+                    @if($todayAttendance && $todayAttendance->clock_out)
+                        <div class="alert alert-success mb-0">
+                            Absensi hari ini sudah selesai. Anda sudah clock out pukul {{ $todayAttendance->clock_out->format('H:i') }}.
+                        </div>
+                    @elseif($todayAttendance && !$todayAttendance->clock_out)
+                        <form action="{{ route('landing.attendance.update', $todayAttendance->id) }}" method="POST" enctype="multipart/form-data" class="landing-attendance-form" novalidate>
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="latitude" class="landing-latitude">
+                            <input type="hidden" name="longitude" class="landing-longitude">
+
+                            <div class="alert alert-warning">
+                                Anda sudah clock in pukul <strong>{{ $todayAttendance->clock_in->format('H:i') }}</strong>. Lanjutkan clock out.
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Selfie Clock Out</label>
+                                <input type="file" name="photo" class="form-control landing-photo-input" accept="image/*" capture="user" required>
+                                <img src="#" class="img-fluid rounded border mt-3 d-none landing-preview" style="max-height: 220px;" alt="Preview Clock Out">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Catatan</label>
+                                <textarea name="notes" rows="2" class="form-control" placeholder="Catatan tambahan (opsional)"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger px-4">Clock Out</button>
+                        </form>
+                    @else
+                        <form action="{{ route('landing.attendance.store') }}" method="POST" enctype="multipart/form-data" class="landing-attendance-form" novalidate>
+                            @csrf
+                            <input type="hidden" name="latitude" class="landing-latitude">
+                            <input type="hidden" name="longitude" class="landing-longitude">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Selfie Clock In</label>
+                                <input type="file" name="photo" class="form-control landing-photo-input" accept="image/*" capture="user" required>
+                                <img src="#" class="img-fluid rounded border mt-3 d-none landing-preview" style="max-height: 220px;" alt="Preview Clock In">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Catatan</label>
+                                <textarea name="notes" rows="2" class="form-control" placeholder="Rencana kerja hari ini (opsional)"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary px-4">Clock In</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </section>
+    @endif
 
     @php
         $cctvPackages = [
@@ -558,6 +649,36 @@
             localStorage.setItem('theme', newTheme);
             themeToggle.querySelector('i').className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         });
+
+        const attendanceForms = document.querySelectorAll('.landing-attendance-form');
+        attendanceForms.forEach((form) => {
+            const photoInput = form.querySelector('.landing-photo-input');
+            const preview = form.querySelector('.landing-preview');
+            if (photoInput && preview) {
+                photoInput.addEventListener('change', (event) => {
+                    const [file] = event.target.files;
+                    if (!file) {
+                        preview.src = '#';
+                        preview.classList.add('d-none');
+                        return;
+                    }
+                    const objectUrl = URL.createObjectURL(file);
+                    preview.src = objectUrl;
+                    preview.classList.remove('d-none');
+                });
+            }
+        });
+
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                document.querySelectorAll('.landing-latitude').forEach((input) => {
+                    input.value = position.coords.latitude;
+                });
+                document.querySelectorAll('.landing-longitude').forEach((input) => {
+                    input.value = position.coords.longitude;
+                });
+            });
+        }
     </script>
 </body>
 </html>

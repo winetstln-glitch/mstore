@@ -6,13 +6,29 @@ use App\Models\AtkProduct;
 use App\Models\Odp;
 use App\Models\Package;
 use App\Models\Setting;
+use App\Models\TechnicianAttendance;
 use App\Models\WashService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
 class LandingController extends Controller
 {
     public function index()
     {
+        $attendanceEnabledRoles = ['technician', 'kasir-atk', 'kasir-wash'];
+        $user = Auth::user();
+        $userRoleName = $user?->role?->name;
+        $canAttendanceFromLanding = $user &&
+            in_array($userRoleName, $attendanceEnabledRoles, true) &&
+            $user->hasPermission('attendance.create');
+        $todayAttendance = null;
+
+        if ($canAttendanceFromLanding) {
+            $todayAttendance = TechnicianAttendance::where('user_id', $user->id)
+                ->whereDate('clock_in', today())
+                ->first();
+        }
+
         // Safely fetch Packages
         try {
             $packages = Package::where('is_active', true)->orderBy('price')->get();
@@ -68,6 +84,18 @@ class LandingController extends Controller
             $odps = collect([]);
         }
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber', 'odps'));
+        try {
+            $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
+            $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+            $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
+            $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
+        } catch (\Exception $e) {
+            $clockInStart = '07:00';
+            $clockInEnd = '13:00';
+            $clockOutStart = '20:00';
+            $clockOutEnd = '01:00';
+        }
+
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber', 'odps', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
     }
 }
