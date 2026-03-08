@@ -223,7 +223,6 @@
     </div>
 
     <script>
-        // Payload disiapkan untuk pengiriman ke printer Bluetooth via bridge
         const receiptPayload = {{ Js::from([
             'store' => $receiptStoreName,
             'address' => $receiptStoreAddress,
@@ -255,15 +254,61 @@
             return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
         }
 
-        function printBluetooth() {
+        function resolveBluetoothPrinter() {
             if (typeof window.printBluetoothAction === 'function') {
-                window.printBluetoothAction(receiptPayload);
-                return true;
-            } else {
-                console.log("Data Struk:", receiptPayload);
-                alert("Fungsi Cetak Bluetooth sedang diproses...");
+                return function (payload) {
+                    try {
+                        return window.printBluetoothAction(payload) !== false;
+                    } catch (_) {
+                        try {
+                            return window.printBluetoothAction(JSON.stringify(payload)) !== false;
+                        } catch (_) {
+                            return false;
+                        }
+                    }
+                };
+            }
+            const bridgeCandidates = [window.Android, window.android, window.MstoreAndroid].filter(Boolean);
+            const bridgeMethods = ['printBluetoothAction', 'printBluetooth', 'printReceipt', 'printStruk'];
+            for (const bridge of bridgeCandidates) {
+                for (const method of bridgeMethods) {
+                    if (typeof bridge[method] !== 'function') {
+                        continue;
+                    }
+                    return function (payload) {
+                        try {
+                            return bridge[method](payload) !== false;
+                        } catch (_) {
+                            try {
+                                return bridge[method](JSON.stringify(payload)) !== false;
+                            } catch (_) {
+                                return false;
+                            }
+                        }
+                    };
+                }
+            }
+            return null;
+        }
+
+        function printBluetooth() {
+            const queueInfo = document.getElementById('printQueueInfo');
+            const printer = resolveBluetoothPrinter();
+            if (!printer) {
+                if (queueInfo) {
+                    queueInfo.textContent = 'Bluetooth tidak tersedia, gunakan Cetak (Browser).';
+                }
+                alert('Cetak Bluetooth belum tersedia pada perangkat ini.');
                 return false;
             }
+            const success = printer(receiptPayload);
+            if (queueInfo) {
+                queueInfo.textContent = success ? 'Data dikirim ke printer Bluetooth.' : 'Gagal mengirim ke printer Bluetooth.';
+            }
+            if (!success) {
+                alert('Gagal mencetak via Bluetooth. Pastikan printer terhubung.');
+            }
+            return success;
         }
         
         window.onload = function() {
