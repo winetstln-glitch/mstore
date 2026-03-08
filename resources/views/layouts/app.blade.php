@@ -637,30 +637,43 @@
         }
     });
 
-    // SweetAlert2 Flash Messages
+    const showFlashMessage = function (config) {
+        Swal.fire(config);
+    };
+
     @if(session('success'))
-        Swal.fire({
+        showFlashMessage({
             icon: 'success',
             title: "{{ __('Success!') }}",
-            text: "{{ session('success') }}",
+            html: {!! json_encode(session('success')) !!},
             timer: 3000,
             showConfirmButton: false
         });
     @endif
 
     @if(session('error'))
-        Swal.fire({
+        showFlashMessage({
             icon: 'error',
             title: "{{ __('Error!') }}",
-            text: "{{ session('error') }}",
+            html: {!! json_encode(session('error')) !!},
         });
     @endif
 
     @if(session('warning'))
-        Swal.fire({
+        showFlashMessage({
             icon: 'warning',
             title: "{{ __('Warning!') }}",
-            text: "{{ session('warning') }}",
+            html: {!! json_encode(session('warning')) !!},
+        });
+    @endif
+
+    @if(session('info'))
+        showFlashMessage({
+            icon: 'info',
+            title: "{{ __('Info!') }}",
+            html: {!! json_encode(session('info')) !!},
+            timer: 5000,
+            showConfirmButton: true
         });
     @endif
     

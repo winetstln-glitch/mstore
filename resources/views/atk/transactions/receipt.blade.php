@@ -302,7 +302,7 @@
     </div>
 
     <div class="payment-status">
-        Lunas - {{ strtoupper($transaction->payment_method ?? 'CASH') }}
+        Pembayaran - {{ strtoupper($transaction->payment_method ?? 'CASH') }}
     </div>
 
     <div class="footer">

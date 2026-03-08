@@ -37,16 +37,17 @@
     <title>Receipt #{{ $transaction->transaction_number }}</title>
     <style>
         * { box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', Courier, monospace;
+         body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-size: 11px;
             line-height: 1.4;
-            width: 58mm;
-            margin: 0;
-            padding: 8px;
             color: #000;
+            width: 58mm;
+            margin: 0 auto;
+            padding: 8px;
             background: #fff;
         }
+
         .no-print-area {
             display: flex;
             flex-direction: column;
@@ -81,14 +82,22 @@
             filter: grayscale(1);
         }
         .header h2 { margin: 2px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        .header p { margin: 0; font-size: 10px; }
+        .header p { margin: 0; font-size: 9px; }
 
         .divider {
             border-top: 1px dashed #000;
             margin: 8px 0;
             width: 100%;
         }
-
+  .payment-status {
+            margin-top: 12px;
+            text-align: center;
+            border: 1px solid #000;
+            padding: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
         .info-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
         .info-table td { vertical-align: top; font-size: 10px; padding: 1px 0; }
         .label { color: #333; width: 65px; font-weight: bold; }
@@ -214,7 +223,9 @@
             </div>
         @endif
     </div>
-
+<div class="payment-status">
+        Pembayaran - {{ strtoupper($transaction->payment_method ?? 'CASH') }}
+    </div>
     <div class="footer">
         <div class="divider"></div>
         <p><strong>TERIMA KASIH</strong></p>
@@ -254,51 +265,68 @@
             return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
         }
 
+        function invokeBridgePrinter(invoker, payload) {
+            try {
+                return invoker(payload) !== false;
+            } catch (_) {
+                try {
+                    return invoker(JSON.stringify(payload)) !== false;
+                } catch (_) {
+                    return false;
+                }
+            }
+        }
+
         function resolveBluetoothPrinter() {
-            if (typeof window.printBluetoothAction === 'function') {
-                return function (payload) {
-                    try {
-                        return window.printBluetoothAction(payload) !== false;
-                    } catch (_) {
-                        try {
-                            return window.printBluetoothAction(JSON.stringify(payload)) !== false;
-                        } catch (_) {
-                            return false;
-                        }
-                    }
-                };
+            const windowMethods = ['printBluetoothAction', 'printBluetooth', 'printReceipt', 'printStruk', 'printBluetoothReceipt', 'cetakBluetooth'];
+            for (const method of windowMethods) {
+                if (typeof window[method] === 'function') {
+                    return function (payload) {
+                        return invokeBridgePrinter(window[method], payload);
+                    };
+                }
             }
             const bridgeCandidates = [window.Android, window.android, window.MstoreAndroid].filter(Boolean);
-            const bridgeMethods = ['printBluetoothAction', 'printBluetooth', 'printReceipt', 'printStruk'];
             for (const bridge of bridgeCandidates) {
-                for (const method of bridgeMethods) {
+                for (const method of windowMethods) {
                     if (typeof bridge[method] !== 'function') {
                         continue;
                     }
                     return function (payload) {
-                        try {
-                            return bridge[method](payload) !== false;
-                        } catch (_) {
-                            try {
-                                return bridge[method](JSON.stringify(payload)) !== false;
-                            } catch (_) {
-                                return false;
-                            }
-                        }
+                        return invokeBridgePrinter(function (data) {
+                            return bridge[method](data);
+                        }, payload);
+                    };
+                }
+                if (typeof bridge.postMessage === 'function') {
+                    return function (payload) {
+                        return invokeBridgePrinter(function (data) {
+                            return bridge.postMessage({ action: 'printBluetooth', payload: data });
+                        }, payload);
                     };
                 }
             }
             return null;
         }
 
-        function printBluetooth() {
+        function printBluetooth(attempt = 0) {
             const queueInfo = document.getElementById('printQueueInfo');
+            const maxAttempts = 8;
             const printer = resolveBluetoothPrinter();
+            if (!printer && attempt < maxAttempts) {
+                if (queueInfo) {
+                    queueInfo.textContent = 'Menunggu layanan Bluetooth...';
+                }
+                setTimeout(function () {
+                    printBluetooth(attempt + 1);
+                }, 250);
+                return true;
+            }
             if (!printer) {
                 if (queueInfo) {
-                    queueInfo.textContent = 'Bluetooth tidak tersedia, gunakan Cetak (Browser).';
+                    queueInfo.textContent = 'Bridge Bluetooth tidak terdeteksi, pakai Cetak (Browser).';
                 }
-                alert('Cetak Bluetooth belum tersedia pada perangkat ini.');
+                alert('Bridge Bluetooth tidak terdeteksi. Silakan buka dari aplikasi Android MStore.');
                 return false;
             }
             const success = printer(receiptPayload);
