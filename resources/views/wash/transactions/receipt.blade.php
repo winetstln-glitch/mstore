@@ -267,18 +267,36 @@
 
         function invokeBridgePrinter(invoker, payload) {
             try {
-                return invoker(payload) !== false;
+                invoker(payload);
+                return true;
             } catch (_) {
                 try {
-                    return invoker(JSON.stringify(payload)) !== false;
+                    invoker(JSON.stringify(payload));
+                    return true;
                 } catch (_) {
                     return false;
                 }
             }
         }
 
+        function isWebViewContext() {
+            const ua = navigator.userAgent || '';
+            return /\bwv\b|Android.*; wv/i.test(ua) || !!window.ReactNativeWebView;
+        }
+
         function resolveBluetoothPrinter() {
-            const windowMethods = ['printBluetoothAction', 'printBluetooth', 'printReceipt', 'printStruk', 'printBluetoothReceipt', 'cetakBluetooth'];
+            const windowMethods = [
+                'printBluetoothAction',
+                'printBluetooth',
+                'printReceipt',
+                'printStruk',
+                'printBluetoothReceipt',
+                'cetakBluetooth',
+                'handleBluetoothPrint',
+                'printViaBluetooth',
+                'sendPrintJob',
+                'bluetoothPrint',
+            ];
             for (const method of windowMethods) {
                 if (typeof window[method] === 'function') {
                     return function (payload) {
@@ -286,7 +304,7 @@
                     };
                 }
             }
-            const bridgeCandidates = [window.Android, window.android, window.MstoreAndroid].filter(Boolean);
+            const bridgeCandidates = [window.Android, window.android, window.MstoreAndroid, window.NativeAndroid, window.JsBridge].filter(Boolean);
             for (const bridge of bridgeCandidates) {
                 for (const method of windowMethods) {
                     if (typeof bridge[method] !== 'function') {
@@ -306,27 +324,52 @@
                     };
                 }
             }
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.printBluetooth && typeof window.webkit.messageHandlers.printBluetooth.postMessage === 'function') {
+                return function (payload) {
+                    return invokeBridgePrinter(function (data) {
+                        return window.webkit.messageHandlers.printBluetooth.postMessage(data);
+                    }, payload);
+                };
+            }
+            if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+                return function (payload) {
+                    return invokeBridgePrinter(function (data) {
+                        const message = { action: 'printBluetooth', payload: data };
+                        return window.ReactNativeWebView.postMessage(JSON.stringify(message));
+                    }, payload);
+                };
+            }
             return null;
         }
 
-        function printBluetooth(attempt = 0) {
+        function printBluetooth(attempt = 0, options = {}) {
             const queueInfo = document.getElementById('printQueueInfo');
-            const maxAttempts = 8;
+            const isWebView = isWebViewContext();
+            const maxAttempts = isWebViewContext() ? 20 : 8;
+            const retryDelay = isWebViewContext() ? 200 : 250;
             const printer = resolveBluetoothPrinter();
             if (!printer && attempt < maxAttempts) {
                 if (queueInfo) {
                     queueInfo.textContent = 'Menunggu layanan Bluetooth...';
                 }
                 setTimeout(function () {
-                    printBluetooth(attempt + 1);
-                }, 250);
+                    printBluetooth(attempt + 1, options);
+                }, retryDelay);
                 return true;
             }
             if (!printer) {
                 if (queueInfo) {
                     queueInfo.textContent = 'Bridge Bluetooth tidak terdeteksi, pakai Cetak (Browser).';
                 }
-                alert('Bridge Bluetooth tidak terdeteksi. Silakan buka dari aplikasi Android MStore.');
+                if (!isWebView && !options.silent) {
+                    alert('Bridge Bluetooth tidak terdeteksi. Silakan buka dari aplikasi Android MStore.');
+                }
+                if (typeof options.onDone === 'function') {
+                    options.onDone(false);
+                }
+                if (options.fallbackToBrowserOnFailure) {
+                    window.print();
+                }
                 return false;
             }
             const success = printer(receiptPayload);
@@ -334,7 +377,19 @@
                 queueInfo.textContent = success ? 'Data dikirim ke printer Bluetooth.' : 'Gagal mengirim ke printer Bluetooth.';
             }
             if (!success) {
-                alert('Gagal mencetak via Bluetooth. Pastikan printer terhubung.');
+                if (isWebView) {
+                    if (queueInfo) {
+                        queueInfo.textContent = 'Gagal mengirim ke layanan cetak. Coba lagi beberapa detik.';
+                    }
+                } else if (!options.silent) {
+                    alert('Gagal mencetak via Bluetooth. Pastikan printer terhubung.');
+                }
+                if (options.fallbackToBrowserOnFailure) {
+                    window.print();
+                }
+            }
+            if (typeof options.onDone === 'function') {
+                options.onDone(success);
             }
             return success;
         }
@@ -342,8 +397,9 @@
         window.onload = function() {
             const autoPrint = new URLSearchParams(window.location.search).get('autoprint');
             if (autoPrint === '1') {
-                const printedViaBluetooth = isMobileDevice() ? printBluetooth() : false;
-                if (!printedViaBluetooth) {
+                if (isMobileDevice()) {
+                    printBluetooth(0, { fallbackToBrowserOnFailure: true, silent: true });
+                } else {
                     window.print();
                 }
             }
