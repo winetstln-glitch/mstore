@@ -85,6 +85,12 @@
                             </div>
                             <small id="customerInfo" class="form-text text-muted"></small>
                         </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="send_whatsapp">
+                            <label class="form-check-label" for="send_whatsapp">
+                                Kirim nota via WhatsApp
+                            </label>
+                        </div>
                         <div class="mb-3">
                             <label for="customer_name" class="form-label">Customer Name</label>
                             <input type="text" class="form-control" id="customer_name" name="customer_name">
@@ -197,6 +203,28 @@ document.addEventListener('DOMContentLoaded', function () {
     let cart = [];
     const employees = @json($employees ?? []);
 
+    function isMobileDevice() {
+        const ua = navigator.userAgent || navigator.vendor || '';
+        return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
+    }
+
+    const sendWhatsappCheckbox = document.getElementById('send_whatsapp');
+    if (sendWhatsappCheckbox && isMobileDevice()) {
+        sendWhatsappCheckbox.checked = true;
+    }
+
+    function withAutoPrint(url) {
+        try {
+            const absoluteUrl = new URL(url, window.location.origin);
+            absoluteUrl.searchParams.set('autoprint', '1');
+            absoluteUrl.searchParams.set('source', 'pos-wash-mobile');
+            return absoluteUrl.toString();
+        } catch (error) {
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}autoprint=1&source=pos-wash-mobile`;
+        }
+    }
+
     function addToCart(id, name, price, type) {
         id = parseInt(id);
         const existingItem = cart.find(item => item.id === id);
@@ -280,6 +308,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('vehicle_plate').value = "";
         document.getElementById('customer_name').value = "";
         document.getElementById('customer_phone').value = "";
+        const sendWhatsapp = document.getElementById('send_whatsapp');
+        if (sendWhatsapp) {
+            sendWhatsapp.checked = false;
+        }
         document.getElementById('cash_amount').value = "";
         document.getElementById('changeAmount').textContent = "Rp 0";
         document.getElementById('customerInfo').innerHTML = "";
@@ -422,6 +454,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const method = document.getElementById('payment_method')?.value || 'cash';
         const cashInput = document.getElementById('cash_amount')?.value || 0;
         const cash = parseInt(cashInput) || 0;
+        const sendWhatsapp = !!document.getElementById('send_whatsapp')?.checked;
+        const phone = document.getElementById('customer_phone').value;
+
+        if (sendWhatsapp && !phone) {
+            alert('Isi nomor WhatsApp customer terlebih dahulu.');
+            return;
+        }
 
         /* if (cash < total) {
              alert('Insufficient cash!');
@@ -462,16 +501,20 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 const url = data.receipt_url ? data.receipt_url : ('{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt');
-                window.open(url, '_blank', 'width=400,height=600');
-                const phone = data.customer_phone || document.getElementById('customer_phone').value;
-                if (phone && !data.wa_sent) {
+                if (isMobileDevice()) {
+                    window.location.href = withAutoPrint(url);
+                } else {
+                    window.open(url, '_blank', 'width=400,height=600');
+                }
+                const resolvedPhone = data.customer_phone || phone;
+                if (sendWhatsapp && resolvedPhone && !data.wa_sent) {
                     fetch(`{{ url('wash/transactions') }}/${data.transaction_id}/whatsapp-receipt`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
-                        body: `phone=${encodeURIComponent(phone)}`
+                        body: `phone=${encodeURIComponent(resolvedPhone)}`
                     }).catch(()=>{});
                 }
                 resetCart();

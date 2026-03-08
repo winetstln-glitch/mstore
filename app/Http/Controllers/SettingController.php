@@ -105,12 +105,17 @@ class SettingController extends Controller implements HasMiddleware
             'pos_performance_profile' => 'nullable|in:ultrafast,balanced,stable',
         ]);
 
+        $existingSettings = Setting::query()
+            ->whereIn('key', array_values($logoUploads))
+            ->get(['key', 'value', 'group', 'type', 'label'])
+            ->keyBy('key');
+
         foreach ($logoClearFlags as $clearKey => $settingKey) {
             if (! $request->boolean($clearKey)) {
                 continue;
             }
 
-            $oldValue = Setting::getValue($settingKey, '');
+            $oldValue = $existingSettings->get($settingKey)?->value ?? '';
             if (is_string($oldValue) && (str_starts_with($oldValue, 'storage/settings-logos/') || str_starts_with($oldValue, 'storage/landing-wedding/'))) {
                 $oldPath = str_replace('storage/', '', $oldValue);
                 if (Storage::disk('public')->exists($oldPath)) {
@@ -119,6 +124,13 @@ class SettingController extends Controller implements HasMiddleware
             }
 
             $data[$settingKey] = '';
+            $existingSettings->put($settingKey, (object) [
+                'key' => $settingKey,
+                'value' => '',
+                'group' => $existingSettings->get($settingKey)?->group,
+                'type' => $existingSettings->get($settingKey)?->type,
+                'label' => $existingSettings->get($settingKey)?->label,
+            ]);
         }
 
         foreach ($logoUploads as $fileKey => $settingKey) {
@@ -126,7 +138,7 @@ class SettingController extends Controller implements HasMiddleware
                 continue;
             }
 
-            $oldValue = Setting::getValue($settingKey, '');
+            $oldValue = $existingSettings->get($settingKey)?->value ?? '';
             if (is_string($oldValue) && (str_starts_with($oldValue, 'storage/settings-logos/') || str_starts_with($oldValue, 'storage/landing-wedding/'))) {
                 $oldPath = str_replace('storage/', '', $oldValue);
                 if (Storage::disk('public')->exists($oldPath)) {
@@ -138,8 +150,24 @@ class SettingController extends Controller implements HasMiddleware
                 ? $request->file($fileKey)->store('landing-wedding', 'public')
                 : $request->file($fileKey)->store('settings-logos', 'public');
             $data[$settingKey] = 'storage/'.$storedPath;
+            $existingSettings->put($settingKey, (object) [
+                'key' => $settingKey,
+                'value' => $data[$settingKey],
+                'group' => $existingSettings->get($settingKey)?->group,
+                'type' => $existingSettings->get($settingKey)?->type,
+                'label' => $existingSettings->get($settingKey)?->label,
+            ]);
         }
 
+        if ($data !== []) {
+            $existingSettings = Setting::query()
+                ->whereIn('key', array_keys($data))
+                ->get(['key', 'group', 'type', 'label'])
+                ->keyBy('key');
+        }
+
+        $rows = [];
+        $timestamp = now();
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $value = json_encode($value);
@@ -147,18 +175,26 @@ class SettingController extends Controller implements HasMiddleware
             if ($key === 'mixradius_api_token' && ($value === null || $value === '')) {
                 continue;
             }
-            $affected = Setting::where('key', $key)->update(['value' => $value]);
-            if ($affected === 0) {
-                $group = str_starts_with($key, 'mixradius_') ? 'mixradius' : 'general';
-                $type = $key === 'mixradius_enforce_customer_login' ? 'boolean' : 'text';
-                Setting::create([
-                    'key' => $key,
-                    'value' => $value,
-                    'group' => $group,
-                    'type' => $type,
-                    'label' => ucwords(str_replace('_', ' ', $key)),
-                ]);
-            }
+
+            $existing = $existingSettings->get($key);
+            $rows[] = [
+                'key' => $key,
+                'value' => $value,
+                'group' => $existing?->group ?? (str_starts_with($key, 'mixradius_') ? 'mixradius' : 'general'),
+                'type' => $existing?->type ?? ($key === 'mixradius_enforce_customer_login' ? 'boolean' : 'text'),
+                'label' => $existing?->label ?? ucwords(str_replace('_', ' ', $key)),
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+        }
+
+        if ($rows !== []) {
+            Setting::upsert(
+                $rows,
+                ['key'],
+                ['value', 'group', 'type', 'label', 'updated_at']
+            );
+            Setting::forgetCache();
         }
 
         return redirect()->back()->with('success', __('Settings updated successfully.'));

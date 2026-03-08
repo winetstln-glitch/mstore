@@ -14,6 +14,7 @@
     $receiptStoreLogo = $receiptStoreLogo && !str_starts_with($receiptStoreLogo, 'http') && !str_starts_with($receiptStoreLogo, 'data:') && !str_starts_with($receiptStoreLogo, '/')
         ? asset($receiptStoreLogo)
         : $receiptStoreLogo;
+    
     $receiptStorePhoneLabel = str_starts_with(strtolower($receiptStorePhone), 'telp') ? $receiptStorePhone : 'Telp: '.$receiptStorePhone;
     $posPrinterAutoReconnect = \App\Models\Setting::getValue('pos_printer_auto_reconnect', '1') === '1';
     $posPrintLogoEnabled = \App\Models\Setting::getValue('pos_print_logo_enabled', '1') === '1';
@@ -23,76 +24,206 @@
     $posPreferredPrinterName = \App\Models\Setting::getValue('pos_preferred_printer_name', '');
     $posPreferredPrinterId = \App\Models\Setting::getValue('pos_preferred_printer_id', '');
     $posPerformanceProfile = \App\Models\Setting::getValue('pos_performance_profile', 'ultrafast');
+    $customerName = trim((string) ($transaction->customer_name ?? ''));
+    $customerName = $customerName !== '' ? $customerName : '-';
+    $vehiclePlate = strtoupper(trim((string) ($transaction->vehicle_plate ?? '')));
+    $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
 @endphp
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt #{{ $transaction->transaction_number }}</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.4;
             width: 58mm;
             margin: 0;
-            padding: 5px;
+            padding: 8px;
+            color: #000;
+            background: #fff;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
+        .no-print-area {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #f4f4f4;
+            padding: 8px;
+            border-radius: 4px;
         }
-        .header h2 {
-            margin: 0;
-            font-size: 16px;
+        .btn {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px;
+            border-radius: 3px;
+            font-family: sans-serif;
+            font-size: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            text-transform: uppercase;
         }
+        .btn-blue { background: #0056b3; }
+        
+        .header { text-align: center; margin-bottom: 8px; }
         .header-logo {
             display: block;
-            margin: 0 auto 6px;
-            max-width: 120px;
-            max-height: 40px;
+            margin: 0 auto 5px;
+            max-width: 100px;
+            max-height: 45px;
             object-fit: contain;
+            filter: grayscale(1);
         }
+        .header h2 { margin: 2px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .header p { margin: 0; font-size: 10px; }
+
         .divider {
             border-top: 1px dashed #000;
-            margin: 5px 0;
+            margin: 8px 0;
+            width: 100%;
         }
-        .item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
-        }
-        .total-section {
-            margin-top: 10px;
-            text-align: right;
-        }
-        .footer {
+
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .info-table td { vertical-align: top; font-size: 10px; padding: 1px 0; }
+        .label { color: #333; width: 65px; font-weight: bold; }
+
+        .queue-badge {
             text-align: center;
-            margin-top: 20px;
-            font-size: 10px;
-        }
-        @media print {
-            body { margin: 0; }
-            .receipt-actions { display: none; }
-        }
-        .receipt-actions {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .receipt-actions button {
             border: 1px solid #000;
-            background: #fff;
-            padding: 4px 8px;
-            font-family: inherit;
-            font-size: 11px;
-            cursor: pointer;
+            padding: 6px;
+            margin: 8px 0;
+            font-size: 18px;
+            font-weight: bold;
         }
-        .receipt-actions span {
-            font-size: 11px;
-            align-self: center;
+
+        .items-list { width: 100%; margin: 5px 0; }
+        .item-row { margin-bottom: 6px; }
+        .item-name { text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px; }
+        .item-details { display: flex; justify-content: space-between; font-size: 10px; }
+
+        .totals { margin-top: 5px; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .total-row.grand-total { font-size: 14px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px; }
+
+        .footer { text-align: center; margin-top: 15px; font-size: 9px; }
+        .footer p { margin: 2px 0; }
+        
+        @media print {
+            .no-print-area { display: none; }
+            body { padding: 0; width: 58mm; }
         }
     </style>
+</head>
+<body>
+    <!-- Area Navigasi (Tidak Ikut Dicetak) -->
+    <div class="no-print-area">
+        <button class="btn" onclick="window.print()">Cetak (Browser)</button>
+        <button class="btn btn-blue" onclick="printBluetooth()">Cetak Bluetooth</button>
+        <div id="printQueueInfo" style="font-size: 9px; text-align: center;"></div>
+    </div>
+
+    <!-- Konten Struk -->
+    <div class="header">
+        @if(!empty($receiptStoreLogo))
+            <img src="{{ $receiptStoreLogo }}" alt="Logo" class="header-logo">
+        @endif
+        <h2>{{ $receiptStoreName }}</h2>
+        <p>{{ $receiptStoreAddress }}</p>
+        <p>{{ $receiptStorePhoneLabel }}</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <table class="info-table">
+        <tr>
+            <td class="label">Nota</td>
+            <td>: {{ $transaction->transaction_number }}</td>
+        </tr>
+        <tr>
+            <td class="label">Waktu</td>
+            <td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td>
+        </tr>
+        <tr>
+            <td class="label">Kasir</td>
+            <td>: {{ $transaction->user->name ?? 'Admin' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Customer</td>
+            <td>: {{ $customerName }}</td>
+        </tr>
+        <tr>
+            <td class="label">No. Kend</td>
+            <td>: <strong>{{ $vehiclePlate }}</strong></td>
+        </tr>
+    </table>
+
+    @if(!empty($transaction->queue_number))
+        <div class="queue-badge">
+            ANTRIAN: #{{ $transaction->queue_number }}
+        </div>
+    @endif
+
+    <div class="divider"></div>
+
+    <div class="items-list">
+        @foreach($transaction->items as $item)
+            <div class="item-row">
+                <span class="item-name">{{ $item->service_name }}</span>
+                <div class="item-details">
+                    <span>{{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
+                    <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="totals">
+        @if(($transaction->discount_amount ?? 0) > 0)
+        <div class="total-row">
+            <span>Diskon</span>
+            <span>-{{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+        </div>
+        @endif
+        
+        <div class="total-row grand-total">
+            <span>TOTAL</span>
+            <span>{{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
+        </div>
+
+        @if(($transaction->cash_amount ?? 0) > 0)
+            <div class="total-row" style="margin-top:4px">
+                <span>Bayar (Tunai)</span>
+                <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
+            </div>
+            <div class="total-row">
+                <span>Kembali</span>
+                <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
+            </div>
+        @else
+            <div class="total-row" style="margin-top:4px">
+                <span>Metode Pembayaran</span>
+                <span>{{ strtoupper($transaction->payment_method) }}</span>
+            </div>
+        @endif
+    </div>
+
+    <div class="footer">
+        <div class="divider"></div>
+        <p><strong>TERIMA KASIH</strong></p>
+        <p>Kendaraan Anda adalah prioritas kami.</p>
+        <p>{{ $transaction->created_at->format('l, d F Y') }}</p>
+    </div>
+
     <script>
+        // Payload disiapkan untuk pengiriman ke printer Bluetooth via bridge
         const receiptPayload = {{ Js::from([
             'store' => $receiptStoreName,
             'address' => $receiptStoreAddress,
@@ -101,6 +232,8 @@
             'date' => $transaction->created_at->format('d/m/Y H:i'),
             'number' => $transaction->transaction_number,
             'queue' => $transaction->queue_number ?? null,
+            'customer' => $customerName,
+            'vehicle' => $vehiclePlate,
             'cashier' => $transaction->user->name ?? 'Admin',
             'items' => $transaction->items->map(fn ($item) => [
                 'name' => $item->service_name,
@@ -113,617 +246,35 @@
             'cash' => (float) ($transaction->cash_amount ?? 0),
             'change' => (float) ($transaction->change_amount ?? 0),
             'method' => strtoupper($transaction->payment_method ?? 'cash'),
-            'footer1' => 'Terima kasih! Kendaraan Anda bersih kembali.',
-            'footer2' => 'Simpan struk ini sebagai bukti layanan.',
-            'qrisText' => $posQrisText,
-            'printerConfig' => [
-                'autoReconnect' => $posPrinterAutoReconnect,
-                'logoEnabled' => $posPrintLogoEnabled,
-                'chunkSize' => $posBluetoothChunkSize,
-                'chunkDelayMs' => $posBluetoothChunkDelayMs,
-                'defaultPrinterName' => $posPreferredPrinterName,
-                'defaultPrinterId' => $posPreferredPrinterId,
-                'performanceProfile' => $posPerformanceProfile,
-            ],
+            'footer1' => 'TERIMA KASIH',
+            'footer2' => 'Kendaraan Anda Bersih Kembali',
         ]) }};
 
-        const bluetoothServiceUuids = [
-            0xFFE0,
-            '0000ffe0-0000-1000-8000-00805f9b34fb',
-            '49535343-fe7d-4ae5-8fa9-9fafd205e455'
-        ];
-
-        const bluetoothCharacteristicUuids = [
-            0xFFE1,
-            '0000ffe1-0000-1000-8000-00805f9b34fb',
-            '49535343-8841-43f4-a8d4-ecbe34729bb3',
-            '49535343-1e4d-4bd9-ba61-23c647249616'
-        ];
-
-        const printerStorageKey = 'mstore.pos.selectedPrinter.v1';
-        const queueStorageKey = 'mstore.pos.printQueue.v1';
-        const logoRasterCache = new Map();
-        let queueInProgress = false;
-
-        function formatCurrency(value) {
-            return Number(value || 0).toLocaleString('id-ID');
+        function isMobileDevice() {
+            const ua = navigator.userAgent || navigator.vendor || '';
+            return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
         }
 
-        function getPrinterConfig() {
-            const raw = receiptPayload.printerConfig || {};
-            const profile = ['ultrafast', 'balanced', 'stable'].includes(raw.performanceProfile) ? raw.performanceProfile : 'ultrafast';
-            const presets = {
-                ultrafast: { chunkSize: 512, chunkDelayMs: 0, retryBaseMs: 300, retryMaxMs: 5000 },
-                balanced: { chunkSize: 256, chunkDelayMs: 0, retryBaseMs: 1000, retryMaxMs: 15000 },
-                stable: { chunkSize: 180, chunkDelayMs: 10, retryBaseMs: 2000, retryMaxMs: 30000 },
-            };
-            const profilePreset = presets[profile];
-            const chunkSize = Number(raw.chunkSize || 256);
-            const chunkDelayMs = Number(raw.chunkDelayMs || 0);
-            return {
-                autoReconnect: raw.autoReconnect !== false,
-                logoEnabled: raw.logoEnabled !== false,
-                performanceProfile: profile,
-                chunkSize: Math.min(512, Math.max(90, Number.isFinite(chunkSize) ? chunkSize : profilePreset.chunkSize)),
-                chunkDelayMs: Math.min(100, Math.max(0, Number.isFinite(chunkDelayMs) ? chunkDelayMs : profilePreset.chunkDelayMs)),
-                retryBaseMs: profilePreset.retryBaseMs,
-                retryMaxMs: profilePreset.retryMaxMs,
-            };
-        }
-
-        function buildReceiptText(payload) {
-            const line = '-'.repeat(32);
-            const rows = [];
-            rows.push(payload.store);
-            rows.push(payload.address);
-            rows.push(payload.phone);
-            rows.push(line);
-            rows.push(`Date   : ${payload.date}`);
-            rows.push(`No     : ${payload.number}`);
-            if (payload.queue) {
-                rows.push(`Queue  : #${payload.queue}`);
-            }
-            rows.push(`Cashier: ${payload.cashier}`);
-            rows.push(line);
-            payload.items.forEach((item) => {
-                rows.push(item.name);
-                rows.push(`${item.qty} x ${formatCurrency(item.price)}`);
-                rows.push(`Subtotal: ${formatCurrency(item.subtotal)}`);
-            });
-            rows.push(line);
-            if (Number(payload.discount) > 0) {
-                rows.push(`DISCOUNT: -${formatCurrency(payload.discount)}`);
-            }
-            rows.push(`TOTAL  : ${formatCurrency(payload.total)}`);
-            if (Number(payload.cash) > 0) {
-                rows.push(`CASH   : ${formatCurrency(payload.cash)}`);
-                rows.push(`CHANGE : ${formatCurrency(payload.change)}`);
+        function printBluetooth() {
+            if (typeof window.printBluetoothAction === 'function') {
+                window.printBluetoothAction(receiptPayload);
+                return true;
             } else {
-                rows.push(`METHOD : ${payload.method}`);
-            }
-            if (String(payload.method || '').toUpperCase() === 'QRIS' && payload.qrisText) {
-                rows.push(line);
-                rows.push('SCAN QRIS');
-            }
-            rows.push(line);
-            rows.push(payload.footer1);
-            rows.push(payload.footer2);
-            rows.push('\n\n');
-            return rows.join('\n');
-        }
-
-        function getStoredQueue() {
-            try {
-                const parsed = JSON.parse(localStorage.getItem(queueStorageKey) || '[]');
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (error) {
-                return [];
-            }
-        }
-
-        function setStoredQueue(queue) {
-            localStorage.setItem(queueStorageKey, JSON.stringify(queue));
-            syncQueueInfo();
-        }
-
-        function enqueuePrintJob(payload, options = {}) {
-            const queue = getStoredQueue();
-            queue.push({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                payload,
-                options,
-                retryCount: 0,
-                nextRetryAt: Date.now(),
-            });
-            setStoredQueue(queue);
-        }
-
-        function getStoredPrinter() {
-            try {
-                const parsed = JSON.parse(localStorage.getItem(printerStorageKey) || 'null');
-                if (parsed && typeof parsed === 'object') {
-                    return parsed;
-                }
-                const config = receiptPayload.printerConfig || {};
-                if (config.defaultPrinterId || config.defaultPrinterName) {
-                    return {
-                        id: config.defaultPrinterId || config.defaultPrinterName,
-                        name: config.defaultPrinterName || config.defaultPrinterId,
-                    };
-                }
-                return null;
-            } catch (error) {
-                return null;
-            }
-        }
-
-        function saveStoredPrinter(printer) {
-            localStorage.setItem(printerStorageKey, JSON.stringify(printer || null));
-        }
-
-        function syncQueueInfo() {
-            const target = document.getElementById('printQueueInfo');
-            if (!target) {
-                return;
-            }
-            const pending = getStoredQueue().length;
-            target.textContent = pending > 0 ? `Queue: ${pending}` : '';
-        }
-
-        function encodeEscPosText(text) {
-            const encoder = new TextEncoder();
-            return Array.from(encoder.encode(text));
-        }
-
-        function bytesToBase64(bytes) {
-            let binary = '';
-            const chunkSize = 0x8000;
-            for (let index = 0; index < bytes.length; index += chunkSize) {
-                const chunk = bytes.subarray(index, index + chunkSize);
-                binary += String.fromCharCode(...chunk);
-            }
-            return btoa(binary);
-        }
-
-        function buildQrEscPosBytes(data) {
-            const encoded = encodeEscPosText(data);
-            const length = encoded.length + 3;
-            const pL = length & 0xff;
-            const pH = (length >> 8) & 0xff;
-            return [
-                0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00,
-                0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06,
-                0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x30,
-                0x1D, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30,
-                ...encoded,
-                0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30,
-            ];
-        }
-
-        async function imageUrlToEscPosRasterBytes(url) {
-            if (!url) {
-                return [];
-            }
-            if (logoRasterCache.has(url)) {
-                return logoRasterCache.get(url);
-            }
-            const image = await new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-            });
-            const widthLimit = 384;
-            const ratio = image.width > widthLimit ? widthLimit / image.width : 1;
-            const width = Math.max(1, Math.floor(image.width * ratio));
-            const height = Math.max(1, Math.floor(image.height * ratio));
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(image, 0, 0, width, height);
-            const source = ctx.getImageData(0, 0, width, height).data;
-            const bytesPerRow = Math.ceil(width / 8);
-            const raster = new Uint8Array(bytesPerRow * height);
-            for (let y = 0; y < height; y += 1) {
-                for (let x = 0; x < width; x += 1) {
-                    const index = (y * width + x) * 4;
-                    const r = source[index];
-                    const g = source[index + 1];
-                    const b = source[index + 2];
-                    const alpha = source[index + 3];
-                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    if (alpha > 10 && gray < 180) {
-                        const byteIndex = y * bytesPerRow + (x >> 3);
-                        raster[byteIndex] |= 0x80 >> (x & 7);
-                    }
-                }
-            }
-            const xL = bytesPerRow & 0xff;
-            const xH = (bytesPerRow >> 8) & 0xff;
-            const yL = height & 0xff;
-            const yH = (height >> 8) & 0xff;
-            const result = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH, ...Array.from(raster)];
-            logoRasterCache.set(url, result);
-            return result;
-        }
-
-        async function buildEscPosBytes(payload) {
-            const config = getPrinterConfig();
-            const bytes = [];
-            bytes.push(0x1B, 0x40);
-            if (config.logoEnabled && payload.logo) {
-                try {
-                    bytes.push(0x1B, 0x61, 0x01);
-                    bytes.push(...await imageUrlToEscPosRasterBytes(payload.logo));
-                    bytes.push(0x0A);
-                } catch (error) {
-                }
-            }
-            bytes.push(0x1B, 0x61, 0x00);
-            bytes.push(...encodeEscPosText(buildReceiptText(payload)));
-            if (String(payload.method || '').toUpperCase() === 'QRIS' && payload.qrisText) {
-                bytes.push(0x1B, 0x61, 0x01);
-                bytes.push(...buildQrEscPosBytes(payload.qrisText));
-                bytes.push(0x0A, 0x0A, 0x1B, 0x61, 0x00);
-            }
-            bytes.push(0x1D, 0x56, 0x41, 0x00);
-            return new Uint8Array(bytes);
-        }
-
-        async function writeChunks(characteristic, bytes) {
-            const config = getPrinterConfig();
-            const useWriteWithoutResponse = typeof characteristic.writeValueWithoutResponse === 'function';
-            for (let index = 0; index < bytes.length; index += config.chunkSize) {
-                const chunk = bytes.slice(index, index + config.chunkSize);
-                if (useWriteWithoutResponse) {
-                    await characteristic.writeValueWithoutResponse(chunk);
-                } else {
-                    await characteristic.writeValue(chunk);
-                }
-                if (config.chunkDelayMs > 0) {
-                    await new Promise((resolve) => setTimeout(resolve, config.chunkDelayMs));
-                }
-            }
-        }
-
-        async function getWritableCharacteristic(server) {
-            for (const serviceUuid of bluetoothServiceUuids) {
-                try {
-                    const service = await server.getPrimaryService(serviceUuid);
-                    for (const characteristicUuid of bluetoothCharacteristicUuids) {
-                        try {
-                            const characteristic = await service.getCharacteristic(characteristicUuid);
-                            if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
-                                return characteristic;
-                            }
-                        } catch (error) {
-                        }
-                    }
-                } catch (error) {
-                }
-            }
-            throw new Error('Karakteristik printer Bluetooth tidak ditemukan');
-        }
-
-        function printReceipt() {
-            window.print();
-        }
-
-        function isLikelyWebView() {
-            const ua = navigator.userAgent || '';
-            if (/\bwv\b/.test(ua)) {
-                return true;
-            }
-            if (/Android/.test(ua) && /Version\/[\d.]+/.test(ua)) {
-                return true;
-            }
-            if (/iPhone|iPad|iPod/.test(ua) && !/Safari/.test(ua)) {
-                return true;
-            }
-            return false;
-        }
-
-        function getAutoParam(name) {
-            const value = new URLSearchParams(window.location.search).get(name);
-            if (value === null) {
-                return null;
-            }
-            return value === '1' || value === 'true' || value === 'yes';
-        }
-
-        async function selectBluetoothPrinter() {
-            try {
-                if (window.MobilePrinterBridge && typeof window.MobilePrinterBridge.selectBluetoothPrinter === 'function') {
-                    const result = await window.MobilePrinterBridge.selectBluetoothPrinter();
-                    if (result) {
-                        saveStoredPrinter(typeof result === 'string' ? { id: result, name: result } : result);
-                    }
-                    return;
-                }
-                if (!('bluetooth' in navigator)) {
-                    alert('Web Bluetooth tidak tersedia di perangkat ini.');
-                    return;
-                }
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: bluetoothServiceUuids,
-                });
-                saveStoredPrinter({ id: device.id, name: device.name || 'Bluetooth Printer' });
-                alert(`Printer dipilih: ${device.name || device.id}`);
-            } catch (error) {
-                alert('Pemilihan printer dibatalkan atau gagal.');
-            }
-        }
-
-        async function tryNativeBluetoothPrint(text, payload) {
-            try {
-                if (window.MobilePrinterBridge && typeof window.MobilePrinterBridge.printBluetooth === 'function') {
-                    const result = window.MobilePrinterBridge.printBluetooth(text, JSON.stringify(payload));
-                    if (result && typeof result.then === 'function') {
-                        await result;
-                    }
-                    return true;
-                }
-                if (window.AndroidPrinter && typeof window.AndroidPrinter.printBluetooth === 'function') {
-                    window.AndroidPrinter.printBluetooth(text);
-                    return true;
-                }
-                if (window.Android && typeof window.Android.printBluetooth === 'function') {
-                    window.Android.printBluetooth(text);
-                    return true;
-                }
-                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bluetoothPrinter) {
-                    window.webkit.messageHandlers.bluetoothPrinter.postMessage({
-                        type: 'printBluetooth',
-                        text: text,
-                        payload: payload
-                    });
-                    return true;
-                }
-            } catch (error) {
-            }
-            return false;
-        }
-
-        async function tryNativeEscPosPrint(payload) {
-            const text = buildReceiptText(payload);
-            const escposBytes = await buildEscPosBytes(payload);
-            const escposBase64 = bytesToBase64(escposBytes);
-            const payloadWithEscPos = {
-                ...payload,
-                escposBase64,
-            };
-            try {
-                if (window.MobilePrinterBridge && typeof window.MobilePrinterBridge.printBluetoothEscPos === 'function') {
-                    const result = window.MobilePrinterBridge.printBluetoothEscPos(escposBase64, JSON.stringify(payloadWithEscPos));
-                    if (result && typeof result.then === 'function') {
-                        await result;
-                    }
-                    return { printed: true, text, escposBytes };
-                }
-                const printed = await tryNativeBluetoothPrint(text, payloadWithEscPos);
-                return { printed, text, escposBytes };
-            } catch (error) {
-                return { printed: false, text, escposBytes };
-            }
-        }
-
-        async function resolveBluetoothDevice() {
-            const saved = getStoredPrinter();
-            const config = getPrinterConfig();
-            if (saved && navigator.bluetooth && typeof navigator.bluetooth.getDevices === 'function' && config.autoReconnect) {
-                const devices = await navigator.bluetooth.getDevices();
-                const matched = devices.find((item) => item.id === saved.id);
-                if (matched) {
-                    return matched;
-                }
-            }
-            const requested = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: bluetoothServiceUuids
-            });
-            saveStoredPrinter({ id: requested.id, name: requested.name || 'Bluetooth Printer' });
-            return requested;
-        }
-
-        async function printViaWebBluetooth(payload) {
-            if (!('bluetooth' in navigator)) {
-                return false;
-            }
-            let device;
-            try {
-                device = await resolveBluetoothDevice();
-                const server = await device.gatt.connect();
-                const characteristic = await getWritableCharacteristic(server);
-                const bytes = payload.escposBytes instanceof Uint8Array ? payload.escposBytes : await buildEscPosBytes(payload);
-                await writeChunks(characteristic, bytes);
-                if (device.gatt.connected) {
-                    device.gatt.disconnect();
-                }
-                return true;
-            } catch (error) {
-                if (device && device.gatt && device.gatt.connected) {
-                    device.gatt.disconnect();
-                }
+                console.log("Data Struk:", receiptPayload);
+                alert("Fungsi Cetak Bluetooth sedang diproses...");
                 return false;
             }
         }
-
-        async function dispatchPrint(payload, options = {}) {
-            const selectedPrinter = getStoredPrinter();
-            const payloadWithPrinter = selectedPrinter
-                ? { ...payload, selectedPrinter }
-                : payload;
-            const nativeAttempt = await tryNativeEscPosPrint(payloadWithPrinter);
-            if (nativeAttempt.printed) {
-                return true;
-            }
-            const bluetoothPrinted = await printViaWebBluetooth({
-                ...payloadWithPrinter,
-                escposBytes: nativeAttempt.escposBytes,
-            });
-            if (bluetoothPrinted) {
-                return true;
-            }
-            if (!options.skipFallbackPrint) {
-                window.print();
-            }
-            return false;
-        }
-
-        async function processPrintQueue() {
-            if (queueInProgress) {
-                return;
-            }
-            queueInProgress = true;
-            try {
-                let queue = getStoredQueue();
-                while (queue.length > 0) {
-                    const next = queue[0];
-                    if (next.nextRetryAt && next.nextRetryAt > Date.now()) {
-                        break;
-                    }
-                    const ok = await dispatchPrint(next.payload, next.options || {});
-                    if (ok) {
-                        queue.shift();
-                        setStoredQueue(queue);
-                        continue;
-                    }
-                    next.retryCount = Number(next.retryCount || 0) + 1;
-                    const config = getPrinterConfig();
-                    next.nextRetryAt = Date.now() + Math.min(config.retryMaxMs, config.retryBaseMs * (2 ** Math.min(5, next.retryCount)));
-                    queue[0] = next;
-                    setStoredQueue(queue);
-                    break;
-                }
-            } finally {
-                queueInProgress = false;
-            }
-        }
-
-        async function printBluetooth(options = {}) {
-            enqueuePrintJob(receiptPayload, {
-                silentSuccess: !!options.silentSuccess,
-                skipFallbackPrint: !!options.skipFallbackPrint,
-            });
-            await processPrintQueue();
-            if (!options.silentSuccess && getStoredQueue().length === 0) {
-                alert('Data struk berhasil dikirim ke printer Bluetooth.');
-            }
-        }
-
-        async function retryPrintQueue() {
-            await processPrintQueue();
-            const pending = getStoredQueue().length;
-            if (pending > 0) {
-                alert(`Masih ada ${pending} item di queue print.`);
-            } else {
-                alert('Queue print sudah kosong.');
-            }
-        }
-
-        window.addEventListener('load', function() {
-            syncQueueInfo();
-            if (receiptPayload.logo) {
-                imageUrlToEscPosRasterBytes(receiptPayload.logo).catch(() => null);
-            }
-            processPrintQueue();
+        
+        window.onload = function() {
             const autoPrint = new URLSearchParams(window.location.search).get('autoprint');
-            const autoBluetooth = getAutoParam('autobluetooth');
-            const shouldAutoBluetooth = autoBluetooth === true || (autoBluetooth === null && isLikelyWebView());
-            if (autoPrint !== '0') {
-                if (shouldAutoBluetooth) {
-                    printBluetooth({ silentSuccess: true, skipFallbackPrint: true });
-                    return;
+            if (autoPrint === '1') {
+                const printedViaBluetooth = isMobileDevice() ? printBluetooth() : false;
+                if (!printedViaBluetooth) {
+                    window.print();
                 }
-                window.print();
             }
-        });
-        window.addEventListener('online', processPrintQueue);
-        window.addEventListener('focus', processPrintQueue);
-        window.selectBluetoothPrinter = selectBluetoothPrinter;
-        window.retryPrintQueue = retryPrintQueue;
-        window.printBluetooth = printBluetooth;
-        window.printReceipt = printReceipt;
+        };
     </script>
-</head>
-<body>
-    <div class="receipt-actions">
-        <button type="button" onclick="printReceipt()">Print</button>
-        <button type="button" onclick="printBluetooth()">Print Bluetooth</button>
-        <span id="printQueueInfo"></span>
-    </div>
-    <div class="header">
-        @if(!empty($receiptStoreLogo))
-        <img src="{{ $receiptStoreLogo }}" alt="{{ $receiptStoreName }}" class="header-logo">
-        @endif
-        <h2>{{ $receiptStoreName }}</h2>
-        <p>{{ $receiptStoreAddress }}</p>
-        <p>{{ $receiptStorePhoneLabel }}</p>
-    </div>
-    
-    <div class="divider"></div>
-    <div>
-        Date: {{ $transaction->created_at->format('d/m/Y H:i') }}<br>
-        No: {{ $transaction->transaction_number }}<br>
-        @if(!empty($transaction->queue_number))
-        Queue: #{{ $transaction->queue_number }}<br>
-        @endif
-        Cashier: {{ $transaction->user->name ?? 'Admin' }}
-    </div>
-    <div class="divider"></div>
-
-    @foreach($transaction->items as $item)
-    <div style="margin-bottom: 5px;">
-        <div>{{ $item->service_name }}</div>
-        <div class="item">
-            <span>{{ $item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
-            <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
-        </div>
-    </div>
-    @endforeach
-
-    <div class="divider"></div>
-
-    <div class="total-section">
-        @if(($transaction->discount_amount ?? 0) > 0)
-        <div class="item">
-            <span>DISCOUNT</span>
-            <span>-{{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
-        </div>
-        @endif
-        <div class="item">
-            <strong>TOTAL</strong>
-            <strong>{{ number_format($transaction->total_amount, 0, ',', '.') }}</strong>
-        </div>
-        @if(($transaction->cash_amount ?? 0) > 0)
-        <div class="item">
-            <span>CASH</span>
-            <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
-        </div>
-        <div class="item">
-            <span>KEMBALIAN</span>
-            <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
-        </div>
-        @else
-        <div class="item">
-            <span>METHOD</span>
-            <span>{{ strtoupper($transaction->payment_method) }}</span>
-        </div>
-        @if(strtoupper($transaction->payment_method) === 'QRIS' && !empty($posQrisText))
-        <div class="item">
-            <span>QRIS</span>
-            <span>READY</span>
-        </div>
-        @endif
-        @endif
-    </div>
-
-    <div class="footer">
-        <p>Terima kasih! Kendaraan Anda bersih kembali.</p>
-        <p>Simpan struk ini sebagai bukti layanan.</p>
-    </div>
 </body>
 </html>

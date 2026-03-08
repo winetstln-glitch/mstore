@@ -9,6 +9,8 @@ class Setting extends Model
 {
     use HasFactory;
 
+    protected static ?array $cachedValues = null;
+
     protected $fillable = [
         'key',
         'value',
@@ -16,6 +18,17 @@ class Setting extends Model
         'type',
         'label',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (): void {
+            self::forgetCache();
+        });
+
+        static::deleted(function (): void {
+            self::forgetCache();
+        });
+    }
 
     /**
      * Get a setting value by key.
@@ -26,8 +39,24 @@ class Setting extends Model
      */
     public static function getValue($key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
+        $values = self::allValues();
 
-        return $setting ? $setting->value : $default;
+        return array_key_exists($key, $values) ? $values[$key] : $default;
+    }
+
+    public static function allValues(): array
+    {
+        if (self::$cachedValues === null) {
+            self::$cachedValues = self::query()
+                ->pluck('value', 'key')
+                ->all();
+        }
+
+        return self::$cachedValues;
+    }
+
+    public static function forgetCache(): void
+    {
+        self::$cachedValues = null;
     }
 }
