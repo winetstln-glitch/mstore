@@ -3,7 +3,7 @@
 @section('title', 'Add Employee')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid wash-employee-create-page">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Add New Employee</h1>
         <a href="{{ route('wash.employees.index') }}" class="btn btn-sm btn-secondary shadow-sm" title="Back">
@@ -17,7 +17,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Employee Details</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('wash.employees.store') }}" method="POST">
+            <form action="{{ route('wash.employees.store') }}" method="POST" id="createEmployeeForm">
                 @csrf
                 <div class="mb-3">
                     <label for="name" class="form-label">{{ __('Name') }} <span class="text-danger">*</span></label>
@@ -78,4 +78,37 @@
         </div>
     </div>
 </div>
+<div class="position-fixed bottom-0 start-0 end-0 bg-body border-top shadow d-md-none" style="z-index: 1030;">
+    <div class="container py-2">
+        <div class="d-flex gap-2">
+            <a href="{{ route('wash.employees.index') }}" class="btn btn-outline-secondary w-50">Back</a>
+            <button type="submit" class="btn btn-primary w-50" form="createEmployeeForm">Save</button>
+        </div>
+    </div>
+</div>
+@push('styles')
+<style>
+    .wash-employee-create-page .form-control,
+    .wash-employee-create-page .form-select {
+        min-height: 44px;
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-employee-create-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+            padding-bottom: 5rem !important;
+        }
+
+        .wash-employee-create-page .h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.9rem !important;
+        }
+
+        .wash-employee-create-page .card-body {
+            padding: 0.9rem;
+        }
+    }
+</style>
+@endpush
 @endsection

@@ -3,7 +3,7 @@
 @section('title', 'Manage Wash Services')
 
 @section('content')
-<div class="col-12 pb-5 pb-md-0">
+<div class="col-12 pb-5 pb-md-0 wash-services-page">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-2">
             <h1 class="h3 mb-0 text-gray-800">Wash Services</h1>
@@ -28,7 +28,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Service List</h6>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
@@ -94,4 +94,58 @@
         </div>
     </div>
 </div>
+@push('styles')
+<style>
+    @media (max-width: 767.98px) {
+        .wash-services-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .wash-services-page .h3 {
+            font-size: 1.15rem;
+        }
+
+        .wash-services-page .card-header,
+        .wash-services-page .card-body {
+            padding-left: 0.85rem;
+            padding-right: 0.85rem;
+        }
+
+        .wash-services-page .table-responsive {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.9rem;
+            padding: 0.25rem;
+        }
+
+        .wash-services-page .table-responsive-mobile td {
+            align-items: flex-start;
+            gap: 0.55rem;
+        }
+
+        .wash-services-page .table-responsive-mobile td[data-label="Image"] img,
+        .wash-services-page .table-responsive-mobile td[data-label="Image"] .text-muted {
+            width: 42px !important;
+            height: 42px !important;
+        }
+
+        .wash-services-page .table-responsive-mobile td[data-label="Actions"] {
+            display: block;
+            text-align: left;
+        }
+
+        .wash-services-page .table-responsive-mobile td[data-label="Actions"]::before {
+            display: block;
+            margin-bottom: 0.45rem;
+        }
+
+        .wash-services-page .table-responsive-mobile td[data-label="Actions"] .btn {
+            min-height: 34px;
+            min-width: 34px;
+            border-radius: 0.65rem;
+            padding: 0.32rem 0.48rem;
+        }
+    }
+</style>
+@endpush
 @endsection

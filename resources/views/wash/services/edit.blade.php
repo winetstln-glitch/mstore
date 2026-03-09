@@ -3,12 +3,12 @@
 @section('title', 'Edit Wash Service')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid wash-service-edit-page">
     <h1 class="h3 mb-4 text-gray-800">Edit Service</h1>
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            <form action="{{ route('wash.services.update', $service->id) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('wash.services.update', $service->id) }}" method="POST" enctype="multipart/form-data" id="editServiceForm">
                 @csrf
                 @method('PUT')
                 <div class="mb-3">
@@ -71,4 +71,42 @@
         </div>
     </div>
 </div>
+<div class="position-fixed bottom-0 start-0 end-0 bg-body border-top shadow d-md-none" style="z-index: 1030;">
+    <div class="container py-2">
+        <div class="d-flex gap-2">
+            <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary w-50">Cancel</a>
+            <button type="submit" class="btn btn-primary w-50" form="editServiceForm">Update</button>
+        </div>
+    </div>
+</div>
+@push('styles')
+<style>
+    .wash-service-edit-page .form-control,
+    .wash-service-edit-page .form-select {
+        min-height: 44px;
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-service-edit-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+            padding-bottom: 5rem !important;
+        }
+
+        .wash-service-edit-page .h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.9rem !important;
+        }
+
+        .wash-service-edit-page .card-body {
+            padding: 0.9rem;
+        }
+
+        .wash-service-edit-page form > .btn,
+        .wash-service-edit-page form > a.btn {
+            display: none;
+        }
+    }
+</style>
+@endpush
 @endsection

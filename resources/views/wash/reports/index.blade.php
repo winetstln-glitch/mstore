@@ -2,14 +2,14 @@
 @section('title', 'Laporan Wash')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 wash-reports-page">
     
     <!-- Judul & Filter -->
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 report-toolbar">
                 <h5 class="mb-0 fw-bold">Laporan Keuangan Wash</h5>
-                <div class="btn-group">
+                <div class="btn-group wash-report-export">
                     <a class="btn btn-sm btn-outline-secondary" id="btnExportPdf">
                         <i class="bi bi-file-earmark-pdf"></i> Export PDF
                     </a>
@@ -20,7 +20,7 @@
             </div>
 
             <!-- Navigasi Tab -->
-            <ul class="nav nav-tabs" id="reportTab" role="tablist">
+            <ul class="nav nav-tabs wash-report-tabs" id="reportTab" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily-content" type="button">Harian</button>
                 </li>
@@ -40,7 +40,7 @@
         <div class="tab-pane fade show active" id="daily-content">
             
             <!-- Filter Tanggal -->
-            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end">
+            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end daily-filter-form">
                 <input type="hidden" name="view" value="daily">
                 <div class="col-auto"><label class="form-label mb-0 fw-bold">Tanggal:</label></div>
                 <div class="col-auto"><input type="date" name="date" value="{{ $date }}" class="form-control"></div>
@@ -48,7 +48,7 @@
             </form>
 
             <!-- RINGKASAN KEUANGAN (Full Width untuk Audit) -->
-            <div class="table-responsive mb-4">
+            <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table mb-0">
                     <thead class="table">
                         <tr>
@@ -69,7 +69,7 @@
 
             <!-- TABEL 1: RINCIAN PEMASUKAN (Full Width) -->
             <h6 class="fw-bold mt-4 text-decoration-underline">A. Rincian Pemasukan (Harian)</h6>
-            <div class="table-responsive mb-4">
+            <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table-striped table-hover align-middle">
                     <thead class="table">
                         <tr>
@@ -104,7 +104,7 @@
 
             <!-- TABEL 2: RINCIAN PENGELUARAN (Full Width) -->
             <h6 class="fw-bold mt-4 text-decoration-underline">B. Rincian Pengeluaran (Harian)</h6>
-            <div class="table-responsive mb-4">
+            <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table-striped table-hover align-middle">
                     <thead class="table">
                         <tr>
@@ -173,7 +173,7 @@
         <div class="tab-pane fade" id="monthly-content">
             
             <!-- Filter Bulan -->
-            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end">
+            <form method="get" class="row g-2 align-items-center mb-3 justify-content-end monthly-filter-form">
                 <input type="hidden" name="view" value="monthly">
                 <div class="col-auto"><label class="form-label mb-0 fw-bold">Bulan:</label></div>
                 <div class="col-auto"><input type="month" name="month" value="{{ $month }}" class="form-control"></div>
@@ -181,7 +181,7 @@
             </form>
 
             <!-- RINGKASAN BULANAN -->
-            <div class="table-responsive mb-4">
+            <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table mb-0">
                     <thead class="table">
                         <tr>
@@ -204,7 +204,7 @@
             <div class="row">
                 <div class="col-12 mb-4">
                     <h6 class="fw-bold text-decoration-underline">Rekap Harian ({{ $month }})</h6>
-                    <div class="table-responsive">
+                    <div class="table-responsive table-responsive-mobile">
                         <table class="table table-bordered table-sm align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -270,6 +270,84 @@
 
     </div>
 </div>
+
+@push('styles')
+<style>
+    @media (max-width: 767.98px) {
+        .wash-reports-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .wash-reports-page .report-toolbar {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0.7rem;
+        }
+
+        .wash-reports-page .wash-report-export {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+        }
+
+        .wash-reports-page .wash-report-export .btn {
+            border-radius: 0.75rem;
+            min-height: 42px;
+            font-size: 0.85rem;
+        }
+
+        .wash-reports-page .wash-report-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.4rem;
+            border-bottom: 0;
+        }
+
+        .wash-reports-page .wash-report-tabs .nav-item {
+            width: 100%;
+        }
+
+        .wash-reports-page .wash-report-tabs .nav-link {
+            width: 100%;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.75rem;
+            text-align: center;
+            min-height: 40px;
+        }
+
+        .wash-reports-page .daily-filter-form,
+        .wash-reports-page .monthly-filter-form {
+            justify-content: stretch !important;
+        }
+
+        .wash-reports-page .daily-filter-form .col-auto,
+        .wash-reports-page .monthly-filter-form .col-auto {
+            width: 100%;
+        }
+
+        .wash-reports-page .daily-filter-form .form-control,
+        .wash-reports-page .monthly-filter-form .form-control,
+        .wash-reports-page .daily-filter-form .btn,
+        .wash-reports-page .monthly-filter-form .btn {
+            width: 100%;
+            min-height: 42px;
+        }
+
+        .wash-reports-page .table-responsive {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.9rem;
+            padding: 0.25rem;
+        }
+
+        .wash-reports-page .table-responsive-mobile tr {
+            margin-bottom: 0.6rem;
+            border-radius: 0.9rem;
+        }
+    }
+</style>
+@endpush
 
 <!-- Script Otomatis Tab -->
 <script>

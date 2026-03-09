@@ -24,7 +24,7 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
 
 @section('content')
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 wash-transaction-show-page">
 <!-- Header Section -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
 <div>
@@ -39,7 +39,7 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
 <span class="text-primary">#{{ $transaction->transaction_number }}</span>
 </h1>
 </div>
-<div class="d-flex gap-2">
+<div class="d-flex gap-2 flex-wrap detail-actions">
 <a href="{{ route('wash.transactions.index') }}" class="btn btn-outline-secondary px-4 shadow-sm border-0 bg-white">
 <i class="fa-solid fa-arrow-left me-2"></i>
 {{ __('Back') }}
@@ -100,7 +100,7 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
                 </div>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive table-responsive-mobile">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light text-muted small text-uppercase">
                             <tr>
@@ -236,6 +236,44 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.08)!important;
 }
 
+@media (max-width: 767.98px) {
+    .wash-transaction-show-page {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    .wash-transaction-show-page .h3 {
+        font-size: 1.08rem;
+        line-height: 1.3;
+    }
+
+    .wash-transaction-show-page .detail-actions {
+        width: 100%;
+    }
+
+    .wash-transaction-show-page .detail-actions .btn {
+        flex: 1 1 100%;
+        justify-content: center;
+        min-height: 42px;
+    }
+
+    .wash-transaction-show-page .card-body,
+    .wash-transaction-show-page .card-footer {
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+
+    .wash-transaction-show-page .table-responsive {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.9rem;
+        padding: 0.25rem;
+    }
+
+    .wash-transaction-show-page .table-responsive-mobile td {
+        align-items: flex-start;
+        gap: 0.55rem;
+    }
+}
 
 </style>
 

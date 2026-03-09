@@ -41,7 +41,7 @@
         }
     </script>
 </head>
-<body>
+<body class="route-{{ request()->segment(1) ?? 'home' }} route-name-{{ str_replace('.', '-', request()->route()?->getName() ?? 'unknown') }}">
 
 <div id="wrapper">
     <!-- Sidebar -->
@@ -688,6 +688,38 @@
         if (window.feather) {
             window.feather.replace();
         }
+
+        if (!document.body.classList.contains('route-wash')) {
+            return;
+        }
+
+        const mobile = window.matchMedia('(max-width: 768px)').matches;
+        if (!mobile) {
+            return;
+        }
+
+        document.querySelectorAll('.table-responsive table, .table-responsive-mobile table').forEach(function (table) {
+            const wrapper = table.closest('.table-responsive, .table-responsive-mobile');
+            if (wrapper) {
+                wrapper.classList.add('table-responsive-mobile');
+            }
+
+            const headerCells = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+                return (th.textContent || '').trim();
+            });
+
+            if (!headerCells.length) {
+                return;
+            }
+
+            table.querySelectorAll('tbody tr').forEach(function (row) {
+                row.querySelectorAll('td').forEach(function (cell, index) {
+                    if (!cell.dataset.label && headerCells[index]) {
+                        cell.dataset.label = headerCells[index];
+                    }
+                });
+            });
+        });
     });
 </script>
 
