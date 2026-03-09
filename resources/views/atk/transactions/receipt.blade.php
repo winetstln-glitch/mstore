@@ -7,319 +7,388 @@
         ? asset($generalStoreLogo)
         : $generalStoreLogo;
 
-    $receiptStoreName = \App\Models\Setting::getValue('atk_store_name', $generalStoreName ?: 'ATK STORE');
-    $receiptStoreAddress = \App\Models\Setting::getValue('atk_store_address', $generalStoreAddress ?: 'Jl. Raya Contoh No. 123');
+    $receiptStoreName = \App\Models\Setting::getValue('atk_store_name', $generalStoreName ?: 'ATK PREMIUM');
+    $receiptStoreAddress = \App\Models\Setting::getValue('atk_store_address', $generalStoreAddress ?: 'Pusat Perbelanjaan ATK No. 101');
     $receiptStorePhone = \App\Models\Setting::getValue('atk_store_phone', $generalStorePhone ?: '0812-3456-7890');
     $receiptStoreLogo = \App\Models\Setting::getValue('atk_store_logo', $generalStoreLogo);
     $receiptStoreLogo = $receiptStoreLogo && !str_starts_with($receiptStoreLogo, 'http') && !str_starts_with($receiptStoreLogo, 'data:') && !str_starts_with($receiptStoreLogo, '/')
         ? asset($receiptStoreLogo)
         : $receiptStoreLogo;
     $receiptStorePhoneLabel = str_starts_with(strtolower($receiptStorePhone), 'telp') ? $receiptStorePhone : 'Telp: '.$receiptStorePhone;
-    
-    // Configs
-    $posPrinterAutoReconnect = \App\Models\Setting::getValue('pos_printer_auto_reconnect', '1') === '1';
-    $posPrintLogoEnabled = \App\Models\Setting::getValue('pos_print_logo_enabled', '1') === '1';
-    $posBluetoothChunkSize = (int) \App\Models\Setting::getValue('pos_bluetooth_chunk_size', '256');
-    $posBluetoothChunkDelayMs = (int) \App\Models\Setting::getValue('pos_bluetooth_chunk_delay_ms', '0');
-    $posQrisText = \App\Models\Setting::getValue('pos_qris_text', '');
-    $posPerformanceProfile = \App\Models\Setting::getValue('pos_performance_profile', 'ultrafast');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt #{{ $transaction->transaction_number }}</title>
+    <title>Struk #{{ $transaction->transaction_number }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Modern Reset & Base */
-        * { box-sizing: border-box; }
+        :root {
+            --bg-main: #f8fafc;
+            --receipt-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #000;
-            width: 58mm;
-            margin: 0 auto;
-            padding: 8px;
-            background: #fff;
-        }
-
-        /* Utility for Thermal Printing (Forces Mono on Print) */
-        @media print {
-            body { 
-                width: 58mm; 
-                margin: 0; 
-                padding: 5px; 
-                font-family: 'Courier New', Courier, monospace; 
-                font-size: 10px;
-            }
-            .no-print { display: none !important; }
-            .receipt-card { border: none !important; box-shadow: none !important; }
-        }
-
-        /* Action Buttons Wrapper */
-        .receipt-actions {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: #1e293b;
+            min-height: 100vh;
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .btn {
-            background: #1a1a1a;
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .btn-outline {
-            background: #fff;
-            color: #1a1a1a;
-            border: 1px solid #1a1a1a;
-        }
-        .btn:active { opacity: 0.7; }
-
-        /* Receipt Visuals */
-        .header {
-            text-align: center;
-            margin-bottom: 12px;
-        }
-        .header-logo {
-            display: block;
-            margin: 0 auto 8px;
-            max-width: 100px;
-            max-height: 45px;
-            filter: grayscale(1); /* Mono look for preview */
-            object-fit: contain;
-        }
-        .header h1 {
-            font-size: 14px;
-            font-weight: 800;
-            margin: 0 0 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .header p {
-            margin: 0;
-            font-size: 9px;
-            color: #444;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
         }
 
-        .meta-info {
-            font-size: 10px;
-            margin: 10px 0;
-            display: grid;
-            grid-template-columns: auto auto;
-            row-gap: 2px;
-        }
-        .meta-info div:nth-child(even) { text-align: right; }
-
-        .divider {
-            border-top: 1px dashed #ccc;
-            margin: 8px 0;
-        }
-
-        /* Item Table-like Layout */
-        .items-list { margin: 8px 0; }
-        .item-row {
-            margin-bottom: 6px;
-        }
-        .item-name {
-            font-weight: 500;
-            display: block;
-            margin-bottom: 1px;
-        }
-        .item-details {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            color: #333;
-        }
-
-        /* Calculation Section */
-        .totals-box {
-            margin-top: 8px;
-        }
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 2px;
-        }
-        .total-row.main {
+        /* Utility classes for thermal font */
+        .thermal-font {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
             font-size: 13px;
-            font-weight: 800;
-            margin-top: 4px;
-            padding-top: 4px;
-            border-top: 1px solid #000;
+            line-height: 1.2;
         }
 
-        .payment-status {
-            margin-top: 12px;
+        /* Glassmorphism Panel */
+        .control-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--receipt-shadow);
+        }
+
+        /* Receipt Card */
+        #receipt-wrapper {
+            background: white;
+            box-shadow: var(--receipt-shadow);
+            border-radius: 2px;
+            padding: 1.25rem;
+            position: relative;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #receipt-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #2dd4bf);
+        }
+
+        .size-58 { width: 58mm; }
+        .size-80 { width: 80mm; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            #receipt-wrapper { box-shadow: none; border: none; width: 100% !important; padding: 0; }
+            #receipt-wrapper::before { display: none; }
+        }
+
+        /* Checkbox styling */
+        .radio-tile-group { display: flex; gap: 0.75rem; width: 100%; }
+        .radio-tile {
+            position: relative;
+            flex: 1;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
             text-align: center;
-            border: 1px solid #000;
-            padding: 4px;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 10px;
+            transition: all 0.2s;
         }
-
-        .footer {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 9px;
-            color: #666;
-            font-style: italic;
-        }
-
-        #printQueueStatus {
-            font-size: 9px;
-            color: #e63946;
-            font-weight: bold;
+        .radio-tile:hover { background: #f1f5f9; }
+        input[type="radio"]:checked + .radio-tile {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #1d4ed8;
         }
     </style>
-    
-    <!-- Scripts stay functional as requested -->
-    <script>
-        const receiptPayload = {{ Js::from([
-            'store' => $receiptStoreName,
-            'address' => $receiptStoreAddress,
-            'phone' => $receiptStorePhoneLabel,
-            'logo' => $receiptStoreLogo,
-            'date' => $transaction->created_at->format('d/m/Y H:i'),
-            'number' => $transaction->transaction_number,
-            'cashier' => $transaction->user->name ?? 'Admin',
-            'items' => $transaction->items->map(fn ($item) => [
-                'name' => $item->product_name,
-                'qty' => (float) $item->quantity,
-                'price' => (float) $item->price,
-                'subtotal' => (float) $item->subtotal,
-            ])->values(),
-            'total' => (float) $transaction->total_amount,
-            'cash' => (float) ($transaction->cash_amount ?? 0),
-            'change' => (float) ($transaction->change_amount ?? 0),
-            'method' => strtoupper($transaction->payment_method ?? 'cash'),
-            'footer1' => 'Terima Kasih Atas Kunjungan Anda!',
-            'footer2' => 'Barang yang sudah dibeli tidak dapat ditukar.',
-            'qrisText' => $posQrisText,
-            'printerConfig' => [
-                'autoReconnect' => $posPrinterAutoReconnect,
-                'logoEnabled' => $posPrintLogoEnabled,
-                'chunkSize' => $posBluetoothChunkSize,
-                'chunkDelayMs' => $posBluetoothChunkDelayMs,
-                'performanceProfile' => $posPerformanceProfile,
-            ],
-        ]) }};
-
-        // ... [Rest of the Bluetooth & Logic Javascript from your original code] ...
-        // Note: Keep your existing JS logic here to ensure Bluetooth printing works.
-        // I will provide the optimized UI structure below.
-
-        function formatCurrency(value) {
-            return Number(value || 0).toLocaleString('id-ID');
-        }
-
-        // Logic shortcut: using your existing window event listeners and functions
-        window.addEventListener('load', function() {
-            // Your existing logic...
-            if (typeof processPrintQueue === 'function') processPrintQueue();
-        });
-    </script>
 </head>
 <body>
-    <div class="receipt-actions no-print">
-        <button type="button" class="btn" onclick="window.print()">Print (System)</button>
-        <button type="button" class="btn btn-outline" onclick="printBluetooth()">Print BT</button>
-        <span id="printQueueStatus"></span>
-    </div>
 
-    <div class="header">
-        @if(!empty($receiptStoreLogo))
-            <img src="{{ $receiptStoreLogo }}" alt="Logo" class="header-logo">
-        @endif
-        <h1>{{ $receiptStoreName }}</h1>
-        <p>{{ $receiptStoreAddress }}</p>
-        <p>{{ $receiptStorePhoneLabel }}</p>
-    </div>
+    <!-- CONTROL PANEL -->
+    <div class="no-print control-panel max-w-md w-full rounded-2xl p-6 mb-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v7" />
+                </svg>
+            </div>
+            <div>
+                <h2 class="font-bold text-lg">Cetak Struk</h2>
+                <p class="text-xs text-slate-500">Konfigurasi printer thermal Anda</p>
+            </div>
+        </div>
 
-    <div class="divider"></div>
-
-    <div class="meta-info">
-        <div>TGL</div>
-        <div>{{ $transaction->created_at->format('d/m/y H:i') }}</div>
-        <div>NO</div>
-        <div>#{{ $transaction->transaction_number }}</div>
-        <div>KASIR</div>
-        <div>{{ $transaction->user->name ?? 'Admin' }}</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="items-list">
-        @foreach($transaction->items as $item)
-            <div class="item-row">
-                <span class="item-name">{{ strtoupper($item->product_name) }}</span>
-                <div class="item-details">
-                    <span>{{ $item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
-                    <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+        <div class="mb-6">
+            <span class="block text-sm font-semibold mb-3 text-slate-700">Ukuran Kertas</span>
+            <div class="radio-tile-group">
+                <div class="relative flex-1">
+                    <input type="radio" name="paper_size" id="size58" value="32" class="hidden" checked onchange="updateView('58')">
+                    <label for="size58" class="radio-tile block">
+                        <span class="block text-sm font-bold">58mm</span>
+                        <span class="text-[10px] opacity-60">32 Karakter</span>
+                    </label>
+                </div>
+                <div class="relative flex-1">
+                    <input type="radio" name="paper_size" id="size80" value="48" class="hidden" onchange="updateView('80')">
+                    <label for="size80" class="radio-tile block">
+                        <span class="block text-sm font-bold">80mm</span>
+                        <span class="text-[10px] opacity-60">48 Karakter</span>
+                    </label>
                 </div>
             </div>
-        @endforeach
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="totals-box">
-        <div class="total-row">
-            <span>Subtotal</span>
-            <span>{{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
-        </div>
-        
-        <div class="total-row main">
-            <span>TOTAL</span>
-            <span>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
         </div>
 
-        @if($transaction->cash_amount > 0)
-            <div class="total-row" style="margin-top: 4px;">
-                <span>Tunai</span>
-                <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
-            </div>
-            <div class="total-row">
-                <span>Kembali</span>
-                <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
-            </div>
-        @else
-            <div class="total-row" style="margin-top: 4px;">
-                <span>Metode</span>
-                <span>{{ strtoupper($transaction->payment_method) }}</span>
-            </div>
-        @endif
+        <div class="flex flex-col gap-3">
+            <button onclick="printBluetooth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 group-hover:scale-110 transition" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.29L13 18.17v-3.76l1.88 1.88z"/>
+                </svg>
+                Bluetooth Print
+            </button>
+            <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-slate-200">
+                Print ke PDF / Sistem
+            </button>
+        </div>
+
+        <div id="status-bar" class="mt-4 py-2 px-3 bg-slate-100 rounded-lg flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</span>
+            <span id="print-status" class="text-[11px] font-semibold text-slate-600 italic">Siap Mencetak</span>
+        </div>
     </div>
 
-    <div class="payment-status">
-        Pembayaran - {{ strtoupper($transaction->payment_method ?? 'CASH') }}
+    <!-- RECEIPT AREA -->
+    <div id="receipt-wrapper" class="size-58 thermal-font">
+        <div class="text-center mb-4">
+            @if(!empty($receiptStoreLogo))
+                <img id="logo-img" src="{{ $receiptStoreLogo }}" class="mx-auto h-12 mb-2 grayscale object-contain" crossorigin="anonymous">
+            @endif
+            <h1 class="text-base font-bold tracking-tight uppercase leading-tight">{{ $receiptStoreName }}</h1>
+            <p class="text-[10px] mt-1">{{ $receiptStoreAddress }}</p>
+            <p class="text-[10px]">{{ $receiptStorePhoneLabel }}</p>
+        </div>
+
+        <div class="border-t border-dashed border-slate-900 my-3"></div>
+
+        <div class="text-[11px] space-y-0.5">
+            <div class="flex justify-between"><span>NO NOTA</span><span>#{{ $transaction->transaction_number }}</span></div>
+            <div class="flex justify-between"><span>TANGGAL</span><span>{{ $transaction->created_at->format('d/m/Y H:i') }}</span></div>
+            <div class="flex justify-between"><span>KASIR</span><span>{{ strtoupper($transaction->user->name ?? 'Admin') }}</span></div>
+        </div>
+
+        <div class="border-t border-dashed border-slate-900 my-3"></div>
+
+        <div class="space-y-3">
+            @foreach($transaction->items as $item)
+                <div>
+                    <span class="block font-bold uppercase">{{ $item->product_name }}</span>
+                    <div class="flex justify-between text-[11px]">
+                        <span>{{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
+                        <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="border-t border-dashed border-slate-900 my-3"></div>
+
+        <div class="space-y-1">
+            <div class="flex justify-between">
+                <span>SUBTOTAL</span>
+                <span>{{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
+            </div>
+            <div class="flex justify-between font-bold text-sm pt-1 border-t border-slate-300 mt-1">
+                <span>TOTAL AKHIR</span>
+                <span>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
+            </div>
+            <div class="flex justify-between pt-2">
+                <span class="opacity-70">METODE BAYAR</span>
+                <span class="font-bold uppercase">{{ $transaction->payment_method }}</span>
+            </div>
+            @if($transaction->cash_amount > 0)
+                <div class="flex justify-between">
+                    <span>TUNAI</span>
+                    <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between italic">
+                    <span>KEMBALI</span>
+                    <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
+                </div>
+            @endif
+        </div>
+
+        <div class="mt-8 text-center space-y-1">
+            <p class="uppercase font-bold text-[11px]">*** TERIMA KASIH ***</p>
+            <p class="text-[9px]">Barang yang sudah dibeli tidak dapat ditukar.</p>
+            <div class="pt-4 opacity-30 text-[8px]">
+                POWERED BY MSTORE
+            </div>
+        </div>
     </div>
 
-    <div class="footer">
-        <p>*** {{ $transaction->total_amount > 100000 ? 'Customer Hebat!' : 'Terima Kasih' }} ***</p>
-        <p>Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan.</p>
-        <p style="margin-top: 5px; font-size: 7px;">Powered by MStore</p>
-    </div>
+    <canvas id="canvas-logo" style="display:none;"></canvas>
 
-    <!-- Script Bluetooth Logic (Re-include your original script parts here) -->
-    <script>
-        // Masukkan kembali semua fungsi bluetooth (enqueuePrintJob, dispatchPrint, dll) 
-        // dari kode asli Anda ke sini agar fitur fungsional tetap berjalan.
-        // Saya tidak menghapusnya, hanya meringkas tampilan di preview ini.
-        const printBluetooth = () => {
-             console.log("Memulai print bluetooth...");
-             // Panggil fungsi asli Anda di sini
-        };
-    </script>
+<script>
+/** * DATA & CONFIGURATION
+ */
+const txnData = {{ Js::from([
+    'store' => $receiptStoreName,
+    'addr' => $receiptStoreAddress,
+    'phone' => $receiptStorePhoneLabel,
+    'nota' => $transaction->transaction_number,
+    'time' => $transaction->created_at->format('d/m/Y H:i'),
+    'cashier' => $transaction->user->name ?? 'Admin',
+    'items' => $transaction->items->map(fn($i) => [
+        'name' => strtoupper($i->product_name),
+        'qty' => (float)$i->quantity,
+        'prc' => (float)$i->price,
+        'sub' => (float)$i->subtotal
+    ]),
+    'total' => (float)$transaction->total_amount,
+    'method' => strtoupper($transaction->payment_method),
+    'cash' => (float)$transaction->cash_amount,
+    'change' => (float)$transaction->change_amount
+]) }};
+
+function updateView(size) {
+    const el = document.getElementById('receipt-wrapper');
+    el.classList.remove('size-58', 'size-80');
+    el.classList.add('size-' + size);
+}
+
+/** * BLUETOOTH PRINT ENGINE
+ */
+class PrinterEngine {
+    constructor(cols) {
+        this.cols = cols;
+        this.buffer = [];
+        this.encoder = new TextEncoder();
+    }
+
+    raw(data) {
+        if (typeof data === 'string') this.buffer.push(...this.encoder.encode(data));
+        else this.buffer.push(...data);
+    }
+
+    init() { this.raw([0x1B, 0x40]); }
+    center() { this.raw([0x1B, 0x61, 1]); }
+    left() { this.raw([0x1B, 0x61, 0]); }
+    bold(v) { this.raw([0x1B, 0x45, v ? 1 : 0]); }
+    divider() { this.raw("-".repeat(this.cols) + "\n"); }
+    feed(n=3) { for(let i=0; i<n; i++) this.raw([0x0A]); }
+    
+    justify(left, right) {
+        const gap = this.cols - left.toString().length - right.toString().length;
+        this.raw(left + " ".repeat(Math.max(1, gap)) + right + "\n");
+    }
+
+    async processLogo(img) {
+        if (!img) return;
+        const canvas = document.getElementById('canvas-logo');
+        const ctx = canvas.getContext('2d');
+        const w = this.cols === 32 ? 184 : 360; 
+        const h = Math.round(img.naturalHeight * (w / img.naturalWidth));
+        canvas.width = w; canvas.height = h;
+        ctx.fillStyle = "white"; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const pixels = ctx.getImageData(0,0,w,h).data;
+        const widthBytes = Math.ceil(w/8);
+        const rast = new Uint8Array(widthBytes * h);
+        for(let y=0; y<h; y++) {
+            for(let x=0; x<w; x++) {
+                const idx = (y*w+x)*4;
+                if (((pixels[idx]+pixels[idx+1]+pixels[idx+2])/3) < 140) {
+                    rast[y*widthBytes + Math.floor(x/8)] |= (0x80 >> (x%8));
+                }
+            }
+        }
+        this.raw([0x1D, 0x76, 0x30, 0, widthBytes%256, Math.floor(widthBytes/256), h%256, Math.floor(h/256)]);
+        this.raw(rast); this.raw("\n");
+    }
+}
+
+async function printBluetooth() {
+    const status = document.getElementById('print-status');
+    const cols = parseInt(document.querySelector('input[name="paper_size"]:checked').value);
+    
+    try {
+        status.innerText = "Mencari Perangkat...";
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
+            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        });
+
+        status.innerText = "Menghubungkan...";
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+        const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+
+        const engine = new PrinterEngine(cols);
+        engine.init();
+
+        const logo = document.getElementById('logo-img');
+        if (logo && logo.complete) {
+            engine.center();
+            await engine.processLogo(logo);
+        }
+
+        engine.center();
+        engine.bold(true); engine.raw(txnData.store + "\n"); engine.bold(false);
+        engine.raw(txnData.addr + "\n" + txnData.phone + "\n");
+        engine.divider();
+
+        engine.left();
+        engine.raw(`NOTA : #${txnData.nota}\n`);
+        engine.raw(`TGL  : ${txnData.time}\n`);
+        engine.raw(`KASIR: ${txnData.cashier}\n`);
+        engine.divider();
+
+        txnData.items.forEach(i => {
+            engine.bold(true); engine.raw(i.name + "\n"); engine.bold(false);
+            engine.justify(`${i.qty} x ${i.prc.toLocaleString('id-ID')}`, i.sub.toLocaleString('id-ID'));
+        });
+        engine.divider();
+
+        engine.justify("SUBTOTAL", txnData.total.toLocaleString('id-ID'));
+        engine.bold(true);
+        engine.justify("TOTAL AKHIR", "Rp " + txnData.total.toLocaleString('id-ID'));
+        engine.bold(false);
+        engine.raw(`METODE: ${txnData.method}\n`);
+
+        if (txnData.cash > 0) {
+            engine.justify("TUNAI", txnData.cash.toLocaleString('id-ID'));
+            engine.justify("KEMBALI", txnData.change.toLocaleString('id-ID'));
+        }
+
+        engine.feed(1);
+        engine.center();
+        engine.raw("*** TERIMA KASIH ***\n");
+        engine.raw("Barang yang sudah dibeli\n");
+        engine.raw("tidak dapat ditukar.\n");
+        engine.raw("POWERED BY MSTORE\n");
+        engine.feed(4);
+
+        status.innerText = "Mengirim Data...";
+        const payload = new Uint8Array(engine.buffer);
+        const chunkSize = 20;
+        for (let i = 0; i < payload.length; i += chunkSize) {
+            await char.writeValue(payload.slice(i, i + chunkSize));
+        }
+
+        status.innerText = "Selesai!";
+        setTimeout(() => status.innerText = "Siap Mencetak", 3000);
+
+    } catch (e) {
+        status.innerText = "Error: " + e.message;
+        console.error(e);
+    }
+}
+</script>
 </body>
 </html>
