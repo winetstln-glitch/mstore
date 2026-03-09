@@ -24,6 +24,13 @@
     $cashierName = strtoupper(trim((string) ($transaction->user->name ?? '')));
     $cashierName = $cashierName !== '' ? $cashierName : '-';
     $printedAt = date('d/m/Y H:i:s');
+    $discountLabel = 'Diskon';
+    if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
+        $discountLabel = 'Bonus Cuci 10x';
+    } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
+        $discountLabel = 'Voucher Free Wash';
+    }
+    $isLoyaltyBonus = ($transaction->notes ?? null) === 'bonus_cuci_10x';
 @endphp
 
 <!DOCTYPE html>
@@ -168,6 +175,15 @@
         .item-sub { font-size: 10px; }
 
         .total-row { display: flex; justify-content: space-between; margin-top: 2px; }
+        .loyalty-highlight {
+            margin-top: 6px;
+            padding: 3px 6px;
+            border: 1px dashed #000;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            letter-spacing: 0.2px;
+        }
         .grand-total { font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px;}
 
         .footer { text-align: center; margin-top: 20px; }
@@ -311,9 +327,12 @@
 
         @if(($transaction->discount_amount ?? 0) > 0)
             <div class="total-row">
-                <span>Diskon</span>
+                <span>{{ $discountLabel }}</span>
                 <span>-{{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
             </div>
+            @if($isLoyaltyBonus)
+                <div class="loyalty-highlight">★ BONUS CUCI 10X ★</div>
+            @endif
         @endif
 
         <div class="total-row grand-total">
@@ -367,6 +386,8 @@ const data = {{ Js::from([
         'p'=>(float)$i->price,
         's'=>(float)$i->subtotal
     ]),
+    'is_loyalty_bonus'=>$isLoyaltyBonus,
+    'discount_label'=>$discountLabel,
     'discount'=>(float)($transaction->discount_amount ?? 0),
     'total'=>(float)$transaction->total_amount,
     'method'=>strtoupper($transaction->payment_method ?? 'CASH'),
@@ -456,7 +477,8 @@ function buildEscPosText(data){
     if(data.queue){txt+="\n[C]<font size='big'>ANTRIAN #"+data.queue+"</font>\n\n";}
     txt+="[L]--------------------------------\n";
     data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});
-    if(data.discount>0){txt+="[L]Diskon [R]-"+data.discount+"\n";}
+    if(data.discount>0){txt+="[L]"+data.discount_label+" [R]-"+data.discount+"\n";}
+    if(data.is_loyalty_bonus){txt+="[C]<b>*** BONUS CUCI 10X ***</b>\n";}
     txt+="[L]TOTAL [R]"+data.total+"\n";
     txt+="[L]Metode: "+data.method+"\n";
     if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
@@ -545,7 +567,8 @@ async function printBluetoothDirect(){
         esc.line();
         data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
         esc.line();
-        if(data.discount>0) esc.justify("Diskon","-"+formatIdr(data.discount));
+        if(data.discount>0) esc.justify(data.discount_label,"-"+formatIdr(data.discount));
+        if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI 10X ***\n");esc.bold(false);esc.left();}
         esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
         esc.add("Metode: "+data.method+"\n");
         if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}

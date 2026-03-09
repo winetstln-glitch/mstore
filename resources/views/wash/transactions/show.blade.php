@@ -25,6 +25,13 @@ $customerName = trim((string) ($transaction->customer_name ?? ''));
 $customerName = $customerName !== '' ? $customerName : '-';
 $vehiclePlate = strtoupper(trim((string) ($transaction->vehicle_plate ?? '')));
 $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
+$discountLabel = __('Discount');
+if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
+    $discountLabel = 'Bonus Cuci 10x';
+} elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
+    $discountLabel = 'Voucher Free Wash';
+}
+$showDiscountType = !empty($transaction->notes) || (($transaction->discount_amount ?? 0) > 0);
 
 
 @endphp
@@ -95,6 +102,9 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
                 @if(!empty($transaction->queue_number))
                 <div class="context-line"><span>{{ __('Queue Number') }}</span><span>#{{ $transaction->queue_number }}</span></div>
                 @endif
+                @if($showDiscountType)
+                <div class="context-line"><span>Jenis Diskon</span><span>{{ $discountLabel }}</span></div>
+                @endif
             </div>
 
             <div class="receipt-item-panel">
@@ -129,7 +139,7 @@ $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
             <div class="receipt-summary">
                 @if(($transaction->discount_amount ?? 0) > 0)
                 <div class="summary-line">
-                    <span>{{ __('Discount') }}</span>
+                    <span>{{ $discountLabel }}</span>
                     <span class="text-danger">-Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
                 </div>
                 @endif

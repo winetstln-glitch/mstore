@@ -159,22 +159,35 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
     document.getElementById('btnCheckCustomer').addEventListener('click', function() {
         const phone = document.getElementById('customer_phone').value;
-        if (!phone) {
-            alert('Please enter phone number');
+        const vehiclePlate = document.getElementById('vehicle_plate').value;
+        const customerName = document.getElementById('customer_name').value;
+        if (!phone && !vehiclePlate && !customerName) {
+            alert('Isi nomor HP, plat kendaraan, atau nama customer');
             return;
         }
-
-        fetch(`{{ route('wash.customer.check') }}?phone=${phone}`)
+        const params = new URLSearchParams({
+            phone: phone || '',
+            vehicle_plate: vehiclePlate || '',
+            customer_name: customerName || ''
+        });
+        fetch(`{{ route('wash.customer.check') }}?${params.toString()}`)
             .then(response => response.json())
             .then(data => {
                 const info = document.getElementById('customerInfo');
                 const voucherSection = document.getElementById('voucherSection');
                 const nameInput = document.getElementById('customer_name');
                 const voucherCount = document.getElementById('voucherCount');
+                const basisMap = {
+                    plate: 'plat kendaraan',
+                    name: 'nama customer'
+                };
+                const basis = basisMap[data.loyalty_basis] || 'data customer';
 
                 if (data.found) {
-                    nameInput.value = data.name;
-                    info.innerHTML = `<span class="text-success">Customer found! Visits: ${data.visit_count}</span>`;
+                    if (data.name && !nameInput.value) {
+                        nameInput.value = data.name;
+                    }
+                    info.innerHTML = `<span class="text-success">Riwayat ${basis}: ${data.visit_count}x cuci, bonus dalam ${data.next_bonus_in}x lagi.</span>`;
                     
                     if (data.free_wash_eligibility > 0) {
                         voucherSection.style.display = 'block';
@@ -183,17 +196,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         voucherSection.style.display = 'none';
                     }
                 } else {
-                    info.innerHTML = '<span class="text-warning">New Customer</span>';
+                    info.innerHTML = '<span class="text-warning">Belum ada riwayat, bonus akan didapat pada cuci ke-10.</span>';
                     voucherSection.style.display = 'none';
-                    // Don't clear name if user already typed it
-                    if (nameInput.value === '') {
-                        nameInput.value = ''; 
-                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error checking customer');
+                alert('Gagal cek riwayat customer');
             });
     });
 
@@ -600,6 +609,9 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(async data => {
             if (data.success) {
+                if (data.discount_type === 'loyalty') {
+                    alert('Selamat! Bonus cuci ke-10 otomatis diterapkan pada transaksi ini.');
+                }
                 const url = data.receipt_url ? data.receipt_url : ('{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt');
                 if (isMobileDevice()) {
                     window.location.href = withAutoPrint(url);

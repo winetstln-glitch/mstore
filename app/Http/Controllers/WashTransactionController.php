@@ -64,18 +64,39 @@ class WashTransactionController extends Controller
     public function checkCustomer(Request $request)
     {
         $phone = $request->query('phone');
+        $vehiclePlate = $request->query('vehicle_plate');
+        $customerName = $request->query('customer_name');
         $customer = WashCustomer::where('phone', $phone)->first();
+        [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier($vehiclePlate, $customerName ?: ($customer->name ?? null));
+        $visitCount = 0;
+        if ($loyaltyType && $loyaltyValue) {
+            $visitCount = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->count();
+        } elseif ($customer) {
+            $visitCount = (int) $customer->visit_count;
+        }
+        $nextBonusIn = 10 - ($visitCount % 10);
+        if ($nextBonusIn === 0) {
+            $nextBonusIn = 10;
+        }
 
-        if ($customer) {
+        if ($customer || $visitCount > 0) {
             return response()->json([
                 'found' => true,
-                'name' => $customer->name,
-                'visit_count' => $customer->visit_count,
-                'free_wash_eligibility' => $customer->free_wash_eligibility,
+                'name' => $customer->name ?? $customerName,
+                'visit_count' => $visitCount,
+                'free_wash_eligibility' => (int) ($customer->free_wash_eligibility ?? 0),
+                'next_bonus_in' => $nextBonusIn,
+                'loyalty_basis' => $loyaltyType,
             ]);
         }
 
-        return response()->json(['found' => false]);
+        return response()->json([
+            'found' => false,
+            'visit_count' => 0,
+            'free_wash_eligibility' => 0,
+            'next_bonus_in' => 10,
+            'loyalty_basis' => $loyaltyType,
+        ]);
     }
 
     public function store(Request $request)
@@ -131,27 +152,47 @@ class WashTransactionController extends Controller
 
             }
 
-            // Handle Voucher
             $discountAmount = 0;
+            $discountType = null;
+            [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier(
+                $request->vehicle_plate,
+                $request->customer_name ?: ($customer->name ?? null)
+            );
+            $visitCountBefore = 0;
+            $isTenthVisit = false;
+            if ($loyaltyType && $loyaltyValue) {
+                $visitCountBefore = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->lockForUpdate()->count();
+                $isTenthVisit = (($visitCountBefore + 1) % 10) === 0;
+            }
+
             if ($customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
-                // Apply discount (assuming 1 free wash = value of first item or fixed amount?
-                // Let's assume it makes the transaction free or deducts the most expensive item?
-                // Simplest: Deduct the price of the first item found)
                 if (count($items) > 0) {
-                    $discountAmount = $items[0]['price']; // Discount one wash
+                    $discountAmount = $items[0]['price'];
+                    $discountType = 'voucher';
                     $customer->decrement('free_wash_eligibility');
                 }
             }
 
-            // Update visit count and eligibility
+            if ($discountAmount <= 0 && $isTenthVisit && count($items) > 0) {
+                $discountAmount = $items[0]['price'];
+                $discountType = 'loyalty';
+            }
+
             if ($customer) {
+                $nextVisitCount = ((int) $customer->visit_count) + 1;
                 $customer->increment('visit_count');
-                if ($customer->visit_count % 10 == 0) {
+                if ($nextVisitCount % 10 === 0 && $discountType !== 'loyalty') {
                     $customer->increment('free_wash_eligibility');
                 }
             }
 
             $finalTotal = max(0, $total - $discountAmount);
+            $discountNote = null;
+            if ($discountType === 'loyalty') {
+                $discountNote = 'bonus_cuci_10x';
+            } elseif ($discountType === 'voucher') {
+                $discountNote = 'voucher_free_wash';
+            }
 
             // Generate Queue Number (Reset daily)
             $today = now()->format('Y-m-d');
@@ -171,6 +212,7 @@ class WashTransactionController extends Controller
                 'customer_name' => $request->customer_name ?? ($customer ? $customer->name : null),
                 'vehicle_plate' => $request->vehicle_plate,
                 'vehicle_brand' => $request->vehicle_brand,
+                'notes' => $discountNote,
                 'status' => 'lunas',
             ]);
 
@@ -203,7 +245,9 @@ class WashTransactionController extends Controller
                 'success' => true,
                 'transaction_id' => $transaction->id,
                 'queue_number' => $queueNumber,
-                'message' => 'Transaction successful'.($discountAmount > 0 ? ' (Voucher Applied)' : ''),
+                'visit_count' => $visitCountBefore + 1,
+                'discount_type' => $discountType,
+                'message' => 'Transaction successful'.($discountAmount > 0 ? ' (Bonus Applied)' : ''),
             ]);
 
         } catch (\Exception $e) {
@@ -382,5 +426,38 @@ class WashTransactionController extends Controller
         }
 
         return $digits;
+    }
+
+    private function resolveLoyaltyIdentifier(?string $vehiclePlate, ?string $customerName): array
+    {
+        $plate = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $vehiclePlate));
+        if ($plate !== '') {
+            return ['plate', $plate];
+        }
+
+        $name = strtoupper(trim((string) $customerName));
+        if ($name !== '') {
+            return ['name', $name];
+        }
+
+        return [null, null];
+    }
+
+    private function buildLoyaltyQuery(string $type, string $value)
+    {
+        $query = WashTransaction::query();
+        if ($type === 'plate') {
+            $query->whereRaw(
+                "UPPER(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', '')) = ?",
+                [$value]
+            );
+        } else {
+            $query->whereRaw(
+                "UPPER(TRIM(COALESCE(customer_name, ''))) = ?",
+                [$value]
+            );
+        }
+
+        return $query;
     }
 }
