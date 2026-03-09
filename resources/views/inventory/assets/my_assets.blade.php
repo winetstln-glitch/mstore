@@ -20,8 +20,8 @@
                         {{ __('These are the assets currently assigned to you. You are responsible for their condition and safety.') }}
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <div class="table-responsive table-responsive-mobile">
+                        <table class="table table-bordered table-hover align-middle mb-0 table-responsive-mobile" width="100%" cellspacing="0">
                             <thead>
                                 <tr>
                                     <th>{{ __('Item Name') }}</th>
@@ -133,8 +133,31 @@
             border-radius: 1rem;
         }
 
-        .inventory-my-assets-page table {
-            min-width: 700px;
+        .inventory-my-assets-page .table-responsive-mobile td {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            gap: 0.35rem;
+            padding-top: 0.65rem;
+            padding-bottom: 0.65rem;
+        }
+
+        .inventory-my-assets-page .table-responsive-mobile td:before {
+            max-width: 100%;
+            margin-right: 0;
+            margin-bottom: 0.2rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+        }
+
+        .inventory-my-assets-page .table-responsive-mobile td.text-end {
+            align-items: stretch;
+        }
+
+        .inventory-my-assets-page .table-responsive-mobile td .btn {
+            width: 100%;
+            min-height: 38px;
+            border-radius: 0.75rem;
         }
     }
 </style>

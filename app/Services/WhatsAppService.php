@@ -133,6 +133,62 @@ class WhatsAppService
         }
     }
 
+    public function sendMessageWithMedia($phone, $message, $mediaBinary, $mediaFilename = 'receipt.png', $category = 'general', $customerId = null)
+    {
+        $logId = DB::table('notification_logs')->insertGetId([
+            'customer_id' => $customerId,
+            'target_phone' => $phone,
+            'type' => 'whatsapp',
+            'category' => $category,
+            'message' => $message,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        if ($this->baseUrl && $this->apiKey) {
+            try {
+                $message = $this->normalizeMessage((string) $message);
+                if (trim($message) === '') {
+                    throw new \Exception('Pesan WhatsApp kosong setelah render');
+                }
+                if (! str_contains($this->baseUrl, 'fonnte.com')) {
+                    return $this->sendMessage($phone, $message, $category, $customerId);
+                }
+
+                $response = Http::timeout(12)->connectTimeout(5)->retry(2, 200)->withHeaders([
+                    'Authorization' => $this->apiKey,
+                ])->attach('file', $mediaBinary, $mediaFilename)->post($this->baseUrl.'/send', [
+                    'target' => $phone,
+                    'message' => $message,
+                    'countryCode' => '62',
+                ]);
+
+                DB::table('notification_logs')->where('id', $logId)->update([
+                    'status' => $response->successful() ? 'sent' : 'failed',
+                    'response' => $response->body(),
+                ]);
+
+                return $response->successful();
+            } catch (\Exception $e) {
+                Log::error('WhatsApp Media Error: '.$e->getMessage());
+                DB::table('notification_logs')->where('id', $logId)->update([
+                    'status' => 'failed',
+                    'response' => $e->getMessage(),
+                ]);
+                throw $e;
+            }
+        }
+
+        $errorMsg = 'WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env';
+        Log::error($errorMsg);
+        DB::table('notification_logs')->where('id', $logId)->update([
+            'status' => 'failed',
+            'response' => $errorMsg,
+        ]);
+        throw new \Exception($errorMsg);
+    }
+
     public function sendInvoice(Customer $customer, $invoice)
     {
         $tpl = Setting::where('key', 'whatsapp_isp_bill_template')->value('value');

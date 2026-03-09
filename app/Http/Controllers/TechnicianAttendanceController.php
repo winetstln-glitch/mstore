@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -483,48 +484,67 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
-        // Validation: Clock In Allowed based on Settings
-        $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
-        $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+        $lockKey = 'attendance-clock-in-'.Auth::id();
+        $lock = Cache::lock($lockKey, 10);
 
-        $now = now();
-        $currentTime = $now->format('H:i');
-
-        if ($currentTime < $clockInStart || $currentTime > $clockInEnd) {
-            return back()->withErrors(['message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd])]);
+        if (! $lock->get()) {
+            return back()->withErrors(['message' => __('Permintaan absensi sedang diproses. Mohon tunggu sebentar.')]);
         }
 
-        $request->validate([
-            'photo' => 'required|image|max:10240',
-            'latitude' => 'nullable',
-            'longitude' => 'nullable',
-        ]);
+        try {
+            // Validation: Clock In Allowed based on Settings
+            $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
+            $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
 
-        // Radius Check
-        $officeLat = Setting::getValue('attendance_office_lat');
-        $officeLng = Setting::getValue('attendance_office_lng');
-        $radius = Setting::getValue('attendance_radius', 100); // meters
+            $now = now();
+            $currentTime = $now->format('H:i');
 
-        if ($officeLat && $officeLng && $request->latitude && $request->longitude) {
-            $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLng);
-            if ($distance > $radius) {
-                return back()->withErrors(['message' => __('You are too far from the office. Distance: :dist m. Max: :max m.', ['dist' => round($distance), 'max' => $radius])]);
+            if ($currentTime < $clockInStart || $currentTime > $clockInEnd) {
+                return back()->withErrors(['message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd])]);
             }
+
+            $alreadyClockedInToday = TechnicianAttendance::where('user_id', Auth::id())
+                ->whereDate('clock_in', today())
+                ->exists();
+
+            if ($alreadyClockedInToday) {
+                return redirect()->route($this->attendanceRedirectRoute($request))->withErrors(['message' => __('Anda sudah melakukan absen masuk hari ini.')]);
+            }
+
+            $request->validate([
+                'photo' => 'required|image|max:10240',
+                'latitude' => 'nullable',
+                'longitude' => 'nullable',
+            ]);
+
+            // Radius Check
+            $officeLat = Setting::getValue('attendance_office_lat');
+            $officeLng = Setting::getValue('attendance_office_lng');
+            $radius = Setting::getValue('attendance_radius', 100); // meters
+
+            if ($officeLat && $officeLng && $request->latitude && $request->longitude) {
+                $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLng);
+                if ($distance > $radius) {
+                    return back()->withErrors(['message' => __('You are too far from the office. Distance: :dist m. Max: :max m.', ['dist' => round($distance), 'max' => $radius])]);
+                }
+            }
+
+            $path = $request->file('photo')->store('attendance-photos', 'public');
+
+            TechnicianAttendance::create([
+                'user_id' => Auth::id(),
+                'clock_in' => now(),
+                'photo_clock_in' => $path,
+                'lat_clock_in' => $request->latitude,
+                'lng_clock_in' => $request->longitude,
+                'status' => 'present',
+                'notes' => $request->notes,
+            ]);
+
+            return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
+        } finally {
+            optional($lock)->release();
         }
-
-        $path = $request->file('photo')->store('attendance-photos', 'public');
-
-        TechnicianAttendance::create([
-            'user_id' => Auth::id(),
-            'clock_in' => now(),
-            'photo_clock_in' => $path,
-            'lat_clock_in' => $request->latitude,
-            'lng_clock_in' => $request->longitude,
-            'status' => 'present',
-            'notes' => $request->notes,
-        ]);
-
-        return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
     }
 
     /**

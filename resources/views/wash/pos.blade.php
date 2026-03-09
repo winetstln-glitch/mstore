@@ -140,6 +140,7 @@
 </div>
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.service-card').forEach(function (el) {
@@ -223,6 +224,105 @@ document.addEventListener('DOMContentLoaded', function () {
             const separator = url.includes('?') ? '&' : '?';
             return `${url}${separator}autoprint=1&source=pos-wash-mobile`;
         }
+    }
+
+    function formatRupiah(value) {
+        return 'Rp ' + new Intl.NumberFormat('id-ID').format(value || 0);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    async function buildWashReceiptBlob(transactionId, payload) {
+        if (typeof html2canvas === 'undefined') {
+            return null;
+        }
+
+        const capture = document.createElement('div');
+        capture.style.position = 'fixed';
+        capture.style.left = '-10000px';
+        capture.style.top = '0';
+        capture.style.width = '360px';
+        capture.style.background = '#ffffff';
+        capture.style.color = '#111827';
+        capture.style.padding = '14px';
+        capture.style.fontFamily = 'Arial, sans-serif';
+        capture.style.fontSize = '12px';
+        capture.style.lineHeight = '1.4';
+        capture.style.border = '1px solid #e5e7eb';
+        const itemsHtml = payload.items.map((item) => `
+            <tr>
+                <td style="padding:4px 0;border-bottom:1px dashed #d1d5db;">${escapeHtml(item.name)}</td>
+                <td style="padding:4px 0;text-align:center;border-bottom:1px dashed #d1d5db;">${item.quantity}</td>
+                <td style="padding:4px 0;text-align:right;border-bottom:1px dashed #d1d5db;">${formatRupiah(item.price)}</td>
+                <td style="padding:4px 0;text-align:right;border-bottom:1px dashed #d1d5db;">${formatRupiah(item.subtotal)}</td>
+            </tr>
+        `).join('');
+
+        capture.innerHTML = `
+            <div style="text-align:center;font-weight:700;font-size:14px;">${escapeHtml(@json(config('app.name')))}</div>
+            <div style="text-align:center;color:#4b5563;">Detail Transaksi Wash</div>
+            <div style="margin-top:8px;">No. Transaksi: #${escapeHtml(transactionId)}</div>
+            <div>Tanggal: ${escapeHtml(new Date().toLocaleString('id-ID'))}</div>
+            <div>Pelanggan: ${escapeHtml(payload.customerName || '-')}</div>
+            <div>Kendaraan: ${escapeHtml(payload.vehicleBrand || '-')} - ${escapeHtml(payload.vehiclePlate || '-')}</div>
+            <div style="margin-top:8px;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:4px 0;border-bottom:1px solid #111827;">Item</th>
+                            <th style="text-align:center;padding:4px 0;border-bottom:1px solid #111827;">Qty</th>
+                            <th style="text-align:right;padding:4px 0;border-bottom:1px solid #111827;">Harga</th>
+                            <th style="text-align:right;padding:4px 0;border-bottom:1px solid #111827;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+            </div>
+            <div style="margin-top:8px;display:flex;justify-content:space-between;">
+                <span>Metode Bayar</span>
+                <strong>${escapeHtml((payload.paymentMethod || '').toUpperCase())}</strong>
+            </div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;font-size:14px;">
+                <span>Total</span>
+                <strong>${formatRupiah(payload.total)}</strong>
+            </div>
+        `;
+
+        document.body.appendChild(capture);
+        try {
+            const canvas = await html2canvas(capture, { scale: 2, backgroundColor: '#ffffff' });
+            return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        } finally {
+            capture.remove();
+        }
+    }
+
+    async function sendWashWhatsappReceipt(transactionId, phone, payload) {
+        const formData = new FormData();
+        formData.append('phone', phone);
+        try {
+            const blob = await buildWashReceiptBlob(transactionId, payload);
+            if (blob) {
+                formData.append('receipt_image', blob, `struk-wash-${transactionId}.png`);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        return fetch(`{{ url('wash/transactions') }}/${transactionId}/whatsapp-receipt`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: formData
+        });
     }
 
     function addToCart(id, name, price, type) {
@@ -498,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return response.json();
         })
-        .then(data => {
+        .then(async data => {
             if (data.success) {
                 const url = data.receipt_url ? data.receipt_url : ('{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt');
                 if (isMobileDevice()) {
@@ -508,14 +608,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 const resolvedPhone = data.customer_phone || phone;
                 if (sendWhatsapp && resolvedPhone && !data.wa_sent) {
-                    fetch(`{{ url('wash/transactions') }}/${data.transaction_id}/whatsapp-receipt`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: `phone=${encodeURIComponent(resolvedPhone)}`
-                    }).catch(()=>{});
+                    await sendWashWhatsappReceipt(data.transaction_id, resolvedPhone, {
+                        items: cart.map((item) => ({
+                            name: item.name,
+                            quantity: item.quantity,
+                            price: item.price,
+                            subtotal: item.price * item.quantity
+                        })),
+                        total: parseInt(document.getElementById('totalAmount')?.dataset?.amount || 0) || 0,
+                        customerName: document.getElementById('customer_name')?.value || '',
+                        vehicleBrand: document.getElementById('vehicle_brand')?.value || '',
+                        vehiclePlate: document.getElementById('vehicle_plate')?.value || '',
+                        paymentMethod: method
+                    }).catch(() => {});
                 }
                 resetCart();
             } else {

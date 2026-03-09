@@ -320,7 +320,10 @@ class WashTransactionController extends Controller
 
     public function whatsappReceipt(Request $request, WashTransaction $transaction)
     {
-        $request->validate(['phone' => 'required|string']);
+        $request->validate([
+            'phone' => 'required|string',
+            'receipt_image' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
+        ]);
         $phone = $this->normalizePhone($request->input('phone'));
         $link = route('wash.transactions.receipt', $transaction);
         $date = $transaction->created_at ? $transaction->created_at->format('d-m-Y H:i') : now()->format('d-m-Y H:i');
@@ -352,7 +355,19 @@ class WashTransactionController extends Controller
             ?? "*STRUK LAYANAN CUCI KENDARAAN*\nNo: {{invoice}}\nTanggal: {{tanggal}}\n\n{{#each items}}• {{nama_layanan}} - Rp{{harga}}\n{{/each}}\n\nTotal Bayar: Rp{{total}}";
         $wa = app(WhatsAppService::class);
         $message = $wa->renderTemplate($tpl, $vars);
-        $wa->sendMessage($phone, $message, 'receipt', null);
+        if ($request->hasFile('receipt_image')) {
+            $file = $request->file('receipt_image');
+            $wa->sendMessageWithMedia(
+                $phone,
+                $message,
+                file_get_contents($file->getRealPath()),
+                $file->getClientOriginalName() ?: ('struk-wash-'.$transaction->transaction_number.'.png'),
+                'receipt',
+                null
+            );
+        } else {
+            $wa->sendMessage($phone, $message, 'receipt', null);
+        }
 
         return response()->json(['success' => true]);
     }

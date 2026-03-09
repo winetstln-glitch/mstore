@@ -63,6 +63,7 @@
             border-radius: 2px;
             padding: 1.25rem;
             position: relative;
+            overflow: hidden;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -72,6 +73,24 @@
             top: 0; left: 0; right: 0;
             height: 4px;
             background: linear-gradient(90deg, #3b82f6, #2dd4bf);
+        }
+
+        #receipt-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: var(--receipt-watermark);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 65%;
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #receipt-wrapper > * {
+            position: relative;
+            z-index: 1;
         }
 
         .size-58 { width: 58mm; }
@@ -155,6 +174,9 @@
             <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-slate-200">
                 Print ke PDF / Sistem
             </button>
+            <button onclick="shareAtkReceiptNow(this)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-200">
+                Bagikan Struk (PNG)
+            </button>
         </div>
 
         <div id="status-bar" class="mt-4 py-2 px-3 bg-slate-100 rounded-lg flex items-center justify-between">
@@ -164,7 +186,7 @@
     </div>
 
     <!-- RECEIPT AREA -->
-    <div id="receipt-wrapper" class="size-58 thermal-font">
+    <div id="receipt-wrapper" class="size-58 thermal-font" style="--receipt-watermark: {{ !empty($receiptStoreLogo) ? 'url(\''.$receiptStoreLogo.'\')' : 'none' }};">
         <div class="text-center mb-4">
             @if(!empty($receiptStoreLogo))
                 <img id="logo-img" src="{{ $receiptStoreLogo }}" class="mx-auto h-12 mb-2 grayscale object-contain" crossorigin="anonymous">
@@ -234,9 +256,11 @@
 
     <canvas id="canvas-logo" style="display:none;"></canvas>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /** * DATA & CONFIGURATION
  */
+const atkReceiptPngName = @json('struk-atk-' . $transaction->transaction_number . '.png');
 const txnData = {{ Js::from([
     'store' => $receiptStoreName,
     'addr' => $receiptStoreAddress,
@@ -311,6 +335,55 @@ class PrinterEngine {
         this.raw([0x1D, 0x76, 0x30, 0, widthBytes%256, Math.floor(widthBytes/256), h%256, Math.floor(h/256)]);
         this.raw(rast); this.raw("\n");
     }
+}
+
+async function shareAtkReceiptNow(button) {
+    const defaultLabel = button ? button.innerHTML : '';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = 'Mempersiapkan PNG...';
+    }
+    try {
+        const receiptFile = await buildAtkReceiptFile();
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [receiptFile] })) {
+            await navigator.share({ files: [receiptFile] });
+            return;
+        }
+        downloadAtkReceiptFile(receiptFile);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = defaultLabel;
+        }
+    }
+}
+
+async function buildAtkReceiptFile() {
+    const captureTarget = document.getElementById('receipt-wrapper');
+    if (!captureTarget || typeof html2canvas === 'undefined') {
+        throw new Error('capture unavailable');
+    }
+    const canvas = await html2canvas(captureTarget, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: '#ffffff'
+    });
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+        throw new Error('blob failed');
+    }
+    return new File([blob], atkReceiptPngName, { type: 'image/png' });
+}
+
+function downloadAtkReceiptFile(file) {
+    const downloadUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 }
 
 async function printBluetooth() {

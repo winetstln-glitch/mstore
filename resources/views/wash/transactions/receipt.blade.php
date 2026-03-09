@@ -106,12 +106,33 @@
             font-weight: bold;
         }
         .btn-blue { background: #007bff; }
+        .btn-green { background: #16a34a; }
         
         #receipt-wrapper {
             background: #fff;
             padding: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
             transition: width 0.3s ease;
+        }
+
+        #receipt-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: var(--receipt-watermark);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 62%;
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #receipt-content {
+            position: relative;
+            z-index: 1;
         }
 
         .size-58mm { width: 58mm; }
@@ -243,11 +264,12 @@
     
     <button class="btn btn-blue" onclick="printBluetoothDirect()">Connect & Print Bluetooth</button>
     <button class="btn" onclick="window.print()">Print via Browser (PDF/System)</button>
+    <button class="btn btn-green" onclick="shareWashReceiptNow(this)">Bagikan Struk (PNG)</button>
     <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Ready</div>
 </div>
 
 <!-- RECEIPT CONTENT -->
-<div id="receipt-wrapper" class="size-80mm">
+<div id="receipt-wrapper" class="size-80mm" style="--receipt-watermark: {{ !empty($receiptStoreLogo) ? 'url(\''.$receiptStoreLogo.'\')' : 'none' }};">
     <div id="receipt-content">
         <div class="header">
             @if(!empty($receiptStoreLogo))
@@ -325,8 +347,10 @@
 
 <canvas id="canvas-logo" style="display:none;"></canvas>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 // === DATA ===
+const washReceiptPngName = @json('struk-wash-' . $transaction->transaction_number . '.png');
 const data = {{ Js::from([
     'logo' => !empty($receiptStoreLogo) ? $receiptStoreLogo : null,
     'store' => $receiptStoreName,
@@ -438,6 +462,55 @@ function buildEscPosText(data){
     if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
     txt+="\n[C]*** TERIMA KASIH ***\n[C]Periksa kembali barang bawaan Anda\n[C]Dicetak pada: "+data.printed_at+"\n\n\n";
     return txt;
+}
+
+async function shareWashReceiptNow(button) {
+    const defaultLabel = button ? button.innerHTML : '';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = 'Mempersiapkan PNG...';
+    }
+    try {
+        const receiptFile = await buildWashReceiptFile();
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [receiptFile] })) {
+            await navigator.share({ files: [receiptFile] });
+            return;
+        }
+        downloadWashReceiptFile(receiptFile);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = defaultLabel;
+        }
+    }
+}
+
+async function buildWashReceiptFile() {
+    const captureTarget = document.getElementById('receipt-wrapper');
+    if (!captureTarget || typeof html2canvas === 'undefined') {
+        throw new Error('capture unavailable');
+    }
+    const canvas = await html2canvas(captureTarget, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: '#ffffff'
+    });
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+        throw new Error('blob failed');
+    }
+    return new File([blob], washReceiptPngName, { type: 'image/png' });
+}
+
+function downloadWashReceiptFile(file) {
+    const downloadUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 }
 
 // === PRINT FUNCTION ===

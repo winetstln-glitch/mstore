@@ -489,11 +489,19 @@
     const instructionText = document.getElementById('instruction-text');
     const fingerprintContainer = document.getElementById('fingerprintContainer');
     const uploadArea = document.getElementById('upload-area');
+    const attendanceForm = document.getElementById('attendanceForm');
 
     function setSubmitEnabled(enabled) {
         if (!submitBtn || !fingerprintContainer) return;
         submitBtn.disabled = !enabled;
         fingerprintContainer.classList.toggle('fingerprint-ready', enabled);
+    }
+
+    if (attendanceForm && submitBtn) {
+        attendanceForm.addEventListener('submit', () => {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        });
     }
 
     async function loadModels() {
