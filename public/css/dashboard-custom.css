@@ -254,6 +254,12 @@ body {
     min-height: 100dvh;
 }
 
+.btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
+    color: var(--bs-btn-active-color);
+    background-color: var(--bs-btn-active-bg);
+    border-color: var(--bs-btn-active-border-color);
+}
+
 /* Navbar - Glassmorphism */
 .main-header {
     position: sticky;
@@ -266,7 +272,7 @@ body {
     -webkit-backdrop-filter: var(--blur);
     border: var(--glass-border);
     box-shadow: var(--shadow-md);
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
     margin-top: 1rem;
 }
 

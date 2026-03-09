@@ -5,7 +5,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Laba Bersih Investor') }}</h1>
+        <h1 class="h3 mb-0 text-body">{{ __('Laporan Laba Bersih Investor') }}</h1>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <form action="{{ route('finance.investor_report') }}" method="GET" class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
                 <select name="coordinator_id" class="form-select form-control-lg" onchange="this.form.submit()">
@@ -85,7 +85,7 @@
                         <!-- Result Section -->
                         <tr class="table-success border-top border-dark">
                             <td class="h5 font-weight-bold text-success">{{ __('Total Laba Bersih untuk Investor') }}</td>
-                            <td class="text-end h5 font-weight-bold text-success">{{ number_format($netProfit, 0, ',', '.') }}</td>
+                            <td class="text-end h5 font-weight-bold finance-kpi-value text-success">{{ number_format($netProfit, 0, ',', '.') }}</td>
                         </tr>
                         
                         <!-- Split Section -->
@@ -98,7 +98,7 @@
                         </tr>
                         <tr class="table-primary">
                             <td class="h5 font-weight-bold text-primary">{{ __('Laba Per Investor') }}</td>
-                            <td class="text-end h5 font-weight-bold text-primary">{{ number_format($profitPerInvestor, 0, ',', '.') }}</td>
+                            <td class="text-end h5 font-weight-bold finance-kpi-value text-primary">{{ number_format($profitPerInvestor, 0, ',', '.') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -106,7 +106,7 @@
 
             <!-- Detailed Investor Breakdown -->
             <div class="mt-4">
-                <h5 class="font-weight-bold text-gray-800 mb-3">{{ __('Rincian Pembagian Per Investor') }}</h5>
+                <h5 class="font-weight-bold text-body mb-3">{{ __('Rincian Pembagian Per Investor') }}</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover table-responsive-mobile">
                         <thead class="bg-primary text-white">

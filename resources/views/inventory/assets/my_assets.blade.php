@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid inventory-my-assets-page py-2 py-md-3">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
+        <h1 class="h3 mb-0 text-body">
             <i class="fa-solid fa-toolbox me-2"></i> {{ __('My Assets & Tools') }}
         </h1>
     </div>
 
     <div class="row">
         <div class="col-12">
-            <div class="card shadow mb-4">
+            <div class="card shadow mb-4 inventory-my-assets-panel">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Items in My Custody') }}</h6>
                 </div>
@@ -86,4 +86,57 @@
         </div>
     </div>
 </div>
+@push('styles')
+<style>
+    .inventory-my-assets-page .inventory-my-assets-panel {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 1.2rem;
+        overflow: hidden;
+    }
+
+    .inventory-my-assets-page .inventory-my-assets-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    }
+
+    .inventory-my-assets-page table thead th {
+        background: rgba(148, 163, 184, 0.12);
+    }
+
+    [data-bs-theme="dark"] .inventory-my-assets-page .inventory-my-assets-panel {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .inventory-my-assets-page .inventory-my-assets-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
+        border-bottom-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .inventory-my-assets-page table thead th {
+        background: rgba(51, 65, 85, 0.5);
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] .inventory-my-assets-page table td {
+        border-color: #334155;
+    }
+
+    @media (max-width: 767.98px) {
+        .inventory-my-assets-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .inventory-my-assets-page .inventory-my-assets-panel {
+            border-radius: 1rem;
+        }
+
+        .inventory-my-assets-page table {
+            min-width: 700px;
+        }
+    }
+</style>
+@endpush
 @endsection

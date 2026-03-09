@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Pendapatan Material') }}</h1>
+            <h1 class="h3 mb-0 text-body">{{ __('Laporan Pendapatan Material') }}</h1>
             <p class="mb-0 text-muted small">Laporan penjualan barang & potongan komisi pengurus</p>
         </div>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
@@ -62,7 +62,7 @@
                 <div class="card-body">
                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                         {{ __('Total Item Terjual') }}</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalQuantity, 0, ',', '.') }} Unit</div>
+                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($totalQuantity, 0, ',', '.') }} Unit</div>
                     <small class="text-muted">Transaksi Sukses</small>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                 <div class="card-body">
                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                         {{ __('Pendapatan Kotor (Gross)') }}</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalValue, 0, ',', '.') }}</div>
+                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">Rp {{ number_format($totalValue, 0, ',', '.') }}</div>
                 </div>
             </div>
         </div>
@@ -81,7 +81,7 @@
                 <div class="card-body">
                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                         {{ __('Pendapatan Bersih (Net)') }}</div>
-                    <div class="h4 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($netTotal, 0, ',', '.') }}</div>
+                    <div class="h4 mb-0 font-weight-bold finance-kpi-value text-gray-800">Rp {{ number_format($netTotal, 0, ',', '.') }}</div>
                     <div class="small text-danger">- Potongan Komisi ({{ number_format($commissionAmount, 0, ',', '.') }})</div>
                 </div>
             </div>

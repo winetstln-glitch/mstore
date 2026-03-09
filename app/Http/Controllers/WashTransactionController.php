@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Journal;
 use App\Models\Setting;
+use App\Models\TechnicianAttendance;
 use App\Models\WashCustomer;
 use App\Models\WashService;
 use App\Models\WashTransaction;
@@ -33,6 +34,9 @@ class WashTransactionController extends Controller
     {
         $today = now()->format('Y-m-d');
         $month = now()->format('Y-m');
+        $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
+            ->whereDate('clock_in', today())
+            ->first();
 
         $dailySales = WashTransaction::whereDate('created_at', $today)->sum('total_amount');
         $monthlySales = WashTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
@@ -45,7 +49,7 @@ class WashTransactionController extends Controller
             ->limit(5)
             ->get();
 
-        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topServices'));
+        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topServices', 'todayAttendance'));
     }
 
     public function pos()

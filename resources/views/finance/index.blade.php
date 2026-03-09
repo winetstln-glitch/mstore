@@ -76,7 +76,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                     {{ __('Total Pendapatan Kotor') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalIncome, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalIncome, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="fa-solid fa-sack-dollar fa-2x text-body-tertiary"></i>
@@ -94,7 +94,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                     {{ __('Total Kas Keluar') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-danger">-{{ number_format($totalExpense, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-danger">-{{ number_format($totalExpense, 0, ',', '.') }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="fa-solid fa-money-bill-transfer fa-2x text-body-tertiary"></i>
@@ -112,7 +112,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                     {{ __('Saldo Kas Perusahaan') }}</div>
-                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($balance, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($balance, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary" style="font-size: 0.75rem;">
                                     <span class="text-success">Gross</span> - <span class="text-danger">Exp</span>
                                 </small>
@@ -134,7 +134,7 @@
                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                     {{ __('Akumulasi Dana Peralatan') }}</div>
                                 <!-- PERBAIKAN AUDIT: Tampilkan nilai positif, ini adalah Dana yang "ditahan", bukan biaya -->
-                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary">{{ __('Tersimpan (Belum Dipakai)') }}</small>
                             </div>
                             <div class="col-auto">
@@ -157,7 +157,7 @@
                                 <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                     {{ __('Dana ISP (Kewajiban)') }} <span class="badge bg-secondary">{{ $ispRate ?? 0 }}%</span></div>
                                 <!-- PERBAIKAN AUDIT: Hilangkan tanda minus di sini, tampilkan sebagai akumulasi kewajiban -->
-                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalIspShare ?? 0, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalIspShare ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary">{{ __('Perlu dibayarkan ke ISP') }}</small>
                             </div>
                             <div class="col-auto">
@@ -176,7 +176,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                     {{ __('Akumulasi Dana Peralatan') }} <span class="badge bg-info text-white">{{ $toolRate ?? 0 }}%</span></div>
-                                <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($totalToolFund ?? 0, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalToolFund ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary">{{ __('Dana Cadangan Perbaikan/Beli Alat') }}</small>
                             </div>
                             <div class="col-auto">
@@ -289,7 +289,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         {{ __('Total Pendapatan Kotor') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($summary->gross_revenue, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-coins fa-2x text-body-tertiary"></i>
@@ -306,7 +306,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         {{ __('Komisi Saya') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->commission, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($summary->commission, 0, ',', '.') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -320,7 +320,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         {{ __('Pengeluaran Tunai') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->cash_expenses ?? 0, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($summary->cash_expenses ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-receipt fa-2x text-body-tertiary"></i>
@@ -340,7 +340,7 @@
                                     <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                         {{ __('Uang Kas Ditahan') }}</div>
                                     <!-- PERBAIKAN: Ini adalah uang investor yang ditahan, bukan pengeluaran koordinator -->
-                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($summary->investor_cash ?? 0, 0, ',', '.') }}</div>
                                     <small class="text-body-secondary">Dana Investor (Dicatat)</small>
                                 </div>
                                 <div class="col-auto">
@@ -358,7 +358,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         {{ __('Wajib Setor') }}</div>
-                                    <div class="h5 mb-0 font-weight-bold text-body">{{ number_format($summary->net_balance ?? 0, 0, ',', '.') }}</div>
+                                    <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($summary->net_balance ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fa-solid fa-hand-holding-dollar fa-2x text-body-tertiary"></i>

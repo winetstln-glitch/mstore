@@ -689,7 +689,11 @@
             window.feather.replace();
         }
 
-        if (!document.body.classList.contains('route-wash')) {
+        const isMobileTableRoute = document.body.classList.contains('route-wash')
+            || document.body.classList.contains('route-accounting')
+            || document.body.classList.contains('route-finance');
+
+        if (!isMobileTableRoute) {
             return;
         }
 

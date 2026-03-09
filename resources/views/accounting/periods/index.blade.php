@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid py-3">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Periode Akuntansi</h1>
+        <h1 class="h3 mb-0 fw-bold">Periode Akuntansi</h1>
         <a href="{{ route('accounting.periods.create') }}" class="btn btn-primary btn-lg w-100 w-md-auto">
             <i class="fas fa-plus me-1"></i> Buat Periode
         </a>
@@ -46,7 +46,7 @@
                             <span class="badge bg-{{ $p->status === 'open' ? 'success' : 'secondary' }}">{{ strtoupper($p->status) }}</span>
                         </td>
                         <td class="text-center">
-                            <div class="d-flex justify-content-center gap-2">
+                            <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
                                 <a href="{{ route('accounting.periods.opening', $p) }}" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-book-open me-1"></i> Saldo Awal
                                 </a>

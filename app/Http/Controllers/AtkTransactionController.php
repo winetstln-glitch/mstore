@@ -12,6 +12,7 @@ use App\Models\Coordinator;
 use App\Models\Investor;
 use App\Models\Journal;
 use App\Models\Setting;
+use App\Models\TechnicianAttendance;
 use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -27,6 +28,9 @@ class AtkTransactionController extends Controller
     {
         $today = now()->format('Y-m-d');
         $month = now()->format('Y-m');
+        $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
+            ->whereDate('clock_in', today())
+            ->first();
 
         $dailySales = AtkTransaction::whereDate('created_at', $today)->sum('total_amount');
         $monthlySales = AtkTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
@@ -39,7 +43,7 @@ class AtkTransactionController extends Controller
             ->limit(5)
             ->get();
 
-        return view('atk.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topProducts'));
+        return view('atk.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topProducts', 'todayAttendance'));
     }
 
     public function pos()

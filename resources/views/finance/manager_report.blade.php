@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h1 class="h3 mb-0 text-gray-800">{{ __('Laporan Laba Rugi & Kas') }}</h1>
+            <h1 class="h3 mb-0 text-body">{{ __('Laporan Laba Rugi & Kas') }}</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('finance.index') }}">{{ __('Finance') }}</a></li>
@@ -84,7 +84,7 @@
                     </tr>
                     <tr class="table-success">
                         <td class="fw-bold">TOTAL PENDAPATAN KOTOR</td>
-                        <td class="text-end fw-bold fs-5">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                        <td class="text-end fw-bold fs-5 finance-kpi-value">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -123,7 +123,7 @@
                     <!-- Total Expense -->
                     <tr class="table-danger">
                         <td class="fw-bold">TOTAL PENGELUARAN & POTONGAN</td>
-                        <td class="text-end fw-bold text-dark">
+                        <td class="text-end fw-bold finance-total-value text-body">
                             - {{ number_format($coordCommission + $operatingExpenses, 0, ',', '.') }}
                         </td>
                     </tr>
@@ -136,7 +136,7 @@
                 <tbody>
                     <tr>
                         <td style="width: 70%" class="fw-bold ">LABA BERSIH (NET INCOME)</td>
-                        <td class="text-end fw-bold ">
+                        <td class="text-end fw-bold finance-kpi-value">
                             {{ number_format($totalRevenue - ($coordCommission + $operatingExpenses), 0, ',', '.') }}
                         </td>
                     </tr>
@@ -151,7 +151,7 @@
                         <td class="fw-bold fs-5">
                             <i class="fa-solid fa-wallet me-2"></i> SISA SALDO / WAJIB SETOR
                         </td>
-                        <td class="text-end fw-bold fs-5">{{ number_format($netBalance, 0, ',', '.') }}</td>
+                        <td class="text-end fw-bold fs-5 finance-kpi-value">{{ number_format($netBalance, 0, ',', '.') }}</td>
                     </tr>
                 </tbody>
             </table>

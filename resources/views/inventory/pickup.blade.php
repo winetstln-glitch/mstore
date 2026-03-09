@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid inventory-pickup-page py-2 py-md-3">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 px-3 px-md-0">
             <!-- Card: Background & Border diset pakai CSS Variable -->
-            <div class="card shadow-sm border-0 border-top border-4 border-primary">
+            <div class="card shadow-sm border-0 border-top border-4 border-primary inventory-pickup-shell">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-primary">
                         @if(request('type_group') == 'tool')
@@ -27,7 +27,7 @@
                         <input type="hidden" name="longitude" id="longitude">
 
                         <!-- Alert Style Override -->
-                        <div id="location-status" class="alert alert-warning d-flex align-items-center shadow-sm mb-4" role="alert" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color);">
+                        <div id="location-status" class="alert alert-warning d-flex align-items-center shadow-sm mb-4" role="alert">
                             <i class="fa-solid fa-location-crosshairs fa-lg me-3"></i>
                             <div class="flex-grow-1">{{ __('Mendeteksi lokasi Anda...') }}</div>
                         </div>
@@ -36,14 +36,14 @@
                             <label class="form-label fw-bold small text-uppercase text-muted">{{ __('Select Items') }}</label>
                             
                             <!-- Table Wrapper: Border transparan di mobile -->
-                            <div class="table-responsive border rounded overflow-hidden" style="border-color: var(--border-color) !important;">
+                            <div class="table-responsive border rounded overflow-hidden">
                                 <table class="table table-hover align-middle mb-0">
                                     <!-- Thead: Dipaksa pakai warna tema -->
-                                    <thead class="" style="background-color: var(--table-head-bg) !important;">
+                                    <thead class="">
                                         <tr>
-                                            <th style="color: var(--text-main) !important;">{{ __('Item') }}</th>
-                                            <th style="width: 200px; color: var(--text-main) !important;">{{ __('Quantity') }}</th>
-                                            <th style="width: 80px; color: var(--text-main) !important;" class="text-center">{{ __('Act') }}</th>
+                                            <th>{{ __('Item') }}</th>
+                                            <th style="width: 200px;">{{ __('Quantity') }}</th>
+                                            <th style="width: 80px;" class="text-center">{{ __('Act') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody id="items-body">
@@ -102,7 +102,7 @@
                                 @endforeach
                             </select>
                             <!-- Alert Info Override -->
-                            <div class="alert alert-info mt-2 small" style="background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color);">
+                            <div class="alert alert-info mt-2 small">
                                 <strong>{{ __('Note:') }}</strong> {{ __('Leave empty if this is for personal use by a technician. Select a Coordinator only for team stock.') }}
                             </div>
                         </div>
@@ -139,216 +139,159 @@
 
 @push('styles')
 <style>
-    /* --- 1. LIGHT MODE (TERANG & BERSIH) --- */
-    :root {
-        --app-bg: #f3f4f6;        /* Abu-abu sangat muda (bukan putih polos biar card kelihatan) */
-        --card-bg: #ffffff;       /* Kartu Putih Bersih */
-        --text-main: #1f2937;     /* Hitam teks */
-        --text-muted: #6b7280;    /* Abu-abu teks sekunder */
-        --border-color: #e5e7eb;  /* Border halus */
-        --input-bg: #f9fafb;      /* Background input sedikit abu */
-        --input-focus-bg: #ffffff;
-        --table-head-bg: #f3f4f6; /* Header tabel sama dengan body app */
-        --item-row-bg: #ffffff;   /* Baris item putih */
-        --item-row-border: #e5e7eb;
-        --upload-border: #d1d5db;
-        --upload-hover-bg: #f0f9ff;
-        --remove-btn-bg: #fef2f2;
-        --remove-btn-border: #fecaca;
-        --remove-btn-text: #ef4444;
-        --shadow-color: rgba(0, 0, 0, 0.05); /* Bayangan lembut */
-        --primary: #2563eb;
-        --primary-contrast: #ffffff;
-        --secondary: #6b7280;
+    .inventory-pickup-page .inventory-pickup-shell {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border-color: rgba(59, 130, 246, 0.2) !important;
+        border-radius: 1.5rem;
+        overflow: hidden;
     }
 
-    /* --- 2. DARK MODE (GELAP TOTAL) --- */
-    [data-bs-theme="dark"] {
-        --app-bg: #000000;
-        --card-bg: #1c1c1e;
-        --text-main: #ffffff;
-        --text-muted: #a1a1aa;
-        --border-color: #2c2c2e;
-        --input-bg: #2c2c2e;
-        --input-focus-bg: #3a3a3c;
-        --table-head-bg: #2c2c2e;
-        --item-row-bg: #1c1c1e;
-        --item-row-border: #2c2c2e;
-        --upload-border: #4b5563;
-        --upload-hover-bg: #374151;
-        --remove-btn-bg: #450a0a;
-        --remove-btn-border: #7f1d1d;
-        --remove-btn-text: #fca5a5;
-        --shadow-color: rgba(0, 0, 0, 0.5);
-        --primary: #60a5fa;
-        --primary-contrast: #0b1220;
-        --secondary: #a1a1aa;
+    .inventory-pickup-page .inventory-pickup-shell .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
     }
 
-    /* --- 3. GLOBAL RESETS (Paksa Warna) --- */
-   [data-bs-theme="dark"] body {
-        background-color: var(--app-bg) !important;
-        color: var(--text-main) !important;
-        transition: background-color 0.3s ease, color 0.3s ease;
+    .inventory-pickup-page .form-select,
+    .inventory-pickup-page .form-control,
+    .inventory-pickup-page .input-group-text {
+        background-color: var(--bs-body-bg);
+        border-color: var(--bs-border-color);
+        color: var(--bs-body-color);
     }
 
-   [data-bs-theme="dark"] .card {
-        background-color: var(--card-bg) !important;
-        border-color: var(--border-color) !important;
-        color: var(--text-main) !important;
-    }
-    .border-primary { border-color: var(--primary) !important; }
-    . { background-color: var(--table-head-bg) !important; color: var(--text-main) !important; }
-    .btn-primary { background-color: var(--primary) !important; border-color: var(--primary) !important; color: var(--primary-contrast) !important; }
-    .btn-outline-primary { color: var(--primary) !important; border-color: var(--primary) !important; }
-    .btn-outline-primary:hover { background-color: var(--primary) !important; color: var(--primary-contrast) !important; }
-    .btn-outline-secondary { color: var(--secondary) !important; border-color: var(--secondary) !important; }
-    .btn-outline-secondary:hover { background-color: var(--secondary) !important; color: var(--primary-contrast) !important; }
-    
-    /* Pastikan tabel hover tidak aneh */
-    .table-hover > tbody > tr:hover > td, 
-    .table-hover > tbody > tr:hover > th {
-        background-color: rgba(0,0,0,0.02); /* Sangat tipis di light mode */
-        color: var(--text-main);
-    }
-    [data-bs-theme="dark"] .table-hover > tbody > tr:hover > td, 
-    [data-bs-theme="dark"] .table-hover > tbody > tr:hover > th {
-        background-color: rgba(255,255,255,0.05);
+    .inventory-pickup-page .form-select:focus,
+    .inventory-pickup-page .form-control:focus {
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2);
+        border-color: #3b82f6;
     }
 
-    /* Form Controls */
-    .form-select, .form-control, .input-group-text {
-        background-color: var(--input-bg) !important;
-        border-color: var(--border-color) !important;
-        color: var(--text-main) !important;
-    }
-    
-    .form-select:focus, .form-control:focus, .input-group:focus-within {
-        background-color: var(--input-focus-bg) !important;
-        border-color: #3b82f6 !important; /* Biru selalu jelas di kedua mode */
-        color: var(--text-main) !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    .inventory-pickup-page #location-status {
+        background-color: rgba(245, 158, 11, 0.08) !important;
+        border-color: rgba(245, 158, 11, 0.26) !important;
     }
 
-    /* Labels & Small Text */
-    .form-label, .small, .form-text, .text-muted {
-        color: var(--text-muted) !important;
+    .inventory-pickup-page .table-responsive {
+        border: 1px solid var(--bs-border-color) !important;
+        border-radius: 0.9rem;
     }
 
-    /* Dropdown Options (Browser Native Fix) */
-    [data-bs-theme="dark"] option {
-        background-color: var(--card-bg) !important;
-        color: var(--text-main) !important;
-    }
-    [data-bs-theme="dark"] optgroup {
-        background-color: var(--app-bg) !important;
-        color: var(--text-main) !important;
-        font-weight: bold;
+    .inventory-pickup-page .table thead th {
+        background: rgba(148, 163, 184, 0.12) !important;
+        color: var(--bs-body-color) !important;
     }
 
-    /* --- 4. MOBILE OPTIMIZATION --- */
-    @media (max-width: 768px) {
-        .container-fluid { padding: 0 !important; }
-        .card { 
-            border: none !important; 
-            border-radius: 0 !important; 
-            box-shadow: none !important; 
-        }
-        .card-header {
-            background-color: var(--card-bg) !important;
-            border-bottom: 1px solid var(--border-color) !important;
-            position: sticky; top: 0; z-index: 10;
-        }
-
-        .table-responsive { border: none !important; background: transparent; }
-
-        #items-body tr {
-            display: flex; flex-direction: column;
-            background-color: var(--item-row-bg) !important; /* Paksa warna baris */
-            border: 1px solid var(--item-row-border) !important;
-            border-radius: 12px;
-            margin-bottom: 1.25rem;
-            padding: 1.25rem;
-            box-shadow: 0 4px 6px var(--shadow-color);
-        }
-
-        #items-body td {
-            display: block; width: 100% !important;
-            padding: 0.25rem 0 1rem 0 !important;
-            border: none; text-align: left !important;
-            background: transparent !important;
-        }
-
-        .table thead { display: none; }
-
-        .input-group { height: 56px; }
-        .quantity-input {
-            font-size: 1.25rem; text-align: center; font-weight: bold;
-            background-color: var(--input-bg) !important;
-            color: var(--text-main) !important;
-        }
-      [data-bs-theme="dark"]  .unit-display {
-            background-color: var(--table-head-bg) !important;
-            color: var(--text-main) !important;
-            font-weight: 600; border: none;
-        }
-
-        /* Remove Button */
-        .remove-item-row {
-            width: 100%; height: 44px; border-radius: 8px;
-            background-color: var(--remove-btn-bg) !important;
-            border: 1px dashed var(--remove-btn-border) !important;
-            color: var(--remove-btn-text) !important;
-            font-weight: 600;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .remove-item-row:active {
-            background-color: #ef4444 !important; color: white !important;
-        }
-        .remove-item-row::after {
-            content: "Hapus Item Ini"; margin-left: 8px;
-        }
-        
-        #add-item-row {
-            border-radius: 50px; font-weight: 600;
-            box-shadow: 0 4px 6px var(--shadow-color);
-            height: 50px; display: flex; align-items: center; justify-content: center;
-            background-color: var(--card-bg) !important;
-            border-color: #3b82f6 !important;
-            color: #3b82f6 !important;
-        }
+    .inventory-pickup-page .remove-item-row {
+        min-width: 42px;
     }
 
-    /* --- 5. CUSTOM FILE UPLOAD --- */
     .custom-file-upload {
-        border: 2px dashed var(--upload-border) !important;
+        border: 2px dashed var(--bs-border-color) !important;
         border-radius: 12px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: 2rem; cursor: pointer; transition: all 0.2s;
-        background-color: var(--input-bg) !important;
-        position: relative; overflow: hidden; min-height: 150px;
-        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        background-color: var(--bs-body-bg) !important;
+        position: relative;
+        overflow: hidden;
+        min-height: 150px;
+        color: var(--bs-secondary-color);
     }
-    [data-bs-theme="dark"] .custom-file-upload {
-        border-color: var(--upload-border) !important;
-        background-color: var(--input-bg) !important;
-        color: var(--text-muted) !important;
-    }
+
     .custom-file-upload:hover {
-        border-color: #3b82f6 !important; 
-        background-color: var(--upload-hover-bg) !important;
+        border-color: #3b82f6 !important;
+        background-color: rgba(59, 130, 246, 0.05) !important;
     }
+
     .custom-file-upload input[type="file"] { display: none; }
-    
-    .upload-placeholder i { font-size: 2.5rem; color: var(--text-muted) !important; margin-bottom: 0.5rem; }
-    .upload-label-text { color: var(--text-muted) !important; font-weight: 500; z-index: 2; }
-    
+
+    .upload-placeholder i { font-size: 2.5rem; color: var(--bs-secondary-color) !important; margin-bottom: 0.5rem; }
+    .upload-label-text { color: var(--bs-secondary-color) !important; font-weight: 500; z-index: 2; }
+
     .upload-preview {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        object-fit: cover; display: none; border-radius: 10px; z-index: 1;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+        border-radius: 10px;
+        z-index: 1;
     }
+
     .upload-preview.active { display: block; }
 
+    [data-bs-theme="dark"] .inventory-pickup-page .inventory-pickup-shell {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border-color: rgba(96, 165, 250, 0.28) !important;
+    }
+
+    [data-bs-theme="dark"] .inventory-pickup-page .inventory-pickup-shell .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
+        border-bottom-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .inventory-pickup-page .table thead th {
+        background: rgba(51, 65, 85, 0.5) !important;
+        color: #e2e8f0 !important;
+    }
+
+    [data-bs-theme="dark"] .inventory-pickup-page .table tbody td {
+        border-color: #334155;
+    }
+
+    @media (max-width: 767.98px) {
+        .inventory-pickup-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .inventory-pickup-page .inventory-pickup-shell {
+            border-radius: 1rem;
+        }
+
+        .inventory-pickup-page .card-header {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .inventory-pickup-page .card-header .btn {
+            width: 100%;
+        }
+
+        .inventory-pickup-page .table thead {
+            display: none;
+        }
+
+        .inventory-pickup-page #items-body tr {
+            display: block;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.9rem;
+            padding: 0.9rem;
+            margin-bottom: 0.85rem;
+            background: var(--bs-body-bg);
+        }
+
+        .inventory-pickup-page #items-body td {
+            display: block;
+            width: 100%;
+            border: 0;
+            padding: 0 0 0.7rem 0;
+        }
+
+        .inventory-pickup-page #items-body td:last-child {
+            padding-bottom: 0;
+        }
+
+        .inventory-pickup-page .remove-item-row {
+            width: 100%;
+            height: 42px;
+        }
+    }
 </style>
 @endpush
 

@@ -14,9 +14,9 @@
     $receiptStoreLogo = $receiptStoreLogo && !str_starts_with($receiptStoreLogo, 'http') && !str_starts_with($receiptStoreLogo, 'data:') && !str_starts_with($receiptStoreLogo, '/')
         ? asset($receiptStoreLogo)
         : $receiptStoreLogo;
-    
+
     $receiptStorePhoneLabel = str_starts_with(strtolower($receiptStorePhone), 'telp') ? $receiptStorePhone : 'Telp: '.$receiptStorePhone;
-    
+
     $customerName = trim((string) ($transaction->customer_name ?? ''));
     $customerName = $customerName !== '' ? $customerName : '-';
     $vehiclePlate = strtoupper(trim((string) ($transaction->vehicle_plate ?? '')));
@@ -25,6 +25,7 @@
     $cashierName = $cashierName !== '' ? $cashierName : '-';
     $printedAt = date('d/m/Y H:i:s');
 @endphp
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -58,6 +59,13 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .panel-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
         }
 
         .paper-selector {
@@ -141,13 +149,78 @@
         .total-row { display: flex; justify-content: space-between; margin-top: 2px; }
         .grand-total { font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px;}
 
- .footer { text-align: center; 
-            margin-top: 20px; 
- }
+        .footer { text-align: center; margin-top: 20px; }
         .footer h2 { margin: 0; font-size: 12px; text-transform: uppercase; }
-        .footer p { margin: 2px 0; 
-                    font-size: 10px;
-                    font-style: italic; }
+        .footer p { margin: 2px 0; font-size: 10px; font-style: italic; }
+
+        @media (max-width: 575.98px) {
+            body {
+                padding: 6px;
+                align-items: stretch;
+            }
+
+            .no-print-area {
+                max-width: 100%;
+                gap: 8px;
+                margin-bottom: 8px;
+                padding: 8px;
+                border-radius: 6px;
+            }
+
+            .paper-selector {
+                gap: 6px;
+            }
+
+            .paper-selector label {
+                font-size: 11px;
+                padding: 7px 8px;
+            }
+
+            .btn {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            #receipt-wrapper {
+                width: 100%;
+                max-width: 100%;
+                padding: 8px;
+                box-shadow: 0 0 6px rgba(0,0,0,0.1);
+            }
+
+            .size-58mm,
+            .size-80mm {
+                width: 100%;
+            }
+
+            .header h2 {
+                font-size: 15px;
+            }
+
+            .header p,
+            .item-sub,
+            .footer p {
+                font-size: 9px;
+            }
+
+            .info-table td {
+                font-size: 10px;
+                line-height: 1.15;
+            }
+
+            .label {
+                width: 58px;
+            }
+
+            .queue-badge {
+                font-size: 18px;
+                padding: 8px 6px;
+            }
+
+            .grand-total {
+                font-size: 13px;
+            }
+        }
 
         @media print {
             .no-print-area { display: none; }
@@ -158,447 +231,268 @@
 </head>
 <body>
 
-    <div class="no-print-area">
-        <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 5px;">Pilih Ukuran Kertas:</div>
-        <div class="paper-selector">
-            <input type="radio" name="paper_size" id="size58" value="32" checked onchange="updatePreviewSize('58')">
-            <label for="size58">58mm (32 Kolom)</label>
-            
-            <input type="radio" name="paper_size" id="size80" value="48" onchange="updatePreviewSize('80')">
-            <label for="size80">80mm (48 Kolom)</label>
-        </div>
+<div class="no-print-area">
+    <div class="panel-title">Pilih Ukuran Kertas:</div>
+    <div class="paper-selector">
+        <input type="radio" name="paper_size" id="size58" value="32" onchange="updatePreviewSize('58')">
+        <label for="size58">58mm (32 Kolom)</label>
         
-        <button class="btn btn-blue" onclick="printBluetoothDirect()">Connect & Print Bluetooth</button>
-        <button class="btn" onclick="window.print()">Print via Browser (PDF/System)</button>
-        <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Ready</div>
+        <input type="radio" name="paper_size" id="size80" value="48" checked onchange="updatePreviewSize('80')">
+        <label for="size80">80mm (48 Kolom)</label>
     </div>
+    
+    <button class="btn btn-blue" onclick="printBluetoothDirect()">Connect & Print Bluetooth</button>
+    <button class="btn" onclick="window.print()">Print via Browser (PDF/System)</button>
+    <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Ready</div>
+</div>
 
-    <!-- START RECEIPT CONTENT -->
-    <div id="receipt-wrapper" class="size-58mm">
-        <div id="receipt-content">
-            <div class="header">
-                @if(!empty($receiptStoreLogo))
-                    <img id="logo-img" src="{{ $receiptStoreLogo }}" class="header-logo" crossorigin="anonymous">
-                @endif
-                <h2>{{ $receiptStoreName }}</h2>
-                <p>{{ $receiptStoreAddress }}</p>
-                <p>{{ $receiptStorePhoneLabel }}</p>
-            </div>
-
-            <div class="divider"></div>
-
-            <table class="info-table">
-                <tr><td class="label">Nota</td><td>: {{ $transaction->transaction_number }}</td></tr>
-                <tr><td class="label">Waktu</td><td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td></tr>
-                <tr><td class="label">Kasir</td><td>: {{ $cashierName }}</td></tr>
-                <tr><td class="label">Cust/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
-            </table>
-
-            @if(!empty($transaction->queue_number))
-                <div class="queue-badge">ANTRIAN: #{{ $transaction->queue_number }}</div>
+<!-- RECEIPT CONTENT -->
+<div id="receipt-wrapper" class="size-80mm">
+    <div id="receipt-content">
+        <div class="header">
+            @if(!empty($receiptStoreLogo))
+                <img id="logo-img" src="{{ $receiptStoreLogo }}" class="header-logo" crossorigin="anonymous">
             @endif
+            <h2>{{ $receiptStoreName }}</h2>
+            <p>{{ $receiptStoreAddress }}</p>
+            <p>{{ $receiptStorePhoneLabel }}</p>
+        </div>
 
-            <div class="divider"></div>
+        <div class="divider"></div>
 
-            @foreach($transaction->items as $item)
-                <div class="item-row">
-                    <div class="item-main">
-                        <span>{{ strtoupper($item->service_name) }}</span>
-                        <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="item-sub">
-                        {{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}
-                    </div>
+        <table class="info-table">
+            <tr><td class="label">Nota</td><td>: {{ $transaction->transaction_number }}</td></tr>
+            <tr><td class="label">Waktu</td><td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td></tr>
+            <tr><td class="label">Kasir</td><td>: {{ $cashierName }}</td></tr>
+            <tr><td class="label">Cust/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
+        </table>
+
+        @if(!empty($transaction->queue_number))
+            <div class="queue-badge">ANTRIAN: #{{ $transaction->queue_number }}</div>
+        @endif
+
+        <div class="divider"></div>
+
+        @foreach($transaction->items as $item)
+            <div class="item-row">
+                <div class="item-main">
+                    <span>{{ strtoupper($item->service_name) }}</span>
+                    <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
                 </div>
-            @endforeach
-
-            <div class="divider"></div>
-
-            @if(($transaction->discount_amount ?? 0) > 0)
-                <div class="total-row">
-                    <span>Diskon</span>
-                    <span>-{{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+                <div class="item-sub">
+                    {{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}
                 </div>
-            @endif
-
-            <div class="total-row grand-total">
-                <span>TOTAL</span>
-                <span>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
             </div>
+        @endforeach
 
+        <div class="divider"></div>
+
+        @if(($transaction->discount_amount ?? 0) > 0)
             <div class="total-row">
-                <span>Metode</span>
-                <span>{{ strtoupper($transaction->payment_method ?? 'CASH') }}</span>
+                <span>Diskon</span>
+                <span>-{{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
             </div>
+        @endif
 
-            @if(($transaction->cash_amount ?? 0) > 0)
-                <div class="total-row">
-                    <span>Bayar</span>
-                    <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
-                </div>
-                <div class="total-row">
-                    <span>Kembali</span>
-                    <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
-                </div>
-            @endif
+        <div class="total-row grand-total">
+            <span>TOTAL</span>
+            <span>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</span>
+        </div>
 
-            <div class="footer">
+        <div class="total-row">
+            <span>Metode</span>
+            <span>{{ strtoupper($transaction->payment_method ?? 'CASH') }}</span>
+        </div>
+
+        @if(($transaction->cash_amount ?? 0) > 0)
+            <div class="total-row">
+                <span>Bayar</span>
+                <span>{{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
+            </div>
+            <div class="total-row">
+                <span>Kembali</span>
+                <span>{{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
+            </div>
+        @endif
+
+        <div class="footer">
             <h2>*** TERIMA KASIH ***</h2>
             <p>Kepuasan Anda Kebanggaan Kami.<br>Periksa kembali barang bawaan Anda sebelum meninggalkan lokasi.</p>
             <p class="timestamp">Dicetak pada: {{ $printedAt }}</p>
         </div>
-        </div>
     </div>
-    <!-- END RECEIPT CONTENT -->
+</div>
 
-    <canvas id="canvas-logo" style="display:none;"></canvas>
+<canvas id="canvas-logo" style="display:none;"></canvas>
 
 <script>
-/**
- * DATA PREPARATION
- */
+// === DATA ===
 const data = {{ Js::from([
     'logo' => !empty($receiptStoreLogo) ? $receiptStoreLogo : null,
     'store' => $receiptStoreName,
     'address' => $receiptStoreAddress,
     'phone' => $receiptStorePhoneLabel,
-    'nota' => $transaction->transaction_number,
-    'time' => $transaction->created_at->format('d/m/y H:i'),
+    'number' => $transaction->transaction_number,
+    'date' => $transaction->created_at->format('d/m/y H:i'),
     'cashier' => $cashierName,
     'customer' => $customerName . " / " . $vehiclePlate,
     'queue' => $transaction->queue_number ?? null,
-    'items' => $transaction->items->map(fn($i) => [
-        'n' => strtoupper($i->service_name),
-        'q' => (float)$i->quantity,
-        'p' => (float)$i->price,
-        's' => (float)$i->subtotal
+    'items' => $transaction->items->map(fn($i)=>[
+        'n'=>strtoupper($i->service_name),
+        'q'=>(float)$i->quantity,
+        'p'=>(float)$i->price,
+        's'=>(float)$i->subtotal
     ]),
-    'discount' => (float)($transaction->discount_amount ?? 0),
-    'total' => (float)$transaction->total_amount,
-    'method' => strtoupper($transaction->payment_method ?? 'CASH'),
-    'cash' => (float)($transaction->cash_amount ?? 0),
-    'change' => (float)($transaction->change_amount ?? 0),
-    'printed_at' => $printedAt,
+    'discount'=>(float)($transaction->discount_amount ?? 0),
+    'total'=>(float)$transaction->total_amount,
+    'method'=>strtoupper($transaction->payment_method ?? 'CASH'),
+    'cash'=>(float)($transaction->cash_amount ?? 0),
+    'change'=>(float)($transaction->change_amount ?? 0),
+    'printed_at'=>$printedAt
 ]) }};
 
-function updatePreviewSize(size) {
-    const wrapper = document.getElementById('receipt-wrapper');
-    if (size === '58') {
-        wrapper.className = 'size-58mm';
-    } else {
-        wrapper.className = 'size-80mm';
+// === PREVIEW ===
+function updatePreviewSize(size){
+    document.getElementById('receipt-wrapper').className = 'size-'+size+'mm';
+}
+
+function initReceiptPreview(){
+    const isMobile = window.matchMedia('(max-width: 575.98px)').matches;
+    if (isMobile) {
+        const paper58 = document.getElementById('size58');
+        if (paper58) {
+            paper58.checked = true;
+            updatePreviewSize('58');
+        }
     }
 }
 
-/**
- * ESC/POS UTILS
- */
+// === FORMAT IDR ===
+const formatIdr = n => new Intl.NumberFormat('id-ID').format(n);
+
+// === ESC/POS BUILDER ===
 class EscPosBuilder {
-    constructor(maxChars = 32) {
+    constructor(maxChars=48){
         this.encoder = new TextEncoder();
         this.buffer = [];
-        this.maxChars = maxChars;
+        this.maxChars=maxChars;
     }
-    
-    add(data) {
-        if (typeof data === 'string') {
-            this.buffer.push(...this.encoder.encode(data));
-        } else if (data instanceof Uint8Array || Array.isArray(data)) {
-            this.buffer.push(...data);
-        }
+    add(data){if(typeof data==='string'){this.buffer.push(...this.encoder.encode(data));}else if(data instanceof Uint8Array||Array.isArray(data)){this.buffer.push(...data);}}
+    init(){this.add([0x1B,0x40]);}
+    center(){this.add([0x1B,0x61,1]);}
+    left(){this.add([0x1B,0x61,0]);}
+    right(){this.add([0x1B,0x61,2]);}
+    bold(on){this.add([0x1B,0x45,on?1:0]);}
+    big(on){this.add([0x1B,0x21,on?0x30:0x00]);}
+    feed(n=3){this.add(new Array(n).fill(0x0A));}
+    line(){this.add("-".repeat(this.maxChars)+"\n");}
+    justify(left,right){const spaces=this.maxChars-left.toString().length-right.toString().length;this.add(left+" ".repeat(Math.max(1,spaces))+right+"\n");}
+    async addImage(imgElement){
+        if(!imgElement) return;
+        const canvas=document.getElementById('canvas-logo');const ctx=canvas.getContext('2d');
+        const maxWidth=this.maxChars===48?240:180;const scale=maxWidth/imgElement.naturalWidth;
+        const width=maxWidth;const height=Math.round(imgElement.naturalHeight*scale);
+        canvas.width=width;canvas.height=height;
+        ctx.fillStyle="white";ctx.fillRect(0,0,width,height);ctx.drawImage(imgElement,0,0,width,height);
+        const pixels=ctx.getImageData(0,0,width,height).data;
+        const widthBytes=Math.ceil(width/8);const raster=new Uint8Array(widthBytes*height);
+        for(let y=0;y<height;y++){for(let x=0;x<width;x++){const idx=(y*width+x)*4;const intensity=(pixels[idx]+pixels[idx+1]+pixels[idx+2])/3;if(intensity<150){raster[y*widthBytes+Math.floor(x/8)]|=(0x80>>(x%8));}}}
+        const xL=widthBytes%256,xH=Math.floor(widthBytes/256),yL=height%256,yH=Math.floor(height/256);
+        this.add([0x1D,0x76,0x30,0,xL,xH,yL,yH]);this.add(raster);this.add("\n");
     }
-
-    init() { this.add([0x1B, 0x40]); }
-    center() { this.add([0x1B, 0x61, 1]); }
-    left() { this.add([0x1B, 0x61, 0]); }
-    right() { this.add([0x1B, 0x61, 2]); }
-    bold(on) { this.add([0x1B, 0x45, on ? 1 : 0]); }
-    big(on) { this.add([0x1B, 0x21, on ? 0x30 : 0x00]); }
-    feed(n = 3) { this.add(new Array(n).fill(0x0A)); }
-    line() { this.add("-".repeat(this.maxChars) + "\n"); }
-
-    justify(leftText, rightText) {
-        const spaces = this.maxChars - leftText.toString().length - rightText.toString().length;
-        this.add(leftText + " ".repeat(Math.max(1, spaces)) + rightText + "\n");
-    }
-
-    async addImage(imgElement) {
-        if (!imgElement) return;
-        
-        const canvas = document.getElementById('canvas-logo');
-        const ctx = canvas.getContext('2d');
-        
-        // Ukuran logo disesuaikan dengan lebar kolom
-        const maxWidth = this.maxChars === 48 ? 240 : 180; 
-        const scale = maxWidth / imgElement.naturalWidth;
-        const width = maxWidth;
-        const height = Math.round(imgElement.naturalHeight * scale);
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(imgElement, 0, 0, width, height);
-        
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const pixels = imageData.data;
-        
-        const widthBytes = Math.ceil(width / 8);
-        const raster = new Uint8Array(widthBytes * height);
-        
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const idx = (y * width + x) * 4;
-                const intensity = (pixels[idx] + pixels[idx+1] + pixels[idx+2]) / 3;
-                if (intensity < 150) { 
-                    raster[y * widthBytes + Math.floor(x / 8)] |= (0x80 >> (x % 8));
-                }
-            }
-        }
-        
-        const xL = widthBytes % 256;
-        const xH = Math.floor(widthBytes / 256);
-        const yL = height % 256;
-        const yH = Math.floor(height / 256);
-        
-        this.add([0x1D, 0x76, 0x30, 0, xL, xH, yL, yH]);
-        this.add(raster);
-        this.add("\n");
-    }
-
-    generate() { return new Uint8Array(this.buffer); }
+    generate(){return new Uint8Array(this.buffer);}
 }
 
-const formatIdr = (n) => new Intl.NumberFormat('id-ID').format(n);
-
-function invokeBridgePrinter(invoker, payload) {
-    try {
-        invoker(payload);
-        return true;
-    } catch (_) {
-        try {
-            invoker(JSON.stringify(payload));
-            return true;
-        } catch (_) {
-            return false;
-        }
+// === UNIVERSAL BLUETOOTH BRIDGE ===
+function invokeBridgePrinter(invoker,payload){try{invoker(payload);return true;}catch(_){try{invoker(JSON.stringify(payload));return true;}catch(_){return false;}}}
+function resolveBluetoothBridge(){
+    const methodNames=['printBluetoothAction','printBluetooth','printReceipt','printStruk','printBluetoothReceipt','cetakBluetooth','handleBluetoothPrint','printViaBluetooth','sendPrintJob','bluetoothPrint'];
+    for(const method of methodNames){if(typeof window[method]==='function'){return data=>invokeBridgePrinter(window[method],data);}}
+    if(window.AndroidPrinter && typeof window.AndroidPrinter.printText==='function'){return data=>{try{window.AndroidPrinter.printText(buildEscPosText(data));return true;}catch(e){return false;}};}
+    const bridgeCandidates=[window.Android,window.android,window.MstoreAndroid,window.NativeAndroid,window.JsBridge].filter(Boolean);
+    for(const bridge of bridgeCandidates){
+        for(const method of methodNames){if(typeof bridge[method]==='function'){return data=>invokeBridgePrinter(d=>bridge[method](d),data);}}
+        if(typeof bridge.postMessage==='function'){return data=>invokeBridgePrinter(d=>bridge.postMessage({action:'printBluetooth',payload:d}),data);}
     }
-}
-
-function resolveBluetoothBridge() {
-    const methodNames = [
-        'printBluetoothAction',
-        'printBluetooth',
-        'printReceipt',
-        'printStruk',
-        'printBluetoothReceipt',
-        'cetakBluetooth',
-        'handleBluetoothPrint',
-        'printViaBluetooth',
-        'sendPrintJob',
-        'bluetoothPrint'
-    ];
-
-    for (const method of methodNames) {
-        if (typeof window[method] === 'function') {
-            return function (payload) {
-                return invokeBridgePrinter(window[method], payload);
-            };
-        }
-    }
-
-    const bridgeCandidates = [window.Android, window.android, window.MstoreAndroid, window.NativeAndroid, window.JsBridge].filter(Boolean);
-    for (const bridge of bridgeCandidates) {
-        for (const method of methodNames) {
-            if (typeof bridge[method] !== 'function') {
-                continue;
-            }
-            return function (payload) {
-                return invokeBridgePrinter(function (data) {
-                    return bridge[method](data);
-                }, payload);
-            };
-        }
-        if (typeof bridge.postMessage === 'function') {
-            return function (payload) {
-                return invokeBridgePrinter(function (data) {
-                    return bridge.postMessage({ action: 'printBluetooth', payload: data });
-                }, payload);
-            };
-        }
-    }
-
-    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.printBluetooth && typeof window.webkit.messageHandlers.printBluetooth.postMessage === 'function') {
-        return function (payload) {
-            return invokeBridgePrinter(function (data) {
-                return window.webkit.messageHandlers.printBluetooth.postMessage(data);
-            }, payload);
-        };
-    }
-
-    if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
-        return function (payload) {
-            return invokeBridgePrinter(function (data) {
-                const message = { action: 'printBluetooth', payload: data };
-                return window.ReactNativeWebView.postMessage(JSON.stringify(message));
-            }, payload);
-        };
-    }
-
+    if(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.printBluetooth && typeof window.webkit.messageHandlers.printBluetooth.postMessage==='function'){return data=>invokeBridgePrinter(d=>window.webkit.messageHandlers.printBluetooth.postMessage(d),data);}
+    if(window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage==='function'){return data=>invokeBridgePrinter(d=>window.ReactNativeWebView.postMessage(JSON.stringify({action:'printBluetooth',payload:d})),data);}
     return null;
 }
 
-/**
- * CORE PRINT FUNCTION
- */
-async function printBluetoothDirect() {
-    const status = document.getElementById('status');
-    const paperSize = parseInt(document.querySelector('input[name="paper_size"]:checked').value);
-    const bridgePayload = {
-        store: data.store,
-        address: data.address,
-        phone: data.phone,
-        date: data.time,
-        number: data.nota,
-        cashier: data.cashier,
-        queue: data.queue,
-        customer: data.customer,
-        items: data.items.map((item) => ({
-            name: item.n,
-            qty: item.q,
-            price: item.p,
-            subtotal: item.s
-        })),
-        discount: data.discount,
-        total: data.total,
-        cash: data.cash,
-        change: data.change,
-        method: data.method,
-        paper_size: paperSize
-    };
-    const bridgePrinter = resolveBluetoothBridge();
-    
-    try {
-        if (!(navigator.bluetooth && typeof navigator.bluetooth.requestDevice === 'function')) {
-            if (!bridgePrinter) {
-                throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android MStore.');
-            }
-            status.innerText = "Sending via App Bridge...";
-            const ok = bridgePrinter(bridgePayload);
-            if (!ok) {
-                throw new Error('Bridge Bluetooth tersedia, tetapi gagal mengirim data.');
-            }
-            status.innerText = "Print Success via Bridge!";
-            setTimeout(() => status.innerText = "Status: Ready", 3000);
-            return;
+// === BUILD ESC/POS TEXT ===
+function buildEscPosText(data){
+    let txt="[C]<b>"+data.store+"</b>\n";
+    txt+="[C]"+data.address+"\n";
+    txt+="[C]"+data.phone+"\n";
+    txt+="[L]--------------------------------\n";
+    txt+="[L]Nota : "+data.number+"\n";
+    txt+="[L]Waktu: "+data.date+"\n";
+    txt+="[L]Kasir: "+data.cashier+"\n";
+    txt+="[L]Cust : "+data.customer+"\n";
+    if(data.queue){txt+="\n[C]<font size='big'>ANTRIAN #"+data.queue+"</font>\n\n";}
+    txt+="[L]--------------------------------\n";
+    data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});
+    if(data.discount>0){txt+="[L]Diskon [R]-"+data.discount+"\n";}
+    txt+="[L]TOTAL [R]"+data.total+"\n";
+    txt+="[L]Metode: "+data.method+"\n";
+    if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
+    txt+="\n[C]*** TERIMA KASIH ***\n[C]Periksa kembali barang bawaan Anda\n[C]Dicetak pada: "+data.printed_at+"\n\n\n";
+    return txt;
+}
+
+// === PRINT FUNCTION ===
+async function printBluetoothDirect(){
+    const status=document.getElementById('status');
+    const paperSize=parseInt(document.querySelector('input[name="paper_size"]:checked').value);
+    const bridgePayload=Object.assign({},data,{paper_size:paperSize});
+    const bridgePrinter=resolveBluetoothBridge();
+    try{
+        if(!(navigator.bluetooth && typeof navigator.bluetooth.requestDevice==='function')){
+            if(!bridgePrinter) throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android/iOS.');
+            status.innerText="Sending via App Bridge...";
+            if(!bridgePrinter(bridgePayload)) throw new Error('Bridge Bluetooth tersedia, tetapi gagal mengirim data.');
+            status.innerText="Print Success via Bridge!";
+            setTimeout(()=>status.innerText="Status: Ready",3000);return;
         }
-
-        status.innerText = "Requesting Printer...";
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-        });
-
-        status.innerText = "Connecting...";
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-
-        status.innerText = `Processing (${paperSize === 32 ? '58mm' : '80mm'})...`;
-        const esc = new EscPosBuilder(paperSize);
+        status.innerText="Requesting Printer...";
+        const device=await navigator.bluetooth.requestDevice({filters:[{services:['000018f0-0000-1000-8000-00805f9b34fb']}],optionalServices:['000018f0-0000-1000-8000-00805f9b34fb']});
+        status.innerText="Connecting...";
+        const server=await device.gatt.connect();
+        const service=await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+        const characteristic=await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        status.innerText=`Processing (${paperSize===32?'58mm':'80mm'})...`;
+        const esc=new EscPosBuilder(paperSize);
         esc.init();
-
-        // 1. Logo
-        const logoImg = document.getElementById('logo-img');
-        if (logoImg && logoImg.complete) {
-            esc.center();
-            await esc.addImage(logoImg);
-        }
-
-        // 2. Header
-        esc.center();
-        esc.bold(true);
-        esc.add(`${data.store}\n`);
-        esc.bold(false);
-        esc.add(`${data.address}\n`);
-        esc.add(`${data.phone}\n`);
+        const logoImg=document.getElementById('logo-img');
+        if(logoImg && logoImg.complete){esc.center();await esc.addImage(logoImg);}
+        esc.center();esc.bold(true);esc.add(data.store+"\n");esc.bold(false);
+        esc.add(data.address+"\n"+data.phone+"\n");esc.line();
+        esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nCust: "+data.customer+"\n");
+        if(data.queue){esc.center();esc.big(true);esc.add("\nANTRIAN #"+data.queue+"\n\n");esc.big(false);}
         esc.line();
-
-        // 3. Info
-        esc.left();
-        esc.add(`Nota : ${data.nota}\n`);
-        esc.add(`Waktu: ${data.time}\n`);
-        esc.add(`Kasir: ${data.cashier}\n`);
-        esc.add(`Cust : ${data.customer}\n`);
-        
-        if (data.queue) {
-            esc.center();
-            esc.big(true);
-            esc.add(`\nANTRIAN #${data.queue}\n\n`);
-            esc.big(false);
-        }
-
+        data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
         esc.line();
-
-        // 4. Items
-        data.items.forEach(item => {
-            esc.left();
-            esc.add(`${item.n}\n`);
-            let priceDetail = `${item.q} x ${formatIdr(item.p)}`;
-            let subtotal = formatIdr(item.s);
-            esc.justify(priceDetail, subtotal);
-        });
-
-        esc.line();
-
-        // 5. Totals
-        if (data.discount > 0) {
-            esc.justify("Diskon", `-${formatIdr(data.discount)}`);
-        }
-
-        esc.bold(true);
-        esc.justify("TOTAL", `Rp ${formatIdr(data.total)}`);
-        esc.bold(false);
-
-        esc.add(`Metode: ${data.method}\n`);
-        if (data.cash > 0) {
-            esc.justify("Bayar", formatIdr(data.cash));
-            esc.justify("Kembali", formatIdr(data.change));
-        }
-
-        // 6. Footer
-        esc.feed(1);
-        esc.center();
-        esc.add("*** TERIMA KASIH ***\n");
-        esc.add("Kepuasan Anda Kebanggaan Kami.\n");
-        esc.add("Periksa kembali barang bawaan Anda\n");
-        esc.add("sebelum meninggalkan lokasi.\n");
-        esc.add(`Dicetak pada: ${data.printed_at}\n`);
-        esc.feed(3);
-
-        status.innerText = "Sending Data...";
-        const receiptData = esc.generate();
-        const chunkSize = 20; 
-        for (let i = 0; i < receiptData.length; i += chunkSize) {
-            await characteristic.writeValue(receiptData.slice(i, i + chunkSize));
-        }
-
-        status.innerText = "Print Success!";
-        setTimeout(() => status.innerText = "Status: Ready", 3000);
-
-    } catch (error) {
-        if (bridgePrinter) {
-            const ok = bridgePrinter(bridgePayload);
-            if (ok) {
-                status.innerText = "Print Success via Bridge!";
-                setTimeout(() => status.innerText = "Status: Ready", 3000);
-                return;
-            }
-        }
-        status.innerText = "Error: " + error.message;
+        if(data.discount>0) esc.justify("Diskon","-"+formatIdr(data.discount));
+        esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
+        esc.add("Metode: "+data.method+"\n");
+        if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}
+        esc.feed(1);esc.center();
+        esc.add("*** TERIMA KASIH ***\nKepuasan Anda Kebanggaan Kami.\nPeriksa kembali barang bawaan Anda\nsebelum meninggalkan lokasi.\n");
+        esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
+        status.innerText="Sending Data...";
+        const receiptData=esc.generate();
+        const chunkSize=20;
+        for(let i=0;i<receiptData.length;i+=chunkSize){await characteristic.writeValue(receiptData.slice(i,i+chunkSize));}
+        status.innerText="Print Success!";
+        setTimeout(()=>status.innerText="Status: Ready",3000);
+    }catch(error){
+        if(bridgePrinter && bridgePrinter(bridgePayload)){status.innerText="Print Success via Bridge!";setTimeout(()=>status.innerText="Status: Ready",3000);return;}
+        status.innerText="Error: "+error.message;
     }
 }
+
+initReceiptPreview();
 </script>
+
 </body>
 </html>

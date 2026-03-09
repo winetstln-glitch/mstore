@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid inventory-page py-2 py-md-3">
     <div class="row justify-content-center">
         <div class="col-12">
             <!-- Responsive Header: Stacks on mobile, Horizontal on desktop -->
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-                <h1 class="h3 mb-0 text-gray-800 text-truncate" style="max-width: 100%;">
+                <h1 class="h3 mb-0 text-body text-truncate" style="max-width: 100%;">
                     @if(request('type_group') == 'tool')
                         {{ __('Tools & Assets') }}
                     @elseif(request('type_group') == 'material')
@@ -16,7 +16,7 @@
                     @endif
                 </h1>
                 
-                <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
+                <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end inventory-toolbar">
                     <!-- Filter Group: Stays together but allows wrapping if needed -->
                     <div class="btn-group" role="group">
                         <a href="{{ route('inventory.index') }}" class="btn btn-outline-secondary {{ !request('type_group') ? 'active' : '' }}">{{ __('All') }}</a>
@@ -146,7 +146,7 @@
 
             <!-- My Assigned Assets (For Technicians/Coordinators) -->
             @if(isset($myAssets) && $myAssets->count() > 0)
-            <div class="card shadow-sm border-0 mb-4 border-left-info">
+            <div class="card shadow-sm border-0 mb-4 border-left-info inventory-panel">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-info"><i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assets') }}</h6>
                 </div>
@@ -206,7 +206,7 @@
 
             <!-- Items List -->
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-            <div class="card shadow-sm border-0 mb-4">
+            <div class="card shadow-sm border-0 mb-4 inventory-panel">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Inventory Items') }}</h6>
                 </div>
@@ -303,7 +303,7 @@
             @endif
 
             <!-- Recent Transactions -->
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 inventory-panel">
                 <div class="card-header bg-white py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Recent Pickups') }}</h6>
                 </div>
@@ -395,6 +395,80 @@
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+    .inventory-page .inventory-panel {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid rgba(59, 130, 246, 0.12);
+        border-radius: 1.2rem;
+        overflow: hidden;
+    }
+
+    .inventory-page .inventory-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    }
+
+    .inventory-page .table thead th {
+        background: rgba(148, 163, 184, 0.12);
+    }
+
+    .inventory-page .text-gray-800 {
+        color: var(--bs-body-color) !important;
+    }
+
+    [data-bs-theme="dark"] .inventory-page .inventory-panel {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .inventory-page .inventory-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
+        border-bottom-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .inventory-page .table thead th {
+        background: rgba(51, 65, 85, 0.5);
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] .inventory-page .table tbody td {
+        border-color: #334155;
+    }
+
+    @media (max-width: 767.98px) {
+        .inventory-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .inventory-page .inventory-toolbar {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .inventory-page .inventory-toolbar .btn-group,
+        .inventory-page .inventory-toolbar .dropdown {
+            grid-column: span 2;
+            width: 100%;
+        }
+
+        .inventory-page .inventory-toolbar .btn-group .btn {
+            flex: 1 1 0;
+        }
+
+        .inventory-page .inventory-toolbar > .btn,
+        .inventory-page .inventory-toolbar > a.btn {
+            width: 100%;
+        }
+
+        .inventory-page .inventory-panel {
+            border-radius: 1rem;
+        }
+    }
+</style>
+@endpush
 
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">

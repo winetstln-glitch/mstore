@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="col-12">
-    <div class="row">
+<div class="container-fluid wash-pos-page py-2 py-md-3">
+    <div class="row g-3">
         <!-- Service Selection -->
-        <div class="col-md-8">
-            <div class="card shadow mb-4">
+        <div class="col-md-8 order-2 order-md-1">
+            <div class="card shadow mb-4 wash-panel">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Select Service') }}</h6>
                 </div>
@@ -50,13 +50,13 @@
         </div>
 
         <!-- Cart/Checkout -->
-        <div class="col-md-4">
-            <div class="card shadow mb-4">
+        <div class="col-md-4 order-1 order-md-2">
+            <div class="card shadow mb-4 wash-panel checkout-panel">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">{{ __('Current Transaction') }}</h6>
                 </div>
                 <div class="card-body">
-                    <form id="checkoutForm">
+                    <form id="checkoutForm" class="checkout-form">
                         <div class="mb-3">
                             <label for="vehicle_brand" class="form-label">Vehicle Brand</label>
                             <select class="form-select" id="vehicle_brand" name="vehicle_brand">
@@ -347,13 +347,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 total += itemTotal;
                 
                 const div = document.createElement('div');
-                div.className = 'd-flex justify-content-between align-items-center mb-2 border-bottom pb-2';
+                div.className = 'cart-item d-flex justify-content-between align-items-start align-items-sm-center mb-2 border-bottom pb-2';
                 const selectId = 'emp_sel_' + item.id;
                 const empOptions = ['<option value=\"\">- Pegawai -</option>']
                     .concat(employees.map(e => `<option value=\"${e.id}\" ${item.employee_id==e.id?'selected':''}>${e.name}</option>`))
                     .join('');
                 div.innerHTML = `
-                    <div class="me-2">
+                    <div class="me-2 cart-item-left">
                         <div class="fw-semibold">${item.name}</div>
                         <small class="text-muted d-block">${item.quantity} x ${item.price.toLocaleString('id-ID')}</small>
                         <div class="mt-1">
@@ -362,8 +362,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             </select>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">Rp ${itemTotal.toLocaleString('id-ID')}</span>
+                    <div class="d-flex align-items-center cart-item-right">
+                        <span class="me-2 fw-semibold">Rp ${itemTotal.toLocaleString('id-ID')}</span>
                          <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
@@ -534,13 +534,148 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <style>
+    .wash-pos-page .wash-panel {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 1.2rem;
+        overflow: hidden;
+    }
+
+    .wash-pos-page .wash-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    }
+
     .service-card {
         cursor: pointer;
-        transition: transform 0.2s;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: 0.9rem;
     }
+
     .service-card:hover {
-        transform: scale(1.05);
+        transform: translateY(-2px);
         border-color: #4e73df;
+        box-shadow: 0 10px 18px rgba(59, 130, 246, 0.18);
+    }
+
+    .wash-pos-page .nav-pills .nav-link.active {
+        background-color: #3b82f6;
+    }
+
+    .wash-pos-page #cartItems {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.85rem;
+        padding: 0.75rem;
+        background: var(--bs-body-bg);
+    }
+
+    .wash-pos-page .cart-item-left {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .wash-pos-page .cart-item-right {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page .wash-panel {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page .wash-panel .card-header {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
+        border-bottom-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page .service-card {
+        border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page #cartItems .border-bottom {
+        border-bottom-color: #334155 !important;
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page .checkout-panel .form-control,
+    [data-bs-theme="dark"] .wash-pos-page .checkout-panel .form-select {
+        border-color: #334155;
+        background-color: #0f172a;
+        color: #e2e8f0;
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-pos-page {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
+
+        .wash-pos-page .wash-panel {
+            border-radius: 1rem;
+        }
+
+        .wash-pos-page .service-item {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .wash-pos-page .service-card .card-body {
+            padding: 0.75rem;
+        }
+
+        .wash-pos-page .service-card .img-fluid {
+            max-height: 82px !important;
+        }
+
+        .wash-pos-page .service-card .card-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .wash-pos-page .service-card .card-text {
+            font-size: 0.86rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .wash-pos-page .nav-pills {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
+        }
+
+        .wash-pos-page .nav-pills .nav-item {
+            width: 100%;
+        }
+
+        .wash-pos-page .nav-pills .nav-link {
+            width: 100%;
+            text-align: center;
+            padding: 0.45rem 0.4rem;
+            font-size: 0.82rem;
+        }
+
+        .wash-pos-page #checkoutForm .btn,
+        .wash-pos-page #checkoutForm .input-group .btn {
+            min-height: 42px;
+        }
+
+        .wash-pos-page .checkout-form .mb-3 {
+            margin-bottom: 0.75rem !important;
+        }
+
+        .wash-pos-page .cart-item {
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .wash-pos-page .cart-item-right {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .wash-pos-page #cartItems {
+            max-height: 280px !important;
+        }
     }
 </style>
 @endsection

@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Profit & Loss Statement') }}</h1>
+        <h1 class="h3 mb-0 text-body">{{ __('Profit & Loss Statement') }}</h1>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
@@ -41,7 +41,7 @@
                     <div class="card border-left-success h-100">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Revenue') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                            <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($totalRevenue, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                     <div class="card border-left-warning h-100">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Total Cost of Revenue') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">-{{ number_format($totalCOGS, 0, ',', '.') }}</div>
+                            <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">-{{ number_format($totalCOGS, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
                     <div class="card border-left-info h-100">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Gross Profit') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($grossProfit, 0, ',', '.') }}</div>
+                            <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($grossProfit, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                     <div class="card border-left-primary h-100">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Net Profit') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($netProfit, 0, ',', '.') }}</div>
+                            <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($netProfit, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>

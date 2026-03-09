@@ -66,7 +66,7 @@
     <div class="alert alert-info mt-3">
         Total Debit harus sama dengan Total Kredit. Jika tidak seimbang, ada jurnal yang tidak balanced.
     </div>
-    <div class="mt-2">
+    <div class="mt-2 d-grid gap-2 d-md-flex">
         <a href="{{ route('wash.reports.index') }}" class="btn btn-outline-secondary">Kembali ke Laporan Wash</a>
         <a href="{{ route('atk.reports.index') }}" class="btn btn-outline-secondary">Kembali ke Laporan ATK</a>
     </div>

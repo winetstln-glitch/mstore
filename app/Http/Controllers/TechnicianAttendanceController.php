@@ -456,14 +456,26 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ->whereDate('clock_in', today())
             ->first();
 
+        $monthAttendances = TechnicianAttendance::where('user_id', Auth::id())
+            ->whereMonth('clock_in', now()->month)
+            ->whereYear('clock_in', now()->year)
+            ->get();
+
+        $attendanceSummary = [
+            'masuk' => $monthAttendances->whereIn('status', ['present', 'late'])->count(),
+            'izin' => $monthAttendances->whereIn('status', ['permit', 'leave'])->count(),
+            'sakit' => $monthAttendances->where('status', 'sick')->count(),
+        ];
+
         $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
         $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
+        $leaveQuota = Setting::getValue('technician_leave_quota', 3);
         // Force disable face verification per user request to simplify attendance
         $faceVerificationEnabled = '0';
 
-        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled'));
+        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota'));
     }
 
     /**

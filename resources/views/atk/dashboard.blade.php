@@ -11,6 +11,47 @@
         </a>
     </div>
 
+    @if(Auth::user()->hasPermission('attendance.view'))
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-start border-4 border-primary">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ __('My Attendance Today') }}</h5>
+                        <p class="mb-0 text-muted small">
+                            @if($todayAttendance)
+                                <span class="badge bg-{{ $todayAttendance->status == 'present' ? 'success' : ($todayAttendance->status == 'late' ? 'warning' : 'secondary') }}">
+                                    {{ __(ucfirst($todayAttendance->status)) }}
+                                </span>
+                                <span class="ms-2">
+                                    <i class="fa-solid fa-clock me-1"></i> {{ __('In') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
+                                    @if($todayAttendance->clock_out)
+                                        | <i class="fa-solid fa-clock me-1"></i> {{ __('Out') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
+                                    @endif
+                                </span>
+                            @else
+                                <span class="badge bg-secondary">{{ __('Not Present Yet') }}</span>
+                                <span class="ms-2 text-muted">{{ __('You have not clocked in today.') }}</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{{ route('attendance.create') }}" class="btn btn-primary">
+                            @if(!$todayAttendance)
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
+                            @elseif(!$todayAttendance->clock_out)
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock Out') }}</span>
+                            @else
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Attendance') }}</span>
+                            @endif
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="row">
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
