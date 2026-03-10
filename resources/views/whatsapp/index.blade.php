@@ -52,7 +52,12 @@
                     </div>
                     <div class="mb-3">
                         <label>API Key</label>
-                        <input type="password" class="form-control" name="whatsapp_api_key" placeholder="••••••">
+                        <div class="input-group">
+                            <input type="password" id="whatsapp_api_key" class="form-control" name="whatsapp_api_key" placeholder="••••••">
+                            <button class="btn btn-outline-secondary" type="button" data-toggle-password="whatsapp_api_key" aria-label="Tampilkan/Sembunyikan Password">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success">
@@ -133,6 +138,25 @@
 
 @push('scripts')
 <script>
+    document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
+        toggleButton.addEventListener('click', function () {
+            const inputId = this.getAttribute('data-toggle-password');
+            const input = document.getElementById(inputId);
+            if (!input) {
+                return;
+            }
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon?.classList.remove('fa-eye');
+                icon?.classList.add('fa-eye-slash');
+                return;
+            }
+            input.type = 'password';
+            icon?.classList.remove('fa-eye-slash');
+            icon?.classList.add('fa-eye');
+        });
+    });
     function renderLoop(tpl, items) {
         const re = /\{\{\#each\s+items\}\}([\s\S]*?)\{\{\/each\}\}/;
         const m = tpl.match(re);

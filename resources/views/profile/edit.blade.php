@@ -175,7 +175,12 @@
 
                         <div class="mb-3">
                             <label for="current_password" class="form-label fw-bold">{{ __('Current Password') }}</label>
-                            <input id="current_password" name="current_password" type="password" class="form-control @error('current_password') is-invalid @enderror" autocomplete="current-password">
+                            <div class="input-group">
+                                <input id="current_password" name="current_password" type="password" class="form-control @error('current_password') is-invalid @enderror" autocomplete="current-password">
+                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="current_password" aria-label="Tampilkan/Sembunyikan Password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                             @error('current_password')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -183,7 +188,12 @@
 
                         <div class="mb-3">
                             <label for="password" class="form-label fw-bold">{{ __('New Password') }}</label>
-                            <input id="password" name="password" type="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password">
+                            <div class="input-group">
+                                <input id="password" name="password" type="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="Tampilkan/Sembunyikan Password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                             @error('password')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -191,7 +201,12 @@
 
                         <div class="mb-3">
                             <label for="password_confirmation" class="form-label fw-bold">{{ __('Confirm Password') }}</label>
-                            <input id="password_confirmation" name="password_confirmation" type="password" class="form-control @error('password_confirmation') is-invalid @enderror" autocomplete="new-password">
+                            <div class="input-group">
+                                <input id="password_confirmation" name="password_confirmation" type="password" class="form-control @error('password_confirmation') is-invalid @enderror" autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password_confirmation" aria-label="Tampilkan/Sembunyikan Password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                             @error('password_confirmation')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -243,7 +258,12 @@
 
                         <div class="mb-3">
                              <label for="password_delete" class="form-label fw-bold">Password</label>
-                             <input id="password_delete" name="password" type="password" class="form-control @error('password', 'userDeletion') is-invalid @enderror" placeholder="Enter password to confirm">
+                             <div class="input-group">
+                                <input id="password_delete" name="password" type="password" class="form-control @error('password', 'userDeletion') is-invalid @enderror" placeholder="Enter password to confirm">
+                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password_delete" aria-label="Tampilkan/Sembunyikan Password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                             </div>
                              @error('password', 'userDeletion')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -300,6 +320,25 @@
         var cropModal = new bootstrap.Modal(cropModalElement);
         var cropper;
         var cropSuccess = false;
+        document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
+            toggleButton.addEventListener('click', function () {
+                const inputId = this.getAttribute('data-toggle-password');
+                const input = document.getElementById(inputId);
+                if (!input) {
+                    return;
+                }
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon?.classList.remove('fa-eye');
+                    icon?.classList.add('fa-eye-slash');
+                    return;
+                }
+                input.type = 'password';
+                icon?.classList.remove('fa-eye-slash');
+                icon?.classList.add('fa-eye');
+            });
+        });
 
         avatarInput.addEventListener('change', function (e) {
             var files = e.target.files;

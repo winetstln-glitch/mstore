@@ -268,7 +268,17 @@ class WashTransactionController extends Controller
             ]);
         }
 
-        $transactions = $query->latest()->paginate(10);
+        $per = $request->get('per_page', '10');
+        if ($per === 'all') {
+            $perPage = max(1, (int) $query->count());
+        } else {
+            $perPage = (int) $per;
+            if (! in_array($perPage, [10, 20], true)) {
+                $perPage = 10;
+            }
+        }
+
+        $transactions = $query->latest()->paginate($perPage)->appends($request->query());
 
         return view('wash.transactions.index', compact('transactions'));
     }
@@ -276,6 +286,40 @@ class WashTransactionController extends Controller
     public function show(WashTransaction $transaction)
     {
         return view('wash.transactions.show', compact('transaction'));
+    }
+
+    public function update(Request $request, WashTransaction $transaction)
+    {
+        if (! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'customer_name' => 'nullable|string|max:255',
+            'vehicle_plate' => 'nullable|string|max:50',
+            'vehicle_brand' => 'nullable|string|max:100',
+            'payment_method' => 'required|in:cash,qris',
+            'cash_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $paymentMethod = strtolower((string) $validated['payment_method']);
+        $cashAmount = $paymentMethod === 'cash' ? ($validated['cash_amount'] ?? 0) : null;
+        $changeAmount = $paymentMethod === 'cash'
+            ? max(0, ((float) $cashAmount) - ((float) $transaction->total_amount))
+            : 0;
+
+        $transaction->update([
+            'customer_name' => $validated['customer_name'] ?? null,
+            'vehicle_plate' => $validated['vehicle_plate'] ?? null,
+            'vehicle_brand' => $validated['vehicle_brand'] ?? null,
+            'payment_method' => $paymentMethod,
+            'cash_amount' => $cashAmount,
+            'change_amount' => $changeAmount,
+        ]);
+
+        return redirect()
+            ->route('wash.transactions.index', request()->query())
+            ->with('success', __('Transaction updated successfully.'));
     }
 
     public function destroy(WashTransaction $transaction)

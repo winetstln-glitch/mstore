@@ -336,7 +336,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
-        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show', 'destroy']);
+        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show', 'update', 'destroy']);
     });
 
     // Wash Services (Auto Wash)

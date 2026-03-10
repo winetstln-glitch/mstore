@@ -502,6 +502,44 @@ body.sb-sidenav-toggled #page-content-wrapper {
     color: var(--text-main);
 }
 
+.input-group > .btn[data-toggle-password] {
+    width: 46px;
+    min-width: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-color: var(--input-border, #cbd5e1);
+    color: var(--text-muted);
+    background-color: var(--input-bg, #fff);
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+.input-group > .btn[data-toggle-password]:hover,
+.input-group > .btn[data-toggle-password]:focus {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--input-bg, #fff);
+}
+
+.input-group > .btn[data-toggle-password] i {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+[data-bs-theme="dark"] .input-group > .btn[data-toggle-password] {
+    color: var(--text-main);
+}
+
+.table td .btn.btn-sm {
+    min-height: 36px;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
 /* Badge */
 .badge {
     border-radius: 6px;

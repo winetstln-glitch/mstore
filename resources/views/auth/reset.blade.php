@@ -37,14 +37,20 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password Baru</label>
-                                <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Password baru" required>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Password baru" required>
+                                    <button class="btn btn-outline-secondary" type="button" data-toggle-password="password">Show</button>
+                                </div>
                                 @error('password')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Konfirmasi Password Baru</label>
-                                <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" required>
+                                <div class="input-group">
+                                    <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" required>
+                                    <button class="btn btn-outline-secondary" type="button" data-toggle-password="password_confirmation">Show</button>
+                                </div>
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-success">Reset Password</button>
@@ -61,5 +67,23 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
+            toggleButton.addEventListener('click', function () {
+                const inputId = this.getAttribute('data-toggle-password');
+                const input = document.getElementById(inputId);
+                if (!input) {
+                    return;
+                }
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.textContent = 'Hide';
+                    return;
+                }
+                input.type = 'password';
+                this.textContent = 'Show';
+            });
+        });
+    </script>
 </body>
 </html>

@@ -36,6 +36,16 @@
                 <div class="col-12 col-md-auto">
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
+                <div class="col-12 col-md-auto">
+                    <label for="per_page" class="col-form-label">Per Page</label>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <select id="per_page" name="per_page" class="form-select">
+                        <option value="10" {{ request('per_page', '10') === '10' ? 'selected' : '' }}>10</option>
+                        <option value="20" {{ request('per_page') === '20' ? 'selected' : '' }}>20</option>
+                        <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>All</option>
+                    </select>
+                </div>
                 <div class="col-12 col-md-auto d-flex flex-wrap gap-2 wash-filter-actions">
                     <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
                         <i class="fas fa-filter"></i>
@@ -77,19 +87,32 @@
                                     <div class="d-flex flex-wrap gap-1 justify-content-end transaction-actions">
                                         <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
                                             <i class="fas fa-eye"></i>
-                                            <span class="d-none d-md-inline ms-1">{{ __('View') }}</span>
                                         </a>
                                         <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-warning" title="{{ __('Print') }}">
                                             <i class="fas fa-print"></i>
-                                            <span class="d-none d-md-inline ms-1">{{ __('Print') }}</span>
                                         </a>
                                         @if(Auth::user()->hasRole('admin'))
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-primary"
+                                            title="{{ __('Edit') }}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editTransactionModal"
+                                            data-update-url="{{ route('wash.transactions.update', $transaction) }}"
+                                            data-transaction-number="{{ $transaction->transaction_number }}"
+                                            data-customer-name="{{ $transaction->customer_name ?? '' }}"
+                                            data-vehicle-plate="{{ $transaction->vehicle_plate ?? '' }}"
+                                            data-vehicle-brand="{{ $transaction->vehicle_brand ?? '' }}"
+                                            data-payment-method="{{ $transaction->payment_method ?? 'cash' }}"
+                                            data-cash-amount="{{ (int) ($transaction->cash_amount ?? 0) }}"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
                                         <form action="{{ route('wash.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
                                                 <i class="fas fa-trash"></i>
-                                                <span class="d-none d-md-inline ms-1">{{ __('Delete') }}</span>
                                             </button>
                                         </form>
                                         @endif
@@ -105,11 +128,56 @@
                 </table>
             </div>
             <div class="mt-3">
-                {{ $transactions->links() }}
+                {{ $transactions->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
 </div>
+@if(Auth::user()->hasRole('admin'))
+<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="editTransactionForm" action="" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTransactionTitle">Edit Transaksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="edit_customer_name">Nama Customer</label>
+                        <input type="text" class="form-control" id="edit_customer_name" name="customer_name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="edit_vehicle_plate">Plat Nomor</label>
+                        <input type="text" class="form-control text-uppercase" id="edit_vehicle_plate" name="vehicle_plate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="edit_vehicle_brand">Merek Kendaraan</label>
+                        <input type="text" class="form-control" id="edit_vehicle_brand" name="vehicle_brand">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="edit_payment_method">Metode Pembayaran</label>
+                        <select class="form-select js-payment-method" id="edit_payment_method" name="payment_method" data-cash-target="#edit_cash_amount_group">
+                            <option value="cash">Cash</option>
+                            <option value="qris">QRIS</option>
+                        </select>
+                    </div>
+                    <div class="mb-0" id="edit_cash_amount_group">
+                        <label class="form-label" for="edit_cash_amount">Nominal Cash</label>
+                        <input type="number" min="0" class="form-control" id="edit_cash_amount" name="cash_amount">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @push('styles')
 <style>
     .wash-transactions-page .wash-panel {
@@ -128,6 +196,17 @@
         background: rgba(148, 163, 184, 0.12);
     }
 
+    .wash-transactions-page .transaction-actions .btn,
+    .wash-transactions-page .transaction-actions button {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.55rem;
+        padding: 0;
+    }
+
     [data-bs-theme="dark"] .wash-transactions-page .wash-panel {
         background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
         border-color: rgba(96, 165, 250, 0.28);
@@ -144,6 +223,24 @@
     }
 
     [data-bs-theme="dark"] .wash-transactions-page .table tbody td {
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] #editTransactionModal .modal-content {
+        background-color: #0f172a;
+        color: #e2e8f0;
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] #editTransactionModal .modal-header,
+    [data-bs-theme="dark"] #editTransactionModal .modal-footer {
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] #editTransactionModal .form-control,
+    [data-bs-theme="dark"] #editTransactionModal .form-select {
+        background-color: #0b1228;
+        color: #e2e8f0;
         border-color: #334155;
     }
 
@@ -238,5 +335,44 @@
         }
     }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+    const editModal = document.getElementById('editTransactionModal');
+    const editForm = document.getElementById('editTransactionForm');
+    const editTitle = document.getElementById('editTransactionTitle');
+    const customerInput = document.getElementById('edit_customer_name');
+    const plateInput = document.getElementById('edit_vehicle_plate');
+    const brandInput = document.getElementById('edit_vehicle_brand');
+    const paymentSelect = document.getElementById('edit_payment_method');
+    const cashGroup = document.getElementById('edit_cash_amount_group');
+    const cashInput = document.getElementById('edit_cash_amount');
+    const updateCashVisibility = () => {
+        if (!paymentSelect || !cashGroup) {
+            return;
+        }
+        cashGroup.style.display = paymentSelect.value === 'cash' ? '' : 'none';
+    };
+    if (paymentSelect) {
+        paymentSelect.addEventListener('change', updateCashVisibility);
+    }
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', (event) => {
+            const trigger = event.relatedTarget;
+            if (!trigger || !editForm) {
+                return;
+            }
+            editForm.action = trigger.getAttribute('data-update-url') || '';
+            editTitle.textContent = `Edit Transaksi #${trigger.getAttribute('data-transaction-number') || ''}`;
+            customerInput.value = trigger.getAttribute('data-customer-name') || '';
+            plateInput.value = trigger.getAttribute('data-vehicle-plate') || '';
+            brandInput.value = trigger.getAttribute('data-vehicle-brand') || '';
+            paymentSelect.value = (trigger.getAttribute('data-payment-method') || 'cash').toLowerCase();
+            cashInput.value = trigger.getAttribute('data-cash-amount') || '0';
+            updateCashVisibility();
+        });
+    }
+</script>
 @endpush
 @endsection
