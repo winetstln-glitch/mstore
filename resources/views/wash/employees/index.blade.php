@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Employees')
+@section('title', 'Kelola Karyawan')
 
 @section('content')
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Wash Employees</h1>
-        <a href="{{ route('wash.employees.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" title="Add New Employee">
+        <h1 class="h3 mb-0 text-gray-800">Karyawan Wash</h1>
+        <a href="{{ route('wash.employees.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" title="Tambah Karyawan Baru">
             <i class="fas fa-plus fa-sm text-white-50"></i>
-            <span class="d-none d-md-inline ms-1">Add New Employee</span>
+            <span class="d-none d-md-inline ms-1">Tambah Karyawan Baru</span>
         </a>
     </div>
 
@@ -21,18 +21,18 @@
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Employee List</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Karyawan</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Account</th>
+                            <th>Nama</th>
+                            <th>Telepon</th>
+                            <th>Akun</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,19 +43,19 @@
                                 <td>{{ $employee->user?->name ?? '—' }}</td>
                                 <td>
                                     @if($employee->status == 'active')
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success">Aktif</span>
                                     @else
                                         <span class="badge bg-secondary">{{ ucfirst($employee->status) }}</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('wash.employees.edit', $employee->id) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('wash.employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('wash.employees.destroy', $employee->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                    <form action="{{ route('wash.employees.destroy', $employee->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus karyawan ini?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -63,7 +63,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center">No employees found.</td>
+                                <td colspan="4" class="text-center">Tidak ada karyawan ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>

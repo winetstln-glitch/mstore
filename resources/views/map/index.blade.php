@@ -1417,7 +1417,7 @@
                 
                 var editLink = document.createElement('a');
                 editLink.href = `/olt/${olt.id}/edit`;
-                editLink.className = 'btn btn-sm btn-primary text-white map-popup-btn';
+                editLink.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editLink.innerText = '{{ __('Edit OLT') }}';
 
                 var deleteBtn = document.createElement('button');
@@ -1479,7 +1479,7 @@
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
+                editBtn.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit ODC') }}';
                 editBtn.onclick = function() { editOdc(odc.id); };
 
@@ -1540,7 +1540,7 @@
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
+                editBtn.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit ODP') }}';
                 editBtn.onclick = function() { editOdp(odp.id); };
 
@@ -1602,7 +1602,7 @@
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
+                editBtn.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit HTB') }}';
                 editBtn.onclick = function() { editHtb(htb.id); };
 
@@ -1662,7 +1662,7 @@
                     </div>`;
                 
                 var editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-primary map-popup-btn';
+                editBtn.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editBtn.innerText = '{{ __('Edit Closure') }}';
                 editBtn.onclick = function() { editClosure(closure.id); };
 
@@ -1722,7 +1722,7 @@
                 
                 var editLink = document.createElement('a');
                 editLink.href = `/inventory/assets/${asset.id}/edit`; // Assumed route
-                editLink.className = 'btn btn-sm btn-primary text-white map-popup-btn';
+                editLink.className = 'btn btn-sm btn-outline-primary map-popup-btn';
                 editLink.innerText = '{{ __('Edit Aset') }}';
 
                 var deleteBtn = document.createElement('button');
@@ -1799,7 +1799,7 @@
                 `</table>` +
                 `<div class="map-popup-actions">` +
                 `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white map-popup-btn">Detail</a>` +
-                `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-primary text-white map-popup-btn">Edit</a>` +
+                `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-outline-primary map-popup-btn">Edit</a>` +
                 `</div></div>`
             );
 

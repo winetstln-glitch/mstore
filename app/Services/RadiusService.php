@@ -22,10 +22,18 @@ class RadiusService
 
             if ($exists) {
                 // Update password
-                DB::connection($this->connection)->table('radcheck')
+                $updated = DB::connection($this->connection)->table('radcheck')
                     ->where('username', $username)
                     ->where('attribute', 'Cleartext-Password')
                     ->update(['value' => $password]);
+                if (! $updated) {
+                    DB::connection($this->connection)->table('radcheck')->insert([
+                        'username' => $username,
+                        'attribute' => 'Cleartext-Password',
+                        'op' => ':=',
+                        'value' => $password,
+                    ]);
+                }
             } else {
                 // Insert
                 DB::connection($this->connection)->table('radcheck')->insert([
@@ -39,6 +47,21 @@ class RadiusService
             return true;
         } catch (\Exception $e) {
             Log::error('Radius Add User Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    public function deleteUser($username)
+    {
+        try {
+            DB::connection($this->connection)->table('radcheck')
+                ->where('username', $username)
+                ->delete();
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Radius Delete User Error: '.$e->getMessage());
 
             return false;
         }

@@ -9,6 +9,7 @@ use App\Models\Odp;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\GenieACSService;
+use App\Services\RadiusService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -23,9 +24,12 @@ class CustomerWebController extends Controller implements HasMiddleware
 {
     protected $genieService;
 
-    public function __construct(GenieACSService $genieService)
+    protected $radiusService;
+
+    public function __construct(GenieACSService $genieService, RadiusService $radiusService)
     {
         $this->genieService = $genieService;
+        $this->radiusService = $radiusService;
     }
 
     public static function middleware(): array
@@ -632,14 +636,20 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         try {
-            Customer::create($validated);
+            $customer = Customer::create($validated);
+            $radiusWarning = $this->syncRadiusCredential($customer, null, null);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error creating customer: '.$e->getMessage());
 
             return back()->withInput()->withErrors(['error' => __('Failed to create customer: :message', ['message' => $e->getMessage()])]);
         }
 
-        return redirect()->route('customers.index')->with('success', __('Customer created successfully.'));
+        $redirect = redirect()->route('customers.index')->with('success', __('Customer created successfully.'));
+        if ($radiusWarning !== null) {
+            $redirect->with('warning', $radiusWarning);
+        }
+
+        return $redirect;
     }
 
     /**
@@ -782,17 +792,29 @@ class CustomerWebController extends Controller implements HasMiddleware
             $validated['odp'] = null;
         }
 
+        $oldPppoeUser = $customer->pppoe_user;
         $customer->update($validated);
+        $radiusWarning = $this->syncRadiusCredential($customer, $oldPppoeUser, null);
 
         if ($request->wantsJson()) {
-            return response()->json([
+            $payload = [
                 'success' => true,
                 'message' => __('Customer updated successfully.'),
                 'data' => $customer,
-            ]);
+            ];
+            if ($radiusWarning !== null) {
+                $payload['warning'] = $radiusWarning;
+            }
+
+            return response()->json($payload);
         }
 
-        return redirect()->route('customers.index')->with('success', __('Customer updated successfully.'));
+        $redirect = redirect()->route('customers.index')->with('success', __('Customer updated successfully.'));
+        if ($radiusWarning !== null) {
+            $redirect->with('warning', $radiusWarning);
+        }
+
+        return $redirect;
     }
 
     /**
@@ -908,5 +930,28 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         return redirect()->back()->with('success', count($ids).' customers deleted successfully.');
+    }
+
+    protected function syncRadiusCredential(Customer $customer, ?string $oldUsername = null, ?string $passwordOverride = null): ?string
+    {
+        $username = trim((string) ($customer->pppoe_user ?? ''));
+        if ($username === '') {
+            return null;
+        }
+
+        $password = $passwordOverride ?? (string) ($customer->pppoe_password ?? '');
+        if ($password === '') {
+            return null;
+        }
+
+        if ($oldUsername && $oldUsername !== $username) {
+            $this->radiusService->deleteUser($oldUsername);
+        }
+
+        if (! $this->radiusService->addUser($username, $password)) {
+            return __('Customer tersimpan, tetapi sinkronisasi RADIUS gagal. Periksa koneksi database RADIUS.');
+        }
+
+        return null;
     }
 }

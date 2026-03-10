@@ -61,7 +61,7 @@ class CoordinatorController extends Controller implements HasMiddleware
         ];
 
         if ($request->input('user_option') === 'new') {
-            $rules['email'] = 'required|string|email|max:255|unique:users';
+            $rules['email'] = 'nullable|string|email|max:255|unique:users,email';
             $rules['password'] = 'required|string|min:8';
         } else {
             $rules['user_id'] = 'nullable|exists:users,id';
@@ -75,7 +75,7 @@ class CoordinatorController extends Controller implements HasMiddleware
             $role = Role::where('name', 'coordinator')->first();
             $user = User::create([
                 'name' => $validated['name'],
-                'email' => $validated['email'],
+                'email' => $validated['email'] ?? null,
                 'password' => Hash::make($validated['password']),
                 'role_id' => $role ? $role->id : null,
             ]);

@@ -89,11 +89,11 @@
                             <td><span class="badge bg-secondary">{{ strtoupper($transaction->payment_method) }}</span></td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1 justify-content-end">
-                                    <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
+                                    <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                         <i class="fa-solid fa-eye"></i>
                                         <span class="d-none d-md-inline ms-1">{{ __('View') }}</span>
                                     </a>
-                                    <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-warning" title="{{ __('Print') }}">
+                                    <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="{{ __('Print') }}">
                                         <i class="fa-solid fa-print"></i>
                                         <span class="d-none d-md-inline ms-1">{{ __('Print') }}</span>
                                     </a>
@@ -101,7 +101,7 @@
                                     <form action="{{ route('atk.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                             <i class="fa-solid fa-trash"></i>
                                             <span class="d-none d-md-inline ms-1">{{ __('Delete') }}</span>
                                         </button>

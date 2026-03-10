@@ -18,6 +18,7 @@
                             <div class="col-md-6">
                                 <label for="name" class="form-label">{{ __('Name') }}</label>
                                 <input type="text" name="name" id="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" required>
+                                <div class="form-text">Wajib diisi.</div>
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -26,7 +27,8 @@
                             <!-- Email -->
                             <div class="col-md-6">
                                 <label for="email" class="form-label">{{ __('Email') }}</label>
-                                <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required>
+                                <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                                <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                                 @error('email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -36,6 +38,7 @@
                             <div class="col-md-6">
                                 <label for="username" class="form-label">Username</label>
                                 <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-control @error('username') is-invalid @enderror">
+                                <div class="form-text">Wajib untuk login. Jika kosong akan dibuat otomatis.</div>
                                 @error('username')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -75,6 +78,7 @@
                                         <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>{{ $role->label }}</option>
                                     @endforeach
                                 </select>
+                                <div class="form-text">Wajib diisi.</div>
                                 @error('role_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -84,6 +88,7 @@
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">{{ __('Phone') }}</label>
                                 <input type="text" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
+                                <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -93,6 +98,7 @@
                             <div class="col-md-6">
                                 <label for="radius_username" class="form-label">Radius Username</label>
                                 <input type="text" name="radius_username" id="radius_username" value="{{ old('radius_username') }}" class="form-control @error('radius_username') is-invalid @enderror">
+                                <div class="form-text">Opsional. Isi hanya jika akun terhubung ke RADIUS.</div>
                                 @error('radius_username')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

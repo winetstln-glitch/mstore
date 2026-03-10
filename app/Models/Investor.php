@@ -13,6 +13,7 @@ class Investor extends Model
 
     protected $fillable = [
         'coordinator_id',
+        'user_id',
         'name',
         'phone',
         'description',
@@ -21,6 +22,11 @@ class Investor extends Model
     public function coordinator(): BelongsTo
     {
         return $this->belongsTo(Coordinator::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function transactions(): HasMany

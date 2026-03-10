@@ -99,28 +99,33 @@ class UserController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:255', 'unique:users,username'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role_id' => ['nullable', 'exists:roles,id'],
+            'role_id' => ['required', 'exists:roles,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
 
+        $username = trim((string) ($validated['username'] ?? ''));
+        if ($username === '') {
+            $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
+        }
+
         User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => $request->username,
-            'radius_username' => $request->radius_username,
-            'password' => Hash::make($request->password),
-            'role_id' => $request->role_id,
-            'phone' => $request->phone,
-            'daily_salary' => $request->daily_salary ?? 0,
-            'is_active' => $request->has('is_active'),
+            'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+            'username' => $username,
+            'radius_username' => $validated['radius_username'] ?? null,
+            'password' => Hash::make($validated['password']),
+            'role_id' => $validated['role_id'],
+            'phone' => $validated['phone'] ?? null,
+            'daily_salary' => $validated['daily_salary'] ?? 0,
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         return redirect()->route('users.index')->with('success', __('User created successfully.'));
@@ -135,26 +140,31 @@ class UserController extends Controller implements HasMiddleware
 
     public function update(Request $request, User $user)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
-            'role_id' => ['nullable', 'exists:roles,id'],
+            'role_id' => ['required', 'exists:roles,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
 
+        $username = trim((string) ($validated['username'] ?? ''));
+        if ($username === '') {
+            $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
+        }
+
         $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => $request->username,
-            'radius_username' => $request->radius_username,
-            'role_id' => $request->role_id,
-            'phone' => $request->phone,
-            'daily_salary' => $request->daily_salary ?? 0,
-            'is_active' => $request->has('is_active'),
+            'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+            'username' => $username,
+            'radius_username' => $validated['radius_username'] ?? null,
+            'role_id' => $validated['role_id'],
+            'phone' => $validated['phone'] ?? null,
+            'daily_salary' => $validated['daily_salary'] ?? 0,
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         if ($request->filled('password')) {

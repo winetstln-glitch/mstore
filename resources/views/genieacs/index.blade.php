@@ -90,8 +90,8 @@
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive" id="listViewContainer">
-                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable" style="min-width: 900px;">
-                        <thead class="table-light text-nowrap">
+                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable" style="min-width: 760px;">
+                        <thead class="table-light">
                             <tr>
                                 <th scope="col" class="text-center" width="1%">{{ __('Status') }}</th>
                                 <th scope="col" class="text-center">{{ __('Action') }}</th>
@@ -185,7 +185,7 @@
                                     // Format Last Inform
                                     $lastInformStr = $device['_lastInform'] ? \Carbon\Carbon::parse($device['_lastInform'])->format('Y-m-d H:i:s') : '-';
                                 @endphp
-                                <tr class="text-nowrap">
+                                <tr>
                                     <td class="text-center">
                                         <i class="fa-solid fa-circle {{ $isOnline ? 'text-success' : 'text-danger' }}" title="{{ $isOnline ? __('Online') : __('Offline') }}"></i>
                                     </td>
@@ -594,7 +594,97 @@
         </div>
     </div>
 
-    @push('scripts')
+@push('styles')
+<style>
+    @media (min-width: 992px) {
+        #genieacsDevicesTable {
+            table-layout: fixed;
+            font-size: 0.78rem;
+        }
+
+        #genieacsDevicesTable th,
+        #genieacsDevicesTable td {
+            padding: 0.35rem 0.45rem;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.25;
+            vertical-align: middle;
+        }
+
+        #genieacsDevicesTable th {
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        #genieacsDevicesTable th:nth-child(1),
+        #genieacsDevicesTable td:nth-child(1) { width: 44px; }
+        #genieacsDevicesTable th:nth-child(2),
+        #genieacsDevicesTable td:nth-child(2) { width: 56px; }
+        #genieacsDevicesTable th:nth-child(3),
+        #genieacsDevicesTable td:nth-child(3) { width: 170px; }
+        #genieacsDevicesTable th:nth-child(4),
+        #genieacsDevicesTable td:nth-child(4) { width: 130px; }
+        #genieacsDevicesTable th:nth-child(5),
+        #genieacsDevicesTable td:nth-child(5) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(6),
+        #genieacsDevicesTable td:nth-child(6) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(7),
+        #genieacsDevicesTable td:nth-child(7) { width: 90px; }
+        #genieacsDevicesTable th:nth-child(8),
+        #genieacsDevicesTable td:nth-child(8) { width: 76px; }
+        #genieacsDevicesTable th:nth-child(9),
+        #genieacsDevicesTable td:nth-child(9) { width: 74px; }
+        #genieacsDevicesTable th:nth-child(10),
+        #genieacsDevicesTable td:nth-child(10) { width: 74px; }
+        #genieacsDevicesTable th:nth-child(11),
+        #genieacsDevicesTable td:nth-child(11) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(12),
+        #genieacsDevicesTable td:nth-child(12) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(13),
+        #genieacsDevicesTable td:nth-child(13) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(14),
+        #genieacsDevicesTable td:nth-child(14) { width: 82px; }
+        #genieacsDevicesTable th:nth-child(15),
+        #genieacsDevicesTable td:nth-child(15) { width: 130px; }
+        #genieacsDevicesTable th:nth-child(16),
+        #genieacsDevicesTable td:nth-child(16) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(17),
+        #genieacsDevicesTable td:nth-child(17) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(18),
+        #genieacsDevicesTable td:nth-child(18) { width: 145px; }
+
+        #genieacsDevicesTable th:nth-child(1),
+        #genieacsDevicesTable th:nth-child(2),
+        #genieacsDevicesTable th:nth-child(7),
+        #genieacsDevicesTable th:nth-child(8),
+        #genieacsDevicesTable th:nth-child(9),
+        #genieacsDevicesTable th:nth-child(10),
+        #genieacsDevicesTable td:nth-child(1),
+        #genieacsDevicesTable td:nth-child(2),
+        #genieacsDevicesTable td:nth-child(7),
+        #genieacsDevicesTable td:nth-child(8),
+        #genieacsDevicesTable td:nth-child(9),
+        #genieacsDevicesTable td:nth-child(10) {
+            text-align: center;
+        }
+
+        #genieacsDevicesTable td:nth-child(6),
+        #genieacsDevicesTable td:nth-child(11),
+        #genieacsDevicesTable td:nth-child(12),
+        #genieacsDevicesTable td:nth-child(13),
+        #genieacsDevicesTable td:nth-child(15),
+        #genieacsDevicesTable td:nth-child(16),
+        #genieacsDevicesTable td:nth-child(17),
+        #genieacsDevicesTable td:nth-child(18) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+</style>
+@endpush
+
+@push('scripts')
     <script>
         $(document).ready(function() {
             // CSRF Token Setup for AJAX

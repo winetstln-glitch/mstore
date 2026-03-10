@@ -85,16 +85,16 @@
                                 <td>{{ $transaction->user->name ?? 'Unknown' }}</td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1 justify-content-end transaction-actions">
-                                        <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
+                                        <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-warning" title="{{ __('Print') }}">
+                                        <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-outline-warning" title="{{ __('Print') }}">
                                             <i class="fas fa-print"></i>
                                         </a>
                                         @if(Auth::user()->hasRole('admin'))
                                         <button
                                             type="button"
-                                            class="btn btn-sm btn-primary"
+                                            class="btn btn-sm btn-outline-info"
                                             title="{{ __('Edit') }}"
                                             data-bs-toggle="modal"
                                             data-bs-target="#editTransactionModal"
@@ -112,7 +112,7 @@
                                         <form action="{{ route('wash.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>

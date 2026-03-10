@@ -71,13 +71,13 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('wash.services.edit', $service->id) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('wash.services.edit', $service->id) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form action="{{ route('wash.services.destroy', $service->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this service?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>

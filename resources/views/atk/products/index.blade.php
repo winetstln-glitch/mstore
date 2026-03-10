@@ -148,13 +148,13 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('atk.products.edit', $product) }}" class="btn btn-sm btn-info">
+                                <a href="{{ route('atk.products.edit', $product) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
                                 <form action="{{ route('atk.products.destroy', $product) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </form>

@@ -14,6 +14,7 @@
                     <div class="mb-3">
                         <label for="name" class="form-label">{{ __('Name') }}</label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required autofocus>
+                        <div class="form-text">Wajib diisi.</div>
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -42,7 +43,7 @@
                                 <option value="">{{ __('Select User') }}</option>
                                 @foreach($users as $user)
                                     <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }} ({{ $user->email }})
+                                        {{ $user->name }} ({{ $user->username ?? '-' }})
                                     </option>
                                 @endforeach
                             </select>
@@ -56,8 +57,9 @@
                         <div id="new_user_section" style="display: none;">
                             <div class="card  border-0 p-3">
                                 <div class="mb-3">
-                                    <label for="email" class="form-label">{{ __('Email Address') }} <span class="text-danger">*</span></label>
+                                    <label for="email" class="form-label">{{ __('Email Address') }}</label>
                                     <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
+                                    <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                                     @error('email')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

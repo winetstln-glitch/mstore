@@ -38,13 +38,13 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('packages.edit', $package) }}" class="btn btn-sm btn-warning text-white">
+                                        <a href="{{ route('packages.edit', $package) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         <form action="{{ route('packages.destroy', $package) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </form>
@@ -63,4 +63,3 @@
     </div>
 </div>
 @endsection
-

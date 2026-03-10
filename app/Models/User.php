@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -58,6 +59,38 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (blank($user->username)) {
+                $user->username = static::generateUniqueUsername($user->name, $user->email);
+            }
+        });
+    }
+
+    public static function generateUniqueUsername(?string $name = null, ?string $email = null): string
+    {
+        $base = trim((string) $name);
+        if ($base === '' && filled($email)) {
+            $base = Str::before((string) $email, '@');
+        }
+
+        $slug = Str::slug($base, '_');
+        if ($slug === '') {
+            $slug = 'user';
+        }
+
+        $candidate = $slug;
+        $suffix = 1;
+
+        while (static::query()->where('username', $candidate)->exists()) {
+            $candidate = $slug.'_'.$suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 
     public function role(): BelongsTo

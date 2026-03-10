@@ -19,6 +19,7 @@
                     <div class="mb-3">
                         <label for="name" class="form-label fw-bold">{{ __('Name') }}</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required class="form-control @error('name') is-invalid @enderror">
+                        <div class="form-text">Wajib diisi.</div>
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -27,7 +28,8 @@
                     <!-- Email -->
                     <div class="mb-3">
                         <label for="email" class="form-label fw-bold">{{ __('Email') }}</label>
-                        <input type="email" name="email" id="email" value="{{ old('email') }}" required class="form-control @error('email') is-invalid @enderror">
+                        <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                        <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                         @error('email')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -37,6 +39,7 @@
                     <div class="mb-3">
                         <label for="phone" class="form-label fw-bold">{{ __('Phone') }}</label>
                         <input type="text" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
+                        <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                         @error('phone')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

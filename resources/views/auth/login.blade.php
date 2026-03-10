@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login Masuk - {{ config('app.name', 'MStore') }}</title>
+    <title>Masuk - {{ config('app.name', 'MStore') }}</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ app()->environment('production') ? secure_asset('favicon.svg') : asset('favicon.svg') }}">
@@ -64,12 +64,12 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="login" class="auth-form-label">Username | Email</label>
+                        <label for="login" class="auth-form-label">Username</label>
                         <div class="input-group auth-input-group">
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
                             </span>
-                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Username PPPoE/Hotspot atau ID Pelanggan" />
+                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukkan Username" />
                             @error('login')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -82,10 +82,8 @@
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-lock"></i>
                             </span>
-                            <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukan Password" />
-                            <button type="button" class="btn auth-input-toggle border-start-0" onclick="togglePasswordVisibility('password')">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
+                            <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan Password" />
+                            <button type="button" class="btn auth-input-toggle border-start-0" data-toggle-password="password">Tampilkan</button>
                             @error('password')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -123,7 +121,7 @@
                 </form>
 
                 <div class="auth-footer text-center mt-4">
-                    &copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. All rights reserved.
+                    &copy; {{ date('Y') }} {{ config('app.name', 'MStore') }}. Seluruh hak cipta dilindungi.
                 </div>
             </div>
         </div>
@@ -161,24 +159,22 @@
             });
         }
 
-        function togglePasswordVisibility(fieldId) {
-            const field = document.getElementById(fieldId);
-            if (!field) return;
-            const sibling = field.nextElementSibling;
-            if (!sibling) return;
-            const icon = sibling.querySelector('i');
-            if (!icon) return;
-
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                field.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
+        document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
+            toggleButton.addEventListener('click', function () {
+                const inputId = this.getAttribute('data-toggle-password');
+                const input = document.getElementById(inputId);
+                if (!input) {
+                    return;
+                }
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.textContent = 'Sembunyikan';
+                    return;
+                }
+                input.type = 'password';
+                this.textContent = 'Tampilkan';
+            });
+        });
         
         // Prevent 419 Page Expired on back button
         window.addEventListener('pageshow', function(event) {

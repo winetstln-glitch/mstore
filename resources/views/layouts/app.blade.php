@@ -730,6 +730,64 @@
         });
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const showLabel = @json(__('Tampilkan'));
+        const hideLabel = @json(__('Sembunyikan'));
+        const passwordInputs = document.querySelectorAll('input[type="password"]');
+
+        const normalizeToggleButton = function (button, input) {
+            const cleanButton = button.cloneNode(false);
+            cleanButton.type = 'button';
+            cleanButton.className = button.className || 'btn btn-outline-secondary';
+            cleanButton.removeAttribute('onclick');
+            cleanButton.removeAttribute('data-toggle-password');
+            cleanButton.setAttribute('data-password-toggle-btn', '1');
+            cleanButton.setAttribute('data-target', input.id || '');
+            cleanButton.textContent = input.type === 'password' ? showLabel : hideLabel;
+            button.replaceWith(cleanButton);
+
+            cleanButton.addEventListener('click', function () {
+                const hidden = input.type === 'password';
+                input.type = hidden ? 'text' : 'password';
+                cleanButton.textContent = hidden ? hideLabel : showLabel;
+            });
+        };
+
+        passwordInputs.forEach(function (input) {
+            if (input.dataset.toggleReady === '1') {
+                return;
+            }
+
+            input.dataset.toggleReady = '1';
+            const existingGroup = input.closest('.input-group');
+            const wrapper = existingGroup || document.createElement('div');
+
+            if (!existingGroup) {
+                wrapper.className = 'input-group';
+                input.parentNode.insertBefore(wrapper, input);
+                wrapper.appendChild(input);
+            }
+
+            const existingToggleButton = wrapper.querySelector('[data-toggle-password], [onclick*="togglePassword"], [data-password-toggle-btn], .btn i.fa-eye, .btn i.fa-eye-slash');
+            if (existingToggleButton) {
+                const existingButton = existingToggleButton.closest('button') || existingToggleButton;
+                normalizeToggleButton(existingButton, input);
+                return;
+            }
+
+            if (wrapper.querySelector('[data-password-toggle-btn][data-target="' + input.id + '"]')) {
+                return;
+            }
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-outline-secondary';
+            wrapper.appendChild(button);
+            normalizeToggleButton(button, input);
+        });
+    });
+</script>
 
 @stack('scripts')
 
