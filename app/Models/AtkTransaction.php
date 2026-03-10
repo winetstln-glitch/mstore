@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\AccountingPoster;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AtkTransaction extends Model
 {
@@ -23,5 +26,93 @@ class AtkTransaction extends Model
     public function coordinator()
     {
         return $this->belongsTo(Coordinator::class);
+    }
+
+    public function syncAccountingJournal(): void
+    {
+        if (! Schema::hasTable('journals') || ! Schema::hasTable('journal_entries') || ! Schema::hasTable('accounts')) {
+            return;
+        }
+
+        Account::ensureDefaultChart();
+        $this->loadMissing(['items.product']);
+
+        $sumBankNominal = 0;
+        $sumFee = 0;
+        $sumRevenueSales = 0;
+        $hpp = 0;
+
+        foreach ($this->items as $item) {
+            $category = strtoupper((string) ($item->product?->category ?? ''));
+            $isService = $category === 'JASA POTOCOPY';
+            $isBank = $category === 'JASA TRANSFER BANK';
+
+            if ($isBank) {
+                $sumBankNominal += (float) ($item->nominal_transaksi ?? 0);
+                $sumFee += (float) ($item->fee ?? 0);
+            } else {
+                $sumRevenueSales += (float) ($item->subtotal ?? 0);
+            }
+
+            if (! $isService && ! $isBank) {
+                $hpp += ((float) ($item->product?->cost_price ?? 0)) * (int) ($item->quantity ?? 0);
+            }
+        }
+
+        $total = (float) ($this->total_amount ?? 0);
+        $drCode = $this->payment_method === 'hutang' ? '1101' : ($this->payment_method === 'cash' ? '1001' : '1002');
+        $drAccId = Account::where('code', $drCode)->value('id');
+        $revAtkId = Account::where('code', '4003')->value('id');
+        $revBankId = Account::where('code', '4004')->value('id');
+        $depositId = Account::where('code', '1401')->value('id');
+        $hppId = Account::where('code', '5001')->value('id');
+        $inventoryId = Account::where('code', '1201')->value('id');
+
+        DB::transaction(function () use ($drAccId, $revAtkId, $revBankId, $depositId, $hppId, $inventoryId, $total, $sumRevenueSales, $sumFee, $sumBankNominal, $hpp): void {
+            $journals = Journal::where('source_type', 'atk_transaction')
+                ->where('source_id', $this->id)
+                ->with('entries')
+                ->get();
+
+            foreach ($journals as $journal) {
+                foreach ($journal->entries as $entry) {
+                    $entry->delete();
+                }
+                $journal->delete();
+            }
+
+            if (! $drAccId || ! $revAtkId || ! $revBankId || ! $depositId || $total <= 0) {
+                return;
+            }
+
+            $lines = [
+                ['account_id' => $drAccId, 'debit' => $total, 'credit' => 0, 'unit' => 'ATK'],
+            ];
+            if ($sumRevenueSales > 0) {
+                $lines[] = ['account_id' => $revAtkId, 'debit' => 0, 'credit' => $sumRevenueSales, 'unit' => 'ATK'];
+            }
+            if ($sumFee > 0) {
+                $lines[] = ['account_id' => $revBankId, 'debit' => 0, 'credit' => $sumFee, 'unit' => 'ATK'];
+            }
+            if ($sumBankNominal > 0) {
+                $lines[] = ['account_id' => $depositId, 'debit' => 0, 'credit' => $sumBankNominal, 'unit' => 'ATK'];
+            }
+            if ($hpp > 0 && $hppId && $inventoryId) {
+                $lines[] = ['account_id' => $hppId, 'debit' => $hpp, 'credit' => 0, 'unit' => 'ATK'];
+                $lines[] = ['account_id' => $inventoryId, 'debit' => 0, 'credit' => $hpp, 'unit' => 'ATK'];
+            }
+
+            $date = $this->created_at?->toDateString() ?? now()->toDateString();
+            $poster = app(AccountingPoster::class);
+            $poster->post(
+                'ATK-'.($this->transaction_number ?: $this->id),
+                $date,
+                'ATK POS',
+                $lines,
+                null,
+                'atk_transaction',
+                $this->id
+            );
+        });
     }
 }

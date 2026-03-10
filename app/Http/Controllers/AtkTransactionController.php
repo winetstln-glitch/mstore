@@ -307,6 +307,67 @@ class AtkTransactionController extends Controller
         return back()->with('success', __('Transaction deleted successfully.'));
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        if (! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:atk_transactions,id',
+        ]);
+
+        $transactions = AtkTransaction::with(['items.product'])
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        DB::transaction(function () use ($transactions) {
+            foreach ($transactions as $transaction) {
+                $sumBankNominal = 0;
+
+                foreach ($transaction->items as $item) {
+                    $product = $item->product;
+                    $category = strtoupper($product->category ?? '');
+                    $isService = $category === 'JASA POTOCOPY';
+                    $isBank = $category === 'JASA TRANSFER BANK';
+
+                    if (! $isService && ! $isBank && $product) {
+                        $product->increment('stock', $item->quantity);
+                    }
+
+                    if ($isBank) {
+                        $sumBankNominal += (float) ($item->nominal_transaksi ?? 0);
+                    }
+                }
+
+                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $cash->balance = (float) $cash->balance - (float) $transaction->total_amount;
+                $cash->save();
+
+                if ($sumBankNominal > 0) {
+                    $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);
+                    $deposit->balance = (float) $deposit->balance + (float) $sumBankNominal;
+                    $deposit->save();
+                }
+
+                $journals = Journal::where('source_type', 'atk_transaction')
+                    ->where('source_id', $transaction->id)
+                    ->get();
+
+                foreach ($journals as $journal) {
+                    $journal->entries()->delete();
+                    $journal->delete();
+                }
+
+                $transaction->items()->delete();
+                $transaction->delete();
+            }
+        });
+
+        return back()->with('success', __('Selected transactions deleted successfully.'));
+    }
+
     public function receipt(AtkTransaction $transaction)
     {
         $transaction->load('items');

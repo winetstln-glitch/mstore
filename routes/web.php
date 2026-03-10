@@ -337,6 +337,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
+        Route::delete('/transactions/bulk-destroy', [\App\Http\Controllers\WashTransactionController::class, 'bulkDestroy'])->name('transactions.bulkDestroy');
         Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show', 'update', 'destroy']);
     });
 
@@ -365,6 +366,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\AtkTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');
+        Route::delete('/transactions/bulk-destroy', [\App\Http\Controllers\AtkTransactionController::class, 'bulkDestroy'])->name('transactions.bulkDestroy');
         Route::get('products/export', [\App\Http\Controllers\AtkProductController::class, 'export'])->name('products.export');
         Route::get('products/barcodes', [\App\Http\Controllers\AtkProductController::class, 'barcodes'])->name('products.barcodes');
         Route::get('products/barcodes/pdf', [\App\Http\Controllers\AtkProductController::class, 'barcodesPdf'])->name('products.barcodes.pdf');

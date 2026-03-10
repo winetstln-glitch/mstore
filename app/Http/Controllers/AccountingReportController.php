@@ -135,28 +135,15 @@ class AccountingReportController extends Controller
         $accountId = $request->input('account_id');
         $start = $request->input('start_date');
         $end = $request->input('end_date');
+        $source = (string) $request->input('source', '');
 
         $this->ensureDefaultAccounts();
         $accounts = Account::orderBy('code')->get(['id', 'code', 'name']);
-        $entries = collect();
-        $selected = null;
-        if ($accountId) {
-            $selected = Account::find($accountId);
-            $q = JournalEntry::query()
-                ->join('journals', 'journal_entries.journal_id', '=', 'journals.id')
-                ->where('journal_entries.account_id', $accountId)
-                ->select('journals.date', 'journals.journal_no', 'journal_entries.debit', 'journal_entries.credit', 'journal_entries.memo')
-                ->orderBy('journals.date')->orderBy('journal_entries.id');
-            if ($start) {
-                $q->whereDate('journals.date', '>=', $start);
-            }
-            if ($end) {
-                $q->whereDate('journals.date', '<=', $end);
-            }
-            $entries = $q->get();
-        }
+        $selected = $accountId ? Account::find($accountId) : null;
+        $availableSources = $this->ledgerSourceOptions();
+        $entries = $this->buildLedgerEntries($accountId ? (int) $accountId : null, $start, $end, $source);
 
-        return view('accounting.ledger', compact('accounts', 'entries', 'selected', 'start', 'end'));
+        return view('accounting.ledger', compact('accounts', 'entries', 'selected', 'start', 'end', 'source', 'availableSources'));
     }
 
     public function exportTrialBalancePdf(Request $request)
@@ -357,22 +344,12 @@ class AccountingReportController extends Controller
         $accountId = $request->account_id;
         $start = $request->start_date;
         $end = $request->end_date;
+        $source = (string) $request->input('source', '');
         $selected = $accountId ? Account::find($accountId) : null;
-        $entries = collect();
-        if ($accountId) {
-            $q = JournalEntry::join('journals', 'journal_entries.journal_id', '=', 'journals.id')
-                ->where('journal_entries.account_id', $accountId)
-                ->select('journals.date', 'journals.journal_no', 'journal_entries.debit', 'journal_entries.credit', 'journal_entries.memo')
-                ->orderBy('journals.date')->orderBy('journal_entries.id');
-            if ($start) {
-                $q->whereDate('journals.date', '>=', $start);
-            }
-            if ($end) {
-                $q->whereDate('journals.date', '<=', $end);
-            }
-            $entries = $q->get();
-        }
-        $pdf = Pdf::loadView('accounting.pdf.ledger', compact('selected', 'entries', 'start', 'end'));
+        $availableSources = $this->ledgerSourceOptions();
+        $sourceLabel = $source !== '' ? ($availableSources[$source] ?? $source) : 'Semua Sumber';
+        $entries = $this->buildLedgerEntries($accountId ? (int) $accountId : null, $start, $end, $source);
+        $pdf = Pdf::loadView('accounting.pdf.ledger', compact('selected', 'entries', 'start', 'end', 'sourceLabel'));
 
         return $pdf->download('ledger.pdf');
     }
@@ -382,36 +359,75 @@ class AccountingReportController extends Controller
         $accountId = $request->account_id;
         $start = $request->start_date;
         $end = $request->end_date;
+        $source = (string) $request->input('source', '');
         $selected = $accountId ? Account::find($accountId) : null;
-        $entries = collect();
-        if ($accountId) {
-            $q = JournalEntry::join('journals', 'journal_entries.journal_id', '=', 'journals.id')
-                ->where('journal_entries.account_id', $accountId)
-                ->select('journals.date', 'journals.journal_no', 'journal_entries.debit', 'journal_entries.credit', 'journal_entries.memo')
-                ->orderBy('journals.date')->orderBy('journal_entries.id');
-            if ($start) {
-                $q->whereDate('journals.date', '>=', $start);
-            }
-            if ($end) {
-                $q->whereDate('journals.date', '<=', $end);
-            }
-            $entries = $q->get();
-        }
+        $availableSources = $this->ledgerSourceOptions();
+        $sourceLabel = $source !== '' ? ($availableSources[$source] ?? $source) : 'Semua Sumber';
+        $entries = $this->buildLedgerEntries($accountId ? (int) $accountId : null, $start, $end, $source);
 
-        return response()->streamDownload(function () use ($selected, $entries) {
+        return response()->streamDownload(function () use ($selected, $entries, $sourceLabel) {
             $writer = new Writer;
             $writer->openToFile('php://output');
             $writer->addRow(Row::fromValues(['Buku Besar']));
             if ($selected) {
                 $writer->addRow(Row::fromValues([$selected->code.' - '.$selected->name]));
             }
+            $writer->addRow(Row::fromValues(['Sumber', $sourceLabel]));
             $writer->addRow(Row::fromValues([]));
-            $writer->addRow(Row::fromValues(['Tanggal', 'No. Jurnal', 'Debit', 'Kredit', 'Keterangan']));
+            $writer->addRow(Row::fromValues(['Tanggal', 'No. Jurnal', 'Sumber', 'Akun', 'Debit', 'Kredit', 'Keterangan']));
             foreach ($entries as $e) {
-                $writer->addRow(Row::fromValues([$e->date, $e->journal_no, $e->debit, $e->credit, $e->memo]));
+                $writer->addRow(Row::fromValues([$e->date, $e->journal_no, $this->ledgerSourceLabel($e->source_type), $e->account_code.' - '.$e->account_name, $e->debit, $e->credit, $e->memo]));
             }
             $writer->close();
         }, 'ledger.xlsx');
+    }
+
+    private function buildLedgerEntries(?int $accountId, ?string $start, ?string $end, string $source)
+    {
+        $q = JournalEntry::query()
+            ->join('journals', 'journal_entries.journal_id', '=', 'journals.id')
+            ->join('accounts', 'journal_entries.account_id', '=', 'accounts.id')
+            ->select(
+                'journals.date',
+                'journals.journal_no',
+                'journals.source_type',
+                'journal_entries.debit',
+                'journal_entries.credit',
+                'journal_entries.memo',
+                'accounts.code as account_code',
+                'accounts.name as account_name'
+            )
+            ->orderBy('journals.date')
+            ->orderBy('journal_entries.id');
+
+        if ($accountId) {
+            $q->where('journal_entries.account_id', $accountId);
+        }
+        if ($start) {
+            $q->whereDate('journals.date', '>=', $start);
+        }
+        if ($end) {
+            $q->whereDate('journals.date', '<=', $end);
+        }
+        if (array_key_exists($source, $this->ledgerSourceOptions())) {
+            $q->where('journals.source_type', $source);
+        }
+
+        return $q->get();
+    }
+
+    private function ledgerSourceOptions(): array
+    {
+        return [
+            'finance_transaction' => 'Finance',
+            'atk_transaction' => 'ATK',
+            'wash_transaction' => 'Wash',
+        ];
+    }
+
+    private function ledgerSourceLabel(?string $sourceType): string
+    {
+        return $this->ledgerSourceOptions()[$sourceType ?? ''] ?? strtoupper((string) ($sourceType ?? '-'));
     }
 
     public function cashFlow(Request $request)

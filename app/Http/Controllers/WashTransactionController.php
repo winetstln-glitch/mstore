@@ -387,6 +387,40 @@ class WashTransactionController extends Controller
         return back()->with('success', __('Transaction deleted successfully.'));
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        if (! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:wash_transactions,id',
+        ]);
+
+        $transactions = WashTransaction::with('items')
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        DB::transaction(function () use ($transactions) {
+            foreach ($transactions as $transaction) {
+                $journals = Journal::where('source_type', 'wash_transaction')
+                    ->where('source_id', $transaction->id)
+                    ->get();
+
+                foreach ($journals as $journal) {
+                    $journal->entries()->delete();
+                    $journal->delete();
+                }
+
+                $transaction->items()->delete();
+                $transaction->delete();
+            }
+        });
+
+        return back()->with('success', __('Selected transactions deleted successfully.'));
+    }
+
     public function exportPdf(Request $request)
     {
         $query = WashTransaction::with('user', 'items');

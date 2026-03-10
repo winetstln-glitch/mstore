@@ -7,6 +7,17 @@
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-body">Wash Transactions</h1>
         <div class="d-flex flex-wrap gap-2 wash-transactions-toolbar">
+            @if(Auth::user()->hasRole('admin'))
+            <button type="button" class="btn btn-sm btn-outline-danger shadow-sm d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
+                <i class="fas fa-trash fa-sm"></i>
+                <span class="d-inline d-md-none ms-1">{{ __('Delete') }} (<span id="selectedCount">0</span>)</span>
+                <span class="d-none d-md-inline ms-1">{{ __('Delete Selected') }} (<span id="selectedCountDesktop">0</span>)</span>
+            </button>
+            <form id="bulkDeleteForm" action="{{ route('wash.transactions.bulkDestroy') }}" method="POST" class="d-none">
+                @csrf
+                @method('DELETE')
+            </form>
+            @endif
             <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm" title="Generate PDF">
                 <i class="fas fa-file-pdf fa-sm text-white-50"></i>
                 <span class="d-none d-md-inline ms-1">Generate PDF</span>
@@ -59,10 +70,25 @@
             </form>
         </div>
         <div class="card-body">
+            @if(Auth::user()->hasRole('admin'))
+            <div class="d-flex d-md-none align-items-center gap-2 mb-2">
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="selectAllMobile">
+                    <label class="form-check-label small" for="selectAllMobile">{{ __('Select all') }}</label>
+                </div>
+            </div>
+            @endif
             <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
+                            @if(Auth::user()->hasRole('admin'))
+                            <th style="width:40px;">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            @endif
                             <th>Date</th>
                             <th>Transaction #</th>
                             <th>Customer</th>
@@ -76,6 +102,13 @@
                     <tbody>
                         @forelse($transactions as $transaction)
                             <tr>
+                                @if(Auth::user()->hasRole('admin'))
+                                <td>
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input transaction-checkbox" type="checkbox" value="{{ $transaction->id }}">
+                                    </div>
+                                </td>
+                                @endif
                                 <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
                                 <td>{{ $transaction->transaction_number }}</td>
                                 <td>{{ $transaction->customer_name ?? '-' }}</td>
@@ -122,7 +155,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">No transactions found.</td>
+                                <td colspan="{{ Auth::user()->hasRole('admin') ? 9 : 8 }}" class="text-center">No transactions found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -354,15 +387,78 @@
     const cashGroup = document.getElementById('edit_cash_amount_group');
     const cashInput = document.getElementById('edit_cash_amount');
     const itemsContainer = document.getElementById('edit_items_container');
+    const selectAll = document.getElementById('selectAll');
+    const selectAllMobile = document.getElementById('selectAllMobile');
+    const transactionCheckboxes = document.querySelectorAll('.transaction-checkbox');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectedCountDesktop = document.getElementById('selectedCountDesktop');
+    const bulkDeleteForm = document.getElementById('bulkDeleteForm');
     const updateCashVisibility = () => {
         if (!paymentSelect || !cashGroup) {
             return;
         }
         cashGroup.style.display = paymentSelect.value === 'cash' ? '' : 'none';
     };
+    const updateBulkDeleteBtn = () => {
+        const selected = document.querySelectorAll('.transaction-checkbox:checked');
+        if (selectedCount) {
+            selectedCount.textContent = selected.length;
+        }
+        if (selectedCountDesktop) {
+            selectedCountDesktop.textContent = selected.length;
+        }
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.classList.toggle('d-none', selected.length === 0);
+        }
+        if (selectAll && transactionCheckboxes.length > 0) {
+            selectAll.checked = selected.length === transactionCheckboxes.length;
+        }
+        if (selectAllMobile && transactionCheckboxes.length > 0) {
+            selectAllMobile.checked = selected.length === transactionCheckboxes.length;
+        }
+    };
+    const setAllChecked = (checked) => {
+        transactionCheckboxes.forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        updateBulkDeleteBtn();
+    };
     if (paymentSelect) {
         paymentSelect.addEventListener('change', updateCashVisibility);
     }
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            setAllChecked(this.checked);
+        });
+    }
+    if (selectAllMobile) {
+        selectAllMobile.addEventListener('change', function() {
+            setAllChecked(this.checked);
+        });
+    }
+    transactionCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', updateBulkDeleteBtn);
+    });
+    updateBulkDeleteBtn();
+    window.confirmBulkDelete = function() {
+        const selected = Array.from(document.querySelectorAll('.transaction-checkbox:checked')).map((checkbox) => checkbox.value);
+        if (selected.length === 0 || !bulkDeleteForm) {
+            return;
+        }
+        if (!confirm('{{ __("Are you sure you want to delete selected transactions?") }}')) {
+            return;
+        }
+        bulkDeleteForm.querySelectorAll('input[name="ids[]"]').forEach((input) => input.remove());
+        selected.forEach((id) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = id;
+            bulkDeleteForm.appendChild(input);
+        });
+        bulkDeleteForm.submit();
+    };
     if (editModal) {
         editModal.addEventListener('show.bs.modal', (event) => {
             const trigger = event.relatedTarget;
