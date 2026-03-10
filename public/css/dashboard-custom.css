@@ -309,6 +309,7 @@ body.sb-sidenav-toggled #page-content-wrapper {
 @media (max-width: 991.98px) {
     #sidebar-wrapper {
         margin-left: calc(-1 * var(--sidebar-width));
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
     }
     #page-content-wrapper {
         margin-left: 0;
@@ -335,6 +336,10 @@ body.sb-sidenav-toggled #page-content-wrapper {
     .main-header {
         margin: 0.2rem;
         top: 0.5rem;
+    }
+
+    body.sb-sidenav-toggled .mobile-bottom-nav {
+        display: none;
     }
 }
 

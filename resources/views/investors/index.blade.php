@@ -6,10 +6,11 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Investor</h2>
-        <div class="toolbar-scroll">
-            <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center">
+        <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center">
                 <input type="month" name="month" class="form-control me-2" value="{{ request('month') }}" onchange="this.form.submit()">
             </form>
+        <div class="toolbar-scroll">
+            
             <a href="{{ route('investors.export.excel', ['month' => request('month')]) }}" class="btn btn-success" data-bs-toggle="tooltip" title="{{ __('Export Excel') }}">
                 <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Excel') }}</span>
             </a>
