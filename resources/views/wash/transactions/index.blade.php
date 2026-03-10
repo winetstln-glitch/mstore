@@ -105,6 +105,7 @@
                                             data-vehicle-brand="{{ $transaction->vehicle_brand ?? '' }}"
                                             data-payment-method="{{ $transaction->payment_method ?? 'cash' }}"
                                             data-cash-amount="{{ (int) ($transaction->cash_amount ?? 0) }}"
+                                            data-items='@json($transaction->items->map(fn($item) => ["id" => $item->id, "service_name" => $item->service_name, "quantity" => (int) $item->quantity])->values())'
                                         >
                                             <i class="fas fa-pen"></i>
                                         </button>
@@ -167,6 +168,10 @@
                     <div class="mb-0" id="edit_cash_amount_group">
                         <label class="form-label" for="edit_cash_amount">Nominal Cash</label>
                         <input type="number" min="0" class="form-control" id="edit_cash_amount" name="cash_amount">
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label mb-2">Quantity Layanan</label>
+                        <div id="edit_items_container" class="d-grid gap-2"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -348,6 +353,7 @@
     const paymentSelect = document.getElementById('edit_payment_method');
     const cashGroup = document.getElementById('edit_cash_amount_group');
     const cashInput = document.getElementById('edit_cash_amount');
+    const itemsContainer = document.getElementById('edit_items_container');
     const updateCashVisibility = () => {
         if (!paymentSelect || !cashGroup) {
             return;
@@ -370,6 +376,18 @@
             brandInput.value = trigger.getAttribute('data-vehicle-brand') || '';
             paymentSelect.value = (trigger.getAttribute('data-payment-method') || 'cash').toLowerCase();
             cashInput.value = trigger.getAttribute('data-cash-amount') || '0';
+            const items = JSON.parse(trigger.getAttribute('data-items') || '[]');
+            itemsContainer.innerHTML = '';
+            items.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'input-group';
+                row.innerHTML = `
+                    <span class="input-group-text">${item.service_name || 'Layanan'}</span>
+                    <input type="hidden" name="items[${index}][id]" value="${item.id}">
+                    <input type="number" min="1" class="form-control" name="items[${index}][quantity]" value="${item.quantity || 1}">
+                `;
+                itemsContainer.appendChild(row);
+            });
             updateCashVisibility();
         });
     }

@@ -259,7 +259,7 @@ class WashTransactionController extends Controller
 
     public function index(Request $request)
     {
-        $query = WashTransaction::with('user');
+        $query = WashTransaction::with(['user', 'items']);
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
@@ -300,22 +300,64 @@ class WashTransactionController extends Controller
             'vehicle_brand' => 'nullable|string|max:100',
             'payment_method' => 'required|in:cash,qris',
             'cash_amount' => 'nullable|numeric|min:0',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer',
+            'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        $paymentMethod = strtolower((string) $validated['payment_method']);
-        $cashAmount = $paymentMethod === 'cash' ? ($validated['cash_amount'] ?? 0) : null;
-        $changeAmount = $paymentMethod === 'cash'
-            ? max(0, ((float) $cashAmount) - ((float) $transaction->total_amount))
-            : 0;
+        DB::transaction(function () use ($validated, $transaction) {
+            $paymentMethod = strtolower((string) $validated['payment_method']);
+            $cashAmount = $paymentMethod === 'cash' ? (float) ($validated['cash_amount'] ?? 0) : null;
 
-        $transaction->update([
-            'customer_name' => $validated['customer_name'] ?? null,
-            'vehicle_plate' => $validated['vehicle_plate'] ?? null,
-            'vehicle_brand' => $validated['vehicle_brand'] ?? null,
-            'payment_method' => $paymentMethod,
-            'cash_amount' => $cashAmount,
-            'change_amount' => $changeAmount,
-        ]);
+            $itemPayload = collect($validated['items']);
+            $transactionItems = $transaction->items()->whereIn('id', $itemPayload->pluck('id'))->get()->keyBy('id');
+            if ($transactionItems->count() !== $itemPayload->count()) {
+                abort(422, 'Data item transaksi tidak valid.');
+            }
+
+            $grossTotal = 0;
+            foreach ($itemPayload as $item) {
+                $line = $transactionItems->get((int) $item['id']);
+                $qty = (int) $item['quantity'];
+                $subtotal = ((float) $line->price) * $qty;
+                $line->update([
+                    'quantity' => $qty,
+                    'subtotal' => $subtotal,
+                ]);
+                $grossTotal += $subtotal;
+            }
+
+            $discountAmount = min((float) ($transaction->discount_amount ?? 0), $grossTotal);
+            $finalTotal = max(0, $grossTotal - $discountAmount);
+            $changeAmount = $paymentMethod === 'cash'
+                ? max(0, $cashAmount - $finalTotal)
+                : 0;
+
+            $transaction->update([
+                'customer_name' => $validated['customer_name'] ?? null,
+                'vehicle_plate' => $validated['vehicle_plate'] ?? null,
+                'vehicle_brand' => $validated['vehicle_brand'] ?? null,
+                'payment_method' => $paymentMethod,
+                'cash_amount' => $cashAmount,
+                'change_amount' => $changeAmount,
+                'total_amount' => $finalTotal,
+            ]);
+
+            $journals = Journal::where('source_type', 'wash_transaction')
+                ->where('source_id', $transaction->id)
+                ->with('entries')
+                ->get();
+
+            foreach ($journals as $journal) {
+                foreach ($journal->entries as $entry) {
+                    if ((float) $entry->debit > 0) {
+                        $entry->update(['debit' => $finalTotal, 'credit' => 0]);
+                    } elseif ((float) $entry->credit > 0) {
+                        $entry->update(['debit' => 0, 'credit' => $finalTotal]);
+                    }
+                }
+            }
+        });
 
         return redirect()
             ->route('wash.transactions.index', request()->query())

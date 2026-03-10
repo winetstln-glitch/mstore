@@ -279,6 +279,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
     Route::prefix('accounting')->name('accounting.')->group(function () {
+        Route::resource('/accounts', \App\Http\Controllers\AccountingAccountController::class)->except(['show']);
         Route::get('/trial-balance', [\App\Http\Controllers\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
         Route::get('/income-statement', [\App\Http\Controllers\AccountingReportController::class, 'incomeStatement'])->name('income_statement');
         Route::get('/balance-sheet', [\App\Http\Controllers\AccountingReportController::class, 'balanceSheet'])->name('balance_sheet');

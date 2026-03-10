@@ -254,6 +254,9 @@
                     <a href="{{ route('accounting.periods.index') }}" class="sidebar-item {{ request()->routeIs('accounting.periods.*') ? 'active' : '' }}">
                         <i class="fa-regular fa-calendar-check"></i> {{ __('Periode Akuntansi') }}
                     </a>
+                    <a href="{{ route('accounting.accounts.index') }}" class="sidebar-item {{ request()->routeIs('accounting.accounts.*') ? 'active' : '' }}">
+                        <i class="fa-regular fa-folder-open"></i> {{ __('Master Akun') }}
+                    </a>
                 </div>
             </div>
             @endif
