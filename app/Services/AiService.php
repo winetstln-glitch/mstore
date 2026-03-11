@@ -670,14 +670,24 @@ class AiService
             });
 
         // 3. Repeat Customers (Customers with > 1 transaction in last 30 days)
-        $repeatCustomers = AtkTransaction::select('customer_name')
-            ->where('created_at', '>=', Carbon::now()->subDays(30))
-            ->whereNotNull('customer_name')
-            ->where('customer_name', '!=', '')
-            ->groupBy('customer_name')
-            ->havingRaw('COUNT(*) > 1')
-            ->get()
-            ->count();
+        if (Schema::hasColumn('atk_transactions', 'customer_name')) {
+            $repeatCustomers = AtkTransaction::select('customer_name')
+                ->where('created_at', '>=', Carbon::now()->subDays(30))
+                ->whereNotNull('customer_name')
+                ->where('customer_name', '!=', '')
+                ->groupBy('customer_name')
+                ->havingRaw('COUNT(*) > 1')
+                ->count();
+        } elseif (Schema::hasColumn('atk_transactions', 'user_id')) {
+            $repeatCustomers = AtkTransaction::select('user_id')
+                ->where('created_at', '>=', Carbon::now()->subDays(30))
+                ->whereNotNull('user_id')
+                ->groupBy('user_id')
+                ->havingRaw('COUNT(*) > 1')
+                ->count();
+        } else {
+            $repeatCustomers = 0;
+        }
 
         // 4. Generate Insight Text
         $topProductName = $topProducts->first() ? $topProducts->first()['name'] : 'N/A';
