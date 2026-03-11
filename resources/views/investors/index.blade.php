@@ -6,10 +6,10 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-stretch align-items-lg-center mb-4 gap-2 flex-wrap">
         <h2 class="mb-0">Investor</h2>
-        <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center w-100 w-lg-auto">
+        <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center w-100 flex-grow-1 flex-lg-grow-0">
             <input type="month" name="month" class="form-control w-100" value="{{ request('month') }}" onchange="this.form.submit()">
         </form>
-        <div class="toolbar-scroll d-flex align-items-center gap-2 w-100 w-lg-auto justify-content-start justify-content-lg-end">
+        <div class="toolbar-scroll d-flex align-items-center gap-2 w-100 flex-grow-1 flex-lg-grow-0 justify-content-start justify-content-lg-end">
             
             <a href="{{ route('investors.export.excel', ['month' => request('month')]) }}" class="btn btn-success" data-bs-toggle="tooltip" title="{{ __('Export Excel') }}">
                 <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Excel') }}</span>
@@ -31,7 +31,7 @@
 
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-responsive-mobile">
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -60,6 +60,7 @@
                                     Rp {{ number_format(($investor->income_transactions_sum_amount ?? 0) - ($investor->expense_transactions_sum_amount ?? 0), 0, ',', '.') }}
                                 </td>
                                 <td>
+                                    <div class="d-flex flex-wrap gap-1 justify-content-end investor-actions">
                                     <a href="{{ route('investors.show', $investor) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Detail">
                                         <i class="fa-solid fa-eye"></i> <span class="d-none d-sm-inline ms-1">Detail</span>
                                     </a>
@@ -73,6 +74,7 @@
                                             <i class="fa-solid fa-trash"></i> <span class="d-none d-sm-inline ms-1">{{ __('Delete') }}</span>
                                         </button>
                                     </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

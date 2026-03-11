@@ -695,7 +695,8 @@
         const isMobileTableRoute = document.body.classList.contains('route-wash')
             || document.body.classList.contains('route-accounting')
             || document.body.classList.contains('route-finance')
-            || document.body.classList.contains('route-inventory');
+            || document.body.classList.contains('route-inventory')
+            || document.body.classList.contains('route-investors');
 
         if (!isMobileTableRoute) {
             return;

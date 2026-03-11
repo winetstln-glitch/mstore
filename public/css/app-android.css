@@ -202,6 +202,32 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
     text-align: left;
     max-width: 40%;
   }
+
+  .route-investors .table-responsive-mobile td {
+    gap: 0.6rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .route-investors .investor-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .route-investors .investor-actions .btn {
+    min-height: 36px;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .route-investors .toolbar-scroll {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .route-investors .toolbar-scroll .btn {
+    flex: 0 0 auto;
+  }
 }
 
 /* Ripple Animation */
