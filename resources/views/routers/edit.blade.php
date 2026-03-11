@@ -125,7 +125,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-9">
         <div class="card shadow-sm border-0 border-top border-4 border-success">
-            <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis">
                     {{ __('Edit Router') }}: {{ $router->name }}
                 </h5>

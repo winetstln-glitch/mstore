@@ -150,21 +150,63 @@
         </div>
     </div>
 
-    <!-- Revenue (Placeholder) -->
+    <!-- Monitor Summary -->
     <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Network Status') }}</h6>
+                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Monitor Summary') }}</h6>
                     <div class="bg-success bg-opacity-10 text-success rounded p-2">
                         <i class="fa-solid fa-server"></i>
                     </div>
                 </div>
-                <h3 class="fw-bold mb-1">98.9%</h3>
-                <div class="small text-success">
-                    <i class="fa-solid fa-check me-1"></i>
-                    <span>{{ __('Operational') }}</span>
+                @if($monitorSummary)
+                <h3 class="fw-bold mb-1">{{ number_format((int) ($monitorSummary['checked'] ?? 0)) }}</h3>
+                <div class="small text-body-secondary mb-1">
+                    <span>{{ __('Checked devices') }}</span>
                 </div>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Down') }}: {{ number_format((int) ($monitorSummary['down'] ?? 0)) }}</span>
+                    <span class="mx-1">•</span>
+                    <span>{{ __('Tickets') }}: {{ number_format((int) ($monitorSummary['tickets_created'] ?? 0)) }}</span>
+                    <span class="mx-1">•</span>
+                    <span>{{ __('Errors') }}: {{ number_format((int) ($monitorSummary['errors'] ?? 0)) }}</span>
+                </div>
+                @if(!empty($monitorTrend))
+                <div class="mt-2">
+                    <div class="small text-muted mb-1">{{ __('7-day down trend') }}</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach($monitorTrend as $trend)
+                        <span class="badge {{ ($trend['down'] ?? 0) > 0 ? 'bg-warning text-dark' : 'bg-light text-muted' }}">
+                            {{ $trend['label'] }}: {{ (int) ($trend['down'] ?? 0) }}
+                        </span>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                @if(!empty($monitorSummary['ran_at']))
+                <div class="small text-muted mt-1">
+                    <span>{{ __('Updated') }} {{ \Carbon\Carbon::parse($monitorSummary['ran_at'])->diffForHumans() }}</span>
+                </div>
+                @endif
+                @else
+                <h3 class="fw-bold mb-1">0</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('No monitor data yet') }}</span>
+                </div>
+                @if(!empty($monitorTrend))
+                <div class="mt-2">
+                    <div class="small text-muted mb-1">{{ __('7-day down trend') }}</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach($monitorTrend as $trend)
+                        <span class="badge {{ ($trend['down'] ?? 0) > 0 ? 'bg-warning text-dark' : 'bg-light text-muted' }}">
+                            {{ $trend['label'] }}: {{ (int) ($trend['down'] ?? 0) }}
+                        </span>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                @endif
             </div>
         </div>
     </div>

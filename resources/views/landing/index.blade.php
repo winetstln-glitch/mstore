@@ -103,93 +103,6 @@
         </div>
     </section>
 
-    @if(($canAttendanceFromLanding ?? false) === true)
-    <section id="absensi-karyawan" class="py-5 bg-black bg-opacity-25">
-        <div class="container py-4">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Employee Attendance</h6>
-                <h2 class="display-6 fw-800">Absensi Karyawan</h2>
-                <p class="text-secondary mb-0">Teknisi, kasir ATK, dan kasir Wash bisa absen langsung dari landing page.</p>
-            </div>
-
-            @if($errors->any())
-                <div class="alert alert-danger fade-up">
-                    <ul class="mb-0 ps-3">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <div class="card border-0 shadow-sm fade-up">
-                <div class="card-body p-4 p-lg-5">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1">Halo, {{ auth()->user()->name }}</h5>
-                            <div class="text-muted small">
-                                Clock In: <span class="fw-semibold">{{ $clockInStart }} - {{ $clockInEnd }} WIB</span> ·
-                                Clock Out: <span class="fw-semibold">{{ $clockOutStart }} - {{ $clockOutEnd }} WIB</span>
-                            </div>
-                        </div>
-                        <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
-                            {{ now()->translatedFormat('l, d F Y') }}
-                        </div>
-                    </div>
-
-                    @if($todayAttendance && $todayAttendance->clock_out)
-                        <div class="alert alert-success mb-0">
-                            Absensi hari ini sudah selesai. Anda sudah clock out pukul {{ $todayAttendance->clock_out->format('H:i') }}.
-                        </div>
-                    @elseif($todayAttendance && !$todayAttendance->clock_out)
-                        <form action="{{ route('landing.attendance.update', $todayAttendance->id) }}" method="POST" enctype="multipart/form-data" class="landing-attendance-form" novalidate>
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="latitude" class="landing-latitude">
-                            <input type="hidden" name="longitude" class="landing-longitude">
-
-                            <div class="alert alert-warning">
-                                Anda sudah clock in pukul <strong>{{ $todayAttendance->clock_in->format('H:i') }}</strong>. Lanjutkan clock out.
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Selfie Clock Out</label>
-                                <input type="file" name="photo" class="form-control landing-photo-input" accept="image/*" capture="user" required>
-                                <img src="#" class="img-fluid rounded border mt-3 d-none landing-preview" style="max-height: 220px;" alt="Preview Clock Out">
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Catatan</label>
-                                <textarea name="notes" rows="2" class="form-control" placeholder="Catatan tambahan (opsional)"></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-danger px-4">Clock Out</button>
-                        </form>
-                    @else
-                        <form action="{{ route('landing.attendance.store') }}" method="POST" enctype="multipart/form-data" class="landing-attendance-form" novalidate>
-                            @csrf
-                            <input type="hidden" name="latitude" class="landing-latitude">
-                            <input type="hidden" name="longitude" class="landing-longitude">
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Selfie Clock In</label>
-                                <input type="file" name="photo" class="form-control landing-photo-input" accept="image/*" capture="user" required>
-                                <img src="#" class="img-fluid rounded border mt-3 d-none landing-preview" style="max-height: 220px;" alt="Preview Clock In">
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Catatan</label>
-                                <textarea name="notes" rows="2" class="form-control" placeholder="Rencana kerja hari ini (opsional)"></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary px-4">Clock In</button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </section>
-    @endif
 
     @php
         $cctvPackages = [
@@ -219,8 +132,93 @@
             ],
         ];
     @endphp
-    <section id="cctv" class="py-5">
-        <div class="container py-4">
+     <!-- Wash Services Section -->
+    <section id="wash-services" class="py-2 bg-black bg-opacity-25">
+        <div class="container py-2">
+            <div class="section-header text-center mb-5 fade-up">
+                <h6 class="text-primary fw-bold text-uppercase">MSTORE WASH</h6>
+                <h2 class="display-6 fw-800">Layanan Cuci Mobil & Motor </h2>
+            </div>
+            
+            <div class="scroll-container fade-up">
+                @forelse($washServices as $service)
+                <div class="scroll-item">
+                    <div class="card">
+                        @if($service->image)
+                            <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
+                        @else
+                            <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
+                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-3x text-secondary"></i>
+                            </div>
+                        @endif
+                        <div class="product-body d-flex flex-column h-100">
+                            <div class="mb-2">
+                                <span class="chip">
+                                    <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} me-1"></i>
+                                    {{ ucfirst($service->vehicle_type) }}
+                                </span>
+                            </div>
+                            <h4 class="product-title mb-1">{{ $service->name }}</h4>
+                            <div class="product-price text-primary fw-bold mb-2">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
+                            <p class="small text-muted mb-3">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
+                                <i class="fab fa-whatsapp me-2"></i> Booking
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                 <div class="text-center w-100 py-2">
+                    <p class="text-muted">Layanan belum tersedia.</p>
+                </div>
+                @endforelse
+            </div>
+        </div>
+   
+    </section>
+     <!-- Internet Section -->
+    <section id="packages" class="py-2 bg-black bg-opacity-25">
+        <div class="container py-2">
+            <div class="section-header text-center mb-5 fade-up">
+                <h6 class="text-primary fw-bold text-uppercase">Internet Service</h6>
+                <h2 class="display-6 fw-800">Paket Internet Fiber</h2>
+            </div>
+
+            <div class="scroll-container fade-up">
+                @forelse($packages as $package)
+                <div class="scroll-item">
+                    <div class="card">
+                        <div class="pricing-header">
+                            <div class="speed">{{ $package->speed }}</div>
+                            <div class="fw-bold">Mbps</div>
+                        </div>
+                        <div class="pricing-body d-flex flex-column">
+                            <div class="price text-primary">
+                                Rp {{ number_format($package->price, 0, ',', '.') }}
+                                <span class="fs-6 text-muted">/ bln</span>
+                            </div>
+                            <h5 class="mb-3">{{ $package->name }}</h5>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle text-primary"></i> 100% Fiber Optic</li>
+                                <li><i class="fas fa-check-circle text-primary"></i> Unlimited FUP</li>
+                            </ul>
+                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
+                                Berlangganan
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="text-center w-100 py-2">
+                    <p class="text-muted">Paket belum tersedia.</p>
+                </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+    <!--CCTV-->
+    <section id="cctv" class="py-2 bg-black bg-opacity-25">
+        <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
                 <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('cctv_section_badge', 'Security Solutions') }}</h6>
                 <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('cctv_section_title', 'Paket Instalasi CCTV') }}</h2>
@@ -256,51 +254,9 @@
             </div>
         </div>
     </section>
-
-    <!-- Internet Section -->
-    <section id="packages" class="py-5 bg-black bg-opacity-25">
-        <div class="container py-4">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Internet Service</h6>
-                <h2 class="display-6 fw-800">Paket Internet Fiber</h2>
-            </div>
-
-            <div class="scroll-container fade-up">
-                @forelse($packages as $package)
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">{{ $package->speed }}</div>
-                            <div class="fw-bold">Mbps</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price text-primary">
-                                Rp {{ number_format($package->price, 0, ',', '.') }}
-                                <span class="fs-6 text-muted">/ bln</span>
-                            </div>
-                            <h5 class="mb-3">{{ $package->name }}</h5>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle text-primary"></i> 100% Fiber Optic</li>
-                                <li><i class="fas fa-check-circle text-primary"></i> Unlimited FUP</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                Berlangganan
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                @empty
-                <div class="text-center w-100 py-5">
-                    <p class="text-muted">Paket belum tersedia.</p>
-                </div>
-                @endforelse
-            </div>
-        </div>
-    </section>
-
     <!-- ATK Promo Section -->
-    <section id="atk-promo" class="py-5">
-        <div class="container py-4">
+    <section id="atk-promo" class="py-2 bg-black bg-opacity-25">
+        <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
                 <h6 class="text-primary fw-bold text-uppercase">Stationery Store</h6>
                 <h2 class="display-6 fw-800">Promo Alat Tulis Kantor</h2>
@@ -329,7 +285,7 @@
                     </div>
                 </div>
                 @empty
-                <div class="text-center w-100 py-5">
+                <div class="text-center w-100 py-2">
                     <p class="text-muted">Belum ada promo produk saat ini.</p>
                 </div>
                 @endforelse
@@ -337,49 +293,7 @@
         </div>
     </section>
 
-    <!-- Wash Services Section -->
-    <section id="wash-services" class="py-5 bg-black bg-opacity-25">
-        <div class="container py-4">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Auto Care</h6>
-                <h2 class="display-6 fw-800">Layanan Cuci & Steam</h2>
-            </div>
-            
-            <div class="scroll-container fade-up">
-                @forelse($washServices as $service)
-                <div class="scroll-item">
-                    <div class="card">
-                        @if($service->image)
-                            <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
-                        @else
-                            <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
-                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-3x text-secondary"></i>
-                            </div>
-                        @endif
-                        <div class="product-body d-flex flex-column h-100">
-                            <div class="mb-2">
-                                <span class="chip">
-                                    <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} me-1"></i>
-                                    {{ ucfirst($service->vehicle_type) }}
-                                </span>
-                            </div>
-                            <h4 class="product-title mb-1">{{ $service->name }}</h4>
-                            <div class="product-price text-primary fw-bold mb-2">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
-                            <p class="small text-muted mb-3">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Booking
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                @empty
-                 <div class="text-center w-100 py-5">
-                    <p class="text-muted">Layanan belum tersedia.</p>
-                </div>
-                @endforelse
-            </div>
-        </div>
-    </section>
+   
 
     @php
         $weddingServices = [
@@ -408,8 +322,8 @@
             'background: linear-gradient(160deg, rgba(9, 42, 40, 0.25) 0%, rgba(2, 24, 22, 0.84) 100%);',
         ];
     @endphp
-    <section id="wedding-services" class="py-5">
-        <div class="container py-4">
+    <section id="wedding-services" class="py-2">
+        <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
                 <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('wedding_section_badge', 'Event Services') }}</h6>
                 <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('wedding_section_title', 'Layanan Wedding & Event') }}</h2>
@@ -437,8 +351,8 @@
     </section>
 
     <!-- Coverage Map Section -->
-    <section id="monitoring" class="py-5">
-        <div class="container py-4">
+    <section id="monitoring" class="py-2">
+        <div class="container py-2">
             <div class="row align-items-center g-5">
                 <div class="col-lg-6 fade-up">
                     <div id="coverageMap"></div>

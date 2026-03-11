@@ -83,7 +83,6 @@
                                 <i class="fa-solid fa-lock"></i>
                             </span>
                             <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan Password" />
-                            <button type="button" class="btn auth-input-toggle border-start-0" data-toggle-password="password">Tampilkan</button>
                             @error('password')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -92,9 +91,9 @@
 
                     <div class="d-flex justify-content-between align-items-center mb-4 auth-links">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                            <label class="form-check-label" for="remember">
-                                Ingat Saya
+                            <input class="form-check-input" type="checkbox" id="showPasswordLogin">
+                            <label class="form-check-label" for="showPasswordLogin">
+                                Tampilkan password
                             </label>
                         </div>
                         <a href="{{ route('password.forgot') }}">Lupa Password?</a>
@@ -159,22 +158,13 @@
             });
         }
 
-        document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
-            toggleButton.addEventListener('click', function () {
-                const inputId = this.getAttribute('data-toggle-password');
-                const input = document.getElementById(inputId);
-                if (!input) {
-                    return;
-                }
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.textContent = 'Sembunyikan';
-                    return;
-                }
-                input.type = 'password';
-                this.textContent = 'Tampilkan';
+        const loginPasswordInput = document.getElementById('password');
+        const showPasswordLogin = document.getElementById('showPasswordLogin');
+        if (loginPasswordInput && showPasswordLogin) {
+            showPasswordLogin.addEventListener('change', function () {
+                loginPasswordInput.type = this.checked ? 'text' : 'password';
             });
-        });
+        }
         
         // Prevent 419 Page Expired on back button
         window.addEventListener('pageshow', function(event) {

@@ -45,7 +45,7 @@
 <div class="row justify-content-center">
     <div class="col-12 col-lg-10 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body border-0 py-3">
+            <div class="card-header py-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                     <div class="header-title text-truncate" style="max-width: 100%;">
                         <h5 class="mb-0 fw-bold text-body-emphasis">

@@ -51,6 +51,20 @@
                     </div>
                 </div>
 
+                @if(session('preview_ip_down'))
+                    <div class="alert alert-danger">
+                        <h6 class="fw-bold mb-2"><i class="fa-solid fa-eye me-2"></i>{{ __('Preview Template IP DOWN') }}</h6>
+                        <pre class="mb-0 small">{{ session('preview_ip_down') }}</pre>
+                    </div>
+                @endif
+
+                @if(session('preview_ip_up'))
+                    <div class="alert alert-primary">
+                        <h6 class="fw-bold mb-2"><i class="fa-solid fa-eye me-2"></i>{{ __('Preview Template IP UP') }}</h6>
+                        <pre class="mb-0 small">{{ session('preview_ip_up') }}</pre>
+                    </div>
+                @endif
+
                 <form action="{{ route('telegram.update') }}" method="POST">
                     @csrf
                     
@@ -73,6 +87,40 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label fw-bold">{{ __('Notifikasi Monitoring IP') }}</label>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_notify_ip_down" name="telegram_notify_ip_down" value="1" {{ (string)($notifyIpDown->value ?? '1') === '1' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="telegram_notify_ip_down">{{ __('Kirim notifikasi saat IP/ONU DOWN') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_notify_ip_up" name="telegram_notify_ip_up" value="1" {{ (string)($notifyIpUp->value ?? '1') === '1' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="telegram_notify_ip_up">{{ __('Kirim notifikasi saat IP/ONU UP (recovery)') }}</label>
+                        </div>
+                        <div class="form-text">{{ __('Notifikasi UP/DOWN dipakai oleh monitor GenieACS yang berjalan berkala.') }}</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="telegram_ip_down_template" class="form-label fw-bold">{{ __('Template Notifikasi IP DOWN') }}</label>
+                        <textarea name="telegram_ip_down_template" id="telegram_ip_down_template" rows="8" class="form-control font-monospace">{{ $ipDownTemplate->value }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="telegram_ip_up_template" class="form-label fw-bold">{{ __('Template Notifikasi IP UP (Recovery)') }}</label>
+                        <textarea name="telegram_ip_up_template" id="telegram_ip_up_template" rows="8" class="form-control font-monospace">{{ $ipUpTemplate->value }}</textarea>
+                        <div class="form-text mt-2">
+                            <strong>{{ __('Variables Available:') }}</strong><br>
+                            <code>{customer_name}</code> - {{ __('Nama Pelanggan') }}<br>
+                            <code>{customer_id}</code> - {{ __('ID Pelanggan') }}<br>
+                            <code>{onu_serial}</code> - {{ __('Serial Number ONU') }}<br>
+                            <code>{status}</code> - {{ __('Status ONT/ONU') }}<br>
+                            <code>{tr069_ip}</code> - {{ __('IP TR069') }}<br>
+                            <code>{connection_request_url}</code> - {{ __('Connection Request URL') }}<br>
+                            <code>{last_inform}</code> - {{ __('Waktu Inform Terakhir') }}<br>
+                            <code>{reason}</code> - {{ __('Alasan Status') }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
                         <label for="telegram_ticket_template" class="form-label fw-bold">{{ __('Template Pesan Notifikasi Tiket') }}</label>
                         <textarea name="telegram_ticket_template" id="telegram_ticket_template" rows="8" class="form-control font-monospace">{{ $template->value }}</textarea>
                         <div class="form-text mt-2">
@@ -89,10 +137,24 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <button type="button" class="btn btn-outline-success" onclick="document.getElementById('test-form').submit()">
-                            <i class="fa-brands fa-telegram me-1"></i> {{ __('Test Send Message') }}
-                        </button>
+                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-success" onclick="document.getElementById('test-form').submit()">
+                                <i class="fa-brands fa-telegram me-1"></i> {{ __('Test Send Message') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="document.getElementById('test-ip-down-form').submit()">
+                                <i class="fa-solid fa-circle-down me-1"></i> {{ __('Test IP DOWN') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="document.getElementById('preview-ip-down-form').submit()">
+                                <i class="fa-solid fa-eye me-1"></i> {{ __('Preview IP DOWN') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('test-ip-up-form').submit()">
+                                <i class="fa-solid fa-circle-up me-1"></i> {{ __('Test IP UP') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('preview-ip-up-form').submit()">
+                                <i class="fa-solid fa-eye me-1"></i> {{ __('Preview IP UP') }}
+                            </button>
+                        </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fa-solid fa-save me-1"></i> {{ __('Save Settings') }}
                         </button>
@@ -100,6 +162,18 @@
                 </form>
 
                 <form id="test-form" action="{{ route('telegram.test') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+                <form id="test-ip-down-form" action="{{ route('telegram.test_ip_down') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+                <form id="test-ip-up-form" action="{{ route('telegram.test_ip_up') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+                <form id="preview-ip-down-form" action="{{ route('telegram.preview_ip_down') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+                <form id="preview-ip-up-form" action="{{ route('telegram.preview_ip_up') }}" method="POST" class="d-none">
                     @csrf
                 </form>
             </div>

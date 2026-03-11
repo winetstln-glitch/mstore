@@ -5,9 +5,9 @@
     <div class="col-lg-10">
         <div class="card shadow-sm border-0">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Create New Ticket') }}</h5>
+                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Buat Tiket Baru') }}</h5>
                 <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
+                    <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali ke Daftar') }}
                 </a>
             </div>
 
@@ -18,12 +18,12 @@
                     <div class="row g-3 mb-4">
                         <!-- Type (Moved to top for better flow) -->
                         <div class="col-md-12">
-                            <label for="type" class="form-label">{{ __('Ticket Type') }}</label>
+                            <label for="type" class="form-label">{{ __('Jenis Tiket') }}</label>
                             <select name="type" id="type" required class="form-select @error('type') is-invalid @enderror">
-                                <option value="gangguan" {{ old('type') == 'gangguan' ? 'selected' : '' }}>{{ __('Gangguan') }} (Issue)</option>
-                                <option value="pasang_baru" {{ old('type') == 'pasang_baru' ? 'selected' : '' }}>{{ __('Pasang Baru') }} (New Install)</option>
-                                <option value="maintenance" {{ old('type') == 'maintenance' ? 'selected' : '' }}>{{ __('Maintenance') }}</option>
-                                <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>{{ __('Other') }}</option>
+                                <option value="gangguan" {{ old('type') == 'gangguan' ? 'selected' : '' }}>{{ __('Gangguan') }}</option>
+                                <option value="pasang_baru" {{ old('type') == 'pasang_baru' ? 'selected' : '' }}>{{ __('Pasang Baru') }}</option>
+                                <option value="maintenance" {{ old('type') == 'maintenance' ? 'selected' : '' }}>{{ __('Pemeliharaan') }}</option>
+                                <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>{{ __('Lainnya') }}</option>
                             </select>
                             @error('type')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -32,9 +32,9 @@
 
                         <!-- Customer Selection (Existing) -->
                         <div class="col-12" id="existing-customer-section">
-                            <label for="customer_id" class="form-label">{{ __('Customer') }}</label>
+                            <label for="customer_id" class="form-label">{{ __('Pelanggan') }}</label>
                             <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror">
-                                <option value="">{{ __('Select Customer') }}</option>
+                                <option value="">{{ __('Pilih Pelanggan') }}</option>
                                 @foreach($customers as $customer)
                                     <option value="{{ $customer->id }}" 
                                         data-lat="{{ $customer->latitude }}" 
@@ -54,26 +54,26 @@
                         <div id="new-customer-section" class="col-12" style="display: none;">
                             <div class="card  border-0">
                                 <div class="card-body">
-                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-1"></i> {{ __('New Customer Details') }}</h6>
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-1"></i> {{ __('Detail Pelanggan Baru') }}</h6>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="new_customer_name" class="form-label">{{ __('Name') }} <span class="text-danger">*</span></label>
+                                            <label for="new_customer_name" class="form-label">{{ __('Nama') }} <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="new_customer_name" name="new_customer_name" value="{{ old('new_customer_name') }}">
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="new_customer_phone" class="form-label">{{ __('Phone') }}</label>
+                                            <label for="new_customer_phone" class="form-label">{{ __('Telepon') }}</label>
                                             <input type="text" class="form-control" id="new_customer_phone" name="new_customer_phone" value="{{ old('new_customer_phone') }}">
                                         </div>
                                         <div class="col-12">
-                                            <label for="new_customer_address" class="form-label">{{ __('Address') }} <span class="text-danger">*</span></label>
+                                            <label for="new_customer_address" class="form-label">{{ __('Alamat') }} <span class="text-danger">*</span></label>
                                             <textarea class="form-control" id="new_customer_address" name="new_customer_address" rows="2">{{ old('new_customer_address') }}</textarea>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="new_customer_lat" class="form-label">{{ __('Latitude') }}</label>
+                                            <label for="new_customer_lat" class="form-label">{{ __('Lintang') }}</label>
                                             <input type="text" class="form-control" id="new_customer_lat" name="new_customer_lat" value="{{ old('new_customer_lat') }}">
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="new_customer_lng" class="form-label">{{ __('Longitude') }}</label>
+                                            <label for="new_customer_lng" class="form-label">{{ __('Bujur') }}</label>
                                             <input type="text" class="form-control" id="new_customer_lng" name="new_customer_lng" value="{{ old('new_customer_lng') }}">
                                         </div>
                                     </div>
@@ -83,7 +83,7 @@
 
                         <!-- Technician Selection -->
                         <div class="col-12">
-                            <label for="technicians" class="form-label">{{ __('Assign Technicians') }}</label>
+                            <label for="technicians" class="form-label">{{ __('Tugaskan Teknisi') }}</label>
                             <select name="technicians[]" id="technicians" class="form-select @error('technicians') is-invalid @enderror" multiple>
                                 @foreach($technicians as $technician)
                                     <option value="{{ $technician->id }}" {{ (collect(old('technicians'))->contains($technician->id)) ? 'selected' : '' }}>
@@ -91,7 +91,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="form-text text-muted">{{ __('Select multiple technicians by clicking on them. Only technicians present today and without active assignments are shown.') }}</div>
+                            <div class="form-text text-muted">{{ __('Pilih beberapa teknisi dengan klik pada nama. Hanya teknisi yang hadir hari ini dan tanpa tugas aktif yang ditampilkan.') }}</div>
                             @error('technicians')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -99,8 +99,8 @@
 
                         <!-- Subject -->
                         <div class="col-12">
-                            <label for="subject" class="form-label">Subject</label>
-                            <input type="text" name="subject" id="subject" value="{{ old('subject') }}" required placeholder="Brief summary of the issue" class="form-control @error('subject') is-invalid @enderror">
+                            <label for="subject" class="form-label">{{ __('Subjek') }}</label>
+                            <input type="text" name="subject" id="subject" value="{{ old('subject') }}" required placeholder="{{ __('Ringkasan singkat masalah') }}" class="form-control @error('subject') is-invalid @enderror">
                             @error('subject')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -108,11 +108,11 @@
 
                         <!-- Priority -->
                         <div class="col-md-12">
-                            <label for="priority" class="form-label">Priority</label>
+                            <label for="priority" class="form-label">{{ __('Prioritas') }}</label>
                             <select name="priority" id="priority" required class="form-select @error('priority') is-invalid @enderror">
-                                <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>Low</option>
-                                <option value="medium" {{ old('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
-                                <option value="high" {{ old('priority') == 'high' ? 'selected' : '' }}>High</option>
+                                <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>{{ __('Rendah') }}</option>
+                                <option value="medium" {{ old('priority') == 'medium' ? 'selected' : '' }}>{{ __('Sedang') }}</option>
+                                <option value="high" {{ old('priority') == 'high' ? 'selected' : '' }}>{{ __('Tinggi') }}</option>
                             </select>
                             @error('priority')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -121,7 +121,7 @@
 
                         <!-- Description -->
                         <div class="col-12">
-                            <label for="description" class="form-label">Description</label>
+                            <label for="description" class="form-label">{{ __('Deskripsi') }}</label>
                             <textarea name="description" id="description" rows="4" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
                             @error('description')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -132,7 +132,7 @@
                         <div class="col-md-6">
                             <label for="odp_id" class="form-label">ODP</label>
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
-                                <option value="">Select ODP</option>
+                                <option value="">{{ __('Pilih ODP') }}</option>
                                 @foreach($odps as $odp)
                                     <option value="{{ $odp->id }}" {{ old('odp_id') == $odp->id ? 'selected' : '' }}>
                                         {{ $odp->name }}
@@ -144,12 +144,12 @@
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="coordinator_id" class="form-label">Coordinator</label>
+                            <label for="coordinator_id" class="form-label">{{ __('Koordinator') }}</label>
                             <select name="coordinator_id" id="coordinator_id" class="form-select @error('coordinator_id') is-invalid @enderror">
-                                <option value="">Select Coordinator</option>
+                                <option value="">{{ __('Pilih Koordinator') }}</option>
                                 @foreach($coordinators as $coordinator)
                                     <option value="{{ $coordinator->id }}" {{ old('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
-                                        {{ $coordinator->name }} ({{ $coordinator->region->name ?? 'No Region' }})
+                                        {{ $coordinator->name }} ({{ $coordinator->region->name ?? __('Tanpa Wilayah') }})
                                     </option>
                                 @endforeach
                             </select>
@@ -160,10 +160,10 @@
 
                         <!-- Location -->
                         <div class="col-12">
-                            <label for="location" class="form-label">Location (Optional)</label>
+                            <label for="location" class="form-label">{{ __('Lokasi (Opsional)') }}</label>
                             <div class="input-group">
-                                <input type="text" name="location" id="location" value="{{ old('location') }}" placeholder="Specific coordinates or notes" class="form-control @error('location') is-invalid @enderror">
-                                <a href="#" id="view-map-link" target="_blank" class="btn btn-outline-secondary" style="display: none;" title="View on Google Maps">
+                                <input type="text" name="location" id="location" value="{{ old('location') }}" placeholder="{{ __('Koordinat spesifik atau catatan') }}" class="form-control @error('location') is-invalid @enderror">
+                                <a href="#" id="view-map-link" target="_blank" class="btn btn-outline-secondary" style="display: none;" title="{{ __('Lihat di Google Maps') }}">
                                     <i class="fa-solid fa-map-location-dot"></i>
                                 </a>
                             </div>
@@ -174,8 +174,8 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 border-top pt-4">
-                        <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary px-4">Create Ticket</button>
+                        <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary">{{ __('Batal') }}</a>
+                        <button type="submit" class="btn btn-primary px-4">{{ __('Buat Tiket') }}</button>
                     </div>
                 </form>
             </div>
@@ -196,7 +196,7 @@
         // Initialize Select2
         $('#technicians').select2({
             theme: 'bootstrap-5',
-            placeholder: "Select Technicians",
+            placeholder: "{{ __('Pilih Teknisi') }}",
             allowClear: true,
             width: '100%'
         });

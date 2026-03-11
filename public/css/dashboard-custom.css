@@ -458,6 +458,7 @@ body.sb-sidenav-toggled #page-content-wrapper {
     padding: 0.5rem;
     margin-top: 0.5rem !important;
     animation: dropdownFade 0.2s ease;
+    background-color: var(--card-bg);
 }
 
 @keyframes dropdownFade {
@@ -644,5 +645,38 @@ body.sb-sidenav-toggled #page-content-wrapper {
     }
     .card-body {
         padding: 0.5rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .route-name-genieacs-show .genieacs-mobile-actions {
+        gap: 0.4rem;
+    }
+
+    .route-name-genieacs-show .genieacs-mobile-action-form {
+        display: inline-flex;
+    }
+
+    .route-name-genieacs-show .genieacs-mobile-actions .btn {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+    }
+
+    .route-name-genieacs-show .genieacs-mobile-mini-actions .btn {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 }

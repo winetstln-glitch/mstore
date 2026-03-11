@@ -8,6 +8,7 @@ use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\Installation;
 use App\Models\InventoryItem;
+use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
 use App\Models\Transaction;
@@ -240,6 +241,41 @@ class DashboardController extends Controller
         }
 
         $mixRadiusOk = app(MixRadiusService::class)->isAvailable();
+        $monitorSummaryRaw = Setting::getValue('network_monitor_summary');
+        $monitorSummary = is_string($monitorSummaryRaw) ? json_decode($monitorSummaryRaw, true) : null;
+        if (! is_array($monitorSummary)) {
+            $monitorSummary = null;
+        }
+        $monitorHistoryRaw = Setting::getValue('network_monitor_history');
+        $monitorHistory = is_string($monitorHistoryRaw) ? json_decode($monitorHistoryRaw, true) : [];
+        if (! is_array($monitorHistory)) {
+            $monitorHistory = [];
+        }
+        $dailyLatest = [];
+        foreach ($monitorHistory as $item) {
+            if (! is_array($item) || empty($item['ran_at'])) {
+                continue;
+            }
+            $dateKey = \Carbon\Carbon::parse($item['ran_at'])->format('Y-m-d');
+            $dailyLatest[$dateKey] = [
+                'checked' => (int) ($item['checked'] ?? 0),
+                'down' => (int) ($item['down'] ?? 0),
+                'tickets_created' => (int) ($item['tickets_created'] ?? 0),
+                'errors' => (int) ($item['errors'] ?? 0),
+            ];
+        }
+        $monitorTrend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $monitorTrend[] = [
+                'date' => $date,
+                'label' => now()->subDays($i)->format('d M'),
+                'checked' => $dailyLatest[$date]['checked'] ?? 0,
+                'down' => $dailyLatest[$date]['down'] ?? 0,
+                'tickets_created' => $dailyLatest[$date]['tickets_created'] ?? 0,
+                'errors' => $dailyLatest[$date]['errors'] ?? 0,
+            ];
+        }
 
         return view('dashboard', compact(
             'stats',
@@ -254,7 +290,9 @@ class DashboardController extends Controller
             'trafficData',
             'trafficStats',
             'systemMetrics',
-            'mixRadiusOk'
+            'mixRadiusOk',
+            'monitorSummary',
+            'monitorTrend'
         ));
     }
 }

@@ -11,7 +11,7 @@
                         <i class="fa-solid fa-cloud-arrow-down me-2 text-primary"></i>
                         {{ __('Import from GenieACS') }}
                     </h5>
-                    <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm w-100 w-md-auto">
+                    <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm w-md-auto">
                         <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
                     </a>
                 </div>

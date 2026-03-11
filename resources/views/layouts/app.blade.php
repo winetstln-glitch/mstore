@@ -83,7 +83,7 @@
             @if(Auth::user()->hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Client Portal') }}</div>
             @php
-                $clientRoutesActive = request()->routeIs('client.*') || request()->routeIs('profile.edit');
+                $clientRoutesActive = request()->routeIs('client.*') || request()->routeIs('profile.edit') || request()->routeIs('profile.id_card');
             @endphp
             <a class="sidebar-item {{ $clientRoutesActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#clientPortalCollapse" role="button" aria-expanded="{{ $clientRoutesActive ? 'true' : 'false' }}" aria-controls="clientPortalCollapse">
                 <i class="fa-solid fa-user-circle"></i> {{ __('Portal Pelanggan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
@@ -99,8 +99,14 @@
                     <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
                     </a>
+                    <a href="{{ route('client.credentials.show') }}" class="sidebar-item {{ request()->routeIs('client.credentials.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-key"></i> {{ __('Kredensial Internet') }}
+                    </a>
                     <a href="{{ route('profile.edit') }}" class="sidebar-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
                         <i class="fa-regular fa-user"></i> {{ __('Profil Saya') }}
+                    </a>
+                    <a href="{{ route('profile.id_card') }}" class="sidebar-item {{ request()->routeIs('profile.id_card') ? 'active' : '' }}">
+                        <i class="fa-regular fa-id-card"></i> {{ __('Kartu Identitas') }}
                     </a>
                     @php $mixUrl = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', '')); @endphp
                     @if(!empty($mixUrl))
@@ -157,12 +163,20 @@
             <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
                 <i class="fa fa-map-marked-alt"></i> {{ __('Peta Jaringan') }}
             </a>
+            <a href="{{ route('map.connections.index') }}" class="sidebar-item {{ request()->routeIs('map.connections.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-diagram-project"></i> {{ __('Koneksi Peta') }}
+            </a>
             @endif
 
-            @if(Auth::user()->hasPermission('genieacs.view'))
-            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.*') ? 'active' : '' }}">
+            @if(Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view'))
+            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-network-wired"></i> {{ __('Network Monitor') }}
             </a>
+            @if(Auth::user()->hasPermission('genieacs_server.view'))
+            <a href="{{ route('genieacs.servers.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.servers.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-database"></i> {{ __('Server GenieACS') }}
+            </a>
+            @endif
             @endif
 
             @if(Auth::user()->hasPermission('router.view'))
@@ -178,10 +192,10 @@
             @endif
 
             @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('closure.view') || Auth::user()->hasPermission('htb.view'))
-            <a class="sidebar-item {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
+            <a class="sidebar-item {{ (request()->routeIs('olt.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ (request()->routeIs('olt.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
                 <i class="fa fa-sitemap"></i> {{ __('Infrastruktur') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('olts.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'show' : '' }}" id="networkInfraCollapse">
+            <div class="collapse {{ (request()->routeIs('olt.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*')) ? 'show' : '' }}" id="networkInfraCollapse">
                 <div class="ps-3">
                     @if(Auth::user()->hasPermission('olt.view'))
                     <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
@@ -231,6 +245,15 @@
             <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
                 <i class="fa fa-wallet"></i> {{ __('Dashboard Keuangan') }}
             </a>
+            <a href="{{ route('finance.profit_loss') }}" class="sidebar-item {{ request()->routeIs('finance.profit_loss*') ? 'active' : '' }}">
+                <i class="fa-solid fa-chart-line"></i> {{ __('Profit & Loss') }}
+            </a>
+            <a href="{{ route('finance.material_report') }}" class="sidebar-item {{ request()->routeIs('finance.material_report') ? 'active' : '' }}">
+                <i class="fa-solid fa-boxes-stacked"></i> {{ __('Laporan Material') }}
+            </a>
+            <a href="{{ route('finance.manager_report') }}" class="sidebar-item {{ request()->routeIs('finance.manager_report*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-tie"></i> {{ __('Laporan Manajer') }}
+            </a>
             <a class="sidebar-item {{ (request()->routeIs('accounting.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#accountingCollapse" role="button" aria-expanded="{{ (request()->routeIs('accounting.*')) ? 'true' : 'false' }}" aria-controls="accountingCollapse">
                 <i class="fa-solid fa-book-open"></i> {{ __('Akuntansi') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
@@ -261,6 +284,9 @@
             </div>
             @endif
             @if(Auth::user()->hasPermission('investor.view'))
+            <a href="{{ route('finance.investor_report') }}" class="sidebar-item {{ request()->routeIs('finance.investor_report*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-invoice-dollar"></i> {{ __('Laporan Investor') }}
+            </a>
             <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-hand-holding-dollar"></i> {{ __('Data Investor') }}
             </a>
@@ -388,6 +414,9 @@
                         </a>
                         <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
                             <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
+                        </a>
+                        <a href="{{ route('inventory.pickup') }}" class="sidebar-item {{ request()->routeIs('inventory.pickup*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-hand-holding"></i> {{ __('Pengambilan Barang') }}
                         </a>
                         @endif
                         @if(Auth::user()->hasPermission('technician.view'))
@@ -561,6 +590,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
                         <li><span class="dropdown-header text-uppercase small">{{ __('Account') }}</span></li>
+                        <li><a class="dropdown-item" href="{{ route('landing') }}"><i class="fa-solid fa-globe me-2"></i> {{ __('Landing') }}</a></li>
                         @if(Auth::user()->hasPermission('profile.view'))
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profile') }}</a></li>
                         @endif
@@ -733,59 +763,52 @@
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const showLabel = @json(__('Tampilkan'));
-        const hideLabel = @json(__('Sembunyikan'));
+        const showPasswordLabel = @json(__('Tampilkan password'));
         const passwordInputs = document.querySelectorAll('input[type="password"]');
 
-        const normalizeToggleButton = function (button, input) {
-            const cleanButton = button.cloneNode(false);
-            cleanButton.type = 'button';
-            cleanButton.className = button.className || 'btn btn-outline-secondary';
-            cleanButton.removeAttribute('onclick');
-            cleanButton.removeAttribute('data-toggle-password');
-            cleanButton.setAttribute('data-password-toggle-btn', '1');
-            cleanButton.setAttribute('data-target', input.id || '');
-            cleanButton.textContent = input.type === 'password' ? showLabel : hideLabel;
-            button.replaceWith(cleanButton);
-
-            cleanButton.addEventListener('click', function () {
-                const hidden = input.type === 'password';
-                input.type = hidden ? 'text' : 'password';
-                cleanButton.textContent = hidden ? hideLabel : showLabel;
-            });
-        };
-
-        passwordInputs.forEach(function (input) {
+        passwordInputs.forEach(function (input, index) {
             if (input.dataset.toggleReady === '1') {
                 return;
             }
 
             input.dataset.toggleReady = '1';
             const existingGroup = input.closest('.input-group');
-            const wrapper = existingGroup || document.createElement('div');
-
-            if (!existingGroup) {
-                wrapper.className = 'input-group';
-                input.parentNode.insertBefore(wrapper, input);
-                wrapper.appendChild(input);
+            if (existingGroup) {
+                existingGroup.querySelectorAll('button[data-toggle-password], button[data-password-toggle-btn], button[onclick*="togglePassword"]').forEach(function (button) {
+                    button.remove();
+                });
             }
 
-            const existingToggleButton = wrapper.querySelector('[data-toggle-password], [onclick*="togglePassword"], [data-password-toggle-btn], .btn i.fa-eye, .btn i.fa-eye-slash');
-            if (existingToggleButton) {
-                const existingButton = existingToggleButton.closest('button') || existingToggleButton;
-                normalizeToggleButton(existingButton, input);
-                return;
+            if (input.parentElement) {
+                input.parentElement.querySelectorAll('button[data-toggle-password], button[data-password-toggle-btn], button[onclick*="togglePassword"]').forEach(function (button) {
+                    button.remove();
+                });
             }
 
-            if (wrapper.querySelector('[data-password-toggle-btn][data-target="' + input.id + '"]')) {
-                return;
-            }
+            const inputIdentifier = input.id && input.id.length ? input.id : ('password-field-' + index);
+            const checkboxId = 'password-visibility-' + inputIdentifier.replace(/[^a-zA-Z0-9\-_]/g, '-') + '-' + index;
+            const formCheck = document.createElement('div');
+            formCheck.className = 'form-check mt-2';
 
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn btn-outline-secondary';
-            wrapper.appendChild(button);
-            normalizeToggleButton(button, input);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input';
+            checkbox.id = checkboxId;
+            checkbox.setAttribute('data-password-checkbox-target', inputIdentifier);
+
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.setAttribute('for', checkboxId);
+            label.textContent = showPasswordLabel;
+
+            formCheck.appendChild(checkbox);
+            formCheck.appendChild(label);
+            const insertAfterElement = existingGroup || input;
+            insertAfterElement.insertAdjacentElement('afterend', formCheck);
+
+            checkbox.addEventListener('change', function () {
+                input.type = checkbox.checked ? 'text' : 'password';
+            });
         });
     });
 </script>

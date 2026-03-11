@@ -9,8 +9,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule Network Monitor
-Schedule::command('monitor:network')->everyTenMinutes();
+// Schedule GenieACS Network Monitor
+Schedule::command('app:monitor-genie-devices', ['--queue' => true])->everyTenMinutes();
 
 Artisan::command('vpn:monitor', function () {
     $count = VpnServer::count();

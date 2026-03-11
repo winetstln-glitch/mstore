@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\NetworkMonitorJob;
 use Illuminate\Console\Command;
 
 class NetworkMonitorCommand extends Command
@@ -12,22 +11,26 @@ class NetworkMonitorCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'monitor:network';
+    protected $signature = 'monitor:network {--queue : Jalankan asinkron melalui queue}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Check network status (ONU/PPPoE) and auto-create tickets';
+    protected $description = 'Alias lama untuk monitoring jaringan, diarahkan ke app:monitor-genie-devices';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Starting network monitor...');
-        NetworkMonitorJob::dispatchSync();
-        $this->info('Network monitor completed.');
+        $this->warn('Perintah monitor:network adalah alias lama. Gunakan app:monitor-genie-devices.');
+        $options = [];
+        if ((bool) $this->option('queue')) {
+            $options['--queue'] = true;
+        }
+
+        return $this->call('app:monitor-genie-devices', $options);
     }
 }

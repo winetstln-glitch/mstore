@@ -118,7 +118,7 @@
     </div>
 
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-body d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <div>
                 <div class="fw-semibold">{{ __('Daftar Router VPN') }}</div>
                 <div class="text-muted small">{{ __('Router Mikrotik yang terhubung ke sistem ini.') }}</div>
@@ -198,7 +198,7 @@
             </div>
         </div>
         @if($routers instanceof \Illuminate\Pagination\AbstractPaginator)
-            <div class="card-footer bg-body">
+            <div class="card-footer ">
                 {{ $routers->links() }}
             </div>
         @endif

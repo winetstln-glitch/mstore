@@ -91,7 +91,7 @@
                                         </span>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <div class="btn-group">
+                                        <div class="d-flex justify-content-end gap-1">
                                             @if(Auth::user()->hasPermission('odc.edit'))
                                             <a href="{{ route('odcs.edit', $odc) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>

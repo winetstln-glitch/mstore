@@ -2,30 +2,30 @@
 
 @section('content')
 <div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
+    <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
         <h4 class="mb-0 fw-bold text-body-emphasis">
             {{ __('Device Management') }}: <span class="text-primary">{{ $device['_deviceId']['_SerialNumber'] ?? 'Unknown' }}</span>
         </h4>
-        <div class="btn-group">
+        <div class="d-flex justify-content-end gap-1 flex-wrap genieacs-mobile-actions">
             @if(isset($deviceIp) && $deviceIp)
                 <a href="http://{{ $deviceIp }}" target="_blank" class="btn btn-outline-primary shadow-sm" title="{{ __('Open Device Web Interface') }}">
-                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> {{ __('Web GUI') }}
+                    <i class="fa-solid fa-arrow-up-right-from-square me-0 me-md-1"></i><span class="d-none d-md-inline">{{ __('Web GUI') }}</span>
                 </a>
             @endif
-            <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverId]) }}" method="POST" class="d-inline">
+            <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverId]) }}" method="POST" class="d-inline genieacs-mobile-action-form">
                 @csrf
                 <button type="submit" class="btn btn-outline-secondary shadow-sm" title="{{ __('Summon (Connection Request)') }}">
-                    <i class="fa-solid fa-bolt me-1"></i> {{ __('Summon') }}
+                    <i class="fa-solid fa-bolt me-0 me-md-1"></i><span class="d-none d-md-inline">{{ __('Summon') }}</span>
                 </button>
             </form>
-            <form action="{{ route('genieacs.reboot', ['id' => $id, 'server_id' => $serverId]) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to reboot this device?') }}');">
+            <form action="{{ route('genieacs.reboot', ['id' => $id, 'server_id' => $serverId]) }}" method="POST" class="d-inline genieacs-mobile-action-form" onsubmit="return confirm('{{ __('Are you sure you want to reboot this device?') }}');">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger shadow-sm">
-                    <i class="fa-solid fa-power-off me-1"></i> {{ __('Reboot') }}
+                    <i class="fa-solid fa-power-off me-0 me-md-1"></i><span class="d-none d-md-inline">{{ __('Reboot') }}</span>
                 </button>
             </form>
             <a href="{{ route('genieacs.index') }}" class="btn btn-secondary shadow-sm">
-                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
+                <i class="fa-solid fa-arrow-left me-0 me-md-1"></i><span class="d-none d-md-inline">{{ __('Back') }}</span>
             </a>
         </div>
     </div>
@@ -495,12 +495,12 @@
                                                             @endif
                                                         </small>
                                                     </div>
-                                                    <div class="btn-group">
+                                                    <div class="d-flex justify-content-end gap-1 genieacs-mobile-mini-actions">
                                                         <button class="btn btn-sm btn-outline-secondary" onclick="editSelectedOdp()">
-                                                            <i class="fa-solid fa-pen"></i> Edit
+                                                            <i class="fa-solid fa-pen me-0 me-md-1"></i><span class="d-none d-md-inline">Edit</span>
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-danger" onclick="deleteSelectedOdp()">
-                                                            <i class="fa-solid fa-trash"></i> Delete
+                                                            <i class="fa-solid fa-trash me-0 me-md-1"></i><span class="d-none d-md-inline">Delete</span>
                                                         </button>
                                                     </div>
                                                 </div>

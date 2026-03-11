@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\MixRadiusService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -84,6 +86,11 @@ class LoginController extends Controller
             $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
 
             return redirect()->intended($fallback);
+        }
+
+        $customerPortalRedirect = $this->attemptCustomerPortalLogin($request, $login, $password, $remember);
+        if ($customerPortalRedirect !== null) {
+            return $customerPortalRedirect;
         }
 
         try {
@@ -206,5 +213,109 @@ class LoginController extends Controller
         }
 
         return $identity;
+    }
+
+    protected function attemptCustomerPortalLogin(Request $request, string $login, string $password, bool $remember): ?RedirectResponse
+    {
+        $customer = $this->resolveCustomerPortalIdentity($login);
+        if (! $customer) {
+            return null;
+        }
+
+        $customerPassword = (string) ($customer->pppoe_password ?? '');
+        if ($customerPassword === '' || ! hash_equals($customerPassword, $password)) {
+            return null;
+        }
+
+        $user = $this->ensurePortalUserForCustomer($customer, $password);
+        if (! $user) {
+            return null;
+        }
+
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('client.dashboard'));
+    }
+
+    protected function resolveCustomerPortalIdentity(string $login): ?Customer
+    {
+        $login = trim($login);
+        if ($login === '') {
+            return null;
+        }
+
+        if (ctype_digit($login)) {
+            return Customer::find((int) $login);
+        }
+
+        return Customer::where('pppoe_user', $login)->first();
+    }
+
+    protected function ensurePortalUserForCustomer(Customer $customer, string $rawPassword): ?User
+    {
+        $user = null;
+        if ($customer->user_id) {
+            $user = User::find($customer->user_id);
+        }
+
+        $username = trim((string) ($customer->pppoe_user ?? ''));
+        $email = 'customer'.$customer->id.'@local.test';
+
+        if (! $user && $username !== '') {
+            $user = User::where('username', $username)->first();
+        }
+        if (! $user) {
+            $user = User::where('email', $email)->first();
+        }
+
+        $role = Role::firstOrCreate(
+            ['name' => 'customer'],
+            ['label' => 'Customer']
+        );
+
+        if (! $user) {
+            $emailBase = 'customer'.$customer->id;
+            $emailCandidate = $email;
+            $suffix = 1;
+            while (User::where('email', $emailCandidate)->exists()) {
+                $emailCandidate = $emailBase.'.'.$suffix.'@local.test';
+                $suffix++;
+            }
+
+            $user = User::create([
+                'name' => $customer->name ?: ('Customer '.$customer->id),
+                'email' => $emailCandidate,
+                'username' => $username !== '' ? User::generateUniqueUsername($username, $emailCandidate) : User::generateUniqueUsername('customer_'.$customer->id, $emailCandidate),
+                'radius_username' => $username !== '' ? $username : null,
+                'radius_type' => $username !== '' ? 'pppoe' : null,
+                'phone' => $customer->phone,
+                'password' => $rawPassword,
+                'role_id' => $role->id,
+                'is_active' => ($customer->status ?? 'active') === 'active',
+            ]);
+        } else {
+            $updates = [
+                'name' => $user->name ?: ($customer->name ?: ('Customer '.$customer->id)),
+                'phone' => $user->phone ?: $customer->phone,
+                'is_active' => ($customer->status ?? 'active') === 'active',
+                'password' => $rawPassword,
+            ];
+            if ($username !== '') {
+                $updates['radius_username'] = $user->radius_username ?: $username;
+                $updates['radius_type'] = $user->radius_type ?: 'pppoe';
+            }
+            if (! $user->role_id) {
+                $updates['role_id'] = $role->id;
+            }
+            $user->fill($updates)->save();
+        }
+
+        if ($customer->user_id !== $user->id) {
+            $customer->user_id = $user->id;
+            $customer->save();
+        }
+
+        return $user;
     }
 }

@@ -366,7 +366,7 @@
 
         <div class="col-12">
             <div class="card shadow-sm border-0 router-stat-card">
-                <div class="card-header bg-body d-flex justify-content-between align-items-center">
+                <div class="card-header  d-flex justify-content-between align-items-center">
                     <span class="fw-semibold">{{ __('Traffic Interface (Snapshot)') }}</span>
                     <span class="text-muted small">
                         {{ $mikrotikConnected ? __('Kecepatan RX/TX per interface saat halaman dimuat.') : __('Router offline.') }}

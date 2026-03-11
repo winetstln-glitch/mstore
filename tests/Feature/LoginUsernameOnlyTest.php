@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\MixRadiusService;
@@ -138,5 +139,31 @@ class LoginUsernameOnlyTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_customer_bisa_login_portal_dari_data_customer_tanpa_user_management(): void
+    {
+        Role::create([
+            'name' => 'customer',
+            'label' => 'Customer',
+        ]);
+
+        $customer = Customer::create([
+            'name' => 'Pelanggan A',
+            'status' => 'active',
+            'pppoe_user' => 'cust_1001',
+            'pppoe_password' => 'rahasia123',
+        ]);
+
+        $response = $this->post(route('login'), [
+            'login' => 'cust_1001',
+            'password' => 'rahasia123',
+        ]);
+
+        $response->assertRedirect(route('client.dashboard'));
+        $this->assertAuthenticated();
+        $customer->refresh();
+        $this->assertNotNull($customer->user_id);
+        $this->assertSame('customer', auth()->user()->role?->name);
     }
 }

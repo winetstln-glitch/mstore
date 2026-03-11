@@ -47,7 +47,7 @@
     <!-- Changed to col-12 on mobile for full width usage -->
     <div class="col-12 col-lg-10 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header  py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold text-body-emphasis fs-6 fs-md-5">{{ __('Create Customer') }}</h5>
                 <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Back') }}</span>

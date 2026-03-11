@@ -99,13 +99,13 @@
                                 <th scope="col">{{ __('SN ONT') }}</th>
                                 <th scope="col">ODP</th>
                                 <th scope="col">SSID</th>
-                                <th scope="col" class="text-center">{{ __('Perangkat Terhubung') }}</th>
+                                <th scope="col" class="text-center">IP TR069</th>
                                 <th scope="col" class="text-center">Hotspot</th>
                                 <th scope="col" class="text-center">RX</th>
                                 <th scope="col" class="text-center">Temp</th>
                                 <th scope="col">{{ __('Uptime') }}</th>
                                 <th scope="col">IP PPPoE</th>
-                                <th scope="col">IP WAN/TR069</th>
+                                <th scope="col">ConnectionRequestURL</th>
                                 <th scope="col">PON</th>
                                 <th scope="col">Mac</th>
                                 <th scope="col">{{ __('Product Class') }}</th>
@@ -175,6 +175,16 @@
                                     $uptime = $get('VirtualParameters.getdeviceuptime');
                                     $ipPppoe = $get('VirtualParameters.pppoeIP');
                                     $ipWan = $get('VirtualParameters.IPTR069');
+                                    $connectionRequestUrl = $get('InternetGatewayDevice.ManagementServer.ConnectionRequestURL');
+                                    if ($connectionRequestUrl === '-') {
+                                        $connectionRequestUrl = $get('Device.ManagementServer.ConnectionRequestURL');
+                                    }
+                                    if (!filter_var($ipWan, FILTER_VALIDATE_IP)) {
+                                        $connectionRequestHost = is_string($connectionRequestUrl) ? parse_url($connectionRequestUrl, PHP_URL_HOST) : null;
+                                        if (is_string($connectionRequestHost) && filter_var($connectionRequestHost, FILTER_VALIDATE_IP)) {
+                                            $ipWan = $connectionRequestHost;
+                                        }
+                                    }
                                     $ponMode = $get('VirtualParameters.getponmode');
                                     $ponMac = $get('VirtualParameters.PonMac'); // Or pppoeMac as per list? User listed both.
                                     
@@ -271,17 +281,12 @@
                                     </td>
                                     <td>{{ $ssid }}</td>
                                     <td class="text-center">
-                                        @if(isset($displayCount) && $displayCount > 0)
-                                            <span class="badge bg-success mb-1">{{ $displayCount }}</span>
-                                            @if(isset($connectedMacs) && count($connectedMacs) > 0)
-                                                <div class="d-flex flex-column gap-1">
-                                                    @foreach($connectedMacs as $mac)
-                                                        <span class="badge  text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;">{{ $mac }}</span>
-                                                    @endforeach
-                                                </div>
-                                            @endif
+                                        @if($ipWan !== '-' && filter_var($ipWan, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none">
+                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                            </a>
                                         @else
-                                            <span class="text-muted">-</span>
+                                            <span class="text-muted">{{ $ipWan }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">{{ $hotspot }}</td>
@@ -306,12 +311,12 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($ipWan !== '-' && filter_var($ipWan, FILTER_VALIDATE_IP))
-                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none">
-                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                        @if($connectionRequestUrl !== '-')
+                                            <a href="{{ $connectionRequestUrl }}" target="_blank" class="text-decoration-none">
+                                                {{ $connectionRequestUrl }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
                                             </a>
                                         @else
-                                            {{ $ipWan }}
+                                            {{ $connectionRequestUrl }}
                                         @endif
                                     </td>
                                     <td>{{ $ponMode }}</td>
@@ -400,6 +405,16 @@
                                 $uptime = $get('VirtualParameters.getdeviceuptime');
                                 $ipPppoe = $get('VirtualParameters.pppoeIP');
                                 $ipWan = $get('VirtualParameters.IPTR069');
+                                if (!filter_var($ipWan, FILTER_VALIDATE_IP)) {
+                                    $connectionRequestUrl = $get('InternetGatewayDevice.ManagementServer.ConnectionRequestURL');
+                                    if ($connectionRequestUrl === '-') {
+                                        $connectionRequestUrl = $get('Device.ManagementServer.ConnectionRequestURL');
+                                    }
+                                    $connectionRequestHost = is_string($connectionRequestUrl) ? parse_url($connectionRequestUrl, PHP_URL_HOST) : null;
+                                    if (is_string($connectionRequestHost) && filter_var($connectionRequestHost, FILTER_VALIDATE_IP)) {
+                                        $ipWan = $connectionRequestHost;
+                                    }
+                                }
 
                                 // Get Device MACs (ONU, WLAN/SSID)
                                 $macOnu = $get('VirtualParameters.PonMac');

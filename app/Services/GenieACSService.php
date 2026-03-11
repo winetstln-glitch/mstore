@@ -473,6 +473,8 @@ class GenieACSService
                 'VirtualParameters.getponmode',
                 'VirtualParameters.PonMac',
                 'VirtualParameters.getSerialNumber',
+                'InternetGatewayDevice.ManagementServer.ConnectionRequestURL',
+                'Device.ManagementServer.ConnectionRequestURL',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID',
                 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddress',
@@ -689,6 +691,11 @@ class GenieACSService
             return $device['VirtualParameters']['IPTR069']['_value'];
         }
 
+        $tr069Ip = $this->getTr069Ip($device);
+        if ($tr069Ip) {
+            return $tr069Ip;
+        }
+
         // 2. Try Standard TR-098
         if (isset($device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['ExternalIPAddress']['_value'])) {
             return $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['ExternalIPAddress']['_value'];
@@ -701,6 +708,62 @@ class GenieACSService
         // 3. Try TR-181
         if (isset($device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']['_value'])) {
             return $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']['_value'];
+        }
+
+        return null;
+    }
+
+    public function getConnectionRequestUrl($device): ?string
+    {
+        if (! $device) {
+            return null;
+        }
+
+        $url = data_get($device, 'InternetGatewayDevice.ManagementServer.ConnectionRequestURL._value');
+        if (is_string($url) && $url !== '') {
+            return $url;
+        }
+
+        $url = data_get($device, 'Device.ManagementServer.ConnectionRequestURL._value');
+        if (is_string($url) && $url !== '') {
+            return $url;
+        }
+
+        return null;
+    }
+
+    public function getTr069Ip($device): ?string
+    {
+        if (! $device) {
+            return null;
+        }
+
+        $virtualIp = data_get($device, 'VirtualParameters.IPTR069._value');
+        if (is_string($virtualIp) && filter_var($virtualIp, FILTER_VALIDATE_IP)) {
+            return $virtualIp;
+        }
+
+        $connectionRequestUrl = $this->getConnectionRequestUrl($device);
+        if (! $connectionRequestUrl) {
+            return null;
+        }
+
+        return $this->extractIpFromConnectionRequestUrl($connectionRequestUrl);
+    }
+
+    protected function extractIpFromConnectionRequestUrl(?string $connectionRequestUrl): ?string
+    {
+        if (! is_string($connectionRequestUrl) || $connectionRequestUrl === '') {
+            return null;
+        }
+
+        $urlHost = parse_url($connectionRequestUrl, PHP_URL_HOST);
+        if (! is_string($urlHost) || $urlHost === '') {
+            return null;
+        }
+
+        if (filter_var($urlHost, FILTER_VALIDATE_IP)) {
+            return $urlHost;
         }
 
         return null;
@@ -1604,13 +1667,15 @@ class GenieACSService
             $response = Http::timeout($this->timeout)
                 ->get("{$this->baseUrl}/devices", [
                     'query' => json_encode(['_deviceId._SerialNumber' => $serialNumber]),
-                    'projection' => '_lastInform',
+                    'projection' => '_id,_lastInform,VirtualParameters.IPTR069,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,Device.ManagementServer.ConnectionRequestURL',
                 ]);
 
             if ($response->successful()) {
                 $devices = $response->json();
                 if (! empty($devices)) {
                     $device = $devices[0];
+                    $tr069Ip = $this->getTr069Ip($device);
+                    $connectionRequestUrl = $this->getConnectionRequestUrl($device);
                     // Check if last inform was recent (e.g., within 5 minutes)
                     $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
                     $isOnline = (time() - $lastInform) < 300; // 5 mins
@@ -1620,6 +1685,8 @@ class GenieACSService
                         'last_inform' => $device['_lastInform'] ?? null,
                         'raw' => $device,
                         'id' => $device['_id'], // Return ID for linking
+                        'tr069_ip' => $tr069Ip,
+                        'connection_request_url' => $connectionRequestUrl,
                     ];
                 }
             }
