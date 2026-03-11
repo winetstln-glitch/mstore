@@ -4,12 +4,12 @@
 
 @section('content')
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Investor</h2>
-        <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center">
-                <input type="month" name="month" class="form-control me-2" value="{{ request('month') }}" onchange="this.form.submit()">
-            </form>
-        <div class="toolbar-scroll">
+    <div class="d-flex justify-content-between align-items-stretch align-items-lg-center mb-4 gap-2 flex-wrap">
+        <h2 class="mb-0">Investor</h2>
+        <form method="GET" action="{{ route('investors.index') }}" class="d-flex align-items-center w-100 w-lg-auto">
+            <input type="month" name="month" class="form-control w-100" value="{{ request('month') }}" onchange="this.form.submit()">
+        </form>
+        <div class="toolbar-scroll d-flex align-items-center gap-2 w-100 w-lg-auto justify-content-start justify-content-lg-end">
             
             <a href="{{ route('investors.export.excel', ['month' => request('month')]) }}" class="btn btn-success" data-bs-toggle="tooltip" title="{{ __('Export Excel') }}">
                 <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Export Excel') }}</span>
