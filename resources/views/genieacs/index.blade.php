@@ -147,44 +147,23 @@
                                     $ssid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID');
                                     // $active = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
                                     
-                                    // Logic for Connected Devices (MACs)
-                                    $hosts = data_get($device, 'InternetGatewayDevice.LANDevice.1.Hosts.Host');
-                                    if (!$hosts) {
-                                        $hosts = data_get($device, 'Device.Hosts.Host');
-                                    }
-                                    $connectedMacs = [];
-                                    if ($hosts && is_array($hosts)) {
-                                        foreach ($hosts as $host) {
-                                            $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
-                                            // Check if active (handle string 'true', '1', or boolean)
-                                            if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
-                                                $macVal = data_get($host, 'MACAddress._value') ?? data_get($host, 'MACAddress') ?? data_get($host, 'PhysAddress._value') ?? data_get($host, 'PhysAddress');
-                                                if ($macVal) {
-                                                    $connectedMacs[] = $macVal;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    // Fallback to TotalAssociations if no hosts found but count exists
-                                    $wifiCount = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
-                                    $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
-
                                     $hotspot = $get('VirtualParameters.activedevices');
                                     $rx = $get('VirtualParameters.RXPower');
                                     $temp = $get('VirtualParameters.gettemp');
                                     $uptime = $get('VirtualParameters.getdeviceuptime');
                                     $ipPppoe = $get('VirtualParameters.pppoeIP');
-                                    $ipWan = $get('VirtualParameters.IPTR069');
+                                    $ipTr069 = $get('VirtualParameters.IPTR069');
                                     $connectionRequestUrl = $get('InternetGatewayDevice.ManagementServer.ConnectionRequestURL');
                                     if ($connectionRequestUrl === '-') {
                                         $connectionRequestUrl = $get('Device.ManagementServer.ConnectionRequestURL');
                                     }
-                                    if (!filter_var($ipWan, FILTER_VALIDATE_IP)) {
+                                    if (!filter_var($ipTr069, FILTER_VALIDATE_IP)) {
                                         $connectionRequestHost = is_string($connectionRequestUrl) ? parse_url($connectionRequestUrl, PHP_URL_HOST) : null;
                                         if (is_string($connectionRequestHost) && filter_var($connectionRequestHost, FILTER_VALIDATE_IP)) {
-                                            $ipWan = $connectionRequestHost;
+                                            $ipTr069 = $connectionRequestHost;
                                         }
                                     }
+                                    $ipPppoeDisplay = ($ipPppoe !== '-' && $ipTr069 !== '-' && $ipPppoe === $ipTr069) ? '-' : $ipPppoe;
                                     $ponMode = $get('VirtualParameters.getponmode');
                                     $ponMac = $get('VirtualParameters.PonMac'); // Or pppoeMac as per list? User listed both.
                                     
@@ -281,12 +260,12 @@
                                     </td>
                                     <td>{{ $ssid }}</td>
                                     <td class="text-center">
-                                        @if($ipWan !== '-' && filter_var($ipWan, FILTER_VALIDATE_IP))
-                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none">
-                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                        @if($ipTr069 !== '-' && filter_var($ipTr069, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $ipTr069 }}" target="_blank" class="text-decoration-none">
+                                                {{ $ipTr069 }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
                                             </a>
                                         @else
-                                            <span class="text-muted">{{ $ipWan }}</span>
+                                            <span class="text-muted">{{ $ipTr069 }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">{{ $hotspot }}</td>
@@ -302,12 +281,12 @@
                                     <td class="text-center">{{ $temp }}</td>
                                     <td>{{ $uptime }}</td>
                                     <td>
-                                        @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
-                                            <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none">
-                                                {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                        @if($ipPppoeDisplay !== '-' && filter_var($ipPppoeDisplay, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $ipPppoeDisplay }}" target="_blank" class="text-decoration-none">
+                                                {{ $ipPppoeDisplay }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
                                             </a>
                                         @else
-                                            {{ $ipPppoe }}
+                                            {{ $ipPppoeDisplay }}
                                         @endif
                                     </td>
                                     <td>
@@ -329,7 +308,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="17" class="text-center py-5">
+                                    <td colspan="18" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="fa-solid fa-network-wired fa-3x mb-3"></i>
                                             <p class="mb-0">{{ __('No devices found.') }}</p>
@@ -404,15 +383,15 @@
                                 $temp = $get('VirtualParameters.gettemp');
                                 $uptime = $get('VirtualParameters.getdeviceuptime');
                                 $ipPppoe = $get('VirtualParameters.pppoeIP');
-                                $ipWan = $get('VirtualParameters.IPTR069');
-                                if (!filter_var($ipWan, FILTER_VALIDATE_IP)) {
+                                $ipTr069 = $get('VirtualParameters.IPTR069');
+                                if (!filter_var($ipTr069, FILTER_VALIDATE_IP)) {
                                     $connectionRequestUrl = $get('InternetGatewayDevice.ManagementServer.ConnectionRequestURL');
                                     if ($connectionRequestUrl === '-') {
                                         $connectionRequestUrl = $get('Device.ManagementServer.ConnectionRequestURL');
                                     }
                                     $connectionRequestHost = is_string($connectionRequestUrl) ? parse_url($connectionRequestUrl, PHP_URL_HOST) : null;
                                     if (is_string($connectionRequestHost) && filter_var($connectionRequestHost, FILTER_VALIDATE_IP)) {
-                                        $ipWan = $connectionRequestHost;
+                                        $ipTr069 = $connectionRequestHost;
                                     }
                                 }
 
@@ -505,24 +484,34 @@
                                                 @endif
                                             </div>
                                             <div class="col-12">
-                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (PPPoE / WAN)</span>
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (TR069 / PPPoE)</span>
                                                 <div class="d-flex flex-column">
-                                                    @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
-                                                        <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none small">
-                                                            {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
-                                                        </a>
-                                                    @else
-                                                        <span class="small">{{ $ipPppoe }}</span>
-                                                    @endif
-
-                                                    @if($ipWan !== '-' && $ipWan !== $ipPppoe)
-                                                        @if(filter_var($ipWan, FILTER_VALIDATE_IP))
-                                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none small text-muted">
-                                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs"></i>
+                                                    @php
+                                                        $showTr069 = $ipTr069 !== '-';
+                                                        $showPppoe = $ipPppoe !== '-' && $ipPppoe !== $ipTr069;
+                                                    @endphp
+                                                    @if($showTr069)
+                                                        @if(filter_var($ipTr069, FILTER_VALIDATE_IP))
+                                                            <a href="http://{{ $ipTr069 }}" target="_blank" class="text-decoration-none small">
+                                                                {{ $ipTr069 }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
                                                             </a>
                                                         @else
-                                                            <span class="small text-muted">{{ $ipWan }}</span>
+                                                            <span class="small">{{ $ipTr069 }}</span>
                                                         @endif
+                                                    @endif
+
+                                                    @if($showPppoe)
+                                                        @if(filter_var($ipPppoe, FILTER_VALIDATE_IP))
+                                                            <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none small text-muted">
+                                                                {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs"></i>
+                                                            </a>
+                                                        @else
+                                                            <span class="small text-muted">{{ $ipPppoe }}</span>
+                                                        @endif
+                                                    @endif
+
+                                                    @if(! $showTr069 && ! $showPppoe)
+                                                        <span class="small text-muted">-</span>
                                                     @endif
                                                 </div>
 

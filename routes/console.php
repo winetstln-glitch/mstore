@@ -10,7 +10,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Schedule GenieACS Network Monitor
-Schedule::command('app:monitor-genie-devices', ['--queue' => true])->everyTenMinutes();
+Schedule::command('app:monitor-genie-devices')->everyTenMinutes()->withoutOverlapping(15);
 
 Artisan::command('vpn:monitor', function () {
     $count = VpnServer::count();

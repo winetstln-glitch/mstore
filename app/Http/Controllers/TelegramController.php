@@ -127,7 +127,70 @@ class TelegramController extends Controller implements HasMiddleware
             ]
         );
 
-        return view('telegram.index', compact('setting', 'groupChatId', 'template', 'notifyIpDown', 'notifyIpUp', 'ipDownTemplate', 'ipUpTemplate'));
+        $onlineThresholdMinutes = Setting::firstOrCreate(
+            ['key' => 'genieacs_online_threshold_minutes'],
+            [
+                'value' => '15',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'GenieACS Online Threshold Minutes',
+            ]
+        );
+
+        $downConfirmChecks = Setting::firstOrCreate(
+            ['key' => 'network_monitor_down_confirm_checks'],
+            [
+                'value' => '2',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Network Monitor Down Confirm Checks',
+            ]
+        );
+
+        $upConfirmChecks = Setting::firstOrCreate(
+            ['key' => 'network_monitor_up_confirm_checks'],
+            [
+                'value' => '2',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Network Monitor Up Confirm Checks',
+            ]
+        );
+
+        $telegramRetryAttempts = Setting::firstOrCreate(
+            ['key' => 'network_monitor_telegram_max_retry_attempts'],
+            [
+                'value' => '5',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Telegram Max Retry Attempts',
+            ]
+        );
+
+        $telegramRetryBackoffMinutes = Setting::firstOrCreate(
+            ['key' => 'network_monitor_telegram_retry_backoff_minutes'],
+            [
+                'value' => '5',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Telegram Retry Backoff Minutes',
+            ]
+        );
+
+        return view('telegram.index', compact(
+            'setting',
+            'groupChatId',
+            'template',
+            'notifyIpDown',
+            'notifyIpUp',
+            'ipDownTemplate',
+            'ipUpTemplate',
+            'onlineThresholdMinutes',
+            'downConfirmChecks',
+            'upConfirmChecks',
+            'telegramRetryAttempts',
+            'telegramRetryBackoffMinutes'
+        ));
     }
 
     /**
@@ -143,6 +206,11 @@ class TelegramController extends Controller implements HasMiddleware
             'telegram_notify_ip_up' => 'nullable|boolean',
             'telegram_ip_down_template' => 'nullable|string',
             'telegram_ip_up_template' => 'nullable|string',
+            'genieacs_online_threshold_minutes' => 'nullable|integer|min:1|max:180',
+            'network_monitor_down_confirm_checks' => 'nullable|integer|min:1|max:10',
+            'network_monitor_up_confirm_checks' => 'nullable|integer|min:1|max:10',
+            'network_monitor_telegram_max_retry_attempts' => 'nullable|integer|min:1|max:20',
+            'network_monitor_telegram_retry_backoff_minutes' => 'nullable|integer|min:1|max:120',
         ]);
 
         Setting::where('key', 'telegram_bot_token')->update([
@@ -172,6 +240,58 @@ class TelegramController extends Controller implements HasMiddleware
         Setting::where('key', 'telegram_ip_up_template')->update([
             'value' => $request->telegram_ip_up_template,
         ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'genieacs_online_threshold_minutes'],
+            [
+                'value' => (string) ($request->integer('genieacs_online_threshold_minutes', 15)),
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'GenieACS Online Threshold Minutes',
+            ]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'network_monitor_down_confirm_checks'],
+            [
+                'value' => (string) ($request->integer('network_monitor_down_confirm_checks', 2)),
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Network Monitor Down Confirm Checks',
+            ]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'network_monitor_up_confirm_checks'],
+            [
+                'value' => (string) ($request->integer('network_monitor_up_confirm_checks', 2)),
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Network Monitor Up Confirm Checks',
+            ]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'network_monitor_telegram_max_retry_attempts'],
+            [
+                'value' => (string) ($request->integer('network_monitor_telegram_max_retry_attempts', 5)),
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Telegram Max Retry Attempts',
+            ]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'network_monitor_telegram_retry_backoff_minutes'],
+            [
+                'value' => (string) ($request->integer('network_monitor_telegram_retry_backoff_minutes', 5)),
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Telegram Retry Backoff Minutes',
+            ]
+        );
+
+        Setting::forgetCache();
 
         return redirect()->route('telegram.index')->with('success', __('Telegram settings updated successfully.'));
     }

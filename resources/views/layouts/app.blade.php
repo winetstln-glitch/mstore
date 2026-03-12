@@ -159,36 +159,63 @@
             @if(! $isKasirWashLimited)
             <div class="sidebar-header mt-2">{{ __('Jaringan') }}</div>
 
-            @if(Auth::user()->hasPermission('map.view'))
-            <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
-                <i class="fa fa-map-marked-alt"></i> {{ __('Peta Jaringan') }}
-            </a>
-            <a href="{{ route('map.connections.index') }}" class="sidebar-item {{ request()->routeIs('map.connections.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-diagram-project"></i> {{ __('Koneksi Peta') }}
-            </a>
-            @endif
+            @php
+                $networkMonitoringActive = request()->routeIs('map.*') || request()->routeIs('genieacs.*') || request()->routeIs('calculator.*') || request()->routeIs('network.analyzer');
+                $networkAccessActive = request()->routeIs('routers.*') || request()->routeIs('vpn.*');
+            @endphp
 
-            @if(Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view'))
-            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-network-wired"></i> {{ __('Network Monitor') }}
+            @if(Auth::user()->hasPermission('map.view') || Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view') || Auth::user()->hasPermission('calculator.view') || Auth::user()->hasPermission('router.view'))
+            <a class="sidebar-item {{ $networkMonitoringActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkMonitoringCollapse" role="button" aria-expanded="{{ $networkMonitoringActive ? 'true' : 'false' }}" aria-controls="networkMonitoringCollapse">
+                <i class="fa-solid fa-satellite-dish"></i> {{ __('Monitoring & Tools') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            @if(Auth::user()->hasPermission('genieacs_server.view'))
-            <a href="{{ route('genieacs.servers.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.servers.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-database"></i> {{ __('Server GenieACS') }}
-            </a>
-            @endif
+            <div class="collapse {{ $networkMonitoringActive ? 'show' : '' }}" id="networkMonitoringCollapse">
+                <div class="ps-3">
+                    @if(Auth::user()->hasPermission('map.view'))
+                    <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
+                        <i class="fa fa-map-marked-alt"></i> {{ __('Peta Jaringan') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view'))
+                    <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-network-wired"></i> {{ __('Network Monitor') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('genieacs_server.view'))
+                    <a href="{{ route('genieacs.servers.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.servers.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-database"></i> {{ __('Server GenieACS') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('calculator.view'))
+                    <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ request()->routeIs('calculator.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('router.view'))
+                    <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ request()->routeIs('network.analyzer') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high"></i> {{ __('Network Analyzer') }}
+                    </a>
+                    @endif
+                </div>
+            </div>
             @endif
 
             @if(Auth::user()->hasPermission('router.view'))
-            <a href="{{ route('routers.index') }}" class="sidebar-item {{ (request()->routeIs('routers.*') && !request()->routeIs('routers.sessions')) ? 'active' : '' }}">
-                <i class="fa fa-server"></i> {{ __('Router / NAS') }}
+            <a class="sidebar-item {{ $networkAccessActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkAccessCollapse" role="button" aria-expanded="{{ $networkAccessActive ? 'true' : 'false' }}" aria-controls="networkAccessCollapse">
+                <i class="fa-solid fa-server"></i> {{ __('Perangkat & Akses') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <a href="{{ route('vpn.servers.index') }}" class="sidebar-item {{ request()->routeIs('vpn.servers.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-shield-halved"></i> {{ __('VPN Bridge') }}
-            </a>
-            <a href="{{ route('vpn.guide') }}" class="sidebar-item {{ request()->routeIs('vpn.guide') ? 'active' : '' }}">
-                <i class="fa-regular fa-circle-question"></i> {{ __('Panduan VPN') }}
-            </a>
+            <div class="collapse {{ $networkAccessActive ? 'show' : '' }}" id="networkAccessCollapse">
+                <div class="ps-3">
+                    <a href="{{ route('routers.index') }}" class="sidebar-item {{ (request()->routeIs('routers.*') && !request()->routeIs('routers.sessions')) ? 'active' : '' }}">
+                        <i class="fa fa-server"></i> {{ __('Router / NAS') }}
+                    </a>
+                    <a href="{{ route('vpn.servers.index') }}" class="sidebar-item {{ request()->routeIs('vpn.servers.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-shield-halved"></i> {{ __('VPN Bridge') }}
+                    </a>
+                    <a href="{{ route('vpn.guide') }}" class="sidebar-item {{ request()->routeIs('vpn.guide') ? 'active' : '' }}">
+                        <i class="fa-regular fa-circle-question"></i> {{ __('Panduan VPN') }}
+                    </a>
+                </div>
+            </div>
             @endif
 
             @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('closure.view') || Auth::user()->hasPermission('htb.view'))
@@ -226,16 +253,6 @@
             </div>
             @endif
 
-            @if(Auth::user()->hasPermission('calculator.view'))
-            <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ request()->routeIs('calculator.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
-            </a>
-            @endif
-            @if(Auth::user()->hasPermission('router.view'))
-            <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ request()->routeIs('network.analyzer') ? 'active' : '' }}">
-                <i class="fa-solid fa-gauge-high"></i> {{ __('Network Analyzer') }}
-            </a>
-            @endif
             @endif
 
             {{-- Keuangan Group --}}
@@ -336,13 +353,13 @@
             </div>
             @endif
 
+            {{-- Car Wash Group --}}
+            @if(Auth::user()->hasPermission('wash.view') || Auth::user()->hasPermission('wash.pos') || Auth::user()->hasPermission('wash.manage') || Auth::user()->hasPermission('wash.report'))
             <div class="sidebar-header mt-2">{{ __('Cuci Kendaraan') }}</div>
-            
+
             <a class="sidebar-item {{ (request()->routeIs('wash.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#washCollapse" role="button" aria-expanded="{{ (request()->routeIs('wash.*')) ? 'true' : 'false' }}" aria-controls="washCollapse">
                 <i class="fa fa-car"></i> {{ __('Kasir & Layanan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            {{-- Car Wash Group --}}
-            @if(Auth::user()->hasPermission('wash.view') || Auth::user()->hasPermission('wash.pos'))
             <div class="collapse {{ (request()->routeIs('wash.*')) ? 'show' : '' }}" id="washCollapse">
                 <div class="ps-3">
                     @if(Auth::user()->hasPermission('wash.view'))

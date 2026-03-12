@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GenieAcsServer;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1668,6 +1669,7 @@ class GenieACSService
                 ->get("{$this->baseUrl}/devices", [
                     'query' => json_encode(['_deviceId._SerialNumber' => $serialNumber]),
                     'projection' => '_id,_lastInform,VirtualParameters.IPTR069,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,Device.ManagementServer.ConnectionRequestURL',
+                    'sort' => '{"_lastInform":-1}',
                 ]);
 
             if ($response->successful()) {
@@ -1676,13 +1678,27 @@ class GenieACSService
                     $device = $devices[0];
                     $tr069Ip = $this->getTr069Ip($device);
                     $connectionRequestUrl = $this->getConnectionRequestUrl($device);
-                    // Check if last inform was recent (e.g., within 5 minutes)
-                    $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
-                    $isOnline = (time() - $lastInform) < 300; // 5 mins
+                    $lastInformText = $device['_lastInform'] ?? null;
+                    $thresholdMinutesRaw = Setting::getValue('genieacs_online_threshold_minutes', '15');
+                    $thresholdMinutes = is_numeric($thresholdMinutesRaw) ? (int) $thresholdMinutesRaw : 15;
+                    $thresholdMinutes = max(1, min(180, $thresholdMinutes));
+                    $lastInformAgeSeconds = null;
+                    $isOnline = false;
+                    if (is_string($lastInformText) && trim($lastInformText) !== '') {
+                        try {
+                            $lastInform = Carbon::parse($lastInformText);
+                            $lastInformAgeSeconds = max(0, $lastInform->diffInSeconds(now()));
+                            $isOnline = $lastInformAgeSeconds <= ($thresholdMinutes * 60);
+                        } catch (\Throwable $e) {
+                            $isOnline = false;
+                        }
+                    }
 
                     return [
                         'online' => $isOnline,
-                        'last_inform' => $device['_lastInform'] ?? null,
+                        'last_inform' => $lastInformText,
+                        'last_inform_age_seconds' => $lastInformAgeSeconds,
+                        'online_threshold_minutes' => $thresholdMinutes,
                         'raw' => $device,
                         'id' => $device['_id'], // Return ID for linking
                         'tr069_ip' => $tr069Ip,

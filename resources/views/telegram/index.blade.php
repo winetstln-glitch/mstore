@@ -100,6 +100,37 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label fw-bold">{{ __('Akurasi Monitoring & Retry Telegram') }}</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="genieacs_online_threshold_minutes" class="form-label">{{ __('Batas Online (menit)') }}</label>
+                                <input type="number" min="1" max="180" name="genieacs_online_threshold_minutes" id="genieacs_online_threshold_minutes" value="{{ (int)($onlineThresholdMinutes->value ?? 15) }}" class="form-control">
+                                <div class="form-text">{{ __('ONU dianggap online jika Last Inform masih dalam batas ini.') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="network_monitor_down_confirm_checks" class="form-label">{{ __('Konfirmasi DOWN (jumlah cek)') }}</label>
+                                <input type="number" min="1" max="10" name="network_monitor_down_confirm_checks" id="network_monitor_down_confirm_checks" value="{{ (int)($downConfirmChecks->value ?? 2) }}" class="form-control">
+                                <div class="form-text">{{ __('Status OFFLINE baru dianggap valid setelah lolos jumlah cek ini.') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="network_monitor_up_confirm_checks" class="form-label">{{ __('Konfirmasi UP (jumlah cek)') }}</label>
+                                <input type="number" min="1" max="10" name="network_monitor_up_confirm_checks" id="network_monitor_up_confirm_checks" value="{{ (int)($upConfirmChecks->value ?? 2) }}" class="form-control">
+                                <div class="form-text">{{ __('Status ONLINE (recovery) baru dianggap valid setelah lolos jumlah cek ini.') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="network_monitor_telegram_max_retry_attempts" class="form-label">{{ __('Maks Retry Telegram') }}</label>
+                                <input type="number" min="1" max="20" name="network_monitor_telegram_max_retry_attempts" id="network_monitor_telegram_max_retry_attempts" value="{{ (int)($telegramRetryAttempts->value ?? 5) }}" class="form-control">
+                                <div class="form-text">{{ __('Jumlah percobaan ulang jika kirim Telegram gagal.') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="network_monitor_telegram_retry_backoff_minutes" class="form-label">{{ __('Jeda Retry Telegram (menit)') }}</label>
+                                <input type="number" min="1" max="120" name="network_monitor_telegram_retry_backoff_minutes" id="network_monitor_telegram_retry_backoff_minutes" value="{{ (int)($telegramRetryBackoffMinutes->value ?? 5) }}" class="form-control">
+                                <div class="form-text">{{ __('Interval jeda antar percobaan retry Telegram.') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
                         <label for="telegram_ip_down_template" class="form-label fw-bold">{{ __('Template Notifikasi IP DOWN') }}</label>
                         <textarea name="telegram_ip_down_template" id="telegram_ip_down_template" rows="8" class="form-control font-monospace">{{ $ipDownTemplate->value }}</textarea>
                     </div>
