@@ -64,7 +64,33 @@
                                 <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
                                 <td>
                                     @if(!empty($service->description))
-                                        <span class="wash-description-chip">{{ $service->description }}</span>
+                                        @php
+                                            $descriptionItems = array_values(array_filter(
+                                                preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
+                                                function ($item) {
+                                                    $item = trim((string) $item);
+                                                    if ($item === '') {
+                                                        return false;
+                                                    }
+                                                    if (preg_match('/^dan\s+sejenis/i', $item)) {
+                                                        return false;
+                                                    }
+                                                    if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
+                                                        return false;
+                                                    }
+                                                    return str_word_count($item) <= 5;
+                                                }
+                                            ));
+                                        @endphp
+                                        @if(!empty($descriptionItems))
+                                            <div class="wash-description-chips">
+                                                @foreach($descriptionItems as $item)
+                                                    <span class="wash-description-chip">{{ $item }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="wash-description-chip wash-description-chip-empty">-</span>
+                                        @endif
                                     @else
                                         <span class="wash-description-chip wash-description-chip-empty">-</span>
                                     @endif
@@ -102,6 +128,12 @@
 </div>
 @push('styles')
 <style>
+    .wash-services-page .wash-description-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
     .wash-services-page .wash-description-chip {
         display: inline-flex;
         align-items: center;
@@ -185,8 +217,8 @@
         }
 
         .wash-services-page .wash-description-chip {
-            width: 100%;
-            justify-content: flex-start;
+            max-width: 100%;
+            justify-content: center;
         }
     }
 </style>

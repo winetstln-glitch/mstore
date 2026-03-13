@@ -43,7 +43,31 @@
                                     </div>
                                     <h5 class="service-title">{{ $service->name }}</h5>
                                     @if(!empty($service->description))
-                                    <p class="service-description"><span class="service-description-label">Deskripsi:</span> {{ $service->description }}</p>
+                                    @php
+                                        $descriptionItems = array_values(array_filter(
+                                            preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
+                                            function ($item) {
+                                                $item = trim((string) $item);
+                                                if ($item === '') {
+                                                    return false;
+                                                }
+                                                if (preg_match('/^dan\s+sejenis/i', $item)) {
+                                                    return false;
+                                                }
+                                                if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
+                                                    return false;
+                                                }
+                                                return str_word_count($item) <= 5;
+                                            }
+                                        ));
+                                    @endphp
+                                    @if(!empty($descriptionItems))
+                                    <div class="service-description-list">
+                                        @foreach($descriptionItems as $item)
+                                            <span class="service-description-chip">{{ $item }}</span>
+                                        @endforeach
+                                    </div>
+                                    @endif
                                     @endif
                                     <div class="service-meta">
                                         <span class="service-price">Rp {{ number_format($service->price, 0, ',', '.') }}</span>
@@ -883,18 +907,23 @@ document.addEventListener('DOMContentLoaded', function () {
         min-height: 2.2em;
     }
 
-    .service-description-label {
+    .service-description-list {
+        margin-top: 0.36rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.32rem;
+    }
+
+    .service-description-chip {
         display: inline-flex;
         align-items: center;
-        margin-right: 0.2rem;
-        padding: 0.03rem 0.4rem;
+        padding: 0.15rem 0.46rem;
         border-radius: 999px;
         background: #e2e8f0;
         color: #475569;
-        font-size: 0.62rem;
+        font-size: 0.64rem;
         font-weight: 700;
         letter-spacing: 0.03em;
-        text-transform: uppercase;
     }
 
     .service-meta {
@@ -1265,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', function () {
         color: #94a3b8;
     }
 
-    [data-bs-theme="dark"] .service-description-label {
+    [data-bs-theme="dark"] .service-description-chip {
         background: #334155;
         color: #cbd5e1;
     }

@@ -41,6 +41,13 @@
                 <div class="mb-3">
                     <label for="description" class="form-label">Deskripsi</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description', $service->description) }}</textarea>
+                    <div class="wash-description-editor mt-2" data-description-editor data-target="description">
+                        <div class="wash-description-chips" data-description-chips></div>
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" data-description-input placeholder="Tambah label, contoh: Scoopy">
+                            <button class="btn btn-outline-primary" type="button" data-description-add>Tambah</button>
+                        </div>
+                    </div>
                     @error('description')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -81,6 +88,41 @@
 </div>
 @push('styles')
 <style>
+    .wash-description-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .wash-description-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.58rem;
+        border-radius: 999px;
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .wash-description-chip button {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 0.9rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    [data-bs-theme="dark"] .wash-description-chip {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(96, 165, 250, 0.42);
+        color: #bfdbfe;
+    }
+
     .wash-service-edit-page .form-control,
     .wash-service-edit-page .form-select {
         min-height: 44px;
@@ -108,5 +150,92 @@
         }
     }
 </style>
+@endpush
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-description-editor]').forEach(function (editor) {
+            const targetId = editor.dataset.target;
+            const textarea = document.getElementById(targetId);
+            if (!textarea) {
+                return;
+            }
+
+            const chipsWrap = editor.querySelector('[data-description-chips]');
+            const input = editor.querySelector('[data-description-input]');
+            const addButton = editor.querySelector('[data-description-add]');
+
+            const parseItems = function (value) {
+                return value
+                    .split(/[,;\n]/)
+                    .map(function (item) { return item.trim(); })
+                    .filter(function (item) { return item.length > 0; });
+            };
+
+            const syncTextarea = function () {
+                const items = Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue;
+                });
+                textarea.value = items.join(', ');
+            };
+
+            const render = function (items) {
+                chipsWrap.innerHTML = '';
+                items.forEach(function (item) {
+                    const chip = document.createElement('span');
+                    chip.className = 'wash-description-chip';
+                    chip.dataset.itemValue = item;
+                    chip.textContent = item;
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.innerHTML = '&times;';
+                    removeButton.addEventListener('click', function () {
+                        chip.remove();
+                        syncTextarea();
+                    });
+
+                    chip.appendChild(removeButton);
+                    chipsWrap.appendChild(chip);
+                });
+                syncTextarea();
+            };
+
+            const addItems = function (rawValue) {
+                const current = new Set(Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue.toLowerCase();
+                }));
+                const added = [];
+                parseItems(rawValue).forEach(function (item) {
+                    if (!current.has(item.toLowerCase())) {
+                        current.add(item.toLowerCase());
+                        added.push(item);
+                    }
+                });
+                render(Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue;
+                }).concat(added));
+            };
+
+            render(parseItems(textarea.value));
+
+            addButton.addEventListener('click', function () {
+                if (!input.value.trim()) {
+                    return;
+                }
+                addItems(input.value);
+                input.value = '';
+                input.focus();
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addButton.click();
+                }
+            });
+        });
+    });
+</script>
 @endpush
 @endsection
