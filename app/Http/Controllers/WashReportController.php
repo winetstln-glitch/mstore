@@ -50,7 +50,7 @@ class WashReportController extends Controller
         $dailyByService = DB::table('wash_transaction_items as i')
             ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
             ->whereDate('t.created_at', $date)
-            ->select('i.service_name', DB::raw('SUM(i.subtotal) as amount'))
+            ->select('i.service_name', DB::raw('SUM(i.quantity) as total_qty'), DB::raw('SUM(i.subtotal) as amount'))
             ->groupBy('i.service_name')->orderByDesc('amount')->get();
         $dailyByPayment = WashTransaction::whereDate('created_at', $date)
             ->select('payment_method', DB::raw('SUM(total_amount) as amount'))
@@ -59,7 +59,7 @@ class WashReportController extends Controller
         $monthlyByService = DB::table('wash_transaction_items as i')
             ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
             ->where('t.created_at', 'like', "$month%")
-            ->select('i.service_name', DB::raw('SUM(i.subtotal) as amount'))
+            ->select('i.service_name', DB::raw('SUM(i.quantity) as total_qty'), DB::raw('SUM(i.subtotal) as amount'))
             ->groupBy('i.service_name')->orderByDesc('amount')->get();
         $monthlyByPayment = WashTransaction::where('created_at', 'like', "$month%")
             ->select('payment_method', DB::raw('SUM(total_amount) as amount'))

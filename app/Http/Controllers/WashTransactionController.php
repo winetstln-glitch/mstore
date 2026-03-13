@@ -41,6 +41,26 @@ class WashTransactionController extends Controller
         $dailySales = WashTransaction::whereDate('created_at', $today)->sum('total_amount');
         $monthlySales = WashTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
         $transactionCount = WashTransaction::whereDate('created_at', $today)->count();
+        $dailyServiceCount = WashTransactionItem::join('wash_transactions as t', 't.id', '=', 'wash_transaction_items.wash_transaction_id')
+            ->whereDate('t.created_at', $today)
+            ->sum('wash_transaction_items.quantity');
+
+        $startDate = now()->subDays(6)->toDateString();
+        $endDate = now()->toDateString();
+        $serviceTrendMap = WashTransactionItem::join('wash_transactions as t', 't.id', '=', 'wash_transaction_items.wash_transaction_id')
+            ->whereBetween(DB::raw('DATE(t.created_at)'), [$startDate, $endDate])
+            ->select(DB::raw('DATE(t.created_at) as date'), DB::raw('SUM(wash_transaction_items.quantity) as total_qty'))
+            ->groupBy(DB::raw('DATE(t.created_at)'))
+            ->orderBy('date')
+            ->pluck('total_qty', 'date');
+
+        $serviceTrendLabels = [];
+        $serviceTrendData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $dateKey = now()->subDays($i)->toDateString();
+            $serviceTrendLabels[] = now()->subDays($i)->translatedFormat('d M');
+            $serviceTrendData[] = (int) ($serviceTrendMap[$dateKey] ?? 0);
+        }
 
         // Top selling services
         $topServices = WashTransactionItem::select('service_name', DB::raw('sum(quantity) as total_qty'))
@@ -49,7 +69,7 @@ class WashTransactionController extends Controller
             ->limit(5)
             ->get();
 
-        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topServices', 'todayAttendance'));
+        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'dailyServiceCount', 'serviceTrendLabels', 'serviceTrendData', 'topServices', 'todayAttendance'));
     }
 
     public function pos()

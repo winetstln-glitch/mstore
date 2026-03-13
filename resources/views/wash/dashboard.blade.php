@@ -106,9 +106,37 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Services (Today)') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($dailyServiceCount, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-soap fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4 wash-panel">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Daily Service Trend (7 Days)') }}</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 320px;">
+                        <canvas id="washServiceTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4 wash-panel">
                 <div class="card-header py-3">
@@ -196,5 +224,51 @@
         }
     }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const canvas = document.getElementById('washServiceTrendChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: @json($serviceTrendLabels),
+                datasets: [{
+                    label: '{{ __("Jumlah Service") }}',
+                    data: @json($serviceTrendData),
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.15)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 @endpush
 @endsection

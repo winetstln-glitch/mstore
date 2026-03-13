@@ -140,12 +140,12 @@
                 <div class="col-md-6 mb-4">
                     <h6 class="fw-bold text-decoration-underline">C. Breakdown per Layanan</h6>
                     <table class="table table-bordered table-sm">
-                        <thead><tr><th>Layanan</th><th class="text-end">Total</th></tr></thead>
+                        <thead><tr><th>Layanan</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
                             @forelse($dailyByService as $r)
-                            <tr><td>{{ $r->service_name }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td>{{ $r->service_name }}</td><td class="text-end">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
-                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            <tr><td colspan="3" class="text-center">-</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -241,12 +241,12 @@
                 <div class="col-md-6 mb-4">
                     <h6 class="fw-bold text-decoration-underline">Statistik per Layanan (Bulanan)</h6>
                     <table class="table table-bordered table-sm">
-                        <thead><tr><th>Layanan</th><th class="text-end">Total</th></tr></thead>
+                        <thead><tr><th>Layanan</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
                             @forelse($monthlyByService as $r)
-                            <tr><td>{{ $r->service_name }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td>{{ $r->service_name }}</td><td class="text-end">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
-                            <tr><td colspan="2" class="text-center">-</td></tr>
+                            <tr><td colspan="3" class="text-center">-</td></tr>
                             @endforelse
                         </tbody>
                     </table>
