@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WashService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WashController extends Controller
 {
@@ -12,9 +13,76 @@ class WashController extends Controller
      */
     public function index()
     {
+        $this->syncDefaultServices();
         $services = WashService::all();
 
         return view('wash.services.index', compact('services'));
+    }
+
+    protected function syncDefaultServices(): void
+    {
+        $catalog = [
+            [
+                'name' => 'Motor Kecil',
+                'vehicle_type' => 'motor',
+                'price' => 15000,
+                'description' => "Cocok untuk motor harian yang lincah.\nBeat\nScoopy\nMio\nSupra\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Motor Sedang',
+                'vehicle_type' => 'motor',
+                'price' => 18000,
+                'description' => "Perawatan ekstra untuk kenyamanan berkendara.\nPCX / NMAX\nStylo\nVespa Matic (Vesmet) 125cc\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Motor Besar',
+                'vehicle_type' => 'motor',
+                'price' => 23000,
+                'description' => "Pembersihan detail untuk medan berat dan moge.\nKLX / CRF\nMegapro\nVixion\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Mobil Kecil',
+                'vehicle_type' => 'car',
+                'price' => 45000,
+                'description' => "Agya / Ayla\nBrio\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Mobil Sedang',
+                'vehicle_type' => 'car',
+                'price' => 50000,
+                'description' => "Avanza / Xenia\nSigra / Calya\nPick Up\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Mobil Besar',
+                'vehicle_type' => 'car',
+                'price' => 60000,
+                'description' => "Pajero / Fortuner\nAlphard\nTriton / Hilux (Hulk)\nDan sejenisnya...",
+            ],
+            [
+                'name' => 'Mobil Extra Besar',
+                'vehicle_type' => 'car',
+                'price' => 70000,
+                'description' => "Khusus kendaraan angkutan dan logistik.\nTruk Engkel\nColt Diesel\nMobil Angkutan Barang",
+            ],
+        ];
+
+        DB::transaction(function () use ($catalog): void {
+            WashService::query()->update(['is_active' => false]);
+
+            foreach ($catalog as $service) {
+                WashService::updateOrCreate(
+                    [
+                        'name' => $service['name'],
+                        'vehicle_type' => $service['vehicle_type'],
+                    ],
+                    [
+                        'price' => $service['price'],
+                        'description' => $service['description'],
+                        'is_active' => true,
+                    ]
+                );
+            }
+        });
     }
 
     /**

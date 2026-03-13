@@ -1,138 +1,152 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid wash-pos-page py-2 py-md-3">
-    <div class="row g-3">
-        <!-- Service Selection -->
-        <div class="col-md-8 order-2 order-md-1">
-            <div class="card shadow mb-4 wash-panel">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Select Service') }}</h6>
-                </div>
-                <div class="card-body">
-                    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active filter-btn" data-filter="all" type="button">All</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link filter-btn" data-filter="car" type="button">Mobil</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link filter-btn" data-filter="motor" type="button">Motor</button>
-                        </li>
-                    </ul>
-                    <div class="row g-3" id="services-container">
-                        @foreach($services as $service)
-                        <div class="col-6 col-md-6 col-lg-6 mb-3 service-item" data-type="{{ strtolower($service->vehicle_type) }}">
-                            <div class="card h-100 service-card" data-fasttap
-                                 data-id="{{ $service->id }}"
-                                 data-name="{{ $service->name }}"
-                                 data-price="{{ $service->price }}"
-                                 data-vehicletype="{{ strtolower($service->vehicle_type) }}">
-                                <div class="card-body text-center">
-                                    <div class="mb-2 d-flex align-items-center justify-content-center rounded " style="height: 100px; overflow: hidden;">
+<div class="wash-pos-page">
+    <div class="wash-pos-shell">
+        <header class="wash-pos-header">
+            <span id="current-time" class="wash-current-time"></span>
+        </header>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-8 order-2 order-lg-1">
+                <div class="wash-card">
+                    <div class="wash-card-header">
+                        <h2 class="wash-card-title"><i class="fas fa-th-large"></i> Pilih Layanan</h2>
+                        <div class="wash-filter-group">
+                            <button class="filter-btn active" data-filter="all" type="button">Semua</button>
+                            <button class="filter-btn" data-filter="mobil" type="button">Mobil</button>
+                            <button class="filter-btn" data-filter="motor" type="button">Motor</button>
+                        </div>
+                    </div>
+                    <div class="wash-card-body">
+                        <div class="row g-3" id="services-container">
+                            @foreach($services as $service)
+                            @php
+                                $rawType = strtolower((string) ($service->vehicle_type ?? ''));
+                                $normalizedType = $rawType === 'car' ? 'mobil' : $rawType;
+                                $serviceTypeClass = in_array($normalizedType, ['mobil', 'motor']) ? $normalizedType : 'umum';
+                                $fallbackIcon = $normalizedType === 'mobil' ? 'fa-car-side' : ($normalizedType === 'motor' ? 'fa-motorcycle' : 'fa-soap');
+                            @endphp
+                            <div class="col-6 col-md-4 service-item" data-type="{{ $normalizedType }}">
+                                <div class="service-card service-card-{{ $serviceTypeClass }}" data-fasttap
+                                     data-id="{{ $service->id }}"
+                                     data-name="{{ $service->name }}"
+                                     data-price="{{ $service->price }}"
+                                     data-description="{{ $service->description }}"
+                                     data-vehicletype="{{ $normalizedType }}">
+                                    <div class="service-image-wrap">
                                         @if($service->image)
-                                            <img src="{{ Storage::url($service->image) }}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="{{ $service->name }}">
+                                            <img src="{{ Storage::url($service->image) }}" class="img-fluid service-image" alt="{{ $service->name }}">
                                         @else
-                                            <i class="fas fa-image fa-2x text-muted"></i>
+                                            <i class="fas {{ $fallbackIcon }} service-fallback-icon"></i>
                                         @endif
                                     </div>
-                                    <h5 class="card-title">{{ $service->name }}</h5>
-                                    <p class="card-text text-primary font-weight-bold">Rp {{ number_format($service->price, 0, ',', '.') }}</p>
-                                    <small class="text-muted">{{ ucfirst($service->vehicle_type) }}</small>
+                                    <h5 class="service-title">{{ $service->name }}</h5>
+                                    @if(!empty($service->description))
+                                    <p class="service-description">{{ $service->description }}</p>
+                                    @endif
+                                    <div class="service-meta">
+                                        <span class="service-price">Rp {{ number_format($service->price, 0, ',', '.') }}</span>
+                                        <span class="service-type service-type-{{ $serviceTypeClass }}">{{ ucfirst($normalizedType) }}</span>
+                                    </div>
                                 </div>
                             </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Cart/Checkout -->
-        <div class="col-md-4 order-1 order-md-2">
-            <div class="card shadow mb-4 wash-panel checkout-panel">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Current Transaction') }}</h6>
-                </div>
-                <div class="card-body">
-                    <form id="checkoutForm" class="checkout-form">
-                        <div class="mb-3">
-                            <label for="vehicle_brand" class="form-label">Vehicle Brand</label>
-                            <select class="form-select" id="vehicle_brand" name="vehicle_brand">
-                                <option value="">Select Brand</option>
-                                <optgroup label="Motor">
-                                    @foreach($brands['Motor'] as $brand)
-                                        <option value="{{ $brand }}">{{ $brand }}</option>
-                                    @endforeach
-                                </optgroup>
-                                <optgroup label="Mobil">
-                                    @foreach($brands['Mobil'] as $brand)
-                                        <option value="{{ $brand }}">{{ $brand }}</option>
-                                    @endforeach
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="vehicle_plate" class="form-label">Vehicle Plate</label>
-                            <input type="text" class="form-control" id="vehicle_plate" name="vehicle_plate">
-                        </div>
-                        <div class="mb-3">
-                            <label for="customer_phone" class="form-label">Customer Phone</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="customer_phone" name="customer_phone" placeholder="Enter phone number">
-                                <button class="btn btn-outline-secondary" type="button" id="btnCheckCustomer">Check</button>
+            <div class="col-12 col-lg-4 order-1 order-lg-2">
+                <div class="wash-card wash-checkout-card">
+                    <div class="wash-card-header">
+                        <h2 class="wash-card-title"><i class="fas fa-shopping-cart"></i> Rincian Transaksi</h2>
+                    </div>
+                    <div class="wash-card-body">
+                        <form id="checkoutForm" class="checkout-form">
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="vehicle_brand" class="wash-field-label">Merek</label>
+                                    <select class="form-select wash-input" id="vehicle_brand" name="vehicle_brand">
+                                        <option value="">Pilih</option>
+                                        <optgroup label="Motor">
+                                            @foreach($brands['Motor'] as $brand)
+                                                <option value="{{ $brand }}">{{ $brand }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                        <optgroup label="Mobil">
+                                            @foreach($brands['Mobil'] as $brand)
+                                                <option value="{{ $brand }}">{{ $brand }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="vehicle_plate" class="wash-field-label">Plat Nomor</label>
+                                    <input type="text" class="form-control wash-input text-uppercase" id="vehicle_plate" name="vehicle_plate" placeholder="B 1234 ABC">
+                                </div>
                             </div>
-                            <small id="customerInfo" class="form-text text-muted"></small>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="send_whatsapp">
-                            <label class="form-check-label" for="send_whatsapp">
-                                Kirim nota via WhatsApp
-                            </label>
-                        </div>
-                        <div class="mb-3">
-                            <label for="customer_name" class="form-label">Customer Name</label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name">
-                        </div>
-                        <div class="mb-3 form-check" id="voucherSection" style="display: none;">
-                            <input type="checkbox" class="form-check-input" id="use_voucher" name="use_voucher">
-                            <label class="form-check-label" for="use_voucher">Use Free Wash Voucher (Eligible: <span id="voucherCount">0</span>)</label>
-                        </div>
 
-                        <hr>
-                        <div id="cartItems" class="mb-3" style="max-height: 360px; overflow-y: auto;">
-                            <!-- Cart items will appear here -->
-                            <p class="text-center text-muted" id="emptyCartMsg">No items selected</p>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="font-weight-bold">Total:</span>
-                            <span class="font-weight-bold" id="totalAmount">Rp 0</span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Payment Method</label>
-                            <select class="form-select" id="payment_method">
-                                <option value="cash">Cash</option>
-                                <option value="qris">QRIS</option>
-                                <option value="transfer">Transfer</option>
-                                <option value="edc"> NB EDC</option>
-                            </select>
-                        </div>
-                        <div id="cashSection">
                             <div class="mb-3">
-                                <label for="cash_amount" class="form-label">Cash Amount</label>
-                                <input type="number" class="form-control" id="cash_amount" name="cash_amount" oninput="calculateChange()">
+                                <label for="customer_phone" class="wash-field-label">Nomor HP & Nama</label>
+                                <div class="d-flex gap-2 mb-2">
+                                    <input type="text" class="form-control wash-input" id="customer_phone" name="customer_phone" placeholder="0812...">
+                                    <button class="btn wash-secondary-btn" type="button" id="btnCheckCustomer">Cek</button>
+                                </div>
+                                <input type="text" class="form-control wash-input" id="customer_name" name="customer_name" placeholder="Nama Pelanggan">
+                                <small id="customerInfo" class="form-text mt-2 d-block"></small>
                             </div>
-                            <div class="d-flex justify-content-between mb-3">
-                                <span>Change:</span>
-                                <span id="changeAmount">Rp 0</span>
-                            </div>
-                        </div>
 
-                        <button type="submit" class="btn btn-primary w-100" id="btnCheckout" disabled>Checkout</button>
-                    </form>
+                            <div class="form-check mb-3 wash-inline-check">
+                                <input class="form-check-input" type="checkbox" id="send_whatsapp">
+                                <label class="form-check-label" for="send_whatsapp">Kirim nota via WhatsApp</label>
+                            </div>
+
+                            <div class="mb-3" id="voucherSection" style="display:none;">
+                                <div class="wash-voucher-box">
+                                    <div>
+                                        <i class="fas fa-ticket-alt me-1"></i> Bonus cuci tersedia
+                                        (<span id="voucherCount">0</span>)
+                                    </div>
+                                    <input type="checkbox" id="use_voucher" name="use_voucher">
+                                </div>
+                            </div>
+
+                            <div id="cartItems" class="mb-3 custom-scrollbar">
+                                <p class="text-center text-muted py-4 mb-0" id="emptyCartMsg">Keranjang masih kosong</p>
+                            </div>
+
+                            <div class="wash-summary-row wash-summary-divider">
+                                <span>Subtotal</span>
+                                <span id="subtotalAmount">Rp 0</span>
+                            </div>
+                            <div class="wash-summary-row wash-summary-total">
+                                <span>Total Akhir</span>
+                                <span id="totalAmount">Rp 0</span>
+                            </div>
+
+                            <div class="row g-2 mt-3">
+                                <div class="col-6">
+                                    <select class="form-select wash-input" id="payment_method">
+                                        <option value="cash">💵 Tunai</option>
+                                        <option value="qris">📱 QRIS</option>
+                                        <option value="transfer">🏦 Transfer</option>
+                                        <option value="edc">💳 EDC</option>
+                                    </select>
+                                </div>
+                                <div class="col-6" id="cashSection">
+                                    <input type="number" class="form-control wash-input" id="cash_amount" name="cash_amount" placeholder="Bayar Tunai..." oninput="calculateChange()">
+                                </div>
+                            </div>
+
+                            <div id="changeDisplay" class="wash-change-box mt-2">
+                                <span>Kembalian</span>
+                                <strong id="changeAmount">Rp 0</strong>
+                            </div>
+
+                            <button type="submit" class="btn wash-primary-btn w-100 mt-3" id="btnCheckout" disabled>Proses Pembayaran</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -152,6 +166,20 @@ document.addEventListener('DOMContentLoaded', function () {
             addToCart(id, name, price, type);
         });
     });
+    const timeEl = document.getElementById('current-time');
+    if (timeEl) {
+        const updateTime = () => {
+            timeEl.textContent = new Date().toLocaleString('id-ID', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+        updateTime();
+        setInterval(updateTime, 60000);
+    }
 });
 </script>
 @endpush
@@ -162,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const vehiclePlate = document.getElementById('vehicle_plate').value;
         const customerName = document.getElementById('customer_name').value;
         if (!phone && !vehiclePlate && !customerName) {
-            alert('Isi nomor HP, plat kendaraan, atau nama customer');
+            alert('Isi nomor HP, plat kendaraan, atau nama pelanggan');
             return;
         }
         const params = new URLSearchParams({
@@ -179,9 +207,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 const voucherCount = document.getElementById('voucherCount');
                 const basisMap = {
                     plate: 'plat kendaraan',
-                    name: 'nama customer'
+                    name: 'nama pelanggan'
                 };
-                const basis = basisMap[data.loyalty_basis] || 'data customer';
+                const basis = basisMap[data.loyalty_basis] || 'data pelanggan';
 
                 if (data.found) {
                     if (data.name && !nameInput.value) {
@@ -202,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Gagal cek riwayat customer');
+                alert('Gagal cek riwayat pelanggan');
             });
     });
 
@@ -342,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             // Check if cart has items of different type
             if (cart.length > 0 && cart[0].type !== type) {
-                if (!confirm('You are adding a service for a different vehicle type. Clear current cart?')) {
+                if (!confirm('Anda menambahkan layanan untuk jenis kendaraan yang berbeda. Kosongkan keranjang saat ini?')) {
                     return;
                 }
                 resetCart();
@@ -436,6 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cartContainer = document.getElementById('cartItems');
         const emptyMsg = document.getElementById('emptyCartMsg');
         const totalEl = document.getElementById('totalAmount');
+        const subtotalEl = document.getElementById('subtotalAmount');
         const btnCheckout = document.getElementById('btnCheckout');
         const voucherEl = document.getElementById('use_voucher');
         const useVoucher = voucherEl ? !!voucherEl.checked : false;
@@ -456,24 +485,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 total += itemTotal;
                 
                 const div = document.createElement('div');
-                div.className = 'cart-item d-flex justify-content-between align-items-start align-items-sm-center mb-2 border-bottom pb-2';
+                div.className = 'cart-item';
                 const selectId = 'emp_sel_' + item.id;
                 const empOptions = ['<option value=\"\">- Pegawai -</option>']
                     .concat(employees.map(e => `<option value=\"${e.id}\" ${item.employee_id==e.id?'selected':''}>${e.name}</option>`))
                     .join('');
                 div.innerHTML = `
-                    <div class="me-2 cart-item-left">
-                        <div class="fw-semibold">${item.name}</div>
-                        <small class="text-muted d-block">${item.quantity} x ${item.price.toLocaleString('id-ID')}</small>
-                        <div class="mt-1">
-                            <select id="${selectId}" class="form-select form-select-sm">
+                    <div class="cart-item-left">
+                        <div class="cart-item-name">${item.name}</div>
+                        <small class="cart-item-meta">${item.quantity} x Rp ${item.price.toLocaleString('id-ID')}</small>
+                        <div class="mt-2">
+                            <select id="${selectId}" class="form-select form-select-sm wash-input">
                                 ${empOptions}
                             </select>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center cart-item-right">
-                        <span class="me-2 fw-semibold">Rp ${itemTotal.toLocaleString('id-ID')}</span>
-                         <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+                    <div class="cart-item-right">
+                        <span class="cart-item-total">Rp ${itemTotal.toLocaleString('id-ID')}</span>
+                        <button class="btn btn-sm text-danger p-0" type="button" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
                 setTimeout(() => {
@@ -493,6 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const finalTotal = Math.max(0, total - discount);
+        if (subtotalEl) subtotalEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
         
         if (discount > 0) {
              totalEl.innerHTML = `<small class="text-decoration-line-through text-muted">Rp ${total.toLocaleString('id-ID')}</small> <span class="text-success fw-bold">Rp ${finalTotal.toLocaleString('id-ID')}</span>`;
@@ -512,13 +542,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const cash = parseInt(cashInput) || 0;
         const changeEl = document.getElementById('changeAmount');
         const cashSection = document.getElementById('cashSection');
+        const changeBox = document.getElementById('changeDisplay');
 
         if (cashSection) cashSection.style.display = (method === 'cash') ? '' : 'none';
 
         if (method === 'cash' && cash >= total) {
             if (changeEl) changeEl.textContent = 'Rp ' + (cash - total).toLocaleString('id-ID');
+            if (changeBox) changeBox.style.display = '';
         } else {
             if (changeEl) changeEl.textContent = 'Rp 0';
+            if (changeBox) changeBox.style.display = method === 'cash' ? '' : 'none';
         }
     }
 
@@ -558,8 +591,6 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (cart.length === 0) return;
 
-        const totalText = document.getElementById('totalAmount').textContent.replace('Rp ', '').replace(/\./g, '');
-        const total = parseInt(totalText) || 0;
         const method = document.getElementById('payment_method')?.value || 'cash';
         const cashInput = document.getElementById('cash_amount')?.value || 0;
         const cash = parseInt(cashInput) || 0;
@@ -567,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const phone = document.getElementById('customer_phone').value;
 
         if (sendWhatsapp && !phone) {
-            alert('Isi nomor WhatsApp customer terlebih dahulu.');
+            alert('Isi nomor WhatsApp pelanggan terlebih dahulu.');
             return;
         }
 
@@ -590,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = document.getElementById('btnCheckout');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
 
         fetch('{{ route("wash.transactions.store") }}', {
             method: 'POST',
@@ -603,7 +634,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('Respons jaringan tidak valid');
             }
             return response.json();
         })
@@ -636,12 +667,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 resetCart();
             } else {
-                alert('Error: ' + data.message);
+                alert('Kesalahan: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred: ' + error.message);
+            alert('Terjadi kesalahan: ' + error.message);
         })
         .finally(() => {
             btn.disabled = false;
@@ -651,148 +682,693 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <style>
-    .wash-pos-page .wash-panel {
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        border-radius: 1.2rem;
+    .wash-pos-page {
+        color: #1e293b;
+    }
+
+    .wash-pos-shell {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem;
+    }
+
+    .wash-pos-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .wash-pos-title {
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .wash-pos-subtitle {
+        margin: 0.25rem 0 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .wash-current-time {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        min-width: 170px;
+        justify-content: center;
+        padding: 0.45rem 0.9rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .wash-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
         overflow: hidden;
     }
 
-    .wash-pos-page .wash-panel .card-header {
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
-        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    .wash-checkout-card {
+        position: sticky;
+        top: 1.2rem;
+    }
+
+    .wash-card-header {
+        padding: 1rem 1.1rem;
+        background: linear-gradient(180deg, rgba(182, 202, 233, 0.22) 0%, rgba(232, 233, 237, 0.3) 100%);
+    border-bottom-color: rgba(120, 142, 170, 0.28);
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .wash-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .wash-card-title i {
+        color: #3b82f6;
+    }
+
+    .wash-card-body {
+        padding: 1rem;
+    }
+
+    .wash-filter-group {
+        background: #e2e8f0;
+        border-radius: 0.8rem;
+        padding: 0.2rem;
+        display: inline-flex;
+        gap: 0.25rem;
+    }
+
+    .wash-filter-group .filter-btn {
+        border: 0;
+        background: transparent;
+        color: #475569;
+        border-radius: 0.6rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.35rem 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    .wash-filter-group .filter-btn.active {
+        background: #fff;
+        color: #2563eb;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+    }
+
+    .wash-filter-group .filter-btn:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
     }
 
     .service-card {
+        height: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 0.8rem;
+        transition: all 0.2s ease;
         cursor: pointer;
-        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-        border: 1px solid rgba(59, 130, 246, 0.18);
-        border-radius: 0.9rem;
+        background: #fff;
     }
 
     .service-card:hover {
         transform: translateY(-2px);
-        border-color: #4e73df;
-        box-shadow: 0 10px 18px rgba(59, 130, 246, 0.18);
+        border-color: #60a5fa;
+        box-shadow: 0 10px 18px rgba(37, 99, 235, 0.14);
     }
 
-    .wash-pos-page .nav-pills .nav-link.active {
-        background-color: #3b82f6;
+    .service-card:hover .service-image {
+        transform: scale(1.06);
     }
 
-    .wash-pos-page #cartItems {
-        border: 1px solid var(--bs-border-color);
-        border-radius: 0.85rem;
-        padding: 0.75rem;
-        background: var(--bs-body-bg);
+    .service-card:hover .service-fallback-icon {
+        transform: scale(1.08);
     }
 
-    .wash-pos-page .cart-item-left {
-        min-width: 0;
+    .service-card:active {
+        transform: scale(0.99);
+    }
+
+    .service-card-mobil {
+        border-color: #bfdbfe;
+    }
+
+    .service-card-motor {
+        border-color: #fed7aa;
+    }
+
+    .service-image-wrap {
+        aspect-ratio: 1 / 1;
+        border-radius: 0.8rem;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+
+    .service-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform .25s ease;
+    }
+
+    .service-fallback-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: #64748b;
+        transition: transform .25s ease;
+    }
+
+    .service-title {
+        font-size: 0.94rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .service-description {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin: 0.32rem 0 0;
+        min-height: 2.2em;
+    }
+
+    .service-meta {
+        margin-top: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .service-price {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #2563eb;
+    }
+
+    .service-type {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: #eff6ff;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+    }
+
+    .service-type-mobil {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .service-type-motor {
+        background: #ffedd5;
+        color: #c2410c;
+    }
+
+    .service-type-umum {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .wash-field-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    .wash-input {
+        min-height: 42px;
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        border-radius: 0.7rem;
+    }
+
+    .wash-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .wash-input:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+        background: #fff;
+    }
+
+    .wash-secondary-btn {
+        border-radius: 0.7rem;
+        border: 1px solid #cbd5e1;
+        background: #e2e8f0;
+        color: #334155;
+        min-width: 66px;
+        font-weight: 600;
+    }
+
+    .wash-secondary-btn:hover {
+        background: #cbd5e1;
+    }
+
+    .wash-secondary-btn:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(148, 163, 184, 0.35);
+    }
+
+    .wash-inline-check .form-check-input {
+        margin-top: 0.2rem;
+        border-color: #94a3b8;
+    }
+
+    .wash-inline-check .form-check-label {
+        color: #475569;
+        font-size: 0.84rem;
+    }
+
+    .wash-voucher-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.65rem 0.75rem;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 0.75rem;
+        color: #166534;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    #cartItems {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.8rem;
+        background: #fff;
+        padding: 0.7rem;
+        max-height: 230px;
+        overflow-y: auto;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .cart-item {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding-bottom: 0.65rem;
+        margin-bottom: 0.65rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .cart-item:last-child {
+        border-bottom: 0;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .cart-item-left {
         flex: 1 1 auto;
+        min-width: 0;
     }
 
-    .wash-pos-page .cart-item-right {
+    .cart-item-name {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.9rem;
+    }
+
+    .cart-item-meta {
+        display: block;
+        margin-top: 0.15rem;
+        color: #64748b;
+        font-size: 0.75rem;
+    }
+
+    .cart-item-right {
         flex: 0 0 auto;
-        white-space: nowrap;
+        text-align: right;
     }
 
-    [data-bs-theme="dark"] .wash-pos-page .wash-panel {
+    .cart-item-total {
+        display: inline-block;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-right: 0.4rem;
+    }
+
+    .wash-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #475569;
+        font-size: 0.9rem;
+    }
+
+    .wash-summary-divider {
+        padding-top: 0.65rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .wash-summary-total {
+        margin-top: 0.2rem;
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .wash-summary-total #totalAmount {
+        color: #2563eb;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .wash-change-box {
+        border-radius: 0.75rem;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        padding: 0.55rem 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #1e3a8a;
+        font-size: 0.84rem;
+    }
+
+    .wash-primary-btn {
+        min-height: 44px;
+        border-radius: 0.8rem;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: 0;
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .wash-primary-btn:hover {
+        color: #fff;
+        filter: brightness(1.03);
+    }
+
+    .wash-primary-btn:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 0.24rem rgba(59, 130, 246, 0.3);
+    }
+
+    @media (max-width: 991.98px) {
+        .wash-checkout-card {
+            position: static;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-pos-shell {
+            padding: 0.8rem 0.4rem 1rem;
+        }
+
+        .wash-pos-header {
+            justify-content: flex-end;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .wash-current-time {
+            min-width: 0;
+            width: fit-content;
+        }
+
+        .wash-card-header {
+            padding: 0.8rem;
+        }
+
+        .wash-card-body {
+            padding: 0.8rem;
+        }
+
+        .wash-filter-group {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .wash-filter-group .filter-btn {
+            width: 100%;
+            padding-left: 0.2rem;
+            padding-right: 0.2rem;
+        }
+
+        .cart-item {
+            flex-direction: column;
+        }
+
+        .cart-item-right {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    }
+
+    [data-bs-theme="dark"] .wash-pos-page {
+        color: #e2e8f0;
         background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
         border-color: rgba(96, 165, 250, 0.28);
+        border-radius: 1rem;
     }
 
-    [data-bs-theme="dark"] .wash-pos-page .wash-panel .card-header {
+    [data-bs-theme="dark"] .wash-pos-title {
+        color: #f8fafc;
+    }
+
+    [data-bs-theme="dark"] .wash-pos-subtitle {
+        color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .wash-current-time,
+    [data-bs-theme="dark"] .wash-card,
+    [data-bs-theme="dark"] .service-card,
+    [data-bs-theme="dark"] #cartItems {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] .wash-current-time {
+        box-shadow: none;
+        color: #cbd5e1;
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-card {
+        box-shadow: 0 14px 30px rgba(2, 6, 23, 0.45);
+    }
+
+    [data-bs-theme="dark"] .wash-card-header {
         background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
         border-bottom-color: rgba(96, 165, 250, 0.28);
     }
 
-    [data-bs-theme="dark"] .wash-pos-page .service-card {
-        border-color: rgba(96, 165, 250, 0.28);
-    }
-
-    [data-bs-theme="dark"] .wash-pos-page #cartItems .border-bottom {
-        border-bottom-color: #334155 !important;
-    }
-
-    [data-bs-theme="dark"] .wash-pos-page .checkout-panel .form-control,
-    [data-bs-theme="dark"] .wash-pos-page .checkout-panel .form-select {
-        border-color: #334155;
-        background-color: #0f172a;
+    [data-bs-theme="dark"] .wash-card-title {
         color: #e2e8f0;
     }
 
-    @media (max-width: 767.98px) {
-        .wash-pos-page {
-            padding-left: 0.35rem;
-            padding-right: 0.35rem;
-        }
+    [data-bs-theme="dark"] .wash-card-title i {
+        color: #93c5fd;
+    }
 
-        .wash-pos-page .wash-panel {
-            border-radius: 1rem;
-        }
+    [data-bs-theme="dark"] .service-image-wrap {
+        background: #1e293b;
+    }
 
-        .wash-pos-page .service-item {
-            margin-bottom: 0.5rem !important;
-        }
+    [data-bs-theme="dark"] .service-card-mobil {
+        border-color: rgba(96, 165, 250, 0.45);
+    }
 
-        .wash-pos-page .service-card .card-body {
-            padding: 0.75rem;
-        }
+    [data-bs-theme="dark"] .service-card-motor {
+        border-color: rgba(251, 146, 60, 0.45);
+    }
 
-        .wash-pos-page .service-card .img-fluid {
-            max-height: 82px !important;
-        }
+    [data-bs-theme="dark"] .service-fallback-icon {
+        background: #334155;
+        color: #bfdbfe;
+    }
 
-        .wash-pos-page .service-card .card-title {
-            font-size: 0.9rem;
-            margin-bottom: 0.35rem;
-        }
+    [data-bs-theme="dark"] .service-title,
+    [data-bs-theme="dark"] .cart-item-name,
+    [data-bs-theme="dark"] .cart-item-total {
+        color: #f8fafc;
+    }
 
-        .wash-pos-page .service-card .card-text {
-            font-size: 0.86rem;
-            margin-bottom: 0.25rem;
-        }
+    [data-bs-theme="dark"] .service-description,
+    [data-bs-theme="dark"] .wash-field-label,
+    [data-bs-theme="dark"] .wash-inline-check .form-check-label,
+    [data-bs-theme="dark"] #customerInfo {
+        color: #94a3b8;
+    }
 
-        .wash-pos-page .nav-pills {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.4rem;
-        }
+    [data-bs-theme="dark"] .service-price {
+        color: #60a5fa;
+    }
 
-        .wash-pos-page .nav-pills .nav-item {
-            width: 100%;
-        }
+    [data-bs-theme="dark"] .wash-input {
+        background: #0b1220;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
 
-        .wash-pos-page .nav-pills .nav-link {
-            width: 100%;
-            text-align: center;
-            padding: 0.45rem 0.4rem;
-            font-size: 0.82rem;
-        }
+    [data-bs-theme="dark"] .wash-input::placeholder {
+        color: #64748b;
+    }
 
-        .wash-pos-page #checkoutForm .btn,
-        .wash-pos-page #checkoutForm .input-group .btn {
-            min-height: 42px;
-        }
+    [data-bs-theme="dark"] .wash-input option,
+    [data-bs-theme="dark"] .wash-input optgroup {
+        background: #0f172a;
+        color: #e2e8f0;
+    }
 
-        .wash-pos-page .checkout-form .mb-3 {
-            margin-bottom: 0.75rem !important;
-        }
+    [data-bs-theme="dark"] .wash-secondary-btn {
+        background: #1e293b;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
 
-        .wash-pos-page .cart-item {
-            flex-direction: column;
-            gap: 0.35rem;
-        }
+    [data-bs-theme="dark"] .wash-secondary-btn:hover {
+        background: #334155;
+        border-color: #475569;
+    }
 
-        .wash-pos-page .cart-item-right {
-            width: 100%;
-            justify-content: space-between;
-        }
+    [data-bs-theme="dark"] .wash-filter-group {
+        background: #1e293b;
+    }
 
-        .wash-pos-page #cartItems {
-            max-height: 280px !important;
-        }
+    [data-bs-theme="dark"] .wash-inline-check .form-check-input {
+        background-color: #0b1220;
+        border-color: #475569;
+    }
+
+    [data-bs-theme="dark"] .wash-inline-check .form-check-input:checked {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+
+    [data-bs-theme="dark"] .wash-inline-check .form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.24);
+    }
+
+    [data-bs-theme="dark"] .wash-filter-group .filter-btn {
+        color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .wash-filter-group .filter-btn.active {
+        background: #0b1220;
+        color: #93c5fd;
+        box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.32);
+    }
+
+    [data-bs-theme="dark"] .wash-voucher-box {
+        background: rgba(22, 101, 52, 0.2);
+        border-color: rgba(74, 222, 128, 0.35);
+        color: #86efac;
+    }
+
+    [data-bs-theme="dark"] #cartItems .text-muted,
+    [data-bs-theme="dark"] #emptyCartMsg {
+        color: #94a3b8 !important;
+    }
+
+    [data-bs-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #475569;
+    }
+
+    [data-bs-theme="dark"] .wash-summary-row,
+    [data-bs-theme="dark"] .cart-item-meta {
+        color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .cart-item {
+        border-bottom-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-summary-divider {
+        border-top-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-summary-total {
+        color: #f8fafc;
+    }
+
+    [data-bs-theme="dark"] .wash-summary-total #totalAmount {
+        color: #60a5fa;
+    }
+
+    [data-bs-theme="dark"] .service-type-mobil {
+        background: rgba(30, 64, 175, 0.3);
+        color: #93c5fd;
+    }
+
+    [data-bs-theme="dark"] .service-type-motor {
+        background: rgba(154, 52, 18, 0.35);
+        color: #fdba74;
+    }
+
+    [data-bs-theme="dark"] .service-type-umum {
+        background: #334155;
+        color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .wash-change-box {
+        background: rgba(30, 64, 175, 0.22);
+        border-color: rgba(96, 165, 250, 0.35);
+        color: #bfdbfe;
+    }
+
+    [data-bs-theme="dark"] .wash-primary-btn {
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
     }
 </style>
 @endsection

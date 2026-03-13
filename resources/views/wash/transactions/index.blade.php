@@ -1,30 +1,30 @@
 @extends('layouts.app')
 
-@section('title', 'Wash Transactions')
+@section('title', 'Transaksi Wash')
 
 @section('content')
 <div class="container-fluid wash-transactions-page py-2 py-md-3">
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
-        <h1 class="h3 mb-0 text-body">Wash Transactions</h1>
+        <h1 class="h3 mb-0 text-body">Transaksi Wash</h1>
         <div class="d-flex flex-wrap gap-2 wash-transactions-toolbar">
             @if(Auth::user()->hasRole('admin'))
             <button type="button" class="btn btn-sm btn-outline-danger shadow-sm d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
                 <i class="fas fa-trash fa-sm"></i>
-                <span class="d-inline d-md-none ms-1">{{ __('Delete') }} (<span id="selectedCount">0</span>)</span>
-                <span class="d-none d-md-inline ms-1">{{ __('Delete Selected') }} (<span id="selectedCountDesktop">0</span>)</span>
+                <span class="d-inline d-md-none ms-1">{{ __('Hapus') }} (<span id="selectedCount">0</span>)</span>
+                <span class="d-none d-md-inline ms-1">{{ __('Hapus Terpilih') }} (<span id="selectedCountDesktop">0</span>)</span>
             </button>
             <form id="bulkDeleteForm" action="{{ route('wash.transactions.bulkDestroy') }}" method="POST" class="d-none">
                 @csrf
                 @method('DELETE')
             </form>
             @endif
-            <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm" title="Generate PDF">
+            <a href="{{ route('wash.transactions.export.pdf', request()->all()) }}" class="btn btn-sm btn-danger shadow-sm" title="Buat PDF">
                 <i class="fas fa-file-pdf fa-sm text-white-50"></i>
-                <span class="d-none d-md-inline ms-1">Generate PDF</span>
+                <span class="d-none d-md-inline ms-1">Buat PDF</span>
             </a>
-            <a href="{{ route('wash.transactions.export.excel', request()->all()) }}" class="btn btn-sm btn-success shadow-sm" title="Export Excel">
+            <a href="{{ route('wash.transactions.export.excel', request()->all()) }}" class="btn btn-sm btn-success shadow-sm" title="Ekspor Excel">
                 <i class="fas fa-file-excel fa-sm text-white-50"></i>
-                <span class="d-none d-md-inline ms-1">Export Excel</span>
+                <span class="d-none d-md-inline ms-1">Ekspor Excel</span>
             </a>
         </div>
     </div>
@@ -32,39 +32,39 @@
     <div class="card shadow mb-4 wash-panel">
         <div class="card-header py-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="m-0 font-weight-bold text-primary">Transaction List</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Daftar Transaksi</h6>
             </div>
             <form action="{{ route('wash.transactions.index') }}" method="GET" class="row g-3 align-items-center wash-filter-form">
                 <div class="col-12 col-md-auto">
-                    <label for="start_date" class="col-form-label">{{ __('Start Date') }}</label>
+                    <label for="start_date" class="col-form-label">{{ __('Tanggal Mulai') }}</label>
                 </div>
                 <div class="col-12 col-md-auto">
                     <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                 </div>
                 <div class="col-12 col-md-auto">
-                    <label for="end_date" class="col-form-label">{{ __('End Date') }}</label>
+                    <label for="end_date" class="col-form-label">{{ __('Tanggal Selesai') }}</label>
                 </div>
                 <div class="col-12 col-md-auto">
                     <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                 </div>
                 <div class="col-12 col-md-auto">
-                    <label for="per_page" class="col-form-label">Per Page</label>
+                    <label for="per_page" class="col-form-label">Per Halaman</label>
                 </div>
                 <div class="col-12 col-md-auto">
                     <select id="per_page" name="per_page" class="form-select">
                         <option value="10" {{ request('per_page', '10') === '10' ? 'selected' : '' }}>10</option>
                         <option value="20" {{ request('per_page') === '20' ? 'selected' : '' }}>20</option>
-                        <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>Semua</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-auto d-flex flex-wrap gap-2 wash-filter-actions">
-                    <button type="submit" class="btn btn-primary" title="{{ __('Filter') }}">
+                    <button type="submit" class="btn btn-primary" title="{{ __('Saring') }}">
                         <i class="fas fa-filter"></i>
-                        <span class="d-none d-md-inline ms-1">{{ __('Filter') }}</span>
+                        <span class="d-none d-md-inline ms-1">{{ __('Saring') }}</span>
                     </button>
-                    <a href="{{ route('wash.transactions.index') }}" class="btn btn-secondary" title="{{ __('Reset') }}">
+                    <a href="{{ route('wash.transactions.index') }}" class="btn btn-secondary" title="{{ __('Atur Ulang') }}">
                         <i class="fas fa-rotate-left"></i>
-                        <span class="d-none d-md-inline ms-1">{{ __('Reset') }}</span>
+                        <span class="d-none d-md-inline ms-1">{{ __('Atur Ulang') }}</span>
                     </a>
                 </div>
             </form>
@@ -74,7 +74,7 @@
             <div class="d-flex d-md-none align-items-center gap-2 mb-2">
                 <div class="form-check m-0">
                     <input class="form-check-input" type="checkbox" id="selectAllMobile">
-                    <label class="form-check-label small" for="selectAllMobile">{{ __('Select all') }}</label>
+                    <label class="form-check-label small" for="selectAllMobile">{{ __('Pilih semua') }}</label>
                 </div>
             </div>
             @endif
@@ -89,14 +89,14 @@
                                 </div>
                             </th>
                             @endif
-                            <th>Date</th>
-                            <th>Transaction #</th>
-                            <th>Customer</th>
-                            <th>Plate No</th>
+                            <th>Tanggal</th>
+                            <th>No. Transaksi</th>
+                            <th>Pelanggan</th>
+                            <th>No. Plat</th>
                             <th>Total</th>
-                            <th>Payment</th>
-                            <th>Cashier</th>
-                            <th>Actions</th>
+                            <th>Pembayaran</th>
+                            <th>Kasir</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -115,20 +115,20 @@
                                 <td>{{ $transaction->vehicle_plate ?? '-' }}</td>
                                 <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
                                 <td>{{ ucfirst($transaction->payment_method) }}</td>
-                                <td>{{ $transaction->user->name ?? 'Unknown' }}</td>
+                                <td>{{ $transaction->user->name ?? 'Tidak Diketahui' }}</td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1 justify-content-end transaction-actions">
-                                        <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
+                                        <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat') }}">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-outline-warning" title="{{ __('Print') }}">
+                                        <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-outline-warning" title="{{ __('Cetak') }}">
                                             <i class="fas fa-print"></i>
                                         </a>
                                         @if(Auth::user()->hasRole('admin'))
                                         <button
                                             type="button"
                                             class="btn btn-sm btn-outline-info"
-                                            title="{{ __('Edit') }}"
+                                            title="{{ __('Ubah') }}"
                                             data-bs-toggle="modal"
                                             data-bs-target="#editTransactionModal"
                                             data-update-url="{{ route('wash.transactions.update', $transaction) }}"
@@ -142,10 +142,10 @@
                                         >
                                             <i class="fas fa-pen"></i>
                                         </button>
-                                        <form action="{{ route('wash.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
+                                        <form action="{{ route('wash.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Hapus transaksi ini?') }}" onsubmit="return confirm(this.dataset.confirm)">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -155,7 +155,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ Auth::user()->hasRole('admin') ? 9 : 8 }}" class="text-center">No transactions found.</td>
+                                <td colspan="{{ Auth::user()->hasRole('admin') ? 9 : 8 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -175,12 +175,12 @@
                 @csrf
                 @method('PUT')
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editTransactionTitle">Edit Transaksi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    <h5 class="modal-title" id="editTransactionTitle">Ubah Transaksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Tutup') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label" for="edit_customer_name">Nama Customer</label>
+                        <label class="form-label" for="edit_customer_name">Nama Pelanggan</label>
                         <input type="text" class="form-control" id="edit_customer_name" name="customer_name">
                     </div>
                     <div class="mb-3">
@@ -194,22 +194,22 @@
                     <div class="mb-3">
                         <label class="form-label" for="edit_payment_method">Metode Pembayaran</label>
                         <select class="form-select js-payment-method" id="edit_payment_method" name="payment_method" data-cash-target="#edit_cash_amount_group">
-                            <option value="cash">Cash</option>
+                            <option value="cash">Tunai</option>
                             <option value="qris">QRIS</option>
                         </select>
                     </div>
                     <div class="mb-0" id="edit_cash_amount_group">
-                        <label class="form-label" for="edit_cash_amount">Nominal Cash</label>
+                        <label class="form-label" for="edit_cash_amount">Nominal Tunai</label>
                         <input type="number" min="0" class="form-control" id="edit_cash_amount" name="cash_amount">
                     </div>
                     <div class="mt-3">
-                        <label class="form-label mb-2">Quantity Layanan</label>
+                        <label class="form-label mb-2">Jumlah Layanan</label>
                         <div id="edit_items_container" class="d-grid gap-2"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Simpan Perubahan') }}</button>
                 </div>
             </form>
         </div>
@@ -345,12 +345,12 @@
             letter-spacing: 0.25px;
         }
 
-        .wash-transactions-page .table-responsive-mobile td[data-label="Actions"] {
+        .wash-transactions-page .table-responsive-mobile td[data-label="Aksi"] {
             display: block;
             text-align: left;
         }
 
-        .wash-transactions-page .table-responsive-mobile td[data-label="Actions"]::before {
+        .wash-transactions-page .table-responsive-mobile td[data-label="Aksi"]::before {
             display: block;
             margin-bottom: 0.45rem;
         }
@@ -446,7 +446,7 @@
         if (selected.length === 0 || !bulkDeleteForm) {
             return;
         }
-        if (!confirm('{{ __("Are you sure you want to delete selected transactions?") }}')) {
+        if (!confirm('{{ __("Apakah Anda yakin ingin menghapus transaksi terpilih?") }}')) {
             return;
         }
         bulkDeleteForm.querySelectorAll('input[name="ids[]"]').forEach((input) => input.remove());
@@ -466,7 +466,7 @@
                 return;
             }
             editForm.action = trigger.getAttribute('data-update-url') || '';
-            editTitle.textContent = `Edit Transaksi #${trigger.getAttribute('data-transaction-number') || ''}`;
+            editTitle.textContent = `Ubah Transaksi #${trigger.getAttribute('data-transaction-number') || ''}`;
             customerInput.value = trigger.getAttribute('data-customer-name') || '';
             plateInput.value = trigger.getAttribute('data-vehicle-plate') || '';
             brandInput.value = trigger.getAttribute('data-vehicle-brand') || '';

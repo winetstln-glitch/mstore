@@ -28,7 +28,7 @@
     if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
         $discountLabel = 'Bonus Cuci 10x';
     } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
-        $discountLabel = 'Voucher Free Wash';
+        $discountLabel = 'Voucher Cuci Gratis';
     }
     $isLoyaltyBonus = ($transaction->notes ?? null) === 'bonus_cuci_10x';
 @endphp
@@ -38,7 +38,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt #{{ $transaction->transaction_number }}</title>
+    <title>Struk #{{ $transaction->transaction_number }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -278,10 +278,10 @@
         <label for="size80">80mm (48 Kolom)</label>
     </div>
     
-    <button class="btn btn-blue" onclick="printBluetoothDirect()">Connect & Print Bluetooth</button>
-    <button class="btn" onclick="window.print()">Print via Browser (PDF/System)</button>
+    <button class="btn btn-blue" onclick="printBluetoothDirect()">Hubungkan & Cetak Bluetooth</button>
+    <button class="btn" onclick="window.print()">Cetak via Peramban (PDF/Sistem)</button>
     <button class="btn btn-green" onclick="shareWashReceiptNow(this)">Bagikan Struk (PNG)</button>
-    <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Ready</div>
+    <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Siap</div>
 </div>
 
 <!-- RECEIPT CONTENT -->
@@ -302,7 +302,7 @@
             <tr><td class="label">Nota</td><td>: {{ $transaction->transaction_number }}</td></tr>
             <tr><td class="label">Waktu</td><td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td></tr>
             <tr><td class="label">Kasir</td><td>: {{ $cashierName }}</td></tr>
-            <tr><td class="label">Cust/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
+            <tr><td class="label">Pelanggan/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
         </table>
 
         @if(!empty($transaction->queue_number))
@@ -473,7 +473,7 @@ function buildEscPosText(data){
     txt+="[L]Nota : "+data.number+"\n";
     txt+="[L]Waktu: "+data.date+"\n";
     txt+="[L]Kasir: "+data.cashier+"\n";
-    txt+="[L]Cust : "+data.customer+"\n";
+    txt+="[L]Pelanggan : "+data.customer+"\n";
     if(data.queue){txt+="\n[C]<font size='big'>ANTRIAN #"+data.queue+"</font>\n\n";}
     txt+="[L]--------------------------------\n";
     data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});
@@ -510,7 +510,7 @@ async function shareWashReceiptNow(button) {
 async function buildWashReceiptFile() {
     const captureTarget = document.getElementById('receipt-wrapper');
     if (!captureTarget || typeof html2canvas === 'undefined') {
-        throw new Error('capture unavailable');
+        throw new Error('penangkapan struk tidak tersedia');
     }
     const canvas = await html2canvas(captureTarget, {
         useCORS: true,
@@ -519,7 +519,7 @@ async function buildWashReceiptFile() {
     });
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) {
-        throw new Error('blob failed');
+        throw new Error('gagal membuat berkas gambar');
     }
     return new File([blob], washReceiptPngName, { type: 'image/png' });
 }
@@ -544,25 +544,25 @@ async function printBluetoothDirect(){
     try{
         if(!(navigator.bluetooth && typeof navigator.bluetooth.requestDevice==='function')){
             if(!bridgePrinter) throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android/iOS.');
-            status.innerText="Sending via App Bridge...";
+            status.innerText="Mengirim via App Bridge...";
             if(!bridgePrinter(bridgePayload)) throw new Error('Bridge Bluetooth tersedia, tetapi gagal mengirim data.');
-            status.innerText="Print Success via Bridge!";
-            setTimeout(()=>status.innerText="Status: Ready",3000);return;
+            status.innerText="Cetak berhasil melalui Bridge!";
+            setTimeout(()=>status.innerText="Status: Siap",3000);return;
         }
-        status.innerText="Requesting Printer...";
+        status.innerText="Meminta printer...";
         const device=await navigator.bluetooth.requestDevice({filters:[{services:['000018f0-0000-1000-8000-00805f9b34fb']}],optionalServices:['000018f0-0000-1000-8000-00805f9b34fb']});
-        status.innerText="Connecting...";
+        status.innerText="Menghubungkan...";
         const server=await device.gatt.connect();
         const service=await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
         const characteristic=await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-        status.innerText=`Processing (${paperSize===32?'58mm':'80mm'})...`;
+        status.innerText=`Memproses (${paperSize===32?'58mm':'80mm'})...`;
         const esc=new EscPosBuilder(paperSize);
         esc.init();
         const logoImg=document.getElementById('logo-img');
         if(logoImg && logoImg.complete){esc.center();await esc.addImage(logoImg);}
         esc.center();esc.bold(true);esc.add(data.store+"\n");esc.bold(false);
         esc.add(data.address+"\n"+data.phone+"\n");esc.line();
-        esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nCust: "+data.customer+"\n");
+        esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nPelanggan: "+data.customer+"\n");
         if(data.queue){esc.center();esc.big(true);esc.add("\nANTRIAN #"+data.queue+"\n\n");esc.big(false);}
         esc.line();
         data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
@@ -575,15 +575,15 @@ async function printBluetoothDirect(){
         esc.feed(1);esc.center();
         esc.add("*** TERIMA KASIH ***\nKepuasan Anda Kebanggaan Kami.\nPeriksa kembali barang bawaan Anda\nsebelum meninggalkan lokasi.\n");
         esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
-        status.innerText="Sending Data...";
+        status.innerText="Mengirim data...";
         const receiptData=esc.generate();
         const chunkSize=20;
         for(let i=0;i<receiptData.length;i+=chunkSize){await characteristic.writeValue(receiptData.slice(i,i+chunkSize));}
-        status.innerText="Print Success!";
-        setTimeout(()=>status.innerText="Status: Ready",3000);
+        status.innerText="Cetak berhasil!";
+        setTimeout(()=>status.innerText="Status: Siap",3000);
     }catch(error){
-        if(bridgePrinter && bridgePrinter(bridgePayload)){status.innerText="Print Success via Bridge!";setTimeout(()=>status.innerText="Status: Ready",3000);return;}
-        status.innerText="Error: "+error.message;
+        if(bridgePrinter && bridgePrinter(bridgePayload)){status.innerText="Cetak berhasil melalui Bridge!";setTimeout(()=>status.innerText="Status: Siap",3000);return;}
+        status.innerText="Kesalahan: "+error.message;
     }
 }
 

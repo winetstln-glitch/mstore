@@ -11,10 +11,10 @@
                 <h5 class="mb-0 fw-bold">Laporan Keuangan Wash</h5>
                 <div class="btn-group wash-report-export">
                     <a class="btn btn-sm btn-outline-secondary" id="btnExportPdf">
-                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                        <i class="bi bi-file-earmark-pdf"></i> Ekspor PDF
                     </a>
                     <a class="btn btn-sm btn-outline-success" id="btnExportExcel">
-                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                        <i class="bi bi-file-earmark-excel"></i> Ekspor Excel
                     </a>
                 </div>
             </div>

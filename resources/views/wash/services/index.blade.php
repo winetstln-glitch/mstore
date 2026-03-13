@@ -1,44 +1,44 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Wash Services')
+@section('title', 'Kelola Layanan Wash')
 
 @section('content')
 <div class="col-12 pb-5 pb-md-0 wash-services-page">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-2">
-            <h1 class="h3 mb-0 text-gray-800">Wash Services</h1>
-            <a href="{{ route('wash.services.create') }}" class="btn btn-primary d-inline d-sm-none rounded-circle" aria-label="Add Wash Service" style="width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;">
+            <h1 class="h3 mb-0 text-gray-800">Layanan Wash</h1>
+            <a href="{{ route('wash.services.create') }}" class="btn btn-primary d-inline d-sm-none rounded-circle" aria-label="Tambah Layanan Wash" style="width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;">
                 <i class="fas fa-plus"></i>
             </a>
         </div>
         <a href="{{ route('wash.services.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50"></i> Add New Service
+            <i class="fas fa-plus fa-sm text-white-50"></i> Tambah Layanan Baru
         </a>
     </div>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
         </div>
     @endif
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Service List</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Layanan</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Image</th>
-                            <th>Name</th>
-                            <th>Vehicle Type</th>
-                            <th>Price</th>
-                            <th>Description</th>
+                            <th>Gambar</th>
+                            <th>Nama</th>
+                            <th>Jenis Kendaraan</th>
+                            <th>Harga</th>
+                            <th>Deskripsi</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,7 +56,7 @@
                                 <td>{{ $service->name }}</td>
                                 <td>
                                     @if($service->vehicle_type === 'car')
-                                        <span class="badge bg-primary">Car</span>
+                                        <span class="badge bg-primary">Mobil</span>
                                     @else
                                         <span class="badge bg-success">Motor</span>
                                     @endif
@@ -65,16 +65,16 @@
                                 <td>{{ $service->description ?? '-' }}</td>
                                 <td>
                                     @if($service->is_active)
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success">Aktif</span>
                                     @else
-                                        <span class="badge bg-danger">Inactive</span>
+                                        <span class="badge bg-danger">Nonaktif</span>
                                     @endif
                                 </td>
                                 <td>
                                     <a href="{{ route('wash.services.edit', $service->id) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('wash.services.destroy', $service->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this service?');">
+                                    <form action="{{ route('wash.services.destroy', $service->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus layanan ini?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -85,7 +85,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center">No services found.</td>
+                                <td colspan="7" class="text-center">Tidak ada layanan ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -123,23 +123,23 @@
             gap: 0.55rem;
         }
 
-        .wash-services-page .table-responsive-mobile td[data-label="Image"] img,
-        .wash-services-page .table-responsive-mobile td[data-label="Image"] .text-muted {
+        .wash-services-page .table-responsive-mobile td[data-label="Gambar"] img,
+        .wash-services-page .table-responsive-mobile td[data-label="Gambar"] .text-muted {
             width: 42px !important;
             height: 42px !important;
         }
 
-        .wash-services-page .table-responsive-mobile td[data-label="Actions"] {
+        .wash-services-page .table-responsive-mobile td[data-label="Aksi"] {
             display: block;
             text-align: left;
         }
 
-        .wash-services-page .table-responsive-mobile td[data-label="Actions"]::before {
+        .wash-services-page .table-responsive-mobile td[data-label="Aksi"]::before {
             display: block;
             margin-bottom: 0.45rem;
         }
 
-        .wash-services-page .table-responsive-mobile td[data-label="Actions"] .btn {
+        .wash-services-page .table-responsive-mobile td[data-label="Aksi"] .btn {
             min-height: 34px;
             min-width: 34px;
             border-radius: 0.65rem;

@@ -8,7 +8,7 @@
         <h1 class="h3 mb-0 text-gray-800">Tambah Karyawan Baru</h1>
         <a href="{{ route('wash.employees.index') }}" class="btn btn-sm btn-secondary shadow-sm" title="Kembali">
             <i class="fas fa-arrow-left fa-sm text-white-50"></i>
-            <span class="d-none d-md-inline ms-1">{{ __('Back to List') }}</span>
+            <span class="d-none d-md-inline ms-1">{{ __('Kembali ke Daftar') }}</span>
         </a>
     </div>
 
@@ -20,7 +20,7 @@
             <form action="{{ route('wash.employees.store') }}" method="POST" id="createEmployeeForm">
                 @csrf
                 <div class="mb-3">
-                    <label for="name" class="form-label">{{ __('Name') }} <span class="text-danger">*</span></label>
+                    <label for="name" class="form-label">{{ __('Nama') }} <span class="text-danger">*</span></label>
                     <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required>
                     @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -79,7 +79,7 @@
                 <div class="mb-3" id="existingAccountField">
                     <label for="user_id" class="form-label">Tautkan ke Akun</label>
                     <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
-                        <option value="">{{ __('— Optional —') }}</option>
+                        <option value="">{{ __('— Opsional —') }}</option>
                         @foreach(($users ?? []) as $user)
                             <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }} @if($user->email) ({{ $user->email }}) @endif

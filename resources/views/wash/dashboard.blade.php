@@ -3,10 +3,10 @@
 @section('content')
 <div class="container-fluid wash-dashboard-page py-2 py-md-3">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4">
-        <h1 class="h3 mb-0 text-body">{{ __('Wash Dashboard') }}</h1>
+        <h1 class="h3 mb-0 text-body">{{ __('Dasbor Wash') }}</h1>
         @if(Auth::user()->hasPermission('wash.pos'))
         <a href="{{ route('wash.pos') }}" class="btn btn-primary">
-            <i class="fas fa-cash-register me-2"></i>{{ __('Go to POS') }}
+            <i class="fas fa-cash-register me-2"></i>{{ __('Buka POS') }}
         </a>
         @endif
     </div>
@@ -17,32 +17,32 @@
             <div class="card border-0 shadow-sm border-start border-4 border-primary wash-panel">
                 <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
-                        <h5 class="fw-bold mb-1">{{ __('My Attendance Today') }}</h5>
+                        <h5 class="fw-bold mb-1">{{ __('Absensi Saya Hari Ini') }}</h5>
                         <p class="mb-0 text-muted small">
                             @if($todayAttendance)
                                 <span class="badge bg-{{ $todayAttendance->status == 'present' ? 'success' : ($todayAttendance->status == 'late' ? 'warning' : 'secondary') }}">
                                     {{ __(ucfirst($todayAttendance->status)) }}
                                 </span>
                                 <span class="ms-2">
-                                    <i class="fa-solid fa-clock me-1"></i> {{ __('In') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
+                                    <i class="fa-solid fa-clock me-1"></i> {{ __('Masuk') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
                                     @if($todayAttendance->clock_out)
-                                        | <i class="fa-solid fa-clock me-1"></i> {{ __('Out') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
+                                        | <i class="fa-solid fa-clock me-1"></i> {{ __('Pulang') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
                                     @endif
                                 </span>
                             @else
-                                <span class="badge bg-secondary">{{ __('Not Present Yet') }}</span>
-                                <span class="ms-2 text-muted">{{ __('You have not clocked in today.') }}</span>
+                                <span class="badge bg-secondary">{{ __('Belum Hadir') }}</span>
+                                <span class="ms-2 text-muted">{{ __('Anda belum melakukan absen masuk hari ini.') }}</span>
                             @endif
                         </p>
                     </div>
                     <div>
                         <a href="{{ route('attendance.create') }}" class="btn btn-primary">
                             @if(!$todayAttendance)
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Masuk') }}</span>
                             @elseif(!$todayAttendance->clock_out)
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock Out') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Pulang') }}</span>
                             @else
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Attendance') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absensi') }}</span>
                             @endif
                         </a>
                     </div>
@@ -60,7 +60,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                {{ __('Daily Sales') }}</div>
+                                {{ __('Penjualan Harian') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -78,7 +78,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                {{ __('Monthly Sales') }}</div>
+                                {{ __('Penjualan Bulanan') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -95,7 +95,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Transactions (Today)') }}
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Transaksi (Hari Ini)') }}
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $transactionCount }}</div>
                         </div>
@@ -112,7 +112,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Services (Today)') }}</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Layanan (Hari Ini)') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($dailyServiceCount, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -128,7 +128,7 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4 wash-panel">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Daily Service Trend (7 Days)') }}</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Tren Layanan Harian (7 Hari)') }}</h6>
                 </div>
                 <div class="card-body">
                     <div style="height: 320px;">
@@ -140,11 +140,11 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4 wash-panel">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Top Services') }}</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Layanan Teratas') }}</h6>
                 </div>
                 <div class="card-body">
                     @if($topServices->isEmpty())
-                        <p class="text-center">{{ __('No transactions yet.') }}</p>
+                        <p class="text-center">{{ __('Belum ada transaksi.') }}</p>
                     @else
                         <ul class="list-group">
                             @foreach($topServices as $service)
@@ -239,7 +239,7 @@
             data: {
                 labels: @json($serviceTrendLabels),
                 datasets: [{
-                    label: '{{ __("Jumlah Service") }}',
+                    label: '{{ __("Jumlah Layanan") }}',
                     data: @json($serviceTrendData),
                     borderColor: 'rgba(54, 162, 235, 1)',
                     backgroundColor: 'rgba(54, 162, 235, 0.15)',

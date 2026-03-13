@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Transaction Details'))
+@section('title', __('Detail Transaksi'))
 
 @php
 // Logic as per receipt requirements
@@ -25,11 +25,11 @@ $customerName = trim((string) ($transaction->customer_name ?? ''));
 $customerName = $customerName !== '' ? $customerName : '-';
 $vehiclePlate = strtoupper(trim((string) ($transaction->vehicle_plate ?? '')));
 $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
-$discountLabel = __('Discount');
+$discountLabel = __('Diskon');
 if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
     $discountLabel = 'Bonus Cuci 10x';
 } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
-    $discountLabel = 'Voucher Free Wash';
+    $discountLabel = 'Voucher Cuci Gratis';
 }
 $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amount ?? 0) > 0);
 
@@ -42,11 +42,11 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
     <div class="receipt-shell mx-auto">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 receipt-top-actions">
             <a href="{{ route('wash.transactions.index') }}" class="btn btn-outline-secondary btn-sm px-3">
-                <i class="fa-solid fa-arrow-left me-1"></i>{{ __('Back') }}
+                <i class="fa-solid fa-arrow-left me-1"></i>{{ __('Kembali') }}
             </a>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('wash.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-primary btn-sm px-3">
-                    <i class="fa-solid fa-print me-1"></i>{{ __('Print Receipt') }}
+                    <i class="fa-solid fa-print me-1"></i>{{ __('Cetak Struk') }}
                 </a>
                 <button type="button" class="btn btn-share-dana btn-sm px-3" onclick="shareWashReceiptNow(this)">
                     <i class="fa-solid fa-share-nodes me-1"></i>{{ __('Bagikan') }}
@@ -80,27 +80,27 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
                 <div class="receipt-status-icon mx-auto mb-2">
                     <i class="fa-solid fa-circle-check"></i>
                 </div>
-                <div class="receipt-status-title">{{ __('Transaction Successful') }}</div>
-                <div class="receipt-status-subtitle">{{ __('Digital Receipt') }}</div>
+                <div class="receipt-status-title">{{ __('Transaksi Berhasil') }}</div>
+                <div class="receipt-status-subtitle">{{ __('Struk Digital') }}</div>
             </div>
 
             <div class="receipt-highlight">
                 <div class="receipt-code">
-                    <div class="receipt-label">{{ __('Transaction ID') }}</div>
+                    <div class="receipt-label">{{ __('ID Transaksi') }}</div>
                     <div class="receipt-id">#{{ $transaction->transaction_number }}</div>
                     <div class="receipt-meta">{{ $transaction->created_at->format('d M Y, H:i') }}</div>
                 </div>
                 <div class="receipt-total">
-                    <div class="receipt-label">{{ __('Total Amount') }}</div>
+                    <div class="receipt-label">{{ __('Total Pembayaran') }}</div>
                     <div class="receipt-amount">Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</div>
                 </div>
             </div>
 
             <div class="receipt-context">
-                <div class="context-line"><span>{{ __('Store') }}</span><span>{{ $receiptStoreName }}</span></div>
-                <div class="context-line"><span>{{ __('Customer / Vehicle') }}</span><span>{{ $customerName }} / {{ $vehiclePlate }}</span></div>
+                <div class="context-line"><span>{{ __('Toko') }}</span><span>{{ $receiptStoreName }}</span></div>
+                <div class="context-line"><span>{{ __('Pelanggan / Kendaraan') }}</span><span>{{ $customerName }} / {{ $vehiclePlate }}</span></div>
                 @if(!empty($transaction->queue_number))
-                <div class="context-line"><span>{{ __('Queue Number') }}</span><span>#{{ $transaction->queue_number }}</span></div>
+                <div class="context-line"><span>{{ __('Nomor Antrean') }}</span><span>#{{ $transaction->queue_number }}</span></div>
                 @endif
                 @if($showDiscountType)
                 <div class="context-line"><span>Jenis Diskon</span><span>{{ $discountLabel }}</span></div>
@@ -108,26 +108,26 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
             </div>
 
             <div class="receipt-item-panel">
-                <div class="receipt-item-title">{{ __('Item Details') }}</div>
+                <div class="receipt-item-title">{{ __('Detail Item') }}</div>
                 <div class="table-responsive table-responsive-mobile">
                     <table class="table align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>{{ __('Service') }}</th>
+                                <th>{{ __('Layanan') }}</th>
                                 <th class="text-center">{{ __('Qty') }}</th>
-                                <th class="text-end">{{ __('Unit Price') }}</th>
+                                <th class="text-end">{{ __('Harga Satuan') }}</th>
                                 <th class="text-end">{{ __('Subtotal') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($transaction->items as $item)
                             <tr>
-                                <td data-label="{{ __('Service') }}">
+                                <td data-label="{{ __('Layanan') }}">
                                     <div class="fw-semibold">{{ $item->service_name }}</div>
                                     <div class="small text-muted">#{{ $item->id }}</div>
                                 </td>
                                 <td class="text-center" data-label="{{ __('Qty') }}">{{ (float) $item->quantity }}</td>
-                                <td class="text-end" data-label="{{ __('Unit Price') }}">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                                <td class="text-end" data-label="{{ __('Harga Satuan') }}">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                                 <td class="text-end fw-bold" data-label="{{ __('Subtotal') }}">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
                             </tr>
                             @endforeach
@@ -144,16 +144,16 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
                 </div>
                 @endif
                 <div class="summary-line">
-                    <span>{{ __('Payment Method') }}</span>
+                    <span>{{ __('Metode Pembayaran') }}</span>
                     <span>{{ strtoupper($transaction->payment_method ?? 'CASH') }}</span>
                 </div>
                 @if(($transaction->cash_amount ?? 0) > 0)
                 <div class="summary-line">
-                    <span>{{ __('Cash Received') }}</span>
+                    <span>{{ __('Uang Diterima') }}</span>
                     <span>Rp {{ number_format($transaction->cash_amount, 0, ',', '.') }}</span>
                 </div>
                 <div class="summary-line">
-                    <span>{{ __('Change') }}</span>
+                    <span>{{ __('Kembalian') }}</span>
                     <span>Rp {{ number_format($transaction->change_amount, 0, ',', '.') }}</span>
                 </div>
                 @endif
@@ -964,7 +964,7 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
     async function buildWashReceiptFile() {
         const captureTarget = document.getElementById('washReceiptCapture');
         if (!captureTarget || typeof html2canvas === 'undefined') {
-            throw new Error('capture unavailable');
+            throw new Error('penangkapan struk tidak tersedia');
         }
 
         const htmlElement = document.documentElement;
@@ -992,7 +992,7 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
 
         const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
         if (!blob) {
-            throw new Error('blob failed');
+            throw new Error('gagal membuat berkas gambar');
         }
 
         return new File([blob], washReceiptPngName, { type: 'image/png' });
