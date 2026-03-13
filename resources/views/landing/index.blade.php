@@ -87,7 +87,7 @@
                         <a href="https://buymstore.online" class="btn btn-primary">
                             <i class="fas fa-rocket me-2"></i> Client Area
                         </a>
-                        <a href="https://clud.mstore.id/index.php/s/R5GNCGHRfJXrjzo" class="btn btn-outline-light" download>
+                        <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-outline-light" download>
                             <i class="fa-brands fa-android me-2"></i> Get App
                         </a>
                     </div>

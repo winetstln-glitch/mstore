@@ -37,9 +37,14 @@ class UserController extends Controller implements HasMiddleware
             });
         }
 
-        $users = $query->paginate(10)->withQueryString();
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->integer('role_id'));
+        }
 
-        return view('users.index', compact('users'));
+        $users = $query->paginate(10)->withQueryString();
+        $roles = Role::orderBy('label')->get();
+
+        return view('users.index', compact('users', 'roles'));
     }
 
     public function export(Request $request)
@@ -52,6 +57,10 @@ class UserController extends Controller implements HasMiddleware
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
+        }
+
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->integer('role_id'));
         }
 
         $users = $query->get();

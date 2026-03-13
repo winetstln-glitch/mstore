@@ -3,7 +3,7 @@
 @section('title', __('ATK POS'))
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid atk-pos-page">
     <div class="row h-100">
         <!-- Product & Service List -->
         <div class="col-md-8">
@@ -129,7 +129,7 @@
                         <div class="card-header bg-primary text-white py-3">
                             <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Current Order</h5>
                         </div>
-                        <div class="card-body p-0 overflow-auto flex-grow-1" id="cartItems" style="max-height: 50vh;">
+                        <div class="mb-3 custom-scrollbar" id="cartItems" style="max-height: 50vh;">
                             <div class="text-center py-5 text-body-secondary" id="emptyCartMessage">
                                 <i class="fas fa-shopping-basket fa-3x mb-3"></i>
                                 <p>Cart is empty</p>
@@ -158,26 +158,13 @@
                             </div>
                             
                             <div class="mb-3 d-none" id="pengurusDiv">
-                                <label class="form-label">Coordinator / Pengurus / Investor</label>
-                                <div class="row g-2">
-                                    <div class="col-12">
-                                        <select class="form-select" id="coordinatorId">
-                                            <option value="">Pilih Pengurus (Coordinator)</option>
-                                            @foreach(($coordinators ?? []) as $c)
-                                                <option value="{{ $c->id }}">{{ $c->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <select class="form-select" id="investorId">
-                                            <option value="">Pilih Investor (opsional)</option>
-                                            @foreach(($investors ?? []) as $inv)
-                                                <option value="{{ $inv->id }}" data-coordinator="{{ $inv->coordinator_id }}">{{ $inv->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <small class="text-body-secondary">Pengurus wajib saat hutang jasa potocopy; investor opsional.</small>
+                                <label class="form-label">Pengurus</label>
+                                <select class="form-select" id="coordinatorId">
+                                    <option value="">Pilih Pengurus (wajib untuk hutang jasa potocopy)</option>
+                                    @foreach(($coordinators ?? []) as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             
                             <div class="mb-3" id="cashInputDiv">
@@ -343,6 +330,7 @@
                 document.getElementById('cashAmount').value = '';
                 document.getElementById('changeAmount').textContent = 'Rp 0';
             }
+            updatePengurusVisibility();
         });
         document.querySelectorAll('.product-card[data-id]').forEach(function (el) {
             el.addEventListener('click', function () {
@@ -538,45 +526,15 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
 
 function updatePengurusVisibility() {
     const hasService = cart.some(i => i.service === true);
+    const method = document.getElementById('paymentMethod')?.value;
     const div = document.getElementById('pengurusDiv');
     if (!div) return;
-    if (hasService) {
+    if (hasService && method === 'hutang') {
         div.classList.remove('d-none');
-        filterInvestorsByCoordinator();
     } else {
         div.classList.add('d-none');
         const sel = document.getElementById('coordinatorId');
         if (sel) sel.value = '';
-        const invSel = document.getElementById('investorId');
-        if (invSel) invSel.value = '';
-    }
-}
-
-// Filter investor option berdasarkan coordinator terpilih
-document.addEventListener('change', function(e) {
-    if (e.target && e.target.id === 'coordinatorId') {
-        filterInvestorsByCoordinator();
-    }
-});
-
-function filterInvestorsByCoordinator() {
-    const coordId = document.getElementById('coordinatorId')?.value || '';
-    const investorSel = document.getElementById('investorId');
-    if (!investorSel) return;
-    Array.from(investorSel.options).forEach(opt => {
-        if (opt.value === '') { 
-            opt.hidden = false; 
-            return; 
-        }
-        const c = opt.getAttribute('data-coordinator') || '';
-        opt.hidden = !!coordId && c !== coordId;
-    });
-    // Reset selection jika tidak sesuai filter
-    if (investorSel.selectedOptions.length) {
-        const selOpt = investorSel.selectedOptions[0];
-        if (selOpt.hidden) {
-            investorSel.value = '';
-        }
     }
 }
     function processTransaction() {
@@ -594,16 +552,18 @@ function filterInvestorsByCoordinator() {
             return;
         }
 
+        const pengurusVisible = !document.getElementById('pengurusDiv').classList.contains('d-none');
         const coordEl = document.getElementById('coordinatorId');
-        const coordinatorId = (!document.getElementById('pengurusDiv').classList.contains('d-none') && coordEl && coordEl.value) ? coordEl.value : undefined;
-        const invEl = document.getElementById('investorId');
-        const investorId = (!document.getElementById('pengurusDiv').classList.contains('d-none') && invEl && invEl.value) ? invEl.value : undefined;
+        const coordinatorId = (pengurusVisible && coordEl && coordEl.value) ? coordEl.value : undefined;
+        if (pengurusVisible && !coordinatorId) {
+            alert('Pilih pengurus untuk transaksi hutang jasa potocopy.');
+            return;
+        }
         const data = {
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
             payment_method: paymentMethod,
             cash_amount: cashAmount,
-            coordinator_id: coordinatorId,
-            investor_id: investorId
+            coordinator_id: coordinatorId
         };
 
         const btn = document.getElementById('btnCheckout');
@@ -670,12 +630,58 @@ function filterInvestorsByCoordinator() {
 </script>
 
 <style>
-    .product-card:hover {
+    .atk-pos-page .product-card:hover {
         border-color: #0d6efd;
         background-color: #f8f9fa;
     }
-    .cursor-pointer {
+    .atk-pos-page .card {
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+    }
+    .atk-pos-page .card-header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(248, 250, 252, 0.82);
+    }
+    .atk-pos-page .form-control,
+    .atk-pos-page .form-select,
+    .atk-pos-page .input-group-text {
+        border-radius: 12px;
+    }
+    .atk-pos-page .input-group .form-control {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+    .atk-pos-page .input-group .input-group-text {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .atk-pos-page .cursor-pointer {
         cursor: pointer;
+    }
+    [data-bs-theme="dark"] .atk-pos-page .card {
+        background: #111827;
+        border-color: rgba(148, 163, 184, 0.22);
+        box-shadow: 0 18px 38px rgba(2, 6, 23, 0.55);
+    }
+    [data-bs-theme="dark"] .atk-pos-page .card-header {
+        background: #0f172a;
+        border-color: rgba(148, 163, 184, 0.3);
+    }
+    [data-bs-theme="dark"] .atk-pos-page .product-card:hover {
+        background-color: rgba(37, 99, 235, 0.18);
+        border-color: rgba(96, 165, 250, 0.5);
+    }
+    [data-bs-theme="dark"] .atk-pos-page .form-control,
+    [data-bs-theme="dark"] .atk-pos-page .form-select,
+    [data-bs-theme="dark"] .atk-pos-page .input-group-text {
+        background: #0b1220;
+        color: #e2e8f0;
+        border-color: rgba(148, 163, 184, 0.35);
+    }
+    [data-bs-theme="dark"] .atk-pos-page .text-muted,
+    [data-bs-theme="dark"] .atk-pos-page .text-body-secondary {
+        color: #94a3b8 !important;
     }
 </style>
 @endpush

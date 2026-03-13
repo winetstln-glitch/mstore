@@ -28,6 +28,75 @@
     <!-- Custom Dashboard CSS -->
     <link href="{{ app()->environment('production') ? secure_asset('css/dashboard-custom.css') : asset('css/dashboard-custom.css') }}" rel="stylesheet">
     <link href="{{ app()->environment('production') ? secure_asset('css/app-android.css') : asset('css/app-android.css') }}" rel="stylesheet">
+    <style>
+        .mstore-swal-popup {
+            border: 1px solid rgba(148, 163, 184, 0.2) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18) !important;
+            backdrop-filter: blur(10px);
+        }
+
+        .mstore-swal-title {
+            font-weight: 700 !important;
+            font-size: 1.03rem !important;
+        }
+
+        .mstore-swal-html {
+            font-size: 0.92rem !important;
+            line-height: 1.45 !important;
+            color: inherit !important;
+        }
+
+        .mstore-swal-toast {
+            border-radius: 14px !important;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.2) !important;
+            border: 1px solid rgba(148, 163, 184, 0.22) !important;
+            backdrop-filter: blur(8px);
+        }
+
+        .mstore-page-loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.28);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 2000;
+        }
+
+        .mstore-page-loader.is-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .mstore-page-loader-card {
+            min-width: 220px;
+            max-width: 90vw;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.25);
+            padding: 1rem 1.2rem;
+            color: #0f172a;
+        }
+
+        [data-bs-theme="dark"] .mstore-page-loader-card {
+            background: rgba(15, 23, 42, 0.92);
+            color: #e2e8f0;
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+
+        .mstore-page-loader-text {
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+    </style>
 
     @stack('styles')
 
@@ -42,6 +111,12 @@
     </script>
 </head>
 <body class="route-{{ request()->segment(1) ?? 'home' }} route-name-{{ str_replace('.', '-', request()->route()?->getName() ?? 'unknown') }}">
+<div class="mstore-page-loader" id="mstorePageLoader" aria-hidden="true">
+    <div class="mstore-page-loader-card d-flex align-items-center gap-3">
+        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+        <span class="mstore-page-loader-text" id="mstorePageLoaderText">Membuka halaman...</span>
+    </div>
+</div>
 
 <div id="wrapper">
     <!-- Sidebar -->
@@ -676,58 +751,281 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
 <script>
-    // Mobile Menu Toggle Logic
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         if (mobileMenuToggle) {
-            mobileMenuToggle.addEventListener('click', function(e) {
+            mobileMenuToggle.addEventListener('click', function (e) {
                 e.preventDefault();
                 document.body.classList.toggle('sb-sidenav-toggled');
             });
         }
     });
 
-    const showFlashMessage = function (config) {
-        Swal.fire(config);
-    };
+    (function () {
+        const buildPopupConfig = function (overrides) {
+            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            const popupBase = {
+                customClass: {
+                    popup: 'mstore-swal-popup',
+                    title: 'mstore-swal-title',
+                    htmlContainer: 'mstore-swal-html'
+                },
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#e2e8f0' : '#1e293b',
+                showConfirmButton: false,
+                timerProgressBar: true
+            };
+            return Object.assign({}, popupBase, overrides || {});
+        };
 
-    @if(session('success'))
-        showFlashMessage({
-            icon: 'success',
-            title: "{{ __('Success!') }}",
-            html: {!! json_encode(session('success')) !!},
-            timer: 3000,
-            showConfirmButton: false
+        const toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3200,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'mstore-swal-toast',
+                title: 'mstore-swal-title',
+                htmlContainer: 'mstore-swal-html'
+            }
         });
-    @endif
 
-    @if(session('error'))
-        showFlashMessage({
-            icon: 'error',
-            title: "{{ __('Error!') }}",
-            html: {!! json_encode(session('error')) !!},
-        });
-    @endif
+        window.mstoreNotify = {
+            success: function (message, options) {
+                return toast.fire(Object.assign({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    html: message || 'Aksi berhasil diproses'
+                }, options || {}));
+            },
+            error: function (message, options) {
+                return Swal.fire(buildPopupConfig(Object.assign({
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan',
+                    html: message || 'Terjadi kesalahan saat memproses data',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Tutup'
+                }, options || {})));
+            },
+            warning: function (message, options) {
+                return Swal.fire(buildPopupConfig(Object.assign({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    html: message || 'Harap periksa kembali data Anda',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Mengerti'
+                }, options || {})));
+            },
+            info: function (message, options) {
+                return Swal.fire(buildPopupConfig(Object.assign({
+                    icon: 'info',
+                    title: 'Informasi',
+                    html: message || 'Informasi terbaru',
+                    showConfirmButton: true,
+                    confirmButtonText: 'OK'
+                }, options || {})));
+            },
+            loading: function (message, options) {
+                return Swal.fire(buildPopupConfig(Object.assign({
+                    title: message || 'Memproses...',
+                    html: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: function () {
+                        Swal.showLoading();
+                    }
+                }, options || {})));
+            },
+            closeLoading: function () {
+                Swal.close();
+            }
+        };
 
-    @if(session('warning'))
-        showFlashMessage({
-            icon: 'warning',
-            title: "{{ __('Warning!') }}",
-            html: {!! json_encode(session('warning')) !!},
-        });
-    @endif
+        window.mstoreNotify.bindAutoLoading = function (root) {
+            const scope = root || document;
+            scope.querySelectorAll('form').forEach(function (form) {
+                if (form.dataset.loadingBound === '1') {
+                    return;
+                }
+                form.dataset.loadingBound = '1';
+                form.addEventListener('submit', function (event) {
+                    if (event.defaultPrevented) {
+                        return;
+                    }
+                    const methodInput = form.querySelector('input[name="_method"]');
+                    const isDeleteForm = methodInput && (methodInput.value || '').toUpperCase() === 'DELETE';
+                    if (isDeleteForm && form.dataset.deleteConfirmed !== '1') {
+                        return;
+                    }
+                    const method = (form.getAttribute('method') || 'get').toLowerCase();
+                    if (method === 'get') {
+                        return;
+                    }
+                    if (form.hasAttribute('data-no-loading') || form.dataset.noLoading === 'true') {
+                        return;
+                    }
+                    if (form.hasAttribute('data-ajax') || form.dataset.ajax === 'true') {
+                        return;
+                    }
+                    const submitter = event.submitter || document.activeElement;
+                    if (submitter && (submitter.hasAttribute('data-no-loading') || submitter.dataset.noLoading === 'true')) {
+                        return;
+                    }
+                    if (form.dataset.isSubmitting === '1') {
+                        event.preventDefault();
+                        return;
+                    }
+                    if (!form.checkValidity()) {
+                        return;
+                    }
+                    form.dataset.isSubmitting = '1';
+                    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (button) {
+                        button.disabled = true;
+                    });
+                    window.mstoreNotify.loading(form.dataset.loadingMessage || 'Memproses data...');
+                });
+            });
+        };
 
-    @if(session('info'))
-        showFlashMessage({
-            icon: 'info',
-            title: "{{ __('Info!') }}",
-            html: {!! json_encode(session('info')) !!},
-            timer: 5000,
-            showConfirmButton: true
+        window.mstoreNotify.bindAutoLoading(document);
+        window.mstoreNotify.bindDeleteConfirm = function (root) {
+            const scope = root || document;
+            scope.querySelectorAll('form').forEach(function (form) {
+                if (form.dataset.deleteConfirmBound === '1') {
+                    return;
+                }
+                const methodInput = form.querySelector('input[name="_method"]');
+                const isDeleteForm = methodInput && (methodInput.value || '').toUpperCase() === 'DELETE';
+                if (!isDeleteForm) {
+                    return;
+                }
+                form.dataset.deleteConfirmBound = '1';
+                if (form.getAttribute('onsubmit')) {
+                    form.removeAttribute('onsubmit');
+                }
+                form.addEventListener('submit', function (event) {
+                    if (event.defaultPrevented) {
+                        return;
+                    }
+                    if (form.hasAttribute('data-no-delete-confirm') || form.dataset.noDeleteConfirm === 'true') {
+                        return;
+                    }
+                    if (form.dataset.deleteConfirmed === '1') {
+                        return;
+                    }
+                    event.preventDefault();
+                    Swal.fire(buildPopupConfig({
+                        icon: 'warning',
+                        title: 'Konfirmasi Hapus',
+                        html: form.dataset.confirmMessage || 'Data yang dihapus tidak bisa dikembalikan.',
+                        showCancelButton: true,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true,
+                        focusCancel: true
+                    })).then(function (result) {
+                        if (!result.isConfirmed) {
+                            return;
+                        }
+                        form.dataset.deleteConfirmed = '1';
+                        if (typeof form.requestSubmit === 'function') {
+                            form.requestSubmit();
+                            return;
+                        }
+                        form.submit();
+                    });
+                });
+            });
+        };
+
+        window.mstoreNotify.bindDeleteConfirm(document);
+        window.mstoreNotify.showPageLoading = function (message) {
+            const loader = document.getElementById('mstorePageLoader');
+            if (!loader) {
+                return;
+            }
+            const textElement = document.getElementById('mstorePageLoaderText');
+            if (textElement && message) {
+                textElement.textContent = message;
+            }
+            loader.classList.add('is-active');
+            loader.setAttribute('aria-hidden', 'false');
+        };
+
+        window.mstoreNotify.hidePageLoading = function () {
+            const loader = document.getElementById('mstorePageLoader');
+            if (!loader) {
+                return;
+            }
+            loader.classList.remove('is-active');
+            loader.setAttribute('aria-hidden', 'true');
+        };
+
+        window.mstoreNotify.bindNavigationLoading = function (root) {
+            const scope = root || document;
+            scope.querySelectorAll('a[href]').forEach(function (link) {
+                if (link.dataset.navLoadingBound === '1') {
+                    return;
+                }
+                link.dataset.navLoadingBound = '1';
+                link.addEventListener('click', function (event) {
+                    if (event.defaultPrevented || event.button !== 0) {
+                        return;
+                    }
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+                    const href = link.getAttribute('href') || '';
+                    if (!href || href.charAt(0) === '#') {
+                        return;
+                    }
+                    if (href.toLowerCase().indexOf('javascript:') === 0) {
+                        return;
+                    }
+                    if (link.hasAttribute('download') || link.target === '_blank') {
+                        return;
+                    }
+                    if (link.hasAttribute('data-no-loading') || link.dataset.noLoading === 'true') {
+                        return;
+                    }
+                    if (link.hasAttribute('data-bs-toggle') || link.getAttribute('role') === 'button') {
+                        return;
+                    }
+                    const targetUrl = link.href;
+                    if (!targetUrl) {
+                        return;
+                    }
+                    if (targetUrl.split('#')[0] === window.location.href.split('#')[0]) {
+                        return;
+                    }
+                    event.preventDefault();
+                    window.mstoreNotify.showPageLoading(link.dataset.loadingMessage || 'Membuka halaman...');
+                    window.setTimeout(function () {
+                        window.location.assign(targetUrl);
+                    }, 60);
+                });
+            });
+        };
+
+        window.mstoreNotify.bindNavigationLoading(document);
+        window.addEventListener('pageshow', function () {
+            window.mstoreNotify.hidePageLoading();
         });
-    @endif
-    
-    // Sidebar Toggle, Theme Toggle, etc. are moved to public/js/dashboard-custom.js
+
+        @if($errors->any())
+            window.mstoreNotify.error({!! json_encode('<ul class="text-start mb-0 ps-3"><li>' . implode('</li><li>', $errors->all()) . '</li></ul>') !!});
+        @elseif(session('error'))
+            window.mstoreNotify.error({!! json_encode(session('error')) !!});
+        @elseif(session('warning'))
+            window.mstoreNotify.warning({!! json_encode(session('warning')) !!});
+        @elseif(session('info'))
+            window.mstoreNotify.info({!! json_encode(session('info')) !!});
+        @elseif(session('success'))
+            window.mstoreNotify.success({!! json_encode(session('success')) !!});
+        @endif
+    })();
 </script>
 
 <!-- Custom Dashboard JS -->

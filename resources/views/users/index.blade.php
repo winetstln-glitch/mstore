@@ -10,22 +10,43 @@
             <p class="text-muted small mb-0">{{ __('Manage system users and their roles.') }}</p>
         </div>
         <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
-            <form action="{{ route('users.index') }}" method="GET" class="d-flex gap-2 me-2">
-                <div class="input-group input-group-sm">
-                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search users...') }}" value="{{ request('search') }}">
-                    <button class="btn btn-outline-secondary" type="submit">
-                        <i class="fa-solid fa-search"></i>
-                    </button>
+            <form action="{{ route('users.index') }}" method="GET" class="row g-2 me-2 w-100 w-md-auto">
+                <div class="col-12 col-md-auto">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search users...') }}" value="{{ request('search') }}">
                 </div>
-            </form>
-            
-            <a href="{{ route('users.export', request()->query()) }}" class="btn btn-success text-nowrap">
+                <div class="col-12 col-md-auto">
+                    <select name="role_id" class="form-select form-select-sm">
+                        <option value="">{{ __('All Roles') }}</option>
+                        @foreach(($roles ?? collect()) as $role)
+                            <option value="{{ $role->id }}" @selected((string) request('role_id') === (string) $role->id)>{{ $role->label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto d-flex gap-2">
+                    <button class="btn btn-sm btn-primary text-nowrap" type="submit">
+                        <i class="fa-solid fa-search me-1"></i>{{ __('Search') }}
+                    </button>
+                    @if(request()->filled('search') || request()->filled('role_id'))
+                        <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
+                            <i class="fa-solid fa-rotate-left me-1"></i>{{ __('Reset') }}
+                        </a>
+                    @endif
+                </div>
+                 <div class="col-12 col-md-auto d-flex gap-2">
+                    <a href="{{ route('users.export', request()->query()) }}" class="btn btn-sm btn-outline-success text-nowrap">
                 <i class="fa-solid fa-file-excel me-1"></i> {{ __('Export Excel') }}
-            </a>
+                </a>
+                 </div>
 
-            <a href="{{ route('users.create') }}" class="btn btn-primary text-nowrap">
+            <div class="col-12 col-md-auto d-flex gap-2">
+                <a href="{{ route('users.create') }}" class="btn btn-sm btn-outline-primary text-nowrap">
                 <i class="fa-solid fa-plus me-1"></i> {{ __('Create New User') }}
             </a>
+
+            </div>
+            </form>
+            
+           
         </div>
     </div>
 </div>
