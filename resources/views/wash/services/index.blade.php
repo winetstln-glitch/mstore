@@ -62,7 +62,13 @@
                                     @endif
                                 </td>
                                 <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
-                                <td>{{ $service->description ?? '-' }}</td>
+                                <td>
+                                    @if(!empty($service->description))
+                                        <span class="wash-description-chip">{{ $service->description }}</span>
+                                    @else
+                                        <span class="wash-description-chip wash-description-chip-empty">-</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($service->is_active)
                                         <span class="badge bg-success">Aktif</span>
@@ -96,6 +102,38 @@
 </div>
 @push('styles')
 <style>
+    .wash-services-page .wash-description-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.65rem;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: #3730a3;
+        font-size: 0.76rem;
+        line-height: 1.35;
+        font-weight: 600;
+    }
+
+    .wash-services-page .wash-description-chip-empty {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #64748b;
+    }
+
+    [data-bs-theme="dark"] .wash-services-page .wash-description-chip {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(96, 165, 250, 0.42);
+        color: #bfdbfe;
+    }
+
+    [data-bs-theme="dark"] .wash-services-page .wash-description-chip-empty {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
     @media (max-width: 767.98px) {
         .wash-services-page {
             padding-left: 0.35rem;
@@ -144,6 +182,11 @@
             min-width: 34px;
             border-radius: 0.65rem;
             padding: 0.32rem 0.48rem;
+        }
+
+        .wash-services-page .wash-description-chip {
+            width: 100%;
+            justify-content: flex-start;
         }
     }
 </style>

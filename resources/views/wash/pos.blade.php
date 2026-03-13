@@ -43,7 +43,7 @@
                                     </div>
                                     <h5 class="service-title">{{ $service->name }}</h5>
                                     @if(!empty($service->description))
-                                    <p class="service-description">{{ $service->description }}</p>
+                                    <p class="service-description"><span class="service-description-label">Deskripsi:</span> {{ $service->description }}</p>
                                     @endif
                                     <div class="service-meta">
                                         <span class="service-price">Rp {{ number_format($service->price, 0, ',', '.') }}</span>
@@ -744,8 +744,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     .wash-card-header {
         padding: 1rem 1.1rem;
-        background: linear-gradient(180deg, rgba(182, 202, 233, 0.22) 0%, rgba(232, 233, 237, 0.3) 100%);
-    border-bottom-color: rgba(120, 142, 170, 0.28);
+        background: linear-gradient(180deg, rgb(58 126 232 / 22%) 0%, rgb(231 236 255 / 30%) 100%);
+        border-bottom-color: rgb(22 22 23 / 98%);
         display: flex;
         gap: 0.8rem;
         align-items: center;
@@ -881,6 +881,20 @@ document.addEventListener('DOMContentLoaded', function () {
         color: #64748b;
         margin: 0.32rem 0 0;
         min-height: 2.2em;
+    }
+
+    .service-description-label {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 0.2rem;
+        padding: 0.03rem 0.4rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #475569;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
     }
 
     .service-meta {
@@ -1249,6 +1263,11 @@ document.addEventListener('DOMContentLoaded', function () {
     [data-bs-theme="dark"] .wash-inline-check .form-check-label,
     [data-bs-theme="dark"] #customerInfo {
         color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .service-description-label {
+        background: #334155;
+        color: #cbd5e1;
     }
 
     [data-bs-theme="dark"] .service-price {
