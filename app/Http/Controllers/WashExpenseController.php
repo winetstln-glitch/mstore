@@ -10,10 +10,15 @@ use Illuminate\Support\Facades\Auth;
 
 class WashExpenseController extends Controller
 {
+    private function queryWashExpenses()
+    {
+        return Transaction::where('type', 'expense')
+            ->where('reference_number', 'like', 'WASH-EXP-%');
+    }
+
     public function index()
     {
-        $expenses = Transaction::where('type', 'expense')
-            ->where('reference_number', 'like', 'WASH-EXP-%')
+        $expenses = $this->queryWashExpenses()
             ->latest('transaction_date')
             ->paginate(15);
 
@@ -62,5 +67,45 @@ class WashExpenseController extends Controller
         }
 
         return redirect()->route('wash.expenses.index')->with('success', 'Pengeluaran berhasil dicatat.');
+    }
+
+    public function edit(Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'WASH-EXP-'),
+            404
+        );
+
+        return view('wash.expenses.create', compact('expense'));
+    }
+
+    public function update(Request $request, Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'WASH-EXP-'),
+            404
+        );
+
+        $data = $request->validate([
+            'transaction_date' => 'required|date',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'required|string|max:255',
+        ]);
+
+        $expense->update($data);
+
+        return redirect()->route('wash.expenses.index')->with('success', 'Pengeluaran berhasil diperbarui.');
+    }
+
+    public function destroy(Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'WASH-EXP-'),
+            404
+        );
+
+        $expense->delete();
+
+        return redirect()->route('wash.expenses.index')->with('success', 'Pengeluaran berhasil dihapus.');
     }
 }

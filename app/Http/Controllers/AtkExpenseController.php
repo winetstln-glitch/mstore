@@ -10,10 +10,15 @@ use Illuminate\Support\Facades\Auth;
 
 class AtkExpenseController extends Controller
 {
+    private function queryAtkExpenses()
+    {
+        return Transaction::where('type', 'expense')
+            ->where('reference_number', 'like', 'ATK-EXP-%');
+    }
+
     public function index()
     {
-        $expenses = Transaction::where('type', 'expense')
-            ->where('reference_number', 'like', 'ATK-EXP-%')
+        $expenses = $this->queryAtkExpenses()
             ->latest('transaction_date')
             ->paginate(15);
 
@@ -62,5 +67,45 @@ class AtkExpenseController extends Controller
         }
 
         return redirect()->route('atk.expenses.index')->with('success', 'Pengeluaran berhasil dicatat.');
+    }
+
+    public function edit(Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'ATK-EXP-'),
+            404
+        );
+
+        return view('atk.expenses.create', compact('expense'));
+    }
+
+    public function update(Request $request, Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'ATK-EXP-'),
+            404
+        );
+
+        $data = $request->validate([
+            'transaction_date' => 'required|date',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'required|string|max:255',
+        ]);
+
+        $expense->update($data);
+
+        return redirect()->route('atk.expenses.index')->with('success', 'Pengeluaran berhasil diperbarui.');
+    }
+
+    public function destroy(Transaction $expense)
+    {
+        abort_unless(
+            $expense->type === 'expense' && str_starts_with((string) $expense->reference_number, 'ATK-EXP-'),
+            404
+        );
+
+        $expense->delete();
+
+        return redirect()->route('atk.expenses.index')->with('success', 'Pengeluaran berhasil dihapus.');
     }
 }
