@@ -18,6 +18,7 @@
                         <th>Deskripsi</th>
                         <th>Nominal</th>
                         <th>Ref</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -27,9 +28,23 @@
                         <td>{{ $e->description }}</td>
                         <td>Rp {{ number_format($e->amount,0,',','.') }}</td>
                         <td><span class="badge bg-secondary">{{ $e->reference_number }}</span></td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('wash.expenses.edit', $e->id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ route('wash.expenses.destroy', $e->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus pengeluaran ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" class="text-center text-muted">Belum ada data</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted">Belum ada data</td></tr>
                     @endforelse
                 </tbody>
             </table>
