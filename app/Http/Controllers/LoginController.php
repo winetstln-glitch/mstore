@@ -55,16 +55,16 @@ class LoginController extends Controller
         $attempted = false;
 
         if ($isEmailInput && $legacyEmailUser) {
-            $attempted = Auth::attempt(['email' => $legacyEmailUser->email, 'password' => $password], $remember);
+            $attempted = Auth::attempt(['email' => $legacyEmailUser->email, 'password' => $password, 'is_active' => true], $remember);
         } else {
-            $attempted = Auth::attempt(['username' => $login, 'password' => $password], $remember);
+            $attempted = Auth::attempt(['username' => $login, 'password' => $password, 'is_active' => true], $remember);
             if (! $attempted) {
                 $legacyUser = User::query()
                     ->whereNull('username')
                     ->where('email', 'like', $login.'@%')
                     ->first();
                 if ($legacyUser) {
-                    $attempted = Auth::attempt(['email' => $legacyUser->email, 'password' => $password], $remember);
+                    $attempted = Auth::attempt(['email' => $legacyUser->email, 'password' => $password, 'is_active' => true], $remember);
                 }
             }
         }
@@ -149,6 +149,10 @@ class LoginController extends Controller
                 } catch (\Throwable $e) {
                 }
 
+                if (! $user->is_active) {
+                    throw ValidationException::withMessages(['login' => 'Akun tidak aktif. Hubungi admin untuk aktivasi ulang.']);
+                }
+
                 Auth::login($user, $remember);
                 $request->session()->regenerate();
                 $fallback = $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
@@ -222,6 +226,10 @@ class LoginController extends Controller
             return null;
         }
 
+        if (($customer->status ?? 'active') !== 'active') {
+            return null;
+        }
+
         $customerPassword = (string) ($customer->pppoe_password ?? '');
         if ($customerPassword === '' || ! hash_equals($customerPassword, $password)) {
             return null;
@@ -229,6 +237,10 @@ class LoginController extends Controller
 
         $user = $this->ensurePortalUserForCustomer($customer, $password);
         if (! $user) {
+            return null;
+        }
+
+        if (! $user->is_active) {
             return null;
         }
 

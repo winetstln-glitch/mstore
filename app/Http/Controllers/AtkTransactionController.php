@@ -18,14 +18,26 @@ use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
-class AtkTransactionController extends Controller
+class AtkTransactionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:atk.view', only: ['dashboard']),
+            new Middleware('permission:atk.pos', only: ['pos', 'store']),
+            new Middleware('permission:atk.report', only: ['index', 'show', 'receipt', 'exportPdf', 'exportExcel', 'whatsappReceipt']),
+            new Middleware('permission:atk.manage', only: ['destroy', 'bulkDestroy']),
+        ];
+    }
+
     public function dashboard()
     {
         $today = now()->format('Y-m-d');

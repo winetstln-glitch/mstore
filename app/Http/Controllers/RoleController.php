@@ -55,6 +55,26 @@ class RoleController extends Controller implements HasMiddleware
             'finance.view',
         ];
 
+        $resellerNames = [
+            'dashboard.view', 'customer.view', 'customer.create', 'customer.edit',
+            'ticket.view', 'ticket.create', 'ticket.edit', 'installation.view',
+            'router.view', 'hotspot.view', 'pppoe.view', 'map.view',
+            'finance.view', 'profile.view', 'profile.update',
+            'notification.view', 'notification.manage',
+        ];
+
+        $cashierAtkNames = [
+            'atk.view', 'atk.pos', 'atk.report',
+            'attendance.view', 'attendance.create', 'attendance.edit',
+            'profile.view', 'profile.update',
+        ];
+
+        $cashierWashNames = [
+            'wash.view', 'wash.pos', 'wash.report',
+            'attendance.view', 'attendance.create', 'attendance.edit',
+            'profile.view', 'profile.update',
+        ];
+
         // Finance: Full Management for some, View for others
         $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification'];
         $financeViewNames = [
@@ -70,9 +90,12 @@ class RoleController extends Controller implements HasMiddleware
             'Network Operations Center' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
             'Technician' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
             'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
+            'Reseller' => $allPermissions->whereIn('name', $resellerNames)->pluck('id')->values()->toArray(),
             'Finance Staff' => $allPermissions->filter(function ($perm) use ($financeManageGroups, $financeViewNames) {
                 return in_array($perm->group, $financeManageGroups) || in_array($perm->name, $financeViewNames);
             })->pluck('id')->values()->toArray(),
+            'Kasir ATK' => $allPermissions->whereIn('name', $cashierAtkNames)->pluck('id')->values()->toArray(),
+            'Kasir Wash' => $allPermissions->whereIn('name', $cashierWashNames)->pluck('id')->values()->toArray(),
             'Customer' => [],
         ];
     }

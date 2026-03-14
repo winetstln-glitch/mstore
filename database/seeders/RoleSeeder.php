@@ -20,6 +20,7 @@ class RoleSeeder extends Seeder
             ['name' => 'technician', 'label' => 'Technician'],
             ['name' => 'coordinator', 'label' => 'Coordinator'],
             ['name' => 'customer', 'label' => 'Customer'],
+            ['name' => 'reseller', 'label' => 'Reseller'],
             ['name' => 'finance', 'label' => 'Finance Staff'],
             ['name' => 'kasir-atk', 'label' => 'Kasir ATK'],
             ['name' => 'kasir-wash', 'label' => 'Kasir Wash'],
@@ -94,6 +95,27 @@ class RoleSeeder extends Seeder
                     'notification.view',
                     'notification.manage',
                     'finance.view',
+                ])->get();
+                $role->permissions()->sync($permissions);
+            } elseif ($role->name === 'reseller') {
+                $permissions = Permission::whereIn('name', [
+                    'dashboard.view',
+                    'customer.view',
+                    'customer.create',
+                    'customer.edit',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'installation.view',
+                    'router.view',
+                    'hotspot.view',
+                    'pppoe.view',
+                    'map.view',
+                    'finance.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'finance') {

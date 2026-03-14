@@ -369,9 +369,6 @@
                     <a href="{{ route('accounting.periods.index') }}" class="sidebar-item {{ request()->routeIs('accounting.periods.*') ? 'active' : '' }}">
                         <i class="fa-regular fa-calendar-check"></i> {{ __('Periode Akuntansi') }}
                     </a>
-                    <a href="{{ route('accounting.accounts.index') }}" class="sidebar-item {{ request()->routeIs('accounting.accounts.*') ? 'active' : '' }}">
-                        <i class="fa-regular fa-folder-open"></i> {{ __('Master Akun') }}
-                    </a>
                 </div>
             </div>
             @endif
@@ -723,7 +720,7 @@
         <footer class="py-3 mt-auto border-top main-footer" style="z-index: 10; position: relative;">
             <div class="container-fluid px-4">
                 <div class="d-flex align-items-center justify-content-center small">
-                    <div class="text-muted">Copyright {{ date('Y') }} &copy; ds-winets.id <span class="mx-1">&middot;</span> {{ config('app.version') }}</div>
+                    <div class="text-muted">Copyright {{ date('Y') }} &copy; mstore.id <span class="mx-1">&middot;</span> {{ config('app.version') }}</div>
                 </div>
             </div>
         </footer>
@@ -778,26 +775,16 @@
             return Object.assign({}, popupBase, overrides || {});
         };
 
-        const toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3200,
-            timerProgressBar: true,
-            customClass: {
-                popup: 'mstore-swal-toast',
-                title: 'mstore-swal-title',
-                htmlContainer: 'mstore-swal-html'
-            }
-        });
-
         window.mstoreNotify = {
             success: function (message, options) {
-                return toast.fire(Object.assign({
+                return Swal.fire(buildPopupConfig(Object.assign({
                     icon: 'success',
                     title: 'Berhasil',
-                    html: message || 'Aksi berhasil diproses'
-                }, options || {}));
+                    html: message || 'Aksi berhasil diproses',
+                    position: 'center',
+                    timer: 2600,
+                    showConfirmButton: false
+                }, options || {})));
             },
             error: function (message, options) {
                 return Swal.fire(buildPopupConfig(Object.assign({
