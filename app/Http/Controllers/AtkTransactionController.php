@@ -9,6 +9,7 @@ use App\Models\AtkTransaction;
 use App\Models\AtkTransactionItem;
 use App\Models\Cash;
 use App\Models\Coordinator;
+use App\Models\Customer;
 use App\Models\Investor;
 use App\Models\Journal;
 use App\Models\Setting;
@@ -19,6 +20,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -51,20 +53,24 @@ class AtkTransactionController extends Controller
         $products = AtkProduct::where('category', 'ATK')->where('stock', '>', 0)->get();
         $services = AtkProduct::where('category', 'JASA POTOCOPY')->get();
         $bankServices = AtkProduct::where('category', 'JASA TRANSFER BANK')->get();
+        $customers = Customer::orderBy('name')->get(['id', 'name', 'phone']);
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $investors = Investor::orderBy('name')->get(['id', 'name', 'coordinator_id']);
 
-        return view('atk.pos', compact('products', 'services', 'bankServices', 'coordinators', 'investors'));
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'items' => 'required|array',
-            'items.*.id' => 'required|exists:atk_products,id',
+            'items.*.id' => 'nullable',
+            'items.*.type' => 'nullable|string|in:product,service,bank,customer_payment',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.nominal_transaksi' => 'nullable|numeric|min:0',
             'items.*.fee' => 'nullable|numeric|min:0',
+            'items.*.customer_name' => 'nullable|string|max:255',
+            'transaction_category' => 'nullable|string|in:penjualan_atk,pembayaran_pelanggan',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
         ]);
@@ -81,7 +87,33 @@ class AtkTransactionController extends Controller
             $hpp = 0;
             $containsService = false;
             foreach ($request->items as $itemData) {
+                $itemType = $itemData['type'] ?? 'product';
+                if ($itemType === 'customer_payment') {
+                    $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
+                    if ($nominal <= 0) {
+                        throw new \Exception('Nominal pembayaran pelanggan wajib diisi.');
+                    }
+                    $customerName = trim((string) ($itemData['customer_name'] ?? 'Pelanggan'));
+                    $subtotal = $nominal;
+                    $total += $subtotal;
+                    $sumRevenueSales += $subtotal;
+                    $items[] = [
+                        'product_id' => null,
+                        'product_name' => 'Pembayaran Pelanggan - '.$customerName,
+                        'price' => $subtotal,
+                        'quantity' => 1,
+                        'subtotal' => $subtotal,
+                        'nominal_transaksi' => $subtotal,
+                        'fee' => null,
+                    ];
+
+                    continue;
+                }
+
                 $product = AtkProduct::lockForUpdate()->find($itemData['id']);
+                if (! $product) {
+                    throw new \Exception('Produk tidak ditemukan.');
+                }
 
                 $isService = strtoupper($product->category ?? '') === 'JASA POTOCOPY';
                 $isBank = strtoupper($product->category ?? '') === 'JASA TRANSFER BANK';
@@ -127,11 +159,15 @@ class AtkTransactionController extends Controller
                 ];
             }
 
+            $transactionCategory = $request->input('transaction_category', 'penjualan_atk');
             if ($request->payment_method === 'hutang' && $containsService && empty($request->coordinator_id)) {
                 throw new \Exception('Pilih pengurus untuk transaksi hutang jasa potocopy.');
             }
+            if ($transactionCategory === 'pembayaran_pelanggan' && empty($request->coordinator_id)) {
+                throw new \Exception('Pilih pengurus untuk transaksi pembayaran pelanggan.');
+            }
 
-            $transaction = AtkTransaction::create([
+            $payload = [
                 'user_id' => Auth::id(),
                 'transaction_number' => 'TRX-'.time(),
                 'invoice_number' => 'INV-'.time(), // Added to satisfy legacy constraint
@@ -139,8 +175,13 @@ class AtkTransactionController extends Controller
                 'payment_method' => $request->payment_method,
                 'cash_amount' => $request->cash_amount,
                 'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
-                'coordinator_id' => $request->payment_method === 'hutang' ? ($request->coordinator_id ?? null) : null,
-            ]);
+                'coordinator_id' => ($request->payment_method === 'hutang' || $transactionCategory === 'pembayaran_pelanggan') ? ($request->coordinator_id ?? null) : null,
+            ];
+            if (Schema::hasColumn('atk_transactions', 'transaction_category')) {
+                $payload['transaction_category'] = $transactionCategory;
+            }
+
+            $transaction = AtkTransaction::create($payload);
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
@@ -257,7 +298,7 @@ class AtkTransactionController extends Controller
 
     public function destroy(AtkTransaction $transaction)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('atk.manage')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -309,7 +350,7 @@ class AtkTransactionController extends Controller
 
     public function bulkDestroy(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('atk.manage')) {
             abort(403, 'Unauthorized action.');
         }
 

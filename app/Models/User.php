@@ -61,38 +61,6 @@ class User extends Authenticatable
         ];
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (User $user) {
-            if (blank($user->username)) {
-                $user->username = static::generateUniqueUsername($user->name, $user->email);
-            }
-        });
-    }
-
-    public static function generateUniqueUsername(?string $name = null, ?string $email = null): string
-    {
-        $base = trim((string) $name);
-        if ($base === '' && filled($email)) {
-            $base = Str::before((string) $email, '@');
-        }
-
-        $slug = Str::slug($base, '_');
-        if ($slug === '') {
-            $slug = 'user';
-        }
-
-        $candidate = $slug;
-        $suffix = 1;
-
-        while (static::query()->where('username', $candidate)->exists()) {
-            $candidate = $slug.'_'.$suffix;
-            $suffix++;
-        }
-
-        return $candidate;
-    }
-
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
@@ -140,6 +108,41 @@ class User extends Authenticatable
         }
 
         return $this->role && $this->role->hasPermission($permission);
+    }
+
+    public static function generateUniqueUsername(?string $seed, ?string $fallbackEmail = null): string
+    {
+        $base = Str::of((string) $seed)
+            ->lower()
+            ->ascii()
+            ->replaceMatches('/[^a-z0-9]+/', '_')
+            ->trim('_')
+            ->value();
+
+        if ($base === '' && $fallbackEmail) {
+            $base = Str::before(strtolower($fallbackEmail), '@');
+            $base = Str::of($base)
+                ->ascii()
+                ->replaceMatches('/[^a-z0-9]+/', '_')
+                ->trim('_')
+                ->value();
+        }
+
+        if ($base === '') {
+            $base = 'user';
+        }
+
+        $base = mb_substr($base, 0, 40);
+        $candidate = $base;
+        $suffix = 1;
+
+        while (static::where('username', $candidate)->exists()) {
+            $suffixText = '_'.$suffix;
+            $candidate = mb_substr($base, 0, max(1, 40 - strlen($suffixText))).$suffixText;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 
     public function assignRole($role)

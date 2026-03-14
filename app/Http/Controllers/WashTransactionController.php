@@ -310,7 +310,7 @@ class WashTransactionController extends Controller
 
     public function update(Request $request, WashTransaction $transaction)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('wash.manage')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -386,7 +386,7 @@ class WashTransactionController extends Controller
 
     public function destroy(WashTransaction $transaction)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('wash.manage')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -409,7 +409,7 @@ class WashTransactionController extends Controller
 
     public function bulkDestroy(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('wash.manage')) {
             abort(403, 'Unauthorized action.');
         }
 

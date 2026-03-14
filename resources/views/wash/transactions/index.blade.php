@@ -7,7 +7,7 @@
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-body">Transaksi Wash</h1>
         <div class="d-flex flex-wrap gap-2 wash-transactions-toolbar">
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasPermission('wash.manage'))
             <button type="button" class="btn btn-sm btn-outline-danger shadow-sm d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
                 <i class="fas fa-trash fa-sm"></i>
                 <span class="d-inline d-md-none ms-1">{{ __('Hapus') }} (<span id="selectedCount">0</span>)</span>
@@ -70,7 +70,7 @@
             </form>
         </div>
         <div class="card-body">
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasPermission('wash.manage'))
             <div class="d-flex d-md-none align-items-center gap-2 mb-2">
                 <div class="form-check m-0">
                     <input class="form-check-input" type="checkbox" id="selectAllMobile">
@@ -82,7 +82,7 @@
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            @if(Auth::user()->hasRole('admin'))
+                            @if(Auth::user()->hasPermission('wash.manage'))
                             <th style="width:40px;">
                                 <div class="form-check m-0">
                                     <input class="form-check-input" type="checkbox" id="selectAll">
@@ -102,7 +102,7 @@
                     <tbody>
                         @forelse($transactions as $transaction)
                             <tr>
-                                @if(Auth::user()->hasRole('admin'))
+                                @if(Auth::user()->hasPermission('wash.manage'))
                                 <td>
                                     <div class="form-check m-0">
                                         <input class="form-check-input transaction-checkbox" type="checkbox" value="{{ $transaction->id }}">
@@ -124,7 +124,7 @@
                                         <a href="{{ route('wash.transactions.receipt', $transaction->id) }}" target="_blank" class="btn btn-sm btn-outline-warning" title="{{ __('Cetak') }}">
                                             <i class="fas fa-print"></i>
                                         </a>
-                                        @if(Auth::user()->hasRole('admin'))
+                                        @if(Auth::user()->hasPermission('wash.manage'))
                                         <button
                                             type="button"
                                             class="btn btn-sm btn-outline-info"
@@ -155,7 +155,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ Auth::user()->hasRole('admin') ? 9 : 8 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
+                                <td colspan="{{ Auth::user()->hasPermission('wash.manage') ? 9 : 8 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -167,7 +167,7 @@
         </div>
     </div>
 </div>
-@if(Auth::user()->hasRole('admin'))
+@if(Auth::user()->hasPermission('wash.manage'))
 <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

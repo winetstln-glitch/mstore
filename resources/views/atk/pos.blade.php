@@ -6,7 +6,7 @@
 <div class="container-fluid atk-pos-page">
     <div class="row h-100">
         <!-- Product & Service List -->
-        <div class="col-md-8">
+        <div class="col-12 col-lg-8 mb-3 mb-lg-0">
             <div class="card shadow-sm h-100">
                 <div class="card-header py-3">
                     <div class="input-group">
@@ -24,10 +24,13 @@
                             <button class="btn btn-outline-success" id="tabBank" onclick="switchTab('bank')">
                                 <i class="fa-solid fa-building-columns"></i> Agen Bank
                             </button>
+                            <button class="btn btn-outline-info" id="tabCustomerPayments" onclick="switchTab('customer-payments')">
+                                <i class="fa-solid fa-money-check-dollar"></i> Pembayaran Pelanggan
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="card-body overflow-auto" style="max-height: 75vh;">
+                <div class="card-body overflow-auto product-panel-body" style="max-height: 75vh;">
                     <div class="row g-3" id="productList">
                         @foreach($products as $product)
                         <div class="col-md-3 col-sm-4 col-6 product-item" data-name="{{ strtolower($product->name) }}" data-code="{{ strtolower($product->code) }}">
@@ -83,6 +86,36 @@
                             </div>
                         @endif
                     </div>
+                    <div class="d-none" id="customerPaymentList">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pelanggan</label>
+                                <select id="customerPaymentCustomerId" class="form-select">
+                                    <option value="">Pilih Pelanggan</option>
+                                    @foreach(($customers ?? []) as $customer)
+                                        <option value="{{ $customer->id }}" data-name="{{ $customer->name }}">{{ $customer->name }}{{ !empty($customer->phone) ? ' - '.$customer->phone : '' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal Pembayaran</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="customerPaymentNominal" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-info text-white w-100" onclick="addCustomerPaymentToCart()">
+                                    <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
+                                </button>
+                            </div>
+                        </div>
+                        @if(empty($customers) || count($customers)===0)
+                            <div class="text-center py-5">
+                                <p class="text-body-secondary">Belum ada data pelanggan. <a href="{{ route('customers.create') }}">Tambah Pelanggan</a></p>
+                            </div>
+                        @endif
+                    </div>
                     <div class="d-none" id="bankPanel">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -124,7 +157,7 @@
                 </div>
 
                 <!-- Cart -->
-                <div class="col-md-4">
+                <div class="col-12 col-lg-4">
                     <div class="card shadow-sm h-100 d-flex flex-column">
                         <div class="card-header bg-primary text-white py-3">
                             <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Current Order</h5>
@@ -148,7 +181,7 @@
                             
                             
                             <div class="mb-3">
-                                 <label class="form-label">Payment Method</label>
+                                 <label class="form-label">Metode Pembayaran</label>
                                  <select class="form-select" id="paymentMethod">
                                      <option value="cash">Cash</option>
                                      <option value="transfer">Transfer</option>
@@ -346,7 +379,12 @@
 
     document.getElementById('productSearch').addEventListener('input', function(e) {
         const search = e.target.value.toLowerCase();
-        const activeList = document.getElementById('serviceList').classList.contains('d-none') ? '.product-item' : '.service-item';
+        let activeList = '.product-item';
+        if (!document.getElementById('serviceList').classList.contains('d-none')) {
+            activeList = '.service-item';
+        } else if (!document.getElementById('customerPaymentList').classList.contains('d-none')) {
+            return;
+        }
         document.querySelectorAll(activeList).forEach(item => {
             const name = item.dataset.name;
             const code = item.dataset.code;
@@ -357,35 +395,55 @@
     function switchTab(tab) {
         const pList = document.getElementById('productList');
         const sList = document.getElementById('serviceList');
+        const cpList = document.getElementById('customerPaymentList');
         const bPanel = document.getElementById('bankPanel');
         const tabP = document.getElementById('tabProducts');
         const tabS = document.getElementById('tabServices');
         const tabB = document.getElementById('tabBank');
+        const tabCP = document.getElementById('tabCustomerPayments');
         if (tab === 'products') {
             pList.classList.remove('d-none');
             sList.classList.add('d-none');
+            cpList.classList.add('d-none');
             bPanel.classList.add('d-none');
             tabP.classList.add('active');
             tabS.classList.remove('active');
             tabB.classList.remove('active');
+            tabCP.classList.remove('active');
         } else {
             if (tab === 'services') {
                 pList.classList.add('d-none');
                 sList.classList.remove('d-none');
+                cpList.classList.add('d-none');
                 bPanel.classList.add('d-none');
                 tabS.classList.add('active');
                 tabP.classList.remove('active');
                 tabB.classList.remove('active');
+                tabCP.classList.remove('active');
             } else {
-                pList.classList.add('d-none');
-                sList.classList.add('d-none');
-                bPanel.classList.remove('d-none');
-                tabB.classList.add('active');
-                tabP.classList.remove('active');
-                tabS.classList.remove('active');
+                if (tab === 'bank') {
+                    pList.classList.add('d-none');
+                    sList.classList.add('d-none');
+                    cpList.classList.add('d-none');
+                    bPanel.classList.remove('d-none');
+                    tabB.classList.add('active');
+                    tabP.classList.remove('active');
+                    tabS.classList.remove('active');
+                    tabCP.classList.remove('active');
+                } else {
+                    pList.classList.add('d-none');
+                    sList.classList.add('d-none');
+                    cpList.classList.remove('d-none');
+                    bPanel.classList.add('d-none');
+                    tabCP.classList.add('active');
+                    tabP.classList.remove('active');
+                    tabS.classList.remove('active');
+                    tabB.classList.remove('active');
+                }
             }
         }
         document.getElementById('productSearch').dispatchEvent(new Event('input'));
+        updatePengurusVisibility();
     }
 
     function addBankToCart() {
@@ -395,6 +453,39 @@
         const name = (document.getElementById('bankServiceId').selectedOptions[0]?.text) || 'Agen Bank';
         if (nominal <= 0 && fee <= 0) return;
         cart.push({ id, name, price: fee, quantity: 1, maxStock: 1, bank: true, nominal_transaksi: nominal, fee });
+        renderCart();
+    }
+
+    function addCustomerPaymentToCart() {
+        const customerSelect = document.getElementById('customerPaymentCustomerId');
+        const customerId = parseInt(customerSelect.value);
+        const nominal = parseFloat(document.getElementById('customerPaymentNominal').value) || 0;
+        if (!customerId) {
+            alert('Pilih pelanggan terlebih dahulu.');
+            return;
+        }
+        if (nominal <= 0) {
+            alert('Nominal pembayaran wajib diisi.');
+            return;
+        }
+        const customerName = customerSelect.selectedOptions[0]?.dataset?.name || customerSelect.selectedOptions[0]?.text || 'Pelanggan';
+        const id = 900000000 + customerId;
+        const existingItem = cart.find(item => item.id === id);
+        if (existingItem) {
+            existingItem.price = nominal;
+            existingItem.nominal_transaksi = nominal;
+        } else {
+            cart.push({
+                id,
+                name: `Pembayaran - ${customerName}`,
+                price: nominal,
+                quantity: 1,
+                maxStock: 1,
+                customerPayment: true,
+                customerName,
+                nominal_transaksi: nominal
+            });
+        }
         renderCart();
     }
 
@@ -408,7 +499,8 @@
             }
         } else {
             const isService = (type === 'service');
-            cart.push({ id, name, price, quantity: 1, maxStock, service: isService });
+            const isCustomerPayment = (type === 'customer_payment');
+            cart.push({ id, name, price, quantity: 1, maxStock, service: isService, customerPayment: isCustomerPayment });
         }
         renderCart();
     }
@@ -468,7 +560,7 @@
                     </div>
                     <div class="d-flex align-items-center">
                          <div class="btn-group btn-group-sm me-2">
-                            ${ item.bank 
+                            ${ (item.bank || item.customerPayment)
                                 ? '<button class="btn btn-outline-secondary" disabled>1</button>' 
                                 : `<button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
                                    <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
@@ -526,10 +618,11 @@ document.getElementById('paymentMethod').addEventListener('change', function(e) 
 
 function updatePengurusVisibility() {
     const hasService = cart.some(i => i.service === true);
+    const hasCustomerPayment = cart.some(i => i.customerPayment === true);
     const method = document.getElementById('paymentMethod')?.value;
     const div = document.getElementById('pengurusDiv');
     if (!div) return;
-    if (hasService && method === 'hutang') {
+    if (hasCustomerPayment || (hasService && method === 'hutang')) {
         div.classList.remove('d-none');
     } else {
         div.classList.add('d-none');
@@ -541,6 +634,7 @@ function updatePengurusVisibility() {
         if (cart.length === 0) return;
 
         const paymentMethod = document.getElementById('paymentMethod').value;
+        const transactionCategory = cart.some(item => item.customerPayment === true) ? 'pembayaran_pelanggan' : 'penjualan_atk';
         const cashAmount = paymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
         let total = 0;
         cart.forEach(item => {
@@ -556,11 +650,19 @@ function updatePengurusVisibility() {
         const coordEl = document.getElementById('coordinatorId');
         const coordinatorId = (pengurusVisible && coordEl && coordEl.value) ? coordEl.value : undefined;
         if (pengurusVisible && !coordinatorId) {
-            alert('Pilih pengurus untuk transaksi hutang jasa potocopy.');
+            alert('Pilih pengurus untuk transaksi ini.');
             return;
         }
         const data = {
-            items: cart.map(item => ({ id: item.id, quantity: item.quantity, nominal_transaksi: item.bank ? item.nominal_transaksi : undefined, fee: item.bank ? item.fee : undefined })),
+            items: cart.map(item => ({
+                id: item.bank || item.customerPayment ? null : item.id,
+                type: item.bank ? 'bank' : (item.service ? 'service' : (item.customerPayment ? 'customer_payment' : 'product')),
+                quantity: item.quantity,
+                nominal_transaksi: (item.bank || item.customerPayment) ? item.nominal_transaksi : undefined,
+                fee: item.bank ? item.fee : undefined,
+                customer_name: item.customerPayment ? item.customerName : undefined
+            })),
+            transaction_category: transactionCategory,
             payment_method: paymentMethod,
             cash_amount: cashAmount,
             coordinator_id: coordinatorId
@@ -682,6 +784,45 @@ function updatePengurusVisibility() {
     [data-bs-theme="dark"] .atk-pos-page .text-muted,
     [data-bs-theme="dark"] .atk-pos-page .text-body-secondary {
         color: #94a3b8 !important;
+    }
+    @media (max-width: 991.98px) {
+        .atk-pos-page {
+            padding-left: 0.4rem;
+            padding-right: 0.4rem;
+        }
+        .atk-pos-page .card {
+            border-radius: 12px;
+        }
+        .atk-pos-page .card-header {
+            padding: 0.75rem;
+        }
+        .atk-pos-page .btn-group {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.4rem;
+            width: 100%;
+        }
+        .atk-pos-page .btn-group .btn {
+            border-radius: 10px !important;
+            min-height: 40px;
+        }
+        .atk-pos-page .product-panel-body {
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0.75rem;
+        }
+        .atk-pos-page .product-card .card-body {
+            padding: 0.6rem !important;
+        }
+        .atk-pos-page .product-card .card-title {
+            font-size: 0.83rem;
+        }
+        .atk-pos-page #cartItems {
+            max-height: 38vh !important;
+        }
+        .atk-pos-page .card-footer {
+            padding: 0.75rem;
+        }
     }
 </style>
 @endpush

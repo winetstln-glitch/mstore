@@ -48,7 +48,6 @@ Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::c
 Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendOtp'])->name('password.send_otp');
 Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
 Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
-Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
 
 Route::middleware('auth')->group(function () {
     // AI Center
@@ -81,6 +80,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
         Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
     });
+
+    // Payment Webhook
+    Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -242,10 +244,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');
     Route::post('/telegram/update', [\App\Http\Controllers\TelegramController::class, 'update'])->name('telegram.update');
     Route::post('/telegram/test', [\App\Http\Controllers\TelegramController::class, 'test'])->name('telegram.test');
-    Route::post('/telegram/test-ip-down', [\App\Http\Controllers\TelegramController::class, 'testIpDown'])->name('telegram.test_ip_down');
-    Route::post('/telegram/test-ip-up', [\App\Http\Controllers\TelegramController::class, 'testIpUp'])->name('telegram.test_ip_up');
-    Route::post('/telegram/preview-ip-down', [\App\Http\Controllers\TelegramController::class, 'previewIpDown'])->name('telegram.preview_ip_down');
-    Route::post('/telegram/preview-ip-up', [\App\Http\Controllers\TelegramController::class, 'previewIpUp'])->name('telegram.preview_ip_up');
 
     // WhatsApp Settings
     Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
@@ -281,7 +279,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
     Route::prefix('accounting')->name('accounting.')->group(function () {
-        Route::resource('/accounts', \App\Http\Controllers\AccountingAccountController::class)->except(['show']);
         Route::get('/trial-balance', [\App\Http\Controllers\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
         Route::get('/income-statement', [\App\Http\Controllers\AccountingReportController::class, 'incomeStatement'])->name('income_statement');
         Route::get('/balance-sheet', [\App\Http\Controllers\AccountingReportController::class, 'balanceSheet'])->name('balance_sheet');
@@ -336,6 +333,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'index'])->name('expenses.index');
         Route::get('/expenses/create', [\App\Http\Controllers\WashExpenseController::class, 'create'])->name('expenses.create');
         Route::post('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\WashExpenseController::class, 'edit'])->name('expenses.edit');
+        Route::put('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'destroy'])->name('expenses.destroy');
         Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
@@ -365,6 +365,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/expenses', [\App\Http\Controllers\AtkExpenseController::class, 'index'])->name('expenses.index');
         Route::get('/expenses/create', [\App\Http\Controllers\AtkExpenseController::class, 'create'])->name('expenses.create');
         Route::post('/expenses', [\App\Http\Controllers\AtkExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\AtkExpenseController::class, 'edit'])->name('expenses.edit');
+        Route::put('/expenses/{expense}', [\App\Http\Controllers\AtkExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('/expenses/{expense}', [\App\Http\Controllers\AtkExpenseController::class, 'destroy'])->name('expenses.destroy');
         Route::get('/transactions/export/pdf', [\App\Http\Controllers\AtkTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
         Route::get('/transactions/export/excel', [\App\Http\Controllers\AtkTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\AtkTransactionController::class, 'receipt'])->name('transactions.receipt');

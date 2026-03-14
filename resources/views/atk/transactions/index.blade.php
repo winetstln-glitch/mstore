@@ -7,7 +7,7 @@
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Transaction History') }}</h1>
         <div class="d-flex flex-wrap gap-2">
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasPermission('atk.manage') && Route::has('atk.transactions.bulkDestroy'))
             <button type="button" class="btn btn-outline-danger d-none" id="bulkDeleteBtn" onclick="confirmBulkDelete()">
                 <i class="fa-solid fa-trash"></i>
                 <span class="d-inline d-md-none ms-2">{{ __('Delete') }} (<span id="selectedCount">0</span>)</span>
@@ -78,7 +78,7 @@
                     {{ __('Total Pendapatan') }}: Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}
                 </span>
             </div>
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasPermission('atk.manage') && Route::has('atk.transactions.bulkDestroy'))
             <div class="d-flex d-md-none align-items-center gap-2 mb-2">
                 <div class="form-check m-0">
                     <input class="form-check-input" type="checkbox" id="selectAllMobile">
@@ -90,7 +90,7 @@
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            @if(Auth::user()->hasRole('admin'))
+                            @if(Auth::user()->hasPermission('atk.manage') && Route::has('atk.transactions.bulkDestroy'))
                             <th style="width:40px;">
                                 <div class="form-check m-0">
                                     <input class="form-check-input" type="checkbox" id="selectAll">
@@ -108,7 +108,7 @@
                     <tbody>
                         @foreach($transactions as $transaction)
                         <tr>
-                            @if(Auth::user()->hasRole('admin'))
+                            @if(Auth::user()->hasPermission('atk.manage') && Route::has('atk.transactions.bulkDestroy'))
                             <td>
                                 <div class="form-check m-0">
                                     <input class="form-check-input transaction-checkbox" type="checkbox" value="{{ $transaction->id }}">
@@ -124,23 +124,19 @@
                                 <div class="d-flex flex-wrap gap-1 justify-content-end">
                                     <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                         <i class="fa-solid fa-eye"></i>
-                                        <span class="d-none d-md-inline ms-1">{{ __('View') }}</span>
                                     </a>
                                     <a href="{{ route('atk.transactions.receipt', $transaction) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="{{ __('Print') }}">
-                                        <i class="fa-solid fa-print"></i>
-                                        <span class="d-none d-md-inline ms-1">{{ __('Print') }}</span>
+                                        <i class="fa-solid fa-print"></i>                                       
                                     </a>
-                                    @if(Auth::user()->hasRole('admin'))
+                                    @if(Auth::user()->hasPermission('atk.manage'))
                                     <a href="{{ route('atk.transactions.show', $transaction) }}" class="btn btn-sm btn-outline-warning" title="{{ __('Edit') }}">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                        <span class="d-none d-md-inline ms-1">{{ __('Edit') }}</span>
+                                        <i class="fa-solid fa-pen-to-square"></i>                                       
                                     </a>
                                     <form action="{{ route('atk.transactions.destroy', $transaction) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" onsubmit="return confirm(this.dataset.confirm)">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
-                                            <i class="fa-solid fa-trash"></i>
-                                            <span class="d-none d-md-inline ms-1">{{ __('Delete') }}</span>
+                                            <i class="fa-solid fa-trash"></i>                                     
                                         </button>
                                     </form>
                                     @endif
@@ -157,7 +153,7 @@
         </div>
     </div>
 </div>
-@if(Auth::user()->hasRole('admin'))
+@if(Auth::user()->hasPermission('atk.manage'))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const selectAll = document.getElementById('selectAll');
