@@ -131,6 +131,11 @@
                 'features' => \App\Models\Setting::getValue('cctv_package_4_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi"),
             ],
         ];
+        $landingHolidayStart = \App\Models\Setting::getValue('wash_holiday_pricing_start_date', '');
+        $landingHolidayEnd = \App\Models\Setting::getValue('wash_holiday_pricing_end_date', '');
+        $landingHolidayActive = !empty($landingHolidayStart) && !empty($landingHolidayEnd)
+            && now()->toDateString() >= $landingHolidayStart
+            && now()->toDateString() <= $landingHolidayEnd;
     @endphp
      <!-- Wash Services Section -->
     <section id="wash-services" class="py-2 bg-black bg-opacity-25">
@@ -138,12 +143,24 @@
             <div class="section-header text-center mb-5 fade-up">
                 <h6 class="text-primary fw-bold text-uppercase">MSTORE WASH</h6>
                 <h2 class="display-6 fw-800">Layanan Cuci Mobil & Motor </h2>
+                @if($landingHolidayActive)
+                    <div class="landing-holiday-banner mt-2">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Harga Hari Raya aktif ({{ \Carbon\Carbon::parse($landingHolidayStart)->translatedFormat('d M Y') }} - {{ \Carbon\Carbon::parse($landingHolidayEnd)->translatedFormat('d M Y') }})</span>
+                    </div>
+                @endif
             </div>
             
             <div class="scroll-container fade-up">
                 @forelse($washServices as $service)
                 <div class="scroll-item">
                     <div class="card">
+                        @php
+                            $landingAdjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
+                            $landingEffectivePrice = $landingHolidayActive && !is_null($landingAdjustment)
+                                ? max(0, ((float) $service->price) + $landingAdjustment)
+                                : (float) $service->price;
+                        @endphp
                         @if($service->image)
                             <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
                         @else
@@ -159,7 +176,18 @@
                                 </span>
                             </div>
                             <h4 class="product-title mb-1">{{ $service->name }}</h4>
-                            <div class="product-price text-primary fw-bold mb-2">Rp {{ number_format($service->price, 0, ',', '.') }}</div>
+                            <div class="product-price text-primary fw-bold mb-1">Rp {{ number_format($landingEffectivePrice, 0, ',', '.') }}</div>
+                            @if(!is_null($landingAdjustment))
+                                <div class="landing-holiday-chip mb-2">
+                                    <i class="fas fa-sparkles"></i>
+                                    <span>Hari Raya {{ $landingAdjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($landingAdjustment), 0, ',', '.') }}</span>
+                                    @if($landingHolidayActive)
+                                        <strong class="ms-1">(aktif)</strong>
+                                    @else
+                                        <span class="ms-1">(jadwal belum aktif)</span>
+                                    @endif
+                                </div>
+                            @endif
                             <p class="small text-muted mb-3">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
                             <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
                                 <i class="fab fa-whatsapp me-2"></i> Booking

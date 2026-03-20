@@ -31,6 +31,11 @@
         $discountLabel = 'Voucher Cuci Gratis';
     }
     $isLoyaltyBonus = ($transaction->notes ?? null) === 'bonus_cuci_10x';
+    $holidayAdjustmentTotal = (float) $transaction->items->sum(function ($item) {
+        return ((float) ($item->holiday_adjustment ?? 0)) * ((float) ($item->quantity ?? 0));
+    });
+    $hasHolidayAdjustment = abs($holidayAdjustmentTotal) > 0;
+    $holidayGreeting = 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.';
 @endphp
 
 <!DOCTYPE html>
@@ -320,6 +325,12 @@
                 <div class="item-sub">
                     {{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}
                 </div>
+                @if(!is_null($item->holiday_adjustment) && (float) $item->holiday_adjustment !== 0.0)
+                    <div class="item-sub">
+                        Dasar {{ number_format((float) ($item->base_price ?? 0), 0, ',', '.') }}
+                        ({{ (float) $item->holiday_adjustment >= 0 ? '+' : '-' }}{{ number_format(abs((float) $item->holiday_adjustment), 0, ',', '.') }})
+                    </div>
+                @endif
             </div>
         @endforeach
 
@@ -333,6 +344,13 @@
             @if($isLoyaltyBonus)
                 <div class="loyalty-highlight">★ BONUS CUCI 10X ★</div>
             @endif
+        @endif
+
+        @if($hasHolidayAdjustment)
+            <div class="total-row">
+                <span>Penyesuaian Hari Raya</span>
+                <span>{{ $holidayAdjustmentTotal >= 0 ? '+' : '-' }}{{ number_format(abs($holidayAdjustmentTotal), 0, ',', '.') }}</span>
+            </div>
         @endif
 
         <div class="total-row grand-total">
@@ -358,6 +376,9 @@
 
         <div class="footer">
             <h2>*** TERIMA KASIH ***</h2>
+            @if($hasHolidayAdjustment)
+                <p>{{ $holidayGreeting }}</p>
+            @endif
             <p>Kepuasan Anda Kebanggaan Kami.<br>Periksa kembali barang bawaan Anda sebelum meninggalkan lokasi.</p>
             <p class="timestamp">Dicetak pada: {{ $printedAt }}</p>
         </div>
@@ -389,6 +410,9 @@ const data = {{ Js::from([
     'is_loyalty_bonus'=>$isLoyaltyBonus,
     'discount_label'=>$discountLabel,
     'discount'=>(float)($transaction->discount_amount ?? 0),
+    'holiday_adjustment_total'=>$holidayAdjustmentTotal,
+    'has_holiday_adjustment'=>$hasHolidayAdjustment,
+    'holiday_greeting'=>$holidayGreeting,
     'total'=>(float)$transaction->total_amount,
     'method'=>strtoupper($transaction->payment_method ?? 'CASH'),
     'cash'=>(float)($transaction->cash_amount ?? 0),
@@ -478,11 +502,14 @@ function buildEscPosText(data){
     txt+="[L]--------------------------------\n";
     data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});
     if(data.discount>0){txt+="[L]"+data.discount_label+" [R]-"+data.discount+"\n";}
+    if(data.has_holiday_adjustment){txt+="[L]Penyesuaian Hari Raya [R]"+(data.holiday_adjustment_total>=0?"+":"-")+Math.abs(data.holiday_adjustment_total)+"\n";}
     if(data.is_loyalty_bonus){txt+="[C]<b>*** BONUS CUCI 10X ***</b>\n";}
     txt+="[L]TOTAL [R]"+data.total+"\n";
     txt+="[L]Metode: "+data.method+"\n";
     if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
-    txt+="\n[C]*** TERIMA KASIH ***\n[C]Periksa kembali barang bawaan Anda\n[C]Dicetak pada: "+data.printed_at+"\n\n\n";
+    txt+="\n[C]*** TERIMA KASIH ***\n";
+    if(data.has_holiday_adjustment){txt+="[C]"+data.holiday_greeting+"\n";}
+    txt+="[C]Periksa kembali barang bawaan Anda\n[C]Dicetak pada: "+data.printed_at+"\n\n\n";
     return txt;
 }
 
@@ -568,12 +595,15 @@ async function printBluetoothDirect(){
         data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
         esc.line();
         if(data.discount>0) esc.justify(data.discount_label,"-"+formatIdr(data.discount));
+        if(data.has_holiday_adjustment) esc.justify("Penyesuaian Hari Raya",(data.holiday_adjustment_total>=0?"+":"-")+formatIdr(Math.abs(data.holiday_adjustment_total)));
         if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI 10X ***\n");esc.bold(false);esc.left();}
         esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
         esc.add("Metode: "+data.method+"\n");
         if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}
         esc.feed(1);esc.center();
-        esc.add("*** TERIMA KASIH ***\nKepuasan Anda Kebanggaan Kami.\nPeriksa kembali barang bawaan Anda\nsebelum meninggalkan lokasi.\n");
+        esc.add("*** TERIMA KASIH ***\n");
+        if(data.has_holiday_adjustment){esc.add(data.holiday_greeting+"\n");}
+        esc.add("Kepuasan Anda Kebanggaan Kami.\nPeriksa kembali barang bawaan Anda\nsebelum meninggalkan lokasi.\n");
         esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
         status.innerText="Mengirim data...";
         const receiptData=esc.generate();

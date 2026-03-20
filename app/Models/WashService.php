@@ -7,6 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class WashService extends Model
 {
     protected $fillable = [
-        'name', 'vehicle_type', 'price', 'description', 'image', 'is_active',
+        'name', 'vehicle_type', 'price', 'holiday_price', 'description', 'image', 'is_active',
     ];
 }

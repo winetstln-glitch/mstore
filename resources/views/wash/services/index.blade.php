@@ -36,6 +36,7 @@
                             <th>Nama</th>
                             <th>Jenis Kendaraan</th>
                             <th>Harga</th>
+                            <th>Penyesuaian Hari Raya</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
                             <th>Aksi</th>
@@ -62,6 +63,17 @@
                                     @endif
                                 </td>
                                 <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
+                                <td>
+                                    @if(!is_null($service->holiday_price))
+                                        @php
+                                            $adjustmentValue = (float) $service->holiday_price;
+                                            $adjustmentPrefix = $adjustmentValue >= 0 ? '+' : '-';
+                                        @endphp
+                                        <span class="badge bg-warning text-dark">{{ $adjustmentPrefix }} Rp {{ number_format(abs($adjustmentValue), 0, ',', '.') }}</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if(!empty($service->description))
                                         @php
@@ -117,7 +129,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center">Tidak ada layanan ditemukan.</td>
+                                <td colspan="8" class="text-center">Tidak ada layanan ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>

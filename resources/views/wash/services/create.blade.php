@@ -45,6 +45,14 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="holiday_price" class="form-label">Penyesuaian Harga Hari Raya (+/-)</label>
+                    <input type="number" class="form-control @error('holiday_price') is-invalid @enderror" id="holiday_price" name="holiday_price" value="{{ old('holiday_price') }}" placeholder="Contoh: 5000 atau -3000">
+                    @error('holiday_price')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3">
                     <label for="description" class="form-label">Deskripsi</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description') }}</textarea>
                     <div class="wash-description-editor mt-2" data-description-editor data-target="description">

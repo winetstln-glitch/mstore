@@ -64,6 +64,25 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Harga Hari Raya
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="wash_holiday_pricing_start_date" class="form-label fw-medium">Tanggal Mulai</label>
+                                <input type="date" class="form-control" id="wash_holiday_pricing_start_date" name="wash_holiday_pricing_start_date" value="{{ \App\Models\Setting::getValue('wash_holiday_pricing_start_date', '') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_holiday_pricing_end_date" class="form-label fw-medium">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="wash_holiday_pricing_end_date" name="wash_holiday_pricing_end_date" value="{{ \App\Models\Setting::getValue('wash_holiday_pricing_end_date', '') }}">
+                            </div>
+                            <div class="col-12">
+                                <div class="small text-muted">Harga hari raya aktif otomatis jika tanggal hari ini berada di antara tanggal mulai dan tanggal selesai.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end pt-3">
                         <button type="submit" class="btn btn-primary">
                             <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengaturan') }}

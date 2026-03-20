@@ -103,6 +103,8 @@ class SettingController extends Controller implements HasMiddleware
             'pos_preferred_printer_name' => 'nullable|string|max:120',
             'pos_preferred_printer_id' => 'nullable|string|max:120',
             'pos_performance_profile' => 'nullable|in:ultrafast,balanced,stable',
+            'wash_holiday_pricing_start_date' => 'nullable|date_format:Y-m-d',
+            'wash_holiday_pricing_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:wash_holiday_pricing_start_date',
         ]);
 
         $existingSettings = Setting::query()
@@ -293,6 +295,20 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Logo Toko Wash',
+            ],
+            [
+                'key' => 'wash_holiday_pricing_start_date',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Tanggal Mulai Harga Hari Raya Wash',
+            ],
+            [
+                'key' => 'wash_holiday_pricing_end_date',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Tanggal Selesai Harga Hari Raya Wash',
             ],
             [
                 'key' => 'pos_printer_auto_reconnect',

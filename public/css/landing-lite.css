@@ -717,6 +717,35 @@ ul { list-style: none; }
 .product-price { font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem; }
 .product-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem; flex-grow: 1; line-height: 1.5; }
 
+.landing-holiday-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 8px 18px rgba(245, 158, 11, 0.28);
+}
+
+.landing-holiday-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.74rem;
+    color: #9a3412;
+    background: #ffedd5;
+    border: 1px solid #fdba74;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+}
+
+.landing-holiday-chip strong {
+    color: #b45309;
+}
+
 /* Feature Item (Monitoring) */
 .feature-item { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
 .feature-icon {
@@ -789,6 +818,17 @@ footer {
     .btn-pill .ti { margin: 0; }
     .hero-img { display: none; } /* Hide hero image on small mobile if desired, or keep */
     .stats-grid { grid-template-columns: 1fr; }
+    .landing-holiday-banner {
+        width: 100%;
+        justify-content: center;
+        border-radius: 0.75rem;
+    }
+    .landing-holiday-chip {
+        width: 100%;
+        justify-content: center;
+        border-radius: 0.65rem;
+        font-size: 0.7rem;
+    }
 }
 @media (min-width: 992px) {
     .scroll-container {

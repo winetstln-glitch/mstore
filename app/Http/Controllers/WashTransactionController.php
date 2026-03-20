@@ -13,6 +13,7 @@ use App\Models\WashTransactionItem;
 use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -89,8 +90,9 @@ class WashTransactionController extends Controller implements HasMiddleware
         $services = WashService::where('is_active', true)->orderBy('vehicle_type')->orderBy('name')->get();
         $brands = $this->brands;
         $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $holidaySchedule = $this->resolveHolidayPricingSchedule();
 
-        return view('wash.pos', compact('services', 'brands', 'employees'));
+        return view('wash.pos', compact('services', 'brands', 'employees', 'holidaySchedule'));
     }
 
     public function checkCustomer(Request $request)
@@ -165,17 +167,27 @@ class WashTransactionController extends Controller implements HasMiddleware
 
             $total = 0;
             $items = [];
+            $holidaySchedule = $this->resolveHolidayPricingSchedule();
+            $isHolidayPricingActive = (bool) ($holidaySchedule['active'] ?? false);
 
             foreach ($request->items as $itemData) {
                 $service = WashService::find($itemData['id']);
 
-                $price = $service->price;
+                $basePrice = (float) $service->price;
+                $holidayAdjustment = null;
+                $price = $basePrice;
+                if ($isHolidayPricingActive && ! is_null($service->holiday_price)) {
+                    $holidayAdjustment = (float) $service->holiday_price;
+                    $price = max(0, $basePrice + $holidayAdjustment);
+                }
                 $subtotal = $price * $itemData['quantity'];
                 $total += $subtotal;
 
                 $items[] = [
                     'wash_service_id' => $service->id,
                     'service_name' => $service->name,
+                    'base_price' => $basePrice,
+                    'holiday_adjustment' => $holidayAdjustment,
                     'price' => $price,
                     'quantity' => $itemData['quantity'],
                     'subtotal' => $subtotal,
@@ -527,8 +539,17 @@ class WashTransactionController extends Controller implements HasMiddleware
             return [
                 'nama_layanan' => $it->service_name,
                 'harga' => number_format($it->price, 0, ',', '.'),
+                'penyesuaian_hari_raya' => is_null($it->holiday_adjustment)
+                    ? '-'
+                    : (((float) $it->holiday_adjustment >= 0 ? '+' : '-').number_format(abs((float) $it->holiday_adjustment), 0, ',', '.')),
             ];
         })->toArray();
+        $holidayAdjustmentTotal = (float) $transaction->items()
+            ->selectRaw('COALESCE(SUM(COALESCE(holiday_adjustment, 0) * quantity), 0) as total')
+            ->value('total');
+        $holidayGreeting = abs($holidayAdjustmentTotal) > 0
+            ? 'Selamat Hari Raya! Semoga berkah dan kebahagiaan selalu menyertai Anda.'
+            : '';
         $subtotal = (float) $transaction->items()->sum('subtotal');
         $vars = [
             'nama_usaha' => config('app.name'),
@@ -541,11 +562,14 @@ class WashTransactionController extends Controller implements HasMiddleware
             'plat_nomor' => $transaction->vehicle_plate ?? '-',
             'subtotal' => number_format($subtotal, 0, ',', '.'),
             'diskon' => number_format($transaction->discount_amount ?? 0, 0, ',', '.'),
+            'penyesuaian_hari_raya_total' => number_format($holidayAdjustmentTotal, 0, ',', '.'),
+            'penyesuaian_hari_raya_tanda' => $holidayAdjustmentTotal >= 0 ? '+' : '-',
             'total' => number_format($transaction->total_amount, 0, ',', '.'),
             'metode_bayar' => strtoupper($transaction->payment_method),
             'status' => 'LUNAS',
             'items' => $items,
             'receipt_url' => $link,
+            'ucapan_hari_raya' => $holidayGreeting,
         ];
         $tpl = Setting::where('key', 'whatsapp_wash_receipt_template')->value('value')
             ?? "*STRUK LAYANAN CUCI KENDARAAN*\nNo: {{invoice}}\nTanggal: {{tanggal}}\n\n{{#each items}}• {{nama_layanan}} - Rp{{harga}}\n{{/each}}\n\nTotal Bayar: Rp{{total}}";
@@ -566,6 +590,39 @@ class WashTransactionController extends Controller implements HasMiddleware
         }
 
         return response()->json(['success' => true]);
+    }
+
+    private function resolveHolidayPricingSchedule(): array
+    {
+        $startRaw = trim((string) Setting::getValue('wash_holiday_pricing_start_date', ''));
+        $endRaw = trim((string) Setting::getValue('wash_holiday_pricing_end_date', ''));
+        $startDate = null;
+        $endDate = null;
+
+        try {
+            if ($startRaw !== '') {
+                $startDate = Carbon::createFromFormat('Y-m-d', $startRaw)->startOfDay();
+            }
+        } catch (\Throwable) {
+            $startDate = null;
+        }
+
+        try {
+            if ($endRaw !== '') {
+                $endDate = Carbon::createFromFormat('Y-m-d', $endRaw)->endOfDay();
+            }
+        } catch (\Throwable) {
+            $endDate = null;
+        }
+
+        $now = now();
+        $active = $startDate && $endDate && $now->between($startDate, $endDate);
+
+        return [
+            'active' => $active,
+            'start_date' => $startDate?->toDateString(),
+            'end_date' => $endDate?->toDateString(),
+        ];
     }
 
     private function normalizePhone(string $phone): string

@@ -101,6 +101,7 @@ class WashController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'holiday_price' => 'nullable|numeric',
             'vehicle_type' => 'required|in:car,motor',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -108,6 +109,7 @@ class WashController extends Controller
         ]);
 
         $data = $request->all();
+        $data['holiday_price'] = $request->filled('holiday_price') ? $request->holiday_price : null;
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('wash-services', 'public');
@@ -135,6 +137,7 @@ class WashController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'holiday_price' => 'nullable|numeric',
             'vehicle_type' => 'required|in:car,motor',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -142,6 +145,7 @@ class WashController extends Controller
         ]);
 
         $data = $request->all();
+        $data['holiday_price'] = $request->filled('holiday_price') ? $request->holiday_price : null;
 
         if ($request->hasFile('image')) {
             // Delete old image if exists

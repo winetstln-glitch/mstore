@@ -26,12 +26,17 @@
                                 $normalizedType = $rawType === 'car' ? 'mobil' : $rawType;
                                 $serviceTypeClass = in_array($normalizedType, ['mobil', 'motor']) ? $normalizedType : 'umum';
                                 $fallbackIcon = $normalizedType === 'mobil' ? 'fa-car-side' : ($normalizedType === 'motor' ? 'fa-motorcycle' : 'fa-soap');
+                                $adjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
+                                $isHolidayActive = (bool) ($holidaySchedule['active'] ?? false);
+                                $effectivePrice = $isHolidayActive && !is_null($adjustment)
+                                    ? max(0, ((float) $service->price) + $adjustment)
+                                    : (float) $service->price;
                             @endphp
                             <div class="col-6 col-md-4 service-item" data-type="{{ $normalizedType }}">
                                 <div class="service-card service-card-{{ $serviceTypeClass }}" data-fasttap
                                      data-id="{{ $service->id }}"
                                      data-name="{{ $service->name }}"
-                                     data-price="{{ $service->price }}"
+                                     data-price="{{ $effectivePrice }}"
                                      data-description="{{ $service->description }}"
                                      data-vehicletype="{{ $normalizedType }}">
                                     <div class="service-image-wrap">
@@ -43,34 +48,15 @@
                                     </div>
                                     <h5 class="service-title">{{ $service->name }}</h5>
                                     @if(!empty($service->description))
-                                    @php
-                                        $descriptionItems = array_values(array_filter(
-                                            preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
-                                            function ($item) {
-                                                $item = trim((string) $item);
-                                                if ($item === '') {
-                                                    return false;
-                                                }
-                                                if (preg_match('/^dan\s+sejenis/i', $item)) {
-                                                    return false;
-                                                }
-                                                if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
-                                                    return false;
-                                                }
-                                                return str_word_count($item) <= 5;
-                                            }
-                                        ));
-                                    @endphp
-                                    @if(!empty($descriptionItems))
-                                    <div class="service-description-list">
-                                        @foreach($descriptionItems as $item)
-                                            <span class="service-description-chip">{{ $item }}</span>
-                                        @endforeach
-                                    </div>
-                                    @endif
+                                    <p class="service-description">{{ $service->description }}</p>
                                     @endif
                                     <div class="service-meta">
-                                        <span class="service-price">Rp {{ number_format($service->price, 0, ',', '.') }}</span>
+                                        <span class="service-price">Rp {{ number_format($effectivePrice, 0, ',', '.') }}</span>
+                                        @if(!is_null($adjustment))
+                                        <span class="service-type service-adjustment bg-warning text-dark">
+                                            Adj {{ $adjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($adjustment), 0, ',', '.') }}
+                                        </span>
+                                        @endif
                                         <span class="service-type service-type-{{ $serviceTypeClass }}">{{ ucfirst($normalizedType) }}</span>
                                     </div>
                                 </div>
@@ -87,6 +73,11 @@
                         <h2 class="wash-card-title"><i class="fas fa-shopping-cart"></i> Rincian Transaksi</h2>
                     </div>
                     <div class="wash-card-body">
+                        @if(($holidaySchedule['active'] ?? false) && !empty($holidaySchedule['start_date']) && !empty($holidaySchedule['end_date']))
+                            <div class="alert alert-warning py-2 px-3 mb-3">
+                                Harga hari raya aktif otomatis ({{ \Carbon\Carbon::parse($holidaySchedule['start_date'])->translatedFormat('d M Y') }} - {{ \Carbon\Carbon::parse($holidaySchedule['end_date'])->translatedFormat('d M Y') }})
+                            </div>
+                        @endif
                         <form id="checkoutForm" class="checkout-form">
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
@@ -907,30 +898,12 @@ document.addEventListener('DOMContentLoaded', function () {
         min-height: 2.2em;
     }
 
-    .service-description-list {
-        margin-top: 0.36rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.32rem;
-    }
-
-    .service-description-chip {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.15rem 0.46rem;
-        border-radius: 999px;
-        background: #e2e8f0;
-        color: #475569;
-        font-size: 0.64rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-    }
-
     .service-meta {
         margin-top: 0.6rem;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        align-items: flex-start;
+        justify-content: flex-start;
+        flex-wrap: wrap;
         gap: 0.5rem;
     }
 
@@ -938,6 +911,8 @@ document.addEventListener('DOMContentLoaded', function () {
         font-size: 0.9rem;
         font-weight: 700;
         color: #2563eb;
+        width: 100%;
+        line-height: 1.2;
     }
 
     .service-type {
@@ -964,6 +939,10 @@ document.addEventListener('DOMContentLoaded', function () {
     .service-type-umum {
         background: #e2e8f0;
         color: #334155;
+    }
+
+    .service-adjustment {
+        border: 1px solid rgba(180, 83, 9, 0.2);
     }
 
     .wash-field-label {
@@ -1205,6 +1184,21 @@ document.addEventListener('DOMContentLoaded', function () {
             padding-right: 0.2rem;
         }
 
+        .service-meta {
+            gap: 0.35rem;
+        }
+
+        .service-price {
+            font-size: 0.82rem;
+        }
+
+        .service-type {
+            font-size: 0.62rem;
+            letter-spacing: 0.02em;
+            padding: 0.18rem 0.45rem;
+            white-space: nowrap;
+        }
+
         .cart-item {
             flex-direction: column;
         }
@@ -1292,11 +1286,6 @@ document.addEventListener('DOMContentLoaded', function () {
     [data-bs-theme="dark"] .wash-inline-check .form-check-label,
     [data-bs-theme="dark"] #customerInfo {
         color: #94a3b8;
-    }
-
-    [data-bs-theme="dark"] .service-description-chip {
-        background: #334155;
-        color: #cbd5e1;
     }
 
     [data-bs-theme="dark"] .service-price {
