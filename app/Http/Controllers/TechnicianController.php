@@ -38,9 +38,9 @@ class TechnicianController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => ['nullable', 'string', 'max:20'],
             'telegram_chat_id' => ['nullable', 'string', 'max:100'],
@@ -50,13 +50,13 @@ class TechnicianController extends Controller implements HasMiddleware
         $role = Role::where('name', 'technician')->firstOrFail();
 
         User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'password' => $validated['password'],
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password,
             'role_id' => $role->id,
-            'phone' => $validated['phone'] ?? null,
-            'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-            'daily_salary' => $validated['daily_salary'] ?? 0,
+            'phone' => $request->phone,
+            'telegram_chat_id' => $request->telegram_chat_id,
+            'daily_salary' => $request->daily_salary ?? 0,
             'is_active' => true,
         ]);
 
@@ -76,9 +76,9 @@ class TechnicianController extends Controller implements HasMiddleware
 
     public function update(Request $request, User $technician)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email,'.$technician->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$technician->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'telegram_chat_id' => ['nullable', 'string', 'max:100'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
@@ -86,12 +86,12 @@ class TechnicianController extends Controller implements HasMiddleware
         ]);
 
         $technician->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-            'daily_salary' => $validated['daily_salary'] ?? 0,
-            'is_active' => $request->boolean('is_active'),
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'telegram_chat_id' => $request->telegram_chat_id,
+            'daily_salary' => $request->daily_salary ?? 0,
+            'is_active' => $request->has('is_active'),
         ]);
 
         if ($request->filled('password')) {

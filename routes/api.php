@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\HotspotPortalController;
 use App\Http\Controllers\Api\InstallationController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\TicketController;
@@ -9,6 +10,12 @@ use App\Http\Controllers\Api\VpnController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/payment/create', [HotspotPortalController::class, 'createPayment']);
+Route::get('/payment/status', [HotspotPortalController::class, 'paymentStatus']);
+Route::get('/voucher/status', [HotspotPortalController::class, 'voucherStatus']);
+Route::get('/billing/monthly', [HotspotPortalController::class, 'billingMonthly']);
+Route::get('/products/ads', [HotspotPortalController::class, 'productAds']);
+Route::get('/hotspot/health', [HotspotPortalController::class, 'health']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

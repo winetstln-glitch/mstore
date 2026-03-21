@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', __('Manajemen Tiket'))
+@section('title', __('Ticket Management'))
 
 @section('content')
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-danger">
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Manajemen Tiket') }}</h5>
+                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Ticket Management') }}</h5>
                 @if(Auth::user()->hasPermission('ticket.create'))
                 <a href="{{ route('tickets.create') }}" class="btn btn-primary">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Buat Tiket') }}
+                    <i class="fa-solid fa-plus me-1"></i> {{ __('Create Ticket') }}
                 </a>
                 @endif
             </div>
@@ -21,25 +21,25 @@
                     <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
-                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari ID atau subjek...') }}">
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search ID or subject...') }}">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <select name="status" class="form-select">
-                            <option value="">{{ __('Semua Status') }}</option>
-                            <option value="open" {{ request('status') == 'open' ? 'selected' : '' }}>{{ __('Terbuka') }}</option>
-                            <option value="assigned" {{ request('status') == 'assigned' ? 'selected' : '' }}>{{ __('Ditugaskan') }}</option>
-                            <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>{{ __('Dalam Proses') }}</option>
-                            <option value="solved" {{ request('status') == 'solved' ? 'selected' : '' }}>{{ __('Selesai') }}</option>
-                            <option value="closed" {{ request('status') == 'closed' ? 'selected' : '' }}>{{ __('Ditutup') }}</option>
+                            <option value="">{{ __('All Status') }}</option>
+                            <option value="open" {{ request('status') == 'open' ? 'selected' : '' }}>{{ __('Open') }}</option>
+                            <option value="assigned" {{ request('status') == 'assigned' ? 'selected' : '' }}>{{ __('Assigned') }}</option>
+                            <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>{{ __('In Progress') }}</option>
+                            <option value="solved" {{ request('status') == 'solved' ? 'selected' : '' }}>{{ __('Solved') }}</option>
+                            <option value="closed" {{ request('status') == 'closed' ? 'selected' : '' }}>{{ __('Closed') }}</option>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <select name="priority" class="form-select">
-                            <option value="">{{ __('Semua Prioritas') }}</option>
-                            <option value="high" {{ request('priority') == 'high' ? 'selected' : '' }}>{{ __('Tinggi') }}</option>
-                            <option value="medium" {{ request('priority') == 'medium' ? 'selected' : '' }}>{{ __('Sedang') }}</option>
-                            <option value="low" {{ request('priority') == 'low' ? 'selected' : '' }}>{{ __('Rendah') }}</option>
+                            <option value="">{{ __('All Priority') }}</option>
+                            <option value="high" {{ request('priority') == 'high' ? 'selected' : '' }}>{{ __('High') }}</option>
+                            <option value="medium" {{ request('priority') == 'medium' ? 'selected' : '' }}>{{ __('Medium') }}</option>
+                            <option value="low" {{ request('priority') == 'low' ? 'selected' : '' }}>{{ __('Low') }}</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -52,11 +52,11 @@
                     <table class="table table-hover align-middle table-responsive-mobile">
                         <thead class="">
                             <tr>
-                                <th scope="col" class="ps-3">{{ __('Info Tiket') }}</th>
-                                <th scope="col">{{ __('Pelanggan') }}</th>
-                                <th scope="col">{{ __('Ditugaskan Ke') }}</th>
-                                <th scope="col">{{ __('Status/Prioritas') }}</th>
-                                <th scope="col" class="text-end pe-3">{{ __('Aksi') }}</th>
+                                <th scope="col" class="ps-3">{{ __('Ticket Info') }}</th>
+                                <th scope="col">{{ __('Customer') }}</th>
+                                <th scope="col">{{ __('Assigned To') }}</th>
+                                <th scope="col">{{ __('Status/Priority') }}</th>
+                                <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -68,7 +68,7 @@
                                         <div class="small text-body-secondary">{{ $ticket->created_at->diffForHumans() }}</div>
                                     </td>
                                     <td>
-                                        <div>{{ $ticket->customer->name ?? __('Tidak Diketahui') }}</div>
+                                        <div>{{ $ticket->customer->name ?? __('Unknown') }}</div>
                                         <div class="small text-body-secondary">
                                             @if($ticket->customer && $ticket->customer->address)
                                                 <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ticket->customer->address) }}" target="_blank" class="text-decoration-none text-body-secondary">
@@ -88,7 +88,7 @@
                                                 </div>
                                             @endforeach
                                         @else
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ __('Belum Ditugaskan') }}</span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ __('Unassigned') }}</span>
                                         @endif
                                     </td>
                                     <td>
@@ -107,51 +107,36 @@
                                                     'medium' => 'bg-warning-subtle text-warning border-warning-subtle',
                                                     default => 'bg-primary-subtle text-primary border-primary-subtle'
                                                 };
-
-                                                $statusLabel = match($ticket->status) {
-                                                    'open' => __('Terbuka'),
-                                                    'assigned' => __('Ditugaskan'),
-                                                    'in_progress' => __('Dalam Proses'),
-                                                    'solved' => __('Selesai'),
-                                                    'closed' => __('Ditutup'),
-                                                    default => __('Menunggu')
-                                                };
-
-                                                $priorityLabel = match($ticket->priority) {
-                                                    'high' => __('Tinggi'),
-                                                    'medium' => __('Sedang'),
-                                                    default => __('Rendah')
-                                                };
                                             @endphp
                                             <span class="badge border {{ $statusClass }} w-auto align-self-start">
-                                                {{ $statusLabel }}
+                                                {{ __(ucfirst(str_replace('_', ' ', $ticket->status))) }}
                                             </span>
                                             <span class="badge border {{ $priorityClass }} w-auto align-self-start">
-                                                {{ $priorityLabel }}
+                                                {{ __(ucfirst($ticket->priority)) }}
                                             </span>
                                         </div>
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
                                             @if(Auth::user()->hasRole('admin'))
-                                            <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kirim notifikasi WhatsApp ke teknisi yang ditugaskan?') }}');">
+                                            <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Send WhatsApp notification to assigned technicians?') }}');">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-success text-white" title="{{ __('Notifikasi Teknisi') }}">
+                                                <button type="submit" class="btn btn-sm btn-success text-white" title="{{ __('Notify Technicians') }}">
                                                     <i class="fa-brands fa-whatsapp"></i>
                                                 </button>
                                             </form>
                                             @endif
-                                            <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat') }}">
+                                            <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Ubah') }}">
+                                            <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
                                             @if(Auth::user()->hasPermission('ticket.delete'))
-                                                <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus tiket ini?') }}');">
+                                                <form action="{{ route('tickets.destroy', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this ticket?') }}');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -163,7 +148,7 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-5 text-body-secondary">
                                         <div class="mb-2"><i class="fa-solid fa-ticket fa-2x opacity-25"></i></div>
-                                        {{ __('Tidak ada tiket ditemukan.') }}
+                                        {{ __('No tickets found.') }}
                                     </td>
                                 </tr>
                             @endforelse

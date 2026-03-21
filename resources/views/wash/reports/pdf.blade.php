@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-    <h1>Laporan Cuci Kendaraan</h1>
+    <h1>Laporan Car Wash</h1>
     <div class="muted">Tanggal: {{ $date }} | Bulan: {{ $month }}</div>
 
     <table>

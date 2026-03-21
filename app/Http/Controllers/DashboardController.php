@@ -102,6 +102,14 @@ class DashboardController extends Controller
             'atk_month_revenue' => AtkTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
             'wash_today' => WashTransaction::whereDate('created_at', today())->count(),
             'wash_month_revenue' => WashTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
+            'technician_present_today' => TechnicianAttendance::whereDate('clock_in', today())
+                ->whereIn('status', ['present', 'late'])
+                ->distinct('user_id')
+                ->count('user_id'),
+            'technician_leave_absent_today' => TechnicianAttendance::whereDate('clock_in', today())
+                ->whereIn('status', ['leave', 'permit', 'sick', 'alpha'])
+                ->distinct('user_id')
+                ->count('user_id'),
         ];
 
         // Traffic Data (Orders & Tickets per Month)

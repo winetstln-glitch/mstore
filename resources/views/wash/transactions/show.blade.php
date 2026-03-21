@@ -1009,5 +1009,4 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
         window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
     }
 </script>
-
 @endsection

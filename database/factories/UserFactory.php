@@ -22,12 +22,9 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->name();
-
         return [
-            'name' => $name,
+            'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'username' => Str::slug($name, '_').'_'.fake()->unique()->numberBetween(100, 999),
             'email_verified_at' => now(),
             'password' => static::$password ??= 'password',
             'remember_token' => Str::random(10),

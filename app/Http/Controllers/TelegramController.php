@@ -16,7 +16,7 @@ class TelegramController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:telegram.view', only: ['index']),
-            new Middleware('permission:telegram.manage', only: ['update', 'test', 'testIpDown', 'testIpUp', 'previewIpDown', 'previewIpUp']),
+            new Middleware('permission:telegram.manage', only: ['update', 'test', 'testIpDown', 'testIpUp']),
         ];
     }
 
@@ -127,70 +127,7 @@ class TelegramController extends Controller implements HasMiddleware
             ]
         );
 
-        $onlineThresholdMinutes = Setting::firstOrCreate(
-            ['key' => 'genieacs_online_threshold_minutes'],
-            [
-                'value' => '15',
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'GenieACS Online Threshold Minutes',
-            ]
-        );
-
-        $downConfirmChecks = Setting::firstOrCreate(
-            ['key' => 'network_monitor_down_confirm_checks'],
-            [
-                'value' => '2',
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Network Monitor Down Confirm Checks',
-            ]
-        );
-
-        $upConfirmChecks = Setting::firstOrCreate(
-            ['key' => 'network_monitor_up_confirm_checks'],
-            [
-                'value' => '2',
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Network Monitor Up Confirm Checks',
-            ]
-        );
-
-        $telegramRetryAttempts = Setting::firstOrCreate(
-            ['key' => 'network_monitor_telegram_max_retry_attempts'],
-            [
-                'value' => '5',
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Telegram Max Retry Attempts',
-            ]
-        );
-
-        $telegramRetryBackoffMinutes = Setting::firstOrCreate(
-            ['key' => 'network_monitor_telegram_retry_backoff_minutes'],
-            [
-                'value' => '5',
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Telegram Retry Backoff Minutes',
-            ]
-        );
-
-        return view('telegram.index', compact(
-            'setting',
-            'groupChatId',
-            'template',
-            'notifyIpDown',
-            'notifyIpUp',
-            'ipDownTemplate',
-            'ipUpTemplate',
-            'onlineThresholdMinutes',
-            'downConfirmChecks',
-            'upConfirmChecks',
-            'telegramRetryAttempts',
-            'telegramRetryBackoffMinutes'
-        ));
+        return view('telegram.index', compact('setting', 'groupChatId', 'template', 'notifyIpDown', 'notifyIpUp', 'ipDownTemplate', 'ipUpTemplate'));
     }
 
     /**
@@ -206,11 +143,6 @@ class TelegramController extends Controller implements HasMiddleware
             'telegram_notify_ip_up' => 'nullable|boolean',
             'telegram_ip_down_template' => 'nullable|string',
             'telegram_ip_up_template' => 'nullable|string',
-            'genieacs_online_threshold_minutes' => 'nullable|integer|min:1|max:180',
-            'network_monitor_down_confirm_checks' => 'nullable|integer|min:1|max:10',
-            'network_monitor_up_confirm_checks' => 'nullable|integer|min:1|max:10',
-            'network_monitor_telegram_max_retry_attempts' => 'nullable|integer|min:1|max:20',
-            'network_monitor_telegram_retry_backoff_minutes' => 'nullable|integer|min:1|max:120',
         ]);
 
         Setting::where('key', 'telegram_bot_token')->update([
@@ -240,58 +172,6 @@ class TelegramController extends Controller implements HasMiddleware
         Setting::where('key', 'telegram_ip_up_template')->update([
             'value' => $request->telegram_ip_up_template,
         ]);
-
-        Setting::updateOrCreate(
-            ['key' => 'genieacs_online_threshold_minutes'],
-            [
-                'value' => (string) ($request->integer('genieacs_online_threshold_minutes', 15)),
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'GenieACS Online Threshold Minutes',
-            ]
-        );
-
-        Setting::updateOrCreate(
-            ['key' => 'network_monitor_down_confirm_checks'],
-            [
-                'value' => (string) ($request->integer('network_monitor_down_confirm_checks', 2)),
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Network Monitor Down Confirm Checks',
-            ]
-        );
-
-        Setting::updateOrCreate(
-            ['key' => 'network_monitor_up_confirm_checks'],
-            [
-                'value' => (string) ($request->integer('network_monitor_up_confirm_checks', 2)),
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Network Monitor Up Confirm Checks',
-            ]
-        );
-
-        Setting::updateOrCreate(
-            ['key' => 'network_monitor_telegram_max_retry_attempts'],
-            [
-                'value' => (string) ($request->integer('network_monitor_telegram_max_retry_attempts', 5)),
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Telegram Max Retry Attempts',
-            ]
-        );
-
-        Setting::updateOrCreate(
-            ['key' => 'network_monitor_telegram_retry_backoff_minutes'],
-            [
-                'value' => (string) ($request->integer('network_monitor_telegram_retry_backoff_minutes', 5)),
-                'group' => 'telegram',
-                'type' => 'number',
-                'label' => 'Telegram Retry Backoff Minutes',
-            ]
-        );
-
-        Setting::forgetCache();
 
         return redirect()->route('telegram.index')->with('success', __('Telegram settings updated successfully.'));
     }
@@ -376,66 +256,6 @@ class TelegramController extends Controller implements HasMiddleware
         }
 
         return back()->with('error', 'Gagal kirim test notifikasi IP UP. Periksa Token dan Chat ID.');
-    }
-
-    public function previewIpDown(Request $request)
-    {
-        $defaultTemplate = "🚨 *ALERT MONITORING GENIEACS*\n\n".
-            "*Pelanggan:* {customer_name}\n".
-            "*Customer ID:* `{customer_id}`\n".
-            "*SN ONU:* `{onu_serial}`\n".
-            "*Status:* 🔴 OFFLINE\n".
-            "*IP TR069:* {tr069_ip}\n".
-            "*ConnectionRequestURL:* {connection_request_url}\n".
-            "*Terakhir Inform:* {last_inform}\n".
-            '*Reason:* {reason}';
-        $template = Setting::getValue('telegram_ip_down_template', $defaultTemplate);
-        if (! is_string($template) || trim($template) === '') {
-            $template = $defaultTemplate;
-        }
-
-        $preview = $this->renderTemplate($template, [
-            'customer_name' => 'Pelanggan Preview DOWN',
-            'customer_id' => '99999',
-            'onu_serial' => 'PREVIEWDOWN123456',
-            'status' => '🔴 OFFLINE',
-            'tr069_ip' => '10.10.10.12',
-            'connection_request_url' => 'http://10.10.10.12:7547/',
-            'last_inform' => now()->format('d M Y H:i:s'),
-            'reason' => 'Simulasi Preview ONU Offline',
-        ]);
-
-        return back()->with('preview_ip_down', $preview);
-    }
-
-    public function previewIpUp(Request $request)
-    {
-        $defaultTemplate = "✅ *RECOVERY MONITORING GENIEACS*\n\n".
-            "*Pelanggan:* {customer_name}\n".
-            "*Customer ID:* `{customer_id}`\n".
-            "*SN ONU:* `{onu_serial}`\n".
-            "*Status:* 🟢 ONLINE\n".
-            "*IP TR069:* {tr069_ip}\n".
-            "*ConnectionRequestURL:* {connection_request_url}\n".
-            "*Terakhir Inform:* {last_inform}\n".
-            '*Reason:* {reason}';
-        $template = Setting::getValue('telegram_ip_up_template', $defaultTemplate);
-        if (! is_string($template) || trim($template) === '') {
-            $template = $defaultTemplate;
-        }
-
-        $preview = $this->renderTemplate($template, [
-            'customer_name' => 'Pelanggan Preview UP',
-            'customer_id' => '99999',
-            'onu_serial' => 'PREVIEWUP123456',
-            'status' => '🟢 ONLINE',
-            'tr069_ip' => '10.10.10.13',
-            'connection_request_url' => 'http://10.10.10.13:7547/',
-            'last_inform' => now()->format('d M Y H:i:s'),
-            'reason' => 'Simulasi Preview ONU Recovery',
-        ]);
-
-        return back()->with('preview_ip_up', $preview);
     }
 
     protected function renderTemplate(string $template, array $data): string

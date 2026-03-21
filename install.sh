@@ -88,7 +88,8 @@ chown -R www-data:www-data $APP_DIR
 cd $APP_DIR
 
 # Konfigurasi Interaktif
-read -p "Masukkan Nama Domain (contoh: mstore.example.com): " DOMAIN_NAME
+read -p "Masukkan Nama Domain (default: ms.mstore.id): " DOMAIN_NAME
+DOMAIN_NAME=${DOMAIN_NAME:-ms.mstore.id}
 read -p "Masukkan Nama Database (default: mstore): " DB_NAME
 DB_NAME=${DB_NAME:-mstore}
 read -p "Masukkan User Database (default: mstore): " DB_USER
@@ -116,7 +117,7 @@ if [ ! -f .env ]; then
 fi
 
 # Update .env menggunakan sed
-sed -i "s/APP_URL=.*/APP_URL=http:\/\/${DOMAIN_NAME}/" .env
+sed -i "s#APP_URL=.*#APP_URL=https://${DOMAIN_NAME}#" .env
 sed -i "s/DB_DATABASE=.*/DB_DATABASE=${DB_NAME}/" .env
 sed -i "s/DB_USERNAME=.*/DB_USERNAME=${DB_USER}/" .env
 sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${DB_PASS}/" .env
@@ -142,6 +143,10 @@ php artisan view:cache
 echo "Membangun Frontend..."
 npm install
 npm run build
+
+HEALTH_URL="https://${DOMAIN_NAME}/api/hotspot/health"
+echo "Probe health endpoint: ${HEALTH_URL}"
+curl -fsS "${HEALTH_URL}" >/dev/null && echo "Hotspot API: OK" || echo "Hotspot API: belum terjangkau (cek DNS/SSL jika fresh server)"
 
 # 8. Setup Konfigurasi Nginx
 echo -e "${GREEN}[8/8] Mengkonfigurasi Nginx...${NC}"

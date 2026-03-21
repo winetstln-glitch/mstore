@@ -19,7 +19,6 @@
                             <div class="col-md-6">
                                 <label for="name" class="form-label">{{ __('Name') }}</label>
                                 <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}" class="form-control @error('name') is-invalid @enderror" required>
-                                <div class="form-text">Wajib diisi.</div>
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -28,8 +27,7 @@
                             <!-- Email -->
                             <div class="col-md-6">
                                 <label for="email" class="form-label">{{ __('Email') }}</label>
-                                <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" class="form-control @error('email') is-invalid @enderror">
-                                <div class="form-text">Opsional. Digunakan untuk reset password.</div>
+                                <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" class="form-control @error('email') is-invalid @enderror" required>
                                 @error('email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -39,7 +37,6 @@
                             <div class="col-md-6">
                                 <label for="username" class="form-label">Username</label>
                                 <input type="text" name="username" id="username" value="{{ old('username', $user->username) }}" class="form-control @error('username') is-invalid @enderror">
-                                <div class="form-text">Wajib untuk login. Jika dikosongkan akan dibuat otomatis.</div>
                                 @error('username')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -54,7 +51,6 @@
                                         <option value="{{ $role->id }}" {{ old('role_id', $user->role_id) == $role->id ? 'selected' : '' }}>{{ $role->label }}</option>
                                     @endforeach
                                 </select>
-                                <div class="form-text">Wajib diisi.</div>
                                 @error('role_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -64,7 +60,6 @@
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">{{ __('Phone') }}</label>
                                 <input type="text" name="phone" id="phone" value="{{ old('phone', $user->phone) }}" class="form-control @error('phone') is-invalid @enderror">
-                                <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -74,7 +69,6 @@
                             <div class="col-md-6">
                                 <label for="radius_username" class="form-label">Radius Username</label>
                                 <input type="text" name="radius_username" id="radius_username" value="{{ old('radius_username', $user->radius_username) }}" class="form-control @error('radius_username') is-invalid @enderror">
-                                <div class="form-text">Opsional. Isi hanya jika akun terhubung ke RADIUS.</div>
                                 @error('radius_username')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -110,12 +104,7 @@
                                         <!-- Password -->
                                         <div class="col-md-6">
                                             <label for="password" class="form-label">{{ __('New Password') }}</label>
-                                            <div class="input-group">
-                                                <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror">
-                                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="Tampilkan/Sembunyikan Password">
-                                                    <i class="fa-solid fa-eye"></i>
-                                                </button>
-                                            </div>
+                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror">
                                             @error('password')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -124,12 +113,7 @@
                                         <!-- Confirm Password -->
                                         <div class="col-md-6">
                                             <label for="password_confirmation" class="form-label">{{ __('Confirm New Password') }}</label>
-                                            <div class="input-group">
-                                                <input type="password" name="password_confirmation" id="password_confirmation" class="form-control">
-                                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="password_confirmation" aria-label="Tampilkan/Sembunyikan Password">
-                                                    <i class="fa-solid fa-eye"></i>
-                                                </button>
-                                            </div>
+                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control">
                                         </div>
                                     </div>
                                 </div>
@@ -151,27 +135,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
-        toggleButton.addEventListener('click', function () {
-            const inputId = this.getAttribute('data-toggle-password');
-            const input = document.getElementById(inputId);
-            if (!input) {
-                return;
-            }
-            const icon = this.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon?.classList.remove('fa-eye');
-                icon?.classList.add('fa-eye-slash');
-                return;
-            }
-            input.type = 'password';
-            icon?.classList.remove('fa-eye-slash');
-            icon?.classList.add('fa-eye');
-        });
-    });
-</script>
-@endpush

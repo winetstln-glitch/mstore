@@ -4,15 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Coordinator;
 use App\Models\Investor;
-use App\Models\Role;
-use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -30,7 +26,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Investor::with(['coordinator', 'user']);
+        $query = Investor::with('coordinator');
 
         $month = $request->input('month');
 
@@ -73,79 +69,42 @@ class InvestorController extends Controller implements HasMiddleware
             $existingInvestors = Investor::whereIn('coordinator_id', $coordinatorIds)->orderBy('name')->get();
         }
 
-        $linkedUserIds = Investor::whereNotNull('user_id')->pluck('user_id')->filter()->all();
-        $availableUsers = User::query()
-            ->whereHas('role', fn ($q) => $q->where('name', 'customer'))
-            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'username']);
-
-        return view('investors.create', compact('coordinators', 'existingInvestors', 'availableUsers'));
+        return view('investors.create', compact('coordinators', 'existingInvestors'));
     }
 
     public function store(Request $request)
     {
-        $rules = [
+        $validated = $request->validate([
             'coordinator_id' => 'required|exists:coordinators,id',
             'mode' => 'required|in:new,select',
             'source_investor_id' => 'nullable|exists:investors,id',
             'name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'description' => 'nullable|string',
-            'user_option' => 'sometimes|in:existing,new',
-        ];
-
-        if ($request->input('mode') === 'select') {
-            $rules['source_investor_id'] = 'required|exists:investors,id';
-        } else {
-            $rules['name'] = 'required|string|max:255';
-        }
-
-        if ($request->input('user_option') === 'new') {
-            $rules['username'] = 'required|string|max:255|unique:users,username';
-            $rules['email'] = 'nullable|string|email|max:255|unique:users,email';
-            $rules['password'] = ['required', 'confirmed', Rules\Password::defaults()];
-        } else {
-            $rules['user_id'] = 'nullable|exists:users,id|unique:investors,user_id';
-        }
-
-        $validated = $request->validate($rules);
-        $userId = $validated['user_id'] ?? null;
-
-        if ($request->input('user_option') === 'new') {
-            $role = Role::where('name', 'customer')->first();
-            $user = User::create([
-                'name' => $validated['name'] ?? optional(Investor::find($validated['source_investor_id'] ?? null))->name ?? 'Investor',
-                'username' => $validated['username'],
-                'email' => $validated['email'] ?? null,
-                'password' => Hash::make($validated['password']),
-                'phone' => $validated['phone'] ?? null,
-                'role_id' => $role?->id,
-                'is_active' => true,
-            ]);
-            $userId = $user->id;
-        }
+        ]);
 
         if ($validated['mode'] === 'select' && $validated['source_investor_id']) {
             $source = Investor::findOrFail($validated['source_investor_id']);
             Investor::create([
                 'coordinator_id' => $validated['coordinator_id'],
-                'user_id' => $userId,
                 'name' => $source->name,
                 'phone' => $source->phone,
                 'description' => $source->description,
             ]);
         } else {
+            $request->validate([
+                'name' => 'required|string|max:255',
+            ]);
+
             Investor::create([
                 'coordinator_id' => $validated['coordinator_id'],
-                'user_id' => $userId,
-                'name' => $validated['name'],
-                'phone' => $validated['phone'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'name' => $request->input('name'),
+                'phone' => $validated['phone'],
+                'description' => $validated['description'],
             ]);
         }
 
-        return redirect()->route('investors.index')->with('success', 'Investor berhasil ditambahkan.');
+        return redirect()->route('investors.index')->with('success', 'Investor created successfully.');
     }
 
     public function show(Investor $investor)
@@ -182,18 +141,7 @@ class InvestorController extends Controller implements HasMiddleware
             $coordinators = Coordinator::where('user_id', Auth::id())->get();
         }
 
-        $linkedUserIds = Investor::whereNotNull('user_id')
-            ->where('id', '!=', $investor->id)
-            ->pluck('user_id')
-            ->filter()
-            ->all();
-        $availableUsers = User::query()
-            ->whereHas('role', fn ($q) => $q->where('name', 'customer'))
-            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'username']);
-
-        return view('investors.edit', compact('investor', 'coordinators', 'availableUsers'));
+        return view('investors.edit', compact('investor', 'coordinators'));
     }
 
     public function update(Request $request, Investor $investor)
@@ -205,45 +153,16 @@ class InvestorController extends Controller implements HasMiddleware
             }
         }
 
-        $rules = [
+        $validated = $request->validate([
             'coordinator_id' => 'required|exists:coordinators,id',
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'description' => 'nullable|string',
-            'user_option' => 'sometimes|in:existing,new',
-        ];
-
-        if ($request->input('user_option') === 'new') {
-            $rules['username'] = 'required|string|max:255|unique:users,username';
-            $rules['email'] = 'nullable|string|email|max:255|unique:users,email';
-            $rules['password'] = ['required', 'confirmed', Rules\Password::defaults()];
-        } else {
-            $rules['user_id'] = 'nullable|exists:users,id|unique:investors,user_id,'.$investor->id;
-        }
-
-        $validated = $request->validate($rules);
-        $userId = $validated['user_id'] ?? null;
-
-        if ($request->input('user_option') === 'new') {
-            $role = Role::where('name', 'customer')->first();
-            $user = User::create([
-                'name' => $validated['name'],
-                'username' => $validated['username'],
-                'email' => $validated['email'] ?? null,
-                'password' => Hash::make($validated['password']),
-                'phone' => $validated['phone'] ?? null,
-                'role_id' => $role?->id,
-                'is_active' => true,
-            ]);
-            $userId = $user->id;
-        }
-
-        $validated['user_id'] = $userId;
-        unset($validated['user_option'], $validated['username'], $validated['email'], $validated['password'], $validated['password_confirmation']);
+        ]);
 
         $investor->update($validated);
 
-        return redirect()->route('investors.index')->with('success', 'Investor berhasil diperbarui.');
+        return redirect()->route('investors.index')->with('success', 'Investor updated successfully.');
     }
 
     public function destroy(Investor $investor)
@@ -256,12 +175,12 @@ class InvestorController extends Controller implements HasMiddleware
         }
 
         if ($investor->transactions()->exists()) {
-            return back()->with('error', 'Investor tidak dapat dihapus karena masih memiliki transaksi.');
+            return back()->with('error', 'Cannot delete investor with existing transactions.');
         }
 
         $investor->delete();
 
-        return redirect()->route('investors.index')->with('success', 'Investor berhasil dihapus.');
+        return redirect()->route('investors.index')->with('success', 'Investor deleted successfully.');
     }
 
     public function exportPdf(Request $request)

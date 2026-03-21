@@ -150,6 +150,40 @@
         </div>
     </div>
 
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Technician Masuk') }}</h6>
+                    <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['technician_present_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Hari ini') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Technician Izin / Tidak Masuk') }}</h6>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['technician_leave_absent_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Hari ini') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Monitor Summary -->
     <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">

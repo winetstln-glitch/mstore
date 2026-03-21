@@ -42,7 +42,6 @@
                         <li><a class="dropdown-item" href="{{ route('accounting.income_statement') }}"><i class="fa-solid fa-file-invoice-dollar me-2"></i>{{ __('Laba Rugi') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('accounting.ledger') }}"><i class="fa-solid fa-book me-2"></i>{{ __('Buku Besar') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('accounting.trial_balance') }}"><i class="fa-solid fa-table-list me-2"></i>{{ __('Neraca Saldo') }}</a></li>
-                        <li><a class="dropdown-item" href="{{ route('accounting.accounts.index') }}"><i class="fa-solid fa-folder-tree me-2"></i>{{ __('Master Akun') }}</a></li>
                     </ul>
                 </div>
             </div>

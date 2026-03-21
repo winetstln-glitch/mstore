@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Transaksi Wash</title>
+    <title>Wash Transactions</title>
     <style>
         body {
             font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
@@ -68,7 +68,7 @@
                 <tr>
                     <td>{{ $trx->created_at->format('d/m/Y H:i') }}</td>
                     <td>{{ $trx->transaction_number }}</td>
-                    <td>{{ $trx->user->name ?? ($trx->customer_name ?? 'Pelanggan Umum') }}</td>
+                    <td>{{ $trx->user->name ?? ($trx->customer_name ?? 'Guest') }}</td>
                     <td>{{ $trx->vehicle_type }} {{ $trx->vehicle_plate ? '('.$trx->vehicle_plate.')' : '' }}</td>
                     <td>
                         @foreach($trx->items as $item)
@@ -86,7 +86,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="5" class="text-right"><strong>Total Keseluruhan</strong></td>
+                <td colspan="5" class="text-right"><strong>Grand Total</strong></td>
                 <td class="text-right"><strong>Rp {{ number_format($transactions->sum('total_amount'), 0, ',', '.') }}</strong></td>
                 <td></td>
             </tr>

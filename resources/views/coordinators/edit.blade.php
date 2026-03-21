@@ -15,7 +15,6 @@
                     <div class="mb-3">
                         <label for="name" class="form-label">{{ __('Name') }}</label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $coordinator->name) }}" required>
-                        <div class="form-text">Wajib diisi.</div>
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -27,7 +26,7 @@
                             <option value="">{{ __('Select User') }}</option>
                             @foreach($users as $user)
                                 <option value="{{ $user->id }}" {{ old('user_id', $coordinator->user_id) == $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }} ({{ $user->username ?? '-' }})
+                                    {{ $user->name }} ({{ $user->email }})
                                 </option>
                             @endforeach
                         </select>

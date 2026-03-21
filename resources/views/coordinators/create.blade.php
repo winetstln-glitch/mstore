@@ -14,7 +14,6 @@
                     <div class="mb-3">
                         <label for="name" class="form-label">{{ __('Name') }}</label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required autofocus>
-                        <div class="form-text">Wajib diisi.</div>
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -43,7 +42,7 @@
                                 <option value="">{{ __('Select User') }}</option>
                                 @foreach($users as $user)
                                     <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }} ({{ $user->username ?? '-' }})
+                                        {{ $user->name }} ({{ $user->email }})
                                     </option>
                                 @endforeach
                             </select>
@@ -57,21 +56,15 @@
                         <div id="new_user_section" style="display: none;">
                             <div class="card  border-0 p-3">
                                 <div class="mb-3">
-                                    <label for="email" class="form-label">{{ __('Email Address') }}</label>
+                                    <label for="email" class="form-label">{{ __('Email Address') }} <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
-                                    <div class="form-text">Opsional. Digunakan untuk reset password.</div>
                                     @error('email')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 <div class="mb-3">
                                     <label for="password" class="form-label">{{ __('Password') }} <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
-                                        <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="Tampilkan/Sembunyikan Password">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </button>
-                                    </div>
+                                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
                                     @error('password')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -102,25 +95,6 @@
                                 document.getElementById('option_new').checked = true;
                                 toggleUserOption();
                             }
-                            document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
-                                toggleButton.addEventListener('click', function () {
-                                    const inputId = this.getAttribute('data-toggle-password');
-                                    const input = document.getElementById(inputId);
-                                    if (!input) {
-                                        return;
-                                    }
-                                    const icon = this.querySelector('i');
-                                    if (input.type === 'password') {
-                                        input.type = 'text';
-                                        icon?.classList.remove('fa-eye');
-                                        icon?.classList.add('fa-eye-slash');
-                                        return;
-                                    }
-                                    input.type = 'password';
-                                    icon?.classList.remove('fa-eye-slash');
-                                    icon?.classList.add('fa-eye');
-                                });
-                            });
                         });
                     </script>
 

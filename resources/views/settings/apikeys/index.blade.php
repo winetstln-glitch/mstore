@@ -77,7 +77,7 @@
                                         <form action="{{ route('apikeys.destroy', $key) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete this key? Applications using this key will lose access.') }}')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <button type="submit" class="btn btn-sm btn-danger">
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>

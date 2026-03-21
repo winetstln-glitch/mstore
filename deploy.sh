@@ -140,4 +140,11 @@ else
   systemctl reload nginx || true
 fi
 
+APP_URL_VALUE=$(grep -E '^APP_URL=' .env | head -n1 | cut -d '=' -f2- | sed 's/^"//; s/"$//' | sed 's#/$##')
+if [ -n "$APP_URL_VALUE" ] && command -v curl >/dev/null 2>&1; then
+  HEALTH_URL="$APP_URL_VALUE/api/hotspot/health"
+  echo "=== Health probe: $HEALTH_URL ==="
+  curl -fsS "$HEALTH_URL" >/dev/null && echo "✅ Hotspot API health OK" || echo "⚠️  Health probe gagal"
+fi
+
 echo "✅ Deploy Finished"

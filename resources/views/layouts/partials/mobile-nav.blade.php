@@ -1,9 +1,5 @@
 <div class="mobile-bottom-nav d-lg-none">
-    @php
-        $isKasirWash = Auth::user()->hasRole('kasir-wash');
-        $isKasirAtk = Auth::user()->hasRole('kasir-atk');
-    @endphp
-
+    {{-- Dashboard / Home --}}
     @if(Auth::user()->hasRole('customer'))
         <a href="{{ route('client.portal') }}" class="mbn-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">
             <div class="mbn-icon"><i class="fa-solid fa-house"></i></div>
@@ -21,62 +17,16 @@
             <div class="mbn-icon"><i class="fa-solid fa-user"></i></div>
             <span class="mbn-label">{{ __('Profil') }}</span>
         </a>
-    @elseif($isKasirWash)
-        @if(Auth::user()->hasPermission('wash.view'))
-        <a href="{{ route('wash.dashboard') }}" class="mbn-item {{ request()->routeIs('wash.dashboard') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-chart-pie"></i></div>
-            <span class="mbn-label">{{ __('Dasbor') }}</span>
-        </a>
-        @endif
-        @if(Auth::user()->hasPermission('wash.pos'))
-        <a href="{{ route('wash.pos') }}" class="mbn-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-cash-register"></i></div>
-            <span class="mbn-label">{{ __('Kasir') }}</span>
-        </a>
-        @endif
-        @if(Auth::user()->hasPermission('wash.report'))
-        <a href="{{ route('wash.transactions.index') }}" class="mbn-item {{ request()->routeIs('wash.transactions.*') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-history"></i></div>
-            <span class="mbn-label">{{ __('Riwayat') }}</span>
-        </a>
-        @endif
-        <a href="{{ route('profile.edit') }}" class="mbn-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-user"></i></div>
-            <span class="mbn-label">{{ __('Profil') }}</span>
-        </a>
-    @elseif($isKasirAtk)
-        @if(Auth::user()->hasPermission('atk.view'))
-        <a href="{{ route('atk.dashboard') }}" class="mbn-item {{ request()->routeIs('atk.dashboard') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-chart-line"></i></div>
-            <span class="mbn-label">{{ __('Dasbor') }}</span>
-        </a>
-        @endif
-        @if(Auth::user()->hasPermission('atk.pos'))
-        <a href="{{ route('atk.pos') }}" class="mbn-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-cash-register"></i></div>
-            <span class="mbn-label">{{ __('Kasir') }}</span>
-        </a>
-        @endif
-        @if(Auth::user()->hasPermission('atk.report'))
-        <a href="{{ route('atk.transactions.index') }}" class="mbn-item {{ request()->routeIs('atk.transactions.*') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-history"></i></div>
-            <span class="mbn-label">{{ __('Riwayat') }}</span>
-        </a>
-        @endif
-        <a href="{{ route('profile.edit') }}" class="mbn-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-user"></i></div>
-            <span class="mbn-label">{{ __('Profil') }}</span>
-        </a>
     @else
         <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <div class="mbn-icon"><i class="fa-solid fa-chart-line"></i></div>
-            <span class="mbn-label">{{ __('Dasbor') }}</span>
+            <span class="mbn-label">{{ __('Dash') }}</span>
         </a>
         
         @if(Auth::user()->hasPermission('customer.view'))
         <a href="{{ route('customers.index') }}" class="mbn-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
             <div class="mbn-icon"><i class="fa-solid fa-users"></i></div>
-            <span class="mbn-label">{{ __('Pelanggan') }}</span>
+            <span class="mbn-label">{{ __('Plg') }}</span>
         </a>
         @endif
 

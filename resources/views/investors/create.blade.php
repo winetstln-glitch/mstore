@@ -6,8 +6,8 @@
         <div class="col-lg-8 col-md-9 px-0 px-md-3">
             <div class="card border-0 shadow-lg rounded-5 overflow-hidden investor-create-shell">
                 <div class="investor-create-header p-4 p-md-5 pb-3">
-                    <h4 class="fw-bold mb-1">Tambah Investor</h4>
-                    <p class="mb-0 small investor-create-subtitle">Lengkapi formulir berikut untuk menambahkan data investor.</p>
+                    <h4 class="fw-bold mb-1">{{ __('Add Investor') }}</h4>
+                    <p class="mb-0 small investor-create-subtitle">{{ __('Complete the form below to add investor data.') }}</p>
                 </div>
 
                 <div class="card-body p-3 p-md-4 pt-3">
@@ -30,23 +30,23 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Mode</label>
+                            <label class="form-label fw-semibold">{{ __('Mode') }}</label>
                             <div class="investor-mode-group">
                                 <label class="investor-mode-option">
                                     <input class="form-check-input" type="radio" name="mode" id="mode_new" value="new" {{ old('mode', 'new') === 'new' ? 'checked' : '' }}>
-                                    <span>Buat Investor Baru</span>
+                                    <span>{{ __('Create New Investor') }}</span>
                                 </label>
                                 <label class="investor-mode-option">
                                     <input class="form-check-input" type="radio" name="mode" id="mode_select" value="select" {{ old('mode') === 'select' ? 'checked' : '' }}>
-                                    <span>Pilih Investor yang Sudah Ada</span>
+                                    <span>{{ __('Select Existing Investor') }}</span>
                                 </label>
                             </div>
                         </div>
 
                         <div class="mb-3" id="existingInvestorWrapper">
-                            <label for="source_investor_id" class="form-label fw-semibold">Investor Tersedia</label>
+                            <label for="source_investor_id" class="form-label fw-semibold">{{ __('Existing Investors') }}</label>
                             <select class="form-select form-select-lg @error('source_investor_id') is-invalid @enderror" id="source_investor_id" name="source_investor_id">
-                                <option value="">Pilih Investor</option>
+                                <option value="">{{ __('Select Investor') }}</option>
                                 @foreach($existingInvestors as $investor)
                                     <option value="{{ $investor->id }}" {{ old('source_investor_id') == $investor->id ? 'selected' : '' }}>
                                         {{ $investor->name }} @if($investor->phone) ({{ $investor->phone }}) @endif
@@ -57,7 +57,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">
-                                Gunakan opsi ini untuk memakai investor lama ke koordinator lain.
+                                {{ __('Use this to reuse an existing investor for another coordinator.') }}
                             </div>
                         </div>
 
@@ -71,7 +71,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="phone" class="form-label fw-semibold">Nomor Telepon</label>
+                                <label for="phone" class="form-label fw-semibold">{{ __('Phone') }}</label>
                                 <input type="text" class="form-control form-control-lg @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}">
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -87,66 +87,9 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Akun Login</label>
-                            <div class="investor-mode-group">
-                                <label class="investor-mode-option">
-                                    <input class="form-check-input" type="radio" name="user_option" id="user_option_existing" value="existing" {{ old('user_option', 'existing') === 'existing' ? 'checked' : '' }}>
-                                    <span>Pakai Akun yang Sudah Ada</span>
-                                </label>
-                                <label class="investor-mode-option">
-                                    <input class="form-check-input" type="radio" name="user_option" id="user_option_new" value="new" {{ old('user_option') === 'new' ? 'checked' : '' }}>
-                                    <span>Buat Akun Baru</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3" id="existingUserWrapper">
-                            <label for="user_id" class="form-label fw-semibold">Akun Tersedia</label>
-                            <select class="form-select form-select-lg @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
-                                <option value="">Pilih Akun</option>
-                                @foreach($availableUsers as $user)
-                                    <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }} @if($user->username) ({{ $user->username }}) @endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('user_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div id="newUserFields">
-                            <div class="mb-3">
-                                <label for="username" class="form-label fw-semibold">{{ __('Username') }} <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-lg @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username') }}">
-                                @error('username')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="mb-3">
-                                <label for="email" class="form-label fw-semibold">{{ __('Email') }}</label>
-                                <input type="email" class="form-control form-control-lg @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
-                                @error('email')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label fw-semibold">{{ __('Password') }} <span class="text-danger">*</span></label>
-                                <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password">
-                                @error('password')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="mb-3">
-                                <label for="password_confirmation" class="form-label fw-semibold">Konfirmasi Password <span class="text-danger">*</span></label>
-                                <input type="password" class="form-control form-control-lg" id="password_confirmation" name="password_confirmation">
-                            </div>
-                        </div>
-
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="{{ route('investors.index') }}" class="btn btn-outline-secondary px-4">{{ __('Cancel') }}</a>
-                            <button type="submit" class="btn btn-primary px-4">Simpan Investor</button>
+                            <button type="submit" class="btn btn-primary px-4">{{ __('Save Investor') }}</button>
                         </div>
                     </form>
                 </div>
@@ -255,27 +198,10 @@
             }
         }
 
-        function updateUserOption() {
-            var userOption = document.querySelector('input[name="user_option"]:checked')?.value || 'existing';
-            var existingUserWrapper = document.getElementById('existingUserWrapper');
-            var newUserFields = document.getElementById('newUserFields');
-
-            if (userOption === 'new') {
-                existingUserWrapper.style.display = 'none';
-                newUserFields.style.display = '';
-            } else {
-                existingUserWrapper.style.display = '';
-                newUserFields.style.display = 'none';
-            }
-        }
-
         document.getElementById('mode_new').addEventListener('change', updateMode);
         document.getElementById('mode_select').addEventListener('change', updateMode);
-        document.getElementById('user_option_existing').addEventListener('change', updateUserOption);
-        document.getElementById('user_option_new').addEventListener('change', updateUserOption);
 
         updateMode();
-        updateUserOption();
     })();
 </script>
 @endsection

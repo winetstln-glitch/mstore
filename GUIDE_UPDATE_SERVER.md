@@ -19,6 +19,14 @@ Skrip ini akan melakukan:
 - Update seeder (permission, role, setting)
 - Link storage
 - Bersihkan dan cache konfigurasi
+- Probe endpoint integrasi hotspot (`/api/hotspot/health`)
+
+## 2b. Zero-Config Ready Command
+Untuk memastikan server langsung siap dipakai login hotspot tanpa langkah manual tambahan:
+
+```bash
+composer run post-install-ready
+```
 
 ## 3. Update Manual (Jika script gagal)
 Jika Anda perlu melakukan update secara manual, jalankan perintah berikut secara berurutan:
