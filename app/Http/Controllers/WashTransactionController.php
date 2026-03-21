@@ -54,9 +54,10 @@ class WashTransactionController extends Controller implements HasMiddleware
         $dailySales = WashTransaction::whereDate('created_at', $today)->sum('total_amount');
         $monthlySales = WashTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
         $transactionCount = WashTransaction::whereDate('created_at', $today)->count();
-        $dailyServiceCount = WashTransactionItem::join('wash_transactions as t', 't.id', '=', 'wash_transaction_items.wash_transaction_id')
-            ->whereDate('t.created_at', $today)
-            ->sum('wash_transaction_items.quantity');
+        $dailyAttendanceCount = TechnicianAttendance::whereDate('clock_in', $today)
+            ->whereIn('status', ['present', 'late'])
+            ->distinct('user_id')
+            ->count('user_id');
 
         $startDate = now()->subDays(6)->toDateString();
         $endDate = now()->toDateString();
@@ -82,7 +83,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->limit(5)
             ->get();
 
-        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'dailyServiceCount', 'serviceTrendLabels', 'serviceTrendData', 'topServices', 'todayAttendance'));
+        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'dailyAttendanceCount', 'serviceTrendLabels', 'serviceTrendData', 'topServices', 'todayAttendance'));
     }
 
     public function pos()
