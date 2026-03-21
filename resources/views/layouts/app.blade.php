@@ -209,11 +209,11 @@
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('hotspot.view') || Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
-            <a class="sidebar-item {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#servicesCollapse" role="button" aria-expanded="{{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'true' : 'false' }}" aria-controls="servicesCollapse">
+            @if(Auth::user()->hasPermission('hotspot.view') || Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view') || Auth::user()->hasPermission('package.view'))
+            <a class="sidebar-item {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index') || request()->routeIs('packages.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#servicesCollapse" role="button" aria-expanded="{{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index') || request()->routeIs('packages.*')) ? 'true' : 'false' }}" aria-controls="servicesCollapse">
                 <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index')) ? 'show' : '' }}" id="servicesCollapse">
+            <div class="collapse {{ (request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index') || request()->routeIs('packages.*')) ? 'show' : '' }}" id="servicesCollapse">
                 <div class="ps-2">
                     @if(Auth::user()->hasPermission('hotspot.view'))
                     <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
@@ -223,6 +223,11 @@
                     @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
                     <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasPermission('package.view'))
+                    <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                     </a>
                     @endif
                 </div>
@@ -541,10 +546,10 @@
             @if(! $isKasirWashLimited && (Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view')))
             <div class="sidebar-header mt-2">{{ __('Sistem') }}</div>
 
-            <a class="sidebar-item {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('packages.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#settingsCollapse" role="button" aria-expanded="{{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('packages.*')) ? 'true' : 'false' }}" aria-controls="settingsCollapse">
+            <a class="sidebar-item {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#settingsCollapse" role="button" aria-expanded="{{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*')) ? 'true' : 'false' }}" aria-controls="settingsCollapse">
                 <i class="fa fa-cogs"></i> {{ __('Pengaturan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('packages.*')) ? 'show' : '' }}" id="settingsCollapse">
+            <div class="collapse {{ (request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*')) ? 'show' : '' }}" id="settingsCollapse">
                 <div class="ps-3">
                     @if(Auth::user()->hasPermission('setting.view'))
                     <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
@@ -575,11 +580,6 @@
                     @if(Auth::user()->hasPermission('role.view'))
                     <a href="{{ route('roles.index') }}" class="sidebar-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
                         <i class="fa-regular fa-id-card"></i> {{ __('Manajemen Role') }}
-                    </a>
-                    @endif
-                    @if(Auth::user()->hasPermission('package.view'))
-                    <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                     </a>
                     @endif
                     @if(Auth::user()->hasPermission('chat.view'))

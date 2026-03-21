@@ -35,11 +35,19 @@ class PackageController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'package_type' => 'required|in:pppoe,hotspot',
             'price' => 'required|integer|min:0',
             'speed' => 'nullable|string|max:100',
+            'devices_limit_mode' => 'required|in:limited,unlimited',
+            'devices_limit' => 'nullable|integer|min:1|required_if:devices_limit_mode,limited',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+
+        $validated['devices_limit'] = $validated['devices_limit_mode'] === 'limited'
+            ? (int) ($validated['devices_limit'] ?? 0)
+            : null;
+        unset($validated['devices_limit_mode']);
 
         Package::create($validated);
 
@@ -55,11 +63,19 @@ class PackageController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'package_type' => 'required|in:pppoe,hotspot',
             'price' => 'required|integer|min:0',
             'speed' => 'nullable|string|max:100',
+            'devices_limit_mode' => 'required|in:limited,unlimited',
+            'devices_limit' => 'nullable|integer|min:1|required_if:devices_limit_mode,limited',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+
+        $validated['devices_limit'] = $validated['devices_limit_mode'] === 'limited'
+            ? (int) ($validated['devices_limit'] ?? 0)
+            : null;
+        unset($validated['devices_limit_mode']);
 
         $package->update($validated);
 

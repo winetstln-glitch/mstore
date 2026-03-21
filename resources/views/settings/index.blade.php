@@ -36,6 +36,9 @@
                             'pos_preferred_printer_name',
                             'pos_preferred_printer_id',
                             'pos_performance_profile',
+                            'landing_internet_promo_enabled',
+                            'landing_internet_promo_percent',
+                            'landing_internet_promo_label',
                             'cctv_section_badge',
                             'cctv_section_title',
                             'cctv_package_1_speed',
@@ -110,6 +113,27 @@
                             <div class="col-md-6">
                                 <label for="store_address" class="form-label fw-medium">Alamat Toko</label>
                                 <textarea class="form-control" id="store_address" name="store_address" rows="3">{{ \App\Models\Setting::getValue('store_address', 'Jl. Contoh No. 1') }}</textarea>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-2">Landing Promo Internet</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="landing_internet_promo_enabled" class="form-label fw-medium">Status Promo</label>
+                                @php $internetPromoEnabled = \App\Models\Setting::getValue('landing_internet_promo_enabled', '1'); @endphp
+                                <select class="form-select" id="landing_internet_promo_enabled" name="landing_internet_promo_enabled">
+                                    <option value="1" {{ $internetPromoEnabled === '1' ? 'selected' : '' }}>Aktif</option>
+                                    <option value="0" {{ $internetPromoEnabled === '0' ? 'selected' : '' }}>Nonaktif</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="landing_internet_promo_label" class="form-label fw-medium">Teks Promo</label>
+                                <input type="text" class="form-control" id="landing_internet_promo_label" name="landing_internet_promo_label" value="{{ \App\Models\Setting::getValue('landing_internet_promo_label', 'Promo Paket Internet') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="landing_internet_promo_percent" class="form-label fw-medium">Diskon Promo (%)</label>
+                                <input type="number" class="form-control" id="landing_internet_promo_percent" name="landing_internet_promo_percent" value="{{ \App\Models\Setting::getValue('landing_internet_promo_percent', '10') }}" min="0" max="90">
+                                <div class="form-text">Nilai 0 untuk menonaktifkan promo di landing.</div>
                             </div>
 
                             <div class="col-12 mt-2">
@@ -329,12 +353,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="mixradius_api_token" class="form-label fw-medium">API Token</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="mixradius_api_token" name="mixradius_api_token" placeholder="••••••">
-                                    <button class="btn btn-outline-secondary" type="button" data-toggle-password="mixradius_api_token" aria-label="Tampilkan/Sembunyikan Password">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                </div>
+                                <input type="password" class="form-control" id="mixradius_api_token" name="mixradius_api_token" placeholder="••••••">
                                 <div class="form-text">{{ __('Biarkan kosong jika tidak ingin mengubah token.') }}</div>
                             </div>
                         </div>
@@ -467,27 +486,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    document.querySelectorAll('[data-toggle-password]').forEach((toggleButton) => {
-        toggleButton.addEventListener('click', function () {
-            const inputId = this.getAttribute('data-toggle-password');
-            const input = document.getElementById(inputId);
-            if (!input) {
-                return;
-            }
-            const icon = this.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon?.classList.remove('fa-eye');
-                icon?.classList.add('fa-eye-slash');
-                return;
-            }
-            input.type = 'password';
-            icon?.classList.remove('fa-eye-slash');
-            icon?.classList.add('fa-eye');
-        });
-    });
-</script>
-@endpush

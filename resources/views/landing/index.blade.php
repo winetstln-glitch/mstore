@@ -188,7 +188,7 @@
                                     @endif
                                 </div>
                             @endif
-                            <p class="small text-muted mb-3">{{ $service->description ?? 'Layanan cuci bersih dan mengkilap.' }}</p>
+                            <p class="small text-muted mb-3">{!! nl2br(e($service->description ?: 'Layanan cuci bersih dan mengkilap.')) !!}</p>
                             <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
                                 <i class="fab fa-whatsapp me-2"></i> Booking
                             </a>
@@ -205,42 +205,161 @@
    
     </section>
      <!-- Internet Section -->
-    <section id="packages" class="py-2 bg-black bg-opacity-25">
+    @php
+        $inferInternetPackageType = function ($package) {
+            $explicitType = \Illuminate\Support\Str::lower((string) ($package->package_type ?? ''));
+            if (in_array($explicitType, ['pppoe', 'hotspot'], true)) {
+                return $explicitType;
+            }
+
+            $haystack = \Illuminate\Support\Str::lower(trim(
+                $package->name.' '.$package->speed.' '.($package->description ?? '')
+            ));
+
+            return \Illuminate\Support\Str::contains($haystack, ['hotspot', 'member', 'voucher'])
+                ? 'hotspot'
+                : 'pppoe';
+        };
+
+        $hotspotInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'hotspot')->values();
+        $pppoeInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'pppoe')->values();
+        $internetPromoEnabled = \App\Models\Setting::getValue('landing_internet_promo_enabled', '1') === '1';
+        $internetPromoPercent = (int) \App\Models\Setting::getValue('landing_internet_promo_percent', '10');
+        $internetPromoPercent = max(0, min($internetPromoPercent, 90));
+        $internetPromoLabel = trim((string) \App\Models\Setting::getValue('landing_internet_promo_label', 'Promo Paket Internet'));
+        $showInternetPromo = $internetPromoEnabled && $internetPromoPercent > 0;
+        $formatInternetSpeed = function ($speedValue) {
+            $speedText = trim((string) $speedValue);
+            if ($speedText === '') {
+                return '-';
+            }
+
+            if (preg_match('/^\d+$/', $speedText) === 1) {
+                return $speedText.' Mbps';
+            }
+
+            return $speedText;
+        };
+    @endphp
+    <section id="packages" class="py-2 bg-black bg-opacity-25 internet-packages-section">
         <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Internet Service</h6>
+                <h6 class="text-primary fw-bold text-uppercase">Layanan Internet</h6>
                 <h2 class="display-6 fw-800">Paket Internet Fiber</h2>
+                @if($showInternetPromo)
+                <div class="internet-promo-banner mt-3">
+                    <i class="fas fa-bolt"></i>
+                    <span>{{ $internetPromoLabel }} • Hemat {{ $internetPromoPercent }}%</span>
+                </div>
+                @endif
             </div>
 
-            <div class="scroll-container fade-up">
-                @forelse($packages as $package)
-                <div class="scroll-item">
-                    <div class="card">
-                        <div class="pricing-header">
-                            <div class="speed">{{ $package->speed }}</div>
-                            <div class="fw-bold">Mbps</div>
-                        </div>
-                        <div class="pricing-body d-flex flex-column">
-                            <div class="price text-primary">
-                                Rp {{ number_format($package->price, 0, ',', '.') }}
-                                <span class="fs-6 text-muted">/ bln</span>
+            <div class="mb-3 fade-up">
+                <h5 class="fw-bold mb-2">Paket Rumahan</h5>
+                <div class="scroll-container">
+                    @forelse($pppoeInternetPackages as $package)
+                    @php
+                        $packageFeatures = collect(preg_split('/\r\n|\r|\n/', (string) $package->description))
+                            ->map(fn ($item) => trim($item))
+                            ->filter()
+                            ->values();
+                        $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
+                        $packageSpeedText = $formatInternetSpeed($package->speed);
+                        $normalPrice = (int) $package->price;
+                        $promoPrice = $showInternetPromo ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
+                        if ($packageFeatures->isEmpty()) {
+                            $packageFeatures = collect(['100% Fiber Optic', 'Unlimited FUP']);
+                        }
+                    @endphp
+                    <div class="scroll-item">
+                        <div class="card">
+                            @if($showInternetPromo)
+                            <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
+                            @endif
+                            <div class="pricing-header">
+                                <div class="speed">{{ $package->name }}</div>
+                                <div class="fw-bold">{{ $packageDevicesText }}</div>
                             </div>
-                            <h5 class="mb-3">{{ $package->name }}</h5>
-                            <ul class="features">
-                                <li><i class="fas fa-check-circle text-primary"></i> 100% Fiber Optic</li>
-                                <li><i class="fas fa-check-circle text-primary"></i> Unlimited FUP</li>
-                            </ul>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                Berlangganan
-                            </a>
+                            <div class="pricing-body d-flex flex-column">
+                                <div class="price text-primary">
+                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
+                                    <span class="fs-6 text-muted">/ bln</span>
+                                </div>
+                                @if($showInternetPromo)
+                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
+                                @endif
+                                <h5 class="mb-3">{{ $packageSpeedText }}</h5>
+                                <ul class="features">
+                                    @foreach($packageFeatures as $feature)
+                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>
+                                    @endforeach
+                                </ul>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
+                                    Ambil Promo
+                                </a>
+                            </div>
                         </div>
                     </div>
+                    @empty
+                    <div class="text-center w-100 py-2">
+                        <p class="text-muted">Paket PPPoE / Rumahan belum tersedia.</p>
+                    </div>
+                    @endforelse
                 </div>
-                @empty
-                <div class="text-center w-100 py-2">
-                    <p class="text-muted">Paket belum tersedia.</p>
+            </div>
+
+            <div class="fade-up">
+                <h5 class="fw-bold mb-2">Paket Hotspot / Member</h5>
+                <div class="scroll-container">
+                    @forelse($hotspotInternetPackages as $package)
+                    @php
+                        $packageFeatures = collect(preg_split('/\r\n|\r|\n/', (string) $package->description))
+                            ->map(fn ($item) => trim($item))
+                            ->filter()
+                            ->values();
+                        $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
+                        $packageSpeedText = $formatInternetSpeed($package->speed);
+                        $normalPrice = (int) $package->price;
+                        $promoPrice = $showInternetPromo ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
+                        if ($packageFeatures->isEmpty()) {
+                            $packageFeatures = collect(['Akses Cepat', 'Cocok untuk Voucher / Member']);
+                        }
+                    @endphp
+                    <div class="scroll-item">
+                        <div class="card">
+                            @if($showInternetPromo)
+                            <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
+                            @endif
+                            <div class="pricing-header">
+                                <div class="speed">{{ $packageSpeedText }}</div>
+                                <div class="fw-bold">{{ $packageDevicesText }}</div>
+                            </div>
+                            <div class="pricing-body d-flex flex-column">
+                                <div class="price text-primary">
+                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
+                                    <span class="fs-6 text-muted">/ bln</span>
+                                </div>
+                                @if($showInternetPromo)
+                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
+                                @endif
+                                <h5 class="mb-3">{{ $package->name }}</h5>
+                                <ul class="features">
+                                    @foreach($packageFeatures as $feature)
+                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>
+                                    @endforeach
+                                </ul>
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
+                                    Ambil Promo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center w-100 py-2">
+                        <p class="text-muted">Paket Hotspot / Member belum tersedia.</p>
+                    </div>
+                    @endforelse
                 </div>
-                @endforelse
             </div>
         </div>
     </section>

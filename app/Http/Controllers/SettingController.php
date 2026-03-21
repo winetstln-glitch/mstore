@@ -105,6 +105,9 @@ class SettingController extends Controller implements HasMiddleware
             'pos_performance_profile' => 'nullable|in:ultrafast,balanced,stable',
             'wash_holiday_pricing_start_date' => 'nullable|date_format:Y-m-d',
             'wash_holiday_pricing_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:wash_holiday_pricing_start_date',
+            'landing_internet_promo_enabled' => 'nullable|in:0,1',
+            'landing_internet_promo_percent' => 'nullable|integer|min:0|max:90',
+            'landing_internet_promo_label' => 'nullable|string|max:120',
         ]);
 
         $existingSettings = Setting::query()
@@ -309,6 +312,27 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Tanggal Selesai Harga Hari Raya Wash',
+            ],
+            [
+                'key' => 'landing_internet_promo_enabled',
+                'value' => '1',
+                'group' => 'general',
+                'type' => 'boolean',
+                'label' => 'Aktifkan Promo Internet Landing',
+            ],
+            [
+                'key' => 'landing_internet_promo_percent',
+                'value' => '10',
+                'group' => 'general',
+                'type' => 'number',
+                'label' => 'Diskon Promo Internet Landing',
+            ],
+            [
+                'key' => 'landing_internet_promo_label',
+                'value' => 'Promo Paket Internet',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Label Promo Internet Landing',
             ],
             [
                 'key' => 'pos_printer_auto_reconnect',

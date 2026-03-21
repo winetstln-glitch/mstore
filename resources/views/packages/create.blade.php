@@ -18,6 +18,16 @@
                         @enderror
                     </div>
                     <div class="mb-3">
+                        <label for="package_type" class="form-label">Tipe Paket</label>
+                        <select name="package_type" id="package_type" class="form-select @error('package_type') is-invalid @enderror" required>
+                            <option value="pppoe" {{ old('package_type') === 'pppoe' ? 'selected' : '' }}>PPPoE / Rumahan</option>
+                            <option value="hotspot" {{ old('package_type') === 'hotspot' ? 'selected' : '' }}>Hotspot / Member</option>
+                        </select>
+                        @error('package_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
                         <label for="price" class="form-label">{{ __('Price') }}</label>
                         <input type="number" name="price" id="price" value="{{ old('price') }}" class="form-control @error('price') is-invalid @enderror" min="0" step="1000" required>
                         @error('price')
@@ -32,8 +42,26 @@
                         @enderror
                     </div>
                     <div class="mb-3">
-                        <label for="description" class="form-label">{{ __('Description') }}</label>
+                        <label for="devices_limit_mode" class="form-label">Jumlah Devices</label>
+                        <select name="devices_limit_mode" id="devices_limit_mode" class="form-select @error('devices_limit_mode') is-invalid @enderror" required>
+                            <option value="unlimited" {{ old('devices_limit_mode', 'unlimited') === 'unlimited' ? 'selected' : '' }}>Unlimited</option>
+                            <option value="limited" {{ old('devices_limit_mode') === 'limited' ? 'selected' : '' }}>Dibatasi</option>
+                        </select>
+                        @error('devices_limit_mode')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="devices_limit" class="form-label">Batas Devices</label>
+                        <input type="number" name="devices_limit" id="devices_limit" value="{{ old('devices_limit') }}" class="form-control @error('devices_limit') is-invalid @enderror" min="1" placeholder="Isi jika mode dibatasi">
+                        @error('devices_limit')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Fitur Paket</label>
                         <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
+                        <small class="text-muted">Isi satu fitur per baris agar tampil sebagai daftar fitur di landing.</small>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -52,4 +80,3 @@
     </div>
 </div>
 @endsection
-
