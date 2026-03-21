@@ -717,8 +717,11 @@ ul { list-style: none; }
     font-size: 0.72rem;
     font-weight: 700;
     box-shadow: 0 10px 22px rgba(239, 68, 68, 0.28);
+    text-align: center;
+    line-height: 1.2;
 }
-ol, ul {
+#packages.internet-packages-section .features,
+#packages.internet-packages-section ul.features {
     padding-left: 0.5rem;
 }
 .internet-promo-ribbon {
