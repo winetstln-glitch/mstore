@@ -868,6 +868,127 @@
             'ROSE': 'pink', 'MERAH MUDA': 'pink',
             'AQUA': 'aqua', 'TOSCA': 'turquoise'
         };
+        const colorLabelMap = {
+            'BLUE': 'Blue (Biru)',
+            'BIRU': 'Blue (Biru)',
+            'ORANGE': 'Orange (Oranye)',
+            'ORANYE': 'Orange (Oranye)',
+            'GREEN': 'Green (Hijau)',
+            'HIJAU': 'Green (Hijau)',
+            'BROWN': 'Brown (Coklat)',
+            'COKLAT': 'Brown (Coklat)',
+            'SLATE': 'Slate',
+            'ABU-ABU': 'Abu-abu',
+            'ABU': 'Abu-abu',
+            'WHITE': 'White (Putih)',
+            'PUTIH': 'White (Putih)',
+            'RED': 'Red (Merah)',
+            'MERAH': 'Red (Merah)',
+            'BLACK': 'Black (Hitam)',
+            'HITAM': 'Black (Hitam)',
+            'YELLOW': 'Yellow (Kuning)',
+            'KUNING': 'Yellow (Kuning)',
+            'VIOLET': 'Violet (Ungu)',
+            'UNGU': 'Violet (Ungu)',
+            'ROSE': 'Rose (Merah Muda)',
+            'MERAH MUDA': 'Rose (Merah Muda)',
+            'AQUA': 'Aqua (Tosca)',
+            'TOSCA': 'Aqua (Tosca)'
+        };
+        const colorHexLabelMap = {
+            '#0000FF': 'Blue (Biru)',
+            '#FFA500': 'Orange (Oranye)',
+            '#00FF00': 'Green (Hijau)',
+            '#A52A2A': 'Brown (Coklat)',
+            '#708090': 'Slate',
+            '#808080': 'Abu-abu',
+            '#FFFFFF': 'White (Putih)',
+            '#FF0000': 'Red (Merah)',
+            '#000000': 'Black (Hitam)',
+            '#FFFF00': 'Yellow (Kuning)',
+            '#800080': 'Violet (Ungu)',
+            '#FFC0CB': 'Rose (Merah Muda)',
+            '#00FFFF': 'Aqua (Tosca)',
+            '#40E0D0': 'Aqua (Tosca)'
+        };
+        const colorPalette = [
+            { hex: '#0000FF', label: 'Blue (Biru)' },
+            { hex: '#FFA500', label: 'Orange (Oranye)' },
+            { hex: '#00FF00', label: 'Green (Hijau)' },
+            { hex: '#A52A2A', label: 'Brown (Coklat)' },
+            { hex: '#708090', label: 'Slate' },
+            { hex: '#808080', label: 'Abu-abu' },
+            { hex: '#FFFFFF', label: 'White (Putih)' },
+            { hex: '#FF0000', label: 'Red (Merah)' },
+            { hex: '#000000', label: 'Black (Hitam)' },
+            { hex: '#FFFF00', label: 'Yellow (Kuning)' },
+            { hex: '#800080', label: 'Violet (Ungu)' },
+            { hex: '#FFC0CB', label: 'Rose (Merah Muda)' },
+            { hex: '#00FFFF', label: 'Aqua (Tosca)' }
+        ];
+        function normalizeHexColor(value) {
+            var raw = String(value || '').trim().toUpperCase();
+            if (!raw.startsWith('#')) {
+                return raw;
+            }
+            if (/^#[0-9A-F]{3}$/.test(raw)) {
+                return '#' + raw[1] + raw[1] + raw[2] + raw[2] + raw[3] + raw[3];
+            }
+            if (/^#[0-9A-F]{6}$/.test(raw)) {
+                return raw;
+            }
+            return raw;
+        }
+        function hexToRgb(hex) {
+            var normalized = normalizeHexColor(hex);
+            if (!/^#[0-9A-F]{6}$/.test(normalized)) {
+                return null;
+            }
+            return {
+                r: parseInt(normalized.slice(1, 3), 16),
+                g: parseInt(normalized.slice(3, 5), 16),
+                b: parseInt(normalized.slice(5, 7), 16)
+            };
+        }
+        function nearestColorLabelFromHex(hex) {
+            var rgb = hexToRgb(hex);
+            if (!rgb) {
+                return null;
+            }
+            var nearestLabel = null;
+            var nearestDistance = Infinity;
+            colorPalette.forEach(function(color) {
+                var sample = hexToRgb(color.hex);
+                if (!sample) {
+                    return;
+                }
+                var dr = rgb.r - sample.r;
+                var dg = rgb.g - sample.g;
+                var db = rgb.b - sample.b;
+                var distance = dr * dr + dg * dg + db * db;
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestLabel = color.label;
+                }
+            });
+            return nearestLabel;
+        }
+        function formatFiberColorLabel(rawColor) {
+            var raw = String(rawColor || '').trim();
+            if (raw === '') {
+                return '-';
+            }
+            var key = raw.toUpperCase();
+            if (colorLabelMap[key]) {
+                return colorLabelMap[key];
+            }
+            var normalizedHex = normalizeHexColor(raw);
+            if (colorHexLabelMap[normalizedHex]) {
+                return colorHexLabelMap[normalizedHex];
+            }
+            var nearest = nearestColorLabelFromHex(raw);
+            return nearest || raw;
+        }
 
         function getConnectionKey(fromType, fromId, toType, toId) {
             return `${fromType}_${fromId}__${toType}_${toId}`;
@@ -1590,8 +1711,8 @@
         odps.forEach(function(odp) {
             if (odp.latitude && odp.longitude) {
                 var odcName = 'N/A';
+                var odpColorLabel = formatFiberColorLabel(odp.color);
                 var odpToOdcDistance = '-';
-                var odcToServerDistance = '-';
                 if (odp.odc_id) {
                     var odc = odcs.find(o => o.id == odp.odc_id);
                     if (odc) {
@@ -1604,19 +1725,6 @@
                             odc.longitude,
                             odpLineKey
                         ));
-                        if (odc.olt_id) {
-                            var odcOlt = olts.find(o => o.id == odc.olt_id);
-                            if (odcOlt) {
-                                var odcLineKey = getConnectionKey('olt', odcOlt.id, 'odc', odc.id);
-                                odcToServerDistance = formatDistance(getLineDistanceMeters(
-                                    odcOlt.latitude,
-                                    odcOlt.longitude,
-                                    odc.latitude,
-                                    odc.longitude,
-                                    odcLineKey
-                                ));
-                            }
-                        }
                     }
                 }
 
@@ -1628,9 +1736,8 @@
                             <tr><td class="map-popup-label">Kapasitas:</td><td class="map-popup-value">${odp.filled || 0}/${odp.capacity}</td></tr>
                             <tr><td class="map-popup-label">ODC:</td><td class="map-popup-value">${odcName}</td></tr>
                             <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${odp.kampung || '-'}</td></tr>
-                            <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odp.color || '-'}</td></tr>
-                            <tr><td class="map-popup-label">Jarak ke ODC:</td><td class="map-popup-value">${odpToOdcDistance}</td></tr>
-                            <tr><td class="map-popup-label">ODC ke Server:</td><td class="map-popup-value">${odcToServerDistance}</td></tr>
+                            <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odpColorLabel}</td></tr>
+                            <tr><td class="map-popup-label">Jarak ODP-ODC:</td><td class="map-popup-value">${odpToOdcDistance}</td></tr>
                         </table>
                         <div class="map-popup-desc">${odp.description || ''}</div>
                     </div>`;
@@ -1861,52 +1968,27 @@
             var iconType = isOnline ? 'online' : 'offline';
             var tr069Ip = customer.tr069_ip || '-';
             var customerToOdpDistance = '-';
-            var odpToOdcDistance = '-';
-            var odcToServerDistance = '-';
 
             // Find ODP name
             var odpName = 'N/A';
+            var matchedOdp = null;
             if (customer.odp_id) {
-                var odp = odps.find(o => o.id == customer.odp_id);
-                if (odp) {
-                    odpName = odp.name;
-                    var customerLineKey = getConnectionKey('odp', odp.id, 'cust', customer.id);
-                    customerToOdpDistance = formatDistance(getLineDistanceMeters(
-                        odp.latitude,
-                        odp.longitude,
-                        customer.latitude,
-                        customer.longitude,
-                        customerLineKey
-                    ));
-                    if (odp.odc_id) {
-                        var odc = odcs.find(o => o.id == odp.odc_id);
-                        if (odc) {
-                            var odpLineKey = getConnectionKey('odc', odc.id, 'odp', odp.id);
-                            odpToOdcDistance = formatDistance(getLineDistanceMeters(
-                                odc.latitude,
-                                odc.longitude,
-                                odp.latitude,
-                                odp.longitude,
-                                odpLineKey
-                            ));
-                            if (odc.olt_id) {
-                                var odcOlt = olts.find(o => o.id == odc.olt_id);
-                                if (odcOlt) {
-                                    var odcLineKey = getConnectionKey('olt', odcOlt.id, 'odc', odc.id);
-                                    odcToServerDistance = formatDistance(getLineDistanceMeters(
-                                        odcOlt.latitude,
-                                        odcOlt.longitude,
-                                        odc.latitude,
-                                        odc.longitude,
-                                        odcLineKey
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                }
+                matchedOdp = odps.find(o => o.id == customer.odp_id) || null;
+            } else if (customer.odp && typeof customer.odp === 'object' && customer.odp.id) {
+                matchedOdp = odps.find(o => o.id == customer.odp.id) || null;
+            }
+            if (matchedOdp) {
+                odpName = matchedOdp.name;
+                var customerLineKey = getConnectionKey('odp', matchedOdp.id, 'cust', customer.id);
+                customerToOdpDistance = formatDistance(getLineDistanceMeters(
+                    matchedOdp.latitude,
+                    matchedOdp.longitude,
+                    customer.latitude,
+                    customer.longitude,
+                    customerLineKey
+                ));
             } else if (customer.odp) {
-                odpName = customer.odp.name || customer.odp; 
+                odpName = customer.odp.name || customer.odp;
             }
             
             var marker = L.marker([customer.latitude, customer.longitude], {
@@ -1928,8 +2010,6 @@
                 `<tr><td class="map-popup-label">Paket:</td><td class="map-popup-value">${customer.package || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">ODP:</td><td class="map-popup-value">${odpName}</td></tr>` +
                 `<tr><td class="map-popup-label">Jarak Customer-ODP:</td><td class="map-popup-value">${customerToOdpDistance}</td></tr>` +
-                `<tr><td class="map-popup-label">Jarak ODP-ODC:</td><td class="map-popup-value">${odpToOdcDistance}</td></tr>` +
-                `<tr><td class="map-popup-label">Jarak ODC-Server:</td><td class="map-popup-value">${odcToServerDistance}</td></tr>` +
                 `<tr><td class="map-popup-label">SN:</td><td class="map-popup-value font-monospace">${customer.onu_serial || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">IP TR069:</td><td class="map-popup-value font-monospace">${tr069Ip}</td></tr>` +
                 `</table>` +
