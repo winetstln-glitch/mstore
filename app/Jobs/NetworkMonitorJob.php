@@ -89,7 +89,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             $previousStatus = $statusRecord->exists ? (bool) $statusRecord->is_online : null;
             $isOnlineNow = ! $isOffline;
             $isTransitionDown = $isOffline && ($previousStatus === true || $previousStatus === null);
-            $isTransitionUp = $isOnlineNow && $previousStatus === false;
+            $isTransitionUp = $isOnlineNow && ($previousStatus === false || $previousStatus === null);
 
             if ($isTransitionDown && ($this->notifyConfig['notify_down'] ?? false)) {
                 Log::info('Network monitor transition DOWN terdeteksi', [
@@ -134,6 +134,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             }
 
             if ($isTransitionUp && ($this->notifyConfig['notify_up'] ?? false)) {
+                $upReason = $previousStatus === null ? 'Snapshot status online pertama' : 'ONU kembali online';
                 Log::info('Network monitor transition UP terdeteksi', [
                     'customer_id' => $customer->id,
                     'customer_name' => $customer->name,
@@ -154,7 +155,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     'tr069_ip' => $tr069Ip,
                     'connection_request_url' => $connectionRequestUrl,
                     'last_inform' => $this->formatLastInform($lastInform),
-                    'reason' => 'ONU kembali online',
+                    'reason' => $upReason,
                 ];
                 $message = $this->renderTemplate($this->notifyConfig['up_template'], [
                     ...$payload,
