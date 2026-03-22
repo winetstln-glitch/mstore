@@ -65,6 +65,38 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
   transform: scale(0.9);
 }
 
+@media (max-width: 991px) {
+  .mobile-bottom-nav {
+    z-index: 1035;
+    padding-bottom: calc(0.75rem + var(--bottom-safe-area));
+    min-height: calc(var(--nav-height) + var(--bottom-safe-area));
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  body.sb-sidenav-toggled .mobile-bottom-nav {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(120%);
+  }
+
+  #page-content-wrapper {
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 20px) !important;
+  }
+
+  #page-content-wrapper .container-fluid {
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 28px) !important;
+  }
+
+  #sidebar-wrapper {
+    z-index: 1060;
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 16px);
+  }
+
+  #sidebar-wrapper .list-group-flush {
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 28px);
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /*                               Cards & Containers                           */
 /* -------------------------------------------------------------------------- */
@@ -134,73 +166,48 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 /*                               Tables (Card View)                           */
 /* -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  /* Force tables to not look like tables */
-  .table-responsive-mobile table, 
-  .table-responsive-mobile thead, 
-  .table-responsive-mobile tbody, 
-  .table-responsive-mobile th, 
-  .table-responsive-mobile td, 
-  .table-responsive-mobile tr { 
-    display: block; 
+  .table-responsive,
+  .table-responsive-mobile {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
   }
 
-  /* Hide table headers (but not display: none;, for accessibility) */
-  .table-responsive-mobile thead tr { 
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
+  .table-responsive > table,
+  .table-responsive-mobile > table {
+    min-width: 760px;
+    width: max-content;
   }
 
-  .table-responsive-mobile tr { 
-    margin-bottom: 1rem;
-    background-color: var(--card-bg, #fff);
-    border: 1px solid var(--sidebar-border, #e2e8f0);
-    border-radius: var(--android-radius);
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  }
-  
-  [data-bs-theme="dark"] .table-responsive-mobile tr {
-    border-color: #1f3b6d;
+  .table-responsive table,
+  .table-responsive-mobile table {
+    min-width: 100%;
+    width: max-content;
   }
 
-  .table-responsive-mobile td { 
-    /* Behave  like a "row" */
-    border: none;
-    border-bottom: 1px solid var(--sidebar-border, #eee); 
-    position: relative;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: right;
-  }
-  
-  [data-bs-theme="dark"] .table-responsive-mobile td {
-    border-bottom-color: #334155;
+  .table-responsive thead tr,
+  .table-responsive-mobile thead tr {
+    display: table-row;
   }
 
-  .table-responsive-mobile td:last-child {
-    border-bottom: 0;
+  .table-responsive tbody tr,
+  .table-responsive-mobile tbody tr {
+    display: table-row;
   }
 
-  /*
-  Label the data
-  Requires JS to copy th text to data-label attribute
-  */
-  .table-responsive-mobile td:before { 
-    content: attr(data-label);
-    float: left;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    color: var(--text-muted, #64748b);
-    margin-right: 1rem;
-    text-align: left;
-    max-width: 40%;
+  .table-responsive th,
+  .table-responsive td,
+  .table-responsive-mobile th,
+  .table-responsive-mobile td {
+    display: table-cell;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .table-responsive td:before,
+  .table-responsive-mobile td:before {
+    content: none !important;
   }
 }
 
@@ -288,6 +295,39 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
     border-radius: 10px;
     padding: 0.45rem 0.55rem;
   }
+
+  .route-settings #content {
+    padding-top: 0.25rem !important;
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem !important;
+  }
+
+  .route-settings #page-content-wrapper .container-fluid {
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem !important;
+    padding-bottom: calc(var(--nav-height) + var(--bottom-safe-area) + 36px) !important;
+  }
+
+  .route-settings .card {
+    border-radius: 14px;
+  }
+
+  .route-settings .card-header {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .route-settings .card-body {
+    padding: 0.8rem;
+  }
+
+  .route-settings .row.g-3 {
+    --bs-gutter-x: 0.65rem;
+    --bs-gutter-y: 0.65rem;
+  }
+
+  .route-settings .form-label {
+    font-size: 0.82rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -325,30 +365,22 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
     min-width: 78px;
   }
 
-  .route-wash .table-responsive-mobile tr,
-  .route-accounting .table-responsive-mobile tr {
+  .route-wash .table-responsive-mobile,
+  .route-accounting .table-responsive-mobile,
+  .route-finance .table-responsive-mobile {
     border-radius: 14px;
-    padding: 0.85rem;
-    margin-bottom: 0.7rem;
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
   }
 
-  .route-wash .table-responsive-mobile td,
-  .route-accounting .table-responsive-mobile td {
-    gap: 0.6rem;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    line-height: 1.2;
-  }
-
-  .route-wash .table-responsive-mobile td:before,
-  .route-accounting .table-responsive-mobile td:before {
-    font-size: 0.7rem;
-    letter-spacing: 0.2px;
+  .route-wash .table-responsive-mobile table,
+  .route-accounting .table-responsive-mobile table,
+  .route-finance .table-responsive-mobile table {
+    min-width: 780px;
   }
 
   .route-wash .table-responsive-mobile td .btn,
-  .route-accounting .table-responsive-mobile td .btn {
+  .route-accounting .table-responsive-mobile td .btn,
+  .route-finance .table-responsive-mobile td .btn {
     min-height: 36px;
     padding: 0.35rem 0.55rem;
   }
@@ -391,10 +423,11 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
   border-bottom-color: rgba(96, 165, 250, 0.24);
 }
 
-[data-bs-theme="dark"] .route-wash .table-responsive-mobile tr,
-[data-bs-theme="dark"] .route-accounting .table-responsive-mobile tr {
-  background-color: #0f172a;
-  border-color: #334155;
+[data-bs-theme="dark"] .route-wash .table-responsive-mobile,
+[data-bs-theme="dark"] .route-accounting .table-responsive-mobile,
+[data-bs-theme="dark"] .route-finance .table-responsive-mobile {
+  background-color: rgba(15, 23, 42, 0.4);
+  border: 1px solid #334155;
 }
 
 [data-bs-theme="dark"] .route-accounting .text-muted,

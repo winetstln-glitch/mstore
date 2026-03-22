@@ -83,9 +83,6 @@
                                 <i class="fa-solid fa-lock"></i>
                             </span>
                             <input id="password" class="form-control auth-input border-start-0 @error('password') is-invalid @enderror" type="password" name="password" required autocomplete="current-password" placeholder="Masukan Password" />
-                            <button type="button" class="btn auth-input-toggle border-start-0" onclick="togglePasswordVisibility('password')">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
                             @error('password')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -94,9 +91,9 @@
 
                     <div class="d-flex justify-content-between align-items-center mb-4 auth-links">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                            <label class="form-check-label" for="remember">
-                                Ingat Saya
+                            <input class="form-check-input" type="checkbox" id="showPasswordLogin">
+                            <label class="form-check-label" for="showPasswordLogin">
+                                Tampilkan Password
                             </label>
                         </div>
                         <a href="{{ route('password.forgot') }}">Lupa Password?</a>
@@ -161,23 +158,12 @@
             });
         }
 
-        function togglePasswordVisibility(fieldId) {
-            const field = document.getElementById(fieldId);
-            if (!field) return;
-            const sibling = field.nextElementSibling;
-            if (!sibling) return;
-            const icon = sibling.querySelector('i');
-            if (!icon) return;
-
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                field.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+        const loginPasswordField = document.getElementById('password');
+        const loginShowPasswordCheckbox = document.getElementById('showPasswordLogin');
+        if (loginPasswordField && loginShowPasswordCheckbox) {
+            loginShowPasswordCheckbox.addEventListener('change', function () {
+                loginPasswordField.type = loginShowPasswordCheckbox.checked ? 'text' : 'password';
+            });
         }
         
         // Prevent 419 Page Expired on back button

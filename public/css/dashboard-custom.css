@@ -453,6 +453,8 @@ body.sb-sidenav-toggled #page-content-wrapper {
     padding: 0.5rem;
     margin-top: 0.5rem !important;
     animation: dropdownFade 0.2s ease;
+    background-color: var(--card-bg);
+    border: 1px solid var(--input-border, #e2e8f0);
 }
 
 @keyframes dropdownFade {
@@ -475,6 +477,21 @@ body.sb-sidenav-toggled #page-content-wrapper {
 .dropdown-item.active, .dropdown-item:active {
     background-color: var(--primary-color);
     color: #fff;
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: #0f172a;
+    border-color: #334155;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-bs-theme="dark"] .dropdown-item:focus {
+    background-color: #1e293b;
+    color: #93c5fd;
 }
 
 /* Forms */
