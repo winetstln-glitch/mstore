@@ -46,7 +46,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $this->notifyConfig = $this->loadNotifyConfig();
 
         Customer::query()
-            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial'])
+            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial', 'created_at'])
             ->where('status', 'active')
             ->whereNotNull('onu_serial')
             ->orderBy('id')
@@ -55,6 +55,8 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     $this->checkCustomer($customer, $genieService, $telegramService);
                 }
             });
+
+        $this->sendPeriodicRecap($telegramService);
     }
 
     protected function checkCustomer(Customer $customer, GenieACSService $genieService, TelegramService $telegramService): void
@@ -90,6 +92,10 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             $isOnlineNow = ! $isOffline;
             $isTransitionDown = $isOffline && ($previousStatus === true || $previousStatus === null);
             $isTransitionUp = $isOnlineNow && ($previousStatus === false || $previousStatus === null);
+            $isFirstOnlineForNewCustomer = $isOnlineNow
+                && is_null($statusRecord->last_notified_up_at)
+                && $customer->created_at
+                && $customer->created_at->gte(now()->subHours(12));
 
             if ($isTransitionDown && ($this->notifyConfig['notify_down'] ?? false)) {
                 Log::info('Network monitor transition DOWN terdeteksi', [
@@ -133,8 +139,10 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 }
             }
 
-            if ($isTransitionUp && ($this->notifyConfig['notify_up'] ?? false)) {
-                $upReason = $previousStatus === null ? 'Snapshot status online pertama' : 'ONU kembali online';
+            if (($isTransitionUp || $isFirstOnlineForNewCustomer) && ($this->notifyConfig['notify_up'] ?? false)) {
+                $upReason = $isFirstOnlineForNewCustomer
+                    ? 'Customer baru terdeteksi ONLINE'
+                    : ($previousStatus === null ? 'Snapshot status online pertama' : 'ONU kembali online');
                 Log::info('Network monitor transition UP terdeteksi', [
                     'customer_id' => $customer->id,
                     'customer_name' => $customer->name,
@@ -189,6 +197,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 'is_online' => $isOnlineNow,
                 'is_transition_down' => $isTransitionDown,
                 'is_transition_up' => $isTransitionUp,
+                'is_first_online_new_customer' => $isFirstOnlineForNewCustomer,
             ]);
         } catch (Throwable $e) {
             Log::warning('Network monitor customer check failed', [
@@ -297,5 +306,74 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         Log::error('Network monitor job failed', [
             'message' => $exception->getMessage(),
         ]);
+    }
+
+    protected function sendPeriodicRecap(TelegramService $telegramService): void
+    {
+        $enabled = Setting::getValue('telegram_notify_monitor_recap', '1') === '1';
+        if (! $enabled) {
+            return;
+        }
+
+        $intervalMinutes = (int) Setting::getValue('telegram_monitor_recap_interval_minutes', '30');
+        if ($intervalMinutes < 5) {
+            $intervalMinutes = 5;
+        }
+
+        $lastSentAt = Setting::getValue('telegram_monitor_recap_last_sent_at');
+        if (is_string($lastSentAt) && trim($lastSentAt) !== '') {
+            try {
+                if (Carbon::parse($lastSentAt)->gt(now()->subMinutes($intervalMinutes))) {
+                    return;
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        $customerIds = Customer::query()
+            ->where('status', 'active')
+            ->whereNotNull('onu_serial')
+            ->pluck('id');
+        $total = $customerIds->count();
+        if ($total === 0) {
+            return;
+        }
+
+        $online = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', true)
+            ->where('updated_at', '>=', now()->subMinutes(15))
+            ->count();
+        $offlineDirect = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', false)
+            ->count();
+        $offlineStaleOnline = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', true)
+            ->where('updated_at', '<', now()->subMinutes(15))
+            ->count();
+        $offline = $offlineDirect + $offlineStaleOnline;
+        $unknown = max(0, $total - $online - $offline);
+
+        $message = "📊 *Rekap Monitor GenieACS*\n\n";
+        $message .= "*Total Modem Aktif:* {$total}\n";
+        $message .= "*Online:* 🟢 {$online}\n";
+        $message .= "*Offline:* 🔴 {$offline}\n";
+        $message .= "*Belum Sinkron:* ⚪ {$unknown}\n";
+        $message .= '*Waktu:* '.now()->format('d M Y H:i:s');
+
+        $sent = $telegramService->sendToTechnicianGroup($message);
+        if ($sent) {
+            Setting::updateOrCreate(
+                ['key' => 'telegram_monitor_recap_last_sent_at'],
+                [
+                    'value' => now()->toDateTimeString(),
+                    'group' => 'telegram',
+                    'type' => 'text',
+                    'label' => 'Telegram monitor recap last sent at',
+                ]
+            );
+        }
     }
 }

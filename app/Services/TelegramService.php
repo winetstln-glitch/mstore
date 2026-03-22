@@ -152,6 +152,11 @@ class TelegramService
 
                 return;
             }
+            if (in_array($cmdNormalized, ['rekapmodem', 'statusmodemall', 'onlinemodem'])) {
+                $this->handleModemAllCommand($chatId);
+
+                return;
+            }
             if (in_array($cmdNormalized, ['cektiket', 'tiket', 'ticket'])) {
                 $this->handleTicketCommand($chatId, $param);
 
@@ -181,11 +186,13 @@ class TelegramService
                     break;
                 case '/cek_modem_all':
                 case '/modem_all':
+                case '/rekap_modem':
+                case '/status_modem_all':
                     $this->handleModemAllCommand($chatId);
                     break;
                 case '/help':
                 case '/bantuan':
-                    $this->sendMessage($chatId, "🤖 *Bantuan Bot MStore*\n\n/cek_tiket [No. Tiket] atau /cektiket [No]\n/cek_modem [ID/SN] atau /cekmodem [ID/SN]\n/cek_tiket_all atau /cektiketall\n/cek_modem_all atau /cekmodemall\n\nJuga bisa: /cek tiket all, /cek modem all");
+                    $this->sendMessage($chatId, "🤖 *Bantuan Bot MStore*\n\n/cek_tiket [No. Tiket] atau /cektiket [No]\n/cek_modem [ID/SN] atau /cekmodem [ID/SN]\n/cek_tiket_all atau /cektiketall\n/cek_modem_all atau /cekmodemall\n/rekap_modem\n\nJuga bisa: /cek tiket all, /cek modem all, rekap modem");
                     break;
                 default:
                     $this->sendMessage($chatId, "❓ Perintah tidak dikenali.\nKetik /bantuan untuk melihat daftar perintah.");
@@ -216,6 +223,11 @@ class TelegramService
                     }
                     $lookup = $third ?? null;
                     $this->handleModemCommand($chatId, $lookup);
+
+                    return;
+                }
+                if ($topic === 'rekap' && $third === 'modem') {
+                    $this->handleModemAllCommand($chatId);
 
                     return;
                 }
@@ -372,47 +384,52 @@ class TelegramService
 
     protected function handleModemAllCommand($chatId)
     {
-        $customers = \App\Models\Customer::where('status', 'active')
+        $customers = \App\Models\Customer::query()
+            ->where('status', 'active')
             ->whereNotNull('onu_serial')
             ->get(['id', 'name', 'onu_serial']);
+        $customerIds = $customers->pluck('id');
+        $freshCutoff = \Carbon\Carbon::now()->subMinutes(15);
 
-        $genieService = app(\App\Services\GenieACSService::class);
-        $devices = $genieService->getDevices(1000);
+        $online = \App\Models\GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', true)
+            ->where('updated_at', '>=', $freshCutoff)
+            ->count();
+        $offlineDirect = \App\Models\GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', false)
+            ->count();
+        $offlineStaleOnline = \App\Models\GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', true)
+            ->where('updated_at', '<', $freshCutoff)
+            ->count();
+        $offline = $offlineDirect + $offlineStaleOnline;
+        $unknown = max(0, $customers->count() - $online - $offline);
 
-        $onlineSerials = [];
-        foreach ($devices as $device) {
-            $serial = $device['_deviceId']['_SerialNumber'] ?? null;
-            $lastInform = $device['_lastInform'] ?? null;
-            if ($serial && $lastInform) {
-                $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
-                if ($diff < 300) {
-                    $onlineSerials[$serial] = true;
-                }
-            }
-        }
-
-        $online = 0;
-        $offline = 0;
-        $offlineList = [];
-
-        foreach ($customers as $c) {
-            if (isset($onlineSerials[$c->onu_serial])) {
-                $online++;
-            } else {
-                $offline++;
-                if (count($offlineList) < 20) {
-                    $offlineList[] = $c;
-                }
-            }
-        }
+        $offlineStatuses = \App\Models\GenieDeviceStatus::query()
+            ->with('customer:id,name,onu_serial')
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', false)
+            ->latest('updated_at')
+            ->limit(20)
+            ->get();
 
         $msg = "📡 *Rekap Status Modem Pelanggan*\n\n";
         $msg .= 'Total Pelanggan: '.$customers->count()."\n";
-        $msg .= "ONLINE: {$online}\n";
-        $msg .= "OFFLINE: {$offline}\n\n";
-        $msg .= "*20 OFFLINE (contoh):*\n";
-        foreach ($offlineList as $c) {
-            $msg .= "- 🔴 {$c->name} | `{$c->onu_serial}`\n";
+        $msg .= "ONLINE: 🟢 {$online}\n";
+        $msg .= "OFFLINE: 🔴 {$offline}\n";
+        $msg .= "BELUM SINKRON: ⚪ {$unknown}\n\n";
+        $msg .= "*20 OFFLINE Terbaru:*\n";
+        if ($offlineStatuses->isEmpty()) {
+            $msg .= "- Tidak ada data offline.\n";
+        } else {
+            foreach ($offlineStatuses as $status) {
+                $customerName = $status->customer?->name ?? '-';
+                $serial = $status->customer?->onu_serial ?? $status->onu_serial ?? '-';
+                $msg .= "- 🔴 {$customerName} | `{$serial}`\n";
+            }
         }
 
         $this->sendMessage($chatId, $msg);

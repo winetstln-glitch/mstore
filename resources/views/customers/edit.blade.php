@@ -395,12 +395,26 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (data.ip_address) document.getElementById('ip_address').value = data.ip_address;
-                    if (data.vlan) document.getElementById('vlan').value = data.vlan;
-                    if (data.wan_mac) document.getElementById('wan_mac').value = data.wan_mac;
-                    if (data.device_model) document.getElementById('device_model').value = data.device_model;
-                    if (data.ssid_name) document.getElementById('ssid_name').value = data.ssid_name;
-                    if (data.ssid_password) document.getElementById('ssid_password').value = data.ssid_password;
+                    const setFieldValue = (id, value) => {
+                        const element = document.getElementById(id);
+                        if (!element) return;
+                        if (value === undefined || value === null) return;
+                        const normalized = String(value).trim();
+                        if (normalized === '') return;
+                        element.value = normalized;
+                    };
+
+                    setFieldValue('onu_serial', data.onu_serial);
+                    setFieldValue('genieacs_device_id', data.genieacs_device_id);
+                    setFieldValue('name', data.name);
+                    setFieldValue('ip_address', data.ip_address);
+                    setFieldValue('vlan', data.vlan);
+                    setFieldValue('wan_mac', data.wan_mac);
+                    setFieldValue('device_model', data.device_model);
+                    setFieldValue('pppoe_user', data.pppoe_user);
+                    setFieldValue('pppoe_password', data.pppoe_password);
+                    setFieldValue('ssid_name', data.ssid_name);
+                    setFieldValue('ssid_password', data.ssid_password);
                 })
                 .catch(error => console.log('GenieACS Auto-populate:', error));
         }

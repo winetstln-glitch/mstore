@@ -1691,9 +1691,19 @@ class GenieACSService
                     $device = $devices[0];
                     $tr069Ip = $this->getTr069Ip($device);
                     $connectionRequestUrl = $this->getConnectionRequestUrl($device);
-                    // Check if last inform was recent (e.g., within 5 minutes)
-                    $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
-                    $isOnline = (time() - $lastInform) < 300; // 5 mins
+                    $isOnline = false;
+                    $lastInformRaw = $device['_lastInform'] ?? null;
+                    if (is_string($lastInformRaw) && trim($lastInformRaw) !== '') {
+                        try {
+                            $lastInformAt = Carbon::parse($lastInformRaw);
+                            $now = now();
+                            $tooFarInFuture = $lastInformAt->gt($now->copy()->addMinutes(2));
+                            $isRecent = $lastInformAt->gte($now->copy()->subMinutes(5));
+                            $isOnline = (! $tooFarInFuture) && $isRecent;
+                        } catch (\Throwable $e) {
+                            $isOnline = false;
+                        }
+                    }
 
                     return [
                         'online' => $isOnline,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\NetworkMonitorJob;
 use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\GenieDeviceStatus;
@@ -528,6 +529,24 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $modelNode = $device['_deviceId']['_ProductClass']
                  ?? ($device['Device']['DeviceInfo']['ModelName']['_value'] ?? 'Unknown');
+        $model = $getValue($modelNode);
+
+        $deviceIdNode = $device['_id']
+                 ?? $device['_deviceId']['_SerialNumber']
+                 ?? '';
+        $deviceId = $getValue($deviceIdNode);
+
+        $pppoeUserNode = $device['VirtualParameters']['pppoeUsername']
+                 ?? $device['VirtualParameters']['PPPUsername']
+                 ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['Username']
+                 ?? '';
+        $pppoeUser = $getValue($pppoeUserNode);
+
+        $pppoePassNode = $device['VirtualParameters']['pppoePassword']
+                 ?? $device['VirtualParameters']['PPPPassword']
+                 ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANPPPConnection'][1]['Password']
+                 ?? '';
+        $pppoePass = $getValue($pppoePassNode);
 
         $ssidNode = $device['InternetGatewayDevice']['LANDevice'][1]['WLANConfiguration'][1]['SSID']
                  ?? $device['Device']['WiFi']['SSID'][1]['SSID']
@@ -542,10 +561,15 @@ class CustomerWebController extends Controller implements HasMiddleware
         $wifiPass = $getValue($passNode);
 
         return response()->json([
+            'onu_serial' => $serial,
+            'genieacs_device_id' => $deviceId,
             'ip_address' => $ip,
             'vlan' => $vlan,
             'wan_mac' => $wanMac,
-            'device_model' => $modelNode,
+            'device_model' => $model,
+            'pppoe_user' => $pppoeUser,
+            'pppoe_password' => $pppoePass,
+            'name' => $pppoeUser !== '' ? strtoupper($pppoeUser) : '',
             'ssid_name' => $ssid,
             'ssid_password' => $wifiPass,
         ]);
@@ -661,6 +685,9 @@ class CustomerWebController extends Controller implements HasMiddleware
         try {
             $customer = Customer::create($validated);
             $radiusWarning = $this->syncRadiusCredential($customer, null, null);
+            if ($customer->status === 'active' && is_string($customer->onu_serial) && trim($customer->onu_serial) !== '') {
+                NetworkMonitorJob::dispatch();
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error creating customer: '.$e->getMessage());
 
@@ -918,6 +945,9 @@ class CustomerWebController extends Controller implements HasMiddleware
         $oldPppoeUser = $customer->pppoe_user;
         $customer->update($validated);
         $radiusWarning = $this->syncRadiusCredential($customer, $oldPppoeUser, null);
+        if ($customer->status === 'active' && is_string($customer->onu_serial) && trim($customer->onu_serial) !== '') {
+            NetworkMonitorJob::dispatch();
+        }
 
         if ($request->wantsJson()) {
             $payload = [

@@ -29,12 +29,17 @@ class DashboardController extends Controller
             ->take($limit)
             ->get()
             ->map(function (GenieDeviceStatus $log) {
+                $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes(15));
+                $isOnline = (bool) $log->is_online && $isFresh;
                 $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
                 $notifyUp = $log->last_notified_up_at ? $log->last_notified_up_at->format('d M H:i') : null;
                 $notifyText = $notifyUp ? 'UP: '.$notifyUp : ($notifyDown ? 'DOWN: '.$notifyDown : '-');
                 $customerName = $log->customer->name ?? ('#'.$log->customer_id);
-                $statusText = $log->is_online ? 'ONLINE' : 'OFFLINE';
+                $statusText = $isOnline ? 'ONLINE' : 'OFFLINE';
                 $reasonText = (string) ($log->last_reason ?? '-');
+                if (! $isFresh) {
+                    $reasonText = 'Status stale (update terakhir lewat 15 menit)';
+                }
                 $searchText = strtolower(implode(' ', [
                     $customerName,
                     (string) ($log->onu_serial ?? ''),
