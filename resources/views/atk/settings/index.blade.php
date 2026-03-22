@@ -46,6 +46,34 @@
 
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-receipt me-1"></i> Template Nota ATK
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="atk_receipt_title" class="form-label fw-medium">Judul Nota</label>
+                                <input type="text" class="form-control" id="atk_receipt_title" name="atk_receipt_title" value="{{ \App\Models\Setting::getValue('atk_receipt_title', 'NOTA PENJUALAN') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_receipt_footer_title" class="form-label fw-medium">Judul Footer Nota</label>
+                                <input type="text" class="form-control" id="atk_receipt_footer_title" name="atk_receipt_footer_title" value="{{ \App\Models\Setting::getValue('atk_receipt_footer_title', '*** TERIMA KASIH ***') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_receipt_footer_message" class="form-label fw-medium">Pesan Footer Nota</label>
+                                <textarea class="form-control" id="atk_receipt_footer_message" name="atk_receipt_footer_message" rows="3">{{ \App\Models\Setting::getValue('atk_receipt_footer_message', 'Barang yang sudah dibeli tidak dapat ditukar.') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_receipt_footer_note" class="form-label fw-medium">Catatan Tambahan Footer</label>
+                                <textarea class="form-control" id="atk_receipt_footer_note" name="atk_receipt_footer_note" rows="3">{{ \App\Models\Setting::getValue('atk_receipt_footer_note', '') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_receipt_powered_by" class="form-label fw-medium">Teks Powered</label>
+                                <input type="text" class="form-control" id="atk_receipt_powered_by" name="atk_receipt_powered_by" value="{{ \App\Models\Setting::getValue('atk_receipt_powered_by', 'POWERED BY MSTORE') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-print me-1"></i> POS Android
                         </h6>
                         <div class="row g-3">

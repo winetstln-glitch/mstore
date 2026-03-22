@@ -45,6 +45,34 @@
                     </div>
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-receipt me-1"></i> Template Nota Wash
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="wash_receipt_title" class="form-label fw-medium">Judul Nota</label>
+                                <input type="text" class="form-control" id="wash_receipt_title" name="wash_receipt_title" value="{{ \App\Models\Setting::getValue('wash_receipt_title', 'NOTA PEMBAYARAN') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_receipt_footer_title" class="form-label fw-medium">Judul Footer Nota</label>
+                                <input type="text" class="form-control" id="wash_receipt_footer_title" name="wash_receipt_footer_title" value="{{ \App\Models\Setting::getValue('wash_receipt_footer_title', '*** TERIMA KASIH ***') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_receipt_footer_message" class="form-label fw-medium">Pesan Footer Nota</label>
+                                <textarea class="form-control" id="wash_receipt_footer_message" name="wash_receipt_footer_message" rows="3">{{ \App\Models\Setting::getValue('wash_receipt_footer_message', 'Kepuasan Anda Kebanggaan Kami.') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_receipt_footer_note" class="form-label fw-medium">Catatan Tambahan Footer</label>
+                                <textarea class="form-control" id="wash_receipt_footer_note" name="wash_receipt_footer_note" rows="3">{{ \App\Models\Setting::getValue('wash_receipt_footer_note', 'Periksa kembali barang bawaan Anda sebelum meninggalkan lokasi.') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="wash_receipt_powered_by" class="form-label fw-medium">Teks Powered</label>
+                                <input type="text" class="form-control" id="wash_receipt_powered_by" name="wash_receipt_powered_by" value="{{ \App\Models\Setting::getValue('wash_receipt_powered_by', 'POWERED BY MSTORE') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-user-gear me-1"></i> Akun Wash
                         </h6>
                         <div class="row g-3">

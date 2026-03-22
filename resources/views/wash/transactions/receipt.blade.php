@@ -16,6 +16,11 @@
         : $receiptStoreLogo;
 
     $receiptStorePhoneLabel = str_starts_with(strtolower($receiptStorePhone), 'telp') ? $receiptStorePhone : 'Telp: '.$receiptStorePhone;
+    $receiptTitle = \App\Models\Setting::getValue('wash_receipt_title', 'NOTA PEMBAYARAN');
+    $receiptFooterTitle = \App\Models\Setting::getValue('wash_receipt_footer_title', '*** TERIMA KASIH ***');
+    $receiptFooterMessage = \App\Models\Setting::getValue('wash_receipt_footer_message', 'Kepuasan Anda Kebanggaan Kami.');
+    $receiptFooterNote = \App\Models\Setting::getValue('wash_receipt_footer_note', 'Periksa kembali barang bawaan Anda sebelum meninggalkan lokasi.');
+    $receiptPoweredBy = \App\Models\Setting::getValue('wash_receipt_powered_by', 'POWERED BY MSTORE');
 
     $customerName = trim((string) ($transaction->customer_name ?? ''));
     $customerName = $customerName !== '' ? $customerName : '-';
@@ -299,6 +304,7 @@
             <h2>{{ $receiptStoreName }}</h2>
             <p>{{ $receiptStoreAddress }}</p>
             <p>{{ $receiptStorePhoneLabel }}</p>
+            <p><strong>{{ $receiptTitle }}</strong></p>
         </div>
 
         <div class="divider"></div>
@@ -375,11 +381,17 @@
         @endif
 
         <div class="footer">
-            <h2>*** TERIMA KASIH ***</h2>
+            <h2>{{ $receiptFooterTitle }}</h2>
             @if($hasHolidayAdjustment)
                 <p>{{ $holidayGreeting }}</p>
             @endif
-            <p>Kepuasan Anda Kebanggaan Kami.<br>Periksa kembali barang bawaan Anda sebelum meninggalkan lokasi.</p>
+            <p>{!! nl2br(e($receiptFooterMessage)) !!}</p>
+            @if(trim((string) $receiptFooterNote) !== '')
+                <p>{!! nl2br(e($receiptFooterNote)) !!}</p>
+            @endif
+            @if(trim((string) $receiptPoweredBy) !== '')
+                <p>{{ $receiptPoweredBy }}</p>
+            @endif
             <p class="timestamp">Dicetak pada: {{ $printedAt }}</p>
         </div>
     </div>
@@ -413,6 +425,11 @@ const data = {{ Js::from([
     'holiday_adjustment_total'=>$holidayAdjustmentTotal,
     'has_holiday_adjustment'=>$hasHolidayAdjustment,
     'holiday_greeting'=>$holidayGreeting,
+    'receipt_title'=>$receiptTitle,
+    'receipt_footer_title'=>$receiptFooterTitle,
+    'receipt_footer_message'=>$receiptFooterMessage,
+    'receipt_footer_note'=>$receiptFooterNote,
+    'receipt_powered_by'=>$receiptPoweredBy,
     'total'=>(float)$transaction->total_amount,
     'method'=>strtoupper($transaction->payment_method ?? 'CASH'),
     'cash'=>(float)($transaction->cash_amount ?? 0),
@@ -494,6 +511,7 @@ function buildEscPosText(data){
     txt+="[C]"+data.address+"\n";
     txt+="[C]"+data.phone+"\n";
     txt+="[L]--------------------------------\n";
+    if(data.receipt_title){txt+="[C]<b>"+data.receipt_title+"</b>\n";}
     txt+="[L]Nota : "+data.number+"\n";
     txt+="[L]Waktu: "+data.date+"\n";
     txt+="[L]Kasir: "+data.cashier+"\n";
@@ -507,9 +525,12 @@ function buildEscPosText(data){
     txt+="[L]TOTAL [R]"+data.total+"\n";
     txt+="[L]Metode: "+data.method+"\n";
     if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
-    txt+="\n[C]*** TERIMA KASIH ***\n";
+    txt+="\n[C]"+(data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n";
     if(data.has_holiday_adjustment){txt+="[C]"+data.holiday_greeting+"\n";}
-    txt+="[C]Periksa kembali barang bawaan Anda\n[C]Dicetak pada: "+data.printed_at+"\n\n\n";
+    if(data.receipt_footer_message){txt+="[C]"+String(data.receipt_footer_message).replace(/\n/g,"\n[C]")+"\n";}
+    if(data.receipt_footer_note){txt+="[C]"+String(data.receipt_footer_note).replace(/\n/g,"\n[C]")+"\n";}
+    if(data.receipt_powered_by){txt+="[C]"+data.receipt_powered_by+"\n";}
+    txt+="[C]Dicetak pada: "+data.printed_at+"\n\n\n";
     return txt;
 }
 
@@ -589,6 +610,7 @@ async function printBluetoothDirect(){
         if(logoImg && logoImg.complete){esc.center();await esc.addImage(logoImg);}
         esc.center();esc.bold(true);esc.add(data.store+"\n");esc.bold(false);
         esc.add(data.address+"\n"+data.phone+"\n");esc.line();
+        if(data.receipt_title){esc.center();esc.bold(true);esc.add(data.receipt_title+"\n");esc.bold(false);}
         esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nPelanggan: "+data.customer+"\n");
         if(data.queue){esc.center();esc.big(true);esc.add("\nANTRIAN #"+data.queue+"\n\n");esc.big(false);}
         esc.line();
@@ -601,9 +623,11 @@ async function printBluetoothDirect(){
         esc.add("Metode: "+data.method+"\n");
         if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}
         esc.feed(1);esc.center();
-        esc.add("*** TERIMA KASIH ***\n");
+        esc.add((data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n");
         if(data.has_holiday_adjustment){esc.add(data.holiday_greeting+"\n");}
-        esc.add("Kepuasan Anda Kebanggaan Kami.\nPeriksa kembali barang bawaan Anda\nsebelum meninggalkan lokasi.\n");
+        if(data.receipt_footer_message){esc.add(String(data.receipt_footer_message)+"\n");}
+        if(data.receipt_footer_note){esc.add(String(data.receipt_footer_note)+"\n");}
+        if(data.receipt_powered_by){esc.add(String(data.receipt_powered_by)+"\n");}
         esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
         status.innerText="Mengirim data...";
         const receiptData=esc.generate();

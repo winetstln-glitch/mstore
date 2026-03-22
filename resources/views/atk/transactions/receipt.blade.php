@@ -15,6 +15,11 @@
         ? asset($receiptStoreLogo)
         : $receiptStoreLogo;
     $receiptStorePhoneLabel = str_starts_with(strtolower($receiptStorePhone), 'telp') ? $receiptStorePhone : 'Telp: '.$receiptStorePhone;
+    $receiptTitle = \App\Models\Setting::getValue('atk_receipt_title', 'NOTA PENJUALAN');
+    $receiptFooterTitle = \App\Models\Setting::getValue('atk_receipt_footer_title', '*** TERIMA KASIH ***');
+    $receiptFooterMessage = \App\Models\Setting::getValue('atk_receipt_footer_message', 'Barang yang sudah dibeli tidak dapat ditukar.');
+    $receiptFooterNote = \App\Models\Setting::getValue('atk_receipt_footer_note', '');
+    $receiptPoweredBy = \App\Models\Setting::getValue('atk_receipt_powered_by', 'POWERED BY MSTORE');
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -194,6 +199,7 @@
             <h1 class="text-base font-bold tracking-tight uppercase leading-tight">{{ $receiptStoreName }}</h1>
             <p class="text-[10px] mt-1">{{ $receiptStoreAddress }}</p>
             <p class="text-[10px]">{{ $receiptStorePhoneLabel }}</p>
+            <p class="text-[10px] mt-1 font-semibold">{{ $receiptTitle }}</p>
         </div>
 
         <div class="border-t border-dashed border-slate-900 my-3"></div>
@@ -246,11 +252,16 @@
         </div>
 
         <div class="mt-8 text-center space-y-1">
-            <p class="uppercase font-bold text-[11px]">*** TERIMA KASIH ***</p>
-            <p class="text-[9px]">Barang yang sudah dibeli tidak dapat ditukar.</p>
-            <div class="pt-4 opacity-30 text-[8px]">
-                POWERED BY MSTORE
-            </div>
+            <p class="uppercase font-bold text-[11px]">{{ $receiptFooterTitle }}</p>
+            <p class="text-[9px]">{!! nl2br(e($receiptFooterMessage)) !!}</p>
+            @if(trim((string) $receiptFooterNote) !== '')
+                <p class="text-[9px]">{!! nl2br(e($receiptFooterNote)) !!}</p>
+            @endif
+            @if(trim((string) $receiptPoweredBy) !== '')
+                <div class="pt-4 opacity-30 text-[8px]">
+                    {{ $receiptPoweredBy }}
+                </div>
+            @endif
         </div>
     </div>
 
@@ -268,6 +279,11 @@ const txnData = {{ Js::from([
     'nota' => $transaction->transaction_number,
     'time' => $transaction->created_at->format('d/m/Y H:i'),
     'cashier' => $transaction->user->name ?? 'Admin',
+    'receipt_title' => $receiptTitle,
+    'receipt_footer_title' => $receiptFooterTitle,
+    'receipt_footer_message' => $receiptFooterMessage,
+    'receipt_footer_note' => $receiptFooterNote,
+    'receipt_powered_by' => $receiptPoweredBy,
     'items' => $transaction->items->map(fn($i) => [
         'name' => strtoupper($i->product_name),
         'qty' => (float)$i->quantity,
@@ -417,6 +433,9 @@ async function printBluetooth() {
         engine.divider();
 
         engine.left();
+        if (txnData.receipt_title) {
+            engine.bold(true); engine.raw(txnData.receipt_title + "\n"); engine.bold(false);
+        }
         engine.raw(`NOTA : #${txnData.nota}\n`);
         engine.raw(`TGL  : ${txnData.time}\n`);
         engine.raw(`KASIR: ${txnData.cashier}\n`);
@@ -441,10 +460,16 @@ async function printBluetooth() {
 
         engine.feed(1);
         engine.center();
-        engine.raw("*** TERIMA KASIH ***\n");
-        engine.raw("Barang yang sudah dibeli\n");
-        engine.raw("tidak dapat ditukar.\n");
-        engine.raw("POWERED BY MSTORE\n");
+        engine.raw((txnData.receipt_footer_title || "*** TERIMA KASIH ***") + "\n");
+        if (txnData.receipt_footer_message) {
+            String(txnData.receipt_footer_message).split('\n').forEach(line => engine.raw(line + "\n"));
+        }
+        if (txnData.receipt_footer_note) {
+            String(txnData.receipt_footer_note).split('\n').forEach(line => engine.raw(line + "\n"));
+        }
+        if (txnData.receipt_powered_by) {
+            engine.raw(String(txnData.receipt_powered_by) + "\n");
+        }
         engine.feed(4);
 
         status.innerText = "Mengirim Data...";
