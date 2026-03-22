@@ -132,6 +132,19 @@
         border-color: rgba(96, 165, 250, 0.42);
         color: #bfdbfe;
     }
+
+    .wash-description-chip-empty {
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    [data-bs-theme="dark"] .wash-description-chip-empty {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+    }
 </style>
 @endpush
 @push('scripts')
@@ -162,8 +175,22 @@
                 textarea.value = items.join(', ');
             };
 
+            const getCurrentItems = function () {
+                return Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue;
+                });
+            };
+
             const render = function (items) {
                 chipsWrap.innerHTML = '';
+                if (!items.length) {
+                    const empty = document.createElement('span');
+                    empty.className = 'wash-description-chip wash-description-chip-empty';
+                    empty.textContent = 'Belum ada label';
+                    chipsWrap.appendChild(empty);
+                    textarea.value = '';
+                    return;
+                }
                 items.forEach(function (item) {
                     const chip = document.createElement('span');
                     chip.className = 'wash-description-chip';
@@ -185,8 +212,9 @@
             };
 
             const addItems = function (rawValue) {
-                const current = new Set(Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
-                    return el.dataset.itemValue.toLowerCase();
+                const existingItems = getCurrentItems();
+                const current = new Set(existingItems.map(function (item) {
+                    return item.toLowerCase();
                 }));
                 const added = [];
                 parseItems(rawValue).forEach(function (item) {
@@ -195,12 +223,36 @@
                         added.push(item);
                     }
                 });
-                render(Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
-                    return el.dataset.itemValue;
-                }).concat(added));
+                render(existingItems.concat(added));
             };
 
-            render(parseItems(textarea.value));
+            const syncFromTextarea = function () {
+                const items = [];
+                const dedupe = new Set();
+                parseItems(textarea.value).forEach(function (item) {
+                    const key = item.toLowerCase();
+                    if (dedupe.has(key)) {
+                        return;
+                    }
+                    dedupe.add(key);
+                    items.push(item);
+                });
+                render(items);
+            };
+
+            textarea.addEventListener('input', function () {
+                const selectionStart = textarea.selectionStart;
+                const selectionEnd = textarea.selectionEnd;
+                syncFromTextarea();
+                textarea.setSelectionRange(selectionStart, selectionEnd);
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addButton.click();
+                }
+            });
 
             addButton.addEventListener('click', function () {
                 if (!input.value.trim()) {
@@ -211,12 +263,17 @@
                 input.focus();
             });
 
-            input.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    addButton.click();
+            const initialItems = [];
+            const initialSeen = new Set();
+            parseItems(textarea.value).forEach(function (item) {
+                const key = item.toLowerCase();
+                if (initialSeen.has(key)) {
+                    return;
                 }
+                initialSeen.add(key);
+                initialItems.push(item);
             });
+            render(initialItems);
         });
     });
 </script>

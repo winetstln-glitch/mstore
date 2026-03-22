@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\WashService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class WashController extends Controller
 {
@@ -66,23 +65,19 @@ class WashController extends Controller
             ],
         ];
 
-        DB::transaction(function () use ($catalog): void {
-            WashService::query()->update(['is_active' => false]);
-
-            foreach ($catalog as $service) {
-                WashService::updateOrCreate(
-                    [
-                        'name' => $service['name'],
-                        'vehicle_type' => $service['vehicle_type'],
-                    ],
-                    [
-                        'price' => $service['price'],
-                        'description' => $service['description'],
-                        'is_active' => true,
-                    ]
-                );
-            }
-        });
+        foreach ($catalog as $service) {
+            WashService::firstOrCreate(
+                [
+                    'name' => $service['name'],
+                    'vehicle_type' => $service['vehicle_type'],
+                ],
+                [
+                    'price' => $service['price'],
+                    'description' => $service['description'],
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 
     /**

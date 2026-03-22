@@ -25,6 +25,48 @@
     
     <!-- Landing Lite CSS -->
     <link href="{{ asset('css/landing-lite.css') }}?v={{ filemtime(public_path('css/landing-lite.css')) }}" rel="stylesheet">
+    <style>
+        .landing-wash-description-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 0.75rem;
+            min-height: 1.6rem;
+        }
+
+        .landing-wash-description-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0.24rem 0.55rem;
+            border-radius: 0.65rem;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #3730a3;
+            font-size: 0.72rem;
+            line-height: 1.25;
+            font-weight: 600;
+        }
+
+        .landing-wash-description-chip-empty {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        [data-bs-theme="dark"] .landing-wash-description-chip {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(96, 165, 250, 0.42);
+            color: #bfdbfe;
+        }
+
+        [data-bs-theme="dark"] .landing-wash-description-chip-empty {
+            background: #1e293b;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+    </style>
     <script>
         (function () {
             const storedTheme = localStorage.getItem('theme');
@@ -177,6 +219,24 @@
                             </div>
                             <h4 class="product-title mb-1">{{ $service->name }}</h4>
                             <div class="product-price text-primary fw-bold mb-1">Rp {{ number_format($landingEffectivePrice, 0, ',', '.') }}</div>
+                            @php
+                                $landingDescriptionItems = array_values(array_filter(
+                                    preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
+                                    function ($item) {
+                                        $item = trim((string) $item);
+                                        if ($item === '') {
+                                            return false;
+                                        }
+                                        if (preg_match('/^dan\s+sejenis/i', $item)) {
+                                            return false;
+                                        }
+                                        if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
+                                            return false;
+                                        }
+                                        return str_word_count($item) <= 5;
+                                    }
+                                ));
+                            @endphp
                             @if(!is_null($landingAdjustment))
                                 <div class="landing-holiday-chip mb-2">
                                     <i class="fas fa-sparkles"></i>
@@ -188,7 +248,17 @@
                                     @endif
                                 </div>
                             @endif
-                            <p class="small text-muted mb-3">{!! nl2br(e($service->description ?: 'Layanan cuci bersih dan mengkilap.')) !!}</p>
+                            @if(!empty($landingDescriptionItems))
+                                <div class="landing-wash-description-chips">
+                                    @foreach($landingDescriptionItems as $item)
+                                        <span class="landing-wash-description-chip">{{ $item }}</span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="landing-wash-description-chips">
+                                    <span class="landing-wash-description-chip landing-wash-description-chip-empty">-</span>
+                                </div>
+                            @endif
                             <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
                                 <i class="fab fa-whatsapp me-2"></i> Booking
                             </a>
@@ -480,6 +550,24 @@
 
             <div class="scroll-container fade-up">
                 @foreach($weddingServices as $index => $service)
+                    @php
+                        $weddingDescriptionItems = array_values(array_filter(
+                            preg_split('/\s*[,;\n]+\s*/', trim((string) ($service['description'] ?? ''))),
+                            function ($item) {
+                                $item = trim((string) $item);
+                                if ($item === '') {
+                                    return false;
+                                }
+                                if (preg_match('/^dan\s+sejenis/i', $item)) {
+                                    return false;
+                                }
+                                if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
+                                    return false;
+                                }
+                                return str_word_count($item) <= 5;
+                            }
+                        ));
+                    @endphp
                     <div class="scroll-item">
                         <div class="card position-relative overflow-hidden border-0">
                             <img src="{{ str_starts_with($service['image'], 'http') ? $service['image'] : asset($service['image']) }}" alt="{{ $service['name'] }}" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
@@ -487,7 +575,21 @@
                             <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
                                 <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">{{ $service['badge'] }}</div>
                                 <h4 class="product-title mb-1">{{ $service['name'] }}</h4>
-                                <p class="small text-white-50 mb-3">{{ $service['description'] }}</p>
+                                @if(!empty($weddingDescriptionItems))
+                                    <div class="landing-wash-description-chips mb-3">
+                                        @foreach($weddingDescriptionItems as $item)
+                                            <span class="landing-wash-description-chip">{{ $item }}</span>
+                                        @endforeach
+                                    </div>
+                                @elseif(trim((string) ($service['description'] ?? '')) !== '')
+                                    <div class="landing-wash-description-chips mb-3">
+                                        <span class="landing-wash-description-chip">{{ \Illuminate\Support\Str::limit(trim((string) $service['description']), 46) }}</span>
+                                    </div>
+                                @else
+                                    <div class="landing-wash-description-chips mb-3">
+                                        <span class="landing-wash-description-chip landing-wash-description-chip-empty">-</span>
+                                    </div>
+                                @endif
                                 <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20{{ urlencode($service['name']) }}" class="btn btn-light text-dark w-100 mt-auto">
                                     <i class="fab fa-whatsapp me-2"></i> Konsultasi
                                 </a>

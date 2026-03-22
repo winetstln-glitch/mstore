@@ -48,7 +48,35 @@
                                     </div>
                                     <h5 class="service-title">{{ $service->name }}</h5>
                                     @if(!empty($service->description))
-                                    <p class="service-description">{{ $service->description }}</p>
+                                        @php
+                                            $descriptionItems = array_values(array_filter(
+                                                preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
+                                                function ($item) {
+                                                    $item = trim((string) $item);
+                                                    if ($item === '') {
+                                                        return false;
+                                                    }
+                                                    if (preg_match('/^dan\s+sejenis/i', $item)) {
+                                                        return false;
+                                                    }
+                                                    if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
+                                                        return false;
+                                                    }
+                                                    return str_word_count($item) <= 5;
+                                                }
+                                            ));
+                                        @endphp
+                                        @if(!empty($descriptionItems))
+                                            <div class="service-description-chips">
+                                                @foreach($descriptionItems as $item)
+                                                    <span class="service-description-chip">{{ $item }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="service-description-chip service-description-chip-empty">-</span>
+                                        @endif
+                                    @else
+                                        <span class="service-description-chip service-description-chip-empty">-</span>
                                     @endif
                                     <div class="service-meta">
                                         <span class="service-price">Rp {{ number_format($effectivePrice, 0, ',', '.') }}</span>
@@ -898,6 +926,35 @@ document.addEventListener('DOMContentLoaded', function () {
         min-height: 2.2em;
     }
 
+    .service-description-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.32rem;
+        margin-top: 0.35rem;
+        min-height: 1.8rem;
+    }
+
+    .service-description-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0.24rem 0.52rem;
+        border-radius: 0.65rem;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: #3730a3;
+        font-size: 0.68rem;
+        line-height: 1.25;
+        font-weight: 600;
+    }
+
+    .service-description-chip-empty {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #64748b;
+        font-weight: 500;
+    }
+
     .service-meta {
         margin-top: 0.6rem;
         display: flex;
@@ -1285,6 +1342,18 @@ document.addEventListener('DOMContentLoaded', function () {
     [data-bs-theme="dark"] .wash-field-label,
     [data-bs-theme="dark"] .wash-inline-check .form-check-label,
     [data-bs-theme="dark"] #customerInfo {
+        color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] .service-description-chip {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(96, 165, 250, 0.42);
+        color: #bfdbfe;
+    }
+
+    [data-bs-theme="dark"] .service-description-chip-empty {
+        background: #1e293b;
+        border-color: #334155;
         color: #94a3b8;
     }
 

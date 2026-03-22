@@ -49,6 +49,13 @@
                 <div class="mb-3">
                     <label for="description" class="form-label">Description</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description', $service->description) }}</textarea>
+                    <div class="wash-description-editor mt-2" data-description-editor data-target="description">
+                        <div class="wash-description-chips" data-description-chips></div>
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" data-description-input placeholder="Tambah label, contoh: Scoopy">
+                            <button class="btn btn-outline-primary" type="button" data-description-add>Tambah</button>
+                        </div>
+                    </div>
                     @error('description')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -94,6 +101,54 @@
         min-height: 44px;
     }
 
+    .wash-service-edit-page .wash-description-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .wash-service-edit-page .wash-description-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.58rem;
+        border-radius: 999px;
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .wash-service-edit-page .wash-description-chip button {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 0.9rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .wash-service-edit-page .wash-description-chip-empty {
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    [data-bs-theme="dark"] .wash-service-edit-page .wash-description-chip {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(96, 165, 250, 0.42);
+        color: #bfdbfe;
+    }
+
+    [data-bs-theme="dark"] .wash-service-edit-page .wash-description-chip-empty {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
     @media (max-width: 767.98px) {
         .wash-service-edit-page {
             padding-left: 0.35rem;
@@ -116,5 +171,136 @@
         z-index: 1080;
     }
 </style>
+@endpush
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-description-editor]').forEach(function (editor) {
+            const targetId = editor.dataset.target;
+            const textarea = document.getElementById(targetId);
+            if (!textarea) {
+                return;
+            }
+
+            const chipsWrap = editor.querySelector('[data-description-chips]');
+            const input = editor.querySelector('[data-description-input]');
+            const addButton = editor.querySelector('[data-description-add]');
+
+            const parseItems = function (value) {
+                return value
+                    .split(/[,;\n]/)
+                    .map(function (item) { return item.trim(); })
+                    .filter(function (item) { return item.length > 0; });
+            };
+
+            const syncTextarea = function () {
+                const items = Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue;
+                });
+                textarea.value = items.join(', ');
+            };
+
+            const getCurrentItems = function () {
+                return Array.from(chipsWrap.querySelectorAll('[data-item-value]')).map(function (el) {
+                    return el.dataset.itemValue;
+                });
+            };
+
+            const render = function (items) {
+                chipsWrap.innerHTML = '';
+                if (!items.length) {
+                    const empty = document.createElement('span');
+                    empty.className = 'wash-description-chip wash-description-chip-empty';
+                    empty.textContent = 'Belum ada label';
+                    chipsWrap.appendChild(empty);
+                    textarea.value = '';
+                    return;
+                }
+                items.forEach(function (item) {
+                    const chip = document.createElement('span');
+                    chip.className = 'wash-description-chip';
+                    chip.dataset.itemValue = item;
+                    chip.textContent = item;
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.innerHTML = '&times;';
+                    removeButton.addEventListener('click', function () {
+                        chip.remove();
+                        syncTextarea();
+                    });
+
+                    chip.appendChild(removeButton);
+                    chipsWrap.appendChild(chip);
+                });
+                syncTextarea();
+            };
+
+            const addItems = function (rawValue) {
+                const existingItems = getCurrentItems();
+                const current = new Set(existingItems.map(function (item) {
+                    return item.toLowerCase();
+                }));
+                const added = [];
+                parseItems(rawValue).forEach(function (item) {
+                    if (!current.has(item.toLowerCase())) {
+                        current.add(item.toLowerCase());
+                        added.push(item);
+                    }
+                });
+                render(existingItems.concat(added));
+            };
+
+            const syncFromTextarea = function () {
+                const items = [];
+                const dedupe = new Set();
+                parseItems(textarea.value).forEach(function (item) {
+                    const key = item.toLowerCase();
+                    if (dedupe.has(key)) {
+                        return;
+                    }
+                    dedupe.add(key);
+                    items.push(item);
+                });
+                render(items);
+            };
+
+            textarea.addEventListener('input', function () {
+                const selectionStart = textarea.selectionStart;
+                const selectionEnd = textarea.selectionEnd;
+                syncFromTextarea();
+                textarea.setSelectionRange(selectionStart, selectionEnd);
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addButton.click();
+                }
+            });
+
+            addButton.addEventListener('click', function () {
+                if (!input.value.trim()) {
+                    return;
+                }
+                addItems(input.value);
+                input.value = '';
+                input.focus();
+            });
+
+            const initialItems = [];
+            const initialSeen = new Set();
+            parseItems(textarea.value).forEach(function (item) {
+                const key = item.toLowerCase();
+                if (initialSeen.has(key)) {
+                    return;
+                }
+                initialSeen.add(key);
+                initialItems.push(item);
+            });
+            render(initialItems);
+        });
+    });
+</script>
 @endpush
 @endsection
