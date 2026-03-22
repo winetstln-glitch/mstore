@@ -42,11 +42,14 @@ class PackageController extends Controller implements HasMiddleware
             'devices_limit' => 'nullable|integer|min:1|required_if:devices_limit_mode,limited',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_promo_enabled' => 'boolean',
         ]);
 
         $validated['devices_limit'] = $validated['devices_limit_mode'] === 'limited'
             ? (int) ($validated['devices_limit'] ?? 0)
             : null;
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_promo_enabled'] = $request->boolean('is_promo_enabled');
         unset($validated['devices_limit_mode']);
 
         Package::create($validated);
@@ -70,11 +73,14 @@ class PackageController extends Controller implements HasMiddleware
             'devices_limit' => 'nullable|integer|min:1|required_if:devices_limit_mode,limited',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_promo_enabled' => 'boolean',
         ]);
 
         $validated['devices_limit'] = $validated['devices_limit_mode'] === 'limited'
             ? (int) ($validated['devices_limit'] ?? 0)
             : null;
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_promo_enabled'] = $request->boolean('is_promo_enabled');
         unset($validated['devices_limit_mode']);
 
         $package->update($validated);

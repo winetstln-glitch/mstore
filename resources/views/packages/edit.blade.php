@@ -83,6 +83,10 @@
                         <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', $package->is_active) ? 'checked' : '' }}>
                         <label class="form-check-label" for="is_active">{{ __('Active') }}</label>
                     </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_promo_enabled" id="is_promo_enabled" value="1" {{ old('is_promo_enabled', is_null($package->is_promo_enabled) ? 1 : $package->is_promo_enabled) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="is_promo_enabled">Aktifkan Promo (ON/OFF)</label>
+                    </div>
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ route('packages.index') }}" class="btn btn-outline-secondary">{{ __('Cancel') }}</a>
                         <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>

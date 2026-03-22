@@ -244,6 +244,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');
     Route::post('/telegram/update', [\App\Http\Controllers\TelegramController::class, 'update'])->name('telegram.update');
     Route::post('/telegram/test', [\App\Http\Controllers\TelegramController::class, 'test'])->name('telegram.test');
+    Route::post('/telegram/test-ip-down', [\App\Http\Controllers\TelegramController::class, 'testIpDown'])->name('telegram.test_ip_down');
+    Route::post('/telegram/test-ip-up', [\App\Http\Controllers\TelegramController::class, 'testIpUp'])->name('telegram.test_ip_up');
+    Route::post('/telegram/preview-ip-down', [\App\Http\Controllers\TelegramController::class, 'previewIpDown'])->name('telegram.preview_ip_down');
+    Route::post('/telegram/preview-ip-up', [\App\Http\Controllers\TelegramController::class, 'previewIpUp'])->name('telegram.preview_ip_up');
 
     // WhatsApp Settings
     Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');

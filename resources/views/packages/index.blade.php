@@ -14,6 +14,7 @@
         'col_price' => 'Harga',
         'col_speed' => 'Kecepatan',
         'col_devices' => 'Devices',
+        'col_promo' => 'Promo',
         'col_status' => 'Status',
         'col_actions' => 'Aksi',
         'status_active' => 'Aktif',
@@ -45,7 +46,7 @@
 
     $renderPackageRows = function ($rows, $emptyText) use ($labels, $inferPackageType) {
         if ($rows->isEmpty()) {
-            return new \Illuminate\Support\HtmlString('<tr><td colspan="7" class="text-center text-muted py-4">'.$emptyText.'</td></tr>');
+            return new \Illuminate\Support\HtmlString('<tr><td colspan="8" class="text-center text-muted py-4">'.$emptyText.'</td></tr>');
         }
 
         $html = '';
@@ -55,6 +56,9 @@
             $statusBadge = $package->is_active
                 ? '<span class="badge bg-success-subtle text-success">'.$labels['status_active'].'</span>'
                 : '<span class="badge bg-secondary-subtle text-secondary">'.$labels['status_inactive'].'</span>';
+            $promoBadge = ($package->is_promo_enabled ?? true)
+                ? '<span class="badge bg-primary-subtle text-primary">ON</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary">OFF</span>';
 
             $html .= '
                 <tr>
@@ -63,6 +67,7 @@
                     <td>'.e(number_format($package->price, 0, ',', '.')).'</td>
                     <td>'.e($package->speed).'</td>
                     <td>'.e($devicesText).'</td>
+                    <td>'.$promoBadge.'</td>
                     <td>'.$statusBadge.'</td>
                     <td class="text-end">
                         <a href="'.e(route('packages.edit', $package)).'" class="btn btn-sm btn-warning text-white" aria-label="'.$labels['edit_aria'].'">
@@ -117,6 +122,7 @@
                                         <th>{{ $labels['col_price'] }}</th>
                                         <th>{{ $labels['col_speed'] }}</th>
                                         <th>{{ $labels['col_devices'] }}</th>
+                                        <th>{{ $labels['col_promo'] }}</th>
                                         <th>{{ $labels['col_status'] }}</th>
                                         <th class="text-end">{{ $labels['col_actions'] }}</th>
                                     </tr>
@@ -136,6 +142,7 @@
                                         <th>{{ $labels['col_price'] }}</th>
                                         <th>{{ $labels['col_speed'] }}</th>
                                         <th>{{ $labels['col_devices'] }}</th>
+                                        <th>{{ $labels['col_promo'] }}</th>
                                         <th>{{ $labels['col_status'] }}</th>
                                         <th class="text-end">{{ $labels['col_actions'] }}</th>
                                     </tr>

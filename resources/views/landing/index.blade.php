@@ -266,14 +266,15 @@
                         $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
                         $packageSpeedText = $formatInternetSpeed($package->speed);
                         $normalPrice = (int) $package->price;
-                        $promoPrice = $showInternetPromo ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
+                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
+                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
                         if ($packageFeatures->isEmpty()) {
                             $packageFeatures = collect(['100% Fiber Optic', 'Unlimited FUP']);
                         }
                     @endphp
                     <div class="scroll-item">
                         <div class="card">
-                            @if($showInternetPromo)
+                            @if($packagePromoEnabled)
                             <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
                             @endif
                             <div class="pricing-header">
@@ -285,7 +286,7 @@
                                     Rp {{ number_format($promoPrice, 0, ',', '.') }}
                                     <span class="fs-6 text-muted">/ bln</span>
                                 </div>
-                                @if($showInternetPromo)
+                                @if($packagePromoEnabled)
                                 <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
                                 @endif
                                 <h5 class="mb-3">{{ $packageSpeedText }}</h5>
@@ -295,7 +296,7 @@
                                     @endforeach
                                 </ul>
                                 <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                    Ambil Promo
+                                    {{ $packagePromoEnabled ? 'Ambil Promo' : 'Pilih Paket' }}
                                 </a>
                             </div>
                         </div>
@@ -320,14 +321,15 @@
                         $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
                         $packageSpeedText = $formatInternetSpeed($package->speed);
                         $normalPrice = (int) $package->price;
-                        $promoPrice = $showInternetPromo ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
+                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
+                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
                         if ($packageFeatures->isEmpty()) {
                             $packageFeatures = collect(['Akses Cepat', 'Cocok untuk Voucher / Member']);
                         }
                     @endphp
                     <div class="scroll-item">
                         <div class="card">
-                            @if($showInternetPromo)
+                            @if($packagePromoEnabled)
                             <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
                             @endif
                             <div class="pricing-header">
@@ -339,7 +341,7 @@
                                     Rp {{ number_format($promoPrice, 0, ',', '.') }}
                                     <span class="fs-6 text-muted">/ bln</span>
                                 </div>
-                                @if($showInternetPromo)
+                                @if($packagePromoEnabled)
                                 <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
                                 @endif
                                 <h5 class="mb-3">{{ $package->name }}</h5>
@@ -349,7 +351,7 @@
                                     @endforeach
                                 </ul>
                                 <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                    Ambil Promo
+                                    {{ $packagePromoEnabled ? 'Ambil Promo' : 'Pilih Paket' }}
                                 </a>
                             </div>
                         </div>
