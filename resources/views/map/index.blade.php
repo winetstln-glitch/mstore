@@ -689,6 +689,63 @@
             }
             return null;
         }
+        function toNumber(value) {
+            var num = parseFloat(value);
+            return Number.isFinite(num) ? num : null;
+        }
+        function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
+            var aLat = toNumber(lat1);
+            var aLng = toNumber(lng1);
+            var bLat = toNumber(lat2);
+            var bLng = toNumber(lng2);
+            if (aLat === null || aLng === null || bLat === null || bLng === null) {
+                return null;
+            }
+            var toRad = function(v) { return v * Math.PI / 180; };
+            var earthRadius = 6371000;
+            var dLat = toRad(bLat - aLat);
+            var dLng = toRad(bLng - aLng);
+            var sinDLat = Math.sin(dLat / 2);
+            var sinDLng = Math.sin(dLng / 2);
+            var h = sinDLat * sinDLat + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * sinDLng * sinDLng;
+            var c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+            return earthRadius * c;
+        }
+        function formatDistance(value) {
+            if (value === null || !Number.isFinite(value)) {
+                return '-';
+            }
+            if (value < 1000) {
+                return Math.round(value) + ' m';
+            }
+            return (value / 1000).toFixed(2) + ' km';
+        }
+        function calculatePolylineDistanceMeters(pathPoints) {
+            if (!Array.isArray(pathPoints) || pathPoints.length < 2) {
+                return null;
+            }
+            var total = 0;
+            for (var i = 1; i < pathPoints.length; i++) {
+                var prev = pathPoints[i - 1];
+                var curr = pathPoints[i];
+                var segment = calculateDistanceMeters(prev[0], prev[1], curr[0], curr[1]);
+                if (segment === null) {
+                    return null;
+                }
+                total += segment;
+            }
+            return total;
+        }
+        function getLineDistanceMeters(startLat, startLng, endLat, endLng, key) {
+            var pathPoints = [[startLat, startLng]];
+            if (key && Array.isArray(waypoints[key])) {
+                waypoints[key].forEach(function(p) {
+                    pathPoints.push([p.lat, p.lng]);
+                });
+            }
+            pathPoints.push([endLat, endLng]);
+            return calculatePolylineDistanceMeters(pathPoints);
+        }
         // Auto-center logic commented out to prioritize server location
         /*
         var picked = firstWithCoord(customers) || firstWithCoord(olts) || firstWithCoord(odcs);
@@ -1458,9 +1515,20 @@
         odcs.forEach(function(odc) {
             if (odc.latitude && odc.longitude) {
                 var oltName = 'N/A';
+                var odcToServerDistance = '-';
                 if (odc.olt_id) {
                     var olt = olts.find(o => o.id == odc.olt_id);
-                    if (olt) oltName = olt.name;
+                    if (olt) {
+                        oltName = olt.name;
+                        var odcLineKey = getConnectionKey('olt', olt.id, 'odc', odc.id);
+                        odcToServerDistance = formatDistance(getLineDistanceMeters(
+                            olt.latitude,
+                            olt.longitude,
+                            odc.latitude,
+                            odc.longitude,
+                            odcLineKey
+                        ));
+                    }
                 }
 
                 var popupContent = document.createElement('div');
@@ -1474,6 +1542,7 @@
                             <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${odc.area || '-'}</td></tr>
                             <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odc.color || '-'}</td></tr>
                             <tr><td class="map-popup-label">No Kabel:</td><td class="map-popup-value">${odc.cable_no || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Jarak ke Server:</td><td class="map-popup-value">${odcToServerDistance}</td></tr>
                         </table>
                         <div class="map-popup-desc">${odc.description || ''}</div>
                     </div>`;
@@ -1521,9 +1590,34 @@
         odps.forEach(function(odp) {
             if (odp.latitude && odp.longitude) {
                 var odcName = 'N/A';
+                var odpToOdcDistance = '-';
+                var odcToServerDistance = '-';
                 if (odp.odc_id) {
                     var odc = odcs.find(o => o.id == odp.odc_id);
-                    if (odc) odcName = odc.name;
+                    if (odc) {
+                        odcName = odc.name;
+                        var odpLineKey = getConnectionKey('odc', odc.id, 'odp', odp.id);
+                        odpToOdcDistance = formatDistance(getLineDistanceMeters(
+                            odp.latitude,
+                            odp.longitude,
+                            odc.latitude,
+                            odc.longitude,
+                            odpLineKey
+                        ));
+                        if (odc.olt_id) {
+                            var odcOlt = olts.find(o => o.id == odc.olt_id);
+                            if (odcOlt) {
+                                var odcLineKey = getConnectionKey('olt', odcOlt.id, 'odc', odc.id);
+                                odcToServerDistance = formatDistance(getLineDistanceMeters(
+                                    odcOlt.latitude,
+                                    odcOlt.longitude,
+                                    odc.latitude,
+                                    odc.longitude,
+                                    odcLineKey
+                                ));
+                            }
+                        }
+                    }
                 }
 
                 var popupContent = document.createElement('div');
@@ -1535,6 +1629,8 @@
                             <tr><td class="map-popup-label">ODC:</td><td class="map-popup-value">${odcName}</td></tr>
                             <tr><td class="map-popup-label">Area:</td><td class="map-popup-value">${odp.kampung || '-'}</td></tr>
                             <tr><td class="map-popup-label">Warna:</td><td class="map-popup-value">${odp.color || '-'}</td></tr>
+                            <tr><td class="map-popup-label">Jarak ke ODC:</td><td class="map-popup-value">${odpToOdcDistance}</td></tr>
+                            <tr><td class="map-popup-label">ODC ke Server:</td><td class="map-popup-value">${odcToServerDistance}</td></tr>
                         </table>
                         <div class="map-popup-desc">${odp.description || ''}</div>
                     </div>`;
@@ -1764,12 +1860,51 @@
             var isOnline = customer.is_online; // Assumed passed from controller
             var iconType = isOnline ? 'online' : 'offline';
             var tr069Ip = customer.tr069_ip || '-';
+            var customerToOdpDistance = '-';
+            var odpToOdcDistance = '-';
+            var odcToServerDistance = '-';
 
             // Find ODP name
             var odpName = 'N/A';
             if (customer.odp_id) {
                 var odp = odps.find(o => o.id == customer.odp_id);
-                if (odp) odpName = odp.name;
+                if (odp) {
+                    odpName = odp.name;
+                    var customerLineKey = getConnectionKey('odp', odp.id, 'cust', customer.id);
+                    customerToOdpDistance = formatDistance(getLineDistanceMeters(
+                        odp.latitude,
+                        odp.longitude,
+                        customer.latitude,
+                        customer.longitude,
+                        customerLineKey
+                    ));
+                    if (odp.odc_id) {
+                        var odc = odcs.find(o => o.id == odp.odc_id);
+                        if (odc) {
+                            var odpLineKey = getConnectionKey('odc', odc.id, 'odp', odp.id);
+                            odpToOdcDistance = formatDistance(getLineDistanceMeters(
+                                odc.latitude,
+                                odc.longitude,
+                                odp.latitude,
+                                odp.longitude,
+                                odpLineKey
+                            ));
+                            if (odc.olt_id) {
+                                var odcOlt = olts.find(o => o.id == odc.olt_id);
+                                if (odcOlt) {
+                                    var odcLineKey = getConnectionKey('olt', odcOlt.id, 'odc', odc.id);
+                                    odcToServerDistance = formatDistance(getLineDistanceMeters(
+                                        odcOlt.latitude,
+                                        odcOlt.longitude,
+                                        odc.latitude,
+                                        odc.longitude,
+                                        odcLineKey
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
             } else if (customer.odp) {
                 odpName = customer.odp.name || customer.odp; 
             }
@@ -1792,6 +1927,9 @@
                 `<tr><td class="map-popup-label">Telepon:</td><td class="map-popup-value">${customer.phone || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">Paket:</td><td class="map-popup-value">${customer.package || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">ODP:</td><td class="map-popup-value">${odpName}</td></tr>` +
+                `<tr><td class="map-popup-label">Jarak Customer-ODP:</td><td class="map-popup-value">${customerToOdpDistance}</td></tr>` +
+                `<tr><td class="map-popup-label">Jarak ODP-ODC:</td><td class="map-popup-value">${odpToOdcDistance}</td></tr>` +
+                `<tr><td class="map-popup-label">Jarak ODC-Server:</td><td class="map-popup-value">${odcToServerDistance}</td></tr>` +
                 `<tr><td class="map-popup-label">SN:</td><td class="map-popup-value font-monospace">${customer.onu_serial || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">IP TR069:</td><td class="map-popup-value font-monospace">${tr069Ip}</td></tr>` +
                 `</table>` +
