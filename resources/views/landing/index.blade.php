@@ -333,7 +333,7 @@
                             <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
                             @endif
                             <div class="pricing-header">
-                                <div class="speed">{{ $packageSpeedText }}</div>
+                                <div class="speed">{{ $package->name }}</div>
                                 <div class="fw-bold">{{ $packageDevicesText }}</div>
                             </div>
                             <div class="pricing-body d-flex flex-column">
@@ -344,7 +344,7 @@
                                 @if($packagePromoEnabled)
                                 <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
                                 @endif
-                                <h5 class="mb-3">{{ $package->name }}</h5>
+                                <h5 class="mb-3">{{ $packageSpeedText }}</h5>
                                 <ul class="features">
                                     @foreach($packageFeatures as $feature)
                                     <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>

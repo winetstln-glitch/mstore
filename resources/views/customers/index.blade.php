@@ -184,6 +184,9 @@
                                         <div class="small text-muted text-truncate" style="max-width: 100px;">{{ $customer->ip_address }}</div>
                                     </td>
                                     <td>
+                                        @php
+                                            $modem = $modemStatuses[$customer->id] ?? null;
+                                        @endphp
                                         <div class="d-flex align-items-center justify-content-between">
                                             <span class="me-2 text-truncate" style="max-width: 80px;">{{ $customer->onu_serial ?? '-' }}</span>
                                             @if($customer->onu_serial)
@@ -192,6 +195,18 @@
                                                 </a>
                                             @endif
                                         </div>
+                                        @if($modem && ($modem['has_data'] ?? false))
+                                            <div class="small mt-1">
+                                                <span class="badge {{ ($modem['online'] ?? false) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }}">
+                                                    {{ ($modem['online'] ?? false) ? 'Online' : 'Offline' }}
+                                                </span>
+                                            </div>
+                                            <div class="small text-muted text-truncate" style="max-width: 120px;">
+                                                {{ $modem['tr069_ip'] ?? '-' }}
+                                            </div>
+                                        @else
+                                            <div class="small text-muted">{{ __('Belum sinkron') }}</div>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($customer->status === 'active')

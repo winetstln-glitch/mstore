@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
     Route::get('customers/import', [CustomerWebController::class, 'import'])->name('customers.import');
     Route::get('customers/genie-device', [CustomerWebController::class, 'getGenieDevice'])->name('customers.genie_device');
     Route::get('customers/{customer}/settings', [CustomerWebController::class, 'settings'])->name('customers.settings');
+    Route::post('customers/{customer}/notify-status', [CustomerWebController::class, 'notifyStatus'])->name('customers.notify_status');
     Route::post('customers/{customer}/settings/wan', [CustomerWebController::class, 'updateWan'])->name('customers.settings.wan');
     Route::post('customers/{customer}/settings/wlan', [CustomerWebController::class, 'updateWlan'])->name('customers.settings.wlan');
     Route::delete('customers/bulk-destroy', [CustomerWebController::class, 'bulkDestroy'])->name('customers.bulkDestroy');

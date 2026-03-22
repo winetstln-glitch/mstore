@@ -119,6 +119,11 @@ class Customer extends Model
         return $this->hasMany(Installation::class);
     }
 
+    public function genieStatus()
+    {
+        return $this->hasOne(GenieDeviceStatus::class);
+    }
+
     public function invoicesByUser()
     {
         return $this->hasMany(Invoice::class, 'user_id', 'user_id');

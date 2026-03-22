@@ -13,6 +13,12 @@
                             <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white">
                                 <i class="fa-solid fa-sliders"></i> {{ __('Device Settings') }}
                             </a>
+                            <form action="{{ route('customers.notify_status', $customer) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fa-brands fa-telegram"></i> {{ __('Kirim Status') }}
+                                </button>
+                            </form>
                             @endcan
                         @endif
                         @can('customer.edit')

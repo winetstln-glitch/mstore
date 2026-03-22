@@ -467,7 +467,9 @@ class GenieACSService
                 'VirtualParameters.pppoeUsername2',
                 'VirtualParameters.gettemp',
                 'VirtualParameters.RXPower',
+                'VirtualParameters.AddressWanPPP',
                 'VirtualParameters.pppoeIP',
+                'VirtualParameters.AddressWanIP',
                 'VirtualParameters.IPTR069',
                 'VirtualParameters.pppoeMac',
                 'VirtualParameters.getponmode',
@@ -683,8 +685,16 @@ class GenieACSService
             return $device['VirtualParameters']['pppIP']['_value'];
         }
 
+        if (isset($device['VirtualParameters']['AddressWanPPP']['_value']) && filter_var($device['VirtualParameters']['AddressWanPPP']['_value'], FILTER_VALIDATE_IP)) {
+            return $device['VirtualParameters']['AddressWanPPP']['_value'];
+        }
+
         if (isset($device['VirtualParameters']['pppoeIP']['_value']) && filter_var($device['VirtualParameters']['pppoeIP']['_value'], FILTER_VALIDATE_IP)) {
             return $device['VirtualParameters']['pppoeIP']['_value'];
+        }
+
+        if (isset($device['VirtualParameters']['AddressWanIP']['_value']) && filter_var($device['VirtualParameters']['AddressWanIP']['_value'], FILTER_VALIDATE_IP)) {
+            return $device['VirtualParameters']['AddressWanIP']['_value'];
         }
 
         if (isset($device['VirtualParameters']['IPTR069']['_value']) && filter_var($device['VirtualParameters']['IPTR069']['_value'], FILTER_VALIDATE_IP)) {
@@ -736,6 +746,11 @@ class GenieACSService
     {
         if (! $device) {
             return null;
+        }
+
+        $virtualIp = data_get($device, 'VirtualParameters.AddressWanIP._value');
+        if (is_string($virtualIp) && filter_var($virtualIp, FILTER_VALIDATE_IP)) {
+            return $virtualIp;
         }
 
         $virtualIp = data_get($device, 'VirtualParameters.IPTR069._value');

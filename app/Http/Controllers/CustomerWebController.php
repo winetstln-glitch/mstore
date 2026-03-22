@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Coordinator;
 use App\Models\Customer;
+use App\Models\GenieDeviceStatus;
 use App\Models\Htb;
 use App\Models\Odp;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\GenieACSService;
 use App\Services\RadiusService;
+use App\Services\TelegramService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -37,7 +41,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:customer.view', only: ['index', 'show', 'import', 'export']),
             new Middleware('permission:customer.create', only: ['create', 'store', 'importFile']),
-            new Middleware('permission:customer.edit', only: ['edit', 'update']),
+            new Middleware('permission:customer.edit', only: ['edit', 'update', 'notifyStatus']),
             new Middleware('permission:customer.delete', only: ['destroy']),
         ];
     }
@@ -93,23 +97,38 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         $modemStatuses = [];
-        // Optimized: Disable auto-fetch status to improve performance
-        // foreach ($customers as $c) {
-        //     if (!empty($c->onu_serial)) {
-        //         try {
-        //             $status = $this->genieService->getDeviceStatus($c->onu_serial);
-        //             $modemStatuses[$c->id] = [
-        //                 'online' => (bool)($status['online'] ?? false),
-        //                 'last_inform' => $status['last_inform'] ?? null,
-        //                 'id' => $status['id'] ?? null,
-        //             ];
-        //         } catch (\Exception $e) {
-        //             $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
-        //         }
-        //     } else {
-        //         $modemStatuses[$c->id] = ['online' => false, 'last_inform' => null, 'id' => null];
-        //     }
-        // }
+        $customerIds = collect($customers->items())->pluck('id')->all();
+        $serials = collect($customers->items())
+            ->pluck('onu_serial')
+            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+            ->values()
+            ->all();
+
+        $statusesByCustomer = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->get()
+            ->keyBy('customer_id');
+
+        $statusesBySerial = GenieDeviceStatus::query()
+            ->whereNull('customer_id')
+            ->whereIn('onu_serial', $serials)
+            ->get()
+            ->keyBy('onu_serial');
+
+        foreach ($customers as $customer) {
+            $status = $statusesByCustomer->get($customer->id);
+            if (! $status && $customer->onu_serial) {
+                $status = $statusesBySerial->get($customer->onu_serial);
+            }
+
+            $modemStatuses[$customer->id] = [
+                'online' => $status ? (bool) $status->is_online : false,
+                'last_inform' => $status?->last_inform,
+                'tr069_ip' => $status?->tr069_ip,
+                'reason' => $status?->last_reason,
+                'has_data' => (bool) $status,
+            ];
+        }
 
         $htbs = Htb::orderBy('name')->get();
 
@@ -419,8 +438,10 @@ class CustomerWebController extends Controller implements HasMiddleware
             $serial = $device['_deviceId']['_SerialNumber'] ?? 'Unknown';
 
             // Extract IP (prefer VirtualParameters, then TR-098, then TR-181)
-            $ipNode = $device['VirtualParameters']['pppoeIP']
+            $ipNode = $device['VirtualParameters']['AddressWanIP']
                      ?? $device['VirtualParameters']['IPTR069']
+                     ?? $device['VirtualParameters']['AddressWanPPP']
+                     ?? $device['VirtualParameters']['pppoeIP']
                      ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']
                      ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']
                      ?? 'N/A';
@@ -487,8 +508,10 @@ class CustomerWebController extends Controller implements HasMiddleware
         };
 
         // Extract fields
-        $ipNode = $device['VirtualParameters']['pppoeIP']
+        $ipNode = $device['VirtualParameters']['AddressWanIP']
                  ?? $device['VirtualParameters']['IPTR069']
+                 ?? $device['VirtualParameters']['AddressWanPPP']
+                 ?? $device['VirtualParameters']['pppoeIP']
                  ?? $device['InternetGatewayDevice']['WANDevice'][1]['WANConnectionDevice'][1]['WANIPConnection'][1]['ExternalIPAddress']
                  ?? $device['Device']['IP']['Interface'][1]['IPv4Address'][1]['IPAddress']
                  ?? '';
@@ -671,6 +694,106 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         return view('customers.show', compact('customer', 'genieDeviceId', 'modemStatus'));
+    }
+
+    public function notifyStatus(Customer $customer, TelegramService $telegramService)
+    {
+        if (! $customer->onu_serial) {
+            return redirect()->route('customers.show', $customer)->with('error', __('Customer tidak memiliki ONU Serial.'));
+        }
+
+        $status = $this->genieService->getDeviceStatus($customer->onu_serial);
+        if (isset($status['error'])) {
+            return redirect()->route('customers.show', $customer)->with('error', __('Gagal mengambil status dari GenieACS: :msg', ['msg' => $status['error']]));
+        }
+
+        $isOnline = (bool) ($status['online'] ?? false);
+        $tr069Ip = (string) ($status['tr069_ip'] ?? '-');
+        $connectionRequestUrl = (string) ($status['connection_request_url'] ?? '-');
+        $lastInform = $status['last_inform'] ?? null;
+        $reason = $isOnline ? 'ONU online' : 'ONU offline';
+
+        $statusRecord = GenieDeviceStatus::firstOrNew(['customer_id' => $customer->id]);
+        $statusRecord->onu_serial = (string) $customer->onu_serial;
+        $statusRecord->is_online = $isOnline;
+        $statusRecord->last_inform = is_string($lastInform) && trim($lastInform) !== '' ? $lastInform : null;
+        $statusRecord->tr069_ip = $tr069Ip !== '' ? $tr069Ip : null;
+        $statusRecord->connection_request_url = $connectionRequestUrl !== '' ? $connectionRequestUrl : null;
+        $statusRecord->last_reason = $reason;
+        $statusRecord->save();
+
+        $defaultDownTemplate = "🚨 *ALERT MONITORING GENIEACS*\n\n".
+            "*Pelanggan:* {customer_name}\n".
+            "*Customer ID:* `{customer_id}`\n".
+            "*No HP:* {customer_phone}\n".
+            "*Alamat:* {customer_address}\n".
+            "*Paket:* {customer_package}\n".
+            "*PPPoE User:* `{customer_pppoe_user}`\n".
+            "*Status Pelanggan:* {customer_status}\n".
+            "*SN ONU:* `{onu_serial}`\n".
+            "*Status:* 🔴 OFFLINE\n".
+            "*IP TR069:* {tr069_ip}\n".
+            "*ConnectionRequestURL:* {connection_request_url}\n".
+            "*Terakhir Inform:* {last_inform}\n".
+            '*Reason:* {reason}';
+
+        $defaultUpTemplate = "✅ *RECOVERY MONITORING GENIEACS*\n\n".
+            "*Pelanggan:* {customer_name}\n".
+            "*Customer ID:* `{customer_id}`\n".
+            "*No HP:* {customer_phone}\n".
+            "*Alamat:* {customer_address}\n".
+            "*Paket:* {customer_package}\n".
+            "*PPPoE User:* `{customer_pppoe_user}`\n".
+            "*Status Pelanggan:* {customer_status}\n".
+            "*SN ONU:* `{onu_serial}`\n".
+            "*Status:* 🟢 ONLINE\n".
+            "*IP TR069:* {tr069_ip}\n".
+            "*ConnectionRequestURL:* {connection_request_url}\n".
+            "*Terakhir Inform:* {last_inform}\n".
+            '*Reason:* {reason}';
+
+        $template = $isOnline
+            ? (string) Setting::getValue('telegram_ip_up_template', $defaultUpTemplate)
+            : (string) Setting::getValue('telegram_ip_down_template', $defaultDownTemplate);
+        $notifyEnabled = $isOnline
+            ? Setting::getValue('telegram_notify_ip_up', '1') === '1'
+            : Setting::getValue('telegram_notify_ip_down', '1') === '1';
+
+        if (! $notifyEnabled) {
+            return redirect()->route('customers.show', $customer)->with('warning', __('Notifikasi Telegram status :status sedang nonaktif.', ['status' => $isOnline ? 'ONLINE' : 'OFFLINE']));
+        }
+
+        $payload = [
+            'customer_name' => $customer->name,
+            'customer_id' => (string) $customer->id,
+            'customer_phone' => (string) ($customer->phone ?: '-'),
+            'customer_address' => (string) ($customer->address ?: '-'),
+            'customer_package' => (string) ($customer->package ?: '-'),
+            'customer_pppoe_user' => (string) ($customer->pppoe_user ?: '-'),
+            'customer_status' => (string) ($customer->status ?: '-'),
+            'onu_serial' => (string) $customer->onu_serial,
+            'status' => $isOnline ? '🟢 ONLINE' : '🔴 OFFLINE',
+            'tr069_ip' => $tr069Ip,
+            'connection_request_url' => $connectionRequestUrl,
+            'last_inform' => $this->formatLastInformValue($lastInform),
+            'reason' => $reason,
+        ];
+
+        $message = $this->renderTemplateText(trim($template) !== '' ? $template : ($isOnline ? $defaultUpTemplate : $defaultDownTemplate), $payload);
+        $sent = $telegramService->sendToTechnicianGroup($message);
+
+        if ($sent) {
+            if ($isOnline) {
+                $statusRecord->last_notified_up_at = now();
+            } else {
+                $statusRecord->last_notified_down_at = now();
+            }
+            $statusRecord->save();
+
+            return redirect()->route('customers.show', $customer)->with('success', __('Notifikasi Telegram status :status berhasil dikirim.', ['status' => $isOnline ? 'ONLINE' : 'OFFLINE']));
+        }
+
+        return redirect()->route('customers.show', $customer)->with('error', __('Gagal mengirim notifikasi Telegram.'));
     }
 
     /**
@@ -953,5 +1076,28 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         return null;
+    }
+
+    protected function renderTemplateText(string $template, array $data): string
+    {
+        $result = $template;
+        foreach ($data as $key => $value) {
+            $result = str_replace('{'.$key.'}', (string) $value, $result);
+        }
+
+        return $result;
+    }
+
+    protected function formatLastInformValue(?string $value): string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return '-';
+        }
+
+        try {
+            return Carbon::parse($value)->format('d M Y H:i:s');
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 }

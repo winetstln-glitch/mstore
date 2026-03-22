@@ -46,7 +46,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $this->notifyConfig = $this->loadNotifyConfig();
 
         Customer::query()
-            ->select(['id', 'name', 'onu_serial'])
+            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial'])
             ->where('status', 'active')
             ->whereNotNull('onu_serial')
             ->orderBy('id')
@@ -100,15 +100,23 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     'last_inform' => $lastInform,
                     'reason' => $reason,
                 ]);
-                $message = $this->renderTemplate($this->notifyConfig['down_template'], [
+                $payload = [
                     'customer_name' => $customer->name,
                     'customer_id' => (string) $customer->id,
+                    'customer_phone' => (string) ($customer->phone ?: '-'),
+                    'customer_address' => (string) ($customer->address ?: '-'),
+                    'customer_package' => (string) ($customer->package ?: '-'),
+                    'customer_pppoe_user' => (string) ($customer->pppoe_user ?: '-'),
+                    'customer_status' => (string) ($customer->status ?: '-'),
                     'onu_serial' => (string) $customer->onu_serial,
                     'status' => '🔴 OFFLINE',
                     'tr069_ip' => $tr069Ip,
                     'connection_request_url' => $connectionRequestUrl,
                     'last_inform' => $this->formatLastInform($lastInform),
                     'reason' => $reason === '' ? '-' : $reason,
+                ];
+                $message = $this->renderTemplate($this->notifyConfig['down_template'], [
+                    ...$payload,
                 ]);
                 $sent = $telegramService->sendToTechnicianGroup($message);
                 if ($sent) {
@@ -133,15 +141,23 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     'tr069_ip' => $tr069Ip,
                     'last_inform' => $lastInform,
                 ]);
-                $message = $this->renderTemplate($this->notifyConfig['up_template'], [
+                $payload = [
                     'customer_name' => $customer->name,
                     'customer_id' => (string) $customer->id,
+                    'customer_phone' => (string) ($customer->phone ?: '-'),
+                    'customer_address' => (string) ($customer->address ?: '-'),
+                    'customer_package' => (string) ($customer->package ?: '-'),
+                    'customer_pppoe_user' => (string) ($customer->pppoe_user ?: '-'),
+                    'customer_status' => (string) ($customer->status ?: '-'),
                     'onu_serial' => (string) $customer->onu_serial,
                     'status' => '🟢 ONLINE',
                     'tr069_ip' => $tr069Ip,
                     'connection_request_url' => $connectionRequestUrl,
                     'last_inform' => $this->formatLastInform($lastInform),
                     'reason' => 'ONU kembali online',
+                ];
+                $message = $this->renderTemplate($this->notifyConfig['up_template'], [
+                    ...$payload,
                 ]);
                 $sent = $telegramService->sendToTechnicianGroup($message);
                 if ($sent) {
@@ -207,6 +223,11 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $defaultDownTemplate = "🚨 *ALERT MONITORING GENIEACS*\n\n".
             "*Pelanggan:* {customer_name}\n".
             "*Customer ID:* `{customer_id}`\n".
+            "*No HP:* {customer_phone}\n".
+            "*Alamat:* {customer_address}\n".
+            "*Paket:* {customer_package}\n".
+            "*PPPoE User:* `{customer_pppoe_user}`\n".
+            "*Status Pelanggan:* {customer_status}\n".
             "*SN ONU:* `{onu_serial}`\n".
             "*Status:* 🔴 OFFLINE\n".
             "*IP TR069:* {tr069_ip}\n".
@@ -217,6 +238,11 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $defaultUpTemplate = "✅ *RECOVERY MONITORING GENIEACS*\n\n".
             "*Pelanggan:* {customer_name}\n".
             "*Customer ID:* `{customer_id}`\n".
+            "*No HP:* {customer_phone}\n".
+            "*Alamat:* {customer_address}\n".
+            "*Paket:* {customer_package}\n".
+            "*PPPoE User:* `{customer_pppoe_user}`\n".
+            "*Status Pelanggan:* {customer_status}\n".
             "*SN ONU:* `{onu_serial}`\n".
             "*Status:* 🟢 ONLINE\n".
             "*IP TR069:* {tr069_ip}\n".

@@ -99,7 +99,7 @@
                                 <th scope="col">{{ __('SN ONT') }}</th>
                                 <th scope="col">ODP</th>
                                 <th scope="col">SSID</th>
-                                <th scope="col" class="text-center">{{ __('Perangkat Terhubung') }}</th>
+                                <th scope="col" class="text-center">IP Address</th>
                                 <th scope="col" class="text-center">Hotspot</th>
                                 <th scope="col" class="text-center">RX</th>
                                 <th scope="col" class="text-center">Temp</th>
@@ -173,8 +173,15 @@
                                     $rx = $get('VirtualParameters.RXPower');
                                     $temp = $get('VirtualParameters.gettemp');
                                     $uptime = $get('VirtualParameters.getdeviceuptime');
-                                    $ipPppoe = $get('VirtualParameters.pppoeIP');
-                                    $ipWan = $get('VirtualParameters.IPTR069');
+                                    $ipPppoe = $get('VirtualParameters.AddressWanPPP');
+                                    if ($ipPppoe === '-') {
+                                        $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                    }
+                                    $ipWan = $get('VirtualParameters.AddressWanIP');
+                                    if ($ipWan === '-') {
+                                        $ipWan = $get('VirtualParameters.IPTR069');
+                                    }
+                                    $displayIpAddress = $ipWan;
                                     $ponMode = $get('VirtualParameters.getponmode');
                                     $ponMac = $get('VirtualParameters.PonMac'); // Or pppoeMac as per list? User listed both.
                                     
@@ -271,17 +278,12 @@
                                     </td>
                                     <td>{{ $ssid }}</td>
                                     <td class="text-center">
-                                        @if(isset($displayCount) && $displayCount > 0)
-                                            <span class="badge bg-success mb-1">{{ $displayCount }}</span>
-                                            @if(isset($connectedMacs) && count($connectedMacs) > 0)
-                                                <div class="d-flex flex-column gap-1">
-                                                    @foreach($connectedMacs as $mac)
-                                                        <span class="badge  text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;">{{ $mac }}</span>
-                                                    @endforeach
-                                                </div>
-                                            @endif
+                                        @if($displayIpAddress !== '-' && filter_var($displayIpAddress, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $displayIpAddress }}" target="_blank" class="text-decoration-none">
+                                                {{ $displayIpAddress }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                            </a>
                                         @else
-                                            <span class="text-muted">-</span>
+                                            {{ $displayIpAddress }}
                                         @endif
                                     </td>
                                     <td class="text-center">{{ $hotspot }}</td>
@@ -398,8 +400,15 @@
                                 $rx = $get('VirtualParameters.RXPower');
                                 $temp = $get('VirtualParameters.gettemp');
                                 $uptime = $get('VirtualParameters.getdeviceuptime');
-                                $ipPppoe = $get('VirtualParameters.pppoeIP');
-                                $ipWan = $get('VirtualParameters.IPTR069');
+                                $ipPppoe = $get('VirtualParameters.AddressWanPPP');
+                                if ($ipPppoe === '-') {
+                                    $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                }
+                                $ipWan = $get('VirtualParameters.AddressWanIP');
+                                if ($ipWan === '-') {
+                                    $ipWan = $get('VirtualParameters.IPTR069');
+                                }
+                                $displayIpAddress = $ipWan;
 
                                 // Get Device MACs (ONU, WLAN/SSID)
                                 $macOnu = $get('VirtualParameters.PonMac');
@@ -490,26 +499,15 @@
                                                 @endif
                                             </div>
                                             <div class="col-12">
-                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (PPPoE / WAN)</span>
-                                                <div class="d-flex flex-column">
-                                                    @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
-                                                        <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none small">
-                                                            {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
-                                                        </a>
-                                                    @else
-                                                        <span class="small">{{ $ipPppoe }}</span>
-                                                    @endif
-
-                                                    @if($ipWan !== '-' && $ipWan !== $ipPppoe)
-                                                        @if(filter_var($ipWan, FILTER_VALIDATE_IP))
-                                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none small text-muted">
-                                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs"></i>
-                                                            </a>
-                                                        @else
-                                                            <span class="small text-muted">{{ $ipWan }}</span>
-                                                        @endif
-                                                    @endif
-                                                </div>
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (WAN/TR069)</span>
+                                                @if($displayIpAddress !== '-' && filter_var($displayIpAddress, FILTER_VALIDATE_IP))
+                                                    <a href="http://{{ $displayIpAddress }}" target="_blank" class="text-decoration-none small d-inline-flex align-items-center gap-1">
+                                                        <span>{{ $displayIpAddress }}</span>
+                                                        <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="small text-muted">{{ $displayIpAddress }}</span>
+                                                @endif
 
                                                 @if(isset($deviceMacs) && count($deviceMacs) > 0)
                                                     <div class="mt-1 d-flex flex-wrap gap-1">
@@ -524,8 +522,8 @@
                                         </div>
                                     </div>
                                     <div class="card-footer  py-2 d-flex justify-content-between align-items-center small text-muted">
-                                        <div title="{{ __('Connected Devices') }}">
-                                            <i class="fa-solid fa-wifi me-1"></i> {{ $displayCount }}
+                                        <div title="IP Address">
+                                            <i class="fa-solid fa-globe me-1"></i> {{ $displayIpAddress }}
                                         </div>
                                         <div title="{{ __('Uptime') }}">
                                             <i class="fa-solid fa-clock me-1"></i> {{ $uptime }}
