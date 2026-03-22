@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         ->name('ai.chat');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/monitor-logs', [DashboardController::class, 'monitorLogs'])->name('dashboard.monitor_logs');
     Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
         return response()->json($mix->health());
     })->name('health.mixradius');

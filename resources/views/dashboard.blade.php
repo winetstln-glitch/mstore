@@ -246,6 +246,70 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Log Monitoring GenieACS') }}</h6>
+                <span id="monitorLogTotalBadge" class="badge bg-primary-subtle text-primary">{{ count($monitorLogs) }} {{ __('data terbaru') }}</span>
+            </div>
+            <div class="px-3 pb-3">
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <select id="monitorLogStatusFilter" class="form-select form-select-sm">
+                            <option value="all">Semua Status</option>
+                            <option value="online">ONLINE</option>
+                            <option value="offline">OFFLINE</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="monitorLogSearchInput" class="form-control form-control-sm" placeholder="Cari pelanggan, SN ONU, IP atau reason...">
+                    </div>
+                    <div class="col-12 col-md-5 d-flex align-items-center">
+                        <span id="monitorLogResultCount" class="small text-muted"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="monitorLogsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Waktu') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Pelanggan') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('SN ONU') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('IP TR069') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Notifikasi') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Reason') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monitorLogsBody">
+                        @forelse($monitorLogs as $log)
+                        <tr class="monitor-log-row" data-status="{{ $log['status_key'] }}" data-search="{{ e($log['search_text']) }}">
+                            <td class="small text-muted">{{ $log['updated_at'] }}</td>
+                            <td>{{ $log['customer_name'] }}</td>
+                            <td><span class="font-monospace small">{{ $log['onu_serial'] }}</span></td>
+                            <td>
+                                <span class="badge {{ $log['status_key'] === 'online' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                                    {{ $log['status'] }}
+                                </span>
+                            </td>
+                            <td class="small">{{ $log['tr069_ip'] }}</td>
+                            <td class="small">{{ $log['notify_text'] }}</td>
+                            <td class="small text-muted">{{ $log['reason_short'] }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">{{ __('Belum ada log monitoring.') }}</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Inventory & Finance Section -->
 <div class="row g-4 mb-4">
     <!-- Inventory Summary -->
@@ -711,6 +775,92 @@
         setInterval(refreshMixRadius, 15000);
         // initial slight delay to avoid blocking page load
         setTimeout(refreshMixRadius, 2000);
+
+        const monitorLogStatusFilter = document.getElementById('monitorLogStatusFilter');
+        const monitorLogSearchInput = document.getElementById('monitorLogSearchInput');
+        const monitorLogsBody = document.getElementById('monitorLogsBody');
+        const monitorLogTotalBadge = document.getElementById('monitorLogTotalBadge');
+        const monitorLogResultCount = document.getElementById('monitorLogResultCount');
+        const escapeHtml = (value) => {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        };
+        const renderMonitorLogRows = (logs) => {
+            if (!monitorLogsBody) return;
+            if (!Array.isArray(logs) || logs.length === 0) {
+                monitorLogsBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada log monitoring.</td></tr>';
+                return;
+            }
+            const html = logs.map((log) => {
+                const statusClass = log.status_key === 'online'
+                    ? 'bg-success-subtle text-success'
+                    : 'bg-danger-subtle text-danger';
+                return `<tr class="monitor-log-row" data-status="${escapeHtml(log.status_key || '')}" data-search="${escapeHtml(log.search_text || '')}">
+                    <td class="small text-muted">${escapeHtml(log.updated_at || '-')}</td>
+                    <td>${escapeHtml(log.customer_name || '-')}</td>
+                    <td><span class="font-monospace small">${escapeHtml(log.onu_serial || '-')}</span></td>
+                    <td><span class="badge ${statusClass}">${escapeHtml(log.status || '-')}</span></td>
+                    <td class="small">${escapeHtml(log.tr069_ip || '-')}</td>
+                    <td class="small">${escapeHtml(log.notify_text || '-')}</td>
+                    <td class="small text-muted">${escapeHtml(log.reason_short || '-')}</td>
+                </tr>`;
+            }).join('');
+            monitorLogsBody.innerHTML = html;
+        };
+        const applyMonitorLogFilters = () => {
+            const monitorLogRows = Array.from(document.querySelectorAll('#monitorLogsTable .monitor-log-row'));
+            if (!monitorLogRows.length) {
+                if (monitorLogResultCount) {
+                    monitorLogResultCount.textContent = 'Belum ada data log.';
+                }
+                return;
+            }
+            const selectedStatus = monitorLogStatusFilter ? monitorLogStatusFilter.value : 'all';
+            const searchKeyword = (monitorLogSearchInput ? monitorLogSearchInput.value : '').trim().toLowerCase();
+            let visibleCount = 0;
+            monitorLogRows.forEach((row) => {
+                const rowStatus = row.getAttribute('data-status') || '';
+                const rowSearch = row.getAttribute('data-search') || '';
+                const passStatus = selectedStatus === 'all' || rowStatus === selectedStatus;
+                const passSearch = searchKeyword === '' || rowSearch.includes(searchKeyword);
+                const visible = passStatus && passSearch;
+                row.style.display = visible ? '' : 'none';
+                if (visible) {
+                    visibleCount += 1;
+                }
+            });
+            if (monitorLogResultCount) {
+                monitorLogResultCount.textContent = `${visibleCount} data tampil`;
+            }
+        };
+        const refreshMonitorLogs = async () => {
+            try {
+                const response = await fetch("{{ route('dashboard.monitor_logs') }}", {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    cache: 'no-store'
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const payload = await response.json();
+                const logs = Array.isArray(payload.logs) ? payload.logs : [];
+                renderMonitorLogRows(logs);
+                if (monitorLogTotalBadge) {
+                    monitorLogTotalBadge.textContent = `${logs.length} data terbaru`;
+                }
+                applyMonitorLogFilters();
+            } catch (error) {
+            }
+        };
+        if (monitorLogStatusFilter) {
+            monitorLogStatusFilter.addEventListener('change', applyMonitorLogFilters);
+        }
+        if (monitorLogSearchInput) {
+            monitorLogSearchInput.addEventListener('input', applyMonitorLogFilters);
+        }
+        applyMonitorLogFilters();
+        setInterval(refreshMonitorLogs, 15000);
 
         // Sales Overview (Area)
         const salesOptions = {

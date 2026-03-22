@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AtkTransaction;
 use App\Models\Coordinator;
 use App\Models\Customer;
+use App\Models\GenieDeviceStatus;
 use App\Models\Installation;
 use App\Models\InventoryItem;
 use App\Models\Setting;
@@ -17,9 +18,47 @@ use App\Services\MixRadiusService;
 use App\Services\SystemMetricsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
+    protected function monitorLogsData(int $limit = 20): array
+    {
+        return GenieDeviceStatus::with('customer:id,name')
+            ->orderByDesc('updated_at')
+            ->take($limit)
+            ->get()
+            ->map(function (GenieDeviceStatus $log) {
+                $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
+                $notifyUp = $log->last_notified_up_at ? $log->last_notified_up_at->format('d M H:i') : null;
+                $notifyText = $notifyUp ? 'UP: '.$notifyUp : ($notifyDown ? 'DOWN: '.$notifyDown : '-');
+                $customerName = $log->customer->name ?? ('#'.$log->customer_id);
+                $statusText = $log->is_online ? 'ONLINE' : 'OFFLINE';
+                $reasonText = (string) ($log->last_reason ?? '-');
+                $searchText = strtolower(implode(' ', [
+                    $customerName,
+                    (string) ($log->onu_serial ?? ''),
+                    (string) ($log->tr069_ip ?? ''),
+                    $reasonText,
+                    $statusText,
+                ]));
+
+                return [
+                    'updated_at' => $log->updated_at?->format('d M Y H:i') ?? '-',
+                    'customer_name' => $customerName,
+                    'onu_serial' => $log->onu_serial ?: '-',
+                    'status' => $statusText,
+                    'status_key' => strtolower($statusText),
+                    'tr069_ip' => $log->tr069_ip ?: '-',
+                    'notify_text' => $notifyText,
+                    'reason_short' => Str::limit($reasonText, 70),
+                    'search_text' => $searchText,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -284,6 +323,7 @@ class DashboardController extends Controller
                 'errors' => $dailyLatest[$date]['errors'] ?? 0,
             ];
         }
+        $monitorLogs = $this->monitorLogsData();
 
         return view('dashboard', compact(
             'stats',
@@ -300,7 +340,20 @@ class DashboardController extends Controller
             'systemMetrics',
             'mixRadiusOk',
             'monitorSummary',
-            'monitorTrend'
+            'monitorTrend',
+            'monitorLogs'
         ));
+    }
+
+    public function monitorLogs()
+    {
+        $user = Auth::user();
+        if (! $user || ! $user->hasPermission('dashboard.view')) {
+            abort(403);
+        }
+
+        return response()->json([
+            'logs' => $this->monitorLogsData(),
+        ]);
     }
 }
