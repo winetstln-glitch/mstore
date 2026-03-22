@@ -40,7 +40,7 @@
         return ((float) ($item->holiday_adjustment ?? 0)) * ((float) ($item->quantity ?? 0));
     });
     $hasHolidayAdjustment = abs($holidayAdjustmentTotal) > 0;
-    $holidayGreeting = 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.';
+    $holidayGreeting = \App\Models\Setting::getValue('wash_receipt_holiday_greeting', 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.');
 @endphp
 
 <!DOCTYPE html>

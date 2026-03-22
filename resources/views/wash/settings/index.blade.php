@@ -68,6 +68,10 @@
                                 <label for="wash_receipt_powered_by" class="form-label fw-medium">Teks Powered</label>
                                 <input type="text" class="form-control" id="wash_receipt_powered_by" name="wash_receipt_powered_by" value="{{ \App\Models\Setting::getValue('wash_receipt_powered_by', 'POWERED BY MSTORE') }}">
                             </div>
+                            <div class="col-12">
+                                <label for="wash_receipt_holiday_greeting" class="form-label fw-medium">Ucapan Hari Raya</label>
+                                <textarea class="form-control" id="wash_receipt_holiday_greeting" name="wash_receipt_holiday_greeting" rows="3">{{ \App\Models\Setting::getValue('wash_receipt_holiday_greeting', 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.') }}</textarea>
+                            </div>
                         </div>
                     </div>
 

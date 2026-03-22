@@ -34,6 +34,7 @@ class SettingController extends Controller implements HasMiddleware
             ->orderBy('group')
             ->orderBy('id')
             ->get()
+            ->reject(fn ($item) => str_starts_with((string) $item->key, 'atk_') || str_starts_with((string) $item->key, 'wash_'))
             ->groupBy('group');
         $accountOptions = Account::orderBy('code')->get();
 
@@ -113,6 +114,7 @@ class SettingController extends Controller implements HasMiddleware
             'wash_receipt_footer_message' => 'nullable|string|max:500',
             'wash_receipt_footer_note' => 'nullable|string|max:500',
             'wash_receipt_powered_by' => 'nullable|string|max:120',
+            'wash_receipt_holiday_greeting' => 'nullable|string|max:500',
             'wash_holiday_pricing_start_date' => 'nullable|date_format:Y-m-d',
             'wash_holiday_pricing_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:wash_holiday_pricing_start_date',
             'landing_internet_promo_enabled' => 'nullable|in:0,1',
@@ -192,10 +194,20 @@ class SettingController extends Controller implements HasMiddleware
             }
 
             $existing = $existingSettings->get($key);
+            $group = $existing?->group;
+            if (str_starts_with($key, 'atk_')) {
+                $group = 'atk';
+            } elseif (str_starts_with($key, 'wash_')) {
+                $group = 'wash';
+            } elseif (str_starts_with($key, 'mixradius_')) {
+                $group = 'mixradius';
+            } elseif (! is_string($group) || $group === '') {
+                $group = 'general';
+            }
             $rows[] = [
                 'key' => $key,
                 'value' => $value,
-                'group' => $existing?->group ?? (str_starts_with($key, 'mixradius_') ? 'mixradius' : 'general'),
+                'group' => $group,
                 'type' => $existing?->type ?? ($key === 'mixradius_enforce_customer_login' ? 'boolean' : 'text'),
                 'label' => $existing?->label ?? ucwords(str_replace('_', ' ', $key)),
                 'created_at' => $timestamp,
@@ -378,6 +390,13 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Teks Powered Nota Wash',
+            ],
+            [
+                'key' => 'wash_receipt_holiday_greeting',
+                'value' => 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.',
+                'group' => 'general',
+                'type' => 'textarea',
+                'label' => 'Ucapan Hari Raya Nota Wash',
             ],
             [
                 'key' => 'wash_holiday_pricing_start_date',
