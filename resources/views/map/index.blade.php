@@ -1763,8 +1763,7 @@
         customers.forEach(function(customer) {
             var isOnline = customer.is_online; // Assumed passed from controller
             var iconType = isOnline ? 'online' : 'offline';
-            var rxPower = customer.rx_power ? customer.rx_power + ' dBm' : 'N/A';
-            var genieName = customer.genie_name || '-';
+            var tr069Ip = customer.tr069_ip || '-';
 
             // Find ODP name
             var odpName = 'N/A';
@@ -1794,8 +1793,7 @@
                 `<tr><td class="map-popup-label">Paket:</td><td class="map-popup-value">${customer.package || '-'}</td></tr>` +
                 `<tr><td class="map-popup-label">ODP:</td><td class="map-popup-value">${odpName}</td></tr>` +
                 `<tr><td class="map-popup-label">SN:</td><td class="map-popup-value font-monospace">${customer.onu_serial || '-'}</td></tr>` +
-                `<tr><td class="map-popup-label">Nama Genie:</td><td class="map-popup-value">${genieName}</td></tr>` +
-                `<tr><td class="map-popup-label">Daya RX:</td><td class="map-popup-value">${rxPower}</td></tr>` +
+                `<tr><td class="map-popup-label">IP TR069:</td><td class="map-popup-value font-monospace">${tr069Ip}</td></tr>` +
                 `</table>` +
                 `<div class="map-popup-actions">` +
                 `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white map-popup-btn">Detail</a>` +

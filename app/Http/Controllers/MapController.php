@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\Closure;
 use App\Models\Customer;
+use App\Models\GenieDeviceStatus;
 use App\Models\Htb;
 use App\Models\Odc;
 use App\Models\Odp;
@@ -102,55 +103,33 @@ class MapController extends Controller implements HasMiddleware
             ->with('odp:id,region_id')
             ->get();
 
-        // Fetch GenieACS devices to get live status
-        // We fetch a larger limit to cover active devices. In production, this should be paginated or optimized.
-        $devices = $this->genieService->getDevices(300);
+        $customerIds = $customers->pluck('id')->all();
+        $serials = $customers->pluck('onu_serial')->filter()->values()->all();
+        $statusesByCustomer = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->get()
+            ->keyBy('customer_id');
+        $statusesBySerial = GenieDeviceStatus::query()
+            ->whereNull('customer_id')
+            ->whereIn('onu_serial', $serials)
+            ->get()
+            ->keyBy('onu_serial');
 
-        // Map GenieACS data to customers
-        $genieData = [];
-        foreach ($devices as $device) {
-            $serial = $device['_deviceId']['_SerialNumber'] ?? null;
-            $lastInform = $device['_lastInform'] ?? null;
-
-            if ($serial) {
-                // Extract RX Power
-                // Handle different potential structures of the value (direct or object with _value)
-                $rxPower = $device['VirtualParameters']['RXPower'] ?? null;
-                if (is_array($rxPower) && isset($rxPower['_value'])) {
-                    $rxPower = $rxPower['_value'];
-                }
-
-                // Extract PPPoE Username (as potential "Full Name" from GenieACS)
-                $pppoeUser = $device['VirtualParameters']['pppoeUsername'] ?? null;
-                if (is_array($pppoeUser) && isset($pppoeUser['_value'])) {
-                    $pppoeUser = $pppoeUser['_value'];
-                }
-
-                // Check online status
-                $isOnline = false;
-                if ($lastInform) {
-                    $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
-                    if ($diff < 300) {
-                        $isOnline = true;
-                    }
-                }
-
-                $genieData[$serial] = [
-                    'is_online' => $isOnline,
-                    'rx_power' => $rxPower,
-                    'genie_name' => $pppoeUser,
-                ];
+        // Attach status terintegrasi dari tabel monitoring GenieACS
+        $customers->transform(function ($customer) use ($statusesByCustomer, $statusesBySerial) {
+            $status = $statusesByCustomer->get($customer->id);
+            if (! $status && $customer->onu_serial) {
+                $status = $statusesBySerial->get($customer->onu_serial);
             }
-        }
 
-        // Attach online status to customers
-        $customers->transform(function ($customer) use ($genieData) {
-            if ($customer->onu_serial && isset($genieData[$customer->onu_serial])) {
-                $customer->is_online = $genieData[$customer->onu_serial]['is_online'];
-                $customer->rx_power = $genieData[$customer->onu_serial]['rx_power'];
-                $customer->genie_name = $genieData[$customer->onu_serial]['genie_name'];
+            if ($status) {
+                $customer->is_online = (bool) $status->is_online;
+                $customer->tr069_ip = $status->tr069_ip;
+                $customer->rx_power = null;
+                $customer->genie_name = null;
             } else {
                 $customer->is_online = false;
+                $customer->tr069_ip = null;
                 $customer->rx_power = null;
                 $customer->genie_name = null;
             }
@@ -205,29 +184,24 @@ class MapController extends Controller implements HasMiddleware
             ->with('odp:id,region_id')
             ->get();
 
-        $devices = $this->genieService->getDevices(300);
-        $genieData = [];
-        foreach ($devices as $device) {
-            $serial = $device['_deviceId']['_SerialNumber'] ?? null;
-            $lastInform = $device['_lastInform'] ?? null;
-            if ($serial) {
-                $isOnline = false;
-                if ($lastInform) {
-                    $diff = now()->diffInSeconds(\Carbon\Carbon::parse($lastInform));
-                    if ($diff < 300) {
-                        $isOnline = true;
-                    }
-                }
-                $genieData[$serial] = ['is_online' => $isOnline];
-            }
-        }
+        $customerIds = $customers->pluck('id')->all();
+        $serials = $customers->pluck('onu_serial')->filter()->values()->all();
+        $statusesByCustomer = GenieDeviceStatus::query()
+            ->whereIn('customer_id', $customerIds)
+            ->get()
+            ->keyBy('customer_id');
+        $statusesBySerial = GenieDeviceStatus::query()
+            ->whereNull('customer_id')
+            ->whereIn('onu_serial', $serials)
+            ->get()
+            ->keyBy('onu_serial');
 
-        $customers->transform(function ($customer) use ($genieData) {
-            if ($customer->onu_serial && isset($genieData[$customer->onu_serial])) {
-                $customer->is_online = $genieData[$customer->onu_serial]['is_online'];
-            } else {
-                $customer->is_online = false;
+        $customers->transform(function ($customer) use ($statusesByCustomer, $statusesBySerial) {
+            $status = $statusesByCustomer->get($customer->id);
+            if (! $status && $customer->onu_serial) {
+                $status = $statusesBySerial->get($customer->onu_serial);
             }
+            $customer->is_online = $status ? (bool) $status->is_online : false;
 
             return $customer;
         });
