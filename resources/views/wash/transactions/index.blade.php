@@ -57,6 +57,17 @@
                         <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>Semua</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-auto">
+                    <label for="vehicle_plate" class="col-form-label">Plat Nomor</label>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <select id="vehicle_plate" name="vehicle_plate" class="form-select">
+                        <option value="">Semua Plat</option>
+                        @foreach(($knownVehiclePlates ?? []) as $plateOption)
+                            <option value="{{ $plateOption }}" {{ request('vehicle_plate') === $plateOption ? 'selected' : '' }}>{{ $plateOption }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-12 col-md-auto d-flex flex-wrap gap-2 wash-filter-actions">
                     <button type="submit" class="btn btn-primary" title="{{ __('Saring') }}">
                         <i class="fas fa-filter"></i>

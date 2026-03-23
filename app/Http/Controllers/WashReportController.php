@@ -10,35 +10,71 @@ class WashReportController extends Controller
 {
     private function buildData(Request $request)
     {
-        $date = $request->input('date', now()->format('Y-m-d'));
+        $startDate = (string) $request->input('start_date', $request->input('date', now()->format('Y-m-d')));
+        $endDate = (string) $request->input('end_date', $request->input('date', $startDate));
+        if ($startDate === '') {
+            $startDate = now()->format('Y-m-d');
+        }
+        if ($endDate === '') {
+            $endDate = $startDate;
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
         $month = $request->input('month', now()->format('Y-m'));
+        $vehiclePlate = (string) $request->input('vehicle_plate', '');
+        $normalizedVehiclePlate = $this->normalizePlate($vehiclePlate);
+        $knownVehiclePlates = $this->getKnownVehiclePlates();
 
-        $dailyIncome = WashTransaction::whereDate('created_at', $date)->sum('total_amount');
+        $dailyIncomeQuery = WashTransaction::query()->whereBetween('created_at', [
+            $startDate.' 00:00:00',
+            $endDate.' 23:59:59',
+        ]);
+        $this->applyVehiclePlateFilter($dailyIncomeQuery, $normalizedVehiclePlate);
+        $dailyIncome = $dailyIncomeQuery->sum('total_amount');
         $dailyExpense = \App\Models\Transaction::where('type', 'expense')
             ->where('category', 'Pengeluaran Pengurus')
             ->where('reference_number', 'like', 'WASH-EXP-%')
-            ->whereDate('transaction_date', $date)->sum('amount');
+            ->whereBetween('transaction_date', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])->sum('amount');
 
-        $monthlyIncome = WashTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
+        $monthlyIncomeQuery = WashTransaction::query()->where('created_at', 'like', "$month%");
+        $this->applyVehiclePlateFilter($monthlyIncomeQuery, $normalizedVehiclePlate);
+        $monthlyIncome = $monthlyIncomeQuery->sum('total_amount');
         $monthlyExpense = \App\Models\Transaction::where('type', 'expense')
             ->where('category', 'Pengeluaran Pengurus')
             ->where('reference_number', 'like', 'WASH-EXP-%')
             ->whereMonth('transaction_date', substr($month, 5, 2))
             ->whereYear('transaction_date', substr($month, 0, 4))->sum('amount');
 
-        $dailyIncomeRows = WashTransaction::whereDate('created_at', $date)
-            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'created_at'])
-            ->orderByDesc('created_at')->get();
+        $dailyIncomeRowsQuery = WashTransaction::query()
+            ->whereBetween('created_at', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])
+            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at'])
+            ->orderByDesc('created_at');
+        $this->applyVehiclePlateFilter($dailyIncomeRowsQuery, $normalizedVehiclePlate);
+        $dailyIncomeRows = $dailyIncomeRowsQuery->get();
         $dailyExpenseRows = \App\Models\Transaction::where('type', 'expense')
             ->where('category', 'Pengeluaran Pengurus')
             ->where('reference_number', 'like', 'WASH-EXP-%')
-            ->whereDate('transaction_date', $date)
+            ->whereBetween('transaction_date', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])
             ->select(['id', 'description', 'amount', 'transaction_date'])
             ->orderByDesc('transaction_date')->get();
 
-        $monthlyDailyIncome = WashTransaction::where('created_at', 'like', "$month%")
+        $monthlyDailyIncomeQuery = WashTransaction::query()
+            ->where('created_at', 'like', "$month%")
             ->select(DB::raw('DATE(created_at) as d'), DB::raw('SUM(total_amount) as total'))
-            ->groupBy(DB::raw('DATE(created_at)'))->orderBy('d', 'asc')->get();
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('d', 'asc');
+        $this->applyVehiclePlateFilter($monthlyDailyIncomeQuery, $normalizedVehiclePlate);
+        $monthlyDailyIncome = $monthlyDailyIncomeQuery->get();
         $monthlyDailyExpense = \App\Models\Transaction::where('type', 'expense')
             ->where('category', 'Pengeluaran Pengurus')
             ->where('reference_number', 'like', 'WASH-EXP-%')
@@ -47,31 +83,102 @@ class WashReportController extends Controller
             ->select(DB::raw('DATE(transaction_date) as d'), DB::raw('SUM(amount) as total'))
             ->groupBy(DB::raw('DATE(transaction_date)'))->orderBy('d', 'asc')->get();
 
-        $dailyByService = DB::table('wash_transaction_items as i')
+        $dailyByServiceQuery = DB::table('wash_transaction_items as i')
             ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
-            ->whereDate('t.created_at', $date)
+            ->whereBetween('t.created_at', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])
             ->select('i.service_name', DB::raw('SUM(i.quantity) as total_qty'), DB::raw('SUM(i.subtotal) as amount'))
-            ->groupBy('i.service_name')->orderByDesc('amount')->get();
-        $dailyByPayment = WashTransaction::whereDate('created_at', $date)
-            ->select('payment_method', DB::raw('SUM(total_amount) as amount'))
-            ->groupBy('payment_method')->orderByDesc('amount')->get();
+            ->groupBy('i.service_name')
+            ->orderByDesc('amount');
+        if ($normalizedVehiclePlate !== '') {
+            $dailyByServiceQuery->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$normalizedVehiclePlate]
+            );
+        }
+        $dailyByService = $dailyByServiceQuery->get();
 
-        $monthlyByService = DB::table('wash_transaction_items as i')
+        $dailyByPaymentQuery = WashTransaction::query()
+            ->whereBetween('created_at', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])
+            ->select('payment_method', DB::raw('SUM(total_amount) as amount'))
+            ->groupBy('payment_method')
+            ->orderByDesc('amount');
+        $this->applyVehiclePlateFilter($dailyByPaymentQuery, $normalizedVehiclePlate);
+        $dailyByPayment = $dailyByPaymentQuery->get();
+
+        $monthlyByServiceQuery = DB::table('wash_transaction_items as i')
             ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
             ->where('t.created_at', 'like', "$month%")
             ->select('i.service_name', DB::raw('SUM(i.quantity) as total_qty'), DB::raw('SUM(i.subtotal) as amount'))
-            ->groupBy('i.service_name')->orderByDesc('amount')->get();
-        $monthlyByPayment = WashTransaction::where('created_at', 'like', "$month%")
+            ->groupBy('i.service_name')
+            ->orderByDesc('amount');
+        if ($normalizedVehiclePlate !== '') {
+            $monthlyByServiceQuery->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$normalizedVehiclePlate]
+            );
+        }
+        $monthlyByService = $monthlyByServiceQuery->get();
+
+        $monthlyByPaymentQuery = WashTransaction::query()
+            ->where('created_at', 'like', "$month%")
             ->select('payment_method', DB::raw('SUM(total_amount) as amount'))
-            ->groupBy('payment_method')->orderByDesc('amount')->get();
+            ->groupBy('payment_method')
+            ->orderByDesc('amount');
+        $this->applyVehiclePlateFilter($monthlyByPaymentQuery, $normalizedVehiclePlate);
+        $monthlyByPayment = $monthlyByPaymentQuery->get();
 
         return compact(
-            'date', 'month',
+            'startDate', 'endDate', 'month',
+            'vehiclePlate', 'knownVehiclePlates',
             'dailyIncome', 'dailyExpense', 'monthlyIncome', 'monthlyExpense',
             'dailyIncomeRows', 'dailyExpenseRows',
             'monthlyDailyIncome', 'monthlyDailyExpense',
             'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment'
         );
+    }
+
+    private function applyVehiclePlateFilter($query, string $normalizedPlate): void
+    {
+        if ($normalizedPlate === '') {
+            return;
+        }
+        $query->whereRaw(
+            "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+            [$normalizedPlate]
+        );
+    }
+
+    private function normalizePlate(string $plate): string
+    {
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $plate));
+    }
+
+    private function getKnownVehiclePlates(): array
+    {
+        $plates = WashTransaction::query()
+            ->whereNotNull('vehicle_plate')
+            ->whereRaw("TRIM(COALESCE(vehicle_plate, '')) <> ''")
+            ->orderByDesc('created_at')
+            ->pluck('vehicle_plate')
+            ->all();
+
+        $unique = [];
+        foreach ($plates as $plate) {
+            $raw = trim((string) $plate);
+            $normalized = $this->normalizePlate($raw);
+            if ($normalized === '' || isset($unique[$normalized])) {
+                continue;
+            }
+            $unique[$normalized] = $raw;
+        }
+
+        return array_values($unique);
     }
 
     public function index(Request $request)
@@ -99,7 +206,7 @@ class WashReportController extends Controller
             $sheet = function ($title) {};
 
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Laporan Wash']));
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', $data['date'], 'Bulan', $data['month']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rentang Harian', $data['startDate'].' s/d '.$data['endDate'], 'Bulan', $data['month']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Ringkasan Harian']));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['dailyIncome'], 'Pengeluaran', $data['dailyExpense'], 'Laba', $data['dailyIncome'] - $data['dailyExpense']]));

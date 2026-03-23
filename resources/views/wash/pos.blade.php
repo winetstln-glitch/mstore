@@ -16,6 +16,7 @@
                             <button class="filter-btn active" data-filter="all" type="button">Semua</button>
                             <button class="filter-btn" data-filter="mobil" type="button">Mobil</button>
                             <button class="filter-btn" data-filter="motor" type="button">Motor</button>
+                            <button class="filter-btn" data-filter="kopi" type="button">Kopi</button>
                         </div>
                     </div>
                     <div class="wash-card-body">
@@ -23,9 +24,17 @@
                             @foreach($services as $service)
                             @php
                                 $rawType = strtolower((string) ($service->vehicle_type ?? ''));
-                                $normalizedType = $rawType === 'car' ? 'mobil' : $rawType;
-                                $serviceTypeClass = in_array($normalizedType, ['mobil', 'motor']) ? $normalizedType : 'umum';
-                                $fallbackIcon = $normalizedType === 'mobil' ? 'fa-car-side' : ($normalizedType === 'motor' ? 'fa-motorcycle' : 'fa-soap');
+                                if ($rawType === 'car') {
+                                    $normalizedType = 'mobil';
+                                } elseif ($rawType === 'coffee') {
+                                    $normalizedType = 'kopi';
+                                } else {
+                                    $normalizedType = $rawType;
+                                }
+                                $serviceTypeClass = in_array($normalizedType, ['mobil', 'motor', 'kopi']) ? $normalizedType : 'umum';
+                                $fallbackIcon = $normalizedType === 'mobil'
+                                    ? 'fa-car-side'
+                                    : ($normalizedType === 'motor' ? 'fa-motorcycle' : ($normalizedType === 'kopi' ? 'fa-mug-hot' : 'fa-soap'));
                                 $adjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
                                 $isHolidayActive = (bool) ($holidaySchedule['active'] ?? false);
                                 $effectivePrice = $isHolidayActive && !is_null($adjustment)
@@ -126,7 +135,21 @@
                                 </div>
                                 <div class="col-6">
                                     <label for="vehicle_plate" class="wash-field-label">Plat Nomor</label>
-                                    <input type="text" class="form-control wash-input text-uppercase" id="vehicle_plate" name="vehicle_plate" placeholder="B 1234 ABC">
+                                    <input type="text" class="form-control wash-input text-uppercase" id="vehicle_plate" name="vehicle_plate" list="vehiclePlateOptions" placeholder="B 1234 ABC">
+                                    <datalist id="vehiclePlateOptions">
+                                        @foreach($knownVehiclePlates ?? [] as $plateOption)
+                                            <option value="{{ $plateOption }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                </div>
+                                <div class="col-6">
+                                    <label for="known_plate" class="wash-field-label">Plat Tersimpan</label>
+                                    <select id="known_plate" class="form-select wash-input">
+                                        <option value="">Pilih dari riwayat</option>
+                                        @foreach($knownVehiclePlates ?? [] as $plateOption)
+                                            <option value="{{ $plateOption }}">{{ $plateOption }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -191,6 +214,23 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="loyaltyBonusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bonus Loyalty</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                Selamat! anda sudah mencapai bonus cuci ke-10 dan  mendapatkan gratis 1 layanan.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnLoyaltyBonusOk">OK</button>
             </div>
         </div>
     </div>
@@ -276,6 +316,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Gagal cek riwayat pelanggan');
             });
     });
+
+    const knownPlateSelect = document.getElementById('known_plate');
+    if (knownPlateSelect) {
+        knownPlateSelect.addEventListener('change', function () {
+            if (!this.value) {
+                return;
+            }
+            const plateInput = document.getElementById('vehicle_plate');
+            plateInput.value = this.value;
+            document.getElementById('btnCheckCustomer').click();
+        });
+    }
 
     document.getElementById('use_voucher').addEventListener('change', function() {
         updateCartUI();
@@ -629,6 +681,29 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initialize visibility
         calculateChange();
     }
+    function showLoyaltyBonusPopup() {
+        return new Promise((resolve) => {
+            const modalEl = document.getElementById('loyaltyBonusModal');
+            const okBtn = document.getElementById('btnLoyaltyBonusOk');
+            if (!modalEl || !okBtn || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                alert('Selamat! Bonus cuci ke-10 otomatis diterapkan pada transaksi ini.');
+                resolve();
+                return;
+            }
+            const bonusModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            const handleResolve = () => {
+                okBtn.removeEventListener('click', handleOk);
+                modalEl.removeEventListener('hidden.bs.modal', handleResolve);
+                resolve();
+            };
+            const handleOk = () => {
+                bonusModal.hide();
+            };
+            okBtn.addEventListener('click', handleOk);
+            modalEl.addEventListener('hidden.bs.modal', handleResolve, { once: true });
+            bonusModal.show();
+        });
+    }
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -683,15 +758,18 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(async data => {
             if (data.success) {
-                if (data.discount_type === 'loyalty') {
-                    alert('Selamat! Bonus cuci ke-10 otomatis diterapkan pada transaksi ini.');
-                }
                 const url = data.receipt_url ? data.receipt_url : ('{{ url("wash/transactions") }}/' + data.transaction_id + '/receipt');
-                if (isMobileDevice()) {
-                    window.location.href = withAutoPrint(url);
-                } else {
-                    window.open(url, '_blank', 'width=400,height=600');
+                const openReceipt = () => {
+                    if (isMobileDevice()) {
+                        window.location.href = withAutoPrint(url);
+                    } else {
+                        window.open(url, '_blank', 'width=400,height=600');
+                    }
+                };
+                if (data.discount_type === 'loyalty') {
+                    await showLoyaltyBonusPopup();
                 }
+                openReceipt();
                 const resolvedPhone = data.customer_phone || phone;
                 if (sendWhatsapp && resolvedPhone && !data.wa_sent) {
                     await sendWashWhatsappReceipt(data.transaction_id, resolvedPhone, {
@@ -880,6 +958,10 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: #fed7aa;
     }
 
+    .service-card-kopi {
+        border-color: #f5d0a7;
+    }
+
     .service-image-wrap {
         aspect-ratio: 1 / 1;
         border-radius: 0.8rem;
@@ -991,6 +1073,11 @@ document.addEventListener('DOMContentLoaded', function () {
     .service-type-motor {
         background: #ffedd5;
         color: #c2410c;
+    }
+
+    .service-type-kopi {
+        background: #fef3c7;
+        color: #92400e;
     }
 
     .service-type-umum {
@@ -1327,6 +1414,10 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: rgba(251, 146, 60, 0.45);
     }
 
+    [data-bs-theme="dark"] .service-card-kopi {
+        border-color: rgba(217, 119, 6, 0.45);
+    }
+
     [data-bs-theme="dark"] .service-fallback-icon {
         background: #334155;
         color: #bfdbfe;
@@ -1460,6 +1551,11 @@ document.addEventListener('DOMContentLoaded', function () {
     [data-bs-theme="dark"] .service-type-motor {
         background: rgba(154, 52, 18, 0.35);
         color: #fdba74;
+    }
+
+    [data-bs-theme="dark"] .service-type-kopi {
+        background: rgba(146, 64, 14, 0.35);
+        color: #fcd34d;
     }
 
     [data-bs-theme="dark"] .service-type-umum {

@@ -42,8 +42,18 @@
             <!-- Filter Tanggal -->
             <form method="get" class="row g-2 align-items-center mb-3 justify-content-end daily-filter-form">
                 <input type="hidden" name="view" value="daily">
-                <div class="col-auto"><label class="form-label mb-0 fw-bold">Tanggal:</label></div>
-                <div class="col-auto"><input type="date" name="date" value="{{ $date }}" class="form-control"></div>
+                <div class="col-auto"><label class="form-label mb-0 fw-bold">Dari:</label></div>
+                <div class="col-auto"><input type="date" name="start_date" value="{{ $startDate }}" class="form-control"></div>
+                <div class="col-auto"><label class="form-label mb-0 fw-bold">Sampai:</label></div>
+                <div class="col-auto"><input type="date" name="end_date" value="{{ $endDate }}" class="form-control"></div>
+                <div class="col-auto">
+                    <select name="vehicle_plate" class="form-select">
+                        <option value="">Semua Plat</option>
+                        @foreach(($knownVehiclePlates ?? []) as $plateOption)
+                            <option value="{{ $plateOption }}" {{ ($vehiclePlate ?? '') === $plateOption ? 'selected' : '' }}>{{ $plateOption }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
             </form>
 
@@ -177,6 +187,14 @@
                 <input type="hidden" name="view" value="monthly">
                 <div class="col-auto"><label class="form-label mb-0 fw-bold">Bulan:</label></div>
                 <div class="col-auto"><input type="month" name="month" value="{{ $month }}" class="form-control"></div>
+                <div class="col-auto">
+                    <select name="vehicle_plate" class="form-select">
+                        <option value="">Semua Plat</option>
+                        @foreach(($knownVehiclePlates ?? []) as $plateOption)
+                            <option value="{{ $plateOption }}" {{ ($vehiclePlate ?? '') === $plateOption ? 'selected' : '' }}>{{ $plateOption }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
             </form>
 
@@ -353,7 +371,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('month') && !urlParams.has('date')) {
+        if (urlParams.has('month') && !urlParams.has('start_date') && !urlParams.has('end_date')) {
             new bootstrap.Tab(document.querySelector('#monthly-tab')).show();
         }
     });
@@ -366,14 +384,18 @@
         var xls = document.getElementById('btnExportExcel');
         if (pdf) {
             var params = new URLSearchParams();
-            if (q('date')) params.set('date', q('date'));
+            if (q('start_date')) params.set('start_date', q('start_date'));
+            if (q('end_date')) params.set('end_date', q('end_date'));
             if (q('month')) params.set('month', q('month'));
+            if (q('vehicle_plate')) params.set('vehicle_plate', q('vehicle_plate'));
             pdf.href = '{{ route('wash.reports.pdf') }}' + (params.toString() ? ('?' + params.toString()) : '');
         }
         if (xls) {
             var params2 = new URLSearchParams();
-            if (q('date')) params2.set('date', q('date'));
+            if (q('start_date')) params2.set('start_date', q('start_date'));
+            if (q('end_date')) params2.set('end_date', q('end_date'));
             if (q('month')) params2.set('month', q('month'));
+            if (q('vehicle_plate')) params2.set('vehicle_plate', q('vehicle_plate'));
             xls.href = '{{ route('wash.reports.excel') }}' + (params2.toString() ? ('?' + params2.toString()) : '');
         }
     })();

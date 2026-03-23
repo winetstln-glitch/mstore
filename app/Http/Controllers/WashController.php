@@ -12,7 +12,9 @@ class WashController extends Controller
      */
     public function index()
     {
-        $this->syncDefaultServices();
+        if (WashService::query()->count() === 0) {
+            $this->syncDefaultServices();
+        }
         $services = WashService::all();
 
         return view('wash.services.index', compact('services'));
@@ -63,6 +65,42 @@ class WashController extends Controller
                 'price' => 70000,
                 'description' => "Khusus kendaraan angkutan dan logistik.\nTruk Engkel\nColt Diesel\nMobil Angkutan Barang",
             ],
+            [
+                'name' => 'Es Kopi Susu',
+                'vehicle_type' => 'coffee',
+                'price' => 12000,
+                'description' => "Espresso\nSusu Segar\nGula Aren",
+            ],
+            [
+                'name' => 'Americano',
+                'vehicle_type' => 'coffee',
+                'price' => 10000,
+                'description' => "Espresso\nAir Mineral\nTanpa Gula",
+            ],
+            [
+                'name' => 'Cappuccino',
+                'vehicle_type' => 'coffee',
+                'price' => 15000,
+                'description' => "Espresso\nSusu\nFoam Lembut",
+            ],
+            [
+                'name' => 'Cafe Latte',
+                'vehicle_type' => 'coffee',
+                'price' => 16000,
+                'description' => "Espresso\nSusu Steamed\nFoam Tipis",
+            ],
+            [
+                'name' => 'Mocha',
+                'vehicle_type' => 'coffee',
+                'price' => 17000,
+                'description' => "Espresso\nSusu\nCokelat",
+            ],
+            [
+                'name' => 'Kopi Tubruk',
+                'vehicle_type' => 'coffee',
+                'price' => 9000,
+                'description' => "Kopi Bubuk Lokal\nAir Panas\nGula Opsional",
+            ],
         ];
 
         foreach ($catalog as $service) {
@@ -97,7 +135,7 @@ class WashController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'holiday_price' => 'nullable|numeric',
-            'vehicle_type' => 'required|in:car,motor',
+            'vehicle_type' => 'required|in:car,motor,coffee',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:2048',
@@ -133,7 +171,7 @@ class WashController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'holiday_price' => 'nullable|numeric',
-            'vehicle_type' => 'required|in:car,motor',
+            'vehicle_type' => 'required|in:car,motor,coffee',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:2048',

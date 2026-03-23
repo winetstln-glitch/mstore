@@ -24,6 +24,7 @@
                     <select class="form-select @error('vehicle_type') is-invalid @enderror" id="vehicle_type" name="vehicle_type" required>
                         <option value="car" {{ old('vehicle_type', $service->vehicle_type) == 'car' ? 'selected' : '' }}>Car (Mobil)</option>
                         <option value="motor" {{ old('vehicle_type', $service->vehicle_type) == 'motor' ? 'selected' : '' }}>Motor (Motorcycle)</option>
+                        <option value="coffee" {{ old('vehicle_type', $service->vehicle_type) == 'coffee' ? 'selected' : '' }}>Coffee (Kopi)</option>
                     </select>
                     @error('vehicle_type')
                         <div class="invalid-feedback">{{ $message }}</div>

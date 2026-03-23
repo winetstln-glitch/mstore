@@ -58,6 +58,8 @@
                                 <td>
                                     @if($service->vehicle_type === 'car')
                                         <span class="badge bg-primary">Mobil</span>
+                                    @elseif($service->vehicle_type === 'coffee')
+                                        <span class="badge bg-info text-dark">Kopi</span>
                                     @else
                                         <span class="badge bg-success">Motor</span>
                                     @endif

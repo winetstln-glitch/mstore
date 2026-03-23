@@ -15,7 +15,7 @@
 </head>
 <body>
     <h1>Laporan Car Wash</h1>
-    <div class="muted">Tanggal: {{ $date }} | Bulan: {{ $month }}</div>
+    <div class="muted">Rentang Harian: {{ $startDate }} s/d {{ $endDate }} | Bulan: {{ $month }}</div>
 
     <table>
         <tr>
