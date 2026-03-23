@@ -463,17 +463,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (existingItem) {
             existingItem.quantity++;
         } else {
-            // Check if cart has items of different type
-            if (cart.length > 0 && cart[0].type !== type) {
-                if (!confirm('Anda menambahkan layanan untuk jenis kendaraan yang berbeda. Kosongkan keranjang saat ini?')) {
-                    return;
-                }
-                resetCart();
-            }
             cart.push({ id, name, price, type, quantity: 1 });
         }
         updateCartUI();
-        filterBrands(type);
+        filterBrands(cart.length > 0 ? 'all' : type);
     }
 
     function filterBrands(type) {
