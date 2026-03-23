@@ -98,6 +98,19 @@
 
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-qrcode me-1"></i> Pembayaran QRIS
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="pos_qris_text" class="form-label fw-medium">Data String QRIS</label>
+                                <textarea class="form-control" id="pos_qris_text" name="pos_qris_text" rows="3">{{ \App\Models\Setting::getValue('pos_qris_text', '') }}</textarea>
+                                <div class="small text-muted mt-1">Isi QRIS statis atau data QRIS yang dipakai di kasir Wash.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Harga Hari Raya
                         </h6>
                         <div class="row g-3">
