@@ -274,7 +274,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         // Inventory Expenses (Ambil Barang + INV-OUT)
         $inventoryExpenses = $transactions->filter(function ($t) {
-            return $t->category === 'Ambil Barang' ||
+            return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
                    ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
         })->sum('amount');
 
@@ -380,7 +380,7 @@ class FinanceController extends Controller implements HasMiddleware
         $serverExpenses = $transactions->where('type', 'expense')->where('category', 'Operational')->sum('amount');
 
         $inventoryExpenses = $transactions->filter(function ($t) {
-            return $t->category === 'Ambil Barang' ||
+            return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
                    ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
         })->sum('amount');
 
@@ -2466,7 +2466,7 @@ class FinanceController extends Controller implements HasMiddleware
 
             $serverExpenses = $transactions->where('type', 'expense')->where('category', 'Operational')->sum('amount');
             $inventoryExpenses = $transactions->filter(function ($t) {
-                return $t->category === 'Ambil Barang' ||
+                return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
                     ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
             })->sum('amount');
             $cashExpensesRaw = $transactions->where('type', 'expense')
@@ -2599,6 +2599,21 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         if ($transaction->type === 'expense') {
+            if ((string) $transaction->category === 'Deposit to Company') {
+                $bankAccount = $this->resolveAccountIdByCode('1002');
+                if (! $bankAccount) {
+                    return null;
+                }
+
+                return [
+                    'description' => $this->buildFinanceLedgerDescription($transaction, 'Finance Transfer'),
+                    'lines' => [
+                        ['account_id' => $bankAccount, 'debit' => (float) $transaction->amount, 'credit' => 0, 'unit' => 'MSTORE'],
+                        ['account_id' => $cashAccount, 'debit' => 0, 'credit' => (float) $transaction->amount, 'unit' => 'MSTORE'],
+                    ],
+                ];
+            }
+
             $expenseAccount = $this->resolveExpenseAccountId($transaction->category);
             if (! $expenseAccount) {
                 return null;
@@ -2738,12 +2753,14 @@ class FinanceController extends Controller implements HasMiddleware
     private function normalizeTransactionTypeByCategory(array $validated): array
     {
         $category = (string) ($validated['category'] ?? '');
+        $supportsTransferType = $this->supportsTransferType();
         $aliases = [
             'Beban Komisi Koordinator' => 'Coordinator Commission',
             'Bagi Hasil Investor' => 'Investor Profit Share',
             'Beban Bagi Hasil Investor' => 'Investor Profit Share',
             'Dana Kas Investor' => 'Investor Cash Fund',
             'Beban Dana Kas Investor' => 'Investor Cash Fund',
+            'Beli Alat (diluar)' => 'Pembelian Alat',
         ];
         if (isset($aliases[$category])) {
             $category = $aliases[$category];
@@ -2753,7 +2770,7 @@ class FinanceController extends Controller implements HasMiddleware
         if (in_array($category, ['Member Income', 'Voucher Income'], true)) {
             $validated['type'] = 'income';
         } elseif ($category === 'Deposit to Company') {
-            $validated['type'] = 'transfer';
+            $validated['type'] = $supportsTransferType ? 'transfer' : 'expense';
         } elseif (in_array($category, [
             'Coordinator Commission',
             'ISP Payment',
@@ -2773,9 +2790,43 @@ class FinanceController extends Controller implements HasMiddleware
             'Gaji',
         ], true)) {
             $validated['type'] = 'expense';
+        } elseif (($validated['type'] ?? null) === 'transfer' && ! $supportsTransferType) {
+            $validated['type'] = 'expense';
         }
 
         return $validated;
+    }
+
+    private function supportsTransferType(): bool
+    {
+        static $supportsTransfer = null;
+        if (! is_null($supportsTransfer)) {
+            return $supportsTransfer;
+        }
+
+        try {
+            $driver = DB::getDriverName();
+            if ($driver === 'mysql') {
+                $databaseName = DB::getDatabaseName();
+                $columnType = DB::table('information_schema.COLUMNS')
+                    ->where('TABLE_SCHEMA', $databaseName)
+                    ->where('TABLE_NAME', 'transactions')
+                    ->where('COLUMN_NAME', 'type')
+                    ->value('COLUMN_TYPE');
+
+                $supportsTransfer = is_string($columnType) && str_contains(strtolower($columnType), "'transfer'");
+
+                return $supportsTransfer;
+            }
+
+            $supportsTransfer = true;
+
+            return true;
+        } catch (\Throwable $e) {
+            $supportsTransfer = false;
+
+            return false;
+        }
     }
 
     public function materialReport(Request $request)
