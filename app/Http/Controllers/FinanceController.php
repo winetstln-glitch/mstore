@@ -148,7 +148,6 @@ class FinanceController extends Controller implements HasMiddleware
                     'Investor Profit Share',
                     'Investor Cash Fund',
                     'Pembayaran ISP',
-                    'Pembelian Alat',
                     'Deposit to Company',
                 ])
                 ->sum('amount');
@@ -274,7 +273,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         // Inventory Expenses (Ambil Barang + INV-OUT)
         $inventoryExpenses = $transactions->filter(function ($t) {
-            return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
+            return $t->category === 'Ambil Barang' ||
                    ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
         })->sum('amount');
 
@@ -380,7 +379,7 @@ class FinanceController extends Controller implements HasMiddleware
         $serverExpenses = $transactions->where('type', 'expense')->where('category', 'Operational')->sum('amount');
 
         $inventoryExpenses = $transactions->filter(function ($t) {
-            return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
+            return $t->category === 'Ambil Barang' ||
                    ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
         })->sum('amount');
 
@@ -570,7 +569,6 @@ class FinanceController extends Controller implements HasMiddleware
                 'Investor Profit Share',
                 'Investor Cash Fund',
                 'Pembayaran ISP',
-                'Pembelian Alat',
                 'Deposit to Company',
             ])
             ->sum('amount');
@@ -595,7 +593,6 @@ class FinanceController extends Controller implements HasMiddleware
                 'Investor Profit Share',
                 'Investor Cash Fund',
                 'Pembayaran ISP',
-                'Pembelian Alat',
                 'Deposit to Company',
                 'Ambil Barang', // Exclude dari list operasional tunai
             ])
@@ -689,7 +686,6 @@ class FinanceController extends Controller implements HasMiddleware
                 'Investor Profit Share',
                 'Investor Cash Fund',
                 'Pembayaran ISP',
-                'Pembelian Alat',
                 'Deposit to Company',
             ])
             ->sum('amount');
@@ -1340,7 +1336,6 @@ class FinanceController extends Controller implements HasMiddleware
                     'Investor Profit Share',
                     'Investor Cash Fund',
                     'Pembayaran ISP',
-                    'Pembelian Alat',
                     'Deposit to Company',
                 ])
                 ->sum('amount');
@@ -1648,7 +1643,6 @@ class FinanceController extends Controller implements HasMiddleware
                 'Investor Profit Share',
                 'Investor Cash Fund',
                 'Pembayaran ISP',
-                'Pembelian Alat',
                 'Deposit to Company',
                 'Ambil Barang',
             ])
@@ -1666,7 +1660,7 @@ class FinanceController extends Controller implements HasMiddleware
         $excludedCategories = [
             'Coordinator Commission', 'ISP Payment', 'Tool Fund',
             'Investor Profit Share', 'Investor Cash Fund',
-            'Pembayaran ISP', 'Pembelian Alat', 'Deposit to Company',
+            'Pembayaran ISP', 'Deposit to Company',
             'Transport', 'Consumption', 'Repair',
         ];
 
@@ -1802,7 +1796,6 @@ class FinanceController extends Controller implements HasMiddleware
                     'Investor Profit Share',
                     'Investor Cash Fund',
                     'Pembayaran ISP',
-                    'Pembelian Alat',
                     'Deposit to Company',
                     'Ambil Barang',
                 ])
@@ -1925,7 +1918,6 @@ class FinanceController extends Controller implements HasMiddleware
                     'Investor Profit Share',
                     'Investor Cash Fund',
                     'Pembayaran ISP',
-                    'Pembelian Alat',
                     'Deposit to Company',
                 ])
                 ->sum('amount');
@@ -2466,7 +2458,7 @@ class FinanceController extends Controller implements HasMiddleware
 
             $serverExpenses = $transactions->where('type', 'expense')->where('category', 'Operational')->sum('amount');
             $inventoryExpenses = $transactions->filter(function ($t) {
-                return in_array($t->category, ['Ambil Barang', 'Pembelian Alat', 'Beli Alat (diluar)'], true) ||
+                return $t->category === 'Ambil Barang' ||
                     ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
             })->sum('amount');
             $cashExpensesRaw = $transactions->where('type', 'expense')
