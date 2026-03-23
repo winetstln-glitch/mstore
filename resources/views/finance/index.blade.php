@@ -53,12 +53,12 @@
             </div>
             @endif
             <div class="col">
-                <button class="btn btn-light border w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#helpModal" data-bs-toggle="tooltip" title="{{ __('Panduan Audit') }}">
+                <button class="btn btn-light border w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#helpModal" title="{{ __('Panduan Audit') }}">
                     <i class="fa-solid fa-circle-question me-1"></i> <span>{{ __('Panduan') }}</span>
                 </button>
             </div>
             <div class="col">
-                <button class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addTransactionModal" data-bs-toggle="tooltip" title="{{ __('Add Transaction') }}">
+                <button class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addTransactionModal" title="{{ __('Add Transaction') }}">
                     <i class="fa-solid fa-plus me-1"></i> <span>{{ __('Transaksi') }}</span>
                 </button>
             </div>
@@ -112,9 +112,9 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                     {{ __('Saldo Kas Perusahaan') }}</div>
-                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($balance, 0, ',', '.') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($cashBalance ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary" style="font-size: 0.75rem;">
-                                    <span class="text-success">Gross</span> - <span class="text-danger">Exp</span>
+                                    <span class="text-success">Income</span> - <span class="text-danger">Expense</span> - <span class="text-warning">Transfer</span>
                                 </small>
                             </div>
                             <div class="col-auto">
@@ -125,20 +125,19 @@
                 </div>
             </div>
 
-            <!-- Accumulated Tool Fund (Asset/Liability) -->
+            <!-- Transfer to Company (Non Expense) -->
             <div class="col-xl-3 col-md-6 mb-4">
                 <div class="card border-start border-4 border-warning shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                    {{ __('Akumulasi Dana Peralatan') }}</div>
-                                <!-- PERBAIKAN AUDIT: Tampilkan nilai positif, ini adalah Dana yang "ditahan", bukan biaya -->
-                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalInvestorFunds ?? 0, 0, ',', '.') }}</div>
-                                <small class="text-body-secondary">{{ __('Tersimpan (Belum Dipakai)') }}</small>
+                                    {{ __('Setoran ke Kantor (Transfer)') }}</div>
+                                <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($totalTransfer ?? 0, 0, ',', '.') }}</div>
+                                <small class="text-body-secondary">{{ __('Dicatat transfer, bukan biaya operasional') }}</small>
                             </div>
                             <div class="col-auto">
-                                <i class="fa-solid fa-piggy-bank fa-2x text-body-tertiary"></i>
+                                <i class="fa-solid fa-building-circle-arrow-right fa-2x text-body-tertiary"></i>
                             </div>
                         </div>
                     </div>
@@ -372,9 +371,6 @@
     @endif
 
     @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-       @endif
-
-    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between gap-3">
@@ -407,6 +403,7 @@
                                     <option value="">Semua Jenis</option>
                                     <option value="income" @selected(request('type') === 'income')>Pemasukan</option>
                                     <option value="expense" @selected(request('type') === 'expense')>Pengeluaran</option>
+                                    <option value="transfer" @selected(request('type') === 'transfer')>Transfer</option>
                                 </select>
                             </div>
                             <div class="col">
@@ -443,9 +440,13 @@
                                 </td>
                                 <td>{{ $transaction->transaction_date->format('d M Y') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $transaction->type == 'income' ? 'success' : 'danger' }}">
-                                        {{ $transaction->type == 'income' ? 'Masuk' : 'Keluar' }}
-                                    </span>
+                                    @if($transaction->type === 'income')
+                                        <span class="badge bg-success">Masuk</span>
+                                    @elseif($transaction->type === 'transfer')
+                                        <span class="badge bg-warning text-dark">Transfer</span>
+                                    @else
+                                        <span class="badge bg-danger">Keluar</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary">{{ ucfirst($transaction->category) }}</span>
@@ -459,10 +460,10 @@
                                     @endif
                                 </td>
                                 <td class="text-end fw-bold text-success">
-                                    {{ $transaction->type == 'income' ? number_format($transaction->amount, 0, ',', '.') : '-' }}
+                                    {{ $transaction->type === 'income' ? number_format($transaction->amount, 0, ',', '.') : '-' }}
                                 </td>
                                 <td class="text-end fw-bold text-danger">
-                                    {{ $transaction->type != 'income' ? number_format($transaction->amount, 0, ',', '.') : '-' }}
+                                    {{ in_array($transaction->type, ['expense', 'transfer'], true) ? number_format($transaction->amount, 0, ',', '.') : '-' }}
                                 </td>
                                 <td class="small font-monospace">{{ $transaction->reference_number }}</td>
                                 <td class="text-center row-actions">
@@ -565,6 +566,7 @@
                         <select name="type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -574,7 +576,8 @@
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
                             <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
                             <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
-                            <option value="Pembelian Alat">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="Pembelian Alat">{{ __('Beli Alat (diluar)') }}</option>
+                            <option value="Ambil Barang">{{ __('Ambil Barang (Stok)') }}</option>
                             <option value="Gaji">{{ __('Gaji') }}</option>
                             <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
                             <option value="Lainnya">{{ __('Lainnya') }}</option>
@@ -628,6 +631,7 @@
                         <select name="type" id="edit_type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -713,7 +717,9 @@
         if(toggleBtn) {
             toggleBtn.addEventListener('click', function() {
                 selectCols.forEach(el => el.classList.toggle('d-none'));
-                bulkDeleteBtn.classList.toggle('d-none');
+                if (bulkDeleteBtn) {
+                    bulkDeleteBtn.classList.toggle('d-none');
+                }
             });
         }
         
@@ -727,6 +733,9 @@
         if (editModal) {
             editModal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
+                if (!button) {
+                    return;
+                }
                 const action = button.getAttribute('data-action');
                 const type = button.getAttribute('data-type');
                 const category = button.getAttribute('data-category');
@@ -762,6 +771,9 @@
         }
 
         const form = document.getElementById('bulkDeleteForm');
+        if (!form) {
+            return;
+        }
         // Clear old inputs
         form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
         

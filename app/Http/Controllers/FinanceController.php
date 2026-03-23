@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\Coordinator;
 use App\Models\InventoryTransaction;
+use App\Models\Journal;
+use App\Models\JournalEntry;
 use App\Models\Setting;
 use App\Models\Transaction;
+use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -193,7 +197,7 @@ class FinanceController extends Controller implements HasMiddleware
             ->whereNotNull('transactions.coordinator_id')
             ->whereNotNull('transactions.investor_id');
 
-        if ($request->has('month')) {
+        if ($request->filled('month')) {
             $investorRows->whereMonth('transactions.transaction_date', date('m', strtotime($request->month)))
                 ->whereYear('transactions.transaction_date', date('Y', strtotime($request->month)));
         }
@@ -757,6 +761,7 @@ class FinanceController extends Controller implements HasMiddleware
             'investor_id' => 'nullable|exists:investors,id',
             'reference_number' => 'nullable|string',
         ]);
+        $validated = $this->normalizeTransactionTypeByCategory($validated);
 
         DB::transaction(function () use ($transaction, $validated) {
             $transaction->update($validated);
@@ -1114,6 +1119,8 @@ class FinanceController extends Controller implements HasMiddleware
             }
         });
 
+        $this->syncAccountingForTransactionFamily($transaction->id);
+
         return back()->with('success', __('Transaction updated successfully.'));
     }
 
@@ -1124,6 +1131,8 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($transaction) {
+            $familyIds = $this->getTransactionFamilyIds($transaction->id);
+            $this->clearAccountingForTransactionIds($familyIds);
             // Delete associated transactions
             Transaction::where('reference_number', 'COM-'.$transaction->id)->delete();
             Transaction::where('reference_number', 'ISP-'.$transaction->id)->delete();
@@ -1152,6 +1161,8 @@ class FinanceController extends Controller implements HasMiddleware
             foreach ($request->ids as $id) {
                 $transaction = Transaction::find($id);
                 if ($transaction) {
+                    $familyIds = $this->getTransactionFamilyIds($transaction->id);
+                    $this->clearAccountingForTransactionIds($familyIds);
                     // Delete associated transactions
                     Transaction::where('reference_number', 'COM-'.$transaction->id)->delete();
                     Transaction::where('reference_number', 'ISP-'.$transaction->id)->delete();
@@ -1194,7 +1205,7 @@ class FinanceController extends Controller implements HasMiddleware
             $query->where('coordinator_id', $request->coordinator_id);
         }
 
-        if ($request->has('month')) {
+        if ($request->filled('month')) {
             $query->whereMonth('transaction_date', date('m', strtotime($request->month)))
                 ->whereYear('transaction_date', date('Y', strtotime($request->month)));
         }
@@ -1211,29 +1222,34 @@ class FinanceController extends Controller implements HasMiddleware
             }
         }
 
-        if ($request->has('month')) {
+        if ($request->filled('month')) {
             $totalsQuery->whereMonth('transaction_date', date('m', strtotime($request->month)))
                 ->whereYear('transaction_date', date('Y', strtotime($request->month)));
         }
 
-        $totalIncome = (clone $totalsQuery)->where('type', 'income')->sum('amount');
+        $totalIncome = (clone $totalsQuery)->where('type', 'income')
+            ->where('category', '!=', 'Deposit to Company')
+            ->sum('amount');
         $totalExpense = (clone $totalsQuery)->where('type', 'expense')
-            ->whereNotIn('category', ['Pembayaran ISP', 'Pembelian Alat', 'Ambil Barang'])
+            ->whereNotIn('category', ['Pembayaran ISP', 'Pembelian Alat', 'Ambil Barang', 'Deposit to Company'])
             ->sum('amount');
         $balance = $totalIncome - $totalExpense;
 
-        $ispAllocations = (clone $totalsQuery)->where('category', 'ISP Payment')->sum('amount');
-        $ispUsages = (clone $totalsQuery)->where('category', 'Pembayaran ISP')->sum('amount');
+        $ispAllocations = (clone $totalsQuery)->where('type', 'expense')->where('category', 'ISP Payment')->sum('amount');
+        $ispUsages = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Pembayaran ISP')->sum('amount');
         $totalIspShare = $ispAllocations - $ispUsages;
 
-        $toolAllocations = (clone $totalsQuery)->where('category', 'Tool Fund')->sum('amount');
-        $toolUsages = (clone $totalsQuery)->where('category', 'Pembelian Alat')->sum('amount');
+        $toolAllocations = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Tool Fund')->sum('amount');
+        $toolUsages = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Pembelian Alat')->sum('amount');
         $totalToolFund = $toolAllocations - $toolUsages;
 
-        $coordShare = (clone $totalsQuery)->where('category', 'Coordinator Commission')->sum('amount');
-        $investorShare = (clone $totalsQuery)->where('category', 'Investor Profit Share')->sum('amount');
-        $investorCashShare = (clone $totalsQuery)->where('category', 'Investor Cash Fund')->sum('amount');
+        $coordShare = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Coordinator Commission')->sum('amount');
+        $investorShare = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Investor Profit Share')->sum('amount');
+        $investorCashShare = (clone $totalsQuery)->where('type', 'expense')->where('category', 'Investor Cash Fund')->sum('amount');
         $totalInvestorShare = $investorShare + $investorCashShare;
+        $totalTransfer = (clone $totalsQuery)->where('type', 'transfer')->sum('amount')
+            + (clone $totalsQuery)->where('type', 'expense')->where('category', 'Deposit to Company')->sum('amount');
+        $cashBalance = $balance - $totalTransfer;
 
         $totalCompanyGrossShare = $totalIncome - $coordShare - $ispAllocations - $toolAllocations - $totalInvestorShare;
 
@@ -1247,6 +1263,7 @@ class FinanceController extends Controller implements HasMiddleware
                 'Pembayaran ISP',
                 'Pembelian Alat',
                 'Ambil Barang',
+                'Deposit to Company',
             ])->sum('amount');
 
         $investorCapital = (clone $totalsQuery)->whereNotNull('investor_id')->where('type', 'income')->sum('amount');
@@ -1279,27 +1296,38 @@ class FinanceController extends Controller implements HasMiddleware
                 ->sum('amount');
 
             $commission = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('type', 'expense')
                 ->where('category', 'Coordinator Commission')
                 ->sum('amount');
 
             $ispShare = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('type', 'expense')
                 ->where('category', 'ISP Payment')
                 ->sum('amount');
 
             $toolFund = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('type', 'expense')
                 ->where('category', 'Tool Fund')
                 ->sum('amount');
 
             $investorShareByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('type', 'expense')
                 ->where('category', 'Investor Profit Share')
                 ->sum('amount');
 
             $investorCashByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
+                ->where('type', 'expense')
                 ->where('category', 'Investor Cash Fund')
                 ->sum('amount');
 
             $deposited = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Deposit to Company')
+                ->where(function ($q) {
+                    $q->where('type', 'transfer')
+                        ->orWhere(function ($q2) {
+                            $q2->where('type', 'expense')
+                                ->where('category', 'Deposit to Company');
+                        });
+                })
                 ->sum('amount');
 
             // Hitung TOTAL Expenses (Termasuk Barang Ambil)
@@ -1366,7 +1394,7 @@ class FinanceController extends Controller implements HasMiddleware
                 ->whereNotNull('transactions.coordinator_id')
                 ->whereNotNull('transactions.investor_id');
 
-            if ($request->has('month')) {
+            if ($request->filled('month')) {
                 $investorRows->whereMonth('transactions.transaction_date', date('m', strtotime($request->month)))
                     ->whereYear('transactions.transaction_date', date('Y', strtotime($request->month)));
             }
@@ -1458,6 +1486,7 @@ class FinanceController extends Controller implements HasMiddleware
             'totalIncome',
             'totalExpense',
             'balance',
+            'cashBalance',
             'coordinators',
             'coordinatorSummaries',
             'totalIspShare',
@@ -1466,6 +1495,7 @@ class FinanceController extends Controller implements HasMiddleware
             'totalInvestorFunds',
             'totalGeneralExpenses',
             'totalCompanyGrossShare',
+            'totalTransfer',
             'toolRate',
             'managerRate',
             'coordRate',
@@ -1490,17 +1520,17 @@ class FinanceController extends Controller implements HasMiddleware
             $query->where('coordinator_id', $coordinatorId);
         }
 
-        $memberIncome = (clone $query)->where('category', 'Member Income')->sum('amount');
-        $voucherIncome = (clone $query)->where('category', 'Voucher Income')->sum('amount');
+        $memberIncome = (clone $query)->where('type', 'income')->where('category', 'Member Income')->sum('amount');
+        $voucherIncome = (clone $query)->where('type', 'income')->where('category', 'Voucher Income')->sum('amount');
         $otherIncome = (clone $query)->where('type', 'income')
-            ->whereNotIn('category', ['Member Income', 'Voucher Income'])
+            ->whereNotIn('category', ['Member Income', 'Voucher Income', 'Deposit to Company'])
             ->sum('amount');
 
         $totalRevenue = $memberIncome + $voucherIncome + $otherIncome;
 
-        $coordCommission = (clone $query)->where('category', 'Coordinator Commission')->sum('amount');
-        $ispPayment = (clone $query)->where('category', 'ISP Payment')->sum('amount');
-        $toolFund = (clone $query)->where('category', 'Tool Fund')->sum('amount');
+        $coordCommission = (clone $query)->where('type', 'expense')->where('category', 'Coordinator Commission')->sum('amount');
+        $ispPayment = (clone $query)->where('type', 'expense')->where('category', 'ISP Payment')->sum('amount');
+        $toolFund = (clone $query)->where('type', 'expense')->where('category', 'Tool Fund')->sum('amount');
 
         $totalCOGS = $coordCommission + $ispPayment + $toolFund;
 
@@ -1607,7 +1637,7 @@ class FinanceController extends Controller implements HasMiddleware
         $totalRevenue = $memberIncome + $voucherIncome;
 
         $coordRate = Setting::getValue('commission_coordinator_percent', 15);
-        $coordCommission = (clone $query)->where('category', 'Coordinator Commission')->sum('amount');
+        $coordCommission = (clone $query)->where('type', 'expense')->where('category', 'Coordinator Commission')->sum('amount');
 
         // Expenses logic - Exclude non-cash inventory items (Ambil Barang / INV-OUT)
         $expenses = (clone $query)->where('type', 'expense')
@@ -1649,7 +1679,12 @@ class FinanceController extends Controller implements HasMiddleware
 
         $otherOperatingExpenses = $otherExpensesBreakdown->sum();
 
-        $deposited = (clone $query)->where('category', 'Deposit to Company')->sum('amount');
+        $deposited = (clone $query)->where(function ($q) {
+            $q->where('type', 'transfer')
+                ->orWhere(function ($q2) {
+                    $q2->where('type', 'expense')->where('category', 'Deposit to Company');
+                });
+        })->sum('amount');
 
         $netBalance = $totalRevenue - $coordCommission - $expenses - $deposited;
 
@@ -2143,11 +2178,14 @@ class FinanceController extends Controller implements HasMiddleware
             'investor_id' => 'nullable|exists:investors,id',
             'reference_number' => 'nullable|string',
         ]);
+        $validated = $this->normalizeTransactionTypeByCategory($validated);
 
         $validated['user_id'] = Auth::id();
 
-        DB::transaction(function () use ($validated) {
+        $rootTransaction = null;
+        DB::transaction(function () use ($validated, &$rootTransaction) {
             $transaction = Transaction::create($validated);
+            $rootTransaction = $transaction;
 
             // Logic for Coordinator Commission (15%)
             // If it's income from a coordinator (Member Income or Voucher Income)
@@ -2305,7 +2343,439 @@ class FinanceController extends Controller implements HasMiddleware
             }
         });
 
+        if ($rootTransaction) {
+            $this->syncAccountingForTransactionFamily($rootTransaction->id);
+        }
+
         return redirect()->route('finance.index')->with('success', __('Transaction recorded successfully.'));
+    }
+
+    private function getTransactionFamilyIds(int $rootTransactionId): array
+    {
+        $references = [
+            'COM-'.$rootTransactionId,
+            'ISP-'.$rootTransactionId,
+            'TOOL-'.$rootTransactionId,
+            'INV-'.$rootTransactionId,
+            'INV-CASH-'.$rootTransactionId,
+        ];
+
+        $family = Transaction::query()
+            ->where('id', $rootTransactionId)
+            ->orWhereIn('reference_number', $references)
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_unique(array_map('intval', $family)));
+    }
+
+    private function clearAccountingForTransactionIds(array $transactionIds): void
+    {
+        if (empty($transactionIds)) {
+            return;
+        }
+
+        $journals = Journal::query()
+            ->where('source_type', 'finance_transaction')
+            ->whereIn('source_id', $transactionIds)
+            ->get(['id']);
+
+        if ($journals->isEmpty()) {
+            return;
+        }
+
+        $journalIds = $journals->pluck('id')->all();
+        JournalEntry::query()->whereIn('journal_id', $journalIds)->delete();
+        Journal::query()->whereIn('id', $journalIds)->delete();
+    }
+
+    private function syncAccountingForTransactionFamily(int $rootTransactionId): void
+    {
+        $transactionIds = $this->getTransactionFamilyIds($rootTransactionId);
+        if (empty($transactionIds)) {
+            return;
+        }
+
+        $transactions = Transaction::query()->whereIn('id', $transactionIds)->orderBy('id')->get();
+        foreach ($transactions as $transaction) {
+            $this->syncAccountingForSingleTransaction($transaction);
+        }
+    }
+
+    public function syncAllFinanceTransactionsToLedger(): int
+    {
+        $this->ensureFinanceAccountDefinitions();
+        $this->materializeInvestorReportAllocations();
+        $journalIds = Journal::query()
+            ->where('source_type', 'finance_transaction')
+            ->pluck('id')
+            ->all();
+
+        if (! empty($journalIds)) {
+            JournalEntry::query()->whereIn('journal_id', $journalIds)->delete();
+            Journal::query()->whereIn('id', $journalIds)->delete();
+        }
+
+        $count = 0;
+        $transactions = Transaction::query()->orderBy('id')->get();
+        foreach ($transactions as $transaction) {
+            $this->syncAccountingForSingleTransaction($transaction);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function materializeInvestorReportAllocations(): void
+    {
+        $pairs = Transaction::query()
+            ->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->whereNotNull('coordinator_id')
+            ->selectRaw('strftime("%Y-%m", transaction_date) as ym, coordinator_id')
+            ->groupBy('ym', 'coordinator_id')
+            ->get();
+
+        foreach ($pairs as $pair) {
+            $ym = (string) ($pair->ym ?? '');
+            $coordinatorId = (int) ($pair->coordinator_id ?? 0);
+            if ($ym === '' || $coordinatorId <= 0) {
+                continue;
+            }
+
+            $date = \Carbon\Carbon::parse($ym.'-01');
+            $transactions = Transaction::query()
+                ->whereYear('transaction_date', $date->year)
+                ->whereMonth('transaction_date', $date->month)
+                ->where('coordinator_id', $coordinatorId)
+                ->get();
+
+            $grossRevenue = $transactions->where('type', 'income')
+                ->whereIn('category', ['Member Income', 'Voucher Income'])
+                ->sum('amount');
+            if ((float) $grossRevenue <= 0) {
+                continue;
+            }
+
+            $commission = $grossRevenue * 0.15;
+            $rem1 = $grossRevenue - $commission;
+            $ispShare = $rem1 * 0.25;
+            $rem2 = $rem1 - $ispShare;
+            $toolFund = $rem2 * 0.20;
+            $rem3 = $rem2 - $toolFund;
+
+            $serverExpenses = $transactions->where('type', 'expense')->where('category', 'Operational')->sum('amount');
+            $inventoryExpenses = $transactions->filter(function ($t) {
+                return $t->category === 'Ambil Barang' ||
+                    ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
+            })->sum('amount');
+            $cashExpensesRaw = $transactions->where('type', 'expense')
+                ->whereNotIn('category', [
+                    'Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Investor Profit Share', 'Investor Cash Fund',
+                    'Deposit to Company', 'Pembayaran ISP', 'Pembelian Alat', 'Operational', 'Ambil Barang',
+                ])
+                ->filter(function ($t) {
+                    return ! ($t->category === 'Pengeluaran Pengurus' && str_starts_with($t->reference_number ?? '', 'INV-OUT-'));
+                })
+                ->sum('amount');
+
+            $operationalExpenses = $serverExpenses + $inventoryExpenses + $cashExpensesRaw;
+            $netBeforeCashFund = $rem3 - $operationalExpenses;
+            $investorCashFund = $netBeforeCashFund > 0 ? ($netBeforeCashFund * 0.05) : 0;
+            $investorProfitShare = $netBeforeCashFund - $investorCashFund;
+            if ($investorProfitShare < 0) {
+                $investorProfitShare = 0;
+            }
+
+            $coordinatorName = Coordinator::query()->where('id', $coordinatorId)->value('name');
+            $investorNames = DB::table('investors')
+                ->where('coordinator_id', $coordinatorId)
+                ->pluck('name')
+                ->filter()
+                ->implode(', ');
+            $suffix = trim(($coordinatorName ? 'Koordinator '.$coordinatorName : '').($investorNames ? ' | Investor '.$investorNames : ''));
+
+            $this->upsertInvestorAllocationTransaction(
+                'INV-RPT-'.$ym.'-'.$coordinatorId.'-SHARE',
+                'Investor Profit Share',
+                (float) $investorProfitShare,
+                $date->copy()->endOfMonth()->toDateString(),
+                $coordinatorId,
+                'Auto Investor Report '.$ym.($suffix !== '' ? ' | '.$suffix : '')
+            );
+            $this->upsertInvestorAllocationTransaction(
+                'INV-RPT-'.$ym.'-'.$coordinatorId.'-CASH',
+                'Investor Cash Fund',
+                (float) $investorCashFund,
+                $date->copy()->endOfMonth()->toDateString(),
+                $coordinatorId,
+                'Auto Investor Cash Fund '.$ym.($suffix !== '' ? ' | '.$suffix : '')
+            );
+        }
+    }
+
+    private function upsertInvestorAllocationTransaction(
+        string $referenceNumber,
+        string $category,
+        float $amount,
+        string $transactionDate,
+        int $coordinatorId,
+        string $description
+    ): void {
+        $existing = Transaction::query()->where('reference_number', $referenceNumber)->first();
+        if ($amount <= 0) {
+            if ($existing) {
+                $existing->delete();
+            }
+
+            return;
+        }
+
+        $payload = [
+            'user_id' => $existing?->user_id ?? Auth::id() ?? Transaction::query()->whereNotNull('user_id')->value('user_id'),
+            'type' => 'expense',
+            'category' => $category,
+            'amount' => $amount,
+            'transaction_date' => $transactionDate,
+            'description' => $description,
+            'coordinator_id' => $coordinatorId,
+            'reference_number' => $referenceNumber,
+        ];
+
+        if ($existing) {
+            $existing->update($payload);
+        } else {
+            Transaction::query()->create($payload);
+        }
+    }
+
+    private function syncAccountingForSingleTransaction(Transaction $transaction): void
+    {
+        $this->ensureFinanceAccountDefinitions();
+        $this->clearAccountingForTransactionIds([$transaction->id]);
+        $posting = $this->buildAccountingPostingPayload($transaction);
+        if (! $posting) {
+            return;
+        }
+
+        app(AccountingPoster::class)->post(
+            'FIN-'.$transaction->id,
+            (string) $transaction->transaction_date,
+            $posting['description'],
+            $posting['lines'],
+            null,
+            'finance_transaction',
+            $transaction->id
+        );
+    }
+
+    private function buildAccountingPostingPayload(Transaction $transaction): ?array
+    {
+        $cashAccount = $this->resolveAccountIdByCode('1001');
+        if (! $cashAccount || (float) $transaction->amount <= 0) {
+            return null;
+        }
+
+        if ($transaction->type === 'income') {
+            if (in_array($transaction->category, ['Member Income', 'Voucher Income'], true)) {
+                $revenueCode = $transaction->category === 'Member Income' ? '4011' : '4012';
+            } elseif ($transaction->category === 'Installation Fee') {
+                $revenueCode = '4013';
+            } else {
+                $revenueCode = '4014';
+            }
+            $revenueAccount = $this->resolveAccountIdByCode($revenueCode);
+            if (! $revenueAccount) {
+                return null;
+            }
+
+            return [
+                'description' => $this->buildFinanceLedgerDescription($transaction, 'Finance Income'),
+                'lines' => [
+                    ['account_id' => $cashAccount, 'debit' => (float) $transaction->amount, 'credit' => 0, 'unit' => 'MSTORE'],
+                    ['account_id' => $revenueAccount, 'debit' => 0, 'credit' => (float) $transaction->amount, 'unit' => 'MSTORE'],
+                ],
+            ];
+        }
+
+        if ($transaction->type === 'expense') {
+            $expenseAccount = $this->resolveExpenseAccountId($transaction->category);
+            if (! $expenseAccount) {
+                return null;
+            }
+
+            return [
+                'description' => $this->buildFinanceLedgerDescription($transaction, 'Finance Expense'),
+                'lines' => [
+                    ['account_id' => $expenseAccount, 'debit' => (float) $transaction->amount, 'credit' => 0, 'unit' => 'MSTORE'],
+                    ['account_id' => $cashAccount, 'debit' => 0, 'credit' => (float) $transaction->amount, 'unit' => 'MSTORE'],
+                ],
+            ];
+        }
+
+        if ($transaction->type === 'transfer') {
+            $bankAccount = $this->resolveAccountIdByCode('1002');
+            if (! $bankAccount) {
+                return null;
+            }
+
+            return [
+                'description' => $this->buildFinanceLedgerDescription($transaction, 'Finance Transfer'),
+                'lines' => [
+                    ['account_id' => $bankAccount, 'debit' => (float) $transaction->amount, 'credit' => 0, 'unit' => 'MSTORE'],
+                    ['account_id' => $cashAccount, 'debit' => 0, 'credit' => (float) $transaction->amount, 'unit' => 'MSTORE'],
+                ],
+            ];
+        }
+
+        return null;
+    }
+
+    private function resolveExpenseAccountId(?string $category): ?int
+    {
+        $category = (string) $category;
+        if (in_array($category, ['ISP Payment', 'Pembayaran ISP'], true)) {
+            return $this->resolveAccountIdByCode('6001');
+        }
+        if (in_array($category, ['Transport'], true)) {
+            return $this->resolveAccountIdByCode('6006');
+        }
+        if (in_array($category, ['Biaya Operasional', 'Operational', 'Operasional', 'Pengeluaran Pengurus'], true)) {
+            return $this->resolveAccountIdByCode('6011');
+        }
+        if (in_array($category, ['Pembelian Alat', 'Tool Fund', 'Ambil Barang'], true)) {
+            return $this->resolveAccountIdByCode('6012');
+        }
+        if (in_array($category, ['Repair'], true)) {
+            return $this->resolveAccountIdByCode('6013');
+        }
+        if (in_array($category, ['Coordinator Commission', 'Komisi'], true)) {
+            return $this->resolveAccountIdByCode('6008');
+        }
+        if (in_array($category, ['Investor Profit Share', 'Bagi Hasil Investor', 'Beban Bagi Hasil Investor'], true)) {
+            return $this->resolveAccountIdByCode('6009');
+        }
+        if (in_array($category, ['Investor Cash Fund', 'Dana Kas Investor', 'Beban Dana Kas Investor'], true)) {
+            return $this->resolveAccountIdByCode('6010');
+        }
+        if (in_array($category, ['Gaji'], true)) {
+            return $this->resolveAccountIdByCode('6003');
+        }
+        if (in_array($category, ['Consumption'], true)) {
+            return $this->resolveAccountIdByCode('6004');
+        }
+
+        return $this->resolveAccountIdByCode('6011');
+    }
+
+    private function buildFinanceLedgerDescription(Transaction $transaction, string $prefix): string
+    {
+        $parts = [$prefix.': '.$transaction->category];
+
+        if ($transaction->coordinator_id) {
+            $coordinatorName = Coordinator::query()->where('id', $transaction->coordinator_id)->value('name');
+            if ($coordinatorName) {
+                $parts[] = 'Koordinator '.$coordinatorName;
+            }
+        }
+
+        if ($transaction->investor_id) {
+            $investorName = DB::table('investors')->where('id', $transaction->investor_id)->value('name');
+            if ($investorName) {
+                $parts[] = 'Investor '.$investorName;
+            }
+        }
+
+        if ($transaction->reference_number) {
+            $parts[] = 'Ref '.$transaction->reference_number;
+        }
+
+        return implode(' | ', $parts);
+    }
+
+    private function ensureFinanceAccountDefinitions(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+
+        $definitions = [
+            '4011' => ['name' => 'Pendapatan Member', 'type' => 'revenue'],
+            '4012' => ['name' => 'Pendapatan Voucher', 'type' => 'revenue'],
+            '4013' => ['name' => 'Pendapatan Instalasi Finance', 'type' => 'revenue'],
+            '4014' => ['name' => 'Pendapatan Lain-lain Finance', 'type' => 'revenue'],
+            '6008' => ['name' => 'Beban Komisi Koordinator', 'type' => 'expense'],
+            '6009' => ['name' => 'Beban Bagi Hasil Investor', 'type' => 'expense'],
+            '6010' => ['name' => 'Beban Dana Kas Investor', 'type' => 'expense'],
+            '6011' => ['name' => 'Beban Operasional Pengurus', 'type' => 'expense'],
+            '6012' => ['name' => 'Beban Material dan Stok', 'type' => 'expense'],
+            '6013' => ['name' => 'Beban Perbaikan', 'type' => 'expense'],
+        ];
+
+        foreach ($definitions as $code => $def) {
+            Account::query()->updateOrCreate(
+                ['code' => $code],
+                ['name' => $def['name'], 'type' => $def['type']]
+            );
+        }
+
+        $done = true;
+    }
+
+    private function resolveAccountIdByCode(string $code): ?int
+    {
+        static $cache = [];
+        if (array_key_exists($code, $cache)) {
+            return $cache[$code];
+        }
+        $id = Account::query()->where('code', $code)->value('id');
+        $cache[$code] = $id ? (int) $id : null;
+
+        return $cache[$code];
+    }
+
+    private function normalizeTransactionTypeByCategory(array $validated): array
+    {
+        $category = (string) ($validated['category'] ?? '');
+        $aliases = [
+            'Beban Komisi Koordinator' => 'Coordinator Commission',
+            'Bagi Hasil Investor' => 'Investor Profit Share',
+            'Beban Bagi Hasil Investor' => 'Investor Profit Share',
+            'Dana Kas Investor' => 'Investor Cash Fund',
+            'Beban Dana Kas Investor' => 'Investor Cash Fund',
+        ];
+        if (isset($aliases[$category])) {
+            $category = $aliases[$category];
+            $validated['category'] = $category;
+        }
+
+        if (in_array($category, ['Member Income', 'Voucher Income'], true)) {
+            $validated['type'] = 'income';
+        } elseif ($category === 'Deposit to Company') {
+            $validated['type'] = 'transfer';
+        } elseif (in_array($category, [
+            'Coordinator Commission',
+            'ISP Payment',
+            'Tool Fund',
+            'Investor Profit Share',
+            'Investor Cash Fund',
+            'Pembayaran ISP',
+            'Pembelian Alat',
+            'Pengeluaran Pengurus',
+            'Operational',
+            'Transport',
+            'Consumption',
+            'Repair',
+            'Ambil Barang',
+            'Komisi',
+            'Operasional',
+            'Gaji',
+        ], true)) {
+            $validated['type'] = 'expense';
+        }
+
+        return $validated;
     }
 
     public function materialReport(Request $request)

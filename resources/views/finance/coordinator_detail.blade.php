@@ -28,7 +28,8 @@
                     <select name="type" class="form-select form-select-lg">
                         <option value="">{{ __('Semua') }}</option>
                         <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}>{{ __('Pemasukan') }}</option>
-                        <option value="expense" {{ request('type') == 'expenses' ? 'selected' : '' }}>{{ __('Pengeluaran') }}</option>
+                        <option value="expense" {{ request('type') == 'expense' ? 'selected' : '' }}>{{ __('Pengeluaran') }}</option>
+                        <option value="transfer" {{ request('type') == 'transfer' ? 'selected' : '' }}>{{ __('Transfer') }}</option>
                     </select>
                 </div>
 
@@ -365,6 +366,7 @@
                         <select name="type" id="edit_type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
+                            <option value="transfer">{{ __('Transfer') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -423,6 +425,9 @@
         if (editModal) {
             editModal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
+                if (!button) {
+                    return;
+                }
                 const action = button.getAttribute('data-action');
                 const type = button.getAttribute('data-type');
                 const category = button.getAttribute('data-category');

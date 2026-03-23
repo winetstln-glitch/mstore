@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\JournalEntry;
+use App\Models\Transaction;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -69,8 +70,9 @@ class AccountingReportController extends Controller
         $totalRevenue = $revenues->sum('amount');
         $totalExpense = $expenses->sum('amount');
         $netIncome = $totalRevenue - $totalExpense;
+        $financeSummary = $this->buildFinanceSummary($start, $end);
 
-        return view('accounting.income_statement', compact('revenues', 'expenses', 'totalRevenue', 'totalExpense', 'netIncome', 'start', 'end'));
+        return view('accounting.income_statement', compact('revenues', 'expenses', 'totalRevenue', 'totalExpense', 'netIncome', 'start', 'end', 'financeSummary'));
     }
 
     public function balanceSheet(Request $request)
@@ -480,11 +482,12 @@ class AccountingReportController extends Controller
                 ->whereIn('journal_entries.account_id', $cashAccounts)
                 ->select(DB::raw('SUM(journal_entries.debit - journal_entries.credit) as bal'))->value('bal') ?? 0;
         }
+        $financeSummary = $this->buildFinanceSummary($start, $end);
 
         return view('accounting.cash_flow', compact(
             'start', 'end',
             'operatingIn', 'operatingOut', 'investingIn', 'investingOut', 'financingIn', 'financingOut',
-            'netOperating', 'netInvesting', 'netFinancing', 'netChange', 'openingCash', 'closingCash'
+            'netOperating', 'netInvesting', 'netFinancing', 'netChange', 'openingCash', 'closingCash', 'financeSummary'
         ));
     }
 
@@ -596,5 +599,46 @@ class AccountingReportController extends Controller
             'operatingIn', 'operatingOut', 'investingIn', 'investingOut', 'financingIn', 'financingOut',
             'netOperating', 'netInvesting', 'netFinancing', 'netChange', 'openingCash', 'closingCash'
         );
+    }
+
+    private function buildFinanceSummary(?string $start, ?string $end): array
+    {
+        $query = Transaction::query();
+        if ($start) {
+            $query->whereDate('transaction_date', '>=', $start);
+        }
+        if ($end) {
+            $query->whereDate('transaction_date', '<=', $end);
+        }
+
+        $financeRevenue = (clone $query)
+            ->where('type', 'income')
+            ->where('category', '!=', 'Deposit to Company')
+            ->sum('amount');
+        $financeExpense = (clone $query)
+            ->where('type', 'expense')
+            ->whereNotIn('category', ['Deposit to Company', 'Pembayaran ISP', 'Pembelian Alat', 'Ambil Barang'])
+            ->sum('amount');
+        $financeTransfer = (clone $query)
+            ->where('type', 'transfer')
+            ->sum('amount');
+        $legacyDepositExpense = (clone $query)
+            ->where('type', 'expense')
+            ->where('category', 'Deposit to Company')
+            ->sum('amount');
+        $financeTransfer += $legacyDepositExpense;
+
+        $memberVoucherIncome = (clone $query)
+            ->where('type', 'income')
+            ->whereIn('category', ['Member Income', 'Voucher Income'])
+            ->sum('amount');
+
+        return [
+            'revenue' => (float) $financeRevenue,
+            'expense' => (float) $financeExpense,
+            'transfer' => (float) $financeTransfer,
+            'member_voucher_income' => (float) $memberVoucherIncome,
+            'net_operational' => (float) $financeRevenue - (float) $financeExpense,
+        ];
     }
 }

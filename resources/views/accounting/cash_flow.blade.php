@@ -32,6 +32,19 @@
                     </div>
                 </div>
             </form>
+            <div class="alert alert-secondary mb-4">
+                <div class="fw-semibold mb-2">Integrasi Transaksi Finance</div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <div>Total Pendapatan Operasional: <span class="fw-bold">{{ number_format(($financeSummary['revenue'] ?? 0),0,',','.') }}</span></div>
+                        <div>Total Beban Operasional: <span class="fw-bold">{{ number_format(($financeSummary['expense'] ?? 0),0,',','.') }}</span></div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div>Setoran ke Kantor (Transfer): <span class="fw-bold">{{ number_format(($financeSummary['transfer'] ?? 0),0,',','.') }}</span></div>
+                        <div>Net Operasional Finance: <span class="fw-bold">{{ number_format(($financeSummary['net_operational'] ?? 0),0,',','.') }}</span></div>
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-bordered align-middle table-responsive-mobile">
                     <tbody>

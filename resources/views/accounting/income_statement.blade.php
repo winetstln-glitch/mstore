@@ -32,6 +32,19 @@
                     </div>
                 </div>
             </form>
+            <div class="alert alert-secondary mb-4">
+                <div class="fw-semibold mb-2">Integrasi Transaksi Finance</div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <div>Pendapatan Koordinator: <span class="fw-bold">{{ number_format(($financeSummary['member_voucher_income'] ?? 0),0,',','.') }}</span></div>
+                        <div>Total Pendapatan (tanpa setoran): <span class="fw-bold">{{ number_format(($financeSummary['revenue'] ?? 0),0,',','.') }}</span></div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div>Total Beban (setoran dikecualikan): <span class="fw-bold">{{ number_format(($financeSummary['expense'] ?? 0),0,',','.') }}</span></div>
+                        <div>Setoran ke Kantor (transfer): <span class="fw-bold">{{ number_format(($financeSummary['transfer'] ?? 0),0,',','.') }}</span></div>
+                    </div>
+                </div>
+            </div>
             <div class="row g-4">
                 <div class="col-md-6">
                     <h6 class="fw-semibold">Pendapatan</h6>
