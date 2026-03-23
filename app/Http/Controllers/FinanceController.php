@@ -2650,6 +2650,9 @@ class FinanceController extends Controller implements HasMiddleware
         if (in_array($category, ['Biaya Operasional', 'Operational', 'Operasional', 'Pengeluaran Pengurus'], true)) {
             return $this->resolveAccountIdByCode('6011');
         }
+        if (in_array($category, ['Pengeluaran Tunai'], true)) {
+            return $this->resolveAccountIdByCode('6011');
+        }
         if (in_array($category, ['Pembelian Alat', 'Tool Fund', 'Ambil Barang'], true)) {
             return $this->resolveAccountIdByCode('6012');
         }
@@ -2752,7 +2755,9 @@ class FinanceController extends Controller implements HasMiddleware
             'Beban Bagi Hasil Investor' => 'Investor Profit Share',
             'Dana Kas Investor' => 'Investor Cash Fund',
             'Beban Dana Kas Investor' => 'Investor Cash Fund',
-            'Beli Alat (diluar)' => 'Pembelian Alat',
+            'Beli Alat (diluar)' => 'Pengeluaran Tunai',
+            'Pembelian Alat' => 'Pengeluaran Tunai',
+            'Ambil Barang' => 'Pengeluaran Tunai',
         ];
         if (isset($aliases[$category])) {
             $category = $aliases[$category];
@@ -2770,6 +2775,7 @@ class FinanceController extends Controller implements HasMiddleware
             'Investor Profit Share',
             'Investor Cash Fund',
             'Pembayaran ISP',
+            'Pengeluaran Tunai',
             'Pembelian Alat',
             'Pengeluaran Pengurus',
             'Operational',

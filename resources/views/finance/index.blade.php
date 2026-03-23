@@ -576,8 +576,7 @@
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
                             <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
                             <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
-                            <option value="Pembelian Alat">{{ __('Beli Alat (diluar)') }}</option>
-                            <option value="Ambil Barang">{{ __('Ambil Barang (Stok)') }}</option>
+                            <option value="Pengeluaran Tunai">{{ __('Pengeluaran Tunai') }}</option>
                             <option value="Gaji">{{ __('Gaji') }}</option>
                             <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
                             <option value="Lainnya">{{ __('Lainnya') }}</option>
@@ -641,10 +640,9 @@
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
                             <option value="Installation Fee">{{ __('Biaya Pasang') }}</option>
                             <option value="Biaya Operasional">{{ __('Biaya Operasional (Bensin/Makan)') }}</option>
-                            <option value="Pembelian Alat">{{ __('Beli Alat (Stok)') }}</option>
+                            <option value="Pengeluaran Tunai">{{ __('Pengeluaran Tunai') }}</option>
                             <option value="Gaji">{{ __('Gaji') }}</option>
                             <option value="Deposit to Company">{{ __('Setor ke Kantor (Deposit)') }}</option>
-                            <option value="Ambil Barang">{{ __('Ambil Barang (Stok)') }}</option>
                             <option value="Lainnya">{{ __('Lainnya') }}</option>
                         </select>
                     </div>
