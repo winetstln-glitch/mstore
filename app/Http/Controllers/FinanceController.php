@@ -1268,7 +1268,8 @@ class FinanceController extends Controller implements HasMiddleware
 
         $monthlyIncome = collect();
         if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance') && $userCoordinator) {
-            $monthlyIncome = Transaction::selectRaw('strftime("%Y-%m", transaction_date) as ym, SUM(amount) as total')
+            $monthExpression = $this->yearMonthExpression('transaction_date');
+            $monthlyIncome = Transaction::selectRaw($monthExpression.' as ym, SUM(amount) as total')
                 ->where('coordinator_id', $userCoordinator->id)
                 ->where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
@@ -2420,11 +2421,12 @@ class FinanceController extends Controller implements HasMiddleware
 
     private function materializeInvestorReportAllocations(): void
     {
+        $monthExpression = $this->yearMonthExpression('transaction_date');
         $pairs = Transaction::query()
             ->where('type', 'income')
             ->whereIn('category', ['Member Income', 'Voucher Income'])
             ->whereNotNull('coordinator_id')
-            ->selectRaw('strftime("%Y-%m", transaction_date) as ym, coordinator_id')
+            ->selectRaw($monthExpression.' as ym, coordinator_id')
             ->groupBy('ym', 'coordinator_id')
             ->get();
 
@@ -2825,6 +2827,19 @@ class FinanceController extends Controller implements HasMiddleware
 
             return false;
         }
+    }
+
+    private function yearMonthExpression(string $column): string
+    {
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            return 'strftime("%Y-%m", '.$column.')';
+        }
+        if ($driver === 'pgsql') {
+            return 'to_char('.$column.", 'YYYY-MM')";
+        }
+
+        return 'DATE_FORMAT('.$column.", '%Y-%m')";
     }
 
     public function materialReport(Request $request)
