@@ -112,6 +112,7 @@ php artisan migrate --force
 php artisan db:seed --class=PermissionSeeder --force || true
 php artisan db:seed --class=RoleSeeder --force || true
 php artisan db:seed --class=SettingSeeder --force || true
+php artisan accounting:sync-finance-ledger || true
 
 php artisan optimize:clear
 php artisan config:cache

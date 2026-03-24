@@ -118,7 +118,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'found' => true,
                 'name' => $customer->name ?? $customerName,
                 'visit_count' => $visitCount,
-                'free_wash_eligibility' => (int) ($customer->free_wash_eligibility ?? 0),
+                'free_wash_eligibility' => $loyaltyType === 'plate' ? (int) ($customer->free_wash_eligibility ?? 0) : 0,
                 'next_bonus_in' => $nextBonusIn,
                 'loyalty_basis' => $loyaltyType,
             ]);
@@ -206,14 +206,15 @@ class WashTransactionController extends Controller implements HasMiddleware
             [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier(
                 $vehiclePlateForStore
             );
+            $hasLoyaltyPlate = $loyaltyType === 'plate' && ! empty($loyaltyValue);
             $visitCountBefore = 0;
             $isTenthVisit = false;
-            if ($loyaltyType && $loyaltyValue) {
+            if ($hasLoyaltyPlate) {
                 $visitCountBefore = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->lockForUpdate()->count();
                 $isTenthVisit = (($visitCountBefore + 1) % 10) === 0;
             }
 
-            if ($customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
+            if ($hasLoyaltyPlate && $customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
                 if (count($items) > 0) {
                     $discountAmount = $items[0]['price'];
                     $discountType = 'voucher';
@@ -229,7 +230,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             if ($customer) {
                 $nextVisitCount = ((int) $customer->visit_count) + 1;
                 $customer->increment('visit_count');
-                if ($nextVisitCount % 10 === 0 && $discountType !== 'loyalty') {
+                if ($hasLoyaltyPlate && $nextVisitCount % 10 === 0 && $discountType !== 'loyalty') {
                     $customer->increment('free_wash_eligibility');
                 }
             }
