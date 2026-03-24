@@ -103,12 +103,10 @@ class WashTransactionController extends Controller implements HasMiddleware
         $vehiclePlate = $request->query('vehicle_plate');
         $customerName = $request->query('customer_name');
         $customer = WashCustomer::where('phone', $phone)->first();
-        [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier($vehiclePlate, $customerName ?: ($customer->name ?? null));
+        [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier($vehiclePlate);
         $visitCount = 0;
         if ($loyaltyType && $loyaltyValue) {
             $visitCount = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->count();
-        } elseif ($customer) {
-            $visitCount = (int) $customer->visit_count;
         }
         $nextBonusIn = 10 - ($visitCount % 10);
         if ($nextBonusIn === 0) {
@@ -206,8 +204,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             $discountAmount = 0;
             $discountType = null;
             [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier(
-                $vehiclePlateForStore,
-                $request->customer_name ?: ($customer->name ?? null)
+                $vehiclePlateForStore
             );
             $visitCountBefore = 0;
             $isTenthVisit = false;
@@ -656,16 +653,11 @@ class WashTransactionController extends Controller implements HasMiddleware
         return $digits;
     }
 
-    private function resolveLoyaltyIdentifier(?string $vehiclePlate, ?string $customerName): array
+    private function resolveLoyaltyIdentifier(?string $vehiclePlate): array
     {
         $plate = $this->normalizePlate((string) $vehiclePlate);
         if ($plate !== '') {
             return ['plate', $plate];
-        }
-
-        $name = strtoupper(trim((string) $customerName));
-        if ($name !== '') {
-            return ['name', $name];
         }
 
         return [null, null];
@@ -674,14 +666,7 @@ class WashTransactionController extends Controller implements HasMiddleware
     private function buildLoyaltyQuery(string $type, string $value)
     {
         $query = WashTransaction::query();
-        if ($type === 'plate') {
-            $this->applyVehiclePlateFilter($query, $value);
-        } else {
-            $query->whereRaw(
-                "UPPER(TRIM(COALESCE(customer_name, ''))) = ?",
-                [$value]
-            );
-        }
+        $this->applyVehiclePlateFilter($query, $value);
 
         return $query;
     }
@@ -728,8 +713,7 @@ class WashTransactionController extends Controller implements HasMiddleware
     private function calculateLoyaltyProgressUntilTransaction(WashTransaction $transaction): array
     {
         [$type, $value] = $this->resolveLoyaltyIdentifier(
-            (string) ($transaction->vehicle_plate ?? ''),
-            (string) ($transaction->customer_name ?? '')
+            (string) ($transaction->vehicle_plate ?? '')
         );
 
         if (! $type || ! $value || ! $transaction->created_at) {

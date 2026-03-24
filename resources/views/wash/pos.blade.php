@@ -272,8 +272,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const phone = document.getElementById('customer_phone').value;
         const vehiclePlate = document.getElementById('vehicle_plate').value;
         const customerName = document.getElementById('customer_name').value;
-        if (!phone && !vehiclePlate && !customerName) {
-            alert('Isi nomor HP, plat kendaraan, atau nama pelanggan');
+        if (!vehiclePlate) {
+            alert('Isi plat kendaraan untuk cek bonus 10x cuci');
             return;
         }
         const params = new URLSearchParams({
@@ -289,8 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const nameInput = document.getElementById('customer_name');
                 const voucherCount = document.getElementById('voucherCount');
                 const basisMap = {
-                    plate: 'plat kendaraan',
-                    name: 'nama pelanggan'
+                    plate: 'plat kendaraan'
                 };
                 const basis = basisMap[data.loyalty_basis] || 'data pelanggan';
 
