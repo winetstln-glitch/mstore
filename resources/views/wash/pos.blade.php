@@ -919,27 +919,18 @@ document.addEventListener('DOMContentLoaded', function () {
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
         padding: 0.8rem;
-        transition: all 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
         cursor: pointer;
         background: #fff;
     }
 
     .service-card:hover {
-        transform: translateY(-2px);
         border-color: #60a5fa;
         box-shadow: 0 10px 18px rgba(37, 99, 235, 0.14);
     }
 
-    .service-card:hover .service-image {
-        transform: scale(1.06);
-    }
-
-    .service-card:hover .service-fallback-icon {
-        transform: scale(1.08);
-    }
-
     .service-card:active {
-        transform: scale(0.99);
+        transform: none;
     }
 
     .service-card-mobil {
