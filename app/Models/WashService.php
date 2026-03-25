@@ -30,8 +30,8 @@ class WashService extends Model
         'body_only' => 'Body Only',
         'full_clean' => 'Body + Kolong + Vacuum',
         'express' => 'Cuci Cepat + Semir Ban',
-        'engine_cleaner' => 'Cuci Mesin',
-        'leather_cleaner' => 'Cuci Jok Kulit',
+        'engine_cleaner' => 'Cleaner Mesin',
+        'leather_cleaner' => 'Cleaner Jok Kulit',
     ];
 
     public function getCategoryLabelAttribute(): string

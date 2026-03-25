@@ -46,6 +46,7 @@
                                 } else {
                                     $normalizedType = $rawType;
                                 }
+                                $addonTypeClass = in_array($normalizedType, ['mobil', 'motor', 'kopi'], true) ? $normalizedType : 'umum';
                                 $filterType = in_array($categoryRaw, ['addon', 'skincare'], true) ? 'addon' : $normalizedType;
                                 $serviceTypeClass = in_array($filterType, ['mobil', 'motor', 'kopi', 'addon']) ? $filterType : 'umum';
                                 $fallbackIcon = $normalizedType === 'mobil'
@@ -58,12 +59,15 @@
                                 $effectivePrice = $isHolidayActive && !is_null($adjustment)
                                     ? max(0, ((float) $service->price) + $adjustment)
                                     : (float) $service->price;
-                                $rulePayload = $service->priceRules->map(function ($rule) use ($isHolidayActive, $adjustment) {
+                                $rulePayload = $service->priceRules->map(function ($rule) use ($isHolidayActive, $adjustment, $categoryRaw) {
                                     $rulePrice = (float) $rule->price;
                                     if ($isHolidayActive && !is_null($adjustment)) {
                                         $rulePrice = max(0, $rulePrice + (float) $adjustment);
                                     }
-                                    $ruleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', (string) $rule->label);
+                                    $ruleLabel = (string) $rule->label;
+                                    if (! in_array($categoryRaw, ['addon', 'skincare'], true)) {
+                                        $ruleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', $ruleLabel);
+                                    }
                                     $ruleLabel = trim((string) $ruleLabel);
                                     if ($ruleLabel === '') {
                                         $ruleLabel = (string) $rule->label;
@@ -153,6 +157,11 @@
                                         @if(!is_null($adjustment))
                                         <span class="service-adjustment bg-warning text-dark">
                                             Adj {{ $adjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($adjustment), 0, ',', '.') }}
+                                        </span>
+                                        @endif
+                                        @if($filterType === 'addon')
+                                        <span class="service-type service-type-{{ $addonTypeClass }}">
+                                            Tipe {{ ucfirst($normalizedType) }}
                                         </span>
                                         @endif
                                     </div>

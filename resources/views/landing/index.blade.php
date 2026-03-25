@@ -265,7 +265,10 @@
                                                 if ($landingHolidayActive && !is_null($landingAdjustment)) {
                                                     $rulePrice = max(0, $rulePrice + (float) $landingAdjustment);
                                                 }
-                                                $landingRuleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', (string) $rule->label);
+                                                $landingRuleLabel = (string) $rule->label;
+                                                if (! in_array((string) ($service->service_category ?? 'main'), ['addon', 'skincare'], true)) {
+                                                    $landingRuleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', $landingRuleLabel);
+                                                }
                                                 $landingRuleLabel = trim((string) $landingRuleLabel);
                                                 if ($landingRuleLabel === '') {
                                                     $landingRuleLabel = (string) $rule->label;

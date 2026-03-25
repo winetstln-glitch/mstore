@@ -425,8 +425,8 @@
                         <option value="body_only">Body Only</option>
                         <option value="full_clean">Body + Kolong + Vacuum</option>
                         <option value="express">Cuci Cepat + Semir Ban</option>
-                        <option value="engine_cleaner">Cuci Mesin</option>
-                        <option value="leather_cleaner">Cuci Jok Kulit</option>
+                        <option value="engine_cleaner">Cleaner Mesin</option>
+                        <option value="leather_cleaner">Cleaner Jok Kulit</option>
                     </select>
                 </td>
                 <td><input type="number" min="0" class="form-control form-control-sm" name="rule_price[]" placeholder="0"></td>
