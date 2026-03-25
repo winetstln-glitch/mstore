@@ -228,7 +228,7 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 
 .route-wash #page-content-wrapper .container-fluid,
 .route-accounting #page-content-wrapper .container-fluid {
-  max-width: 1080px;
+  max-width: 1600px;
 }
 
 .route-wash .card,
@@ -472,7 +472,7 @@ button, .btn, .sidebar-item, .nav-link, .page-link, .form-control, .form-select 
 }
 
 .route-finance #page-content-wrapper .container-fluid {
-  max-width: 1120px;
+  max-width: 1400px;
 }
 
 .route-finance .card {

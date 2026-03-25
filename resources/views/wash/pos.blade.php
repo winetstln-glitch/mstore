@@ -1305,9 +1305,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     .service-rule-mobile-input:checked + .service-rule-mobile-chip {
-        background: #dcfce7;
-        border-color: #34d399;
-        color: #166534;
+        background: #11bb4dff;
+        border-color: #13b433ff;
+        color: #ffffffff;
     }
 
     .service-meta {
@@ -1792,9 +1792,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     [data-bs-theme="dark"] .service-rule-mobile-input:checked + .service-rule-mobile-chip {
-        background: rgba(22, 163, 74, 0.28);
+        background: rgba(14, 182, 45, 0.86);
         border-color: rgba(34, 197, 94, 0.55);
-        color: #bbf7d0;
+        color: #daeae0ff;
     }
 
     [data-bs-theme="dark"] .service-section-heading h6 {
