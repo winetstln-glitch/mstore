@@ -45,19 +45,39 @@ class LandingController extends Controller
         }
 
         // Safely fetch Wash Services
+        $washMainServices = collect([]);
+        $washAddonServices = collect([]);
         try {
             if (class_exists(WashService::class) && Schema::hasTable('wash_services')) {
-                // Check if is_active column exists
+                $baseWashQuery = WashService::query()
+                    ->with(['priceRules' => function ($query) {
+                        $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+                    }]);
                 if (Schema::hasColumn('wash_services', 'is_active')) {
-                    $washServices = WashService::where('is_active', true)->get();
-                } else {
-                    $washServices = WashService::all();
+                    $baseWashQuery->where('is_active', true);
                 }
+                $washServices = (clone $baseWashQuery)
+                    ->orderBy('vehicle_type')
+                    ->orderBy('service_category')
+                    ->orderBy('size_tier')
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get();
+                $washMainServices = $washServices->filter(function ($service) {
+                    return in_array((string) ($service->service_category ?? 'main'), ['main', ''], true);
+                })->values();
+                $washAddonServices = $washServices->filter(function ($service) {
+                    return in_array((string) ($service->service_category ?? ''), ['addon', 'skincare'], true);
+                })->values();
             } else {
                 $washServices = collect([]);
+                $washMainServices = collect([]);
+                $washAddonServices = collect([]);
             }
         } catch (\Exception $e) {
             $washServices = collect([]);
+            $washMainServices = collect([]);
+            $washAddonServices = collect([]);
         }
 
         // Get WA Number from settings or default
@@ -93,6 +113,6 @@ class LandingController extends Controller
             $clockOutEnd = '01:00';
         }
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'waNumber', 'odps', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'washMainServices', 'washAddonServices', 'waNumber', 'odps', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
     }
 }

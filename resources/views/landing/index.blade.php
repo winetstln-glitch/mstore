@@ -193,84 +193,117 @@
                 @endif
             </div>
             
-            <div class="scroll-container fade-up">
-                @forelse($washServices as $service)
-                <div class="scroll-item">
-                    <div class="card">
-                        @php
-                            $landingAdjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
-                            $landingEffectivePrice = $landingHolidayActive && !is_null($landingAdjustment)
-                                ? max(0, ((float) $service->price) + $landingAdjustment)
-                                : (float) $service->price;
-                        @endphp
-                        @if($service->image)
-                            <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
-                        @else
-                            <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
-                                <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} fa-3x text-secondary"></i>
-                            </div>
-                        @endif
-                        <div class="product-body d-flex flex-column h-100">
-                            <div class="mb-2">
-                                <span class="chip">
-                                    <i class="fas {{ $service->vehicle_type == 'car' ? 'fa-car' : 'fa-motorcycle' }} me-1"></i>
-                                    {{ ucfirst($service->vehicle_type) }}
-                                </span>
-                            </div>
-                            <h4 class="product-title mb-1">{{ $service->name }}</h4>
-                            <div class="product-price text-primary fw-bold mb-1">Rp {{ number_format($landingEffectivePrice, 0, ',', '.') }}</div>
+            @php
+                $landingWashGroups = collect($washServices ?? [])->groupBy(function ($service) {
+                    $vehicleType = strtolower((string) ($service->vehicle_type ?? ''));
+                    $category = strtolower((string) ($service->service_category ?? 'main'));
+                    if (in_array($category, ['addon', 'skincare'], true)) {
+                        return 'addon';
+                    }
+                    if ($vehicleType === 'car') {
+                        return 'mobil';
+                    }
+                    if ($vehicleType === 'motor') {
+                        return 'motor';
+                    }
+                    if ($vehicleType === 'coffee') {
+                        return 'kopi';
+                    }
+                    return 'umum';
+                });
+                $landingGroupLabels = [
+                    'mobil' => 'Layanan Mobil',
+                    'motor' => 'Layanan Motor',
+                    'addon' => 'Paket Tambahan',
+                    'kopi' => 'Layanan Kopi',
+                    'umum' => 'Layanan Lainnya',
+                ];
+            @endphp
+            @forelse(['mobil', 'motor', 'addon', 'kopi', 'umum'] as $groupKey)
+                @php $groupItems = $landingWashGroups->get($groupKey, collect()); @endphp
+                @if($groupItems->count() === 0)
+                    @continue
+                @endif
+                <div class="section-header text-center mt-4 mb-3 fade-up">
+                    <h4 class="fw-bold">{{ $landingGroupLabels[$groupKey] ?? 'Layanan' }}</h4>
+                </div>
+                <div class="scroll-container fade-up">
+                    @foreach($groupItems as $serviceIndex => $service)
+                    <div class="scroll-item">
+                        <div class="card">
                             @php
-                                $landingDescriptionItems = array_values(array_filter(
-                                    preg_split('/\s*[,;\n]+\s*/', trim((string) $service->description)),
-                                    function ($item) {
-                                        $item = trim((string) $item);
-                                        if ($item === '') {
-                                            return false;
-                                        }
-                                        if (preg_match('/^dan\s+sejenis/i', $item)) {
-                                            return false;
-                                        }
-                                        if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
-                                            return false;
-                                        }
-                                        return str_word_count($item) <= 5;
-                                    }
-                                ));
+                                $landingAdjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
+                                $landingEffectivePrice = $landingHolidayActive && !is_null($landingAdjustment)
+                                    ? max(0, ((float) $service->price) + $landingAdjustment)
+                                    : (float) $service->price;
                             @endphp
-                            @if(!is_null($landingAdjustment))
-                                <div class="landing-holiday-chip mb-2">
-                                    <i class="fas fa-sparkles"></i>
-                                    <span>Hari Raya {{ $landingAdjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($landingAdjustment), 0, ',', '.') }}</span>
-                                    @if($landingHolidayActive)
-                                        <strong class="ms-1">(aktif)</strong>
-                                    @else
-                                        <span class="ms-1">(jadwal belum aktif)</span>
+                            @if($service->image)
+                                <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
+                            @else
+                                <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
+                                    <i class="fas {{ $groupKey === 'mobil' ? 'fa-car' : ($groupKey === 'motor' ? 'fa-motorcycle' : ($groupKey === 'kopi' ? 'fa-mug-hot' : 'fa-plus-circle')) }} fa-3x text-secondary"></i>
+                                </div>
+                            @endif
+                            <div class="product-body d-flex flex-column h-100">
+                                <div class="mb-2">
+                                    <span class="chip">
+                                        <i class="fas {{ $groupKey === 'mobil' ? 'fa-car' : ($groupKey === 'motor' ? 'fa-motorcycle' : ($groupKey === 'kopi' ? 'fa-mug-hot' : 'fa-plus-circle')) }} me-1"></i>
+                                        {{ ucfirst($groupKey) }}
+                                    </span>
+                                    @if($serviceIndex < 3)
+                                        <span class="chip ms-1" style="background: rgba(16, 185, 129, 0.16); color: #065f46; border-color: rgba(16, 185, 129, 0.35);">
+                                            Terbaru
+                                        </span>
                                     @endif
                                 </div>
-                            @endif
-                            @if(!empty($landingDescriptionItems))
-                                <div class="landing-wash-description-chips">
-                                    @foreach($landingDescriptionItems as $item)
-                                        <span class="landing-wash-description-chip">{{ $item }}</span>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="landing-wash-description-chips">
-                                    <span class="landing-wash-description-chip landing-wash-description-chip-empty">-</span>
-                                </div>
-                            @endif
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20cuci%20{{ $service->vehicle_type }}:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Booking
-                            </a>
+                                <h4 class="product-title mb-1">{{ $service->name }}</h4>
+                                @if(($service->priceRules ?? collect())->count() > 0)
+                                    <div class="mb-2">
+                                        @foreach($service->priceRules as $rule)
+                                            @php
+                                                $rulePrice = (float) $rule->price;
+                                                if ($landingHolidayActive && !is_null($landingAdjustment)) {
+                                                    $rulePrice = max(0, $rulePrice + (float) $landingAdjustment);
+                                                }
+                                                $landingRuleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', (string) $rule->label);
+                                                $landingRuleLabel = trim((string) $landingRuleLabel);
+                                                if ($landingRuleLabel === '') {
+                                                    $landingRuleLabel = (string) $rule->label;
+                                                }
+                                            @endphp
+                                            <div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+                                                <span>{{ $landingRuleLabel }}</span>
+                                                <strong class="text-primary">Rp {{ number_format($rulePrice, 0, ',', '.') }}</strong>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="product-price text-primary fw-bold mb-1">Rp {{ number_format($landingEffectivePrice, 0, ',', '.') }}</div>
+                                @endif
+                                @if(!is_null($landingAdjustment))
+                                    <div class="landing-holiday-chip mb-2">
+                                        <i class="fas fa-sparkles"></i>
+                                        <span>Hari Raya {{ $landingAdjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($landingAdjustment), 0, ',', '.') }}</span>
+                                        @if($landingHolidayActive)
+                                            <strong class="ms-1">(aktif)</strong>
+                                        @else
+                                            <span class="ms-1">(jadwal belum aktif)</span>
+                                        @endif
+                                    </div>
+                                @endif
+                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20layanan%20wash:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
+                                    <i class="fab fa-whatsapp me-2"></i> Booking
+                                </a>
+                            </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
-                @empty
-                 <div class="text-center w-100 py-2">
+            @empty
+                <div class="text-center w-100 py-2">
                     <p class="text-muted">Layanan belum tersedia.</p>
                 </div>
-                @endforelse
-            </div>
+            @endforelse
         </div>
    
     </section>

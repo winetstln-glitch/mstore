@@ -16,14 +16,29 @@
                             <button class="filter-btn active" data-filter="all" type="button">Semua</button>
                             <button class="filter-btn" data-filter="mobil" type="button">Mobil</button>
                             <button class="filter-btn" data-filter="motor" type="button">Motor</button>
+                            <button class="filter-btn" data-filter="addon" type="button">Add On</button>
                             <button class="filter-btn" data-filter="kopi" type="button">Kopi</button>
+                        </div>
+                        <div class="mt-2">
+                            <input type="text" id="serviceSearchInput" class="form-control form-control-sm wash-input" placeholder="Cari layanan cepat...">
                         </div>
                     </div>
                     <div class="wash-card-body">
                         <div class="row g-3" id="services-container">
+                            @php
+                                $lastFilterType = null;
+                                $sectionLabels = [
+                                    'mobil' => 'Layanan Mobil',
+                                    'motor' => 'Layanan Motor',
+                                    'addon' => 'Add On & Skincare',
+                                    'kopi' => 'Layanan Kopi',
+                                    'umum' => 'Layanan Umum',
+                                ];
+                            @endphp
                             @foreach($services as $service)
                             @php
                                 $rawType = strtolower((string) ($service->vehicle_type ?? ''));
+                                $categoryRaw = strtolower((string) ($service->service_category ?? 'main'));
                                 if ($rawType === 'car') {
                                     $normalizedType = 'mobil';
                                 } elseif ($rawType === 'coffee') {
@@ -31,23 +46,50 @@
                                 } else {
                                     $normalizedType = $rawType;
                                 }
-                                $serviceTypeClass = in_array($normalizedType, ['mobil', 'motor', 'kopi']) ? $normalizedType : 'umum';
+                                $filterType = in_array($categoryRaw, ['addon', 'skincare'], true) ? 'addon' : $normalizedType;
+                                $serviceTypeClass = in_array($filterType, ['mobil', 'motor', 'kopi', 'addon']) ? $filterType : 'umum';
                                 $fallbackIcon = $normalizedType === 'mobil'
                                     ? 'fa-car-side'
-                                    : ($normalizedType === 'motor' ? 'fa-motorcycle' : ($normalizedType === 'kopi' ? 'fa-mug-hot' : 'fa-soap'));
+                                    : ($normalizedType === 'motor'
+                                        ? 'fa-motorcycle'
+                                        : ($normalizedType === 'kopi' ? 'fa-mug-hot' : ($filterType === 'addon' ? 'fa-plus-circle' : 'fa-soap')));
                                 $adjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
                                 $isHolidayActive = (bool) ($holidaySchedule['active'] ?? false);
                                 $effectivePrice = $isHolidayActive && !is_null($adjustment)
                                     ? max(0, ((float) $service->price) + $adjustment)
                                     : (float) $service->price;
+                                $rulePayload = $service->priceRules->map(function ($rule) use ($isHolidayActive, $adjustment) {
+                                    $rulePrice = (float) $rule->price;
+                                    if ($isHolidayActive && !is_null($adjustment)) {
+                                        $rulePrice = max(0, $rulePrice + (float) $adjustment);
+                                    }
+                                    $ruleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', (string) $rule->label);
+                                    $ruleLabel = trim((string) $ruleLabel);
+                                    if ($ruleLabel === '') {
+                                        $ruleLabel = (string) $rule->label;
+                                    }
+
+                                    return [
+                                        'id' => $rule->id,
+                                        'label' => $ruleLabel,
+                                        'price' => $rulePrice,
+                                    ];
+                                })->values();
                             @endphp
-                            <div class="col-6 col-md-4 service-item" data-type="{{ $normalizedType }}">
+                            @if($lastFilterType !== $filterType)
+                                <div class="col-12 service-section-heading" data-type="{{ $filterType }}">
+                                    <h6 class="mb-1 mt-2">{{ $sectionLabels[$filterType] ?? 'Layanan' }}</h6>
+                                </div>
+                                @php $lastFilterType = $filterType; @endphp
+                            @endif
+                            <div class="col-6 col-md-4 service-item" data-type="{{ $filterType }}">
                                 <div class="service-card service-card-{{ $serviceTypeClass }}" data-fasttap
                                      data-id="{{ $service->id }}"
                                      data-name="{{ $service->name }}"
                                      data-price="{{ $effectivePrice }}"
                                      data-description="{{ $service->description }}"
-                                     data-vehicletype="{{ $normalizedType }}">
+                                     data-vehicletype="{{ $normalizedType }}"
+                                     data-rules='@json($rulePayload)'>
                                     <div class="service-image-wrap">
                                         @if($service->image)
                                             <img src="{{ Storage::url($service->image) }}" class="img-fluid service-image" alt="{{ $service->name }}">
@@ -56,6 +98,25 @@
                                         @endif
                                     </div>
                                     <h5 class="service-title">{{ $service->name }}</h5>
+                                    @if($rulePayload->count() > 0)
+                                        <div class="service-rule-picker mb-2">
+                                            <select class="form-select form-select-sm service-rule-select">
+                                                @foreach($rulePayload as $rule)
+                                                    <option value="{{ $rule['id'] }}" data-label="{{ $rule['label'] }}" data-price="{{ $rule['price'] }}">
+                                                        {{ $rule['label'] }} - Rp {{ number_format($rule['price'], 0, ',', '.') }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <div class="service-rule-mobile-options mt-2">
+                                                @foreach($rulePayload as $idx => $rule)
+                                                    <label class="service-rule-mobile-option">
+                                                        <input type="radio" class="service-rule-mobile-input" name="service_rule_mobile_{{ $service->id }}" value="{{ $rule['id'] }}" data-label="{{ $rule['label'] }}" data-price="{{ $rule['price'] }}" {{ $idx === 0 ? 'checked' : '' }}>
+                                                        <span class="service-rule-mobile-chip">{{ $rule['label'] }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                     @if(!empty($service->description))
                                         @php
                                             $descriptionItems = array_values(array_filter(
@@ -88,13 +149,12 @@
                                         <span class="service-description-chip service-description-chip-empty">-</span>
                                     @endif
                                     <div class="service-meta">
-                                        <span class="service-price">Rp {{ number_format($effectivePrice, 0, ',', '.') }}</span>
+                                        <span class="service-price" data-default-price="{{ $effectivePrice }}">Rp {{ number_format($effectivePrice, 0, ',', '.') }}</span>
                                         @if(!is_null($adjustment))
-                                        <span class="service-type service-adjustment bg-warning text-dark">
+                                        <span class="service-adjustment bg-warning text-dark">
                                             Adj {{ $adjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($adjustment), 0, ',', '.') }}
                                         </span>
                                         @endif
-                                        <span class="service-type service-type-{{ $serviceTypeClass }}">{{ ucfirst($normalizedType) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -240,13 +300,135 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const RULE_INTERACTION_LOCK_MS = 500;
+    const CARD_ADD_LOCK_MS = 320;
+
+    const markCardRuleInteraction = function (card) {
+        if (!card) {
+            return;
+        }
+        card.dataset.ruleInteractedAt = String(Date.now());
+    };
+
+    const shouldBlockCardAdd = function (card) {
+        const now = Date.now();
+        const lastRuleInteraction = parseInt(card?.dataset?.ruleInteractedAt || '0', 10) || 0;
+        const lastAddAt = parseInt(card?.dataset?.lastAddAt || '0', 10) || 0;
+        if (lastRuleInteraction > 0 && (now - lastRuleInteraction) < RULE_INTERACTION_LOCK_MS) {
+            return true;
+        }
+        if (lastAddAt > 0 && (now - lastAddAt) < CARD_ADD_LOCK_MS) {
+            return true;
+        }
+        return false;
+    };
+
+    const updateCardDisplayedPrice = function (card, value) {
+        const priceEl = card.querySelector('.service-price');
+        if (priceEl) {
+            priceEl.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(value || 0);
+        }
+    };
+
+    const syncCardRuleSelection = function (card, sourceEl) {
+        const selectedValue = String(sourceEl?.value || '');
+        const selectedLabel = sourceEl?.dataset?.label || '';
+        const selectedPrice = parseFloat(sourceEl?.dataset?.price || 0);
+        const selectEl = card.querySelector('.service-rule-select');
+        if (selectEl) {
+            selectEl.value = selectedValue;
+        }
+        card.querySelectorAll('.service-rule-mobile-input').forEach(function (radioEl) {
+            radioEl.checked = String(radioEl.value) === selectedValue;
+        });
+        updateCardDisplayedPrice(card, selectedPrice);
+        return {
+            id: parseInt(selectedValue || 0),
+            label: selectedLabel,
+            price: selectedPrice,
+        };
+    };
+
+    const getCardSelectedRule = function (card, rules) {
+        const selectedRadio = card.querySelector('.service-rule-mobile-input:checked');
+        if (selectedRadio) {
+            return syncCardRuleSelection(card, selectedRadio);
+        }
+        const selectEl = card.querySelector('.service-rule-select');
+        if (selectEl) {
+            const selected = selectEl.options[selectEl.selectedIndex];
+            return syncCardRuleSelection(card, selected);
+        }
+        return rules[0] || null;
+    };
+
+    document.querySelectorAll('.service-rule-select').forEach(function (selectEl) {
+        ['click', 'mousedown', 'touchstart'].forEach(function (evt) {
+            selectEl.addEventListener(evt, function (event) {
+                event.stopPropagation();
+                markCardRuleInteraction(this.closest('.service-card'));
+            });
+        });
+        selectEl.addEventListener('change', function (event) {
+            event.stopPropagation();
+            const card = this.closest('.service-card');
+            if (!card) {
+                return;
+            }
+            markCardRuleInteraction(card);
+            const option = this.options[this.selectedIndex];
+            syncCardRuleSelection(card, option);
+        });
+    });
+
+    document.querySelectorAll('.service-rule-mobile-input').forEach(function (radioEl) {
+        ['click', 'mousedown', 'touchstart'].forEach(function (evt) {
+            radioEl.addEventListener(evt, function (event) {
+                event.stopPropagation();
+                markCardRuleInteraction(this.closest('.service-card'));
+            });
+        });
+        radioEl.addEventListener('change', function (event) {
+            event.stopPropagation();
+            const card = this.closest('.service-card');
+            if (!card) {
+                return;
+            }
+            markCardRuleInteraction(card);
+            syncCardRuleSelection(card, this);
+        });
+    });
+
+    document.querySelectorAll('.service-rule-mobile-option, .service-rule-mobile-chip').forEach(function (el) {
+        ['click', 'mousedown', 'touchstart', 'pointerdown'].forEach(function (evt) {
+            el.addEventListener(evt, function (event) {
+                event.stopPropagation();
+                markCardRuleInteraction(this.closest('.service-card'));
+            });
+        });
+    });
+
     document.querySelectorAll('.service-card').forEach(function (el) {
         el.addEventListener('click', function () {
+            if (shouldBlockCardAdd(this)) {
+                return;
+            }
             const id = parseInt(this.dataset.id);
             const name = this.dataset.name;
             const price = parseFloat(this.dataset.price);
             const type = this.dataset.vehicletype;
-            addToCart(id, name, price, type);
+            const rules = JSON.parse(this.dataset.rules || '[]');
+            if (Array.isArray(rules) && rules.length > 0) {
+                const chosenRule = getCardSelectedRule(this, rules);
+                if (!chosenRule) {
+                    return;
+                }
+                this.dataset.lastAddAt = String(Date.now());
+                addToCart(id, name, parseFloat(chosenRule.price || 0), type, chosenRule);
+                return;
+            }
+            this.dataset.lastAddAt = String(Date.now());
+            addToCart(id, name, price, type, null);
         });
     });
     const timeEl = document.getElementById('current-time');
@@ -456,13 +638,26 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function addToCart(id, name, price, type) {
+    function addToCart(id, name, price, type, selectedRule = null) {
         id = parseInt(id);
-        const existingItem = cart.find(item => item.id === id);
+        const ruleId = selectedRule ? parseInt(selectedRule.id) : null;
+        const cartKey = `${id}::${ruleId || 'base'}`;
+        const displayName = selectedRule ? `${name} (${selectedRule.label})` : name;
+        const existingItem = cart.find(item => item.key === cartKey);
         if (existingItem) {
             existingItem.quantity++;
         } else {
-            cart.push({ id, name, price, type, quantity: 1 });
+            cart.push({
+                key: cartKey,
+                id,
+                rule_id: ruleId,
+                name: displayName,
+                base_name: name,
+                rule_label: selectedRule ? selectedRule.label : null,
+                price,
+                type,
+                quantity: 1,
+            });
         }
         updateCartUI();
         filterBrands(cart.length > 0 ? 'all' : type);
@@ -478,6 +673,10 @@ document.addEventListener('DOMContentLoaded', function () {
             typeLower = 'mobil';
         } else if (typeLower === 'motor') {
             typeLower = 'motor';
+        }
+
+        if (!['mobil', 'motor'].includes(typeLower)) {
+            typeLower = 'all';
         }
 
         for (let i = 0; i < options.length; i++) {
@@ -507,6 +706,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function removeFromCartByKey(key) {
+        const index = cart.findIndex(item => item.key === key);
+        if (index > -1) {
+            cart.splice(index, 1);
+        }
+        updateCartUI();
+        if (cart.length === 0) {
+            resetServiceSelection();
+        }
+    }
+
     function resetServiceSelection() {
         // Only reset filters and service visibility, NOT customer data
         
@@ -514,6 +724,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
         if (allBtn) {
             allBtn.click();
+        }
+        const serviceSearchInput = document.getElementById('serviceSearchInput');
+        if (serviceSearchInput) {
+            serviceSearchInput.value = '';
         }
         
         // Reset brand options visibility
@@ -573,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 const div = document.createElement('div');
                 div.className = 'cart-item';
-                const selectId = 'emp_sel_' + item.id;
+                const selectId = 'emp_sel_' + String(item.key || item.id).replace(/[^a-zA-Z0-9_]/g, '_');
                 const empOptions = ['<option value=\"\">- Pegawai -</option>']
                     .concat(employees.map(e => `<option value=\"${e.id}\" ${item.employee_id==e.id?'selected':''}>${e.name}</option>`))
                     .join('');
@@ -589,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="cart-item-right">
                         <span class="cart-item-total">Rp ${itemTotal.toLocaleString('id-ID')}</span>
-                        <button class="btn btn-sm text-danger p-0" type="button" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-sm text-danger p-0" type="button" onclick="removeFromCartByKey('${item.key}')"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
                 setTimeout(() => {
@@ -642,29 +856,44 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    const serviceSearchInput = document.getElementById('serviceSearchInput');
+    const applyServiceVisibility = function () {
+        const activeBtn = document.querySelector('.filter-btn.active');
+        const type = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+        const keyword = (serviceSearchInput?.value || '').trim().toLowerCase();
+
+        document.querySelectorAll('.service-item').forEach(item => {
+            const typeMatch = type === 'all' || item.dataset.type === type;
+            const card = item.querySelector('.service-card');
+            const rawName = (card?.dataset?.name || '').toLowerCase();
+            const desc = (card?.dataset?.description || '').toLowerCase();
+            const textMatch = keyword === '' || rawName.includes(keyword) || desc.includes(keyword);
+            item.style.display = (typeMatch && textMatch) ? 'block' : 'none';
+        });
+
+        document.querySelectorAll('.service-section-heading').forEach(section => {
+            const sectionType = section.dataset.type;
+            const hasVisibleItems = Array.from(document.querySelectorAll('.service-item[data-type="' + sectionType + '"]'))
+                .some(item => item.style.display !== 'none');
+            section.style.display = hasVisibleItems ? 'block' : 'none';
+        });
+    };
+
     document.querySelectorAll('.filter-btn').forEach(button => {
         button.addEventListener('click', function () {
-            // Remove active class from all
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked
             this.classList.add('active');
-            
             const type = this.getAttribute('data-filter');
-            
-            // Update brand filter if cart is empty
             if (cart.length === 0) {
                 filterBrands(type);
             }
-
-            document.querySelectorAll('.service-item').forEach(item => {
-                if (type === 'all' || item.dataset.type === type) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
+            applyServiceVisibility();
         });
     });
+
+    if (serviceSearchInput) {
+        serviceSearchInput.addEventListener('input', applyServiceVisibility);
+    }
 
     // Toggle cash section on payment method change
     const paymentMethodEl = document.getElementById('payment_method');
@@ -892,6 +1121,10 @@ document.addEventListener('DOMContentLoaded', function () {
         gap: 0.25rem;
     }
 
+    #serviceSearchInput {
+        min-width: 220px;
+    }
+
     .wash-filter-group .filter-btn {
         border: 0;
         background: transparent;
@@ -943,6 +1176,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     .service-card-kopi {
         border-color: #f5d0a7;
+    }
+
+    .service-card-addon {
+        border-color: #bbf7d0;
+    }
+
+    .service-section-heading h6 {
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+        border-bottom: 1px dashed #cbd5e1;
+        padding-bottom: 0.32rem;
     }
 
     .service-image-wrap {
@@ -1018,6 +1264,50 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: #e2e8f0;
         color: #64748b;
         font-weight: 500;
+    }
+
+    .service-rule-picker .form-select {
+        border-radius: 0.6rem;
+        font-size: 0.76rem;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+    }
+
+    .service-rule-mobile-options {
+        display: none;
+        gap: 0.28rem;
+        flex-wrap: wrap;
+    }
+
+    .service-rule-mobile-option {
+        display: inline-flex;
+        align-items: center;
+        margin: 0;
+    }
+
+    .service-rule-mobile-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .service-rule-mobile-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 0.64rem;
+        font-weight: 700;
+        padding: 0.14rem 0.45rem;
+        line-height: 1.2;
+    }
+
+    .service-rule-mobile-input:checked + .service-rule-mobile-chip {
+        background: #dcfce7;
+        border-color: #34d399;
+        color: #166534;
     }
 
     .service-meta {
@@ -1252,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .wash-primary-btn {
         min-height: 44px;
         border-radius: 0.8rem;
-        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        background: linear-gradient(135deg, #16a34a, #22c55e);
         border: 0;
         color: #fff;
         font-weight: 700;
@@ -1277,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     @media (max-width: 767.98px) {
         .wash-pos-shell {
-            padding: 0.8rem 0.4rem 1rem;
+            padding: 0.7rem 0.35rem 0.8rem;
         }
 
         .wash-pos-header {
@@ -1292,11 +1582,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         .wash-card-header {
-            padding: 0.8rem;
+            padding: 0.72rem;
+            gap: 0.55rem;
         }
 
         .wash-card-body {
-            padding: 0.8rem;
+            padding: 0.72rem;
         }
 
         .wash-filter-group {
@@ -1309,6 +1600,14 @@ document.addEventListener('DOMContentLoaded', function () {
             width: 100%;
             padding-left: 0.2rem;
             padding-right: 0.2rem;
+            min-height: 34px;
+        }
+
+        #serviceSearchInput {
+            width: 100%;
+            min-width: 0;
+            font-size: 0.82rem;
+            min-height: 34px;
         }
 
         .service-meta {
@@ -1328,6 +1627,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         .cart-item {
             flex-direction: column;
+            gap: 0.45rem;
         }
 
         .cart-item-right {
@@ -1335,6 +1635,86 @@ document.addEventListener('DOMContentLoaded', function () {
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .wash-summary-row {
+            font-size: 0.84rem;
+        }
+
+        .wash-summary-total {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .wash-card {
+            border-radius: 0.85rem;
+        }
+
+        .service-item {
+            width: 50%;
+        }
+
+        .service-card {
+            border-radius: 0.85rem;
+            padding: 0.62rem;
+        }
+
+        .service-image-wrap {
+            aspect-ratio: 1 / 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-title {
+            font-size: 0.8rem;
+            line-height: 1.2;
+            margin-bottom: 0.3rem;
+        }
+
+        .service-rule-picker .form-select {
+            font-size: 0.68rem;
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+            min-height: 30px;
+        }
+
+        .service-rule-picker .form-select {
+            display: none;
+        }
+
+        .service-rule-mobile-options {
+            display: flex;
+        }
+
+        .service-description-chips {
+            min-height: 0;
+            margin-top: 0.2rem;
+            gap: 0.22rem;
+        }
+
+        .service-description-chip {
+            font-size: 0.58rem;
+            min-height: 20px;
+            padding: 0.16rem 0.34rem;
+        }
+
+        .service-price {
+            font-size: 0.76rem;
+        }
+
+        .service-type {
+            font-size: 0.56rem;
+            padding: 0.14rem 0.34rem;
+        }
+
+        .wash-inline-check {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        #cartItems {
+            max-height: 220px;
         }
     }
 
@@ -1399,6 +1779,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     [data-bs-theme="dark"] .service-card-kopi {
         border-color: rgba(217, 119, 6, 0.45);
+    }
+
+    [data-bs-theme="dark"] .service-card-addon {
+        border-color: rgba(74, 222, 128, 0.42);
+    }
+
+    [data-bs-theme="dark"] .service-rule-mobile-chip {
+        background: #1e293b;
+        border-color: #334155;
+        color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .service-rule-mobile-input:checked + .service-rule-mobile-chip {
+        background: rgba(22, 163, 74, 0.28);
+        border-color: rgba(34, 197, 94, 0.55);
+        color: #bbf7d0;
+    }
+
+    [data-bs-theme="dark"] .service-section-heading h6 {
+        color: #94a3b8;
+        border-bottom-color: #334155;
     }
 
     [data-bs-theme="dark"] .service-fallback-icon {
@@ -1553,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     [data-bs-theme="dark"] .wash-primary-btn {
-        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        background: linear-gradient(135deg, #15803d, #16a34a);
     }
 </style>
 @endsection

@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\WashCustomer;
 use App\Models\WashService;
+use App\Models\WashServicePriceRule;
 use App\Models\WashTransaction;
 use App\Models\WashTransactionItem;
 use App\Services\AccountingPoster;
@@ -88,7 +89,17 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function pos()
     {
-        $services = WashService::where('is_active', true)->orderBy('vehicle_type')->orderBy('name')->get();
+        $services = WashService::query()
+            ->where('is_active', true)
+            ->with(['priceRules' => function ($q) {
+                $q->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+            }])
+            ->orderBy('vehicle_type')
+            ->orderBy('service_category')
+            ->orderBy('size_tier')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
         $brands = $this->brands;
         $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id', 'name']);
         $holidaySchedule = $this->resolveHolidayPricingSchedule();
@@ -139,6 +150,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             'items' => 'required|array',
             'items.*.id' => 'required|exists:wash_services,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.rule_id' => 'nullable|integer|exists:wash_service_price_rules,id',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
             'customer_name' => 'nullable|string',
@@ -177,8 +189,20 @@ class WashTransactionController extends Controller implements HasMiddleware
 
             foreach ($request->items as $itemData) {
                 $service = WashService::find($itemData['id']);
+                $selectedRuleId = isset($itemData['rule_id']) ? (int) $itemData['rule_id'] : null;
+                $selectedRule = null;
+                if (! is_null($selectedRuleId)) {
+                    $selectedRule = WashServicePriceRule::query()
+                        ->where('id', $selectedRuleId)
+                        ->where('wash_service_id', $service->id)
+                        ->where('is_active', true)
+                        ->first();
+                    if (! $selectedRule) {
+                        throw new \RuntimeException('Aturan harga layanan tidak valid.');
+                    }
+                }
 
-                $basePrice = (float) $service->price;
+                $basePrice = $selectedRule ? (float) $selectedRule->price : (float) $service->price;
                 $holidayAdjustment = null;
                 $price = $basePrice;
                 if ($isHolidayPricingActive && ! is_null($service->holiday_price)) {
@@ -187,10 +211,19 @@ class WashTransactionController extends Controller implements HasMiddleware
                 }
                 $subtotal = $price * $itemData['quantity'];
                 $total += $subtotal;
+                $serviceName = (string) $service->name;
+                if ($selectedRule) {
+                    $ruleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', (string) $selectedRule->label);
+                    $ruleLabel = trim((string) $ruleLabel);
+                    if ($ruleLabel === '') {
+                        $ruleLabel = (string) $selectedRule->label;
+                    }
+                    $serviceName .= ' ('.$ruleLabel.')';
+                }
 
                 $items[] = [
                     'wash_service_id' => $service->id,
-                    'service_name' => $service->name,
+                    'service_name' => $serviceName,
                     'base_price' => $basePrice,
                     'holiday_adjustment' => $holidayAdjustment,
                     'price' => $price,

@@ -37,6 +37,50 @@
                     @enderror
                 </div>
 
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-4">
+                        <label for="service_category" class="form-label">Kategori Layanan</label>
+                        <select class="form-select @error('service_category') is-invalid @enderror" id="service_category" name="service_category" required>
+                            @foreach(\App\Models\WashService::CATEGORY_OPTIONS as $value => $label)
+                                <option value="{{ $value }}" {{ old('service_category', 'main') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('service_category')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="size_tier" class="form-label">Ukuran Kendaraan</label>
+                        <select class="form-select @error('size_tier') is-invalid @enderror" id="size_tier" name="size_tier" required>
+                            @foreach(\App\Models\WashService::SIZE_TIER_OPTIONS as $value => $label)
+                                <option value="{{ $value }}" {{ old('size_tier', 'none') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('size_tier')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="package_type" class="form-label">Jenis Paket</label>
+                        <select class="form-select @error('package_type') is-invalid @enderror" id="package_type" name="package_type" required>
+                            @foreach(\App\Models\WashService::PACKAGE_TYPE_OPTIONS as $value => $label)
+                                <option value="{{ $value }}" {{ old('package_type', 'general') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('package_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sort_order" class="form-label">Urutan Tampil</label>
+                    <input type="number" class="form-control @error('sort_order') is-invalid @enderror" id="sort_order" name="sort_order" value="{{ old('sort_order', 0) }}" min="0">
+                    @error('sort_order')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <div class="mb-3">
                     <label for="price" class="form-label">Harga</label>
                     <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" required min="0">
@@ -51,6 +95,71 @@
                     @error('holiday_price')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+
+                @php
+                    $rulePrices = old('rule_price', []);
+                    $ruleRows = max(1, count($rulePrices));
+                @endphp
+                <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between align-items-center">
+                        <span>Aturan Harga POS (Opsional)</span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="applyPriceTemplate">Template Otomatis</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addPriceRuleRow">Tambah Baris</button>
+                        </div>
+                    </label>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0" id="priceRulesTable">
+                            <thead>
+                                <tr>
+                                    <th>Tipe</th>
+                                    <th>Ukuran</th>
+                                    <th>Paket</th>
+                                    <th>Harga</th>
+                                    <th>Urutan</th>
+                                    <th>Aktif</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for($i = 0; $i < $ruleRows; $i++)
+                                    <tr>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="rule_vehicle_type[]">
+                                                <option value="all" {{ old('rule_vehicle_type.'.$i, 'all') === 'all' ? 'selected' : '' }}>Semua</option>
+                                                <option value="car" {{ old('rule_vehicle_type.'.$i) === 'car' ? 'selected' : '' }}>Mobil</option>
+                                                <option value="motor" {{ old('rule_vehicle_type.'.$i) === 'motor' ? 'selected' : '' }}>Motor</option>
+                                                <option value="coffee" {{ old('rule_vehicle_type.'.$i) === 'coffee' ? 'selected' : '' }}>Kopi</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="rule_size_tier[]">
+                                                @foreach(\App\Models\WashService::SIZE_TIER_OPTIONS as $value => $label)
+                                                    <option value="{{ $value }}" {{ old('rule_size_tier.'.$i, 'none') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="rule_package_type[]">
+                                                @foreach(\App\Models\WashService::PACKAGE_TYPE_OPTIONS as $value => $label)
+                                                    <option value="{{ $value }}" {{ old('rule_package_type.'.$i, 'general') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td><input type="number" min="0" class="form-control form-control-sm" name="rule_price[]" value="{{ old('rule_price.'.$i) }}" placeholder="0"></td>
+                                        <td><input type="number" min="0" class="form-control form-control-sm" name="rule_sort_order[]" value="{{ old('rule_sort_order.'.$i, 0) }}"></td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input" name="rule_is_active[]" value="{{ $i }}" {{ in_array((string) $i, collect(old('rule_is_active', ['0']))->map(fn($v) => (string) $v)->all(), true) ? 'checked' : '' }}>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-remove-rule>&times;</button>
+                                        </td>
+                                    </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -275,6 +384,149 @@
                 initialItems.push(item);
             });
             render(initialItems);
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tableBody = document.querySelector('#priceRulesTable tbody');
+        const addButton = document.getElementById('addPriceRuleRow');
+        const templateButton = document.getElementById('applyPriceTemplate');
+        const basePriceInput = document.getElementById('price');
+        const vehicleTypeInput = document.getElementById('vehicle_type');
+        const categoryInput = document.getElementById('service_category');
+        if (!tableBody || !addButton) {
+            return;
+        }
+
+        const renderRow = function (index) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <select class="form-select form-select-sm" name="rule_vehicle_type[]">
+                        <option value="all" selected>Semua</option>
+                        <option value="car">Mobil</option>
+                        <option value="motor">Motor</option>
+                        <option value="coffee">Kopi</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm" name="rule_size_tier[]">
+                        <option value="none" selected>-</option>
+                        <option value="kecil">Kecil</option>
+                        <option value="sedang">Sedang</option>
+                        <option value="besar">Besar</option>
+                        <option value="extra_besar">Extra Besar</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm" name="rule_package_type[]">
+                        <option value="general" selected>General</option>
+                        <option value="body_only">Body Only</option>
+                        <option value="full_clean">Body + Kolong + Vacuum</option>
+                        <option value="express">Cuci Cepat + Semir Ban</option>
+                        <option value="engine_cleaner">Cuci Mesin</option>
+                        <option value="leather_cleaner">Cuci Jok Kulit</option>
+                    </select>
+                </td>
+                <td><input type="number" min="0" class="form-control form-control-sm" name="rule_price[]" placeholder="0"></td>
+                <td><input type="number" min="0" class="form-control form-control-sm" name="rule_sort_order[]" value="${index}"></td>
+                <td class="text-center"><input type="checkbox" class="form-check-input" name="rule_is_active[]" value="${index}" checked></td>
+                <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" data-remove-rule>&times;</button></td>
+            `;
+            tableBody.appendChild(row);
+        };
+
+        const syncActiveIndexes = function () {
+            Array.from(tableBody.querySelectorAll('tr')).forEach((row, index) => {
+                const active = row.querySelector('input[name="rule_is_active[]"]');
+                if (active) {
+                    active.value = String(index);
+                }
+            });
+        };
+
+        const addRow = function (rowData, index) {
+            renderRow(index);
+            const row = tableBody.lastElementChild;
+            if (!row) {
+                return;
+            }
+            row.querySelector('select[name="rule_vehicle_type[]"]').value = rowData.vehicle_type || 'all';
+            row.querySelector('select[name="rule_size_tier[]"]').value = rowData.size_tier || 'none';
+            row.querySelector('select[name="rule_package_type[]"]').value = rowData.package_type || 'general';
+            row.querySelector('input[name="rule_price[]"]').value = rowData.price || '';
+            row.querySelector('input[name="rule_sort_order[]"]').value = rowData.sort_order ?? index;
+            row.querySelector('input[name="rule_is_active[]"]').checked = rowData.is_active !== false;
+        };
+
+        const buildTemplateRows = function () {
+            const base = parseFloat(basePriceInput?.value || 0) || 0;
+            const vehicleType = vehicleTypeInput?.value || 'car';
+            const category = categoryInput?.value || 'main';
+
+            if (category === 'addon' || category === 'skincare') {
+                const sizes = vehicleType === 'car' ? ['kecil', 'sedang', 'besar'] : ['kecil', 'sedang', 'besar'];
+                return sizes.map((size, idx) => ({
+                    vehicle_type: vehicleType,
+                    size_tier: size,
+                    package_type: category === 'skincare' ? 'leather_cleaner' : 'engine_cleaner',
+                    price: Math.max(0, Math.round(base + (idx * 5000))),
+                    sort_order: idx + 1,
+                    is_active: true,
+                }));
+            }
+
+            if (vehicleType === 'motor') {
+                return [
+                    { vehicle_type: 'motor', size_tier: 'kecil', package_type: 'express', price: Math.max(0, Math.round(base * 0.85)), sort_order: 1, is_active: true },
+                    { vehicle_type: 'motor', size_tier: 'sedang', package_type: 'express', price: Math.max(0, Math.round(base)), sort_order: 2, is_active: true },
+                    { vehicle_type: 'motor', size_tier: 'besar', package_type: 'express', price: Math.max(0, Math.round(base * 1.25)), sort_order: 3, is_active: true },
+                ];
+            }
+
+            return [
+                { vehicle_type: 'car', size_tier: 'kecil', package_type: 'body_only', price: Math.max(0, Math.round(base * 0.8)), sort_order: 1, is_active: true },
+                { vehicle_type: 'car', size_tier: 'kecil', package_type: 'full_clean', price: Math.max(0, Math.round(base)), sort_order: 2, is_active: true },
+                { vehicle_type: 'car', size_tier: 'sedang', package_type: 'body_only', price: Math.max(0, Math.round(base)), sort_order: 3, is_active: true },
+                { vehicle_type: 'car', size_tier: 'sedang', package_type: 'full_clean', price: Math.max(0, Math.round(base * 1.2)), sort_order: 4, is_active: true },
+                { vehicle_type: 'car', size_tier: 'besar', package_type: 'body_only', price: Math.max(0, Math.round(base * 1.2)), sort_order: 5, is_active: true },
+                { vehicle_type: 'car', size_tier: 'besar', package_type: 'full_clean', price: Math.max(0, Math.round(base * 1.4)), sort_order: 6, is_active: true },
+            ];
+        };
+
+        addButton.addEventListener('click', function () {
+            renderRow(tableBody.querySelectorAll('tr').length);
+            syncActiveIndexes();
+        });
+
+        if (templateButton) {
+            templateButton.addEventListener('click', function () {
+                const rows = buildTemplateRows();
+                tableBody.innerHTML = '';
+                rows.forEach((row, index) => addRow(row, index));
+                if (rows.length === 0) {
+                    renderRow(0);
+                }
+                syncActiveIndexes();
+            });
+        }
+
+        tableBody.addEventListener('click', function (event) {
+            const button = event.target.closest('[data-remove-rule]');
+            if (!button) {
+                return;
+            }
+            const row = button.closest('tr');
+            if (!row) {
+                return;
+            }
+            if (tableBody.querySelectorAll('tr').length <= 1) {
+                row.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
+                return;
+            }
+            row.remove();
+            syncActiveIndexes();
         });
     });
 </script>

@@ -35,6 +35,10 @@
                             <th>Gambar</th>
                             <th>Nama</th>
                             <th>Jenis Kendaraan</th>
+                            <th>Kategori</th>
+                            <th>Ukuran</th>
+                            <th>Paket</th>
+                            <th>Urutan</th>
                             <th>Harga</th>
                             <th>Penyesuaian Hari Raya</th>
                             <th>Deskripsi</th>
@@ -64,6 +68,10 @@
                                         <span class="badge bg-success">Motor</span>
                                     @endif
                                 </td>
+                                <td><span class="badge bg-secondary">{{ $service->category_label }}</span></td>
+                                <td><span class="badge bg-light text-dark border">{{ $service->size_tier_label }}</span></td>
+                                <td><span class="badge bg-dark">{{ $service->package_type_label }}</span></td>
+                                <td>{{ $service->sort_order ?? 0 }}</td>
                                 <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
                                 <td>
                                     @if(!is_null($service->holiday_price))
@@ -131,7 +139,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">Tidak ada layanan ditemukan.</td>
+                                <td colspan="12" class="text-center">Tidak ada layanan ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
