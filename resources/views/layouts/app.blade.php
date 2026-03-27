@@ -136,7 +136,7 @@
             {{-- User Panel (Simplified) --}}
            
             @php
-                $isKasirWashLimited = Auth::user()->hasRole('kasir-wash');
+                $isKasirWashLimited = Auth::user()->hasRole('kasir-wash') || Auth::user()->hasRole('karyawan-wash');
             @endphp
             <div class="sidebar-header mt-2">{{ __('Main Menu') }}</div>
 

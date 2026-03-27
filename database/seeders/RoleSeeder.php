@@ -24,6 +24,7 @@ class RoleSeeder extends Seeder
             ['name' => 'finance', 'label' => 'Finance Staff'],
             ['name' => 'kasir-atk', 'label' => 'Kasir ATK'],
             ['name' => 'kasir-wash', 'label' => 'Kasir Wash'],
+            ['name' => 'karyawan-wash', 'label' => 'Karyawan Wash'],
         ];
 
         foreach ($roles as $roleData) {
@@ -186,7 +187,7 @@ class RoleSeeder extends Seeder
                     'profile.update',
                 ])->get();
                 $role->permissions()->sync($permissions);
-            } elseif ($role->name === 'kasir-wash') {
+            } elseif (in_array($role->name, ['kasir-wash', 'karyawan-wash'], true)) {
                 // Kasir Wash: hanya menu Wash
                 $permissions = Permission::whereIn('name', [
                     'wash.view',
