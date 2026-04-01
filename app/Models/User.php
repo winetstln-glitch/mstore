@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'name',
         'email',
         'username',
+        'attendance_card_code',
         'radius_username',
         'radius_type',
         'password',
@@ -143,6 +145,70 @@ class User extends Authenticatable
         }
 
         return $candidate;
+    }
+
+    public static function generateUniqueAttendanceCardCode(?string $seed, ?int $ignoreId = null): string
+    {
+        $base = trim((string) $seed);
+        if ($base === '') {
+            $base = 'IDCARD';
+        }
+        $base = Str::of($base)
+            ->upper()
+            ->ascii()
+            ->replaceMatches('/[^A-Z0-9\-]+/', '-')
+            ->trim('-')
+            ->value();
+        if ($base === '') {
+            $base = 'IDCARD';
+        }
+        $base = mb_substr($base, 0, 40);
+        $candidate = $base;
+        $suffix = 1;
+
+        if (! static::hasAttendanceCardColumn()) {
+            return $candidate;
+        }
+
+        while (static::where('attendance_card_code', $candidate)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $suffixText = '-'.$suffix;
+            $candidate = mb_substr($base, 0, max(1, 40 - strlen($suffixText))).$suffixText;
+            $suffix++;
+        }
+
+        return $candidate;
+    }
+
+    public static function defaultAttendanceCardCodeById(int $id): string
+    {
+        return 'EMP-'.str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (self $user) {
+            if (! static::hasAttendanceCardColumn()) {
+                return;
+            }
+            if (trim((string) $user->attendance_card_code) !== '') {
+                return;
+            }
+            $fallbackCode = static::defaultAttendanceCardCodeById((int) $user->id);
+            $user->attendance_card_code = static::generateUniqueAttendanceCardCode($fallbackCode, (int) $user->id);
+            $user->saveQuietly();
+        });
+    }
+
+    private static function hasAttendanceCardColumn(): bool
+    {
+        static $hasColumn = null;
+        if ($hasColumn === null) {
+            $hasColumn = Schema::hasColumn('users', 'attendance_card_code');
+        }
+
+        return $hasColumn;
     }
 
     public function assignRole($role)

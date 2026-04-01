@@ -98,7 +98,7 @@
                     @endif
                     <a class="nav-link" href="#packages">Internet</a>
                     <a class="nav-link" href="#atk-promo">ATK Store</a>
-                    <a class="nav-link" href="#wash-services">Auto Wash</a>
+                   <a class="nav-link" href="#wash-services">Gt Wash Mstore</a>
                     <a class="nav-link" href="#cctv">CCTV</a>
                 </div>
 
@@ -123,13 +123,13 @@
                 <div class="col-lg-7 fade-up">
                     <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3 rounded-pill">#1 Trusted Digital Partner</span>
                     <h1 class="hero-title">Solusi Digital & Layanan Terlengkap</h1>
-                    <p class="hero-desc text-secondary fs-5 mb-4">Mulai dari internet fiber optic super cepat, perlengkapan kantor, hingga perawatan kendaraan profesional. Kami hadir untuk memudahkan hidup Anda.</p>
+                    <p class="hero-desc text-secondary fs-5 mb-4">Mulai dari <b>Internet</b> fiber optic super cepat, perlengkapan kantor, hingga perawatan kendaraan profesional. Kami hadir untuk memudahkan hidup Anda.</p>
                     
                     <div class="d-flex flex-wrap gap-3">
                         <a href="https://buymstore.online" class="btn btn-primary">
                             <i class="fas fa-rocket me-2"></i> Client Area
                         </a>
-                        <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-outline-light" download>
+                        <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-primary" download>
                             <i class="fa-brands fa-android me-2"></i> Get App
                         </a>
                     </div>
@@ -183,7 +183,7 @@
     <section id="wash-services" class="py-2 bg-black bg-opacity-25">
         <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">MSTORE WASH</h6>
+                <h6 class="text-primary fw-bold text-uppercase">GT WASH MSTORE</h6>
                 <h2 class="display-6 fw-800">Layanan Cuci Mobil & Motor </h2>
                 @if($landingHolidayActive)
                     <div class="landing-holiday-banner mt-2">
@@ -465,6 +465,53 @@
                     @empty
                     <div class="text-center w-100 py-2">
                         <p class="text-muted">Paket Hotspot / Member belum tersedia.</p>
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="fade-up mt-4">
+                <h5 class="fw-bold mb-2">Beli Voucher Hotspot Online</h5>
+                <div class="scroll-container">
+                    @forelse($hotspotInternetPackages->take(6) as $package)
+                    @php
+                        $normalPrice = (int) $package->price;
+                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
+                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
+                    @endphp
+                    <div class="scroll-item">
+                        <div class="card">
+                            <div class="pricing-header">
+                                <div class="speed">{{ $package->name }}</div>
+                                <div class="text-muted">Voucher Hotspot</div>
+                            </div>
+                            <div class="pricing-body d-flex flex-column">
+                                <div class="price text-primary">
+                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
+                                </div>
+                                @if($packagePromoEnabled)
+                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
+                                @endif
+                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                    Beli Online
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="scroll-item">
+                        <div class="card">
+                            <div class="pricing-header">
+                                <div class="speed">Voucher Hotspot</div>
+                                <div class="text-muted">Pembelian Online</div>
+                            </div>
+                            <div class="pricing-body d-flex flex-column">
+                                <p class="text-muted mb-3">Voucher hotspot tersedia dan bisa dibeli langsung via portal online.</p>
+                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                    Beli Online
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     @endforelse
                 </div>

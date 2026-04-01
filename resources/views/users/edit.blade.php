@@ -42,6 +42,15 @@
                                 @enderror
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="attendance_card_code" class="form-label">Kode ID Card Absensi</label>
+                                <input type="text" name="attendance_card_code" id="attendance_card_code" value="{{ old('attendance_card_code', $user->attendance_card_code) }}" class="form-control @error('attendance_card_code') is-invalid @enderror">
+                                <div class="form-text">Gunakan kode ini untuk barcode/QR di kartu pegawai.</div>
+                                @error('attendance_card_code')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Role -->
                             <div class="col-md-6">
                                 <label for="role_id" class="form-label">{{ __('Role') }}</label>

@@ -195,6 +195,28 @@
         .data-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .label { color: #777; font-family: var(--ui-font); font-weight: 600; letter-spacing: .3px; }
         .value { color: #fff; font-family: var(--ui-font); font-weight: 700; letter-spacing: .2px; }
+        .barcode-wrap {
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px 8px 4px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .barcode-img {
+            width: 100%;
+            max-height: 56px;
+            object-fit: contain;
+            display: block;
+        }
+        .barcode-code {
+            margin-top: 4px;
+            font-size: 11px;
+            color: #111827;
+            letter-spacing: 1px;
+            font-weight: 700;
+            font-family: var(--ui-font);
+        }
 
         /* Footer QR */
         .footer-id {
@@ -233,10 +255,15 @@
         $role = isset($user) ? ($user->role?->label ?? $user->role?->name ?? 'Staff') : 'Staff';
         $department = $role;
         // Employee Code
-        $code = isset($user) ? ('EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT)) : 'EMP-00000';
+        $code = isset($user)
+            ? ((trim((string) ($user->attendance_card_code ?? '')) !== '')
+                ? (string) $user->attendance_card_code
+                : \App\Models\User::defaultAttendanceCardCodeById((int) $user->id))
+            : 'EMP-00000';
         // QR
         $qrUrl = $qrUrl ?? "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={$code}";
         $qrSrc = $qrSrc ?? $qrUrl;
+        $barcodeUrl = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . rawurlencode($code) . "&scale=2&height=10&includetext=false";
     ?>
 
     <!-- Tombol Download -->
@@ -305,6 +332,10 @@
                     <span class="value">{{ $user->phone }}</span>
                 </div>
                 @endif
+            </div>
+            <div class="barcode-wrap">
+                <img src="{{ $barcodeUrl }}" alt="BARCODE {{ $code }}" class="barcode-img">
+                <div class="barcode-code">{{ $code }}</div>
             </div>
 
             <!-- Footer -->

@@ -429,6 +429,39 @@
         background: #0f172a;
     }
 
+    [data-bs-theme="dark"] #attendanceLeaveModal .modal-content {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border: 1px solid rgba(96, 165, 250, 0.28) !important;
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] #attendanceLeaveModal .modal-header,
+    [data-bs-theme="dark"] #attendanceLeaveModal .modal-footer {
+        border-color: #334155 !important;
+    }
+
+    [data-bs-theme="dark"] #attendanceLeaveModal .modal-title,
+    [data-bs-theme="dark"] #attendanceLeaveModal .form-label {
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] #attendanceLeaveModal .form-control,
+    [data-bs-theme="dark"] #attendanceLeaveModal .form-select,
+    [data-bs-theme="dark"] #attendanceLeaveModal textarea {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] #attendanceLeaveModal .form-control::placeholder,
+    [data-bs-theme="dark"] #attendanceLeaveModal textarea::placeholder {
+        color: #94a3b8;
+    }
+
+    [data-bs-theme="dark"] #attendanceLeaveModal .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
     .text-gradient { background: linear-gradient(45deg, #10b981, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 </style>
 @endpush

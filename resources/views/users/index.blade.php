@@ -60,6 +60,7 @@
                             <tr>
                                 <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Name') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Email') }}</th>
+                                <th class="text-uppercase small text-muted border-0">ID Card</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
                                 <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Actions') }}</th>
@@ -73,6 +74,9 @@
                                 </td>
                                 <td>
                                     {{ $user->email }}
+                                </td>
+                                <td>
+                                    <span class="small fw-semibold">{{ $user->attendance_card_code ?: $user->username }}</span>
                                 </td>
                                 <td>
                                     @if($user->role)
@@ -94,6 +98,9 @@
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="d-flex justify-content-end gap-1">
+                                        <a href="{{ route('users.id-card', $user) }}" class="btn btn-sm btn-outline-dark" title="ID Card">
+                                            <i class="fa-solid fa-id-card"></i>
+                                        </a>
                                         <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>

@@ -7,6 +7,7 @@ use App\Models\AtkProduct;
 use App\Models\Invoice;
 use App\Models\Package;
 use App\Models\User;
+use App\Models\WashService;
 use App\Services\BillingService;
 use App\Services\MidtransService;
 use App\Services\MixRadiusService;
@@ -231,6 +232,36 @@ class HotspotPortalController extends Controller
                 'kind' => 'product',
             ];
         }
+
+        $washServices = WashService::query()
+            ->where('is_active', true)
+            ->whereIn('service_category', ['addon', 'skincare', 'main'])
+            ->with(['priceRules' => function ($query) {
+                $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+            }])
+            ->orderBy('service_category')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get(['id', 'name', 'price', 'service_category']);
+
+        foreach ($washServices as $service) {
+            $rules = [];
+            foreach ($service->priceRules->take(6) as $rule) {
+                $rules[] = [
+                    'label' => (string) $rule->label,
+                    'price' => (int) $rule->price,
+                ];
+            }
+
+            $items[] = [
+                'title' => (string) $service->name,
+                'subtitle' => (string) ($service->service_category === 'addon' ? 'Addon Wash' : ($service->service_category === 'skincare' ? 'Skincare Wash' : 'Layanan Wash')),
+                'price' => (int) ($service->price ?? 0),
+                'kind' => 'wash',
+                'rules' => $rules,
+            ];
+        }
         $items = array_slice($items, 0, $limit);
 
         return response()->json([
@@ -238,6 +269,7 @@ class HotspotPortalController extends Controller
             'message' => 'ok',
             'data' => [
                 'items' => $items,
+                'landing_url' => url('/'),
             ],
         ]);
     }
@@ -275,9 +307,25 @@ class HotspotPortalController extends Controller
             return null;
         }
 
+        $digits = preg_replace('/\D+/', '', $id) ?? '';
+        $phoneCandidates = [];
+        if ($digits !== '') {
+            $phoneCandidates[] = $digits;
+            if (str_starts_with($digits, '0')) {
+                $phoneCandidates[] = '62'.substr($digits, 1);
+            } elseif (str_starts_with($digits, '62')) {
+                $phoneCandidates[] = '0'.substr($digits, 2);
+            }
+        }
+        $phoneCandidates = array_values(array_unique(array_filter($phoneCandidates)));
+
         $query = User::query();
         if (ctype_digit($id)) {
             $query->orWhere('id', (int) $id);
+        }
+
+        foreach ($phoneCandidates as $candidate) {
+            $query->orWhere('phone', $candidate);
         }
 
         return $query

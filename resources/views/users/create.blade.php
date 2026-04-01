@@ -41,6 +41,15 @@
                                 @enderror
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="attendance_card_code" class="form-label">Kode ID Card Absensi</label>
+                                <input type="text" name="attendance_card_code" id="attendance_card_code" value="{{ old('attendance_card_code') }}" class="form-control @error('attendance_card_code') is-invalid @enderror">
+                                <div class="form-text">Jika kosong, otomatis pakai username.</div>
+                                @error('attendance_card_code')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Password -->
                             <div class="col-md-6">
                                 <label for="password" class="form-label">{{ __('Password') }}</label>

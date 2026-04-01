@@ -101,6 +101,7 @@ Route::middleware('auth')->group(function () {
 
     // User Management
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
+    Route::get('users/{user}/id-card', [UserController::class, 'idCard'])->name('users.id-card');
     Route::resource('users', UserController::class);
 
     // Settings
@@ -146,6 +147,8 @@ Route::middleware('auth')->group(function () {
     Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual');
     Route::delete('attendance/bulk-destroy', [TechnicianAttendanceController::class, 'bulkDestroy'])->name('attendance.bulkDestroy');
     Route::post('attendance/{attendance}/notify', [TechnicianAttendanceController::class, 'sendNotification'])->name('attendance.notify');
+    Route::get('attendance/kiosk', [TechnicianAttendanceController::class, 'kiosk'])->name('attendance.kiosk');
+    Route::post('attendance/kiosk/scan', [TechnicianAttendanceController::class, 'kioskScan'])->name('attendance.kiosk.scan');
     Route::post('landing/attendance/clock-in', [TechnicianAttendanceController::class, 'store'])->name('landing.attendance.store');
     Route::put('landing/attendance/{attendance}/clock-out', [TechnicianAttendanceController::class, 'update'])->name('landing.attendance.update');
     Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);

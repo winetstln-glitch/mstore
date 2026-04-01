@@ -165,11 +165,21 @@
                     <table class="table table-bordered table-sm">
                         <thead><tr><th>Metode</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
+                            @php
+                                $dailyCash = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
+                                $dailyQris = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
+                                $dailyTransfer = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
+                                $dailySetoranCash = $dailyCash - (float) $dailyExpense;
+                            @endphp
                             @forelse($dailyByPayment as $r)
                             <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="2" class="text-center">-</td></tr>
                             @endforelse
+                            <tr class="table-warning fw-bold">
+                                <td>Setoran Cash (Cash - Pengeluaran)</td>
+                                <td class="text-end {{ $dailySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailySetoranCash,0,',','.') }}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -274,11 +284,21 @@
                     <table class="table table-bordered table-sm">
                         <thead><tr><th>Metode</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
+                            @php
+                                $monthlyCash = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
+                                $monthlyQris = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
+                                $monthlyTransfer = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
+                                $monthlySetoranCash = $monthlyCash - (float) $monthlyExpense;
+                            @endphp
                             @forelse($monthlyByPayment as $r)
                             <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="2" class="text-center">-</td></tr>
                             @endforelse
+                            <tr class="table-warning fw-bold">
+                                <td>Setoran Cash (Cash - Pengeluaran)</td>
+                                <td class="text-end {{ $monthlySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlySetoranCash,0,',','.') }}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -291,6 +311,72 @@
 
 @push('styles')
 <style>
+    [data-bs-theme="dark"] .wash-reports-page .card {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table {
+        color: #e2e8f0;
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table > :not(caption) > * > * {
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table thead th {
+        background: #1e293b;
+        color: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table-striped > tbody > tr:nth-of-type(odd) > * {
+        color: #e2e8f0;
+        background-color: rgba(148, 163, 184, 0.08);
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table-hover > tbody > tr:hover > * {
+        color: #f8fafc;
+        background-color: rgba(59, 130, 246, 0.16);
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table-warning > th,
+    [data-bs-theme="dark"] .wash-reports-page .table-warning > td,
+    [data-bs-theme="dark"] .wash-reports-page .table-warning > * > th,
+    [data-bs-theme="dark"] .wash-reports-page .table-warning > * > td {
+        color: #fef3c7 !important;
+        background-color: rgba(161, 98, 7, 0.45) !important;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table .text-danger {
+        color: #fca5a5 !important;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .table .text-success {
+        color: #86efac !important;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .text-muted {
+        color: #94a3b8 !important;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .badge.bg-secondary {
+        background: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .wash-report-tabs .nav-link {
+        color: #cbd5e1;
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] .wash-reports-page .wash-report-tabs .nav-link.active {
+        background: #1e293b;
+        color: #f8fafc;
+        border-color: #475569;
+    }
+
     @media (max-width: 767.98px) {
         .wash-reports-page {
             padding-left: 0.35rem;
@@ -380,6 +466,33 @@
     // Build export URLs preserving current filters
     (function() {
         function q(name) { return new URLSearchParams(window.location.search).get(name); }
+        function bindDownload(button) {
+            if (!button) return;
+            button.addEventListener('click', function(e) {
+                if (!button.href) return;
+                e.preventDefault();
+                var iframe = document.getElementById('wash-report-download-frame');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'wash-report-download-frame';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+                var currentLabel = button.innerHTML;
+                button.classList.add('disabled');
+                button.setAttribute('aria-disabled', 'true');
+                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+                var downloadUrl = new URL(button.href, window.location.origin);
+                downloadUrl.searchParams.set('_ts', Date.now().toString());
+                iframe.src = downloadUrl.toString();
+                setTimeout(function() {
+                    button.classList.remove('disabled');
+                    button.removeAttribute('aria-disabled');
+                    button.innerHTML = currentLabel;
+                }, 1800);
+            });
+        }
+
         var pdf = document.getElementById('btnExportPdf');
         var xls = document.getElementById('btnExportExcel');
         if (pdf) {
@@ -389,6 +502,7 @@
             if (q('month')) params.set('month', q('month'));
             if (q('vehicle_plate')) params.set('vehicle_plate', q('vehicle_plate'));
             pdf.href = '{{ route('wash.reports.pdf') }}' + (params.toString() ? ('?' + params.toString()) : '');
+            bindDownload(pdf);
         }
         if (xls) {
             var params2 = new URLSearchParams();
@@ -397,6 +511,7 @@
             if (q('month')) params2.set('month', q('month'));
             if (q('vehicle_plate')) params2.set('vehicle_plate', q('vehicle_plate'));
             xls.href = '{{ route('wash.reports.excel') }}' + (params2.toString() ? ('?' + params2.toString()) : '');
+            bindDownload(xls);
         }
     })();
 </script>

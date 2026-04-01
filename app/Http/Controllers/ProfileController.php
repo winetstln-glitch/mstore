@@ -210,7 +210,10 @@ class ProfileController extends Controller implements HasMiddleware
     protected function buildQrPayload($user): string
     {
         $company = config('app.name', 'MStore');
-        $code = 'EMP-'.str_pad($user->id, 5, '0', STR_PAD_LEFT);
+        $code = trim((string) ($user->attendance_card_code ?? ''));
+        if ($code === '') {
+            $code = \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
+        }
         $role = $user->role?->label ?? $user->role?->name ?? 'Staff';
         $vcard = "BEGIN:VCARD\nVERSION:3.0\nN:{$user->name}\nEMAIL:{$user->email}\nORG:{$company}\nTITLE:{$role}\nNOTE:{$code}\nEND:VCARD";
 

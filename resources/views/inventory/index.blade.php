@@ -437,6 +437,30 @@
         border-color: #334155;
     }
 
+    [data-bs-theme="dark"] #addItemModal .modal-content {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+        border: 1px solid rgba(96, 165, 250, 0.28);
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] #addItemModal .modal-header,
+    [data-bs-theme="dark"] #addItemModal .modal-footer {
+        border-color: #334155;
+    }
+
+    [data-bs-theme="dark"] #addItemModal .form-control,
+    [data-bs-theme="dark"] #addItemModal .form-select,
+    [data-bs-theme="dark"] #addItemModal textarea {
+        background-color: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    [data-bs-theme="dark"] #addItemModal .form-control::placeholder,
+    [data-bs-theme="dark"] #addItemModal textarea::placeholder {
+        color: #94a3b8;
+    }
+
     @media (max-width: 767.98px) {
         .inventory-page {
             padding-left: 0.35rem;

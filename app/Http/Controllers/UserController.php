@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use OpenSpout\Common\Entity\Row;
@@ -18,7 +19,7 @@ class UserController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:user.view', only: ['index', 'export']),
+            new Middleware('permission:user.view', only: ['index', 'export', 'idCard']),
             new Middleware('permission:user.create', only: ['create', 'store']),
             new Middleware('permission:user.edit', only: ['edit', 'update']),
             new Middleware('permission:user.delete', only: ['destroy']),
@@ -99,6 +100,24 @@ class UserController extends Controller implements HasMiddleware
         }, 'users-'.date('Y-m-d-His').'.xlsx');
     }
 
+    public function idCard(User $user)
+    {
+        $hasAttendanceCardColumn = Schema::hasColumn('users', 'attendance_card_code');
+        if ($hasAttendanceCardColumn && trim((string) $user->attendance_card_code) === '') {
+            $seed = User::defaultAttendanceCardCodeById((int) $user->id);
+            $user->update([
+                'attendance_card_code' => User::generateUniqueAttendanceCardCode((string) $seed, $user->id),
+            ]);
+            $user->refresh();
+        }
+
+        if (! $hasAttendanceCardColumn) {
+            $user->attendance_card_code = User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
+        }
+
+        return view('users.id-card', compact('user'));
+    }
+
     public function create()
     {
         $roles = Role::all();
@@ -108,7 +127,7 @@ class UserController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:255', 'unique:users,username'],
@@ -118,14 +137,18 @@ class UserController extends Controller implements HasMiddleware
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
-        ]);
+        ];
+        if (Schema::hasColumn('users', 'attendance_card_code')) {
+            $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', 'unique:users,attendance_card_code'];
+        }
+        $validated = $request->validate($rules);
 
         $username = trim((string) ($validated['username'] ?? ''));
         if ($username === '') {
             $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
         }
 
-        User::create([
+        $createData = [
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'username' => $username,
@@ -135,7 +158,17 @@ class UserController extends Controller implements HasMiddleware
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'is_active' => $request->boolean('is_active'),
-        ]);
+        ];
+        if (Schema::hasColumn('users', 'attendance_card_code')) {
+            $createData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? ''));
+        }
+        $createdUser = User::create($createData);
+
+        if (Schema::hasColumn('users', 'attendance_card_code') && trim((string) $createdUser->attendance_card_code) === '') {
+            $createdUser->update([
+                'attendance_card_code' => User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $createdUser->id), (int) $createdUser->id),
+            ]);
+        }
 
         return redirect()->route('users.index')->with('success', __('User created successfully.'));
     }
@@ -149,7 +182,7 @@ class UserController extends Controller implements HasMiddleware
 
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
@@ -158,14 +191,18 @@ class UserController extends Controller implements HasMiddleware
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
-        ]);
+        ];
+        if (Schema::hasColumn('users', 'attendance_card_code')) {
+            $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', Rule::unique('users', 'attendance_card_code')->ignore($user->id)];
+        }
+        $validated = $request->validate($rules);
 
         $username = trim((string) ($validated['username'] ?? ''));
         if ($username === '') {
             $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
         }
 
-        $user->update([
+        $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'username' => $username,
@@ -174,7 +211,11 @@ class UserController extends Controller implements HasMiddleware
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'is_active' => $request->boolean('is_active'),
-        ]);
+        ];
+        if (Schema::hasColumn('users', 'attendance_card_code')) {
+            $updateData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? '')) ?: User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), (int) $user->id);
+        }
+        $user->update($updateData);
 
         if ($request->filled('password')) {
             $request->validate([

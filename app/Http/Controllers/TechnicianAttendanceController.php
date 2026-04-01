@@ -6,6 +6,8 @@ use App\Models\SalaryAdjustment;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\Transaction;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -21,7 +23,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:attendance.view', only: ['index', 'exportPdf', 'exportExcel']),
-            new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut']),
+            new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut', 'kiosk', 'kioskScan']),
             new Middleware('permission:attendance.create|attendance.edit', only: ['update']),
             new Middleware('permission:attendance.edit', only: ['edit']),
             new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
@@ -479,6 +481,100 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota'));
     }
 
+    public function kiosk()
+    {
+        $todayLogs = TechnicianAttendance::with('user')
+            ->whereDate('clock_in', today())
+            ->latest('clock_in')
+            ->limit(20)
+            ->get();
+
+        return view('technicians.attendance.kiosk', compact('todayLogs'));
+    }
+
+    public function kioskScan(Request $request)
+    {
+        $payload = $request->validate([
+            'card_code' => ['required', 'string', 'max:255'],
+        ]);
+
+        $cardCode = trim((string) $payload['card_code']);
+        $user = $this->resolveAttendanceUser($cardCode);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => __('ID Card tidak dikenali.'),
+            ], 422);
+        }
+
+        $todayAttendance = TechnicianAttendance::where('user_id', $user->id)
+            ->whereDate('clock_in', today())
+            ->first();
+
+        if (! $todayAttendance) {
+            if (! $this->isWithinClockInWindow()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Absensi masuk hanya boleh pada jam yang ditentukan.'),
+                ], 422);
+            }
+
+            $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
+            $lateTolerance = (int) Setting::getValue('attendance_late_tolerance', 0);
+            $lateAt = Carbon::today()->setTimeFromTimeString($clockInStart)->addMinutes(max(0, $lateTolerance));
+            $status = now()->greaterThan($lateAt) ? 'late' : 'present';
+
+            $attendance = TechnicianAttendance::create([
+                'user_id' => $user->id,
+                'clock_in' => now(),
+                'status' => $status,
+                'notes' => 'Kiosk scan ID Card oleh '.Auth::user()->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'action' => 'clock_in',
+                'message' => __('Absen masuk berhasil: :name', ['name' => $user->name]),
+                'data' => [
+                    'name' => $user->name,
+                    'status' => $attendance->status,
+                    'time' => $attendance->clock_in->format('H:i:s'),
+                ],
+            ]);
+        }
+
+        if ($todayAttendance->clock_out) {
+            return response()->json([
+                'success' => false,
+                'message' => __(':name sudah absen lengkap hari ini.', ['name' => $user->name]),
+            ], 422);
+        }
+
+        if (! $this->isWithinClockOutWindow()) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Absensi pulang hanya boleh pada jam yang ditentukan.'),
+            ], 422);
+        }
+
+        $todayAttendance->update([
+            'clock_out' => now(),
+            'notes' => trim(($todayAttendance->notes ?? '')."\nClock Out Kiosk oleh ".Auth::user()->name),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'action' => 'clock_out',
+            'message' => __('Absen pulang berhasil: :name', ['name' => $user->name]),
+            'data' => [
+                'name' => $user->name,
+                'status' => $todayAttendance->status,
+                'time' => $todayAttendance->clock_out->format('H:i:s'),
+            ],
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage (Clock In).
      */
@@ -679,5 +775,50 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     private function attendanceRedirectRoute(Request $request): string
     {
         return $request->routeIs('landing.attendance.*') ? 'landing' : 'attendance.create';
+    }
+
+    private function resolveAttendanceUser(string $cardCode): ?User
+    {
+        $code = trim($cardCode);
+        if ($code === '') {
+            return null;
+        }
+
+        return User::query()
+            ->where('is_active', true)
+            ->whereHas('role.permissions', function ($query) {
+                $query->where('name', 'attendance.create');
+            })
+            ->where(function ($query) use ($code) {
+                $query->where('attendance_card_code', $code)
+                    ->orWhere('username', $code)
+                    ->orWhere('radius_username', $code);
+                if (ctype_digit($code)) {
+                    $query->orWhere('id', (int) $code);
+                }
+            })
+            ->first();
+    }
+
+    private function isWithinClockInWindow(): bool
+    {
+        $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
+        $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+        $currentTime = now()->format('H:i');
+
+        return $currentTime >= $clockInStart && $currentTime <= $clockInEnd;
+    }
+
+    private function isWithinClockOutWindow(): bool
+    {
+        $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
+        $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
+        $currentTime = now()->format('H:i');
+
+        if ($clockOutStart > $clockOutEnd) {
+            return $currentTime >= $clockOutStart || $currentTime <= $clockOutEnd;
+        }
+
+        return $currentTime >= $clockOutStart && $currentTime <= $clockOutEnd;
     }
 }
