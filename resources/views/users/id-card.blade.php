@@ -36,20 +36,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-    @media print {
-        .navbar, .sidebar, .btn, footer {
-            display: none !important;
-        }
-        .id-card-shell {
-            box-shadow: none !important;
-            border: 1px solid #000 !important;
-        }
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
