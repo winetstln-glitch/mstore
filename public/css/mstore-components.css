@@ -489,3 +489,54 @@ body { background-color: var(--bs-body-bg); }
   .route-name-map-index .btn-group-mobile { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; }
   .route-name-map-index .btn-group-mobile .btn { flex: 1 1 auto; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
 }
+
+@media (max-width: 767.98px) {
+  .route-name-customers-index .form-control,
+  .route-name-customers-index .form-select {
+    font-size: 16px;
+  }
+}
+
+.route-name-customers-create #map-picker,
+.route-name-customers-edit #map-picker {
+  height: 320px;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .route-name-customers-create #map-picker,
+  .route-name-customers-edit #map-picker {
+    height: 250px;
+  }
+
+  .route-name-customers-create .mobile-sticky-footer,
+  .route-name-customers-edit .mobile-sticky-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--bs-body-bg);
+    padding: 1rem;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    z-index: 1020;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    margin-bottom: -1rem;
+    border-top: 1px solid rgba(0,0,0,0.075);
+  }
+
+  .route-name-customers-create input,
+  .route-name-customers-create select,
+  .route-name-customers-create textarea,
+  .route-name-customers-edit input,
+  .route-name-customers-edit select,
+  .route-name-customers-edit textarea {
+    font-size: 16px !important;
+  }
+
+  .route-name-customers-create .d-flex.gap-3 {
+    gap: 1.5rem !important;
+  }
+
+  .route-name-customers-edit .header-title h5 {
+    font-size: 1.1rem;
+  }
+}

@@ -3,16 +3,6 @@
 @section('title', __('Customer Management'))
 
 @section('content')
-<style>
-    /* Mobile specific tweaks */
-    @media (max-width: 767.98px) {
-        /* Ensure modal inputs are large enough */
-        .form-control, .form-select {
-            font-size: 16px; /* Prevents iOS zoom on focus */
-        }
-    }
-</style>
-
 <div class="mb-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
         <div>

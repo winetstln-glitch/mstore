@@ -1,47 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@push('styles')
-<style>
-    /* Mobile Optimization Styles */
-    @media (max-width: 768px) {
-        /* Map height adjustment */
-        #map-picker {
-            height: 250px; /* Reduce height on mobile */
-        }
-
-        /* Sticky Bottom Action Bar */
-        .mobile-sticky-footer {
-            position: sticky;
-            bottom: 0;
-            background-color: var(--bs-body-bg);
-            padding: 1rem;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 1020;
-            margin-left: -1rem;
-            margin-right: -1rem;
-            margin-bottom: -1rem;
-            border-top: 1px solid rgba(0,0,0,0.075);
-        }
-
-        /* Prevent iOS auto-zoom on inputs */
-        input, select, textarea {
-            font-size: 16px !important;
-        }
-        
-        /* Header adjustments */
-        .header-title h5 {
-            font-size: 1.1rem;
-        }
-    }
-    
-    #map-picker {
-        height: 320px;
-        z-index: 1;
-    }
-</style>
-@endpush
-
 <div class="row justify-content-center">
     <div class="col-12 col-lg-10 px-3 px-lg-0">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">

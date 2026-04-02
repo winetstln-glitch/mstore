@@ -1,48 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@push('styles')
-<style>
-    /* Mobile Optimization Styles */
-    @media (max-width: 768px) {
-        /* Map height adjustment */
-        #map-picker {
-            height: 250px; /* Reduce height on mobile to save vertical space */
-        }
-
-        /* Sticky Bottom Action Bar */
-        .mobile-sticky-footer {
-            position: sticky;
-            bottom: 0;
-            background-color: var(--bs-body-bg);
-            padding: 1rem;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 1020; /* Above other content */
-            margin-left: -1rem; /* Compensate for card padding */
-            margin-right: -1rem;
-            margin-bottom: -1rem;
-            border-top: 1px solid rgba(0,0,0,0.075);
-        }
-
-        /* Ensure inputs are 16px to prevent iOS auto-zoom */
-        input, select, textarea {
-            font-size: 16px !important;
-        }
-
-        /* Make connection type radios stack better if needed */
-        .d-flex.gap-3 {
-            gap: 1.5rem !important;
-        }
-    }
-    
-    /* Map container z-index to ensure it doesn't overlap sticky footer incorrectly */
-    #map-picker {
-        height: 320px;
-        z-index: 1;
-    }
-</style>
-@endpush
-
 <div class="row justify-content-center">
     <!-- Changed to col-12 on mobile for full width usage -->
     <div class="col-12 col-lg-10 px-3 px-lg-0">
