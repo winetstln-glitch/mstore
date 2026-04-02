@@ -180,6 +180,11 @@
                                 <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                             </a>
                             @endif
+                            @if(Auth::user()->hasPermission('hotspot.view'))
+                            <a href="{{ route('vouchers.index') }}" class="sidebar-item {{ request()->routeIs('vouchers.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-ticket"></i> {{ __('Voucher Hotspot') }}
+                            </a>
+                            @endif
                         </div>
                     </div>
                     @endif

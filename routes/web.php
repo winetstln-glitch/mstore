@@ -26,6 +26,7 @@ use App\Http\Controllers\TechnicianAttendanceController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\TicketWebController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\VpnServerController;
 use App\Models\Router as RouterModel;
 use App\Models\VpnAccount;
@@ -246,6 +247,13 @@ Route::middleware('auth')->group(function () {
     Route::get('employees-export/excel', [EmployeeController::class, 'exportExcel'])->name('employees.export.excel');
     Route::post('employees-sync', [EmployeeController::class, 'syncExisting'])->name('employees.sync');
     Route::resource('employees', EmployeeController::class)->except(['show']);
+
+    Route::get('/voucher/list', [VoucherController::class, 'index'])->name('vouchers.index');
+    Route::post('/voucher/generate', [VoucherController::class, 'generate'])->name('vouchers.generate');
+    Route::post('/voucher/disconnect', [VoucherController::class, 'disconnect'])->name('vouchers.disconnect');
+    Route::get('/voucher/export/csv', [VoucherController::class, 'exportCsv'])->name('vouchers.export.csv');
+    Route::get('/voucher/export/excel', [VoucherController::class, 'exportExcel'])->name('vouchers.export.excel');
+    Route::get('/voucher/export/pdf', [VoucherController::class, 'exportPdf'])->name('vouchers.export.pdf');
     Route::get('investors/export/pdf', [InvestorController::class, 'exportPdf'])->name('investors.export.pdf');
     Route::get('investors/export/excel', [InvestorController::class, 'exportExcel'])->name('investors.export.excel');
     Route::resource('investors', InvestorController::class);
