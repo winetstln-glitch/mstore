@@ -540,3 +540,151 @@ body { background-color: var(--bs-body-bg); }
     font-size: 1.1rem;
   }
 }
+
+/* Routers */
+.route-name-routers-index .content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.route-name-routers-index .content-header-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+.route-name-routers-index .content-header-subtitle {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+.route-name-routers-index .vpn-badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+.route-name-routers-index .vpn-stat-card {
+  border-radius: 0.75rem;
+}
+.route-name-routers-index .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: 6px;
+}
+.route-name-routers-index .status-dot-online { background-color: #28a745; }
+.route-name-routers-index .status-dot-offline { background-color: #dc3545; }
+.route-name-routers-index .vpn-table-actions { white-space: nowrap; }
+
+.route-name-routers-show .router-hero {
+  background: linear-gradient(135deg, #16a34a, #f97316);
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: #fff;
+  box-shadow: 0 0.46875rem 2.1875rem rgba(4,9,20,0.03), 0 0.9375rem 1.40625rem rgba(4,9,20,0.03), 0 0.25rem 0.53125rem rgba(4,9,20,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.route-name-routers-show .router-hero::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.18), transparent 60%);
+  right: -60px;
+  top: -80px;
+}
+.route-name-routers-show .router-hero-title { font-size: 1.4rem; font-weight: 600; margin-bottom: .25rem; }
+.route-name-routers-show .router-hero-subtitle { font-size: .9rem; opacity: .9; }
+.route-name-routers-show .router-hero-meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }
+.route-name-routers-show .router-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  background-color: rgba(15,23,42,0.18);
+  font-size: .78rem;
+}
+.route-name-routers-show .router-chip i { font-size: .8rem; }
+.route-name-routers-show .router-hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+}
+.route-name-routers-show .router-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .2rem .6rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  background-color: rgba(15,23,42,0.28);
+}
+.route-name-routers-show .router-hero-status-icon {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background-color: #22c55e;
+}
+.route-name-routers-show .router-hero-status-icon.offline { background-color: #ef4444; }
+.route-name-routers-show .router-hero-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background-color: rgba(15,23,42,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: .5rem;
+}
+.route-name-routers-show .router-stat-card {
+  border-radius: .85rem;
+  border: 0;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+}
+.route-name-routers-show .router-stat-label {
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #6c757d;
+}
+.route-name-routers-show .router-stat-value { font-size: 1.4rem; font-weight: 600; }
+.route-name-routers-show .router-stat-badge { font-size: .75rem; }
+.route-name-routers-show .metric-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+.route-name-routers-show .metric-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #16a34a, #f97316);
+}
+@media (max-width: 768px) {
+  .route-name-routers-show .router-hero {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .route-name-routers-show .router-hero-actions {
+    align-items: flex-start;
+  }
+}
+[data-bs-theme="dark"] .route-name-routers-show .router-hero {
+  background: linear-gradient(135deg, #14532d, #9a3412);
+}
+[data-bs-theme="dark"] .route-name-routers-show .metric-bar {
+  background-color: #2c3034;
+}

@@ -2,52 +2,6 @@
 
 @section('title', __('Router Management'))
 
-@push('styles')
-<style>
-.content-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.content-header-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-}
-.content-header-subtitle {
-    font-size: 0.9rem;
-    color: #6c757d;
-}
-.vpn-badge {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-}
-.vpn-stat-card {
-    border-radius: 0.75rem;
-}
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    display: inline-block;
-    margin-right: 6px;
-}
-.status-dot-online {
-    background-color: #28a745;
-}
-.status-dot-offline {
-    background-color: #dc3545;
-}
-.vpn-table-actions {
-    white-space: nowrap;
-}
-</style>
-@endpush
-
 @section('content')
     @php
         $totalRouters = \App\Models\Router::count();
