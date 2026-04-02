@@ -25,48 +25,6 @@
     
     <!-- Landing Lite CSS -->
     <link href="{{ asset('css/landing-lite.css') }}?v={{ filemtime(public_path('css/landing-lite.css')) }}" rel="stylesheet">
-    <style>
-        .landing-wash-description-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            margin-bottom: 0.75rem;
-            min-height: 1.6rem;
-        }
-
-        .landing-wash-description-chip {
-            display: inline-flex;
-            align-items: center;
-            min-height: 26px;
-            padding: 0.24rem 0.55rem;
-            border-radius: 0.65rem;
-            background: #eef2ff;
-            border: 1px solid #c7d2fe;
-            color: #3730a3;
-            font-size: 0.72rem;
-            line-height: 1.25;
-            font-weight: 600;
-        }
-
-        .landing-wash-description-chip-empty {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        [data-bs-theme="dark"] .landing-wash-description-chip {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(96, 165, 250, 0.42);
-            color: #bfdbfe;
-        }
-
-        [data-bs-theme="dark"] .landing-wash-description-chip-empty {
-            background: #1e293b;
-            border-color: #334155;
-            color: #94a3b8;
-        }
-    </style>
     <script>
         (function () {
             const storedTheme = localStorage.getItem('theme');
