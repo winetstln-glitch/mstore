@@ -28,6 +28,7 @@
     <!-- Custom Dashboard CSS -->
     <link href="{{ app()->environment('production') ? secure_asset('css/dashboard-custom.css') : asset('css/dashboard-custom.css') }}" rel="stylesheet">
     <link href="{{ app()->environment('production') ? secure_asset('css/app-android.css') : asset('css/app-android.css') }}" rel="stylesheet">
+    <link href="{{ app()->environment('production') ? secure_asset('css/mstore-components.css') : asset('css/mstore-components.css') }}" rel="stylesheet">
     <style>
         .mstore-swal-popup {
             border: 1px solid rgba(148, 163, 184, 0.2) !important;

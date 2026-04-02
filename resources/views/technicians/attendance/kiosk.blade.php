@@ -72,58 +72,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-    [data-bs-theme="dark"] #reader {
-        background: #0f172a;
-        border-color: #334155 !important;
-    }
-
-    [data-bs-theme="dark"] #manualCode {
-        background: #0f172a;
-        border-color: #334155;
-        color: #e2e8f0;
-    }
-
-    [data-bs-theme="dark"] #manualCode::placeholder {
-        color: #94a3b8;
-    }
-
-    [data-bs-theme="dark"] .card-header,
-    [data-bs-theme="dark"] .card-body,
-    [data-bs-theme="dark"] .card-body .small,
-    [data-bs-theme="dark"] .card-body .form-label,
-    [data-bs-theme="dark"] .card-body h5,
-    [data-bs-theme="dark"] .card-body h6 {
-        color: #e2e8f0 !important;
-    }
-
-    [data-bs-theme="dark"] .alert-info {
-        background: rgba(30, 64, 175, 0.25);
-        border-color: rgba(96, 165, 250, 0.4);
-        color: #dbeafe;
-    }
-
-    [data-bs-theme="dark"] #todayLogTable {
-        color: #e2e8f0;
-    }
-
-    [data-bs-theme="dark"] #todayLogTable thead.table-light th {
-        background: #1e293b;
-        color: #cbd5e1;
-        border-color: #334155;
-    }
-
-    [data-bs-theme="dark"] #todayLogTable tbody td {
-        border-color: #334155;
-    }
-
-    [data-bs-theme="dark"] #todayLogTable .text-muted {
-        color: #94a3b8 !important;
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script src="https://unpkg.com/html5-qrcode" defer></script>
 <script>

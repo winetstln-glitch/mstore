@@ -306,54 +306,6 @@
     </div>
 </div>
 
-@push('styles')
-<style>
-    [data-bs-theme="dark"] #manualAttendanceModal .modal-content,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .modal-content {
-        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
-        border: 1px solid rgba(96, 165, 250, 0.28);
-        color: #e2e8f0;
-    }
-
-    [data-bs-theme="dark"] #manualAttendanceModal .modal-header,
-    [data-bs-theme="dark"] #manualAttendanceModal .modal-footer,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .modal-header,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .modal-footer {
-        border-color: #334155;
-    }
-
-    [data-bs-theme="dark"] #manualAttendanceModal .form-label,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .form-label,
-    [data-bs-theme="dark"] #manualAttendanceModal .modal-title,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .modal-title {
-        color: #e2e8f0;
-    }
-
-    [data-bs-theme="dark"] #manualAttendanceModal .form-control,
-    [data-bs-theme="dark"] #manualAttendanceModal .form-select,
-    [data-bs-theme="dark"] #manualAttendanceModal textarea,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .form-control,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .form-select,
-    [data-bs-theme="dark"] #salaryAdjustmentModal textarea {
-        background: #0f172a;
-        border-color: #334155;
-        color: #e2e8f0;
-    }
-
-    [data-bs-theme="dark"] #manualAttendanceModal .form-control::placeholder,
-    [data-bs-theme="dark"] #manualAttendanceModal textarea::placeholder,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .form-control::placeholder,
-    [data-bs-theme="dark"] #salaryAdjustmentModal textarea::placeholder {
-        color: #94a3b8;
-    }
-
-    [data-bs-theme="dark"] #manualAttendanceModal .btn-close,
-    [data-bs-theme="dark"] #salaryAdjustmentModal .btn-close {
-        filter: invert(1) grayscale(100%) brightness(200%);
-    }
-</style>
-@endpush
-
 @if(Auth::user()->hasRole('admin'))
 <form id="form-recap-finance" action="{{ route('attendance.recap_finance') }}" method="POST" style="display: none;">
     @csrf

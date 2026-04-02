@@ -192,7 +192,7 @@
 
 <!-- ODC Modal -->
 <div class="modal fade" id="odcModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="odcModalLabel">{{ __('Tambah ODC') }}</h5>
@@ -278,7 +278,7 @@
 
 <!-- ODP Modal -->
 <div class="modal fade" id="odpModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="odpModalLabel">{{ __('Tambah ODP') }}</h5>
@@ -359,7 +359,7 @@
 </div>
 <!-- HTB Modal -->
 <div class="modal fade" id="htbModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="htbModalLabel">{{ __('Tambah HTB') }}</h5>
