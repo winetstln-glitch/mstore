@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Models\Permission;
+use App\Models\User;
+use App\Models\WashEmployee;
+use App\Observers\UserObserver;
+use App\Observers\WashEmployeeObserver;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
                         return $user->hasPermission($permission->name);
                     });
                 });
+            }
+            if (Schema::hasTable('users')) {
+                User::observe(UserObserver::class);
+            }
+            if (Schema::hasTable('wash_employees')) {
+                WashEmployee::observe(WashEmployeeObserver::class);
             }
         } catch (\Exception $e) {
             // Log::error($e->getMessage());
