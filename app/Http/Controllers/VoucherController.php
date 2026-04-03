@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Voucher;
 use App\Models\VoucherBatch;
+use App\Models\VoucherTemplate;
 use App\Services\VoucherService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -32,13 +33,15 @@ class VoucherController extends Controller implements HasMiddleware
             ->paginate(25)
             ->withQueryString();
         $batches = VoucherBatch::query()->latest('id')->limit(10)->get();
+        $templates = VoucherTemplate::query()->orderByDesc('is_active')->orderBy('name')->get();
 
-        return view('vouchers.index', compact('vouchers', 'batches', 'search', 'status'));
+        return view('vouchers.index', compact('vouchers', 'batches', 'search', 'status', 'templates'));
     }
 
     public function generate(Request $request, VoucherService $service)
     {
         $validated = $request->validate([
+            'voucher_template_id' => ['nullable', 'exists:voucher_templates,id'],
             'profile' => ['nullable', 'string', 'max:255'],
             'duration' => ['nullable', 'string', 'max:20'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
@@ -46,11 +49,18 @@ class VoucherController extends Controller implements HasMiddleware
             'password_same' => ['boolean'],
         ]);
 
-        $durationSeconds = $this->parseDurationToSeconds($validated['duration'] ?? null);
+        $template = null;
+        if (! empty($validated['voucher_template_id'])) {
+            $template = VoucherTemplate::query()->find($validated['voucher_template_id']);
+        }
+
+        $durationSeconds = $template?->duration_seconds ?? $this->parseDurationToSeconds($validated['duration'] ?? null);
+        $profile = $template?->rate_limit ?? ($validated['profile'] ?? null);
+        $quotaMb = $template?->quota_mb ?? ($validated['quota_mb'] ?? null);
         $batch = $service->generateBatch(
-            $validated['profile'] ?? null,
+            $profile,
             $durationSeconds,
-            $validated['quota_mb'] ?? null,
+            $quotaMb,
             (int) $validated['count'],
             (bool) ($validated['password_same'] ?? true),
             auth()->id()
@@ -67,6 +77,30 @@ class VoucherController extends Controller implements HasMiddleware
         $ok = $service->disconnectUser($validated['username']);
 
         return back()->with($ok ? 'success' : 'error', $ok ? 'User disconnected.' : 'Disconnect gagal.');
+    }
+
+    public function storeTemplate(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'rate_limit' => ['nullable', 'string', 'max:255'],
+            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'quota_mb' => ['nullable', 'integer', 'min:0'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'is_active' => ['boolean'],
+        ]);
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
+
+        VoucherTemplate::query()->create($validated);
+
+        return back()->with('success', 'Profile paket voucher berhasil ditambahkan.');
+    }
+
+    public function deleteTemplate(VoucherTemplate $voucherTemplate)
+    {
+        $voucherTemplate->delete();
+
+        return back()->with('success', 'Profile paket voucher berhasil dihapus.');
     }
 
     public function exportCsv(Request $request)

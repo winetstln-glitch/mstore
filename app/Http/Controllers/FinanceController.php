@@ -1285,39 +1285,45 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         // --- HITUNG SUMMARY PER KOORDINATOR ---
+        $selectedReconMonth = $request->input('month', now()->format('Y-m'));
         $coordinatorSummaries = [];
         foreach ($coordinators as $coordinator) {
-            $grossRevenue = Transaction::where('coordinator_id', $coordinator->id)
+            $baseCoordinatorQuery = Transaction::query()
+                ->where('coordinator_id', $coordinator->id)
+                ->whereMonth('transaction_date', date('m', strtotime($selectedReconMonth)))
+                ->whereYear('transaction_date', date('Y', strtotime($selectedReconMonth)));
+
+            $grossRevenue = (clone $baseCoordinatorQuery)
                 ->where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
                 ->sum('amount');
 
-            $commission = Transaction::where('coordinator_id', $coordinator->id)
+            $commission = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->where('category', 'Coordinator Commission')
                 ->sum('amount');
 
-            $ispShare = Transaction::where('coordinator_id', $coordinator->id)
+            $ispShare = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->where('category', 'ISP Payment')
                 ->sum('amount');
 
-            $toolFund = Transaction::where('coordinator_id', $coordinator->id)
+            $toolFund = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->where('category', 'Tool Fund')
                 ->sum('amount');
 
-            $investorShareByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
+            $investorShareByCoordinator = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->where('category', 'Investor Profit Share')
                 ->sum('amount');
 
-            $investorCashByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
+            $investorCashByCoordinator = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->where('category', 'Investor Cash Fund')
                 ->sum('amount');
 
-            $deposited = Transaction::where('coordinator_id', $coordinator->id)
+            $deposited = (clone $baseCoordinatorQuery)
                 ->where(function ($q) {
                     $q->where('type', 'transfer')
                         ->orWhere(function ($q2) {
@@ -1328,7 +1334,7 @@ class FinanceController extends Controller implements HasMiddleware
                 ->sum('amount');
 
             // Hitung TOTAL Expenses (Termasuk Barang Ambil)
-            $totalExpenses = Transaction::where('coordinator_id', $coordinator->id)
+            $totalExpenses = (clone $baseCoordinatorQuery)
                 ->where('type', 'expense')
                 ->whereNotIn('category', [
                     'Coordinator Commission',
@@ -1342,7 +1348,7 @@ class FinanceController extends Controller implements HasMiddleware
                 ->sum('amount');
 
             // PISAHKAN: Hitung Inventory (Ambil Barang & Pengeluaran INV-OUT)
-            $inventoryExpenses = Transaction::where('coordinator_id', $coordinator->id)
+            $inventoryExpenses = (clone $baseCoordinatorQuery)
                 ->where(function ($q) {
                     $q->where('category', 'Ambil Barang')
                         ->orWhere(function ($sub) {

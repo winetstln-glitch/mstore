@@ -7,20 +7,12 @@
     <!-- HEADER FILTER (Sesuai saran tambahan sebelumnya) -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form action="{{ route('finance.coordinator.detail', $coordinator->id) }}" method="GET" class="row g-3 align-items-end">
-                
+            <form action="{{ route('finance.coordinator.detail', $coordinator->id) }}" method="GET" class="row g-3 align-items-end" id="coordFilterForm">
                 <div class="col-md-4">
                     <label class="form-label small text-muted fw-bold">Pilih Periode</label>
-                    <select name="month" class="form-select form-select-lg">
-                        <option value="{{ \Carbon\Carbon::parse($startDate)->format('Y-m') }}">{{ \Carbon\Carbon::parse($startDate)->format('F Y') }}</option>
-                        @for($i = 1; $i <= 6; $i++)
-                        @php
-                            $d = date('Y-m', strtotime("-$i months"));
-                        @endphp
-                        <option value="{{ $d }}">{{ \Carbon\Carbon::parse($d)->format('F Y') }}</option>
-                        @endfor
-                        <option value="all">Semua Periode</option>
-                    </select>
+                    <input type="month" name="month" id="monthPicker" class="form-control form-control-lg" value="{{ \Carbon\Carbon::parse($startDate)->format('Y-m') }}">
+                    <input type="hidden" name="start_date" id="start_date" value="{{ $startDate }}">
+                    <input type="hidden" name="end_date" id="end_date" value="{{ $endDate }}">
                 </div>
 
                 <div class="col-md-3">
@@ -420,6 +412,30 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('coordFilterForm');
+        const monthPicker = document.getElementById('monthPicker');
+        const startInput = document.getElementById('start_date');
+        const endInput = document.getElementById('end_date');
+
+        function updateDatesFromMonth() {
+            if (!monthPicker || !monthPicker.value) return;
+            const [y, m] = monthPicker.value.split('-').map(Number);
+            if (!y || !m) return;
+            const start = new Date(y, m - 1, 1);
+            const end = new Date(y, m, 0);
+            const pad = (n) => n.toString().padStart(2, '0');
+            startInput.value = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
+            endInput.value = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+        }
+
+        if (monthPicker && form) {
+            monthPicker.addEventListener('change', function() {
+                updateDatesFromMonth();
+                form.submit();
+            });
+            updateDatesFromMonth();
+        }
+
         const editModal = document.getElementById('editTransactionModal');
         if (editModal) {
             editModal.addEventListener('show.bs.modal', function (event) {

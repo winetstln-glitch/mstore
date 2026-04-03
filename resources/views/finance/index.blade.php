@@ -189,9 +189,31 @@
 
         <!-- ============================ MODIFIKASI UTAMA ============================ -->
         <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Pengurus (Cash Only)') }}</h6>
-                <span class="badge bg-warning text-dark">Exclude Ambil Barang</span>
+            <div class="card-header py-3">
+                <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Pengurus (Cash Only)') }}</h6>
+                        <span class="badge bg-warning text-dark">Exclude Ambil Barang</span>
+                        @php $monthText = \Carbon\Carbon::createFromFormat('Y-m', request('month', now()->format('Y-m')))->translatedFormat('F Y'); @endphp
+                        <span class="badge bg-light text-dark border">{{ __('Periode') }}: {{ $monthText }}</span>
+                    </div>
+                    <form action="{{ route('finance.index') }}" method="GET" class="w-100 w-lg-auto">
+                        <div class="row g-2 align-items-stretch align-items-lg-center">
+                            <div class="col">
+                                <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month', now()->format('Y-m')) }}" onchange="this.form.submit()">
+                            </div>
+                            @if(request()->has('coordinator_id') && request('coordinator_id')!=='')
+                                <input type="hidden" name="coordinator_id" value="{{ request('coordinator_id') }}">
+                            @endif
+                            @if(request()->has('type') && request('type')!=='')
+                                <input type="hidden" name="type" value="{{ request('type') }}">
+                            @endif
+                            @if(request()->has('search') && request('search')!=='')
+                                <input type="hidden" name="search" value="{{ request('search') }}">
+                            @endif
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="card-body">
                 <div class="alert alert-info py-2 px-3 small mb-3">
