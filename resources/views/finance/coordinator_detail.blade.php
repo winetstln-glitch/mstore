@@ -240,7 +240,7 @@
                             <th width="120">Kategori</th>
                             <th>Keterangan / Deskripsi</th>
                             <th width="110" class="text-end">Jumlah (Rp)</th>
-                            <th width="100" class="text-center">Aksi</th>
+                            <th width="120" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -266,7 +266,8 @@
                                 @if($transaction->type != 'income') ) @endif
                             </td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-primary" 
+                                <div class="d-inline-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary finance-action-btn" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#editTransactionModal"
                                     data-action="{{ route('finance.update', $transaction->id) }}"
@@ -282,15 +283,16 @@
                                 <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger finance-action-btn">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted" style="padding: 20px;">
+                            <td colspan="6" class="text-center text-muted" style="padding: 20px;">
                                 Tidak ada transaksi manual yang diinput pada periode ini.
                             </td>
                         </tr>

@@ -688,3 +688,51 @@ body { background-color: var(--bs-body-bg); }
 [data-bs-theme="dark"] .route-name-routers-show .metric-bar {
   background-color: #2c3034;
 }
+
+.inventory-page .inventory-action-btn {
+  min-width: 34px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Global View Consistency */
+.card .card-header {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.table thead th {
+  background: rgba(148, 163, 184, 0.12);
+  font-weight: 600;
+}
+.table td .btn.btn-sm,
+.table td .btn-group .btn.btn-sm {
+  min-width: 34px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.table-responsive {
+  border-radius: 0.75rem;
+}
+.btn-group .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-bs-theme="dark"] .table thead th {
+  background: rgba(51, 65, 85, 0.55);
+  color: #e2e8f0;
+}
+[data-bs-theme="dark"] .table tbody td {
+  border-color: #334155;
+}
+
+.finance-action-btn {
+  min-width: 34px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

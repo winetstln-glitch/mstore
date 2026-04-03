@@ -451,7 +451,7 @@
                                 <th class="text-end text-success">{{ __('Debet (Masuk)') }}</th>
                                 <th class="text-end text-danger">{{ __('Kredit (Keluar)') }}</th>
                                 <th width="100">{{ __('Ref') }}</th>
-                                <th class="text-center" width="100">{{ __('Aksi') }}</th>
+                                <th class="text-center" width="120">{{ __('Aksi') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -489,8 +489,8 @@
                                 </td>
                                 <td class="small font-monospace">{{ $transaction->reference_number }}</td>
                                 <td class="text-center row-actions">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button type="button" class="btn btn-outline-primary"
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <button type="button" class="btn btn-sm btn-outline-primary finance-action-btn"
                                             data-bs-toggle="modal"  
                                             data-bs-target="#editTransactionModal"
                                             data-id="{{ $transaction->id }}"
@@ -508,7 +508,7 @@
                                         <form action="{{ route('finance.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus transaksi ini?') }}')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger finance-action-btn">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </form>

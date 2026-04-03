@@ -358,6 +358,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'index'])->name('expenses.index');
         Route::get('/expenses/create', [\App\Http\Controllers\WashExpenseController::class, 'create'])->name('expenses.create');
         Route::post('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'store'])->name('expenses.store');
+        Route::post('/expenses/stock-out', [\App\Http\Controllers\WashExpenseController::class, 'stockOut'])->name('expenses.stock_out');
         Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\WashExpenseController::class, 'edit'])->name('expenses.edit');
         Route::put('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'update'])->name('expenses.update');
         Route::delete('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'destroy'])->name('expenses.destroy');

@@ -163,7 +163,7 @@
                                     <th class="d-none d-md-table-cell">{{ __('Condition') }}</th>
                                     <!-- Hidden on mobile -->
                                     <th class="d-none d-md-table-cell">{{ __('Note') }}</th>
-                                    <th class="text-end pe-4" style="width: 80px;">{{ __('Act') }}</th>
+                                    <th class="text-end pe-4" style="width: 110px;">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -188,12 +188,14 @@
                                             {{ $asset->meta_data['assignment_note'] ?? '-' }}
                                         </td>
                                         <td class="text-end pe-4">
+                                            <div class="d-inline-flex align-items-center gap-1">
                                             <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Return this asset?') }}')">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Return') }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning inventory-action-btn" title="{{ __('Return') }}">
                                                     <i class="fa-solid fa-rotate-left"></i>
                                                 </button>
                                             </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -224,7 +226,7 @@
                                     <th class="py-3 text-center">{{ __('Stock') }}</th>
                                     <!-- Hidden on mobile -->
                                     <th class="d-none d-md-table-cell py-3">{{ __('Unit') }}</th>
-                                    <th class="pe-4 py-3 text-end" style="width: 120px;">{{ __('Actions') }}</th>
+                                    <th class="pe-4 py-3 text-end" style="width: 140px;">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -257,11 +259,11 @@
                                         </td>
                                         <td class="d-none d-md-table-cell small">{{ $item->unit }}</td>
                                         <td class="pe-4 text-end">
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info" title="{{ __('Assets') }}">
+                                            <div class="d-inline-flex align-items-center gap-1">
+                                                <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info inventory-action-btn" title="{{ __('Assets') }}">
                                                     <i class="fa-solid fa-barcode"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                <button type="button" class="btn btn-sm btn-outline-primary inventory-action-btn" 
                                                     data-bs-toggle="modal" data-bs-target="#editItemModal"
                                                     data-id="{{ $item->id }}"
                                                     data-name="{{ $item->name }}"
@@ -280,7 +282,7 @@
                                                 <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete?') }}')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger inventory-action-btn">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -322,7 +324,7 @@
                                     <!-- Hidden on mobile -->
                                     <th class="d-none d-md-table-cell py-3">{{ __('Desc') }}</th>
                                     <th class="pe-4 py-3 text-end">{{ __('Proof') }}</th>
-                                    <th class="pe-4 py-3 text-end" style="width: 80px;">{{ __('Act') }}</th>
+                                    <th class="pe-4 py-3 text-end" style="width: 110px;">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -344,7 +346,7 @@
                                         <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">{{ $transaction->description ?: '-' }}</td>
                                         <td class="pe-4 text-end">
                                             @if($transaction->proof_image)
-                                                <a href="{{ Storage::url($transaction->proof_image) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <a href="{{ Storage::url($transaction->proof_image) }}" target="_blank" class="btn btn-sm btn-outline-info inventory-action-btn">
                                                     <i class="fa-solid fa-image"></i>
                                                 </a>
                                             @else
@@ -353,7 +355,8 @@
                                         </td>
                                         <td class="pe-4 text-end">
                                             @if(Auth::id() === $transaction->user_id || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
-                                            <button type="button" class="btn btn-sm btn-outline-primary me-1" 
+                                            <div class="d-inline-flex align-items-center gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-primary inventory-action-btn" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#editPickupModal"
                                                 data-id="{{ $transaction->id }}"
@@ -367,10 +370,11 @@
                                             <form action="{{ route('inventory.pickup.destroy', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete pickup?') }}')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger inventory-action-btn">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
+                                            </div>
                                             @endif
                                         </td>
                                     </tr>
