@@ -146,6 +146,20 @@ class UserController extends Controller implements HasMiddleware
         }
         $validated = $request->validate($rules);
 
+        // Prevent duplicates by checking name too
+        $existing = User::findExistingUser([
+            'email' => $validated['email'] ?? null,
+            'username' => $validated['username'] ?? null,
+            'radius_username' => $validated['radius_username'] ?? null,
+            'attendance_card_code' => $validated['attendance_card_code'] ?? null,
+            'name' => $validated['name'],
+            'phone' => $validated['phone'] ?? null,
+        ]);
+
+        if ($existing) {
+            return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email ?: $existing->username])])->withInput();
+        }
+
         $username = trim((string) ($validated['username'] ?? ''));
         if ($username === '') {
             $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);

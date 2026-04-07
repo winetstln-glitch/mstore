@@ -98,6 +98,43 @@ class User extends Authenticatable
         return $this->hasMany(Invoice::class);
     }
 
+    public static function findExistingUser(array $data): ?self
+    {
+        $query = self::query();
+
+        if (! empty($data['email'])) {
+            return self::where('email', $data['email'])->first();
+        }
+
+        if (! empty($data['username'])) {
+            return self::where('username', $data['username'])->first();
+        }
+
+        if (! empty($data['radius_username'])) {
+            return self::where('radius_username', $data['radius_username'])->first();
+        }
+
+        if (! empty($data['attendance_card_code'])) {
+            return self::where('attendance_card_code', $data['attendance_card_code'])->first();
+        }
+
+        if (! empty($data['phone'])) {
+            $phone = preg_replace('/[^0-9]/', '', $data['phone']);
+            if ($phone) {
+                $userByPhone = self::where('phone', 'like', "%{$phone}%")->first();
+                if ($userByPhone) {
+                    return $userByPhone;
+                }
+            }
+        }
+
+        if (! empty($data['name'])) {
+            return self::whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($data['name']))])->first();
+        }
+
+        return null;
+    }
+
     public function hasRole(string $roleName): bool
     {
         return $this->role && $this->role->name === $roleName;

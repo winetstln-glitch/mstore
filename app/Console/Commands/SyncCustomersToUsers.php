@@ -29,19 +29,26 @@ class SyncCustomersToUsers extends Command
 
             if (! $user) {
                 $email = 'customer'.$customer->id.'@local.test';
-                $user = User::where('email', $email)->first();
+                // Try finding by name or phone or email
+                $user = User::findExistingUser([
+                    'email' => $email,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                ]);
+
                 if (! $user && ! $dry) {
                     $password = Str::password(12);
                     $user = User::create([
                         'name' => $customer->name ?: 'Customer '.$customer->id,
                         'email' => $email,
+                        'phone' => $customer->phone,
                         'password' => $password,
                         'is_active' => true,
                     ]);
                     $created++;
                     $this->line("created user: {$user->email}");
-                } else {
-                    $this->line("user exists: {$email}");
+                } elseif ($user) {
+                    $this->line("user found: {$user->name} ({$user->id})");
                 }
             }
 

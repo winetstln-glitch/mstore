@@ -72,14 +72,26 @@ class CoordinatorController extends Controller implements HasMiddleware
         $userId = $request->user_id;
 
         if ($request->input('user_option') === 'new') {
-            $role = Role::where('name', 'coordinator')->first();
-            $user = User::create([
-                'name' => $validated['name'],
+            // Check for existing user first
+            $existing = User::findExistingUser([
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'role_id' => $role ? $role->id : null,
+                'name' => $validated['name'],
+                'phone' => $validated['phone'] ?? null,
             ]);
-            $userId = $user->id;
+
+            if ($existing) {
+                $userId = $existing->id;
+            } else {
+                $role = Role::where('name', 'coordinator')->first();
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make($validated['password']),
+                    'role_id' => $role ? $role->id : null,
+                    'phone' => $validated['phone'] ?? null,
+                ]);
+                $userId = $user->id;
+            }
         }
 
         Coordinator::create([

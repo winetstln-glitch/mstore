@@ -99,6 +99,18 @@ class WashEmployeeController extends Controller
     private function resolveUserId(array $validated): ?int
     {
         if (($validated['user_option'] ?? 'existing') === 'new') {
+            // Check if user with this email or username or name already exists
+            $existingUser = User::findExistingUser([
+                'email' => $validated['email'] ?? null,
+                'username' => $validated['username'] ?? null,
+                'name' => $validated['name'],
+                'phone' => $validated['phone'] ?? null,
+            ]);
+
+            if ($existingUser) {
+                return (int) $existingUser->id;
+            }
+
             $roleId = Role::query()
                 ->whereIn('name', ['karyawan-wash', 'kasir-wash', 'employee'])
                 ->value('id');

@@ -47,6 +47,16 @@ class TechnicianController extends Controller implements HasMiddleware
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $existing = User::findExistingUser([
+            'email' => $request->email,
+            'name' => $request->name,
+            'phone' => $request->phone,
+        ]);
+
+        if ($existing) {
+            return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email])])->withInput();
+        }
+
         $role = Role::where('name', 'technician')->firstOrFail();
 
         User::create([
