@@ -44,7 +44,7 @@
                     <div class="brand-section">
                         <div class="brand-logo"><img src="{{ $logoUrl }}" alt="Logo"></div>
                         <div>
-                            <div class="brand-name">MSTORE CORP</div>
+                            <div class="brand-name">MSTORE</div>
                             <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
                         </div>
                     </div>
@@ -60,15 +60,18 @@
                     </div>
                     <div class="identity-lines">
                         <div class="identity-row">
-                            <div class="identity-label">NAME:</div>
+                            <div class="identity-label">NAME</div>
+                            <div class="identity-sep">:</div>
                             <div class="identity-value">{{ $employee->full_name }}</div>
                         </div>
                         <div class="identity-row">
-                            <div class="identity-label">TITLE:</div>
+                            <div class="identity-label">TITLE</div>
+                            <div class="identity-sep">:</div>
                             <div class="identity-value">{{ $employee->position ?: '-' }}</div>
                         </div>
                         <div class="identity-row">
-                            <div class="identity-label">EMP ID:</div>
+                            <div class="identity-label">EMP ID</div>
+                            <div class="identity-sep">:</div>
                             <div class="identity-value">{{ $idCardCode }}</div>
                         </div>
                     </div>
@@ -94,8 +97,8 @@ document.addEventListener('DOMContentLoaded', function () {
         JsBarcode(el, code, {
             format: 'CODE128',
             lineColor: '#111827',
-            width: 1.4,
-            height: 22,
+            width: 1.5,
+            height: 20,
             displayValue: false,
             margin: 0,
         });
@@ -125,7 +128,11 @@ document.addEventListener('DOMContentLoaded', function () {
     height: 85.6mm;
     border-radius: 4mm;
     overflow: hidden;
-    background: #ffffff;
+    background:
+        radial-gradient(circle at 18% 16%, rgba(59, 130, 246, 0.18), transparent 42%),
+        radial-gradient(circle at 85% 22%, rgba(14, 165, 233, 0.16), transparent 38%),
+        radial-gradient(circle at 72% 88%, rgba(99, 102, 241, 0.14), transparent 40%),
+        linear-gradient(145deg, #ffffff 0%, #f8fbff 55%, #eef4ff 100%);
     display: flex;
     flex-direction: column;
     position: relative;
@@ -176,12 +183,12 @@ document.addEventListener('DOMContentLoaded', function () {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 2.3mm 3.2mm 1.4mm;
-    gap: 1.6mm;
+    padding: 1.9mm 3.2mm 0.9mm;
+    gap: 1.2mm;
 }
 .photo-frame {
-    width: 100%;
-    height: 31mm;
+    width: 28mm;
+    height: 37mm;
     border: 0.8pt dashed #9ca3af;
     border-radius: 1.3mm;
     display: flex;
@@ -189,22 +196,31 @@ document.addEventListener('DOMContentLoaded', function () {
     justify-content: center;
     background: #f8fafc;
     overflow: hidden;
+    margin: 0 auto;
 }
 .photo-image { width: 100%; height: 100%; object-fit: cover; }
 .photo-placeholder { font-size: 2.4mm; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
 .identity-lines { display: flex; flex-direction: column; gap: 0.7mm; }
-.identity-row { display: flex; align-items: baseline; gap: 1.1mm; line-height: 1.08; }
+.identity-row { display: flex; align-items: baseline; gap: 0.8mm; line-height: 1.08; }
 .identity-label {
-    width: 12.5mm;
-    font-size: 2.5mm;
+    width: 11.8mm;
+    font-size: 2.3mm;
     font-weight: 900;
     color: #1d4ed8;
     text-transform: uppercase;
     letter-spacing: 0.1px;
 }
+.identity-sep {
+    width: 2mm;
+    text-align: center;
+    font-size: 2.4mm;
+    font-weight: 900;
+    color: #1d4ed8;
+    line-height: 1;
+}
 .identity-value {
     flex: 1;
-    font-size: 2.9mm;
+    font-size: 2.6mm;
     font-weight: 800;
     color: #111827;
     white-space: nowrap;
@@ -213,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 .id-card-item-footer {
     border-top: 0.8pt solid #bfdbfe;
-    padding: 1.1mm 3.2mm 1.6mm;
+    padding: 0.8mm 3.2mm 1.2mm;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -229,8 +245,8 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 .barcode-svg { max-width: 100%; height: auto; }
 .barcode-text {
-    margin-top: 0.8mm;
-    font-size: 1.6mm;
+    margin-top: 0.6mm;
+    font-size: 1.5mm;
     font-weight: 700;
     color: #1e293b;
     letter-spacing: 0.12em;

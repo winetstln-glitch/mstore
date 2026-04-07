@@ -355,13 +355,67 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             ->count();
         $offline = $offlineDirect + $offlineStaleOnline;
         $unknown = max(0, $total - $online - $offline);
+        $detailLimit = (int) Setting::getValue('telegram_monitor_detail_list_limit', '20');
+        if ($detailLimit < 5) {
+            $detailLimit = 5;
+        }
+        if ($detailLimit > 100) {
+            $detailLimit = 100;
+        }
 
-        $message = "📊 *Rekap Monitor GenieACS*\n\n";
+        $onlineStatuses = GenieDeviceStatus::query()
+            ->with('customer:id,name,pppoe_user')
+            ->whereIn('customer_id', $customerIds)
+            ->where('is_online', true)
+            ->where('updated_at', '>=', now()->subMinutes(15))
+            ->latest('updated_at')
+            ->limit($detailLimit)
+            ->get();
+        $offlineStatuses = GenieDeviceStatus::query()
+            ->with('customer:id,name,pppoe_user')
+            ->whereIn('customer_id', $customerIds)
+            ->where(function ($q) {
+                $q->where('is_online', false)
+                    ->orWhere(function ($q2) {
+                        $q2->where('is_online', true)
+                            ->where('updated_at', '<', now()->subMinutes(15));
+                    });
+            })
+            ->latest('updated_at')
+            ->limit($detailLimit)
+            ->get();
+
+        $message = "📊 *Rekap Monitor GenieACS (Detail Mode)*\n\n";
         $message .= "*Total Modem Aktif:* {$total}\n";
-        $message .= "*Online:* 🟢 {$online}\n";
-        $message .= "*Offline:* 🔴 {$offline}\n";
+        $message .= "*Mode ONLINE:* 🟢 {$online}\n";
+        $message .= "*Mode OFFLINE:* 🔴 {$offline}\n";
         $message .= "*Belum Sinkron:* ⚪ {$unknown}\n";
-        $message .= '*Waktu:* '.now()->format('d M Y H:i:s');
+        $message .= '*Waktu:* '.now()->format('d M Y H:i:s')."\n\n";
+
+        $message .= "*Daftar ONLINE (max {$detailLimit}):*\n";
+        if ($onlineStatuses->isEmpty()) {
+            $message .= "- Tidak ada data online.\n";
+        } else {
+            foreach ($onlineStatuses as $status) {
+                $name = $status->customer?->name ?? '-';
+                $pppoe = $status->customer?->pppoe_user ?: '-';
+                $ip = $status->tr069_ip ?: '-';
+                $message .= "- 🟢 {$name} | `{$pppoe}` | IP: `{$ip}`\n";
+            }
+        }
+
+        $message .= "\n*Daftar OFFLINE (max {$detailLimit}):*\n";
+        if ($offlineStatuses->isEmpty()) {
+            $message .= "- Tidak ada data offline.\n";
+        } else {
+            foreach ($offlineStatuses as $status) {
+                $name = $status->customer?->name ?? '-';
+                $pppoe = $status->customer?->pppoe_user ?: '-';
+                $ip = $status->tr069_ip ?: '-';
+                $reason = $status->last_reason ?: '-';
+                $message .= "- 🔴 {$name} | `{$pppoe}` | IP: `{$ip}` | {$reason}\n";
+            }
+        }
 
         $sent = $telegramService->sendToTechnicianGroup($message);
         if ($sent) {

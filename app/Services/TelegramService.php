@@ -390,6 +390,13 @@ class TelegramService
             ->get(['id', 'name', 'onu_serial']);
         $customerIds = $customers->pluck('id');
         $freshCutoff = \Carbon\Carbon::now()->subMinutes(15);
+        $detailLimit = (int) Setting::getValue('telegram_monitor_detail_list_limit', '20');
+        if ($detailLimit < 5) {
+            $detailLimit = 5;
+        }
+        if ($detailLimit > 100) {
+            $detailLimit = 100;
+        }
 
         $online = \App\Models\GenieDeviceStatus::query()
             ->whereIn('customer_id', $customerIds)
@@ -408,27 +415,55 @@ class TelegramService
         $offline = $offlineDirect + $offlineStaleOnline;
         $unknown = max(0, $customers->count() - $online - $offline);
 
-        $offlineStatuses = \App\Models\GenieDeviceStatus::query()
-            ->with('customer:id,name,onu_serial')
+        $onlineStatuses = \App\Models\GenieDeviceStatus::query()
+            ->with('customer:id,name,pppoe_user')
             ->whereIn('customer_id', $customerIds)
-            ->where('is_online', false)
+            ->where('is_online', true)
+            ->where('updated_at', '>=', $freshCutoff)
             ->latest('updated_at')
-            ->limit(20)
+            ->limit($detailLimit)
+            ->get();
+        $offlineStatuses = \App\Models\GenieDeviceStatus::query()
+            ->with('customer:id,name,pppoe_user')
+            ->whereIn('customer_id', $customerIds)
+            ->where(function ($q) use ($freshCutoff) {
+                $q->where('is_online', false)
+                    ->orWhere(function ($q2) use ($freshCutoff) {
+                        $q2->where('is_online', true)
+                            ->where('updated_at', '<', $freshCutoff);
+                    });
+            })
+            ->latest('updated_at')
+            ->limit($detailLimit)
             ->get();
 
-        $msg = "📡 *Rekap Status Modem Pelanggan*\n\n";
+        $msg = "📡 *Rekap Status Modem Pelanggan (Detail Mode)*\n\n";
         $msg .= 'Total Pelanggan: '.$customers->count()."\n";
-        $msg .= "ONLINE: 🟢 {$online}\n";
-        $msg .= "OFFLINE: 🔴 {$offline}\n";
+        $msg .= "MODE ONLINE: 🟢 {$online}\n";
+        $msg .= "MODE OFFLINE: 🔴 {$offline}\n";
         $msg .= "BELUM SINKRON: ⚪ {$unknown}\n\n";
-        $msg .= "*20 OFFLINE Terbaru:*\n";
+        $msg .= "*{$detailLimit} ONLINE Terbaru:*\n";
+        if ($onlineStatuses->isEmpty()) {
+            $msg .= "- Tidak ada data online.\n";
+        } else {
+            foreach ($onlineStatuses as $status) {
+                $customerName = $status->customer?->name ?? '-';
+                $pppoe = $status->customer?->pppoe_user ?: '-';
+                $ip = $status->tr069_ip ?: '-';
+                $msg .= "- 🟢 {$customerName} | `{$pppoe}` | IP: `{$ip}`\n";
+            }
+        }
+
+        $msg .= "\n*{$detailLimit} OFFLINE Terbaru:*\n";
         if ($offlineStatuses->isEmpty()) {
             $msg .= "- Tidak ada data offline.\n";
         } else {
             foreach ($offlineStatuses as $status) {
                 $customerName = $status->customer?->name ?? '-';
-                $serial = $status->customer?->onu_serial ?? $status->onu_serial ?? '-';
-                $msg .= "- 🔴 {$customerName} | `{$serial}`\n";
+                $pppoe = $status->customer?->pppoe_user ?: '-';
+                $ip = $status->tr069_ip ?: '-';
+                $reason = $status->last_reason ?: '-';
+                $msg .= "- 🔴 {$customerName} | `{$pppoe}` | IP: `{$ip}` | {$reason}\n";
             }
         }
 

@@ -177,6 +177,16 @@ class TelegramController extends Controller implements HasMiddleware
             ]
         );
 
+        $telegramMonitorDetailLimit = Setting::firstOrCreate(
+            ['key' => 'telegram_monitor_detail_list_limit'],
+            [
+                'value' => '20',
+                'group' => 'telegram',
+                'type' => 'number',
+                'label' => 'Maks data detail ONLINE/OFFLINE',
+            ]
+        );
+
         return view('telegram.index', compact(
             'setting',
             'groupChatId',
@@ -189,7 +199,8 @@ class TelegramController extends Controller implements HasMiddleware
             'downConfirmChecks',
             'upConfirmChecks',
             'telegramRetryAttempts',
-            'telegramRetryBackoffMinutes'
+            'telegramRetryBackoffMinutes',
+            'telegramMonitorDetailLimit'
         ));
     }
 
@@ -211,6 +222,7 @@ class TelegramController extends Controller implements HasMiddleware
             'network_monitor_up_confirm_checks' => 'nullable|integer|min:1|max:10',
             'network_monitor_telegram_max_retry_attempts' => 'nullable|integer|min:1|max:20',
             'network_monitor_telegram_retry_backoff_minutes' => 'nullable|integer|min:1|max:120',
+            'telegram_monitor_detail_list_limit' => 'nullable|integer|min:5|max:100',
         ]);
 
         Setting::updateOrCreate(['key' => 'telegram_bot_token'], [
@@ -295,6 +307,13 @@ class TelegramController extends Controller implements HasMiddleware
             'group' => 'telegram',
             'type' => 'number',
             'label' => 'Jeda Retry Telegram (menit)',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_monitor_detail_list_limit'], [
+            'value' => (string) ((int) $request->input('telegram_monitor_detail_list_limit', 20)),
+            'group' => 'telegram',
+            'type' => 'number',
+            'label' => 'Maks data detail ONLINE/OFFLINE',
         ]);
 
         return redirect()->route('telegram.index')->with('success', __('Telegram settings updated successfully.'));

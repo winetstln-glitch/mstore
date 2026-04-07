@@ -96,7 +96,7 @@
                             <input class="form-check-input" type="checkbox" role="switch" id="telegram_notify_ip_up" name="telegram_notify_ip_up" value="1" {{ (string)($notifyIpUp->value ?? '1') === '1' ? 'checked' : '' }}>
                             <label class="form-check-label" for="telegram_notify_ip_up">{{ __('Kirim notifikasi saat IP/ONU UP (recovery)') }}</label>
                         </div>
-                        <div class="form-text">{{ __('Notifikasi UP/DOWN dipakai oleh monitor GenieACS yang berjalan berkala.') }}</div>
+                        <div class="form-text">{{ __('Notifikasi UP/DOWN dipakai oleh monitor GenieACS yang berjalan berkala, termasuk detail per mode (ONLINE/OFFLINE), pelanggan, dan IP address.') }}</div>
                     </div>
 
                     <div class="mb-4">
@@ -127,6 +127,11 @@
                                 <input type="number" min="1" max="120" name="network_monitor_telegram_retry_backoff_minutes" id="network_monitor_telegram_retry_backoff_minutes" value="{{ (int)($telegramRetryBackoffMinutes->value ?? 5) }}" class="form-control">
                                 <div class="form-text">{{ __('Interval jeda antar percobaan retry Telegram.') }}</div>
                             </div>
+                            <div class="col-md-6">
+                                <label for="telegram_monitor_detail_list_limit" class="form-label">{{ __('Maks Detail List ONLINE/OFFLINE') }}</label>
+                                <input type="number" min="5" max="100" name="telegram_monitor_detail_list_limit" id="telegram_monitor_detail_list_limit" value="{{ (int)($telegramMonitorDetailLimit->value ?? 20) }}" class="form-control">
+                                <div class="form-text">{{ __('Jumlah maksimal data pelanggan yang ditampilkan per mode pada notifikasi rekap GenieACS.') }}</div>
+                            </div>
                         </div>
                     </div>
 
@@ -142,6 +147,10 @@
                             <strong>{{ __('Variables Available:') }}</strong><br>
                             <code>{customer_name}</code> - {{ __('Nama Pelanggan') }}<br>
                             <code>{customer_id}</code> - {{ __('ID Pelanggan') }}<br>
+                            <code>{customer_pppoe_user}</code> - {{ __('Username PPPoE Pelanggan') }}<br>
+                            <code>{customer_phone}</code> - {{ __('No HP Pelanggan') }}<br>
+                            <code>{customer_address}</code> - {{ __('Alamat Pelanggan') }}<br>
+                            <code>{customer_package}</code> - {{ __('Paket Pelanggan') }}<br>
                             <code>{onu_serial}</code> - {{ __('Serial Number ONU') }}<br>
                             <code>{status}</code> - {{ __('Status ONT/ONU') }}<br>
                             <code>{tr069_ip}</code> - {{ __('IP TR069') }}<br>
