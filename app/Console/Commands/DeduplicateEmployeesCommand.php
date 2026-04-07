@@ -28,6 +28,8 @@ class DeduplicateEmployeesCommand extends Command
 
         $runner = function () use (&$stats, $dryRun): void {
             $this->dedupeEmployeesByUserId($stats, $dryRun);
+            $this->dedupeEmployeesByWashEmployeeId($stats, $dryRun);
+            $this->dedupeEmployeesByEmail($stats, $dryRun);
             $this->dedupeEmployeesByWashName($stats, $dryRun);
             $this->deactivateOrphanGeneratedUsers($stats, $dryRun);
         };
@@ -77,6 +79,75 @@ class DeduplicateEmployeesCommand extends Command
             $stats['employee_merged_groups']++;
             $stats['employee_deleted_rows'] += $duplicates->count();
             $this->line("merge employee user_id={$userId} keep={$keeper->id} remove=".$duplicates->pluck('id')->implode(','));
+        }
+    }
+
+    private function dedupeEmployeesByWashEmployeeId(array &$stats, bool $dryRun): void
+    {
+        $duplicateWashIds = Employee::query()
+            ->whereNotNull('wash_employee_id')
+            ->selectRaw('wash_employee_id, COUNT(*) as c')
+            ->groupBy('wash_employee_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('wash_employee_id');
+
+        foreach ($duplicateWashIds as $washId) {
+            $rows = Employee::query()->where('wash_employee_id', $washId)->orderBy('id')->get();
+            if ($rows->count() <= 1) {
+                continue;
+            }
+
+            $keeper = $rows->sortByDesc(fn (Employee $employee) => $this->score($employee))->first();
+            $duplicates = $rows->where('id', '!=', $keeper->id)->values();
+
+            foreach ($duplicates as $duplicate) {
+                $this->mergeEmployee($keeper, $duplicate);
+            }
+
+            if (! $dryRun) {
+                $keeper->save();
+                Employee::query()->whereIn('id', $duplicates->pluck('id')->all())->delete();
+            }
+
+            $stats['employee_merged_groups']++;
+            $stats['employee_deleted_rows'] += $duplicates->count();
+            $this->line("merge employee wash_employee_id={$washId} keep={$keeper->id} remove=".$duplicates->pluck('id')->implode(','));
+        }
+    }
+
+    private function dedupeEmployeesByEmail(array &$stats, bool $dryRun): void
+    {
+        $dupEmails = Employee::query()
+            ->selectRaw('LOWER(email) as email_key, COUNT(*) as c')
+            ->groupBy('email_key')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('email_key');
+
+        foreach ($dupEmails as $email) {
+            if (empty($email) || str_ends_with($email, '@mstore.local')) {
+                continue;
+            }
+
+            $rows = Employee::query()->whereRaw('LOWER(email) = ?', [$email])->orderBy('id')->get();
+            if ($rows->count() <= 1) {
+                continue;
+            }
+
+            $keeper = $rows->sortByDesc(fn (Employee $employee) => $this->score($employee))->first();
+            $duplicates = $rows->where('id', '!=', $keeper->id)->values();
+
+            foreach ($duplicates as $duplicate) {
+                $this->mergeEmployee($keeper, $duplicate);
+            }
+
+            if (! $dryRun) {
+                $keeper->save();
+                Employee::query()->whereIn('id', $duplicates->pluck('id')->all())->delete();
+            }
+
+            $stats['employee_merged_groups']++;
+            $stats['employee_deleted_rows'] += $duplicates->count();
+            $this->line("merge employee email={$email} keep={$keeper->id} remove=".$duplicates->pluck('id')->implode(','));
         }
     }
 

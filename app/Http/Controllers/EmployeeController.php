@@ -66,7 +66,7 @@ class EmployeeController extends Controller implements HasMiddleware
     public function create()
     {
         $users = $this->employeeUsers();
-        $washEmployees = WashEmployee::query()->orderBy('name')->get();
+        $washEmployees = $this->washEmployees();
 
         return view('employees.create', compact('users', 'washEmployees'));
     }
@@ -89,8 +89,8 @@ class EmployeeController extends Controller implements HasMiddleware
 
     public function edit(Employee $employee)
     {
-        $users = $this->employeeUsers();
-        $washEmployees = WashEmployee::query()->orderBy('name')->get();
+        $users = $this->employeeUsers($employee->id);
+        $washEmployees = $this->washEmployees($employee->id);
 
         return view('employees.edit', compact('employee', 'users', 'washEmployees'));
     }
@@ -376,11 +376,34 @@ class EmployeeController extends Controller implements HasMiddleware
         return $request->file('id_card_photo')->store('employee-id-cards', 'public');
     }
 
-    private function employeeUsers()
+    private function employeeUsers(?int $excludeEmployeeId = null)
     {
+        $linkedUserIds = Employee::query()
+            ->when($excludeEmployeeId, fn($q) => $q->where('id', '!=', $excludeEmployeeId))
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->toArray();
+
         return User::query()
             ->with('role')
-            ->whereHas('role', fn ($query) => $query->whereIn('name', $this->employeeSyncService->allowedRoles()))
+            ->whereHas('role', function ($query) {
+                $query->whereIn('name', $this->employeeSyncService->allowedRoles());
+            })
+            ->whereNotIn('id', $linkedUserIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function washEmployees(?int $excludeEmployeeId = null)
+    {
+        $linkedWashIds = Employee::query()
+            ->when($excludeEmployeeId, fn($q) => $q->where('id', '!=', $excludeEmployeeId))
+            ->whereNotNull('wash_employee_id')
+            ->pluck('wash_employee_id')
+            ->toArray();
+
+        return WashEmployee::query()
+            ->whereNotIn('id', $linkedWashIds)
             ->orderBy('name')
             ->get();
     }
