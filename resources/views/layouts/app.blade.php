@@ -1061,6 +1061,19 @@
 
         window.mstoreNotify.bindNavigationLoading = function (root) {
             const scope = root || document;
+            const looksLikeFileDownload = function (url) {
+                if (!url) {
+                    return false;
+                }
+                const normalized = (url || '').toLowerCase();
+                if (normalized.indexOf('/export/') !== -1 || normalized.indexOf('-export/') !== -1) {
+                    return true;
+                }
+                if (normalized.indexOf('download=') !== -1) {
+                    return true;
+                }
+                return /\.(csv|xlsx|xls|pdf)(\?|#|$)/i.test(normalized);
+            };
             scope.querySelectorAll('a[href]').forEach(function (link) {
                 if (link.dataset.navLoadingBound === '1') {
                     return;
@@ -1078,6 +1091,9 @@
                         return;
                     }
                     if (href.toLowerCase().indexOf('javascript:') === 0) {
+                        return;
+                    }
+                    if (looksLikeFileDownload(href)) {
                         return;
                     }
                     if (link.hasAttribute('download') || link.target === '_blank') {

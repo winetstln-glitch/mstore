@@ -52,6 +52,9 @@
             </div>
             <div class="col-auto ms-auto">
                 <div class="btn-group">
+                    <a href="{{ route('employees.print.cards', request()->only(['search','department','status'])) }}" target="_blank" class="btn btn-outline-dark">
+                        <i class="fa-solid fa-id-card me-1"></i> Print ID Cards
+                    </a>
                     <a href="{{ route('employees.export.pdf', request()->only(['search','department','status'])) }}" class="btn btn-outline-danger">
                         <i class="fa-regular fa-file-pdf me-1"></i> PDF
                     </a>
@@ -65,10 +68,22 @@
             </div>
         </form>
 
+        <form method="GET" action="{{ route('employees.print.cards') }}" target="_blank" id="printSelectedForm">
+            <input type="hidden" name="search" value="{{ $search }}">
+            <input type="hidden" name="department" value="{{ $department }}">
+            <input type="hidden" name="status" value="{{ $status }}">
+            <div class="d-flex justify-content-end mb-2">
+                <button type="submit" class="btn btn-sm btn-outline-dark" id="printSelectedBtn" disabled>
+                    <i class="fa-solid fa-id-card me-1"></i> Print Pilihan
+                </button>
+            </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
+                        <th style="width:40px;">
+                            <input type="checkbox" class="form-check-input" id="checkAllEmployees">
+                        </th>
                         <th>Nama</th>
                         <th>NIK</th>
                         <th>Jabatan</th>
@@ -76,6 +91,7 @@
                         <th>No HP</th>
                         <th>Status</th>
                         <th>Integrasi</th>
+                        <th>ID Card</th>
                         <th>Dokumen</th>
                         <th class="text-end">Aksi</th>
                     </tr>
@@ -83,6 +99,9 @@
                 <tbody>
                     @forelse($employees as $employee)
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input employee-check" name="selected_ids[]" value="{{ $employee->id }}">
+                            </td>
                             <td>
                                 <div class="fw-semibold">{{ $employee->full_name }}</div>
                                 <div class="small text-muted">{{ $employee->email }}</div>
@@ -104,6 +123,11 @@
                                 @if(!$employee->user_id && !$employee->wash_employee_id)
                                     <span class="text-muted small">Manual</span>
                                 @endif
+                            </td>
+                            <td>
+                                <a href="{{ route('employees.id-card', $employee) }}" class="btn btn-sm btn-outline-dark" title="ID Card / Barcode">
+                                    <i class="fa-solid fa-id-card"></i>
+                                </a>
                             </td>
                             <td>
                                 @if($employee->document_path)
@@ -129,14 +153,50 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-3">Belum ada data karyawan.</td>
+                            <td colspan="11" class="text-center text-muted py-3">Belum ada data karyawan.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        </form>
 
         {{ $employees->links() }}
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkAll = document.getElementById('checkAllEmployees');
+    const checks = Array.from(document.querySelectorAll('.employee-check'));
+    const printBtn = document.getElementById('printSelectedBtn');
+
+    function refreshPrintButton() {
+        const selectedCount = checks.filter((el) => el.checked).length;
+        printBtn.disabled = selectedCount === 0;
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function () {
+            checks.forEach((el) => { el.checked = checkAll.checked; });
+            refreshPrintButton();
+        });
+    }
+
+    checks.forEach((el) => {
+        el.addEventListener('change', function () {
+            if (!el.checked && checkAll) {
+                checkAll.checked = false;
+            } else if (checkAll) {
+                checkAll.checked = checks.length > 0 && checks.every((node) => node.checked);
+            }
+            refreshPrintButton();
+        });
+    });
+
+    refreshPrintButton();
+});
+</script>
+@endpush

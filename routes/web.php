@@ -245,7 +245,9 @@ Route::middleware('auth')->group(function () {
     Route::get('employees-export/csv', [EmployeeController::class, 'exportCsv'])->name('employees.export.csv');
     Route::get('employees-export/pdf', [EmployeeController::class, 'exportPdf'])->name('employees.export.pdf');
     Route::get('employees-export/excel', [EmployeeController::class, 'exportExcel'])->name('employees.export.excel');
+    Route::get('employees-print/id-cards', [EmployeeController::class, 'printCards'])->name('employees.print.cards');
     Route::post('employees-sync', [EmployeeController::class, 'syncExisting'])->name('employees.sync');
+    Route::get('employees/{employee}/id-card', [EmployeeController::class, 'idCard'])->name('employees.id-card');
     Route::resource('employees', EmployeeController::class)->except(['show']);
 
     Route::get('/voucher/list', [VoucherController::class, 'index'])->name('vouchers.index');

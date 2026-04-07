@@ -116,6 +116,35 @@ class EmployeeController extends Controller implements HasMiddleware
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil dihapus.');
     }
 
+    public function idCard(Employee $employee, Request $request)
+    {
+        $idCardCode = $this->employeeIdCardCode($employee);
+        $printMode = $request->boolean('print');
+
+        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode'));
+    }
+
+    public function printCards(Request $request)
+    {
+        $selectedIds = collect((array) $request->query('selected_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $employees = $selectedIds->isNotEmpty()
+            ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
+            : $this->filteredEmployees($request)->orderBy('full_name')->get();
+        $cards = $employees->map(function (Employee $employee) {
+            return [
+                'employee' => $employee,
+                'code' => $this->employeeIdCardCode($employee),
+            ];
+        });
+
+        return view('employees.id-cards-print', compact('cards'));
+    }
+
     public function exportCsv(Request $request)
     {
         $filename = 'data-karyawan-'.date('Ymd-His').'.csv';
@@ -351,5 +380,18 @@ class EmployeeController extends Controller implements HasMiddleware
             ->when($status !== '', function ($query) use ($status) {
                 $query->where('employment_status', $status);
             });
+    }
+
+    private function employeeIdCardCode(Employee $employee): string
+    {
+        if (! empty($employee->user?->attendance_card_code)) {
+            return (string) $employee->user->attendance_card_code;
+        }
+
+        if (! empty($employee->nik)) {
+            return 'EMP-'.preg_replace('/[^0-9A-Za-z]/', '', (string) $employee->nik);
+        }
+
+        return 'EMP-'.str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT);
     }
 }
