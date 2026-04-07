@@ -55,7 +55,7 @@
                             <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
                         </div>
                     </div>
-                    <div class="exp-badge">EXP: {{ $expDate }}</div>
+                  
                 </div>
 
                 <div class="id-card-item-main">
@@ -86,6 +86,7 @@
                 </div>
 
                 <div class="id-card-item-footer">
+                    <div class="exp-badge">EXP: {{ $expDate }}</div>
                     <div class="barcode-container">
                         <svg class="barcode-svg" data-code="{{ $code }}"></svg>
                     </div>

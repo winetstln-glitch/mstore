@@ -22,12 +22,33 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:attendance.view', only: ['index', 'exportPdf', 'exportExcel']),
+            new Middleware('permission:attendance.view', only: ['index', 'daily', 'exportPdf', 'exportExcel']),
             new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut', 'kiosk', 'kioskScan']),
             new Middleware('permission:attendance.create|attendance.edit', only: ['update']),
             new Middleware('permission:attendance.edit', only: ['edit']),
             new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
         ];
+    }
+
+    /**
+     * Display daily attendance for all technicians/staff.
+     */
+    public function daily(Request $request)
+    {
+        $date = $request->query('date', date('Y-m-d'));
+        
+        // Get all users who should have attendance (technicians and admins)
+        $users = User::whereHas('role', function ($q) {
+            $q->whereIn('name', ['technician', 'admin']);
+        })->where('is_active', true)->get();
+
+        // Get attendance for the selected date
+        $attendances = TechnicianAttendance::whereDate('clock_in', $date)
+            ->with('user')
+            ->get()
+            ->keyBy('user_id');
+
+        return view('technicians.attendance.daily', compact('users', 'attendances', 'date'));
     }
 
     /**

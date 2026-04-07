@@ -31,6 +31,9 @@
                         </div>
                         <div class="row g-2 mt-2">
                             <div class="col-12 d-flex flex-wrap gap-2">
+                                <a href="{{ route('attendance.daily') }}" class="btn btn-info text-white" data-bs-toggle="tooltip" title="{{ __('Daily Attendance') }}">
+                                    <i class="fa-solid fa-calendar-day"></i> <span class="d-none d-sm-inline ms-1">{{ __('Daily Attendance') }}</span>
+                                </a>
                                 <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Filter') }}"><i class="fa-solid fa-filter"></i> <span class="d-none d-sm-inline ms-1">{{ __('Filter') }}</span></button>
                                 <a href="{{ route('attendance.kiosk') }}" class="btn btn-dark" data-bs-toggle="tooltip" title="Kiosk Barcode">
                                     <i class="fa-solid fa-barcode"></i> <span class="d-none d-sm-inline ms-1">Kiosk Barcode</span>

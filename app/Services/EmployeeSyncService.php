@@ -14,7 +14,8 @@ class EmployeeSyncService
             return;
         }
 
-        $employee = Employee::query()->firstOrNew(['user_id' => $user->id]);
+        $employee = $this->findEmployeeForUser($user) ?? new Employee;
+        $employee->user_id = $user->id;
 
         $employee->full_name = $user->name;
         $employee->phone = $user->phone ?: ($employee->phone ?: '-');
@@ -39,6 +40,7 @@ class EmployeeSyncService
         }
 
         $employee->save();
+        $this->cleanupDuplicateEmployeesByUserId($user->id);
     }
 
     public function unlinkUser(int $userId): void
@@ -101,7 +103,6 @@ class EmployeeSyncService
             'noc',
             'network-operations-center',
             'technician',
-            'coordinator',
             'finance',
             'kasir-atk',
             'kasir-wash',
@@ -113,10 +114,116 @@ class EmployeeSyncService
     {
         return match ($roleName) {
             'technician', 'noc', 'network-operations-center' => 'Teknis',
+            'admin' => 'Administrasi',
             'finance' => 'Keuangan',
             'kasir-wash', 'karyawan-wash' => 'Wash',
             'kasir-atk' => 'ATK',
             default => 'Operasional',
         };
+    }
+
+    private function findEmployeeForUser(User $user): ?Employee
+    {
+        $byUserId = Employee::query()->where('user_id', $user->id)->orderByDesc('updated_at')->first();
+        if ($byUserId) {
+            return $byUserId;
+        }
+
+        $washEmployeeId = WashEmployee::query()
+            ->where('user_id', $user->id)
+            ->value('id');
+        if ($washEmployeeId) {
+            $byWashEmployee = Employee::query()->where('wash_employee_id', $washEmployeeId)->first();
+            if ($byWashEmployee) {
+                return $byWashEmployee;
+            }
+        }
+
+        $email = strtolower(trim((string) $user->email));
+        if ($email !== '') {
+            $byEmail = Employee::query()
+                ->whereNull('user_id')
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->orderByDesc('updated_at')
+                ->first();
+            if ($byEmail) {
+                return $byEmail;
+            }
+        }
+
+        return null;
+    }
+
+    private function cleanupDuplicateEmployeesByUserId(int $userId): void
+    {
+        $items = Employee::query()
+            ->where('user_id', $userId)
+            ->orderBy('id')
+            ->get();
+
+        if ($items->count() <= 1) {
+            return;
+        }
+
+        $keeper = $items->sortByDesc(fn (Employee $employee) => $this->employeeQualityScore($employee))->first();
+        foreach ($items as $item) {
+            if ($item->id === $keeper->id) {
+                continue;
+            }
+
+            if (! $keeper->wash_employee_id && $item->wash_employee_id) {
+                $keeper->wash_employee_id = $item->wash_employee_id;
+            }
+            if (($keeper->phone === null || $keeper->phone === '' || $keeper->phone === '-') && $item->phone && $item->phone !== '-') {
+                $keeper->phone = $item->phone;
+            }
+            if (($keeper->address === null || trim((string) $keeper->address) === '' || trim((string) $keeper->address) === '-') && $item->address && trim((string) $item->address) !== '-') {
+                $keeper->address = $item->address;
+            }
+            if (($keeper->nik === null || trim((string) $keeper->nik) === '' || str_starts_with((string) $keeper->nik, 'AUTO-')) && $item->nik && ! str_starts_with((string) $item->nik, 'AUTO-')) {
+                $keeper->nik = $item->nik;
+            }
+            if (($keeper->email === null || trim((string) $keeper->email) === '') && $item->email) {
+                $keeper->email = $item->email;
+            }
+            if (($keeper->position === null || trim((string) $keeper->position) === '' || trim((string) $keeper->position) === 'Karyawan') && $item->position) {
+                $keeper->position = $item->position;
+            }
+            if (($keeper->department === null || trim((string) $keeper->department) === '' || trim((string) $keeper->department) === 'Operasional') && $item->department) {
+                $keeper->department = $item->department;
+            }
+        }
+
+        $keeper->save();
+        Employee::query()
+            ->where('user_id', $userId)
+            ->where('id', '!=', $keeper->id)
+            ->delete();
+    }
+
+    private function employeeQualityScore(Employee $employee): int
+    {
+        $score = 0;
+        if ($employee->wash_employee_id) {
+            $score += 100;
+        }
+        if ($employee->phone && $employee->phone !== '-') {
+            $score += 20;
+        }
+        if ($employee->address && trim((string) $employee->address) !== '' && trim((string) $employee->address) !== '-') {
+            $score += 15;
+        }
+        if ($employee->nik && ! str_starts_with((string) $employee->nik, 'AUTO-')) {
+            $score += 20;
+        }
+        if ($employee->email && ! str_ends_with(strtolower((string) $employee->email), '@mstore.local')) {
+            $score += 10;
+        }
+        if ($employee->position && ! in_array(strtolower((string) $employee->position), ['karyawan', 'technician'], true)) {
+            $score += 5;
+        }
+        $score += (int) $employee->id / 1000;
+
+        return $score;
     }
 }

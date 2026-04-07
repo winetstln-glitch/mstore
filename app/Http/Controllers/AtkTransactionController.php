@@ -199,10 +199,12 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 $transaction->items()->create($item);
             }
 
-            // Update default cash balance (Kas Utama)
-            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-            $cash->balance = (float) $cash->balance + (float) $total;
-            $cash->save();
+            // Update default cash balance (Kas Utama) if not credit/debt
+            if ($request->payment_method !== 'hutang') {
+                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $cash->balance = (float) $cash->balance + (float) $total;
+                $cash->save();
+            }
 
             // Reduce Agent Deposit by nominal transfer sum
             if ($sumBankNominal > 0) {

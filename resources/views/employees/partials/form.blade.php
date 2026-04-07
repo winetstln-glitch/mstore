@@ -64,12 +64,36 @@
 </div>
 <div class="col-md-4">
     <label class="form-label">Jabatan *</label>
-    <input type="text" name="position" class="form-control @error('position') is-invalid @enderror" value="{{ old('position', $employee->position ?? '') }}" required>
+    @php
+        $positionOptions = ['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan'];
+        $selectedPosition = old('position', $employee->position ?? '');
+    @endphp
+    <select name="position" class="form-select @error('position') is-invalid @enderror" required>
+        <option value="">Pilih Jabatan</option>
+        @foreach($positionOptions as $positionOption)
+            <option value="{{ $positionOption }}" {{ $selectedPosition === $positionOption ? 'selected' : '' }}>{{ $positionOption }}</option>
+        @endforeach
+        @if($selectedPosition && !in_array($selectedPosition, $positionOptions, true))
+            <option value="{{ $selectedPosition }}" selected>{{ $selectedPosition }}</option>
+        @endif
+    </select>
     @error('position')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 <div class="col-md-4">
     <label class="form-label">Departemen *</label>
-    <input type="text" name="department" class="form-control @error('department') is-invalid @enderror" value="{{ old('department', $employee->department ?? '') }}" required>
+    @php
+        $departmentOptions = ['Administrasi', 'Keuangan', 'Teknis', 'Wash', 'ATK', 'Operasional'];
+        $selectedDepartment = old('department', $employee->department ?? '');
+    @endphp
+    <select name="department" class="form-select @error('department') is-invalid @enderror" required>
+        <option value="">Pilih Departemen</option>
+        @foreach($departmentOptions as $departmentOption)
+            <option value="{{ $departmentOption }}" {{ $selectedDepartment === $departmentOption ? 'selected' : '' }}>{{ $departmentOption }}</option>
+        @endforeach
+        @if($selectedDepartment && !in_array($selectedDepartment, $departmentOptions, true))
+            <option value="{{ $selectedDepartment }}" selected>{{ $selectedDepartment }}</option>
+        @endif
+    </select>
     @error('department')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 <div class="col-md-2">

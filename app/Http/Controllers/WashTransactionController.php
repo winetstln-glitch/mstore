@@ -302,6 +302,11 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $transaction->items()->create($item);
             }
 
+            // Update default cash balance (Kas Utama)
+            $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+            $cash->balance = (float) $cash->balance + (float) $finalTotal;
+            $cash->save();
+
             $cashCode = $request->payment_method === 'cash' ? '1001' : '1002';
             $cashAccId = Account::where('code', $cashCode)->value('id');
             $revAccId = Account::where('code', '4005')->value('id');

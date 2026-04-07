@@ -124,6 +124,8 @@ class InventoryController extends Controller implements HasMiddleware
                 'proof_image' => 'required|image|max:10240',
                 'description' => 'nullable|string',
                 'coordinator_id' => 'nullable|exists:coordinators,id',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
             ]);
 
             $path = $request->file('proof_image')->store('inventory_proofs', 'public');
@@ -212,6 +214,8 @@ class InventoryController extends Controller implements HasMiddleware
                 'proof_image' => 'required|image|max:10240',
                 'description' => 'nullable|string',
                 'coordinator_id' => 'nullable|exists:coordinators,id',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
             ]);
 
             $path = $request->file('proof_image')->store('inventory_proofs', 'public');
