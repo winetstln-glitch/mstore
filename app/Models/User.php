@@ -124,9 +124,11 @@ class User extends Authenticatable
         }
 
         if (! empty($data['phone'])) {
-            $phone = preg_replace('/[^0-9]/', '', $data['phone']);
-            if ($phone) {
-                $userByPhone = self::where('phone', 'like', "%{$phone}%")->first();
+            $phone = preg_replace('/[^0-9]/', '', (string) $data['phone']);
+            if (strlen($phone) >= 8) {
+                // Remove leading zero if any
+                $phoneTrim = ltrim($phone, '0');
+                $userByPhone = self::where('phone', 'like', "%{$phoneTrim}%")->first();
                 if ($userByPhone) {
                     return $userByPhone;
                 }

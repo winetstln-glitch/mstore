@@ -108,6 +108,15 @@ class WashEmployeeController extends Controller
             ]);
 
             if ($existingUser) {
+                // If existing user doesn't have a role or is just a customer, upgrade to karyawan-wash
+                $roleId = Role::query()
+                    ->whereIn('name', ['karyawan-wash', 'kasir-wash', 'employee'])
+                    ->value('id');
+                
+                if (!$existingUser->role_id || $existingUser->role?->name === 'customer') {
+                    $existingUser->update(['role_id' => $roleId]);
+                }
+                
                 return (int) $existingUser->id;
             }
 

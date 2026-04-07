@@ -27,10 +27,11 @@ class DeduplicateEmployeesCommand extends Command
         ];
 
         $runner = function () use (&$stats, $dryRun): void {
+            $this->dedupeUsers($stats, $dryRun);
             $this->dedupeEmployeesByUserId($stats, $dryRun);
             $this->dedupeEmployeesByWashEmployeeId($stats, $dryRun);
             $this->dedupeEmployeesByEmail($stats, $dryRun);
-            $this->dedupeEmployeesByWashName($stats, $dryRun);
+            $this->dedupeEmployeesByName($stats, $dryRun);
             $this->deactivateOrphanGeneratedUsers($stats, $dryRun);
         };
 
@@ -200,7 +201,64 @@ class DeduplicateEmployeesCommand extends Command
         }
     }
 
-    private function dedupeEmployeesByWashName(array &$stats, bool $dryRun): void
+    private function dedupeUsers(array &$stats, bool $dryRun): void
+    {
+        $duplicateNames = User::selectRaw('LOWER(TRIM(name)) as name_key, COUNT(*) as c')
+            ->groupBy('name_key')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('name_key');
+
+        foreach ($duplicateNames as $nameKey) {
+            $rows = User::whereRaw('LOWER(TRIM(name)) = ?', [$nameKey])
+                ->orderBy('id')
+                ->get();
+
+            if ($rows->count() <= 1) {
+                continue;
+            }
+
+            // Prefer user with role (admin/karyawan) over customers
+            $keeper = $rows->sortByDesc(fn (User $user) => $this->userScore($user))->first();
+            $duplicates = $rows->where('id', '!=', $keeper->id)->values();
+
+            foreach ($duplicates as $duplicate) {
+                if (! $dryRun) {
+                    // Update all foreign keys pointing to duplicate user
+                    DB::table('wash_employees')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('coordinators')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('employees')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('technician_attendances')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('technician_schedules')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('wash_transactions')->where('customer_id', $duplicate->id)->update(['customer_id' => $keeper->id]);
+                    DB::table('atk_transactions')->where('customer_id', $duplicate->id)->update(['customer_id' => $keeper->id]);
+                    DB::table('invoices')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    
+                    // Transfer important info
+                    if (!$keeper->email && $duplicate->email) $keeper->email = $duplicate->email;
+                    if (!$keeper->phone && $duplicate->phone) $keeper->phone = $duplicate->phone;
+                    if (!$keeper->username && $duplicate->username) $keeper->username = $duplicate->username;
+                    if (!$keeper->role_id && $duplicate->role_id) $keeper->role_id = $duplicate->role_id;
+                    $keeper->save();
+
+                    $duplicate->delete();
+                }
+                $this->line("merge user name={$nameKey} keep={$keeper->id} remove={$duplicate->id}");
+            }
+        }
+    }
+
+    private function userScore(User $user): int
+    {
+        $score = 0;
+        if ($user->role?->name === 'admin') $score += 1000;
+        if (in_array($user->role?->name, ['karyawan-wash', 'technician', 'noc'])) $score += 500;
+        if ($user->email) $score += 100;
+        if ($user->username) $score += 50;
+        if ($user->is_active) $score += 10;
+        return $score;
+    }
+
+    private function dedupeEmployeesByName(array &$stats, bool $dryRun): void
     {
         $dupNames = Employee::query()
             ->selectRaw('LOWER(TRIM(full_name)) as full_name_key, COUNT(*) as c')
@@ -218,34 +276,11 @@ class DeduplicateEmployeesCommand extends Command
                 continue;
             }
 
-            $isWashLike = $rows->contains(fn (Employee $employee) => (bool) $employee->wash_employee_id)
-                || $rows->contains(fn (Employee $employee) => str_starts_with(strtolower((string) $employee->email), 'wash-'));
-            if (! $isWashLike) {
-                continue;
-            }
-
             $keeper = $rows->sortByDesc(fn (Employee $employee) => $this->score($employee))->first();
             $duplicates = $rows->where('id', '!=', $keeper->id)->values();
-            if ($duplicates->isEmpty()) {
-                continue;
-            }
 
             foreach ($duplicates as $duplicate) {
                 $this->mergeEmployee($keeper, $duplicate);
-
-                if ($duplicate->user_id && $keeper->user_id && $duplicate->user_id !== $keeper->user_id) {
-                    if (! $dryRun) {
-                        $stats['schedule_relinked'] += TechnicianSchedule::query()
-                            ->where('user_id', $duplicate->user_id)
-                            ->update(['user_id' => $keeper->user_id]);
-                        $stats['attendance_relinked'] += TechnicianAttendance::query()
-                            ->where('user_id', $duplicate->user_id)
-                            ->update(['user_id' => $keeper->user_id]);
-                    } else {
-                        $stats['schedule_relinked'] += TechnicianSchedule::query()->where('user_id', $duplicate->user_id)->count();
-                        $stats['attendance_relinked'] += TechnicianAttendance::query()->where('user_id', $duplicate->user_id)->count();
-                    }
-                }
             }
 
             if (! $dryRun) {
