@@ -543,7 +543,21 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             if (! $this->isWithinClockInWindow()) {
                 return response()->json([
                     'success' => false,
-                    'message' => __('Absensi masuk hanya boleh pada jam yang ditentukan.'),
+                    'message' => __('Gagal: Absensi masuk hanya boleh pada jam yang ditentukan.'),
+                ], 422);
+            }
+
+            // Check if user is currently on leave/sick
+            $hasLeaveRequest = \App\Models\LeaveRequest::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->whereDate('start_date', '<=', today())
+                ->whereDate('end_date', '>=', today())
+                ->exists();
+
+            if ($hasLeaveRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Gagal: :name sedang dalam masa cuti/izin hari ini.', ['name' => $user->name]),
                 ], 422);
             }
 
@@ -575,6 +589,20 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return response()->json([
                 'success' => false,
                 'message' => __(':name sudah absen lengkap hari ini.', ['name' => $user->name]),
+            ], 422);
+        }
+
+        // Add cooldown between clock in and clock out (e.g., 30 minutes)
+        // to prevent accidental double scans clocking out immediately
+        $cooldownMinutes = (int) Setting::getValue('attendance_cooldown_minutes', 30);
+        $diffInMinutes = $todayAttendance->clock_in->diffInMinutes(now());
+        if ($diffInMinutes < $cooldownMinutes) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Gagal: Jeda waktu absen masuk dan pulang minimal :min menit. Baru :diff menit berlalu.', [
+                    'min' => $cooldownMinutes,
+                    'diff' => $diffInMinutes,
+                ]),
             ], 422);
         }
 
@@ -637,7 +665,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ->exists();
 
             if ($alreadyClockedInToday) {
-                return redirect()->route($this->attendanceRedirectRoute($request))->withErrors(['message' => __('Anda sudah melakukan absen masuk hari ini.')]);
+                return redirect()->route($this->attendanceRedirectRoute($request))->withErrors(['message' => __('Gagal: Anda sudah melakukan absen masuk hari ini.')]);
+            }
+
+            // Also check for pending leave/sick for today
+            $hasLeaveRequest = \App\Models\LeaveRequest::where('user_id', Auth::id())
+                ->where('status', 'approved')
+                ->whereDate('start_date', '<=', today())
+                ->whereDate('end_date', '>=', today())
+                ->exists();
+
+            if ($hasLeaveRequest) {
+                return back()->withErrors(['message' => __('Gagal: Anda sedang dalam masa cuti/izin hari ini.')]);
             }
 
             $request->validate([
@@ -713,6 +752,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         $attendance = TechnicianAttendance::where('user_id', Auth::id())->findOrFail($id);
+
+        // Add cooldown between clock in and clock out (e.g., 30 minutes)
+        $cooldownMinutes = (int) Setting::getValue('attendance_cooldown_minutes', 30);
+        $diffInMinutes = $attendance->clock_in->diffInMinutes(now());
+        if ($diffInMinutes < $cooldownMinutes) {
+            return back()->withErrors(['message' => __('Gagal: Jeda waktu absen masuk dan pulang minimal :min menit. Baru :diff menit berlalu.', [
+                'min' => $cooldownMinutes,
+                'diff' => $diffInMinutes,
+            ])]);
+        }
 
         $request->validate([
             'photo' => 'required|image|max:10240',

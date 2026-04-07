@@ -63,6 +63,13 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Radius Absensi (Meter)',
             ],
+            [
+                'key' => 'attendance_cooldown_minutes',
+                'value' => '30',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Jeda Minimal Masuk ke Pulang (Menit)',
+            ],
             // Finance Settings
             [
                 'key' => 'commission_coordinator_percent',
