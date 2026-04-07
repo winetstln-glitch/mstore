@@ -50,7 +50,7 @@
                         @if($photoUrl)
                             <img src="{{ $photoUrl }}" alt="Photo {{ $user->name }}" class="photo-image">
                         @else
-                            <div class="photo-placeholder">[PHOTO PLACEHOLDER]</div>
+                            <div class="photo-placeholder"><i class="fa-solid fa-user"></i></div>
                         @endif
                     </div>
                     <div class="identity-lines">
@@ -186,7 +186,19 @@ document.addEventListener('DOMContentLoaded', function () {
     overflow: hidden;
 }
 .photo-image { width: 100%; height: 100%; object-fit: cover; }
-.photo-placeholder { font-size: 2.4mm; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+.photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    background: linear-gradient(145deg, #eef2ff, #f8fafc);
+}
+.photo-placeholder i {
+    font-size: 11mm;
+    color: #94a3b8;
+}
 .identity-lines { display: flex; flex-direction: column; gap: 0.7mm; }
 .identity-row { display: flex; align-items: baseline; gap: 1.1mm; line-height: 1.08; }
 .identity-label {
