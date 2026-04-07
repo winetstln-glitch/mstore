@@ -229,8 +229,8 @@ class DeduplicateEmployeesCommand extends Command
                     DB::table('employees')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     DB::table('technician_attendances')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     DB::table('technician_schedules')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
-                    DB::table('wash_transactions')->where('customer_id', $duplicate->id)->update(['customer_id' => $keeper->id]);
-                    DB::table('atk_transactions')->where('customer_id', $duplicate->id)->update(['customer_id' => $keeper->id]);
+                    DB::table('wash_transactions')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
+                    DB::table('atk_transactions')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     DB::table('invoices')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     
                     // Transfer important info
