@@ -187,8 +187,8 @@ class RoleSeeder extends Seeder
                     'profile.update',
                 ])->get();
                 $role->permissions()->sync($permissions);
-            } elseif (in_array($role->name, ['kasir-wash', 'karyawan-wash'], true)) {
-                // Kasir Wash: hanya menu Wash
+            } elseif ($role->name === 'kasir-wash') {
+                // Kasir Wash: menu Wash lengkap (POS + Laporan)
                 $permissions = Permission::whereIn('name', [
                     'wash.view',
                     'wash.pos',
@@ -196,6 +196,16 @@ class RoleSeeder extends Seeder
                     'attendance.view',
                     'attendance.create',
                     'attendance.edit',
+                    'profile.view',
+                    'profile.update',
+                ])->get();
+                $role->permissions()->sync($permissions);
+            } elseif ($role->name === 'karyawan-wash') {
+                // Karyawan Wash: hanya View & Absensi
+                $permissions = Permission::whereIn('name', [
+                    'wash.view',
+                    'attendance.view',
+                    'attendance.create',
                     'profile.view',
                     'profile.update',
                 ])->get();
