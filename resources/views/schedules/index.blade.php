@@ -76,7 +76,7 @@
                                 <th class="py-3 text-center" style="min-width: 130px;">
                                     <div class="fw-bold text-primary d-flex justify-content-center align-items-center gap-1">
                                         <span>W{{ $week['week_number'] }}</span>
-                                        @if(Auth::user()->hasPermission('schedule.manage') || Auth::user()->hasRole('admin'))
+                                        @if(Auth::user()->hasRole('admin'))
                                             <button type="button"
                                                     class="btn btn-link btn-sm p-0 text-primary"
                                                     title="Ubah rentang tanggal minggu"
