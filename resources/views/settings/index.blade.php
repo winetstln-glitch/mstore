@@ -14,6 +14,7 @@
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @php
+                        $attendanceOnly = request('section') === 'attendance';
                         $receiptIdentityKeys = [
                             'store_name',
                             'store_address',
@@ -84,6 +85,13 @@
                             'mixradius_api_token',
                         ];
                     @endphp
+                    @if($attendanceOnly)
+                    <div class="alert alert-info border-0 mb-3">
+                        <i class="fa-solid fa-user-clock me-1"></i>
+                        Anda sedang mengedit <strong>Pengaturan Attendance</strong> dari menu SDM & Kehadiran.
+                    </div>
+                    @endif
+                    @if(! $attendanceOnly)
                     <div class="mb-4 pb-3 border-bottom">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-receipt me-1"></i> Identitas Struk
@@ -417,9 +425,19 @@
                             </div>
                         </div>
                     </div>
+                    @endif
                     
                     @foreach($settings as $group => $groupSettings)
-                        <div class="mb-4 pb-3 border-bottom last:border-0">
+                        @php
+                            $isAttendanceGroup = str_contains(strtolower((string) $group), 'attendance');
+                        @endphp
+                        @if($attendanceOnly && ! $isAttendanceGroup)
+                            @continue
+                        @endif
+                        @if(! $attendanceOnly && $isAttendanceGroup)
+                            @continue
+                        @endif
+                        <div class="mb-4 pb-3 border-bottom last:border-0" @if($attendanceOnly) id="attendance-settings-section" @endif>
                             <h6 class="fw-bold text-primary text-uppercase mb-3">
                                 <i class="fa-solid fa-layer-group me-1"></i> {{ __(str_replace('_', ' ', $group)) }} {{ __('Settings') }}
                             </h6>

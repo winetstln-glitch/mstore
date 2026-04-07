@@ -565,10 +565,11 @@
                 </a>
                 @endif
 
-                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
+                @php $attendanceSettingsActive = request()->routeIs('settings.index') && request('section') === 'attendance'; @endphp
+                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
@@ -591,6 +592,11 @@
                         @if(Auth::user()->hasPermission('schedule.view'))
                         <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
                             <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('setting.view'))
+                        <a href="{{ route('settings.index', ['section' => 'attendance']) }}" class="sidebar-item {{ $attendanceSettingsActive ? 'active' : '' }}">
+                            <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Attendance') }}
                         </a>
                         @endif
                         @if(Auth::user()->hasPermission('leave.view'))
