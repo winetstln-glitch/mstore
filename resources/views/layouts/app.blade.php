@@ -468,7 +468,7 @@
 
             @php
                 $washDashboardActive = request()->routeIs('wash.dashboard');
-                $washMasterActive = request()->routeIs('wash.services.*') || request()->routeIs('wash.employees.*');
+                $washMasterActive = request()->routeIs('wash.services.*');
                 $washTransactionActive = request()->routeIs('wash.pos') || request()->routeIs('wash.transactions.*');
                 $washFinanceActive = request()->routeIs('wash.expenses.*') || request()->routeIs('wash.reports.*');
                 $washAnyActive = $washDashboardActive || $washMasterActive || $washTransactionActive || $washFinanceActive;
@@ -493,9 +493,6 @@
                         <div class="ps-3">
                             <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ request()->routeIs('wash.services.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-tags"></i> {{ __('Layanan & Harga') }}
-                            </a>
-                            <a href="{{ route('wash.employees.index') }}" class="sidebar-item {{ request()->routeIs('wash.employees.*') ? 'active' : '' }}">
-                                <i class="fa-solid fa-users"></i> {{ __('Karyawan Steam') }}
                             </a>
                         </div>
                     </div>
@@ -566,14 +563,19 @@
                 @endif
 
                 @php $attendanceSettingsActive = request()->routeIs('settings.index') && request('section') === 'attendance'; @endphp
-                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
+                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || $attendanceSettingsActive) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
                         </a>
+                        @if(Auth::user()->hasPermission('wash.manage'))
+                        <a href="{{ route('wash.employees.index') }}" class="sidebar-item {{ request()->routeIs('wash.employees.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-users-viewfinder"></i> {{ __('Karyawan Wash') }}
+                        </a>
+                        @endif
                         @if(Auth::user()->hasPermission('technician.view'))
                         <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-user-gear"></i> {{ __('Teknisi') }}

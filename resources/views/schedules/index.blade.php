@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Technician Schedule (Piket)') }}</h1>
+        <h1 class="h3 mb-0 text-gray-800">{{ __('Technician Schedule (2 Shift)') }}</h1>
         <div class="d-flex gap-2">
             <form action="{{ route('schedules.index') }}" method="GET" class="d-flex gap-2">
                 <select name="month" class="form-select" onchange="this.form.submit()">
@@ -19,11 +19,22 @@
                     @endfor
                 </select>
             </form>
+            <a href="{{ route('schedules.export.pdf', ['month' => $month, 'year' => $year]) }}" class="btn btn-outline-danger">
+                <i class="fa-regular fa-file-pdf me-1"></i> PDF
+            </a>
+            <a href="{{ route('schedules.export.excel', ['month' => $month, 'year' => $year]) }}" class="btn btn-outline-success">
+                <i class="fa-regular fa-file-excel me-1"></i> Excel
+            </a>
         </div>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-body">
+            <div class="alert alert-info border-0 mb-3">
+                <div><strong>Shift 1:</strong> {{ $shift1Start }} - {{ $shift1End }}</div>
+                <div><strong>Shift 2:</strong> {{ $shift2Start }} - {{ $shift2End }}</div>
+                <small class="text-muted">Ubah jam shift di SDM & Kehadiran → Pengaturan Attendance.</small>
+            </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-striped">
                     <thead>
@@ -31,7 +42,7 @@
                             <th>{{ __('Week') }}</th>
                             <th>{{ __('Date Range') }}</th>
                             @foreach($technicians as $tech)
-                                <th class="text-center">{{ $tech->name }}</th>
+                                <th class="text-center">{{ $tech->schedule_name ?? $tech->name }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -79,15 +90,15 @@
                                             
                                             <select name="status" class="form-select form-select-sm {{ $status == 'piket' ? 'bg-success text-white' : ($status == 'backup' ? 'bg-warning' : '') }}" onchange="this.form.submit()">
                                                 <option value="off" {{ $status == 'off' ? 'selected' : '' }}>{{ __('Off') }}</option>
-                                                <option value="piket" {{ $status == 'piket' ? 'selected' : '' }}>{{ __('Piket') }}</option>
-                                                <option value="backup" {{ $status == 'backup' ? 'selected' : '' }}>{{ __('Backup') }}</option>
+                                                <option value="piket" {{ $status == 'piket' ? 'selected' : '' }}>Shift 1 ({{ $shift1Start }}-{{ $shift1End }})</option>
+                                                <option value="backup" {{ $status == 'backup' ? 'selected' : '' }}>Shift 2 ({{ $shift2Start }}-{{ $shift2End }})</option>
                                             </select>
                                         </form>
                                         @else
                                             @if($status == 'piket')
-                                                <span class="badge bg-success">{{ __('Piket') }}</span>
+                                                <span class="badge bg-success">Shift 1</span>
                                             @elseif($status == 'backup')
-                                                <span class="badge bg-warning text-dark">{{ __('Backup') }}</span>
+                                                <span class="badge bg-warning text-dark">Shift 2</span>
                                             @else
                                                 <span class="badge bg-secondary">{{ __('Off') }}</span>
                                             @endif

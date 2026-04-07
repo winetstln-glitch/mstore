@@ -157,6 +157,8 @@ Route::middleware('auth')->group(function () {
 
     // Schedules & Leaves
     Route::post('schedules/period', [\App\Http\Controllers\TechnicianScheduleController::class, 'updatePeriod'])->name('schedules.updatePeriod');
+    Route::get('schedules/export/pdf', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportPdf'])->name('schedules.export.pdf');
+    Route::get('schedules/export/excel', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportExcel'])->name('schedules.export.excel');
     Route::resource('schedules', \App\Http\Controllers\TechnicianScheduleController::class)->only(['index', 'store', 'destroy']);
     Route::resource('leave-requests', \App\Http\Controllers\LeaveRequestController::class)->except(['create', 'show', 'edit', 'destroy']);
 

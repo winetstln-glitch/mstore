@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     align-items: center;
     justify-content: center;
     border-radius: 1.6mm;
-    background: #060707eb;
+    background: #ffffffeb;
     overflow: hidden;
     border: 0.8pt solid #cad0deff;
 }
