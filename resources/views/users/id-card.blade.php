@@ -55,12 +55,15 @@
                     
                 </div>
                 <div class="id-card-item-main">
-                    <div class="photo-frame">
-                        @if($photoUrl)
-                            <img src="{{ $photoUrl }}" alt="Photo {{ $fullName }}" class="photo-image">
-                        @else
-                            <div class="photo-placeholder"><i class="fa-solid fa-user"></i></div>
-                        @endif
+                    <div class="hex-container">
+                        <div class="hex-border"></div>
+                        <div class="hex-img">
+                            @if($photoUrl)
+                                <img src="{{ $photoUrl }}" alt="Photo {{ $fullName }}" class="photo-image">
+                            @else
+                                <img src="https://ui-avatars.com/api/?name={{ urlencode($fullName) }}&background=f1f5f9&color=1e40af&bold=true" alt="Photo {{ $fullName }}" class="photo-image">
+                            @endif
+                        </div>
                     </div>
                     <div class="identity-lines">
                         <div class="identity-row">
@@ -190,15 +193,30 @@ document.addEventListener('DOMContentLoaded', function () {
         padding: 25px 20px;
     }
 
-    .photo-frame {
+    .hex-container {
+        position: relative;
         width: 140px;
-        height: 175px;
-        border: 4px solid #fff;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        border-radius: 12px;
-        overflow: hidden;
+        height: 160px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .hex-border {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    }
+
+    .hex-img {
+        position: absolute;
+        top: 4px; left: 4px;
+        width: calc(100% - 8px);
+        height: calc(100% - 8px);
         background: #f9fafb;
-        margin-bottom: 25px;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -211,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     .photo-placeholder {
-        font-size: 4rem;
+        font-size: 3rem;
         color: #d1d5db;
     }
 
