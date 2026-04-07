@@ -27,6 +27,15 @@
                             </div>
                         </form>
                         <div id="scanMessage" class="alert d-none"></div>
+                        <div class="mb-3">
+                            <label for="cameraSelect" class="form-label fw-semibold">Pilih Kamera Scanner</label>
+                            <div class="input-group">
+                                <select id="cameraSelect" class="form-select">
+                                    <option value="">Memuat daftar kamera...</option>
+                                </select>
+                                <button type="button" id="switchCameraBtn" class="btn btn-outline-secondary">Ganti</button>
+                            </div>
+                        </div>
                         <div class="small text-muted">
                             Kamera bisa dipakai untuk barcode 1D/2D. Jika gagal scan, masukkan kode manual.
                         </div>
@@ -81,8 +90,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const messageEl = document.getElementById('scanMessage');
     const manualForm = document.getElementById('manualScanForm');
     const manualCodeInput = document.getElementById('manualCode');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const switchCameraBtn = document.getElementById('switchCameraBtn');
     let lastScan = '';
     let scanLock = false;
+    let html5QrCode = null;
+    let availableCameras = [];
+    let currentCameraId = '';
+    let scannerStarted = false;
+
+    const isBackCamera = (label) => /(back|rear|environment|belakang)/i.test(String(label || ''));
+    const isFrontCamera = (label) => /(front|user|depan)/i.test(String(label || ''));
 
     const showMessage = (text, success = true) => {
         messageEl.classList.remove('d-none', 'alert-success', 'alert-danger');
@@ -149,27 +167,82 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof Html5Qrcode === 'undefined') {
             return;
         }
-        const html5QrCode = new Html5Qrcode('reader');
-        Html5Qrcode.getCameras().then((devices) => {
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode('reader');
+        }
+
+        const fillCameraOptions = (devices) => {
+            cameraSelect.innerHTML = '';
+            devices.forEach((camera, index) => {
+                const option = document.createElement('option');
+                const name = camera.label || `Kamera ${index + 1}`;
+                option.value = camera.id;
+                option.textContent = name;
+                cameraSelect.appendChild(option);
+            });
+        };
+
+        const startWithCamera = async (cameraId) => {
+            if (!cameraId || !html5QrCode) {
+                return;
+            }
+            try {
+                if (scannerStarted) {
+                    await html5QrCode.stop();
+                    scannerStarted = false;
+                }
+                await html5QrCode.start(
+                    cameraId,
+                    { fps: 10, qrbox: { width: 220, height: 140 } },
+                    (decodedText) => {
+                        const code = String(decodedText || '').trim();
+                        if (code === '' || code === lastScan) {
+                            return;
+                        }
+                        lastScan = code;
+                        submitScan(code);
+                        setTimeout(() => { lastScan = ''; }, 1200);
+                    }
+                );
+                scannerStarted = true;
+                currentCameraId = cameraId;
+                cameraSelect.value = cameraId;
+            } catch (error) {
+                showMessage('Gagal mengaktifkan kamera scanner.', false);
+            }
+        };
+
+        Html5Qrcode.getCameras().then(async (devices) => {
             if (!devices || devices.length === 0) {
                 showMessage('Kamera tidak ditemukan.', false);
                 return;
             }
-            const cameraId = devices[0].id;
-            html5QrCode.start(
-                cameraId,
-                { fps: 10, qrbox: { width: 220, height: 140 } },
-                (decodedText) => {
-                    const code = String(decodedText || '').trim();
-                    if (code === '' || code === lastScan) {
-                        return;
-                    }
-                    lastScan = code;
-                    submitScan(code);
-                    setTimeout(() => { lastScan = ''; }, 1200);
+            availableCameras = devices;
+            fillCameraOptions(devices);
+
+            const preferredBack = devices.find((camera) => isBackCamera(camera.label));
+            const preferredFront = devices.find((camera) => isFrontCamera(camera.label));
+            const initialCamera = preferredBack?.id || preferredFront?.id || devices[0].id;
+            await startWithCamera(initialCamera);
+
+            cameraSelect.addEventListener('change', function () {
+                const selectedId = cameraSelect.value;
+                if (selectedId && selectedId !== currentCameraId) {
+                    startWithCamera(selectedId);
                 }
-            ).catch(() => {
-                showMessage('Gagal mengaktifkan kamera scanner.', false);
+            });
+
+            switchCameraBtn.addEventListener('click', function () {
+                if (availableCameras.length < 2) {
+                    showMessage('Kamera lain tidak tersedia.', false);
+                    return;
+                }
+                const currentIndex = availableCameras.findIndex((camera) => camera.id === currentCameraId);
+                const nextIndex = currentIndex >= 0
+                    ? (currentIndex + 1) % availableCameras.length
+                    : 0;
+                const nextCameraId = availableCameras[nextIndex].id;
+                startWithCamera(nextCameraId);
             });
         }).catch(() => {
             showMessage('Akses kamera ditolak.', false);
