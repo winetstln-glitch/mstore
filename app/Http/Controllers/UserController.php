@@ -116,9 +116,11 @@ class UserController extends Controller implements HasMiddleware
             $user->attendance_card_code = User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
         }
 
+        $idCardCode = $user->attendance_card_code;
+        $employee = $user->employee;
         [$brandName, $logoUrl] = $this->resolveUserBrand($user);
 
-        return view('users.id-card', compact('user', 'logoUrl', 'brandName'));
+        return view('users.id-card', compact('user', 'logoUrl', 'brandName', 'idCardCode', 'employee'));
     }
 
     public function create()
