@@ -48,6 +48,30 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $this->applyScheduleDisplayNames($technicians);
         $technicians = $this->deduplicateScheduleUsers($technicians);
 
+        $totalTechnicians = $technicians->count();
+        $columnsPerPage = (int) $request->input('per_page', 12);
+        if ($columnsPerPage < 5) {
+            $columnsPerPage = 5;
+        }
+        if ($columnsPerPage > 40) {
+            $columnsPerPage = 40;
+        }
+
+        $columnPageCount = max(1, (int) ceil($totalTechnicians / max(1, $columnsPerPage)));
+        $columnPage = (int) $request->input('col_page', 1);
+        if ($columnPage < 1) {
+            $columnPage = 1;
+        }
+        if ($columnPage > $columnPageCount) {
+            $columnPage = $columnPageCount;
+        }
+
+        $columnStart = $totalTechnicians > 0 ? (($columnPage - 1) * $columnsPerPage) + 1 : 0;
+        $columnEnd = min($totalTechnicians, $columnPage * $columnsPerPage);
+        $technicians = $technicians
+            ->slice(($columnPage - 1) * $columnsPerPage, $columnsPerPage)
+            ->values();
+
         // Get schedules for the selected month (spanning weeks)
         // Simple logic: get schedules where week_number falls in the month
         // Or simpler: just get all schedules for the year and filter in view
@@ -74,7 +98,13 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'shift1Start',
             'shift1End',
             'shift2Start',
-            'shift2End'
+            'shift2End',
+            'totalTechnicians',
+            'columnsPerPage',
+            'columnPage',
+            'columnPageCount',
+            'columnStart',
+            'columnEnd'
         ));
     }
 
@@ -108,24 +138,24 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $writer = new Writer;
             $writer->openToFile('php://output');
 
-            $header = ['Week', 'Date Range'];
-            foreach ($technicians as $tech) {
-                $header[] = $tech->schedule_name ?? $tech->name;
+            $header = ['Karyawan', 'Posisi'];
+            foreach ($weeks as $week) {
+                $header[] = 'W'.$week['week_number'].' ('.$week['range'].')';
             }
             $writer->addRow(Row::fromValues($header));
 
-            foreach ($weeks as $week) {
+            foreach ($technicians as $tech) {
                 $row = [
-                    'Week '.$week['week_number'],
-                    $week['range'],
+                    $tech->schedule_name ?? $tech->name,
+                    $tech->position ?? 'Karyawan',
                 ];
 
-                foreach ($technicians as $tech) {
+                foreach ($weeks as $week) {
                     $status = $week['statuses'][$tech->id] ?? 'off';
                     $row[] = match ($status) {
-                        'piket' => "Shift 1 ({$shift1Start}-{$shift1End})",
-                        'backup' => "Shift 2 ({$shift2Start}-{$shift2End})",
-                        default => 'Off',
+                        'piket' => "S1 ({$shift1Start}-{$shift1End})",
+                        'backup' => "S2 ({$shift2Start}-{$shift2End})",
+                        default => 'OFF',
                     };
                 }
 
@@ -352,6 +382,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $weeks[] = [
                 'week_number' => $weekNum,
                 'range' => $range,
+                'start_date' => $period ? $period->start_date->format('Y-m-d') : $date->copy()->startOfWeek()->format('Y-m-d'),
+                'end_date' => $period ? $period->end_date->format('Y-m-d') : $date->copy()->endOfWeek()->format('Y-m-d'),
                 'statuses' => $statuses,
             ];
         }
