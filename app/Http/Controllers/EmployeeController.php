@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
@@ -74,7 +75,11 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $validated = $this->validateEmployee($request);
         $validated['document_path'] = $this->storeDocument($request);
-        $validated['id_card_photo_path'] = $this->storeIdCardPhoto($request);
+        if ($this->hasIdCardColumns()) {
+            $validated['id_card_photo_path'] = $this->storeIdCardPhoto($request);
+        } else {
+            unset($validated['id_card_expires_at']);
+        }
 
         $validated = $this->applyLinkedEmployee($validated);
         Employee::create($validated);
@@ -93,6 +98,9 @@ class EmployeeController extends Controller implements HasMiddleware
     public function update(Request $request, Employee $employee)
     {
         $validated = $this->validateEmployee($request, $employee->id);
+        if (! $this->hasIdCardColumns()) {
+            unset($validated['id_card_expires_at']);
+        }
         $newDocPath = $this->storeDocument($request);
         if ($newDocPath) {
             if ($employee->document_path) {
@@ -100,12 +108,14 @@ class EmployeeController extends Controller implements HasMiddleware
             }
             $validated['document_path'] = $newDocPath;
         }
-        $newPhotoPath = $this->storeIdCardPhoto($request);
-        if ($newPhotoPath) {
-            if ($employee->id_card_photo_path) {
-                Storage::disk('public')->delete($employee->id_card_photo_path);
+        if ($this->hasIdCardColumns()) {
+            $newPhotoPath = $this->storeIdCardPhoto($request);
+            if ($newPhotoPath) {
+                if ($employee->id_card_photo_path) {
+                    Storage::disk('public')->delete($employee->id_card_photo_path);
+                }
+                $validated['id_card_photo_path'] = $newPhotoPath;
             }
-            $validated['id_card_photo_path'] = $newPhotoPath;
         }
 
         $validated = $this->applyLinkedEmployee($validated);
@@ -119,7 +129,7 @@ class EmployeeController extends Controller implements HasMiddleware
         if ($employee->document_path) {
             Storage::disk('public')->delete($employee->document_path);
         }
-        if ($employee->id_card_photo_path) {
+        if ($this->hasIdCardColumns() && $employee->id_card_photo_path) {
             Storage::disk('public')->delete($employee->id_card_photo_path);
         }
         $employee->delete();
@@ -131,9 +141,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $idCardCode = $this->employeeIdCardCode($employee);
         $printMode = $request->boolean('print');
-        $logoUrl = $this->appLogoUrl();
+        [$brandName, $logoUrl] = $this->resolveEmployeeBrand($employee);
 
-        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl'));
+        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName'));
     }
 
     public function printCards(Request $request)
@@ -148,14 +158,17 @@ class EmployeeController extends Controller implements HasMiddleware
             ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
             : $this->filteredEmployees($request)->orderBy('full_name')->get();
         $cards = $employees->map(function (Employee $employee) {
+            [$brandName, $logoUrl] = $this->resolveEmployeeBrand($employee);
+
             return [
                 'employee' => $employee,
                 'code' => $this->employeeIdCardCode($employee),
+                'brand_name' => $brandName,
+                'logo_url' => $logoUrl,
             ];
         });
-        $logoUrl = $this->appLogoUrl();
 
-        return view('employees.id-cards-print', compact('cards', 'logoUrl'));
+        return view('employees.id-cards-print', compact('cards'));
     }
 
     public function exportCsv(Request $request)
@@ -353,6 +366,9 @@ class EmployeeController extends Controller implements HasMiddleware
 
     private function storeIdCardPhoto(Request $request): ?string
     {
+        if (! $this->hasIdCardColumns()) {
+            return null;
+        }
         if (! $request->hasFile('id_card_photo')) {
             return null;
         }
@@ -419,9 +435,36 @@ class EmployeeController extends Controller implements HasMiddleware
         return 'EMP-'.str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT);
     }
 
-    private function appLogoUrl(): string
+    private function resolveEmployeeBrand(Employee $employee): array
     {
-        $logo = Setting::getValue('store_logo');
+        $scope = strtolower(trim((string) ($employee->department ?: $employee->position ?: '')));
+        if (str_contains($scope, 'wash')) {
+            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
+            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: '');
+
+            return [strtoupper($name), $this->brandLogoUrl($logo)];
+        }
+        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
+            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
+            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: '');
+
+            return [strtoupper($name), $this->brandLogoUrl($logo)];
+        }
+
+        $name = (string) (Setting::getValue('brand_mstore_name') ?: 'MSTORE');
+        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: Setting::getValue('store_logo') ?: '');
+
+        return [strtoupper($name), $this->brandLogoUrl($logo)];
+    }
+
+    private function hasIdCardColumns(): bool
+    {
+        return Schema::hasColumn('employees', 'id_card_photo_path')
+            && Schema::hasColumn('employees', 'id_card_expires_at');
+    }
+
+    private function brandLogoUrl(string $logo): string
+    {
         if (! $logo) {
             return asset('img/logo.png');
         }

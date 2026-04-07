@@ -62,6 +62,9 @@ class SettingController extends Controller implements HasMiddleware
     {
         $logoUploads = [
             'store_logo_file' => 'store_logo',
+            'brand_gtwash_logo_file' => 'brand_gtwash_logo',
+            'brand_mstore_logo_file' => 'brand_mstore_logo',
+            'brand_mstorenet_logo_file' => 'brand_mstorenet_logo',
             'atk_store_logo_file' => 'atk_store_logo',
             'wash_store_logo_file' => 'wash_store_logo',
             'wedding_service_1_image_file' => 'wedding_service_1_image',
@@ -70,6 +73,9 @@ class SettingController extends Controller implements HasMiddleware
         ];
         $logoClearFlags = [
             'clear_store_logo' => 'store_logo',
+            'clear_brand_gtwash_logo' => 'brand_gtwash_logo',
+            'clear_brand_mstore_logo' => 'brand_mstore_logo',
+            'clear_brand_mstorenet_logo' => 'brand_mstorenet_logo',
             'clear_atk_store_logo' => 'atk_store_logo',
             'clear_wash_store_logo' => 'wash_store_logo',
             'clear_wedding_service_1_image' => 'wedding_service_1_image',
@@ -85,12 +91,18 @@ class SettingController extends Controller implements HasMiddleware
 
         $request->validate([
             'store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'brand_gtwash_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'brand_mstore_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'brand_mstorenet_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'atk_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'wash_store_logo_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'wedding_service_1_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'wedding_service_2_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'wedding_service_3_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'clear_store_logo' => 'nullable|boolean',
+            'clear_brand_gtwash_logo' => 'nullable|boolean',
+            'clear_brand_mstore_logo' => 'nullable|boolean',
+            'clear_brand_mstorenet_logo' => 'nullable|boolean',
             'clear_atk_store_logo' => 'nullable|boolean',
             'clear_wash_store_logo' => 'nullable|boolean',
             'clear_wedding_service_1_image' => 'nullable|boolean',
@@ -264,6 +276,48 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Logo Toko Umum',
+            ],
+            [
+                'key' => 'brand_gtwash_name',
+                'value' => 'GTWASH',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Brand Company GTWASH',
+            ],
+            [
+                'key' => 'brand_gtwash_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Brand GTWASH',
+            ],
+            [
+                'key' => 'brand_mstore_name',
+                'value' => 'MSTORE',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Brand Company MSTORE',
+            ],
+            [
+                'key' => 'brand_mstore_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Brand MSTORE',
+            ],
+            [
+                'key' => 'brand_mstorenet_name',
+                'value' => 'MSTORE.NET',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Brand Company MSTORE.NET',
+            ],
+            [
+                'key' => 'brand_mstorenet_logo',
+                'value' => '',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Logo Brand MSTORE.NET',
             ],
             [
                 'key' => 'atk_store_name',

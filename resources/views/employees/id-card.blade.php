@@ -44,7 +44,7 @@
                     <div class="brand-section">
                         <div class="brand-logo"><img src="{{ $logoUrl }}" alt="Logo"></div>
                         <div>
-                            <div class="brand-name">MSTORE</div>
+                            <div class="brand-name">{{ $brandName }}</div>
                             <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
                         </div>
                     </div>
@@ -171,9 +171,9 @@ document.addEventListener('DOMContentLoaded', function () {
     align-items: center;
     justify-content: center;
     border-radius: 1.6mm;
-    background: #ffffff;
+    background: #060707eb;
     overflow: hidden;
-    border: 0.8pt solid #2563eb;
+    border: 0.8pt solid #cad0deff;
 }
 .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
     .brand-name { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.2px; color: #1d4ed8; line-height: 1; }

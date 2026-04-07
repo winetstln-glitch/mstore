@@ -20,6 +20,12 @@
                             'store_phone',
                             'whatsapp_number',
                             'store_logo',
+                            'brand_gtwash_name',
+                            'brand_gtwash_logo',
+                            'brand_mstore_name',
+                            'brand_mstore_logo',
+                            'brand_mstorenet_name',
+                            'brand_mstorenet_logo',
                             'atk_store_name',
                             'atk_store_address',
                             'atk_store_phone',
@@ -113,6 +119,59 @@
                             <div class="col-md-6">
                                 <label for="store_address" class="form-label fw-medium">Alamat Toko</label>
                                 <textarea class="form-control" id="store_address" name="store_address" rows="3">{{ \App\Models\Setting::getValue('store_address', 'Jl. Contoh No. 1') }}</textarea>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-2">Brand Company ID Card (Terpisah)</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_gtwash_name" class="form-label fw-medium">Nama Brand GTWASH</label>
+                                <input type="text" class="form-control" id="brand_gtwash_name" name="brand_gtwash_name" value="{{ \App\Models\Setting::getValue('brand_gtwash_name', 'GTWASH') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstore_name" class="form-label fw-medium">Nama Brand MSTORE</label>
+                                <input type="text" class="form-control" id="brand_mstore_name" name="brand_mstore_name" value="{{ \App\Models\Setting::getValue('brand_mstore_name', 'MSTORE') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstorenet_name" class="form-label fw-medium">Nama Brand MSTORE.NET</label>
+                                <input type="text" class="form-control" id="brand_mstorenet_name" name="brand_mstorenet_name" value="{{ \App\Models\Setting::getValue('brand_mstorenet_name', 'MSTORE.NET') }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="brand_gtwash_logo_file" class="form-label fw-medium">Logo GTWASH</label>
+                                <input type="file" class="form-control" id="brand_gtwash_logo_file" name="brand_gtwash_logo_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('brand_gtwash_logo'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('brand_gtwash_logo'), 'http') ? \App\Models\Setting::getValue('brand_gtwash_logo') : asset(\App\Models\Setting::getValue('brand_gtwash_logo')) }}" alt="Logo GTWASH" class="img-thumbnail mt-2" style="max-height: 56px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_brand_gtwash_logo" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_brand_gtwash_logo" name="clear_brand_gtwash_logo">
+                                        <label class="form-check-label text-danger" for="clear_brand_gtwash_logo">Hapus logo GTWASH</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstore_logo_file" class="form-label fw-medium">Logo MSTORE</label>
+                                <input type="file" class="form-control" id="brand_mstore_logo_file" name="brand_mstore_logo_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('brand_mstore_logo'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('brand_mstore_logo'), 'http') ? \App\Models\Setting::getValue('brand_mstore_logo') : asset(\App\Models\Setting::getValue('brand_mstore_logo')) }}" alt="Logo MSTORE" class="img-thumbnail mt-2" style="max-height: 56px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_brand_mstore_logo" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_brand_mstore_logo" name="clear_brand_mstore_logo">
+                                        <label class="form-check-label text-danger" for="clear_brand_mstore_logo">Hapus logo MSTORE</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstorenet_logo_file" class="form-label fw-medium">Logo MSTORE.NET</label>
+                                <input type="file" class="form-control" id="brand_mstorenet_logo_file" name="brand_mstorenet_logo_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                @if(\App\Models\Setting::getValue('brand_mstorenet_logo'))
+                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('brand_mstorenet_logo'), 'http') ? \App\Models\Setting::getValue('brand_mstorenet_logo') : asset(\App\Models\Setting::getValue('brand_mstorenet_logo')) }}" alt="Logo MSTORE.NET" class="img-thumbnail mt-2" style="max-height: 56px;">
+                                    <div class="form-check mt-2">
+                                        <input type="hidden" name="clear_brand_mstorenet_logo" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1" id="clear_brand_mstorenet_logo" name="clear_brand_mstorenet_logo">
+                                        <label class="form-check-label text-danger" for="clear_brand_mstorenet_logo">Hapus logo MSTORE.NET</label>
+                                    </div>
+                                @endif
                             </div>
 
                             <div class="col-12 mt-2">

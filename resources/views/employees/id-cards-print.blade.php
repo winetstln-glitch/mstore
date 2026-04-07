@@ -25,6 +25,8 @@
             @php
                 $employee = $row['employee'];
                 $code = $row['code'];
+                $brandName = (string) ($row['brand_name'] ?? 'MSTORE');
+                $logoUrl = (string) ($row['logo_url'] ?? asset('img/logo.png'));
                 $expDate = optional($employee->id_card_expires_at)->format('m/d/Y') ?: now()->addYear()->format('m/d/Y');
                 $avatar = (string) ($employee->user?->avatar ?? '');
                 $cardPhoto = (string) ($employee->id_card_photo_path ?? '');
@@ -49,7 +51,7 @@
                             <img src="{{ $logoUrl }}" alt="Logo">
                         </div>
                         <div>
-                            <div class="brand-name">MSTORE</div>
+                            <div class="brand-name">{{ $brandName }}</div>
                             <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
                         </div>
                     </div>
@@ -183,7 +185,7 @@
         border-radius: 1.6mm;
         background: #ffffff;
         overflow: hidden;
-        border: 0.8pt solid #2563eb;
+        border: 0.8pt solid #d6e0f5ff;
     }
     .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
     .brand-name { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.2px; color: #1d4ed8; line-height: 1; }

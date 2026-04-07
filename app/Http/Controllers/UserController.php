@@ -116,8 +116,7 @@ class UserController extends Controller implements HasMiddleware
             $user->attendance_card_code = User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
         }
 
-        $logoUrl = $this->appLogoUrl();
-        $brandName = strtoupper((string) (Setting::getValue('store_name') ?: 'MSTORE'));
+        [$brandName, $logoUrl] = $this->resolveUserBrand($user);
 
         return view('users.id-card', compact('user', 'logoUrl', 'brandName'));
     }
@@ -251,9 +250,30 @@ class UserController extends Controller implements HasMiddleware
         }
     }
 
-    private function appLogoUrl(): string
+    private function resolveUserBrand(User $user): array
     {
-        $logo = Setting::getValue('store_logo');
+        $scope = strtolower(trim((string) ($user->role?->label ?: $user->role?->name ?: '')));
+        if (str_contains($scope, 'wash')) {
+            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
+            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: '');
+
+            return [strtoupper($name), $this->brandLogoUrl($logo)];
+        }
+        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
+            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
+            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: '');
+
+            return [strtoupper($name), $this->brandLogoUrl($logo)];
+        }
+
+        $name = (string) (Setting::getValue('brand_mstore_name') ?: 'MSTORE');
+        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: Setting::getValue('store_logo') ?: '');
+
+        return [strtoupper($name), $this->brandLogoUrl($logo)];
+    }
+
+    private function brandLogoUrl(string $logo): string
+    {
         if (! $logo) {
             return asset('img/logo.png');
         }
