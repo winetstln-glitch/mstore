@@ -18,7 +18,6 @@
             </button>
         </div>
     </div>
-
     <div class="employee-print-sheet is-preview">
         <div class="id-card-sheet">
             @php
@@ -48,7 +47,7 @@
                             <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
                         </div>
                     </div>
-                    <div class="exp-badge">EXP: {{ $expDate }}</div>
+                    
                 </div>
                 <div class="id-card-item-main">
                     <div class="photo-frame">
@@ -77,6 +76,7 @@
                     </div>
                 </div>
                 <div class="id-card-item-footer">
+                    <div class="exp-badge">EXP: {{ $expDate }}</div>
                     <div class="barcode-container">
                         <svg class="barcode-svg" data-code="{{ $idCardCode }}"></svg>
                     </div>
@@ -97,8 +97,8 @@ document.addEventListener('DOMContentLoaded', function () {
         JsBarcode(el, code, {
             format: 'CODE128',
             lineColor: '#111827',
-            width: 1.5,
-            height: 20,
+            width: 2,
+            height: 26,
             displayValue: false,
             margin: 0,
         });
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
 .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
     .brand-name { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.2px; color: #1d4ed8; line-height: 1; }
     .brand-subtitle { font-size: 1.8mm; font-weight: 800; color: #1d4ed8; line-height: 1.1; margin-top: 0.5mm; }
-.exp-badge { font-size: 1.8mm; font-weight: 800; color: #1d4ed8; white-space: nowrap; }
+.exp-badge { font-size: 1.9mm; font-weight: 800; color: #1d4ed8; white-space: nowrap; margin-bottom: 0.6mm; letter-spacing: 0.04em; }
 .id-card-item-main {
     flex: 1;
     display: flex;
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     width: 100%;
     background: #fff;
     border-radius: 1.2mm;
-    padding: 0.6mm 0.6mm 0;
+    padding: 0.3mm 0.2mm 0;
     display: flex;
     justify-content: center;
 }

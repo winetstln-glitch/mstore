@@ -138,24 +138,24 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $writer = new Writer;
             $writer->openToFile('php://output');
 
-            $header = ['Karyawan', 'Posisi'];
-            foreach ($weeks as $week) {
-                $header[] = 'W'.$week['week_number'].' ('.$week['range'].')';
+            $header = ['Week', 'Date Range'];
+            foreach ($technicians as $tech) {
+                $header[] = $tech->schedule_name ?? $tech->name;
             }
             $writer->addRow(Row::fromValues($header));
 
-            foreach ($technicians as $tech) {
+            foreach ($weeks as $week) {
                 $row = [
-                    $tech->schedule_name ?? $tech->name,
-                    $tech->position ?? 'Karyawan',
+                    'Week '.$week['week_number'],
+                    $week['range'],
                 ];
 
-                foreach ($weeks as $week) {
+                foreach ($technicians as $tech) {
                     $status = $week['statuses'][$tech->id] ?? 'off';
                     $row[] = match ($status) {
-                        'piket' => "S1 ({$shift1Start}-{$shift1End})",
-                        'backup' => "S2 ({$shift2Start}-{$shift2End})",
-                        default => 'OFF',
+                        'piket' => "Shift 1 ({$shift1Start}-{$shift1End})",
+                        'backup' => "Shift 2 ({$shift2Start}-{$shift2End})",
+                        default => 'Off',
                     };
                 }
 
@@ -251,15 +251,47 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         }
     }
 
+    private function scheduleUsersQuery()
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($roleQ) {
+                $roleQ->whereIn('name', $this->scheduleEligibleRoleNames());
+            });
+    }
+
+    private function scheduleEligibleRoleNames(): array
+    {
+        return [
+            'admin', // administrasi
+            'finance', // administrasi/keuangan
+            'noc',
+            'network-operations-center',
+            'technician',
+            'kasir-atk',
+            'kasir-wash',
+            'karyawan-wash', // operator wash
+        ];
+    }
+
+    private function scheduleDefaultRoleId(): ?int
+    {
+        return Role::query()
+            ->whereIn('name', ['karyawan-wash', 'technician', 'employee'])
+            ->orderByRaw("CASE name WHEN 'karyawan-wash' THEN 1 WHEN 'technician' THEN 2 ELSE 3 END")
+            ->value('id');
+    }
+
     private function ensureScheduleUsers(): void
     {
         if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
             return;
         }
 
-        $employeeRoleId = Role::query()
-            ->whereIn('name', ['employee', 'technician', 'karyawan-wash'])
-            ->value('id');
+        $employeeRoleId = $this->scheduleDefaultRoleId();
+        if (! $employeeRoleId) {
+            return;
+        }
 
         Employee::query()
             ->whereNull('user_id')
@@ -321,31 +353,6 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             });
     }
 
-    private function scheduleUsersQuery()
-    {
-        $employeeUserIds = Employee::query()
-            ->whereNotNull('user_id')
-            ->pluck('user_id')
-            ->all();
-        $washUserIds = WashEmployee::query()
-            ->whereNotNull('user_id')
-            ->pluck('user_id')
-            ->all();
-
-        return User::query()->where(function ($q) use ($employeeUserIds, $washUserIds) {
-            $q->whereHas('role', function ($roleQ) {
-                $roleQ->where('name', 'technician');
-            });
-
-            if (! empty($employeeUserIds)) {
-                $q->orWhereIn('id', $employeeUserIds);
-            }
-            if (! empty($washUserIds)) {
-                $q->orWhereIn('id', $washUserIds);
-            }
-        });
-    }
-
     private function buildScheduleExportData(Request $request): array
     {
         $year = (int) $request->input('year', now()->year);
@@ -382,8 +389,6 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $weeks[] = [
                 'week_number' => $weekNum,
                 'range' => $range,
-                'start_date' => $period ? $period->start_date->format('Y-m-d') : $date->copy()->startOfWeek()->format('Y-m-d'),
-                'end_date' => $period ? $period->end_date->format('Y-m-d') : $date->copy()->endOfWeek()->format('Y-m-d'),
                 'statuses' => $statuses,
             ];
         }

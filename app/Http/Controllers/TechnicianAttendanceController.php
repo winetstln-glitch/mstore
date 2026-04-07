@@ -455,6 +455,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function create()
     {
+        if (! $this->isAttendanceEligibleUser(Auth::user())) {
+            return redirect()->route('dashboard')->withErrors([
+                'message' => __('Role Anda tidak diizinkan untuk absensi mandiri.'),
+            ]);
+        }
+
         $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
             ->whereDate('clock_in', today())
             ->first();
@@ -580,6 +586,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
+        if (! $this->isAttendanceEligibleUser(Auth::user())) {
+            return redirect()->route($this->attendanceRedirectRoute($request))->withErrors([
+                'message' => __('Role Anda tidak diizinkan untuk absensi.'),
+            ]);
+        }
+
         $lockKey = 'attendance-clock-in-'.Auth::id();
         $lock = Cache::lock($lockKey, 10);
 
@@ -648,6 +660,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function update(Request $request, $id)
     {
+        if (! $this->isAttendanceEligibleUser(Auth::user())) {
+            return redirect()->route($this->attendanceRedirectRoute($request))->withErrors([
+                'message' => __('Role Anda tidak diizinkan untuk absensi.'),
+            ]);
+        }
+
         // Validation: Clock Out Allowed based on Settings
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
@@ -786,6 +804,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         return User::query()
             ->where('is_active', true)
+            ->whereHas('role', function ($query) {
+                $query->whereIn('name', $this->attendanceEligibleRoleNames());
+            })
             ->whereHas('role.permissions', function ($query) {
                 $query->where('name', 'attendance.create');
             })
@@ -798,6 +819,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 }
             })
             ->first();
+    }
+
+    private function attendanceEligibleRoleNames(): array
+    {
+        return [
+            'admin', // administrasi
+            'finance', // administrasi/keuangan
+            'noc',
+            'network-operations-center',
+            'technician',
+            'kasir-atk',
+            'kasir-wash',
+            'karyawan-wash', // operator wash
+        ];
+    }
+
+    private function isAttendanceEligibleUser(?User $user): bool
+    {
+        if (! $user || ! $user->role) {
+            return false;
+        }
+
+        return in_array($user->role->name, $this->attendanceEligibleRoleNames(), true);
     }
 
     private function isWithinClockInWindow(): bool
