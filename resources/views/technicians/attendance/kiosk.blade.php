@@ -37,7 +37,7 @@
                             </div>
                         </div>
                         <div class="small text-muted">
-                            Kamera bisa dipakai untuk barcode 1D/2D. Jika gagal scan, masukkan kode manual.
+                            Kamera bisa dipakai untuk barcode 1D/2D. Untuk mode tap kartu RFID (reader HID), cukup tempel kartu lalu sistem akan kirim otomatis.
                         </div>
                     </div>
                 </div>
@@ -98,9 +98,23 @@ document.addEventListener('DOMContentLoaded', function () {
     let availableCameras = [];
     let currentCameraId = '';
     let scannerStarted = false;
+    let hidBuffer = '';
+    let hidBufferTimer = null;
 
     const isBackCamera = (label) => /(back|rear|environment|belakang)/i.test(String(label || ''));
     const isFrontCamera = (label) => /(front|user|depan)/i.test(String(label || ''));
+    const focusManualInput = () => {
+        if (!manualCodeInput) {
+            return;
+        }
+        setTimeout(() => {
+            try {
+                manualCodeInput.focus({ preventScroll: true });
+            } catch (_) {
+                manualCodeInput.focus();
+            }
+        }, 60);
+    };
 
     const showMessage = (text, success = true) => {
         messageEl.classList.remove('d-none', 'alert-success', 'alert-danger');
@@ -151,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             showMessage('Gagal menghubungi server absensi.', false);
         } finally {
+            focusManualInput();
             setTimeout(() => {
                 scanLock = false;
             }, 800);
@@ -162,6 +177,60 @@ document.addEventListener('DOMContentLoaded', function () {
         const code = manualCodeInput.value.trim();
         submitScan(code);
     });
+
+    manualCodeInput.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== 'Tab') {
+            return;
+        }
+        const code = manualCodeInput.value.trim();
+        if (code === '') {
+            return;
+        }
+        event.preventDefault();
+        submitScan(code);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        const target = event.target;
+        const tagName = target?.tagName?.toUpperCase();
+        const isTypingField = tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target?.isContentEditable;
+        if (isTypingField && target !== manualCodeInput) {
+            return;
+        }
+        if (event.ctrlKey || event.altKey || event.metaKey) {
+            return;
+        }
+
+        if (event.key === 'Enter' || event.key === 'Tab') {
+            if (hidBuffer.trim() !== '') {
+                event.preventDefault();
+                submitScan(hidBuffer.trim());
+                hidBuffer = '';
+            }
+            return;
+        }
+
+        if (event.key.length === 1) {
+            hidBuffer += event.key;
+            if (hidBufferTimer) {
+                clearTimeout(hidBufferTimer);
+            }
+            hidBufferTimer = setTimeout(() => {
+                hidBuffer = '';
+            }, 180);
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        const target = event.target;
+        if (target?.closest('#cameraSelect') || target?.closest('#switchCameraBtn')) {
+            return;
+        }
+        focusManualInput();
+    });
+
+    window.addEventListener('focus', focusManualInput);
+    focusManualInput();
 
     const startScanner = () => {
         if (typeof Html5Qrcode === 'undefined') {
