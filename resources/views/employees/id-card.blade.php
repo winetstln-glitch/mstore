@@ -19,49 +19,66 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-lg employee-id-card-screen">
-        <div class="card-body p-0">
-            <div class="row g-0">
-                <div class="col-lg-7 p-4">
-                    <div class="small text-uppercase fw-semibold text-secondary">MSTORE Employee Card</div>
-                    <h4 class="fw-bold mb-1">{{ $employee->full_name }}</h4>
-                    <div class="text-muted mb-3">{{ $employee->department }} - {{ $employee->position }}</div>
-                    <div class="mb-2"><span class="text-muted">ID Card:</span> <strong>{{ $idCardCode }}</strong></div>
-                    <div class="mb-2"><span class="text-muted">NIK:</span> <strong>{{ $employee->nik }}</strong></div>
-                    <div><span class="text-muted">No HP:</span> <strong>{{ $employee->phone }}</strong></div>
+    <div class="employee-print-sheet is-preview">
+        <div class="id-card-sheet">
+            @php
+                $expDate = optional($employee->id_card_expires_at)->format('m/d/Y') ?: now()->addYear()->format('m/d/Y');
+                $avatar = (string) ($employee->user?->avatar ?? '');
+                $cardPhoto = (string) ($employee->id_card_photo_path ?? '');
+                $photoUrl = null;
+                if ($avatar !== '') {
+                    if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
+                        $photoUrl = $avatar;
+                    } elseif (str_starts_with($avatar, 'storage/') || str_starts_with($avatar, 'img/')) {
+                        $photoUrl = asset($avatar);
+                    } else {
+                        $photoUrl = asset('storage/'.$avatar);
+                    }
+                } elseif ($cardPhoto !== '') {
+                    $photoUrl = asset('storage/'.$cardPhoto);
+                }
+            @endphp
+            <div class="id-card-item">
+                <div class="lanyard-slot"></div>
+                <div class="id-card-item-top">
+                    <div class="brand-section">
+                        <div class="brand-logo"><img src="{{ $logoUrl }}" alt="Logo"></div>
+                        <div>
+                            <div class="brand-name">MSTORE CORP</div>
+                            <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
+                        </div>
+                    </div>
+                    <div class="exp-badge">EXP: {{ $expDate }}</div>
                 </div>
-                <div class="col-lg-5 p-4 text-center employee-id-card-side">
-                    <img
-                        src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($idCardCode) }}"
-                        alt="QR {{ $idCardCode }}"
-                        class="img-fluid border rounded p-1 bg-white mb-2"
-                        style="max-width: 170px;">
-                    <svg id="barcodeSvg"></svg>
+                <div class="id-card-item-main">
+                    <div class="photo-frame">
+                        @if($photoUrl)
+                            <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image">
+                        @else
+                            <div class="photo-placeholder">[PHOTO PLACEHOLDER]</div>
+                        @endif
+                    </div>
+                    <div class="identity-lines">
+                        <div class="identity-row">
+                            <div class="identity-label">NAME:</div>
+                            <div class="identity-value">{{ $employee->full_name }}</div>
+                        </div>
+                        <div class="identity-row">
+                            <div class="identity-label">TITLE:</div>
+                            <div class="identity-value">{{ $employee->position ?: '-' }}</div>
+                        </div>
+                        <div class="identity-row">
+                            <div class="identity-label">EMP ID:</div>
+                            <div class="identity-value">{{ $idCardCode }}</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="employee-print-sheet {{ $printMode ? 'is-preview' : '' }}">
-        <div class="employee-print-card">
-            <div class="employee-print-top">
-                <div class="employee-print-brand">MSTORE</div>
-                <div class="employee-print-role">{{ strtoupper($employee->position) }}</div>
-            </div>
-            <div class="employee-print-main">
-                <div class="employee-print-left">
-                    <div class="employee-print-name">{{ $employee->full_name }}</div>
-                    <div class="employee-print-row"><span>ID Card</span><strong>{{ $idCardCode }}</strong></div>
-                    <div class="employee-print-row"><span>Divisi/Jabatan</span><strong>{{ $employee->department }} / {{ $employee->position }}</strong></div>
-                    <div class="employee-print-row"><span>No HP</span><strong>{{ $employee->phone ?: '-' }}</strong></div>
+                <div class="id-card-item-footer">
+                    <div class="barcode-container">
+                        <svg class="barcode-svg" data-code="{{ $idCardCode }}"></svg>
+                    </div>
+                    <div class="barcode-text">{{ $idCardCode }}</div>
                 </div>
-                <div class="employee-print-right">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ urlencode($idCardCode) }}" class="employee-print-qr" alt="QR">
-                </div>
-            </div>
-            <div class="employee-print-footer">
-                <svg id="barcodePrintSvg"></svg>
-                <div class="employee-print-code">{{ $idCardCode }}</div>
             </div>
         </div>
     </div>
@@ -73,75 +90,170 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const code = @json($idCardCode);
-    JsBarcode('#barcodeSvg', code, {
-        format: 'CODE128',
-        lineColor: '#111827',
-        width: 1.8,
-        height: 50,
-        displayValue: false,
-        margin: 0,
-    });
-    if (document.getElementById('barcodePrintSvg')) {
-        JsBarcode('#barcodePrintSvg', code, {
+    document.querySelectorAll('.barcode-svg').forEach((el) => {
+        JsBarcode(el, code, {
             format: 'CODE128',
             lineColor: '#111827',
             width: 1.4,
-            height: 30,
+            height: 22,
             displayValue: false,
             margin: 0,
         });
-    }
+    });
 });
 </script>
 @endpush
 
 @push('styles')
 <style>
-.employee-id-card-screen { border-radius: 1rem; overflow: hidden; }
-.employee-id-card-side { background: linear-gradient(165deg, rgba(15,23,42,0.03), rgba(37,99,235,0.08)); }
-.employee-print-sheet { display: none; }
 .employee-print-sheet.is-preview {
-    display: flex; justify-content: center; margin-top: 1rem; padding: 1rem;
-    background: #f1f5f9; border-radius: 1rem;
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f1f5f9;
+    border-radius: 1rem;
 }
-.employee-print-card {
-    width: 85.6mm; height: 54mm; background: #fff; border: 1px solid #0f172a; border-radius: 3mm;
-    display: flex; flex-direction: column; overflow: hidden;
+.id-card-sheet {
+    display: grid;
+    grid-template-columns: repeat(1, 54mm);
+    gap: 20px;
+    justify-content: center;
 }
-.employee-print-top {
-    background: linear-gradient(135deg, #0f172a, #1d4ed8); color: #fff;
-    padding: 2.2mm 3mm; display: flex; justify-content: space-between; align-items: center;
+.id-card-item {
+    width: 54mm;
+    height: 85.6mm;
+    border-radius: 4mm;
+    overflow: hidden;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
-.employee-print-brand { font-size: 2.8mm; font-weight: 700; }
-.employee-print-role { font-size: 1.9mm; border: 1px solid rgba(255,255,255,.45); border-radius: 99px; padding: .8mm 1.6mm; }
-.employee-print-main { flex: 1; display: flex; padding: 2mm 3mm 1.2mm; gap: 2mm; }
-.employee-print-left { flex: 1; min-width: 0; }
-.employee-print-name { font-size: 2.9mm; font-weight: 700; margin-bottom: 1.1mm; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.employee-print-row { display: flex; justify-content: space-between; gap: 1.2mm; border-bottom: 1px dashed #cbd5e1; padding: .4mm 0; font-size: 1.9mm; }
-.employee-print-row span { color: #64748b; }
-.employee-print-row strong { color: #111827; max-width: 30mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.employee-print-right { width: 17mm; display: flex; justify-content: center; }
-.employee-print-qr { width: 16mm; height: 16mm; border: 1px solid #cbd5e1; border-radius: 1.2mm; padding: .5mm; background: #fff; }
-.employee-print-footer { border-top: 1px solid #e2e8f0; padding: 1.2mm 3mm 1.6mm; display: flex; flex-direction: column; align-items: center; }
-#barcodePrintSvg { width: 42mm; height: 7.2mm; }
-.employee-print-code { font-size: 1.8mm; color: #334155; margin-top: .6mm; letter-spacing: .05em; }
+.lanyard-slot {
+    position: absolute;
+    top: 2.1mm;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14mm;
+    height: 3.2mm;
+    border-radius: 999px;
+    background: #d1d5db;
+    z-index: 4;
+    box-shadow: inset 0 0 1px rgba(0,0,0,0.2);
+}
+.id-card-item-top {
+    background: #ffffff;
+    border-bottom: 0.8pt solid #bfdbfe;
+    color: #0f172a;
+    padding: 7.2mm 3.2mm 2mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+}
+.brand-section { display: flex; align-items: center; gap: 2.1mm; }
+.brand-logo {
+    width: 9mm;
+    height: 9mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.6mm;
+    background: #ffffff;
+    overflow: hidden;
+    border: 0.8pt solid #2563eb;
+}
+.brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-name { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.2px; color: #1d4ed8; line-height: 1; }
+    .brand-subtitle { font-size: 1.8mm; font-weight: 800; color: #1d4ed8; line-height: 1.1; margin-top: 0.5mm; }
+.exp-badge { font-size: 1.8mm; font-weight: 800; color: #1d4ed8; white-space: nowrap; }
+.id-card-item-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2.3mm 3.2mm 1.4mm;
+    gap: 1.6mm;
+}
+.photo-frame {
+    width: 100%;
+    height: 31mm;
+    border: 0.8pt dashed #9ca3af;
+    border-radius: 1.3mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    overflow: hidden;
+}
+.photo-image { width: 100%; height: 100%; object-fit: cover; }
+.photo-placeholder { font-size: 2.4mm; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+.identity-lines { display: flex; flex-direction: column; gap: 0.7mm; }
+.identity-row { display: flex; align-items: baseline; gap: 1.1mm; line-height: 1.08; }
+.identity-label {
+    width: 12.5mm;
+    font-size: 2.5mm;
+    font-weight: 900;
+    color: #1d4ed8;
+    text-transform: uppercase;
+    letter-spacing: 0.1px;
+}
+.identity-value {
+    flex: 1;
+    font-size: 2.9mm;
+    font-weight: 800;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.id-card-item-footer {
+    border-top: 0.8pt solid #bfdbfe;
+    padding: 1.1mm 3.2mm 1.6mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.barcode-container {
+    width: 100%;
+    background: #fff;
+    border-radius: 1.2mm;
+    padding: 0.6mm 0.6mm 0;
+    display: flex;
+    justify-content: center;
+}
+.barcode-svg { max-width: 100%; height: auto; }
+.barcode-text {
+    margin-top: 0.8mm;
+    font-size: 1.6mm;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: 0.12em;
+    line-height: 1;
+}
 
 @media print {
     @page { size: A4 portrait; margin: 10mm; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    #sidebar-wrapper, #sidebar-overlay, .main-header, .navbar, .sidebar, footer, .employee-id-toolbar, .employee-id-card-screen,
-    .mobile-bottom-nav, #mobile-bottom-nav, [class*="mobile-bottom-nav"] { display: none !important; }
+    #sidebar-wrapper, #sidebar-overlay, .main-header, .navbar, .sidebar, footer, .employee-id-toolbar,
+    .mobile-bottom-nav, #mobile-bottom-nav, [class*="mobile-bottom-nav"], nav { display: none !important; }
     #wrapper { display: block !important; }
     #page-content-wrapper { margin-left: 0 !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; }
     .employee-id-card-page,
     .employee-id-card-page * {
         visibility: hidden !important;
     }
+    .id-card-sheet { display: grid !important; grid-template-columns: repeat(1, 54mm); justify-content: center; gap: 0 !important; }
     .employee-print-sheet { display: flex !important; justify-content: center; width: 100% !important; margin: 0 !important; padding: 0 !important; background: transparent !important; }
-    .employee-print-sheet,
-    .employee-print-sheet * {
+    .employee-print-sheet, .employee-print-sheet * {
         visibility: visible !important;
     }
+    .id-card-item { box-shadow: none !important; border: 0.2pt solid #000 !important; }
 }
 </style>
 @endpush

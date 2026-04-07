@@ -25,27 +25,65 @@
             @php
                 $employee = $row['employee'];
                 $code = $row['code'];
+                $expDate = optional($employee->id_card_expires_at)->format('m/d/Y') ?: now()->addYear()->format('m/d/Y');
+                $avatar = (string) ($employee->user?->avatar ?? '');
+                $cardPhoto = (string) ($employee->id_card_photo_path ?? '');
+                $photoUrl = null;
+                if ($avatar !== '') {
+                    if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
+                        $photoUrl = $avatar;
+                    } elseif (str_starts_with($avatar, 'storage/') || str_starts_with($avatar, 'img/')) {
+                        $photoUrl = asset($avatar);
+                    } else {
+                        $photoUrl = asset('storage/'.$avatar);
+                    }
+                } elseif ($cardPhoto !== '') {
+                    $photoUrl = asset('storage/'.$cardPhoto);
+                }
             @endphp
             <div class="id-card-item">
+                <div class="lanyard-slot"></div>
                 <div class="id-card-item-top">
-                    <div class="brand">MSTORE</div>
-                    <div class="role">{{ strtoupper($employee->position ?? 'STAFF') }}</div>
+                    <div class="brand-section">
+                        <div class="brand-logo">
+                            <img src="{{ $logoUrl }}" alt="Logo">
+                        </div>
+                        <div>
+                            <div class="brand-name">MSTORE</div>
+                            <div class="brand-subtitle">{{ strtoupper($employee->department ?: 'GENERAL') }}</div>
+                        </div>
+                    </div>
+                    <div class="exp-badge">EXP: {{ $expDate }}</div>
                 </div>
+
                 <div class="id-card-item-main">
-                    <div class="left">
-                        <div class="name">{{ $employee->full_name }}</div>
-                        <div class="line"><span>ID Card</span><strong>{{ $code }}</strong></div>
-                        <div class="line"><span>Divisi</span><strong>{{ $employee->department }}</strong></div>
-                        <div class="line"><span>Jabatan</span><strong>{{ $employee->position }}</strong></div>
-                        <div class="line"><span>No HP</span><strong>{{ $employee->phone ?: '-' }}</strong></div>
+                    <div class="photo-frame">
+                        @if($photoUrl)
+                            <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image">
+                        @else
+                            <div class="photo-placeholder">[PHOTO PLACEHOLDER]</div>
+                        @endif
                     </div>
-                    <div class="right">
-                        {{-- Placeholder QR Code --}}
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode($code) }}" alt="QR" class="qr">
+                    <div class="identity-lines">
+                        <div class="identity-row">
+                            <div class="identity-label">NAME:</div>
+                            <div class="identity-value">{{ $employee->full_name }}</div>
+                        </div>
+                        <div class="identity-row">
+                            <div class="identity-label">TITLE:</div>
+                            <div class="identity-value">{{ $employee->position ?: '-' }}</div>
+                        </div>
+                        <div class="identity-row">
+                            <div class="identity-label">EMP ID:</div>
+                            <div class="identity-value">{{ $code }}</div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="id-card-item-footer">
-                    <svg class="barcode-svg" data-code="{{ $code }}"></svg>
+                    <div class="barcode-container">
+                        <svg class="barcode-svg" data-code="{{ $code }}"></svg>
+                    </div>
                     <div class="barcode-text">{{ $code }}</div>
                 </div>
             </div>
@@ -66,9 +104,9 @@
                 if (!code) return;
                 JsBarcode(el, code, {
                     format: 'CODE128',
-                    lineColor: '#000',
-                    width: 1.2,
-                    height: 30,
+                    lineColor: '#111827',
+                    width: 1.4,
+                    height: 22,
                     displayValue: false,
                     margin: 0,
                 });
@@ -81,142 +119,184 @@
 
 @push('styles')
 <style>
-    /* UI Style (Screen Only) */
     .id-card-sheet {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(85.6mm, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(54mm, 1fr));
+        gap: 22px;
         justify-content: center;
+        padding: 20px 0;
     }
 
-    /* ID Card Base Style */
     .id-card-item {
-        width: 85.6mm;
-        height: 54mm;
-        border: 1px solid #d1d5db;
-        border-radius: 3mm;
+        width: 54mm;
+        height: 85.6mm;
+        border-radius: 4mm;
         overflow: hidden;
-        background: #fff;
+        background: #ffffff;
         display: flex;
         flex-direction: column;
         position: relative;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border: 0.8pt solid #dbeafe;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
+    .lanyard-slot {
+        position: absolute;
+        top: 2.1mm;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 14mm;
+        height: 3.2mm;
+        border-radius: 999px;
+        background: #d1d5db;
+        z-index: 4;
+        box-shadow: inset 0 0 1px rgba(0,0,0,0.2);
+    }
+
     .id-card-item-top {
-        background: linear-gradient(135deg, #0f172a, #2563eb);
-        color: #fff;
-        padding: 2.5mm 4mm;
+        background: #ffffff;
+        border-bottom: 0.8pt solid #bfdbfe;
+        color: #0f172a;
+        padding: 7.2mm 3.2mm 2mm;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        z-index: 2;
     }
 
-    .id-card-item-top .brand { font-size: 3.5mm; font-weight: 800; letter-spacing: 0.5px; }
-    .id-card-item-top .role { 
-        font-size: 2mm; 
-        background: rgba(255,255,255,0.2); 
-        border: 0.5px solid rgba(255,255,255,0.5); 
-        border-radius: 50px; 
-        padding: 0.5mm 2.5mm; 
-        text-transform: uppercase;
+    .brand-section { display: flex; align-items: center; gap: 2.1mm; }
+    .brand-logo {
+        width: 9mm;
+        height: 9mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1.6mm;
+        background: #ffffff;
+        overflow: hidden;
+        border: 0.8pt solid #2563eb;
+    }
+    .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-name { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.2px; color: #1d4ed8; line-height: 1; }
+    .brand-subtitle { font-size: 1.8mm; font-weight: 800; color: #1d4ed8; line-height: 1.1; margin-top: 0.5mm; }
+    .exp-badge {
+        font-size: 1.8mm;
+        font-weight: 800;
+        color: #1d4ed8;
+        white-space: nowrap;
     }
 
     .id-card-item-main {
         flex: 1;
         display: flex;
-        padding: 3mm 4mm;
-        gap: 3mm;
+        flex-direction: column;
+        padding: 2.3mm 3.2mm 1.4mm;
+        gap: 1.6mm;
     }
 
-    .id-card-item-main .left { flex: 1; }
-    .id-card-item-main .name {
-        font-size: 3.2mm;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 2mm;
-        border-bottom: 1.5px solid #2563eb;
-        padding-bottom: 0.5mm;
-        display: inline-block;
+    .photo-frame {
         width: 100%;
-    }
-
-    .id-card-item-main .line {
+        height: 31mm;
+        border: 0.8pt dashed #9ca3af;
+        border-radius: 1.3mm;
         display: flex;
-        justify-content: space-between;
-        font-size: 2.1mm;
-        margin-bottom: 0.8mm;
-        color: #475569;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        overflow: hidden;
     }
-    .id-card-item-main .line strong { color: #000; font-weight: 600; }
+    .photo-image { width: 100%; height: 100%; object-fit: cover; }
+    .photo-placeholder {
+        font-size: 2.4mm;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.3px;
+    }
 
-    .id-card-item-main .right { width: 18mm; text-align: right; }
-    .id-card-item-main .qr {
-        width: 18mm;
-        height: 18mm;
-        border: 1px solid #e2e8f0;
-        padding: 1mm;
-        background: #fff;
+    .identity-lines { display: flex; flex-direction: column; gap: 0.7mm; }
+    .identity-row { display: flex; align-items: baseline; gap: 1.1mm; line-height: 1.08; }
+    .identity-label {
+        width: 12.5mm;
+        font-size: 2.5mm;
+        font-weight: 900;
+        color: #1d4ed8;
+        text-transform: uppercase;
+        letter-spacing: 0.1px;
+    }
+    .identity-value {
+        flex: 1;
+        font-size: 2.9mm;
+        font-weight: 800;
+        color: #111827;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .id-card-item-footer {
-        padding: 1mm 4mm 2mm;
+        border-top: 0.8pt solid #bfdbfe;
+        padding: 1.1mm 3.2mm 1.6mm;
         display: flex;
         flex-direction: column;
         align-items: center;
-        background: #f8fafc;
+        justify-content: center;
+    }
+    .barcode-container {
+        width: 100%;
+        background: #fff;
+        border-radius: 1.2mm;
+        padding: 0.6mm 0.6mm 0;
+        display: flex;
+        justify-content: center;
+    }
+    .barcode-svg { max-width: 100%; height: auto; }
+    .barcode-text {
+        margin-top: 0.8mm;
+        font-size: 1.6mm;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: 0.12em;
+        line-height: 1;
     }
 
-    .id-card-item-footer .barcode-svg { width: 100%; max-height: 8mm; }
-    .id-card-item-footer .barcode-text { font-size: 1.8mm; font-weight: 600; color: #1e293b; margin-top: 0.5mm; }
-
-    /* PRINT OPTIMIZATION */
     @media print {
-        @page { 
-            size: A4 portrait; 
-            margin: 10mm; 
-        }
-
-        /* Sembunyikan semua elemen UI kecuali konten utama */
+        @page { size: A4 portrait; margin: 10mm; }
         body * { visibility: hidden; }
         .id-card-sheet, .id-card-sheet * { visibility: visible; }
-        
-        /* Layout Grid Khusus Cetak */
+
         .id-card-sheet {
-            visibility: visible;
             position: absolute;
             left: 0;
             top: 0;
             display: grid;
-            grid-template-columns: repeat(2, 85.6mm); /* 2 kolom */
-            gap: 7mm 7mm; /* Spasi potong antar kartu diperbesar */
+            grid-template-columns: repeat(3, 54mm);
+            gap: 5mm;
             width: 100%;
             justify-content: center;
+            padding: 0;
         }
 
-        /* Hilangkan shadow dan border dekoratif saat print agar bersih */
         .id-card-item {
             box-shadow: none;
-            border: 0.2pt solid #000; /* Border tipis sebagai guide potong */
+            border: 0.2pt solid #000;
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
-        /* Sembunyikan elemen dashboard/nav (desktop + mobile) */
-        .employee-cards-toolbar, 
+        .employee-cards-toolbar,
         #sidebar-wrapper,
         #sidebar-overlay,
-        .main-header, 
-        .main-sidebar, 
-        .main-footer, 
+        .main-header,
+        .main-sidebar,
+        .main-footer,
         .mobile-bottom-nav,
         #mobile-bottom-nav,
         [class*="mobile-bottom-nav"],
-        nav, 
-        footer { 
-            display: none !important; 
+        nav,
+        footer {
+            display: none !important;
         }
     }
 </style>

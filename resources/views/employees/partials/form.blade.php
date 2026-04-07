@@ -95,6 +95,19 @@
         <div class="form-text">Dokumen saat ini: <a href="{{ asset('storage/'.$employee->document_path) }}" target="_blank">Lihat File</a></div>
     @endif
 </div>
+<div class="col-md-6">
+    <label class="form-label">Foto ID Card (JPG/PNG max 2MB)</label>
+    <input type="file" name="id_card_photo" class="form-control @error('id_card_photo') is-invalid @enderror" accept=".jpg,.jpeg,.png,.webp,image/*">
+    @error('id_card_photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    @if(!empty($employee?->id_card_photo_path))
+        <div class="form-text">Foto saat ini: <a href="{{ asset('storage/'.$employee->id_card_photo_path) }}" target="_blank">Lihat Foto</a></div>
+    @endif
+</div>
+<div class="col-md-3">
+    <label class="form-label">Expired ID Card (opsional)</label>
+    <input type="date" name="id_card_expires_at" class="form-control @error('id_card_expires_at') is-invalid @enderror" value="{{ old('id_card_expires_at', isset($employee?->id_card_expires_at) ? $employee->id_card_expires_at->format('Y-m-d') : '') }}">
+    @error('id_card_expires_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+</div>
 <div class="col-12 d-flex justify-content-end">
     <button type="submit" class="btn btn-primary">
         <i class="fa-solid fa-save me-1"></i> Simpan

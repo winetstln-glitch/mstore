@@ -74,6 +74,7 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $validated = $this->validateEmployee($request);
         $validated['document_path'] = $this->storeDocument($request);
+        $validated['id_card_photo_path'] = $this->storeIdCardPhoto($request);
 
         $validated = $this->applyLinkedEmployee($validated);
         Employee::create($validated);
@@ -99,6 +100,13 @@ class EmployeeController extends Controller implements HasMiddleware
             }
             $validated['document_path'] = $newDocPath;
         }
+        $newPhotoPath = $this->storeIdCardPhoto($request);
+        if ($newPhotoPath) {
+            if ($employee->id_card_photo_path) {
+                Storage::disk('public')->delete($employee->id_card_photo_path);
+            }
+            $validated['id_card_photo_path'] = $newPhotoPath;
+        }
 
         $validated = $this->applyLinkedEmployee($validated);
         $employee->update($validated);
@@ -111,6 +119,9 @@ class EmployeeController extends Controller implements HasMiddleware
         if ($employee->document_path) {
             Storage::disk('public')->delete($employee->document_path);
         }
+        if ($employee->id_card_photo_path) {
+            Storage::disk('public')->delete($employee->id_card_photo_path);
+        }
         $employee->delete();
 
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil dihapus.');
@@ -120,8 +131,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $idCardCode = $this->employeeIdCardCode($employee);
         $printMode = $request->boolean('print');
+        $logoUrl = $this->appLogoUrl();
 
-        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode'));
+        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl'));
     }
 
     public function printCards(Request $request)
@@ -141,8 +153,9 @@ class EmployeeController extends Controller implements HasMiddleware
                 'code' => $this->employeeIdCardCode($employee),
             ];
         });
+        $logoUrl = $this->appLogoUrl();
 
-        return view('employees.id-cards-print', compact('cards'));
+        return view('employees.id-cards-print', compact('cards', 'logoUrl'));
     }
 
     public function exportCsv(Request $request)
@@ -324,6 +337,8 @@ class EmployeeController extends Controller implements HasMiddleware
             'join_date' => ['required', 'date'],
             'employment_status' => ['required', Rule::in(['Tetap', 'Kontrak', 'Magang'])],
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
+            'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'id_card_expires_at' => ['nullable', 'date'],
         ]);
     }
 
@@ -334,6 +349,15 @@ class EmployeeController extends Controller implements HasMiddleware
         }
 
         return $request->file('document')->store('employee-documents', 'public');
+    }
+
+    private function storeIdCardPhoto(Request $request): ?string
+    {
+        if (! $request->hasFile('id_card_photo')) {
+            return null;
+        }
+
+        return $request->file('id_card_photo')->store('employee-id-cards', 'public');
     }
 
     private function employeeUsers()
@@ -393,5 +417,19 @@ class EmployeeController extends Controller implements HasMiddleware
         }
 
         return 'EMP-'.str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT);
+    }
+
+    private function appLogoUrl(): string
+    {
+        $logo = Setting::getValue('store_logo');
+        if (! $logo) {
+            return asset('img/logo.png');
+        }
+
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return $logo;
+        }
+
+        return asset($logo);
     }
 }

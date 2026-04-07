@@ -27,11 +27,14 @@ class Employee extends Model
         'join_date',
         'employment_status',
         'document_path',
+        'id_card_photo_path',
+        'id_card_expires_at',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'join_date' => 'date',
+        'id_card_expires_at' => 'date',
     ];
 
     public function user(): BelongsTo

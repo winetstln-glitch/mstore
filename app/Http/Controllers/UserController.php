@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -115,7 +116,10 @@ class UserController extends Controller implements HasMiddleware
             $user->attendance_card_code = User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
         }
 
-        return view('users.id-card', compact('user'));
+        $logoUrl = $this->appLogoUrl();
+        $brandName = strtoupper((string) (Setting::getValue('store_name') ?: 'MSTORE'));
+
+        return view('users.id-card', compact('user', 'logoUrl', 'brandName'));
     }
 
     public function create()
@@ -245,5 +249,18 @@ class UserController extends Controller implements HasMiddleware
             }
             throw $e;
         }
+    }
+
+    private function appLogoUrl(): string
+    {
+        $logo = Setting::getValue('store_logo');
+        if (! $logo) {
+            return asset('img/logo.png');
+        }
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return $logo;
+        }
+
+        return asset($logo);
     }
 }
