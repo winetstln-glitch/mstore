@@ -141,9 +141,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $idCardCode = $this->employeeIdCardCode($employee);
         $printMode = $request->boolean('print');
-        [$brandName, $logoUrl] = $this->resolveEmployeeBrand($employee);
+        [$brandName, $logoUrl, $brandSlogan] = $this->resolveEmployeeBrand($employee);
 
-        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName'));
+        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName', 'brandSlogan'));
     }
 
     public function printCards(Request $request)
@@ -158,13 +158,14 @@ class EmployeeController extends Controller implements HasMiddleware
             ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
             : $this->filteredEmployees($request)->orderBy('full_name')->get();
         $cards = $employees->map(function (Employee $employee) {
-            [$brandName, $logoUrl] = $this->resolveEmployeeBrand($employee);
+            [$brandName, $logoUrl, $brandSlogan] = $this->resolveEmployeeBrand($employee);
 
             return [
                 'employee' => $employee,
                 'code' => $this->employeeIdCardCode($employee),
                 'brand_name' => $brandName,
                 'logo_url' => $logoUrl,
+                'brand_slogan' => $brandSlogan,
             ];
         });
 
@@ -461,23 +462,28 @@ class EmployeeController extends Controller implements HasMiddleware
     private function resolveEmployeeBrand(Employee $employee): array
     {
         $scope = strtolower(trim((string) ($employee->department ?: $employee->position ?: '')));
+        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
+        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
         if (str_contains($scope, 'wash')) {
             $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
-            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: '');
+            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo)];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
         }
         if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
             $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
-            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: '');
+            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo)];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
         }
 
-        $name = (string) (Setting::getValue('brand_mstore_name') ?: 'MSTORE');
-        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: Setting::getValue('store_logo') ?: '');
+        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
+        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
+        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
 
-        return [strtoupper($name), $this->brandLogoUrl($logo)];
+        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
     }
 
     private function hasIdCardColumns(): bool

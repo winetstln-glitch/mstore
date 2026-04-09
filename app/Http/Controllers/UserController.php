@@ -118,9 +118,9 @@ class UserController extends Controller implements HasMiddleware
 
         $idCardCode = $user->attendance_card_code;
         $employee = $user->employee;
-        [$brandName, $logoUrl] = $this->resolveUserBrand($user);
+        [$brandName, $logoUrl, $brandSlogan] = $this->resolveUserBrand($user);
 
-        return view('users.id-card', compact('user', 'logoUrl', 'brandName', 'idCardCode', 'employee'));
+        return view('users.id-card', compact('user', 'logoUrl', 'brandName', 'brandSlogan', 'idCardCode', 'employee'));
     }
 
     public function create()
@@ -269,23 +269,28 @@ class UserController extends Controller implements HasMiddleware
     private function resolveUserBrand(User $user): array
     {
         $scope = strtolower(trim((string) ($user->role?->label ?: $user->role?->name ?: '')));
+        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
+        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
         if (str_contains($scope, 'wash')) {
             $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
-            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: '');
+            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo)];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
         }
         if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
             $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
-            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: '');
+            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo)];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
         }
 
-        $name = (string) (Setting::getValue('brand_mstore_name') ?: 'MSTORE');
-        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: Setting::getValue('store_logo') ?: '');
+        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
+        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
+        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
 
-        return [strtoupper($name), $this->brandLogoUrl($logo)];
+        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
     }
 
     private function brandLogoUrl(string $logo): string

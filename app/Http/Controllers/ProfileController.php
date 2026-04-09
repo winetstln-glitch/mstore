@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -166,36 +167,26 @@ class ProfileController extends Controller implements HasMiddleware
 
     public function idCard()
     {
-        $user = Auth::user()->load('role');
-        $qrPayload = $this->buildQrPayload($user);
-        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
+        $user = Auth::user()->load(['role', 'employee']);
+        $idCardCode = $this->userIdCardCode($user);
+        [$brandName, $logoUrl, $brandSlogan] = $this->resolveUserBrand($user);
 
-        return view('profile.id_card', compact('user', 'qrUrl'));
+        return view('profile.id_card', compact('user', 'idCardCode', 'logoUrl', 'brandName', 'brandSlogan'));
     }
 
     public function idCardDownload()
     {
-        $user = Auth::user()->load('role');
-        $qrPayload = $this->buildQrPayload($user);
-        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
-        $qrSrc = $qrUrl;
-        // Try to embed QR as data URI for reliable PDF rendering
-        try {
-            $context = stream_context_create([
-                'http' => ['timeout' => 5],
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ],
-            ]);
-            $qrBin = @file_get_contents($qrUrl, false, $context);
-            if ($qrBin !== false) {
-                $qrSrc = 'data:image/png;base64,'.base64_encode($qrBin);
-            }
-        } catch (\Throwable $e) {
-            // Fallback keeps $qrSrc as URL
-        }
-        $viewData = ['user' => $user, 'qrUrl' => $qrUrl, 'qrSrc' => $qrSrc, 'isPdf' => true];
+        $user = Auth::user()->load(['role', 'employee']);
+        $idCardCode = $this->userIdCardCode($user);
+        [$brandName, $logoUrl, $brandSlogan] = $this->resolveUserBrand($user);
+        $viewData = [
+            'user' => $user,
+            'idCardCode' => $idCardCode,
+            'logoUrl' => $logoUrl,
+            'brandName' => $brandName,
+            'brandSlogan' => $brandSlogan,
+            'isPdf' => true,
+        ];
         $pdf = Pdf::loadView('profile.id_card', $viewData)
             ->setPaper('a6', 'portrait');
         // Enable remote assets for images (logo, avatar, QR)
@@ -205,6 +196,58 @@ class ProfileController extends Controller implements HasMiddleware
         $filename = 'ID-'.preg_replace('/[^A-Za-z0-9\-]+/', '-', $user->name).'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    protected function userIdCardCode($user): string
+    {
+        $code = trim((string) ($user->attendance_card_code ?? ''));
+        if ($code !== '') {
+            return $code;
+        }
+
+        return \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
+    }
+
+    protected function resolveUserBrand($user): array
+    {
+        $scope = strtolower(trim((string) ($user->role?->label ?: $user->role?->name ?: '')));
+        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
+        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
+
+        if (str_contains($scope, 'wash')) {
+            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
+            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
+
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+        }
+
+        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
+            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
+            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
+            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
+
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+        }
+
+        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
+        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
+        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
+
+        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+    }
+
+    protected function brandLogoUrl(string $logo): string
+    {
+        if (! $logo) {
+            return asset('img/logo.png');
+        }
+
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return $logo;
+        }
+
+        return asset($logo);
     }
 
     protected function buildQrPayload($user): string

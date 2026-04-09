@@ -132,6 +132,9 @@ class SettingController extends Controller implements HasMiddleware
             'landing_internet_promo_enabled' => 'nullable|in:0,1',
             'landing_internet_promo_percent' => 'nullable|integer|min:0|max:90',
             'landing_internet_promo_label' => 'nullable|string|max:120',
+            'brand_gtwash_slogan' => 'nullable|string|max:160',
+            'brand_mstore_slogan' => 'nullable|string|max:160',
+            'brand_mstorenet_slogan' => 'nullable|string|max:160',
         ]);
 
         $existingSettings = Setting::query()
@@ -292,6 +295,13 @@ class SettingController extends Controller implements HasMiddleware
                 'label' => 'Logo Brand GTWASH',
             ],
             [
+                'key' => 'brand_gtwash_slogan',
+                'value' => 'Solusi Digital Cepat dan Terpercaya',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Slogan Brand GTWASH',
+            ],
+            [
                 'key' => 'brand_mstore_name',
                 'value' => 'MSTORE',
                 'group' => 'general',
@@ -306,6 +316,13 @@ class SettingController extends Controller implements HasMiddleware
                 'label' => 'Logo Brand MSTORE',
             ],
             [
+                'key' => 'brand_mstore_slogan',
+                'value' => 'Solusi Digital Cepat dan Terpercaya',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Slogan Brand MSTORE',
+            ],
+            [
                 'key' => 'brand_mstorenet_name',
                 'value' => 'MSTORE.NET',
                 'group' => 'general',
@@ -318,6 +335,13 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'general',
                 'type' => 'text',
                 'label' => 'Logo Brand MSTORE.NET',
+            ],
+            [
+                'key' => 'brand_mstorenet_slogan',
+                'value' => 'Solusi Digital Cepat dan Terpercaya',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Slogan Brand MSTORE.NET',
             ],
             [
                 'key' => 'atk_store_name',

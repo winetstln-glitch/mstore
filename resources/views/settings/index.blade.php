@@ -22,10 +22,13 @@
                             'whatsapp_number',
                             'store_logo',
                             'brand_gtwash_name',
+                            'brand_gtwash_slogan',
                             'brand_gtwash_logo',
                             'brand_mstore_name',
+                            'brand_mstore_slogan',
                             'brand_mstore_logo',
                             'brand_mstorenet_name',
+                            'brand_mstorenet_slogan',
                             'brand_mstorenet_logo',
                             'atk_store_name',
                             'atk_store_address',
@@ -143,6 +146,18 @@
                             <div class="col-md-4">
                                 <label for="brand_mstorenet_name" class="form-label fw-medium">Nama Brand MSTORE.NET</label>
                                 <input type="text" class="form-control" id="brand_mstorenet_name" name="brand_mstorenet_name" value="{{ \App\Models\Setting::getValue('brand_mstorenet_name', 'MSTORE.NET') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_gtwash_slogan" class="form-label fw-medium">Slogan GTWASH</label>
+                                <input type="text" class="form-control" id="brand_gtwash_slogan" name="brand_gtwash_slogan" value="{{ \App\Models\Setting::getValue('brand_gtwash_slogan', 'Solusi Digital Cepat dan Terpercaya') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstore_slogan" class="form-label fw-medium">Slogan MSTORE</label>
+                                <input type="text" class="form-control" id="brand_mstore_slogan" name="brand_mstore_slogan" value="{{ \App\Models\Setting::getValue('brand_mstore_slogan', 'Solusi Digital Cepat dan Terpercaya') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="brand_mstorenet_slogan" class="form-label fw-medium">Slogan MSTORE.NET</label>
+                                <input type="text" class="form-control" id="brand_mstorenet_slogan" name="brand_mstorenet_slogan" value="{{ \App\Models\Setting::getValue('brand_mstorenet_slogan', 'Solusi Digital Cepat dan Terpercaya') }}">
                             </div>
 
                             <div class="col-md-4">
