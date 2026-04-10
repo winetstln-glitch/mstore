@@ -13,6 +13,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -518,6 +519,31 @@ class EmployeeController extends Controller implements HasMiddleware
         }
 
         if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            try {
+                $hash = md5($logo);
+                $ext = pathinfo(parse_url($logo, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'png';
+                $ext = strtolower($ext);
+                if (! in_array($ext, ['png','jpg','jpeg','webp','gif','svg'], true)) {
+                    $ext = 'png';
+                }
+                $path = "brand-logos/{$hash}.{$ext}";
+                if (! Storage::disk('public')->exists($path)) {
+                    $response = Http::timeout(10)->withHeaders([
+                        'User-Agent' => 'MStore-IDCard-LogoFetcher/1.0',
+                    ])->get($logo);
+                    if ($response->successful()) {
+                        $contentType = (string) $response->header('Content-Type', '');
+                        if (str_starts_with($contentType, 'image/')) {
+                            Storage::disk('public')->put($path, $response->body());
+                        }
+                    }
+                }
+                if (Storage::disk('public')->exists($path)) {
+                    return asset('storage/'.$path);
+                }
+            } catch (\Throwable $e) {
+                // ignore download failure, fallback to given URL
+            }
             return $logo;
         }
 

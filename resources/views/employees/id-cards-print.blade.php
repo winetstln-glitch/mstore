@@ -217,7 +217,6 @@ function downloadElement(element, fileName) {
         return html2canvas(element, {
             scale: 4,
             useCORS: true,
-            foreignObjectRendering: true,
             logging: false,
             backgroundColor: '#ffffff'
         }).then(canvas => {
@@ -225,6 +224,9 @@ function downloadElement(element, fileName) {
             link.download = fileName;
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
+        }).catch((e) => {
+            alert('Gagal membuat gambar. Pastikan logo/foto dapat diakses (CORS) dan coba muat ulang halaman.');
+            console.error(e);
         });
     });
 }

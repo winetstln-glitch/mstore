@@ -195,7 +195,6 @@ async function downloadCard(side) {
     html2canvas(element, {
         scale: 4, // Higher scale for better image quality
         useCORS: true,
-        foreignObjectRendering: true,
         logging: false,
         backgroundColor: '#ffffff'
     }).then((canvas) => {
@@ -203,6 +202,9 @@ async function downloadCard(side) {
         link.download = fileName;
         link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.click();
+    }).catch((e) => {
+        alert('Gagal membuat gambar. Pastikan logo/foto dapat diakses (CORS) dan coba muat ulang halaman.');
+        console.error(e);
     });
 }
 
