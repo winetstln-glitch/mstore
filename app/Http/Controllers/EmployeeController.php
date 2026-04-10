@@ -67,8 +67,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $users = $this->employeeUsers();
         $washEmployees = $this->washEmployees();
+        $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
 
-        return view('employees.create', compact('users', 'washEmployees'));
+        return view('employees.create', compact('users', 'washEmployees', 'roleLabels'));
     }
 
     public function store(Request $request)
@@ -82,7 +83,14 @@ class EmployeeController extends Controller implements HasMiddleware
         }
 
         $validated = $this->applyLinkedEmployee($validated);
-        Employee::create($validated);
+        $employee = Employee::create($validated);
+
+        if ($employee->user_id) {
+            $user = User::with('role')->find($employee->user_id);
+            if ($user) {
+                $this->employeeSyncService->syncFromUser($user);
+            }
+        }
 
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil ditambahkan.');
     }
@@ -91,8 +99,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $users = $this->employeeUsers($employee->id);
         $washEmployees = $this->washEmployees($employee->id);
+        $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
 
-        return view('employees.edit', compact('employee', 'users', 'washEmployees'));
+        return view('employees.edit', compact('employee', 'users', 'washEmployees', 'roleLabels'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -120,6 +129,13 @@ class EmployeeController extends Controller implements HasMiddleware
 
         $validated = $this->applyLinkedEmployee($validated);
         $employee->update($validated);
+
+        if ($employee->user_id) {
+            $user = User::with('role')->find($employee->user_id);
+            if ($user) {
+                $this->employeeSyncService->syncFromUser($user);
+            }
+        }
 
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil diperbarui.');
     }

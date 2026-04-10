@@ -16,6 +16,9 @@
             <button type="button" class="btn btn-primary" onclick="window.print()">
                 <i class="fa-solid fa-print me-1"></i>Print Sekarang
             </button>
+            <button type="button" class="btn btn-dark" id="downloadAllBtn" onclick="downloadAllImages()">
+                <i class="fa-solid fa-download me-1"></i>Download Semua (Image)
+            </button>
         </div>
     </div>
 
@@ -51,8 +54,8 @@
                 }
             @endphp
 
-            <div class="id-card-pair">
-                <div class="id-card-item brand-{{ $row['brand_key'] ?? 'mstore' }}">
+            <div class="id-card-pair" id="card-pair-{{ $employee->id }}">
+                <div class="id-card-item brand-{{ $row['brand_key'] ?? 'mstore' }} id-card-front">
                     <div class="wave-accent-top"></div>
                     <div class="header-bg"></div>
                     <div class="wave-accent-bottom"></div>
@@ -60,7 +63,7 @@
 
                     <div class="logo-container">
                         <div class="logo-diamond">
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                         </div>
                         <div class="company-copy">
                             <div class="company-name">{{ $brandName }}</div>
@@ -71,7 +74,7 @@
                     <div class="profile-container">
                         <div class="profile-image">
                             @if($photoUrl)
-                                <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image">
+                                <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                             @else
                                 <div class="photo-placeholder"><i class="fa-solid fa-user"></i></div>
                             @endif
@@ -92,14 +95,14 @@
                     </div>
                 </div>
 
-                <div class="id-card-item id-card-back brand-{{ $row['brand_key'] ?? 'mstore' }}">
+                <div class="id-card-item id-card-back brand-{{ $row['brand_key'] ?? 'mstore' }} id-card-back">
                     <div class="back-header-bg"></div>
                     <div class="back-accent-circle"></div>
                     <div class="back-accent-line"></div>
 
                     <div class="back-brand-lockup">
                         <div class="back-logo-frame">
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                         </div>
                         <div class="back-brand-meta">
                             <div class="back-brand-name">{{ $brandName }}</div>
@@ -139,9 +142,17 @@
                         <div class="back-footer-warning">Kartu ini wajib dibawa saat bertugas.</div>
                     </div>
                 </div>
+
+                <div class="card-pair-toolbar no-print">
+                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="downloadPair('{{ $employee->id }}', '{{ Str::slug($employee->full_name) }}')">
+                        <i class="fa-solid fa-download me-1"></i> Download Images
+                    </button>
+                </div>
             </div>
         @empty
-            <div class="alert alert-warning employee-cards-toolbar">Tidak ada data karyawan sesuai filter.</div>
+            <div class="text-center py-5">
+                <p class="text-muted">Tidak ada data karyawan terpilih untuk dicetak.</p>
+            </div>
         @endforelse
     </div>
 </div>
@@ -149,6 +160,7 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.barcode-svg').forEach((el) => {
@@ -167,7 +179,104 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+async function waitForAssets(element) {
+    const images = Array.from(element.querySelectorAll('img'));
+    const promises = images.map((img) => {
+        try {
+            if (img.decode) {
+                return img.decode().catch(() => {});
+            }
+        } catch (e) {}
+        return new Promise((resolve) => {
+            if (img.complete) return resolve();
+            img.onload = img.onerror = () => resolve();
+        });
+    });
+    await Promise.all(promises);
+    await new Promise((r) => setTimeout(r, 150));
+}
+
+async function downloadPair(id, name) {
+    const pair = document.getElementById(`card-pair-${id}`);
+    if (!pair) return;
+
+    const front = pair.querySelector('.id-card-front');
+    const back = pair.querySelector('.id-card-back');
+
+    if (front) await downloadElement(front, `ID_Card_Depan_${name}.jpg`);
+    if (back) {
+        // Delay a bit to avoid browser issues
+        await new Promise(r => setTimeout(r, 300));
+        await downloadElement(back, `ID_Card_Belakang_${name}.jpg`);
+    }
+}
+
+function downloadElement(element, fileName) {
+    return waitForAssets(element).then(() => {
+        return html2canvas(element, {
+            scale: 4,
+            useCORS: true,
+            foreignObjectRendering: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        });
+    });
+}
+
+async function downloadAllImages() {
+    const pairs = document.querySelectorAll('.id-card-pair');
+    const btn = document.getElementById('downloadAllBtn');
+    const originalText = btn.innerHTML;
+    
+    if (pairs.length > 5 && !confirm(`Anda akan mendownload ${pairs.length * 2} file gambar. Lanjutkan?`)) {
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sedang memproses...';
+
+    for (const pair of pairs) {
+        const id = pair.id.replace('card-pair-', '');
+        const name = pair.querySelector('.name-block').textContent.trim().toLowerCase().replace(/\s+/g, '-');
+        await downloadPair(id, name);
+        // Delay between pairs
+        await new Promise(r => setTimeout(r, 600));
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    alert('Selesai mendownload semua gambar.');
+}
 </script>
+@endpush
+
+@push('styles')
+<style>
+.id-card-pair {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    page-break-inside: avoid;
+}
+
+.card-pair-toolbar {
+    margin-top: 5px;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+</style>
 @endpush
 
 @push('styles')

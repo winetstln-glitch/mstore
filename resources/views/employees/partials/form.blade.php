@@ -5,15 +5,16 @@
 </div>
 <div class="col-md-6">
     <label class="form-label">Link ke User (opsional)</label>
-    <select name="user_id" class="form-select @error('user_id') is-invalid @enderror">
+    <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror">
         <option value="">-- Tidak di-link --</option>
         @foreach(($users ?? []) as $u)
-            <option value="{{ $u->id }}" {{ (string) old('user_id', $employee->user_id ?? '') === (string) $u->id ? 'selected' : '' }}>
+            <option value="{{ $u->id }}" data-role-label="{{ $u->role?->label ?? $u->role?->name }}" data-role-name="{{ $u->role?->name }}" {{ (string) old('user_id', $employee->user_id ?? '') === (string) $u->id ? 'selected' : '' }}>
                 {{ $u->name }} @if($u->username) ({{ $u->username }}) @endif — {{ $u->role?->label ?? $u->role?->name }}
             </option>
         @endforeach
     </select>
     @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    <div class="form-text text-primary small"><i class="fa-solid fa-circle-info me-1"></i> Jika di-link, data Jabatan dan Departemen akan disinkronkan dari Role User.</div>
 </div>
 <div class="col-md-3">
     <label class="form-label">Tanggal Lahir *</label>
@@ -65,10 +66,15 @@
 <div class="col-md-4">
     <label class="form-label">Jabatan *</label>
     @php
-        $positionOptions = ['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan'];
         $selectedPosition = old('position', $employee->position ?? '');
+        // Merge existing role labels with the default ones if not present
+        $positionOptions = array_unique(array_merge(
+            ['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan'],
+            $roleLabels ?? []
+        ));
+        sort($positionOptions);
     @endphp
-    <select name="position" class="form-select @error('position') is-invalid @enderror" required>
+    <select name="position" id="position" class="form-select @error('position') is-invalid @enderror" required>
         <option value="">Pilih Jabatan</option>
         @foreach($positionOptions as $positionOption)
             <option value="{{ $positionOption }}" {{ $selectedPosition === $positionOption ? 'selected' : '' }}>{{ $positionOption }}</option>
@@ -85,7 +91,7 @@
         $departmentOptions = ['Administrasi', 'Keuangan', 'Teknis', 'Wash', 'ATK', 'Operasional'];
         $selectedDepartment = old('department', $employee->department ?? '');
     @endphp
-    <select name="department" class="form-select @error('department') is-invalid @enderror" required>
+    <select name="department" id="department" class="form-select @error('department') is-invalid @enderror" required>
         <option value="">Pilih Departemen</option>
         @foreach($departmentOptions as $departmentOption)
             <option value="{{ $departmentOption }}" {{ $selectedDepartment === $departmentOption ? 'selected' : '' }}>{{ $departmentOption }}</option>
@@ -96,6 +102,65 @@
     </select>
     @error('department')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userSelect = document.getElementById('user_id');
+    const positionSelect = document.getElementById('position');
+    const departmentSelect = document.getElementById('department');
+
+    if (userSelect) {
+        userSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const roleLabel = selectedOption.getAttribute('data-role-label');
+                const roleName = selectedOption.getAttribute('data-role-name');
+
+                // Auto select position
+                if (roleLabel) {
+                    // Try to find matching option
+                    let found = false;
+                    for (let i = 0; i < positionSelect.options.length; i++) {
+                        if (positionSelect.options[i].value === roleLabel) {
+                            positionSelect.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        const newOption = new Option(roleLabel, roleLabel, true, true);
+                        positionSelect.add(newOption);
+                    }
+                }
+
+                // Auto select department
+                let department = 'Operasional';
+                const role = roleName.toLowerCase();
+                if (['technician', 'noc', 'network-operations-center'].includes(role)) {
+                    department = 'Teknis';
+                } else if (['admin', 'owner-pendiri'].includes(role)) {
+                    department = 'Administrasi';
+                } else if (role === 'finance') {
+                    department = 'Keuangan';
+                } else if (['kasir-wash', 'karyawan-wash'].includes(role)) {
+                    department = 'Wash';
+                } else if (role === 'kasir-atk') {
+                    department = 'ATK';
+                } else if (role === 'coordinator') {
+                    department = 'Operasional';
+                }
+
+                for (let i = 0; i < departmentSelect.options.length; i++) {
+                    if (departmentSelect.options[i].value === department) {
+                        departmentSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 <div class="col-md-2">
     <label class="form-label">Tanggal Masuk *</label>
     <input type="date" name="join_date" class="form-control @error('join_date') is-invalid @enderror" value="{{ old('join_date', isset($employee?->join_date) ? $employee->join_date->format('Y-m-d') : '') }}" required>

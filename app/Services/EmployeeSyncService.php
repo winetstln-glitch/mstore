@@ -157,6 +157,8 @@ class EmployeeSyncService
             'kasir-atk',
             'kasir-wash',
             'karyawan-wash',
+            'coordinator',
+            'owner-pendiri',
         ];
     }
 
@@ -164,10 +166,11 @@ class EmployeeSyncService
     {
         return match ($roleName) {
             'technician', 'noc', 'network-operations-center' => 'Teknis',
-            'admin' => 'Administrasi',
+            'admin', 'owner-pendiri' => 'Administrasi',
             'finance' => 'Keuangan',
             'kasir-wash', 'karyawan-wash' => 'Wash',
             'kasir-atk' => 'ATK',
+            'coordinator' => 'Operasional',
             default => 'Operasional',
         };
     }

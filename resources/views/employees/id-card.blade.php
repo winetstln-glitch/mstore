@@ -16,10 +16,21 @@
             <button type="button" class="btn btn-success btn-sm" onclick="window.print()">
                 <i class="fa-solid fa-print me-1"></i>Print
             </button>
+            <div class="dropdown">
+                <button class="btn btn-dark btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fa-solid fa-download me-1"></i>Download
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><button class="dropdown-item" type="button" onclick="downloadCard('front')"><i class="fa-regular fa-image me-2"></i>Download Front (JPG)</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="downloadCard('back')"><i class="fa-regular fa-image me-2"></i>Download Back (JPG)</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" type="button" onclick="downloadBothCards()"><i class="fa-solid fa-images me-2"></i>Download Keduanya (Zip/Batch)</button></li>
+                </ul>
+            </div>
         </div>
     </div>
     <div class="employee-print-sheet is-preview">
-        <div class="id-card-sheet">
+        <div class="id-card-sheet" id="idCardSheet">
             @php
                 $avatar = (string) ($employee->user?->avatar ?? '');
                 $cardPhoto = (string) ($employee->id_card_photo_path ?? '');
@@ -41,7 +52,7 @@
                     $photoUrl = asset('storage/'.$cardPhoto);
                 }
             @endphp
-            <div class="id-card-item brand-{{ $brandKey ?? 'mstore' }}">
+            <div class="id-card-item brand-{{ $brandKey ?? 'mstore' }}" id="id-card-front">
                 <div class="wave-accent-top"></div>
                 <div class="header-bg"></div>
                 <div class="wave-accent-bottom"></div>
@@ -49,7 +60,7 @@
 
                 <div class="logo-container">
                     <div class="logo-diamond">
-                        <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                        <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                     </div>
                     <div class="company-copy">
                         <div class="company-name">{{ $brandName }}</div>
@@ -60,7 +71,7 @@
                 <div class="profile-container">
                     <div class="profile-image">
                         @if($photoUrl)
-                            <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image">
+                            <img src="{{ $photoUrl }}" alt="Photo {{ $employee->full_name }}" class="photo-image" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                         @else
                             <div class="photo-placeholder"><i class="fa-solid fa-user"></i></div>
                         @endif
@@ -81,14 +92,14 @@
                 </div>
             </div>
 
-            <div class="id-card-item id-card-back brand-{{ $brandKey ?? 'mstore' }}">
+            <div class="id-card-item id-card-back brand-{{ $brandKey ?? 'mstore' }}" id="id-card-back">
                 <div class="back-header-bg"></div>
                 <div class="back-accent-circle"></div>
                 <div class="back-accent-line"></div>
 
                 <div class="back-brand-lockup">
                     <div class="back-logo-frame">
-                        <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                        <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:block">
                     </div>
                     <div class="back-brand-meta">
                         <div class="back-brand-name">{{ $brandName }}</div>
@@ -135,6 +146,7 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.barcode-svg').forEach((el) => {
@@ -153,6 +165,52 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+async function waitForAssets(element) {
+    const images = Array.from(element.querySelectorAll('img'));
+    const promises = images.map((img) => {
+        try {
+            if (img.decode) {
+                return img.decode().catch(() => {});
+            }
+        } catch (e) {}
+        return new Promise((resolve) => {
+            if (img.complete) return resolve();
+            img.onload = img.onerror = () => resolve();
+        });
+    });
+    await Promise.all(promises);
+    await new Promise((r) => setTimeout(r, 150));
+}
+
+async function downloadCard(side) {
+    const elementId = `id-card-${side}`;
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const fileName = `ID_Card_${side === 'front' ? 'Depan' : 'Belakang'}_{{ Str::slug($employee->full_name) }}.jpg`;
+
+    await waitForAssets(element);
+
+    html2canvas(element, {
+        scale: 4, // Higher scale for better image quality
+        useCORS: true,
+        foreignObjectRendering: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+    }).then((canvas) => {
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+    });
+}
+
+function downloadBothCards() {
+    downloadCard('front').then(() => {
+        setTimeout(() => downloadCard('back'), 400);
+    });
+}
 </script>
 @endpush
 
