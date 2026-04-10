@@ -158,6 +158,9 @@ Route::middleware('auth')->group(function () {
 
     // Schedules & Leaves
     Route::post('schedules/period', [\App\Http\Controllers\TechnicianScheduleController::class, 'updatePeriod'])->name('schedules.updatePeriod');
+    Route::post('schedules/auto-generate', [\App\Http\Controllers\TechnicianScheduleController::class, 'autoGenerate'])->name('schedules.autoGenerate');
+    Route::post('schedules/daily', [\App\Http\Controllers\TechnicianScheduleController::class, 'dailyStore'])->name('schedules.daily.store');
+    Route::post('schedules/daily/auto-generate', [\App\Http\Controllers\TechnicianScheduleController::class, 'dailyAutoGenerate'])->name('schedules.daily.autoGenerate');
     Route::get('schedules/export/pdf', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportPdf'])->name('schedules.export.pdf');
     Route::get('schedules/export/excel', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportExcel'])->name('schedules.export.excel');
     Route::resource('schedules', \App\Http\Controllers\TechnicianScheduleController::class)->only(['index', 'store', 'destroy']);

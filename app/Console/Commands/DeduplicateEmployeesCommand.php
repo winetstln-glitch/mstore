@@ -232,12 +232,20 @@ class DeduplicateEmployeesCommand extends Command
                     DB::table('wash_transactions')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     DB::table('atk_transactions')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
                     DB::table('invoices')->where('user_id', $duplicate->id)->update(['user_id' => $keeper->id]);
-                    
+
                     // Transfer important info
-                    if (!$keeper->email && $duplicate->email) $keeper->email = $duplicate->email;
-                    if (!$keeper->phone && $duplicate->phone) $keeper->phone = $duplicate->phone;
-                    if (!$keeper->username && $duplicate->username) $keeper->username = $duplicate->username;
-                    if (!$keeper->role_id && $duplicate->role_id) $keeper->role_id = $duplicate->role_id;
+                    if (! $keeper->email && $duplicate->email) {
+                        $keeper->email = $duplicate->email;
+                    }
+                    if (! $keeper->phone && $duplicate->phone) {
+                        $keeper->phone = $duplicate->phone;
+                    }
+                    if (! $keeper->username && $duplicate->username) {
+                        $keeper->username = $duplicate->username;
+                    }
+                    if (! $keeper->role_id && $duplicate->role_id) {
+                        $keeper->role_id = $duplicate->role_id;
+                    }
                     $keeper->save();
 
                     $duplicate->delete();
@@ -250,11 +258,22 @@ class DeduplicateEmployeesCommand extends Command
     private function userScore(User $user): int
     {
         $score = 0;
-        if ($user->role?->name === 'admin') $score += 1000;
-        if (in_array($user->role?->name, ['karyawan-wash', 'technician', 'noc'])) $score += 500;
-        if ($user->email) $score += 100;
-        if ($user->username) $score += 50;
-        if ($user->is_active) $score += 10;
+        if ($user->role?->name === 'admin') {
+            $score += 1000;
+        }
+        if (in_array($user->role?->name, ['karyawan-wash', 'technician', 'noc'])) {
+            $score += 500;
+        }
+        if ($user->email) {
+            $score += 100;
+        }
+        if ($user->username) {
+            $score += 50;
+        }
+        if ($user->is_active) {
+            $score += 10;
+        }
+
         return $score;
     }
 

@@ -7,19 +7,21 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\WashEmployee;
 use App\Services\EmployeeSyncService;
+use App\Traits\HasIdCard;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
 class EmployeeController extends Controller implements HasMiddleware
 {
+    use HasIdCard;
+
     public function __construct(private readonly EmployeeSyncService $employeeSyncService) {}
 
     public static function middleware(): array
@@ -75,8 +77,9 @@ class EmployeeController extends Controller implements HasMiddleware
         $users = $this->employeeUsers();
         $washEmployees = $this->washEmployees();
         $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
+        $roles = \App\Models\Role::query()->orderBy('label')->get();
 
-        return view('employees.create', compact('users', 'washEmployees', 'roleLabels'));
+        return view('employees.create', compact('users', 'washEmployees', 'roleLabels', 'roles'));
     }
 
     public function store(Request $request)
@@ -89,13 +92,35 @@ class EmployeeController extends Controller implements HasMiddleware
             unset($validated['id_card_expires_at']);
         }
 
+        // Handle User Account Creation
+        if ($request->boolean('create_user_account')) {
+            $user = User::create([
+                'name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'username' => $validated['username'] ?? \Illuminate\Support\Str::slug($validated['full_name'], ''),
+                'password' => bcrypt($validated['password'] ?? 'password'),
+                'role_id' => $validated['role_id'],
+                'phone' => $validated['phone'],
+                'is_active' => true,
+            ]);
+            $validated['user_id'] = $user->id;
+        }
+
         $validated = $this->applyLinkedEmployee($validated);
         $employee = Employee::create($validated);
 
         if ($employee->user_id) {
-            $user = User::with('role')->find($employee->user_id);
+            $user = User::find($employee->user_id);
             if ($user) {
-                $this->employeeSyncService->syncFromUser($user);
+                // Update user data to match employee data
+                $user->update([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'],
+                ]);
+
+                // Then sync to ensure other fields are correct
+                $this->employeeSyncService->syncFromUser($user->load('role'));
             }
         }
 
@@ -107,8 +132,9 @@ class EmployeeController extends Controller implements HasMiddleware
         $users = $this->employeeUsers($employee->id);
         $washEmployees = $this->washEmployees($employee->id);
         $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
+        $roles = \App\Models\Role::query()->orderBy('label')->get();
 
-        return view('employees.edit', compact('employee', 'users', 'washEmployees', 'roleLabels'));
+        return view('employees.edit', compact('employee', 'users', 'washEmployees', 'roleLabels', 'roles'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -134,13 +160,49 @@ class EmployeeController extends Controller implements HasMiddleware
             }
         }
 
+        // Handle User Account Creation/Update
+        if ($request->boolean('create_user_account')) {
+            if ($employee->user_id) {
+                // Update existing user
+                $user = User::find($employee->user_id);
+                $userData = [
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'username' => $validated['username'] ?? $user->username,
+                    'role_id' => $validated['role_id'] ?? $user->role_id,
+                    'phone' => $validated['phone'],
+                ];
+                if (! empty($validated['password'])) {
+                    $userData['password'] = bcrypt($validated['password']);
+                }
+                $user->update($userData);
+            } else {
+                // Create new user
+                $user = User::create([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'username' => $validated['username'] ?? \Illuminate\Support\Str::slug($validated['full_name'], ''),
+                    'password' => bcrypt($validated['password'] ?? 'password'),
+                    'role_id' => $validated['role_id'],
+                    'phone' => $validated['phone'],
+                    'is_active' => true,
+                ]);
+                $validated['user_id'] = $user->id;
+            }
+        }
+
         $validated = $this->applyLinkedEmployee($validated);
         $employee->update($validated);
 
         if ($employee->user_id) {
-            $user = User::with('role')->find($employee->user_id);
+            $user = User::find($employee->user_id);
             if ($user) {
-                $this->employeeSyncService->syncFromUser($user);
+                // Update user record to match basic info
+                $user->update([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'],
+                ]);
             }
         }
 
@@ -162,11 +224,12 @@ class EmployeeController extends Controller implements HasMiddleware
 
     public function idCard(Employee $employee, Request $request)
     {
-        $idCardCode = $this->employeeIdCardCode($employee);
+        $user = $employee->user ?? new User(['name' => $employee->full_name]);
+        $idCardCode = $this->userIdCardCode($user);
         $printMode = $request->boolean('print');
-        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveEmployeeBrand($employee);
+        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
 
-        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName', 'brandSlogan', 'brandKey'));
+        return view('employees.id-card', compact('employee', 'user', 'idCardCode', 'printMode', 'logoUrl', 'brandName', 'brandSlogan', 'brandKey'));
     }
 
     public function printCards(Request $request)
@@ -180,12 +243,15 @@ class EmployeeController extends Controller implements HasMiddleware
         $employees = $selectedIds->isNotEmpty()
             ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
             : $this->filteredEmployees($request)->orderBy('full_name')->get();
+
         $cards = $employees->map(function (Employee $employee) {
-            [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveEmployeeBrand($employee);
+            $user = $employee->user ?? new User(['name' => $employee->full_name]);
+            [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
 
             return [
                 'employee' => $employee,
-                'code' => $this->employeeIdCardCode($employee),
+                'user' => $user,
+                'code' => $this->userIdCardCode($user),
                 'brand_name' => $brandName,
                 'logo_url' => $logoUrl,
                 'brand_slogan' => $brandSlogan,
@@ -360,6 +426,8 @@ class EmployeeController extends Controller implements HasMiddleware
 
     private function validateEmployee(Request $request, ?int $id = null): array
     {
+        $userId = $id ? Employee::find($id)?->user_id : null;
+
         return $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
             'user_id' => ['nullable', 'exists:users,id'],
@@ -377,6 +445,11 @@ class EmployeeController extends Controller implements HasMiddleware
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
             'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'id_card_expires_at' => ['nullable', 'date'],
+            // User account fields
+            'create_user_account' => ['nullable', 'boolean'],
+            'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($userId)],
+            'password' => ['nullable', 'string', 'min:6'],
+            'role_id' => ['nullable', 'exists:roles,id'],
         ]);
     }
 
@@ -404,7 +477,7 @@ class EmployeeController extends Controller implements HasMiddleware
     private function employeeUsers(?int $excludeEmployeeId = null)
     {
         $linkedUserIds = Employee::query()
-            ->when($excludeEmployeeId, fn($q) => $q->where('id', '!=', $excludeEmployeeId))
+            ->when($excludeEmployeeId, fn ($q) => $q->where('id', '!=', $excludeEmployeeId))
             ->whereNotNull('user_id')
             ->pluck('user_id')
             ->toArray();
@@ -422,7 +495,7 @@ class EmployeeController extends Controller implements HasMiddleware
     private function washEmployees(?int $excludeEmployeeId = null)
     {
         $linkedWashIds = Employee::query()
-            ->when($excludeEmployeeId, fn($q) => $q->where('id', '!=', $excludeEmployeeId))
+            ->when($excludeEmployeeId, fn ($q) => $q->where('id', '!=', $excludeEmployeeId))
             ->whereNotNull('wash_employee_id')
             ->pluck('wash_employee_id')
             ->toArray();
@@ -470,89 +543,11 @@ class EmployeeController extends Controller implements HasMiddleware
             });
     }
 
-    private function employeeIdCardCode(Employee $employee): string
-    {
-        if (! empty($employee->user?->attendance_card_code)) {
-            return (string) $employee->user->attendance_card_code;
-        }
-
-        if (! empty($employee->nik)) {
-            return 'EMP-'.preg_replace('/[^0-9A-Za-z]/', '', (string) $employee->nik);
-        }
-
-        return 'EMP-'.str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT);
-    }
-
-    private function resolveEmployeeBrand(Employee $employee): array
-    {
-        $scope = strtolower(trim((string) ($employee->department ?: $employee->position ?: '')));
-        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
-        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
-        if (str_contains($scope, 'wash')) {
-            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
-            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'gtwash'];
-        }
-        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
-            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
-            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstorenet'];
-        }
-
-        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
-        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
-        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
-
-        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstore'];
-    }
-
     private function hasIdCardColumns(): bool
     {
         return \Illuminate\Support\Facades\Cache::rememberForever('employees_id_card_columns', function () {
             return Schema::hasColumn('employees', 'id_card_photo_path')
                 && Schema::hasColumn('employees', 'id_card_expires_at');
         });
-    }
-
-    private function brandLogoUrl(string $logo): string
-    {
-        if (! $logo) {
-            return asset('img/logo.png');
-        }
-
-        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
-            try {
-                $hash = md5($logo);
-                $ext = pathinfo(parse_url($logo, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'png';
-                $ext = strtolower($ext);
-                if (! in_array($ext, ['png','jpg','jpeg','webp','gif','svg'], true)) {
-                    $ext = 'png';
-                }
-                $path = "brand-logos/{$hash}.{$ext}";
-                if (! Storage::disk('public')->exists($path)) {
-                    $response = Http::timeout(10)->withHeaders([
-                        'User-Agent' => 'MStore-IDCard-LogoFetcher/1.0',
-                    ])->get($logo);
-                    if ($response->successful()) {
-                        $contentType = (string) $response->header('Content-Type', '');
-                        if (str_starts_with($contentType, 'image/')) {
-                            Storage::disk('public')->put($path, $response->body());
-                        }
-                    }
-                }
-                if (Storage::disk('public')->exists($path)) {
-                    return asset('storage/'.$path);
-                }
-            } catch (\Throwable $e) {
-                // ignore download failure, fallback to given URL
-            }
-            return $logo;
-        }
-
-        return asset($logo);
     }
 }

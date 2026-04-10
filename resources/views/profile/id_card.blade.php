@@ -723,96 +723,31 @@
         @endif
 
         <div class="profile-print-sheet">
-            <div class="id-card-sheet">
-                <div class="id-card-item brand-{{ $brandKey ?? 'mstore' }}">
-                <div class="wave-accent-top"></div>
-                <div class="header-bg"></div>
-                <div class="wave-accent-bottom"></div>
-                <div class="side-curve"></div>
-
-                    <div class="logo-container">
-                        <div class="logo-diamond">
-                            <img src="{{ $localLogoUrl }}" alt="Logo {{ $brandName }}">
-                        </div>
-                        <div class="company-copy">
-                            <div class="company-name">{{ $brandName }}</div>
-                            <div class="company-tagline">{{ $brandSlogan }}</div>
-                        </div>
-                    </div>
-
-                    <div class="profile-container">
-                        <div class="profile-image">
-                            @if($photoUrl)
-                                <img src="{{ $photoUrl }}" alt="Photo {{ $fullName }}" class="photo-image">
-                            @else
-                                <div class="photo-placeholder">{{ strtoupper(substr($fullName, 0, 1)) }}</div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="content">
-                        <h2 class="name-block">{{ $fullName }}</h2>
-                        <p class="job-title">{{ strtoupper($position ?: 'STAFF') }}</p>
-                    </div>
-
-                    <div class="footer-info">
-                        <div class="id-label">ID NO : {{ $idCardCode }}</div>
-                        <div class="barcode-container">
-                            <img src="{{ $barcodeUrl }}" alt="Barcode {{ $idCardCode }}" class="barcode-image">
-                        </div>
-                        <div class="barcode-text">{{ $idCardCode }}</div>
-                    </div>
-                </div>
-
-                <div class="id-card-item id-card-back brand-{{ $brandKey ?? 'mstore' }}">
-                    <div class="back-header-bg"></div>
-                    <div class="back-accent-circle"></div>
-                    <div class="back-accent-line"></div>
-
-                    <div class="back-brand-lockup">
-                        <div class="back-logo-frame">
-                            <img src="{{ $localLogoUrl }}" alt="Logo {{ $brandName }}">
-                        </div>
-                        <div class="back-brand-meta">
-                            <div class="back-brand-name">{{ $brandName }}</div>
-                            <div class="back-brand-slogan">{{ $brandSlogan }}</div>
-                        </div>
-                    </div>
-
-                    <div class="back-content">
-                        <div class="back-chip">OFFICIAL ID CARD</div>
-                        <div class="back-title">KARTU IDENTITAS RESMI</div>
-                        <p class="back-description">
-                            Kartu ini adalah identitas resmi perusahaan. Jika ditemukan, harap hubungi kontak resmi di bawah ini.
-                        </p>
-
-                        <div class="back-contact-card">
-                            <div class="back-contact-item">
-                                <div class="back-contact-label">Alamat</div>
-                                <div class="back-contact-value">{{ $storeAddress !== '' ? $storeAddress : '-' }}</div>
-                            </div>
-                            <div class="back-contact-item">
-                                <div class="back-contact-label">Telepon</div>
-                                <div class="back-contact-value">{{ $storePhone !== '' ? $storePhone : '-' }}</div>
-                            </div>
-                            <div class="back-contact-item">
-                                <div class="back-contact-label">WhatsApp</div>
-                                <div class="back-contact-value">{{ $recoveryContact }}</div>
-                            </div>
-                            <div class="back-contact-item">
-                                <div class="back-contact-label">Website</div>
-                                <div class="back-contact-value">{{ $brandWebsite }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="back-footer">
-                        <div class="back-footer-note">ID NO : {{ $idCardCode }}</div>
-                        <div class="back-footer-warning">Kartu ini wajib dibawa saat bertugas.</div>
-                    </div>
-                </div>
-            </div>
+            <x-id-card :user="$user" :employee="$employee" :brandName="$brandName" :logoUrl="$logoUrl" :brandSlogan="$brandSlogan" :brandKey="$brandKey" :idCardCode="$idCardCode" />
         </div>
     </div>
+
+    @if(! $isPdf)
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.barcode-svg').forEach((el) => {
+            const code = el.dataset.code || '';
+            if (!code || typeof JsBarcode === 'undefined') {
+                return;
+            }
+
+            JsBarcode(el, code, {
+                format: 'CODE128',
+                lineColor: '#111827',
+                width: 2,
+                height: 26,
+                displayValue: false,
+                margin: 0,
+            });
+        });
+    });
+    </script>
+    @endif
 </body>
 </html>

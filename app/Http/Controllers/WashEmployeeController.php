@@ -112,11 +112,11 @@ class WashEmployeeController extends Controller
                 $roleId = Role::query()
                     ->whereIn('name', ['karyawan-wash', 'kasir-wash', 'employee'])
                     ->value('id');
-                
-                if (!$existingUser->role_id || $existingUser->role?->name === 'customer') {
+
+                if (! $existingUser->role_id || $existingUser->role?->name === 'customer') {
                     $existingUser->update(['role_id' => $roleId]);
                 }
-                
+
                 return (int) $existingUser->id;
             }
 

@@ -2763,9 +2763,7 @@ class FinanceController extends Controller implements HasMiddleware
             'Beban Bagi Hasil Investor' => 'Investor Profit Share',
             'Dana Kas Investor' => 'Investor Cash Fund',
             'Beban Dana Kas Investor' => 'Investor Cash Fund',
-            'Beli Alat (diluar)' => 'Pengeluaran Tunai',
-            'Pembelian Alat' => 'Pengeluaran Tunai',
-            'Ambil Barang' => 'Pengeluaran Tunai',
+            'Beli Alat (diluar)' => 'Pembelian Alat',
         ];
         if (isset($aliases[$category])) {
             $category = $aliases[$category];

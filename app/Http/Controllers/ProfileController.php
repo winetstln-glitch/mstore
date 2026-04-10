@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Setting;
+use App\Traits\HasIdCard;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -13,6 +13,8 @@ use Illuminate\Validation\Rules;
 
 class ProfileController extends Controller implements HasMiddleware
 {
+    use HasIdCard;
+
     public static function middleware(): array
     {
         return [
@@ -26,7 +28,7 @@ class ProfileController extends Controller implements HasMiddleware
      */
     public function edit()
     {
-        $user = Auth::user();
+        $user = Auth::user()->load(['role', 'employee']);
         $customer = \App\Models\Customer::where('user_id', $user->id)->first();
         $currentInvoice = $user->invoices()->latest()->first();
         $devicesCount = $customer ? \App\Models\Device::where('customer_id', $customer->id)->count() : 0;
@@ -37,6 +39,11 @@ class ProfileController extends Controller implements HasMiddleware
         $registeredAt = $customer?->created_at;
         $updatedAt = $user->updated_at;
         $dueDate = $currentInvoice?->due_date;
+
+        $isCustomer = ($user->role?->name === 'customer') && (bool) $customer;
+        $idCardCode = $this->userIdCardCode($user);
+        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
+        $employee = $user->employee;
 
         return view('profile.edit', compact(
             'user',
@@ -49,7 +56,14 @@ class ProfileController extends Controller implements HasMiddleware
             'paymentType',
             'registeredAt',
             'updatedAt',
-            'dueDate'
+            'dueDate',
+            'isCustomer',
+            'brandName',
+            'logoUrl',
+            'brandSlogan',
+            'brandKey',
+            'idCardCode',
+            'employee'
         ));
     }
 
@@ -168,48 +182,29 @@ class ProfileController extends Controller implements HasMiddleware
     public function idCard()
     {
         $user = Auth::user()->load('role');
-        $qrPayload = $this->buildQrPayload($user);
-        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
         $idCardCode = $this->userIdCardCode($user);
         [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
+        $employee = $user->employee;
 
-        return view('profile.id_card', compact('user', 'qrUrl', 'brandName', 'logoUrl', 'brandSlogan', 'brandKey', 'idCardCode'));
+        return view('profile.id_card', compact('user', 'brandName', 'logoUrl', 'brandSlogan', 'brandKey', 'idCardCode', 'employee'));
     }
 
     public function idCardDownload()
     {
         $user = Auth::user()->load('role');
-        $qrPayload = $this->buildQrPayload($user);
-        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
-        $qrSrc = $qrUrl;
         $idCardCode = $this->userIdCardCode($user);
         [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
-        // Try to embed QR as data URI for reliable PDF rendering
-        try {
-            $context = stream_context_create([
-                'http' => ['timeout' => 5],
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ],
-            ]);
-            $qrBin = @file_get_contents($qrUrl, false, $context);
-            if ($qrBin !== false) {
-                $qrSrc = 'data:image/png;base64,'.base64_encode($qrBin);
-            }
-        } catch (\Throwable $e) {
-            // Fallback keeps $qrSrc as URL
-        }
+        $employee = $user->employee;
+
         $viewData = [
             'user' => $user,
-            'qrUrl' => $qrUrl,
-            'qrSrc' => $qrSrc,
+            'employee' => $employee,
             'isPdf' => true,
             'brandName' => $brandName,
             'logoUrl' => $logoUrl,
             'brandSlogan' => $brandSlogan,
             'brandKey' => $brandKey,
-            'idCardCode' => $idCardCode
+            'idCardCode' => $idCardCode,
         ];
 
         // 54mm x 85.6mm standard CR80 size in points (1mm = 2.83465pt)
@@ -221,94 +216,11 @@ class ProfileController extends Controller implements HasMiddleware
         if (method_exists($pdf, 'setOptions')) {
             $pdf->setOptions([
                 'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
+                'defaultFont' => 'sans-serif',
             ]);
         }
         $filename = 'ID-'.preg_replace('/[^A-Za-z0-9\-]+/', '-', $user->name).'.pdf';
 
         return $pdf->download($filename);
-    }
-
-    protected function resolveUserBrand($user): array
-    {
-        $scope = strtolower(trim((string) ($user->role?->label ?: $user->role?->name ?: '')));
-        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
-        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
-
-        if (str_contains($scope, 'wash')) {
-            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
-            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'gtwash'];
-        }
-
-        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
-            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
-            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstorenet'];
-        }
-
-        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
-        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
-        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
-
-        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstore'];
-    }
-
-    protected function userIdCardCode($user): string
-    {
-        $hasAttendanceCardColumn = \Illuminate\Support\Facades\Schema::hasColumn('users', 'attendance_card_code');
-        if ($hasAttendanceCardColumn && trim((string) ($user->attendance_card_code ?? '')) === '') {
-            $seed = \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
-            $user->update([
-                'attendance_card_code' => \App\Models\User::generateUniqueAttendanceCardCode((string) $seed, $user->id),
-            ]);
-            $user->refresh();
-        }
-
-        if (! $hasAttendanceCardColumn) {
-            return \App\Models\User::generateUniqueAttendanceCardCode(\App\Models\User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
-        }
-
-        return (string) $user->attendance_card_code;
-    }
-
-    protected function brandLogoUrl(string $logo): string
-    {
-        if (! $logo) {
-            return asset('img/logo.png');
-        }
-
-        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
-            return $logo;
-        }
-
-        return asset($logo);
-    }
-
-    protected function buildQrPayload($user): string
-    {
-        $company = config('app.name', 'MStore');
-        $code = trim((string) ($user->attendance_card_code ?? ''));
-        if ($code === '') {
-            $code = \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
-        }
-        $role = $user->role?->label ?? $user->role?->name ?? 'Staff';
-        $vcard = "BEGIN:VCARD\nVERSION:3.0\nN:{$user->name}\nEMAIL:{$user->email}\nORG:{$company}\nTITLE:{$role}\nNOTE:{$code}\nEND:VCARD";
-
-        return $vcard;
-    }
-
-    protected function buildQrUrl(string $text, int $size = 260, string $hexColor = '1d4ed8'): string
-    {
-        $data = rawurlencode($text);
-        $sizeParam = $size.'x'.$size;
-        $color = strtolower(ltrim($hexColor, '#'));
-
-        // api.qrserver.com supports &color=RRGGBB and &bgcolor=RRGGBB
-        return "https://api.qrserver.com/v1/create-qr-code/?size={$sizeParam}&margin=2&data={$data}&color={$color}&bgcolor=ffffff";
     }
 }

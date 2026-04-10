@@ -53,6 +53,9 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="d-flex justify-content-end gap-1">
+                                            <a href="{{ route('technicians.show', $technician) }}" class="btn btn-sm btn-outline-info" title="{{ __('View') }}">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
                                             <a href="{{ route('technicians.edit', $technician) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>

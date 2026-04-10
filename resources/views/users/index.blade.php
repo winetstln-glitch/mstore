@@ -60,7 +60,6 @@
                             <tr>
                                 <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Name') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Email') }}</th>
-                                <th class="text-uppercase small text-muted border-0">ID Card</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
                                 <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Actions') }}</th>
@@ -71,12 +70,10 @@
                             <tr>
                                 <td class="ps-3 fw-medium">
                                     {{ $user->name }}
+                                    <div class="small text-muted">{{ $user->attendance_card_code ?: $user->username }}</div>
                                 </td>
                                 <td>
                                     {{ $user->email }}
-                                </td>
-                                <td>
-                                    <span class="small fw-semibold">{{ $user->attendance_card_code ?: $user->username }}</span>
                                 </td>
                                 <td>
                                     @if($user->role)

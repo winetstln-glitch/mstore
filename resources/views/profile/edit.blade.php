@@ -5,6 +5,9 @@
 @section('content')
 @push('styles')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+@if(empty($isCustomer) || ! $isCustomer)
+    <x-id-card-styles />
+@endif
 <style>
     .profile-card {
         border-radius: 15px;
@@ -110,9 +113,11 @@
                         <button class="nav-link mb-2 text-start" id="v-pills-security-tab" data-bs-toggle="pill" data-bs-target="#v-pills-security" type="button" role="tab">
                             <i class="fa-solid fa-shield-halved me-2"></i> {{ __('Keamanan') }}
                         </button>
-                        <button class="nav-link mb-2 text-start" id="v-pills-idcard-tab" data-bs-toggle="pill" data-bs-target="#v-pills-idcard" type="button" role="tab">
-                            <i class="fa-solid fa-id-badge me-2"></i> {{ __('Digital ID Card') }}
-                        </button>
+                        @if(empty($isCustomer) || ! $isCustomer)
+                            <button class="nav-link mb-2 text-start" id="v-pills-idcard-tab" data-bs-toggle="pill" data-bs-target="#v-pills-idcard" type="button" role="tab">
+                                <i class="fa-solid fa-id-badge me-2"></i> {{ __('Digital ID Card') }}
+                            </button>
+                        @endif
                         <hr class="my-2 opacity-25">
                         <button class="nav-link text-danger text-start" id="v-pills-danger-tab" data-bs-toggle="pill" data-bs-target="#v-pills-danger" type="button" role="tab">
                             <i class="fa-solid fa-trash-can me-2"></i> {{ __('Hapus Akun') }}
@@ -126,49 +131,118 @@
                         
                         <!-- Ringkasan Akun Tab -->
                         <div class="tab-pane fade show active" id="v-pills-summary" role="tabpanel">
-                            <h5 class="fw-bold mb-4">{{ __('Ringkasan Data Pelanggan') }}</h5>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded-3 h-100">
-                                        <div class="mb-3">
-                                            <div class="info-label">ID PELANGGAN</div>
-                                            <div class="info-value text-primary">#{{ $idPelanggan }}</div>
+                            @if(!empty($isCustomer) && $isCustomer)
+                                <h5 class="fw-bold mb-4">{{ __('Ringkasan Data Pelanggan') }}</h5>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 h-100">
+                                            <div class="mb-3">
+                                                <div class="info-label">ID PELANGGAN</div>
+                                                <div class="info-value text-primary">#{{ $idPelanggan }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">NAMA LENGKAP</div>
+                                                <div class="info-value">{{ $user->name }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">EMAIL</div>
+                                                <div class="info-value">{{ $user->email }}</div>
+                                            </div>
+                                            <div class="mb-0">
+                                                <div class="info-label">ALAMAT</div>
+                                                <div class="info-value text-wrap">{{ $customer->address ?? '-' }}</div>
+                                            </div>
                                         </div>
-                                        <div class="mb-3">
-                                            <div class="info-label">NAMA LENGKAP</div>
-                                            <div class="info-value">{{ $user->name }}</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="info-label">EMAIL</div>
-                                            <div class="info-value">{{ $user->email }}</div>
-                                        </div>
-                                        <div class="mb-0">
-                                            <div class="info-label">ALAMAT</div>
-                                            <div class="info-value text-wrap">{{ $customer->address ?? '-' }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 h-100">
+                                            <div class="mb-3">
+                                                <div class="info-label">SERVICE</div>
+                                                <div class="info-value">{{ $serviceText }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">TIPE PEMBAYARAN</div>
+                                                <div class="info-value">{{ $paymentType }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">TERDAFTAR SEJAK</div>
+                                                <div class="info-value">{{ $registeredAt ? $registeredAt->format('d M Y') : '-' }}</div>
+                                            </div>
+                                            <div class="mb-0">
+                                                <div class="info-label">JATUH TEMPO</div>
+                                                <div class="info-value text-danger">{{ $dueDate ? $dueDate->format('d M Y') : '-' }}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded-3 h-100">
-                                        <div class="mb-3">
-                                            <div class="info-label">SERVICE</div>
-                                            <div class="info-value">{{ $serviceText }}</div>
+                            @else
+                                <h5 class="fw-bold mb-4">{{ __('Ringkasan Akun') }}</h5>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 h-100">
+                                            <div class="mb-3">
+                                                <div class="info-label">NAMA</div>
+                                                <div class="info-value">{{ $user->name }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">EMAIL</div>
+                                                <div class="info-value">{{ $user->email }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">ROLE</div>
+                                                <div class="info-value">{{ $user->role?->label ?? $user->role?->name ?? '-' }}</div>
+                                            </div>
+                                            <div class="mb-0">
+                                                <div class="info-label">STATUS</div>
+                                                <div class="info-value">{{ $statusText }}</div>
+                                            </div>
                                         </div>
-                                        <div class="mb-3">
-                                            <div class="info-label">TIPE PEMBAYARAN</div>
-                                            <div class="info-value">{{ $paymentType }}</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="info-label">TERDAFTAR SEJAK</div>
-                                            <div class="info-value">{{ $registeredAt ? $registeredAt->format('d M Y') : '-' }}</div>
-                                        </div>
-                                        <div class="mb-0">
-                                            <div class="info-label">JATUH TEMPO</div>
-                                            <div class="info-value text-danger">{{ $dueDate ? $dueDate->format('d M Y') : '-' }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded-3 h-100">
+                                            <div class="mb-3">
+                                                <div class="info-label">USERNAME</div>
+                                                <div class="info-value">{{ $user->username ?? '-' }}</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="info-label">KODE ID</div>
+                                                <div class="info-value text-primary">{{ $idCardCode ?? '-' }}</div>
+                                            </div>
+                                            <div class="mb-0">
+                                                <div class="info-label">TERAKHIR UPDATE</div>
+                                                <div class="info-value">{{ $updatedAt ? $updatedAt->format('d M Y H:i') : '-' }}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="fw-bold">Preview ID Card</div>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="{{ route('profile.id_card') }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fa-solid fa-up-right-from-square me-1"></i>Buka Halaman ID Card
+                                            </a>
+                                            <a href="{{ route('profile.id_card.download') }}" class="btn btn-sm btn-primary">
+                                                <i class="fa-solid fa-file-pdf me-1"></i>Download PDF
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="id-card-preview-container" id="profile-idcard-preview">
+                                        <div class="id-card-sheet">
+                                            <x-id-card
+                                                :user="$user"
+                                                :employee="$employee"
+                                                :brand-name="$brandName"
+                                                :logo-url="$logoUrl"
+                                                :brand-slogan="$brandSlogan"
+                                                :brand-key="$brandKey"
+                                                :id-card-code="$idCardCode"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
 
                         <!-- Informasi Profil Tab -->
@@ -254,26 +328,40 @@
                             </form>
                         </div>
 
-                        <!-- ID Card Tab -->
-                        <div class="tab-pane fade" id="v-pills-idcard" role="tabpanel">
-                            <div class="d-flex align-items-center justify-content-between mb-4">
-                                <h5 class="fw-bold mb-0">{{ __('Digital ID Card') }}</h5>
-                                <div class="d-flex gap-2">
-                                    <a href="{{ route('profile.id_card') }}" target="_blank" class="btn btn-outline-info btn-sm rounded-pill px-3">
-                                        <i class="fa-solid fa-eye me-1"></i> {{ __('Preview') }}
-                                    </a>
-                                    <a href="{{ route('profile.id_card.download') }}" class="btn btn-info btn-sm text-white rounded-pill px-3">
-                                        <i class="fa-solid fa-download me-1"></i> {{ __('Download PDF') }}
-                                    </a>
+                        @if(empty($isCustomer) || ! $isCustomer)
+                            <div class="tab-pane fade" id="v-pills-idcard" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <h5 class="fw-bold mb-0">{{ __('Digital ID Card') }}</h5>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="button" class="btn btn-sm btn-outline-dark" onclick="downloadProfileIdCard('front')">
+                                            <i class="fa-solid fa-download me-1"></i>Depan (JPG)
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-dark" onclick="downloadProfileIdCard('back')">
+                                            <i class="fa-solid fa-download me-1"></i>Belakang (JPG)
+                                        </button>
+                                        <a href="{{ route('profile.id_card.download') }}" class="btn btn-sm btn-primary">
+                                            <i class="fa-solid fa-file-pdf me-1"></i>PDF
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="id-card-preview-container" id="profile-idcard-tab-preview">
+                                    <div class="id-card-sheet">
+                                        <x-id-card
+                                            :user="$user"
+                                            :employee="$employee"
+                                            :brand-name="$brandName"
+                                            :logo-url="$logoUrl"
+                                            :brand-slogan="$brandSlogan"
+                                            :brand-key="$brandKey"
+                                            :id-card-code="$idCardCode"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            <div class="id-card-preview-container text-center">
-                                <p class="text-white-50 small mb-3">{{ __('Tampilan Kartu Identitas Digital Anda') }}</p>
-                                <iframe src="{{ route('profile.id_card') }}" style="width:100%; height:420px; border:none; border-radius:12px;"></iframe>
-                            </div>
-                        </div>
+                        @endif
 
-                        <!-- Danger Zone Tab -->
+                                             <!-- Danger Zone Tab -->
                         <div class="tab-pane fade" id="v-pills-danger" role="tabpanel">
                             <div class="alert alert-danger border-0 rounded-4">
                                 <h5 class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Hapus Akun</h5>
@@ -333,6 +421,22 @@
 </div>
 
 @push('scripts')
+@if(empty($isCustomer) || ! $isCustomer)
+    <x-id-card-scripts />
+    <script>
+        async function downloadProfileIdCard(side) {
+            const wrapper = document.getElementById('profile-idcard-tab-preview');
+            if (!wrapper) return;
+
+            const el = wrapper.querySelector(side === 'front' ? '.id-card-front' : '.id-card-back');
+            if (!el) return;
+
+            const name = '{{ \Illuminate\Support\Str::slug($user->name) }}';
+            const fileName = `ID_Card_${side === 'front' ? 'Depan' : 'Belakang'}_${name}.jpg`;
+            await downloadElement(el, fileName);
+        }
+    </script>
+@endif
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 <script>

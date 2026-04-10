@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
-use App\Models\Setting;
 use App\Models\User;
+use App\Traits\HasIdCard;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -17,6 +17,8 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class UserController extends Controller implements HasMiddleware
 {
+    use HasIdCard;
+
     public static function middleware(): array
     {
         return [
@@ -111,20 +113,7 @@ class UserController extends Controller implements HasMiddleware
 
     public function idCard(User $user)
     {
-        $hasAttendanceCardColumn = $this->hasAttendanceCardColumn();
-        if ($hasAttendanceCardColumn && trim((string) $user->attendance_card_code) === '') {
-            $seed = User::defaultAttendanceCardCodeById((int) $user->id);
-            $user->update([
-                'attendance_card_code' => User::generateUniqueAttendanceCardCode((string) $seed, $user->id),
-            ]);
-            $user->refresh();
-        }
-
-        if (! $hasAttendanceCardColumn) {
-            $user->attendance_card_code = User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
-        }
-
-        $idCardCode = $user->attendance_card_code;
+        $idCardCode = $this->userIdCardCode($user);
         $employee = $user->employee;
         [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
 
@@ -274,44 +263,6 @@ class UserController extends Controller implements HasMiddleware
             }
             throw $e;
         }
-    }
-
-    private function resolveUserBrand(User $user): array
-    {
-        $scope = strtolower(trim((string) ($user->role?->label ?: $user->role?->name ?: '')));
-        $defaultLogo = (string) (Setting::getValue('store_logo') ?: '');
-        $defaultSlogan = 'Solusi Digital Cepat dan Terpercaya';
-        if (str_contains($scope, 'wash')) {
-            $name = (string) (Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
-            $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'gtwash'];
-        }
-        if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
-            $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
-            $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
-            $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
-
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstorenet'];
-        }
-
-        $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
-        $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
-        $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
-
-        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstore'];
-    }
-
-    private function brandLogoUrl(string $logo): string
-    {
-        if (! $logo) {
-            return asset('img/logo.png');
-        } elseif (! str_starts_with($logo, 'http')) {
-            return asset($logo);
-        }
-
-        return $logo;
     }
 
     private function hasAttendanceCardColumn(): bool

@@ -805,7 +805,7 @@ class SettingController extends Controller implements HasMiddleware
         $existingKeys = Setting::whereIn('key', $keys)->pluck('key')->toArray();
         $missing = collect($defaults)->whereNotIn('key', $existingKeys)->values()->toArray();
 
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             Setting::insert($missing);
             Setting::forgetCache();
         }

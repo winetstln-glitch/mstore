@@ -72,7 +72,7 @@ class EmployeeSyncService
         }
         $employee->department = 'Wash';
         $employee->save();
-        
+
         // Final cleanup to ensure no duplicates for this wash_employee_id or user_id or name
         $this->cleanupDuplicateEmployeesByWashEmployeeId($washEmployee->id);
         if ($employee->user_id) {

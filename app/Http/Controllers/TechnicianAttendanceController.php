@@ -36,7 +36,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public function daily(Request $request)
     {
         $date = $request->query('date', date('Y-m-d'));
-        
+
         // Get all users who should have attendance (technicians and admins)
         $users = User::whereHas('role', function ($q) {
             $q->whereIn('name', ['technician', 'admin']);
@@ -571,7 +571,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'action' => 'clock_in',
                 'message' => __('Absen masuk berhasil: :name (:status)', [
                     'name' => $user->name,
-                    'status' => strtoupper(__($attendance->status))
+                    'status' => strtoupper(__($attendance->status)),
                 ]),
                 'data' => [
                     'name' => $user->name,

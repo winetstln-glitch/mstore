@@ -449,9 +449,6 @@
                         @if($attendanceOnly && ! $isAttendanceGroup)
                             @continue
                         @endif
-                        @if(! $attendanceOnly && $isAttendanceGroup)
-                            @continue
-                        @endif
                         <div class="mb-4 pb-3 border-bottom last:border-0" @if($attendanceOnly) id="attendance-settings-section" @endif>
                             <h6 class="fw-bold text-primary text-uppercase mb-3">
                                 <i class="fa-solid fa-layer-group me-1"></i> {{ __(str_replace('_', ' ', $group)) }} {{ __('Settings') }}
@@ -465,6 +462,9 @@
                                     <div class="{{ $setting->type == 'schedule_weekly' ? 'col-12' : 'col-md-6' }}">
                                         <label for="{{ $setting->key }}" class="form-label fw-medium">
                                             {{ $setting->label ?? ucwords(str_replace('_', ' ', $setting->key)) }}
+                                            @if($setting->type == 'schedule_weekly')
+                                                <span class="text-muted small">(Weekly Work Schedule)</span>
+                                            @endif
                                         </label>
                                         
                                         @if($setting->type == 'time')
@@ -498,7 +498,7 @@
                                                                     $daySettings = $schedule[$day] ?? ['enabled' => false, 'start' => '08:00', 'end' => '17:00'];
                                                                 @endphp
                                                                 <tr>
-                                                                    <td class="fw-medium">{{ __($day) }}</td>
+                                                                    <td class="fw-medium">{{ $day }}</td>
                                                                     <td class="text-center">
                                                                         <div class="form-check d-inline-block">
                                                                             <input type="hidden" name="{{ $setting->key }}[{{ $day }}][enabled]" value="0">

@@ -91,8 +91,6 @@
                         <th>No HP</th>
                         <th>Status</th>
                         <th>Integrasi</th>
-                        <th>ID Card</th>
-                        <th>Dokumen</th>
                         <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
@@ -124,31 +122,27 @@
                                     <span class="text-muted small">Manual</span>
                                 @endif
                             </td>
-                            <td>
-                                <a href="{{ route('employees.id-card', $employee) }}" class="btn btn-sm btn-outline-dark" title="ID Card / Barcode">
-                                    <i class="fa-solid fa-id-card"></i>
-                                </a>
-                            </td>
-                            <td>
-                                @if($employee->document_path)
-                                    <a class="btn btn-sm btn-outline-secondary" href="{{ asset('storage/'.$employee->document_path) }}" target="_blank">
-                                        <i class="fa-regular fa-file-lines"></i>
-                                    </a>
-                                @else
-                                    <span class="text-muted small">-</span>
-                                @endif
-                            </td>
                             <td class="text-end">
-                                <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
-                                <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin hapus data ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger" type="submit">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </form>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="{{ route('employees.id-card', $employee) }}" class="btn btn-sm btn-outline-dark" title="ID Card">
+                                        <i class="fa-solid fa-id-card"></i>
+                                    </a>
+                                    @if($employee->document_path)
+                                        <a class="btn btn-sm btn-outline-secondary" href="{{ asset('storage/'.$employee->document_path) }}" target="_blank" title="Dokumen">
+                                            <i class="fa-regular fa-file-lines"></i>
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin hapus data ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" title="Hapus">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
