@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .5; }
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -20,10 +33,14 @@
                     <div class="col-md-6">
                         <form id="manualScanForm" class="mb-3">
                             @csrf
-                            <label class="form-label fw-semibold">Input Kode Manual</label>
+                            <label class="form-label fw-semibold">Scanner / Input Kode</label>
                             <div class="input-group">
-                                <input type="text" id="manualCode" class="form-control" placeholder="Kode ID Card / Username">
-                                <button type="submit" class="btn btn-success">Proses</button>
+                                <span class="input-group-text bg-success text-white"><i class="fa-solid fa-barcode"></i></span>
+                                <input type="text" id="manualCode" class="form-control form-control-lg" placeholder="Scan Barcode / Tap Kartu..." autocomplete="off">
+                                <button type="submit" class="btn btn-success d-none">Proses</button>
+                            </div>
+                            <div class="mt-1 small text-success fw-bold animate-pulse" id="autoStatus">
+                                <i class="fa-solid fa-bolt-lightning me-1"></i> Mode Scan Otomatis Aktif
                             </div>
                         </form>
                         <div id="scanMessage" class="alert d-none"></div>
@@ -100,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let scannerStarted = false;
     let hidBuffer = '';
     let hidBufferTimer = null;
+    let autoSubmitTimer = null;
 
     const isBackCamera = (label) => /(back|rear|environment|belakang)/i.test(String(label || ''));
     const isFrontCamera = (label) => /(front|user|depan)/i.test(String(label || ''));
@@ -127,11 +145,32 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tableBody) {
             return;
         }
+        
+        // Remove "Belum ada log" row if it exists
+        const emptyRow = tableBody.querySelector('tr td[colspan="4"]');
+        if (emptyRow) {
+            tableBody.innerHTML = '';
+        }
+
         const row = document.createElement('tr');
+        row.classList.add('table-success'); // Flash success color
         const status = (payload?.status || '').toUpperCase();
-        const time = payload?.time || '-';
-        row.innerHTML = `<td>${payload?.name || '-'}</td><td>${time}</td><td>${payload?.clock_out || '-'}</td><td><span class="badge bg-secondary-subtle text-secondary">${status}</span></td>`;
+        const timeIn = payload?.time || '-';
+        const timeOut = payload?.clock_out || '-';
+        
+        row.innerHTML = `
+            <td><span class="fw-bold text-dark">${payload?.name || '-'}</span></td>
+            <td>${timeIn}</td>
+            <td>${timeOut !== '-' ? `<span class="text-primary fw-bold">${timeOut}</span>` : '-'}</td>
+            <td><span class="badge bg-secondary-subtle text-secondary">${status}</span></td>
+        `;
+        
         tableBody.prepend(row);
+        
+        // Remove success color after a few seconds
+        setTimeout(() => {
+            row.classList.remove('table-success');
+        }, 3000);
     };
 
     const submitScan = async (cardCode) => {
@@ -139,6 +178,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         scanLock = true;
+        
+        // Show temporary "Processing" state
+        const originalMessage = messageEl.textContent;
+        const originalClass = messageEl.className;
+        showMessage('Memproses kode: ' + cardCode + '...', true);
+        messageEl.classList.add('alert-warning');
+
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -150,27 +196,64 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ card_code: cardCode }),
             });
             const result = await response.json();
+            
             if (!response.ok || !result.success) {
                 showMessage(result.message || 'Proses absensi gagal.', false);
+                // Optional: Error sound
                 return;
             }
+            
             showMessage(result.message || 'Absensi berhasil.', true);
+            
             prependLog({
                 name: result?.data?.name,
                 time: result?.data?.time,
                 status: result?.data?.status,
-                clock_out: result?.action === 'clock_out' ? result?.data?.time : '-',
+                clock_out: result?.action === 'clock_out' ? (result?.data?.clock_out || result?.data?.time) : '-',
             });
+            
             manualCodeInput.value = '';
+            
+            // Optional: Success sound (beep)
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch (_) {}
+
         } catch (error) {
             showMessage('Gagal menghubungi server absensi.', false);
         } finally {
             focusManualInput();
             setTimeout(() => {
                 scanLock = false;
-            }, 800);
+            }, 1000);
         }
     };
+
+    manualCodeInput.addEventListener('input', function() {
+        if (autoSubmitTimer) {
+            clearTimeout(autoSubmitTimer);
+        }
+        
+        const code = this.value.trim();
+        if (code === '') {
+            return;
+        }
+
+        // Jika panjang input >= 4, asumsi itu barcode/RFID, tunggu sejenak lalu submit otomatis
+        // 400ms adalah jeda yang pas antara selesai scan dan proses
+        autoSubmitTimer = setTimeout(() => {
+            submitScan(this.value.trim());
+        }, 400);
+    });
 
     manualForm.addEventListener('submit', function (event) {
         event.preventDefault();

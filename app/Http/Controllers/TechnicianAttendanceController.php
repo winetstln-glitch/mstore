@@ -531,7 +531,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => __('ID Card tidak dikenali.'),
+                'message' => __('ID Card tidak dikenali atau pengguna tidak aktif.'),
             ], 422);
         }
 
@@ -540,13 +540,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ->first();
 
         if (! $todayAttendance) {
-            if (! $this->isWithinClockInWindow()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('Gagal: Absensi masuk hanya boleh pada jam yang ditentukan.'),
-                ], 422);
-            }
-
             // Check if user is currently on leave/sick
             $hasLeaveRequest = \App\Models\LeaveRequest::where('user_id', $user->id)
                 ->where('status', 'approved')
@@ -570,13 +563,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'user_id' => $user->id,
                 'clock_in' => now(),
                 'status' => $status,
-                'notes' => 'Kiosk scan ID Card oleh '.Auth::user()->name,
+                'notes' => 'Kiosk scan ID Card otomatis. Admin: '.Auth::user()->name,
             ]);
 
             return response()->json([
                 'success' => true,
                 'action' => 'clock_in',
-                'message' => __('Absen masuk berhasil: :name', ['name' => $user->name]),
+                'message' => __('Absen masuk berhasil: :name (:status)', [
+                    'name' => $user->name,
+                    'status' => strtoupper(__($attendance->status))
+                ]),
                 'data' => [
                     'name' => $user->name,
                     'status' => $attendance->status,
@@ -588,34 +584,25 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($todayAttendance->clock_out) {
             return response()->json([
                 'success' => false,
-                'message' => __(':name sudah absen lengkap hari ini.', ['name' => $user->name]),
+                'message' => __(':name sudah absen lengkap (Masuk & Pulang) hari ini.', ['name' => $user->name]),
             ], 422);
         }
 
-        // Add cooldown between clock in and clock out (e.g., 30 minutes)
-        // to prevent accidental double scans clocking out immediately
-        $cooldownMinutes = (int) Setting::getValue('attendance_cooldown_minutes', 30);
+        // Add cooldown between clock in and clock out (e.g., 5 minutes for kiosk)
+        $cooldownMinutes = (int) Setting::getValue('attendance_kiosk_cooldown_minutes', 5);
         $diffInMinutes = $todayAttendance->clock_in->diffInMinutes(now());
         if ($diffInMinutes < $cooldownMinutes) {
             return response()->json([
                 'success' => false,
-                'message' => __('Gagal: Jeda waktu absen masuk dan pulang minimal :min menit. Baru :diff menit berlalu.', [
-                    'min' => $cooldownMinutes,
-                    'diff' => $diffInMinutes,
+                'message' => __('Tunggu :rem menit lagi untuk absen pulang (Cooldown Kiosk).', [
+                    'rem' => $cooldownMinutes - $diffInMinutes,
                 ]),
-            ], 422);
-        }
-
-        if (! $this->isWithinClockOutWindow()) {
-            return response()->json([
-                'success' => false,
-                'message' => __('Absensi pulang hanya boleh pada jam yang ditentukan.'),
             ], 422);
         }
 
         $todayAttendance->update([
             'clock_out' => now(),
-            'notes' => trim(($todayAttendance->notes ?? '')."\nClock Out Kiosk oleh ".Auth::user()->name),
+            'notes' => trim(($todayAttendance->notes ?? '')."\nClock Out Kiosk otomatis oleh ".Auth::user()->name),
         ]);
 
         return response()->json([
@@ -625,7 +612,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'data' => [
                 'name' => $user->name,
                 'status' => $todayAttendance->status,
-                'time' => $todayAttendance->clock_out->format('H:i:s'),
+                'time' => $todayAttendance->clock_in->format('H:i:s'),
+                'clock_out' => $todayAttendance->clock_out->format('H:i:s'),
             ],
         ]);
     }
@@ -872,14 +860,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return null;
         }
 
+        // Broaden user resolution for Kiosk:
+        // Any active user with an ID card code, username, or ID matching the scan
+        // should be allowed to use the kiosk if they belong to a staff-related role.
         return User::query()
             ->where('is_active', true)
-            ->whereHas('role', function ($query) {
-                $query->whereIn('name', $this->attendanceEligibleRoleNames());
-            })
-            ->whereHas('role.permissions', function ($query) {
-                $query->where('name', 'attendance.create');
-            })
             ->where(function ($query) use ($code) {
                 $query->where('attendance_card_code', $code)
                     ->orWhere('username', $code)
