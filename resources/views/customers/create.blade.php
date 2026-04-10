@@ -79,21 +79,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <div id="existing_user_group" class="{{ old('create_user') ? 'd-none' : '' }}">
-                                    <div class="col-md-6">
-                                        <label for="user_id" class="form-label small text-muted fw-bold">{{ __('Link to Existing User (Portal)') }}</label>
-                                        <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror">
-                                            <option value="">{{ __('-- Optional: Select Existing User --') }}</option>
-                                            @foreach(($availableUsers ?? []) as $u)
-                                                <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
-                                                    {{ $u->name }} @if($u->username) ({{ $u->username }}) @endif @if($u->email) - {{ $u->email }} @endif
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
@@ -101,16 +86,12 @@
                             function togglePortalFields() {
                                 const createChecked = document.getElementById('create_user').checked;
                                 document.getElementById('portal_fields').classList.toggle('d-none', !createChecked);
-                                document.getElementById('existing_user_group').classList.toggle('d-none', createChecked);
                                 
                                 // Disable inputs when hidden to avoid validation issues if browser sends them
                                 const portalInputs = document.querySelectorAll('#portal_fields input');
                                 portalInputs.forEach(input => {
                                     input.disabled = !createChecked;
                                 });
-                                
-                                const userSelect = document.querySelector('#existing_user_group select');
-                                if (userSelect) userSelect.disabled = createChecked;
                             }
                             
                             // Initialize on load

@@ -614,16 +614,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        // Available users for linking (role: customer) that are not linked yet
-        $customerRoleId = Role::where('name', 'customer')->value('id');
-        $linkedUserIds = Customer::whereNotNull('user_id')->pluck('user_id')->filter()->all();
-        $availableUsers = User::query()
-            ->where('role_id', $customerRoleId)
-            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'username']);
-
-        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures', 'availableUsers'));
+        return view('customers.create', compact('prefill', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
     }
 
     /**
@@ -878,20 +869,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $packages = \App\Models\Package::where('is_active', true)->orderBy('name')->get();
 
-        // Available users for linking (include current linked user if present)
-        $customerRoleId = Role::where('name', 'customer')->value('id');
-        $linkedUserIds = Customer::whereNotNull('user_id')
-            ->when($customer->user_id, fn ($q) => $q->where('user_id', '!=', $customer->user_id))
-            ->pluck('user_id')
-            ->filter()
-            ->all();
-        $availableUsers = User::query()
-            ->where('role_id', $customerRoleId)
-            ->when(! empty($linkedUserIds), fn ($q) => $q->whereNotIn('id', $linkedUserIds))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'username']);
-
-        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures', 'availableUsers'));
+        return view('customers.edit', compact('customer', 'odps', 'htbs', 'olts', 'onuDevices', 'packages', 'closures'));
     }
 
     /**
