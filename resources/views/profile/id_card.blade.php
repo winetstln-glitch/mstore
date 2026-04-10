@@ -89,8 +89,19 @@
             justify-content: center;
         }
 
-        .id-card-item {
-            width: 54mm;
+        /* Brand Themes */
+.brand-gtwash .header-bg, .brand-gtwash .back-header-bg { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+.brand-gtwash .wave-accent-top { background: #86efac; }
+.brand-gtwash .side-curve { border-color: #86efac; }
+.brand-gtwash .job-title, .brand-gtwash .back-contact-label { color: #16a34a; }
+
+.brand-mstorenet .header-bg, .brand-mstorenet .back-header-bg { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+.brand-mstorenet .wave-accent-top { background: #93c5fd; }
+.brand-mstorenet .side-curve { border-color: #93c5fd; }
+.brand-mstorenet .job-title, .brand-mstorenet .back-contact-label { color: #2563eb; }
+
+.id-card-item {
+    width: 54mm;
             height: 85.6mm;
             border-radius: 4.5mm;
             overflow: hidden;
@@ -538,29 +549,100 @@
             }
         }
 
+        /* PDF Rendering Adjustments */
+        @if($isPdf ?? false)
+            @page {
+                size: 54mm 85.6mm;
+                margin: 0;
+            }
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                width: 54mm;
+                height: 85.6mm;
+            }
+            .profile-id-card-page {
+                padding: 0 !important;
+                margin: 0 !important;
+                background: none !important;
+                min-height: auto !important;
+                width: 54mm !important;
+                overflow: hidden;
+            }
+            .profile-print-sheet {
+                 margin: 0 !important;
+                 padding: 0 !important;
+                 display: block !important;
+             }
+             .id-card-sheet {
+                 display: block !important;
+                 width: 54mm !important;
+                 margin: 0 !important;
+                 padding: 0 !important;
+                 gap: 0 !important;
+             }
+             .id-card-item {
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important; /* DomPDF can struggle with double borders */
+                page-break-after: always !important;
+            }
+            .id-card-item:last-child {
+                page-break-after: avoid !important;
+            }
+            .barcode-container {
+                display: block !important;
+                text-align: center !important;
+                padding: 1.1mm 0 !important;
+            }
+            .barcode-image {
+                display: inline-block !important;
+                width: auto !important;
+                max-width: 90% !important;
+            }
+        @endif
+
         @media print {
             @page {
                 size: 54mm 85.6mm;
                 margin: 0;
             }
 
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
             body {
+                margin: 0 !important;
                 padding: 0 !important;
                 background: #ffffff !important;
             }
 
-            .profile-id-toolbar {
-                display: none !important;
+            /* Hide everything except the card sheet */
+            #sidebar-wrapper, #sidebar-overlay, .main-header, .navbar, .sidebar, footer, 
+            .profile-id-toolbar, .mobile-bottom-nav, #mobile-bottom-nav, 
+            [class*="mobile-bottom-nav"], nav { 
+                display: none !important; 
+            }
+
+            .profile-id-card-page {
+                padding: 0 !important;
+                margin: 0 !important;
+                background: none !important;
+                min-height: auto !important;
+                width: 100% !important;
             }
 
             .profile-print-sheet {
-                display: flex !important;
-                justify-content: center;
+                display: block !important;
                 width: 54mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: transparent !important;
                 border: 0 !important;
+                visibility: visible !important;
             }
 
             .id-card-sheet {
@@ -568,6 +650,7 @@
                 width: 54mm !important;
                 min-width: 54mm !important;
                 gap: 0 !important;
+                visibility: visible !important;
             }
 
             .id-card-item {
@@ -576,6 +659,7 @@
                 margin: 0 !important;
                 page-break-after: always;
                 break-after: page;
+                visibility: visible !important;
             }
 
             .id-card-item:last-child {
@@ -605,12 +689,24 @@
             if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
                 $photoUrl = $avatar;
             } elseif (str_starts_with($avatar, 'storage/') || str_starts_with($avatar, 'img/')) {
-                $photoUrl = asset($avatar);
+                $photoUrl = $isPdf ? public_path($avatar) : asset($avatar);
             } else {
-                $photoUrl = asset('storage/'.$avatar);
+                $photoUrl = $isPdf ? storage_path('app/public/'.$avatar) : asset('storage/'.$avatar);
             }
         } elseif ($cardPhoto !== '') {
-            $photoUrl = asset('storage/'.$cardPhoto);
+            $photoUrl = $isPdf ? storage_path('app/public/'.$cardPhoto) : asset('storage/'.$cardPhoto);
+        }
+
+        // For PDF, convert logo URL to local path if it's an asset URL
+        $localLogoUrl = $logoUrl;
+        if ($isPdf && !str_starts_with($logoUrl, 'http')) {
+             $relativePath = preg_replace('#^https?://[^/]+/#', '', $logoUrl);
+             // If it starts with img/ or storage/, try to resolve path
+             if (str_starts_with($relativePath, 'img/')) {
+                 $localLogoUrl = public_path($relativePath);
+             } elseif (str_starts_with($relativePath, 'storage/')) {
+                 $localLogoUrl = storage_path('app/public/'.substr($relativePath, 8));
+             }
         }
     @endphp
 
@@ -628,15 +724,15 @@
 
         <div class="profile-print-sheet">
             <div class="id-card-sheet">
-                <div class="id-card-item">
-                    <div class="wave-accent-top"></div>
-                    <div class="header-bg"></div>
-                    <div class="wave-accent-bottom"></div>
-                    <div class="side-curve"></div>
+                <div class="id-card-item brand-{{ $brandKey ?? 'mstore' }}">
+                <div class="wave-accent-top"></div>
+                <div class="header-bg"></div>
+                <div class="wave-accent-bottom"></div>
+                <div class="side-curve"></div>
 
                     <div class="logo-container">
                         <div class="logo-diamond">
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                            <img src="{{ $localLogoUrl }}" alt="Logo {{ $brandName }}">
                         </div>
                         <div class="company-copy">
                             <div class="company-name">{{ $brandName }}</div>
@@ -668,14 +764,14 @@
                     </div>
                 </div>
 
-                <div class="id-card-item id-card-back">
+                <div class="id-card-item id-card-back brand-{{ $brandKey ?? 'mstore' }}">
                     <div class="back-header-bg"></div>
                     <div class="back-accent-circle"></div>
                     <div class="back-accent-line"></div>
 
                     <div class="back-brand-lockup">
                         <div class="back-logo-frame">
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}">
+                            <img src="{{ $localLogoUrl }}" alt="Logo {{ $brandName }}">
                         </div>
                         <div class="back-brand-meta">
                             <div class="back-brand-name">{{ $brandName }}</div>

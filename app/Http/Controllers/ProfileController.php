@@ -167,45 +167,66 @@ class ProfileController extends Controller implements HasMiddleware
 
     public function idCard()
     {
-        $user = Auth::user()->load(['role', 'employee']);
+        $user = Auth::user()->load('role');
+        $qrPayload = $this->buildQrPayload($user);
+        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
         $idCardCode = $this->userIdCardCode($user);
-        [$brandName, $logoUrl, $brandSlogan] = $this->resolveUserBrand($user);
+        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
 
-        return view('profile.id_card', compact('user', 'idCardCode', 'logoUrl', 'brandName', 'brandSlogan'));
+        return view('profile.id_card', compact('user', 'qrUrl', 'brandName', 'logoUrl', 'brandSlogan', 'brandKey', 'idCardCode'));
     }
 
     public function idCardDownload()
     {
-        $user = Auth::user()->load(['role', 'employee']);
+        $user = Auth::user()->load('role');
+        $qrPayload = $this->buildQrPayload($user);
+        $qrUrl = $this->buildQrUrl($qrPayload, 320, '00d2ff');
+        $qrSrc = $qrUrl;
         $idCardCode = $this->userIdCardCode($user);
-        [$brandName, $logoUrl, $brandSlogan] = $this->resolveUserBrand($user);
+        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveUserBrand($user);
+        // Try to embed QR as data URI for reliable PDF rendering
+        try {
+            $context = stream_context_create([
+                'http' => ['timeout' => 5],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $qrBin = @file_get_contents($qrUrl, false, $context);
+            if ($qrBin !== false) {
+                $qrSrc = 'data:image/png;base64,'.base64_encode($qrBin);
+            }
+        } catch (\Throwable $e) {
+            // Fallback keeps $qrSrc as URL
+        }
         $viewData = [
             'user' => $user,
-            'idCardCode' => $idCardCode,
-            'logoUrl' => $logoUrl,
-            'brandName' => $brandName,
-            'brandSlogan' => $brandSlogan,
+            'qrUrl' => $qrUrl,
+            'qrSrc' => $qrSrc,
             'isPdf' => true,
+            'brandName' => $brandName,
+            'logoUrl' => $logoUrl,
+            'brandSlogan' => $brandSlogan,
+            'brandKey' => $brandKey,
+            'idCardCode' => $idCardCode
         ];
+
+        // 54mm x 85.6mm standard CR80 size in points (1mm = 2.83465pt)
+        $customPaper = [0, 0, 153.07, 242.65];
         $pdf = Pdf::loadView('profile.id_card', $viewData)
-            ->setPaper('a6', 'portrait');
+            ->setPaper($customPaper, 'portrait');
+
         // Enable remote assets for images (logo, avatar, QR)
         if (method_exists($pdf, 'setOptions')) {
-            $pdf->setOptions(['isRemoteEnabled' => true]);
+            $pdf->setOptions([
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif'
+            ]);
         }
         $filename = 'ID-'.preg_replace('/[^A-Za-z0-9\-]+/', '-', $user->name).'.pdf';
 
         return $pdf->download($filename);
-    }
-
-    protected function userIdCardCode($user): string
-    {
-        $code = trim((string) ($user->attendance_card_code ?? ''));
-        if ($code !== '') {
-            return $code;
-        }
-
-        return \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
     }
 
     protected function resolveUserBrand($user): array
@@ -219,7 +240,7 @@ class ProfileController extends Controller implements HasMiddleware
             $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
             $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'gtwash'];
         }
 
         if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
@@ -227,14 +248,32 @@ class ProfileController extends Controller implements HasMiddleware
             $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
             $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstorenet'];
         }
 
         $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
         $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
         $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
 
-        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstore'];
+    }
+
+    protected function userIdCardCode($user): string
+    {
+        $hasAttendanceCardColumn = \Illuminate\Support\Facades\Schema::hasColumn('users', 'attendance_card_code');
+        if ($hasAttendanceCardColumn && trim((string) ($user->attendance_card_code ?? '')) === '') {
+            $seed = \App\Models\User::defaultAttendanceCardCodeById((int) $user->id);
+            $user->update([
+                'attendance_card_code' => \App\Models\User::generateUniqueAttendanceCardCode((string) $seed, $user->id),
+            ]);
+            $user->refresh();
+        }
+
+        if (! $hasAttendanceCardColumn) {
+            return \App\Models\User::generateUniqueAttendanceCardCode(\App\Models\User::defaultAttendanceCardCodeById((int) $user->id), $user->id);
+        }
+
+        return (string) $user->attendance_card_code;
     }
 
     protected function brandLogoUrl(string $logo): string

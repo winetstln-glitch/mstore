@@ -41,7 +41,7 @@
                     $photoUrl = asset('storage/'.$cardPhoto);
                 }
             @endphp
-            <div class="id-card-item">
+            <div class="id-card-item brand-{{ $brandKey ?? 'mstore' }}">
                 <div class="wave-accent-top"></div>
                 <div class="header-bg"></div>
                 <div class="wave-accent-bottom"></div>
@@ -81,7 +81,7 @@
                 </div>
             </div>
 
-            <div class="id-card-item id-card-back">
+            <div class="id-card-item id-card-back brand-{{ $brandKey ?? 'mstore' }}">
                 <div class="back-header-bg"></div>
                 <div class="back-accent-circle"></div>
                 <div class="back-accent-line"></div>
@@ -189,6 +189,17 @@ document.addEventListener('DOMContentLoaded', function () {
         grid-template-columns: repeat(1, 54mm);
     }
 }
+
+/* Brand Themes */
+.brand-gtwash .header-bg, .brand-gtwash .back-header-bg { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+.brand-gtwash .wave-accent-top { background: #86efac; }
+.brand-gtwash .side-curve { border-color: #86efac; }
+.brand-gtwash .job-title, .brand-gtwash .back-contact-label { color: #16a34a; }
+
+.brand-mstorenet .header-bg, .brand-mstorenet .back-header-bg { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+.brand-mstorenet .wave-accent-top { background: #93c5fd; }
+.brand-mstorenet .side-curve { border-color: #93c5fd; }
+.brand-mstorenet .job-title, .brand-mstorenet .back-contact-label { color: #2563eb; }
 
 .id-card-item {
     width: 54mm;

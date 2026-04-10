@@ -141,9 +141,9 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $idCardCode = $this->employeeIdCardCode($employee);
         $printMode = $request->boolean('print');
-        [$brandName, $logoUrl, $brandSlogan] = $this->resolveEmployeeBrand($employee);
+        [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveEmployeeBrand($employee);
 
-        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName', 'brandSlogan'));
+        return view('employees.id-card', compact('employee', 'idCardCode', 'printMode', 'logoUrl', 'brandName', 'brandSlogan', 'brandKey'));
     }
 
     public function printCards(Request $request)
@@ -158,7 +158,7 @@ class EmployeeController extends Controller implements HasMiddleware
             ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
             : $this->filteredEmployees($request)->orderBy('full_name')->get();
         $cards = $employees->map(function (Employee $employee) {
-            [$brandName, $logoUrl, $brandSlogan] = $this->resolveEmployeeBrand($employee);
+            [$brandName, $logoUrl, $brandSlogan, $brandKey] = $this->resolveEmployeeBrand($employee);
 
             return [
                 'employee' => $employee,
@@ -166,6 +166,7 @@ class EmployeeController extends Controller implements HasMiddleware
                 'brand_name' => $brandName,
                 'logo_url' => $logoUrl,
                 'brand_slogan' => $brandSlogan,
+                'brand_key' => $brandKey,
             ];
         });
 
@@ -469,21 +470,21 @@ class EmployeeController extends Controller implements HasMiddleware
             $logo = (string) (Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
             $slogan = (string) (Setting::getValue('brand_gtwash_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'gtwash'];
         }
         if (str_contains($scope, 'net') || str_contains($scope, 'network') || str_contains($scope, 'internet')) {
             $name = (string) (Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
             $logo = (string) (Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
             $slogan = (string) (Setting::getValue('brand_mstorenet_slogan') ?: $defaultSlogan);
 
-            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+            return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstorenet'];
         }
 
         $name = (string) (Setting::getValue('brand_mstore_name') ?: Setting::getValue('store_name') ?: 'MSTORE');
         $logo = (string) (Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
         $slogan = (string) (Setting::getValue('brand_mstore_slogan') ?: $defaultSlogan);
 
-        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan];
+        return [strtoupper($name), $this->brandLogoUrl($logo), $slogan, 'mstore'];
     }
 
     private function hasIdCardColumns(): bool
