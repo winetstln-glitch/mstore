@@ -489,8 +489,10 @@ class EmployeeController extends Controller implements HasMiddleware
 
     private function hasIdCardColumns(): bool
     {
-        return Schema::hasColumn('employees', 'id_card_photo_path')
-            && Schema::hasColumn('employees', 'id_card_expires_at');
+        return \Illuminate\Support\Facades\Cache::rememberForever('employees_id_card_columns', function () {
+            return Schema::hasColumn('employees', 'id_card_photo_path')
+                && Schema::hasColumn('employees', 'id_card_expires_at');
+        });
     }
 
     private function brandLogoUrl(string $logo): string

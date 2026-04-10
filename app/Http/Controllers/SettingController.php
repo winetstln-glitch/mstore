@@ -29,13 +29,16 @@ class SettingController extends Controller implements HasMiddleware
     {
         $this->ensureReceiptIdentitySettings();
 
-        $settings = Setting::whereNotIn('group', ['telegram', 'whatsapp'])
+        $settings = Setting::query()
+            ->whereNotIn('group', ['telegram', 'whatsapp'])
             ->where('key', '!=', 'subscription_packages')
+            ->where('key', 'not like', 'atk_%')
+            ->where('key', 'not like', 'wash_%')
             ->orderBy('group')
             ->orderBy('id')
             ->get()
-            ->reject(fn ($item) => str_starts_with((string) $item->key, 'atk_') || str_starts_with((string) $item->key, 'wash_'))
             ->groupBy('group');
+
         $accountOptions = Account::orderBy('code')->get();
 
         return view('settings.index', compact('settings', 'accountOptions'));
@@ -244,6 +247,11 @@ class SettingController extends Controller implements HasMiddleware
 
     private function ensureReceiptIdentitySettings(): void
     {
+        // Cache this check for 1 hour to prevent constant DB hits
+        if (\Illuminate\Support\Facades\Cache::has('settings_ensured')) {
+            return;
+        }
+
         $defaults = [
             [
                 'key' => 'store_name',
@@ -793,16 +801,15 @@ class SettingController extends Controller implements HasMiddleware
             ],
         ];
 
-        foreach ($defaults as $setting) {
-            Setting::firstOrCreate(
-                ['key' => $setting['key']],
-                [
-                    'value' => $setting['value'],
-                    'group' => $setting['group'],
-                    'type' => $setting['type'],
-                    'label' => $setting['label'],
-                ]
-            );
+        $keys = collect($defaults)->pluck('key')->toArray();
+        $existingKeys = Setting::whereIn('key', $keys)->pluck('key')->toArray();
+        $missing = collect($defaults)->whereNotIn('key', $existingKeys)->values()->toArray();
+
+        if (!empty($missing)) {
+            Setting::insert($missing);
+            Setting::forgetCache();
         }
+
+        \Illuminate\Support\Facades\Cache::put('settings_ensured', true, now()->addHour());
     }
 }

@@ -47,9 +47,11 @@ class Setting extends Model
     public static function allValues(): array
     {
         if (self::$cachedValues === null) {
-            self::$cachedValues = self::query()
-                ->pluck('value', 'key')
-                ->all();
+            self::$cachedValues = \Illuminate\Support\Facades\Cache::rememberForever('settings_all', function () {
+                return self::query()
+                    ->pluck('value', 'key')
+                    ->all();
+            });
         }
 
         return self::$cachedValues;
@@ -58,5 +60,6 @@ class Setting extends Model
     public static function forgetCache(): void
     {
         self::$cachedValues = null;
+        \Illuminate\Support\Facades\Cache::forget('settings_all');
     }
 }

@@ -511,9 +511,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public function kiosk()
     {
         $todayLogs = TechnicianAttendance::with('user')
-            ->whereDate('clock_in', today())
+            ->where('clock_in', '>=', today())
             ->latest('clock_in')
-            ->limit(20)
+            ->limit(50)
             ->get();
 
         return view('technicians.attendance.kiosk', compact('todayLogs'));
@@ -536,7 +536,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         $todayAttendance = TechnicianAttendance::where('user_id', $user->id)
-            ->whereDate('clock_in', today())
+            ->where('clock_in', '>=', today())
             ->first();
 
         if (! $todayAttendance) {

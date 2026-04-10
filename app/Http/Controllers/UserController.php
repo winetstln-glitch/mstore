@@ -103,7 +103,7 @@ class UserController extends Controller implements HasMiddleware
 
     public function idCard(User $user)
     {
-        $hasAttendanceCardColumn = Schema::hasColumn('users', 'attendance_card_code');
+        $hasAttendanceCardColumn = $this->hasAttendanceCardColumn();
         if ($hasAttendanceCardColumn && trim((string) $user->attendance_card_code) === '') {
             $seed = User::defaultAttendanceCardCodeById((int) $user->id);
             $user->update([
@@ -143,7 +143,7 @@ class UserController extends Controller implements HasMiddleware
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ];
-        if (Schema::hasColumn('users', 'attendance_card_code')) {
+        if ($this->hasAttendanceCardColumn()) {
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', 'unique:users,attendance_card_code'];
         }
         $validated = $request->validate($rules);
@@ -178,12 +178,12 @@ class UserController extends Controller implements HasMiddleware
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'is_active' => $request->boolean('is_active'),
         ];
-        if (Schema::hasColumn('users', 'attendance_card_code')) {
+        if ($this->hasAttendanceCardColumn()) {
             $createData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? ''));
         }
         $createdUser = User::create($createData);
 
-        if (Schema::hasColumn('users', 'attendance_card_code') && trim((string) $createdUser->attendance_card_code) === '') {
+        if ($this->hasAttendanceCardColumn() && trim((string) $createdUser->attendance_card_code) === '') {
             $createdUser->update([
                 'attendance_card_code' => User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $createdUser->id), (int) $createdUser->id),
             ]);
@@ -211,7 +211,7 @@ class UserController extends Controller implements HasMiddleware
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ];
-        if (Schema::hasColumn('users', 'attendance_card_code')) {
+        if ($this->hasAttendanceCardColumn()) {
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', Rule::unique('users', 'attendance_card_code')->ignore($user->id)];
         }
         $validated = $request->validate($rules);
@@ -231,7 +231,7 @@ class UserController extends Controller implements HasMiddleware
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'is_active' => $request->boolean('is_active'),
         ];
-        if (Schema::hasColumn('users', 'attendance_card_code')) {
+        if ($this->hasAttendanceCardColumn()) {
             $updateData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? '')) ?: User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), (int) $user->id);
         }
         $user->update($updateData);
@@ -297,11 +297,17 @@ class UserController extends Controller implements HasMiddleware
     {
         if (! $logo) {
             return asset('img/logo.png');
-        }
-        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
-            return $logo;
+        } elseif (! str_starts_with($logo, 'http')) {
+            return asset($logo);
         }
 
-        return asset($logo);
+        return $logo;
+    }
+
+    private function hasAttendanceCardColumn(): bool
+    {
+        return \Illuminate\Support\Facades\Cache::rememberForever('users_attendance_card_column', function () {
+            return Schema::hasColumn('users', 'attendance_card_code');
+        });
     }
 }
