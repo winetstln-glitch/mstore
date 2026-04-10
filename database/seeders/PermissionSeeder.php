@@ -188,6 +188,14 @@ class PermissionSeeder extends Seeder
             ['name' => 'hotspot.manage', 'label' => 'Manage Hotspot', 'group' => 'Service Management'],
             ['name' => 'pppoe.view', 'label' => 'View PPPoE', 'group' => 'Service Management'],
             ['name' => 'pppoe.manage', 'label' => 'Manage PPPoE', 'group' => 'Service Management'],
+
+            // Employee Management
+            ['name' => 'employee.view', 'label' => 'View Employees', 'group' => 'Employee Management'],
+            ['name' => 'employee.create', 'label' => 'Create Employee', 'group' => 'Employee Management'],
+            ['name' => 'employee.edit', 'label' => 'Edit Employee', 'group' => 'Employee Management'],
+            ['name' => 'employee.delete', 'label' => 'Delete Employee', 'group' => 'Employee Management'],
+            ['name' => 'employee.sync', 'label' => 'Sync Employees', 'group' => 'Employee Management'],
+            ['name' => 'employee.export', 'label' => 'Export Employees', 'group' => 'Employee Management'],
         ];
 
         $permissionNames = collect($permissions)->pluck('name')->toArray();

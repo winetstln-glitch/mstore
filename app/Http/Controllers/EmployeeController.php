@@ -26,6 +26,12 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('auth'),
+            new Middleware('permission:employee.view', only: ['index', 'idCard', 'printCards']),
+            new Middleware('permission:employee.create', only: ['create', 'store']),
+            new Middleware('permission:employee.edit', only: ['edit', 'update']),
+            new Middleware('permission:employee.delete', only: ['destroy']),
+            new Middleware('permission:employee.sync', only: ['syncExisting']),
+            new Middleware('permission:employee.export', only: ['exportCsv', 'exportPdf', 'exportExcel']),
         ];
     }
 
