@@ -29,7 +29,11 @@ class UserController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = User::with('role')->latest();
+        $query = User::with('role')
+            ->whereHas('role', function ($q) {
+                $q->where('name', '!=', 'customer');
+            })
+            ->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -51,7 +55,11 @@ class UserController extends Controller implements HasMiddleware
 
     public function export(Request $request)
     {
-        $query = User::with('role')->latest();
+        $query = User::with('role')
+            ->whereHas('role', function ($q) {
+                $q->where('name', '!=', 'customer');
+            })
+            ->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -125,20 +133,21 @@ class UserController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $roles = Role::all();
+        $roles = Role::where('name', '!=', 'customer')->get();
 
         return view('users.create', compact('roles'));
     }
 
     public function store(Request $request)
     {
+        $customerRoleId = Role::where('name', 'customer')->value('id');
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:255', 'unique:users,username'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role_id' => ['required', 'exists:roles,id'],
+            'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
@@ -194,19 +203,20 @@ class UserController extends Controller implements HasMiddleware
 
     public function edit(User $user)
     {
-        $roles = Role::all();
+        $roles = Role::where('name', '!=', 'customer')->get();
 
         return view('users.edit', compact('user', 'roles'));
     }
 
     public function update(Request $request, User $user)
     {
+        $customerRoleId = Role::where('name', 'customer')->value('id');
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
-            'role_id' => ['required', 'exists:roles,id'],
+            'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],

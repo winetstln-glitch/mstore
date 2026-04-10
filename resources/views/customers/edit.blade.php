@@ -62,21 +62,84 @@
                         </div>
                         
                         <!-- Link to User (Client Portal) -->
-                        <div class="col-md-6">
-                            <label for="user_id" class="form-label small text-muted fw-bold">{{ __('Link to User (Portal)') }}</label>
-                            <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror">
-                                <option value="">{{ __('-- Optional: Select User --') }}</option>
-                                @foreach(($availableUsers ?? []) as $u)
-                                    <option value="{{ $u->id }}" {{ (string)old('user_id', $customer->user_id) === (string)$u->id ? 'selected' : '' }}>
-                                        {{ $u->name }} @if($u->username) ({{ $u->username }}) @endif @if($u->email) - {{ $u->email }} @endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="form-text">{{ __('Menghubungkan customer ke akun portal (role: customer).') }}</div>
-                            @error('user_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-12">
+                            <h6 class="fw-bold text-body-secondary text-uppercase small mt-3 mb-3 border-top pt-3">{{ __('Portal Account') }}</h6>
+                            <div class="row g-3">
+                                @if(!$customer->user_id)
+                                <div class="col-md-12 mb-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="create_user" id="create_user" value="1" {{ old('create_user') ? 'checked' : '' }} onchange="togglePortalFields()">
+                                        <label class="form-check-label fw-bold" for="create_user">{{ __('Create Portal Account for this Customer') }}</label>
+                                    </div>
+                                </div>
+                                @endif
+
+                                <div id="portal_fields" class="{{ ($customer->user_id || old('create_user')) ? '' : 'd-none' }}">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="username" class="form-label small text-muted fw-bold">{{ __('Portal Username') }}</label>
+                                            <input type="text" name="username" id="username" value="{{ old('username', $customer->user?->username) }}" class="form-control @error('username') is-invalid @enderror" placeholder="username">
+                                            @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="email" class="form-label small text-muted fw-bold">{{ __('Portal Email') }}</label>
+                                            <input type="email" name="email" id="email" value="{{ old('email', $customer->user?->email) }}" class="form-control @error('email') is-invalid @enderror" placeholder="email@example.com">
+                                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="password" class="form-label small text-muted fw-bold">{{ __('Portal Password') }} {{ $customer->user_id ? __('(Leave blank to keep current)') : '' }}</label>
+                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="min 8 chars">
+                                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="password_confirmation" class="form-label small text-muted fw-bold">{{ __('Confirm Password') }}</label>
+                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="confirm password">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if(!$customer->user_id)
+                                <div id="existing_user_group" class="{{ old('create_user') ? 'd-none' : '' }}">
+                                    <div class="col-md-6">
+                                        <label for="user_id" class="form-label small text-muted fw-bold">{{ __('Link to Existing User (Portal)') }}</label>
+                                        <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror">
+                                            <option value="">{{ __('-- Optional: Select Existing User --') }}</option>
+                                            @foreach(($availableUsers ?? []) as $u)
+                                                <option value="{{ $u->id }}" {{ (string)old('user_id', $customer->user_id) === (string)$u->id ? 'selected' : '' }}>
+                                                    {{ $u->name }} @if($u->username) ({{ $u->username }}) @endif @if($u->email) - {{ $u->email }} @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
                         </div>
+
+                        <script>
+                            function togglePortalFields() {
+                                const createChecked = document.getElementById('create_user')?.checked;
+                                const hasUser = {{ $customer->user_id ? 'true' : 'false' }};
+                                
+                                if (!hasUser) {
+                                    document.getElementById('portal_fields').classList.toggle('d-none', !createChecked);
+                                    document.getElementById('existing_user_group').classList.toggle('d-none', createChecked);
+                                    
+                                    const portalInputs = document.querySelectorAll('#portal_fields input');
+                                    portalInputs.forEach(input => {
+                                        input.disabled = !createChecked;
+                                    });
+                                    
+                                    const userSelect = document.querySelector('#existing_user_group select');
+                                    if (userSelect) userSelect.disabled = createChecked;
+                                }
+                            }
+                            
+                            document.addEventListener('DOMContentLoaded', function() {
+                                togglePortalFields();
+                            });
+                        </script>
 
                         <!-- Location -->
                         <div class="col-md-6">

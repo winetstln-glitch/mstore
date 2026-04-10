@@ -6,6 +6,7 @@ use App\Jobs\NetworkMonitorJob;
 use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\GenieDeviceStatus;
+use App\Models\Package;
 use App\Models\Htb;
 use App\Models\Odp;
 use App\Models\Role;
@@ -20,6 +21,8 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\CSV\Reader as CSVReader;
 use OpenSpout\Reader\XLSX\Reader as XLSXReader;
@@ -634,6 +637,11 @@ class CustomerWebController extends Controller implements HasMiddleware
             'phone' => 'nullable|string|max:20',
             'package_id' => 'nullable|exists:packages,id',
             'user_id' => 'nullable|exists:users,id|unique:customers,user_id',
+            // User account creation fields
+            'create_user' => 'nullable|boolean',
+            'username' => 'nullable|string|max:255|unique:users,username',
+            'email' => 'nullable|string|email|max:255|unique:users,email',
+            'password' => 'nullable|string|min:8|confirmed',
             'ip_address' => 'nullable|ip',
             'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
@@ -683,12 +691,32 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         try {
+            DB::beginTransaction();
+
+            // Handle User creation if requested
+            if ($request->boolean('create_user') && ! empty($validated['username']) && ! empty($validated['password'])) {
+                $customerRoleId = Role::where('name', 'customer')->value('id');
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'username' => $validated['username'],
+                    'email' => $validated['email'] ?? null,
+                    'password' => Hash::make($validated['password']),
+                    'role_id' => $customerRoleId,
+                    'phone' => $validated['phone'],
+                    'is_active' => true,
+                ]);
+                $validated['user_id'] = $user->id;
+            }
+
             $customer = Customer::create($validated);
             $radiusWarning = $this->syncRadiusCredential($customer, null, null);
             if ($customer->status === 'active' && is_string($customer->onu_serial) && trim($customer->onu_serial) !== '') {
                 NetworkMonitorJob::dispatch();
             }
+
+            DB::commit();
         } catch (\Exception $e) {
+            DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Error creating customer: '.$e->getMessage());
 
             return back()->withInput()->withErrors(['error' => __('Failed to create customer: :message', ['message' => $e->getMessage()])]);
@@ -878,6 +906,11 @@ class CustomerWebController extends Controller implements HasMiddleware
             'package_id' => 'nullable|exists:packages,id',
             'package' => 'nullable|string|max:100',
             'user_id' => 'nullable|exists:users,id|unique:customers,user_id,'.$customer->id,
+            // User account update fields
+            'create_user' => 'nullable|boolean',
+            'username' => 'nullable|string|max:255|unique:users,username,'.($customer->user_id ?? 'NULL'),
+            'email' => 'nullable|string|email|max:255|unique:users,email,'.($customer->user_id ?? 'NULL'),
+            'password' => 'nullable|string|min:8|confirmed',
             'ip_address' => 'nullable|ip',
             'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
@@ -908,13 +941,10 @@ class CustomerWebController extends Controller implements HasMiddleware
         $oldHtbId = $customer->htb_id;
 
         // Handle HTB/ODP logic
-        // We prioritize HTB selection if provided. If HTB is empty, we check ODP selection.
-
         $newHtbId = $validated['htb_id'] ?? null;
         $newOdpId = $validated['odp_id'] ?? null;
 
         if (! empty($newHtbId)) {
-            // "Via HTB" mode
             $newHtb = Htb::with('odp')->find($newHtbId);
             if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
                 return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
@@ -924,10 +954,7 @@ class CustomerWebController extends Controller implements HasMiddleware
                 $validated['odp'] = $newHtb->odp->name ?? null;
             }
         } elseif (! empty($newOdpId)) {
-            // "Direct ODP" mode (HTB is empty)
-            $validated['htb_id'] = null; // Ensure HTB is cleared
-
-            // Only validate ODP capacity if connecting directly (no HTB)
+            $validated['htb_id'] = null;
             $newOdp = Odp::find($newOdpId);
             if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
                 return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
@@ -936,17 +963,51 @@ class CustomerWebController extends Controller implements HasMiddleware
                 $validated['odp'] = $newOdp->name;
             }
         } else {
-            // Both cleared
             $validated['htb_id'] = null;
             $validated['odp_id'] = null;
             $validated['odp'] = null;
         }
 
-        $oldPppoeUser = $customer->pppoe_user;
-        $customer->update($validated);
-        $radiusWarning = $this->syncRadiusCredential($customer, $oldPppoeUser, null);
-        if ($customer->status === 'active' && is_string($customer->onu_serial) && trim($customer->onu_serial) !== '') {
-            NetworkMonitorJob::dispatch();
+        try {
+            DB::beginTransaction();
+
+            // Handle User creation/update
+            if ($request->boolean('create_user') || $customer->user_id) {
+                $customerRoleId = Role::where('name', 'customer')->value('id');
+                $userData = [
+                    'name' => $validated['name'] ?? $customer->name,
+                    'username' => $validated['username'] ?? ($customer->user?->username),
+                    'email' => $validated['email'] ?? ($customer->user?->email),
+                    'role_id' => $customerRoleId,
+                    'phone' => $validated['phone'] ?? $customer->phone,
+                    'is_active' => true,
+                ];
+
+                if (! empty($validated['password'])) {
+                    $userData['password'] = Hash::make($validated['password']);
+                }
+
+                if ($customer->user_id) {
+                    $customer->user->update($userData);
+                } elseif ($request->boolean('create_user') && ! empty($validated['username']) && ! empty($validated['password'])) {
+                    $user = User::create($userData);
+                    $validated['user_id'] = $user->id;
+                }
+            }
+
+            $oldPppoeUser = $customer->pppoe_user;
+            $customer->update($validated);
+            $radiusWarning = $this->syncRadiusCredential($customer, $oldPppoeUser, null);
+            if ($customer->status === 'active' && is_string($customer->onu_serial) && trim($customer->onu_serial) !== '') {
+                NetworkMonitorJob::dispatch();
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error updating customer: '.$e->getMessage());
+
+            return back()->withInput()->withErrors(['error' => __('Failed to update customer: :message', ['message' => $e->getMessage()])]);
         }
 
         if ($request->wantsJson()) {

@@ -26,7 +26,10 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $roles = Role::withCount('users')->latest()->paginate(10);
+        $roles = Role::where('name', '!=', 'customer')
+            ->withCount('users')
+            ->latest()
+            ->paginate(10);
 
         return view('roles.index', compact('roles'));
     }
