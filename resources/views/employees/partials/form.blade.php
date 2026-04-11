@@ -160,7 +160,17 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Foto ID Card (Pas Foto)</label>
-                        <input type="file" name="id_card_photo" class="form-control form-control-sm" accept="image/*">
+                        <input type="file" name="id_card_photo" id="employee_id_card_photo" class="form-control form-control-sm" accept="image/*">
+                        <input type="hidden" name="id_card_photo_base64" id="employee_id_card_photo_base64">
+                        @if(!empty($employee?->id_card_photo_path))
+                            <div class="mt-2">
+                                <img id="employeePhotoPreview" src="{{ asset('storage/'.$employee->id_card_photo_path) }}" class="img-thumbnail" style="height: 70px;">
+                            </div>
+                        @else
+                            <div class="mt-2 d-none">
+                                <img id="employeePhotoPreview" src="" class="img-thumbnail" style="height: 70px;">
+                            </div>
+                        @endif
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Expired ID Card</label>
@@ -182,6 +192,28 @@
         </button>
     </div>
 </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<div class="modal fade" id="employeePhotoCropModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Atur Foto ID Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 70vh;">
+                    <img id="employeeCropImage" src="" style="max-width: 100%; display: block;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="employeeCropApplyBtn">Gunakan Foto</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -267,6 +299,178 @@ document.addEventListener('DOMContentLoaded', function() {
                 depSelect.selectedIndex = i; break;
             }
         }
+    }
+
+    const idPhotoInput = document.getElementById('employee_id_card_photo');
+    const cropModalEl = document.getElementById('employeePhotoCropModal');
+    const cropImageEl = document.getElementById('employeeCropImage');
+    const cropApplyBtn = document.getElementById('employeeCropApplyBtn');
+    const base64Hidden = document.getElementById('employee_id_card_photo_base64');
+    const previewEl = document.getElementById('employeePhotoPreview');
+    let cropper = null;
+    let modalInstance = null;
+    let backdropEl = null;
+    let objectUrl = null;
+
+    if (cropModalEl && window.bootstrap && bootstrap.Modal) {
+        modalInstance = new bootstrap.Modal(cropModalEl);
+    }
+
+    function showCropModal() {
+        if (!cropModalEl) return;
+        if (modalInstance) {
+            modalInstance.show();
+            return;
+        }
+
+        cropModalEl.classList.add('show');
+        cropModalEl.style.display = 'block';
+        cropModalEl.removeAttribute('aria-hidden');
+        document.body.classList.add('modal-open');
+
+        backdropEl = document.createElement('div');
+        backdropEl.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdropEl);
+
+        setTimeout(() => {
+            initCropper();
+        }, 10);
+    }
+
+    function hideCropModal({ resetFileInput = false } = {}) {
+        if (!cropModalEl) return;
+        if (modalInstance) {
+            modalInstance.hide();
+        } else {
+            cropModalEl.classList.remove('show');
+            cropModalEl.style.display = 'none';
+            cropModalEl.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            if (backdropEl) {
+                backdropEl.remove();
+                backdropEl = null;
+            }
+        }
+
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+        }
+        cropImageEl.src = '';
+        if (resetFileInput && idPhotoInput) {
+            idPhotoInput.value = '';
+        }
+        if (resetFileInput && base64Hidden) {
+            base64Hidden.value = '';
+        }
+    }
+
+    function initCropper() {
+        if (!cropImageEl || !cropImageEl.src) return;
+        if (typeof Cropper === 'undefined') {
+            return;
+        }
+        if (cropper) {
+            cropper.destroy();
+        }
+        cropper = new Cropper(cropImageEl, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 1,
+            background: false,
+            movable: true,
+            zoomable: true,
+            rotatable: true,
+            scalable: false,
+        });
+    }
+
+    if (idPhotoInput) {
+        idPhotoInput.addEventListener('change', function () {
+            const file = this.files && this.files[0] ? this.files[0] : null;
+            if (!file) return;
+
+            if (base64Hidden) {
+                base64Hidden.value = '';
+            }
+
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+            objectUrl = URL.createObjectURL(file);
+            cropImageEl.src = objectUrl;
+            showCropModal();
+        });
+    }
+
+    if (cropModalEl) {
+        cropModalEl.addEventListener('shown.bs.modal', function () {
+            initCropper();
+        });
+
+        cropModalEl.addEventListener('hidden.bs.modal', function () {
+            hideCropModal();
+        });
+
+        cropModalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach((btn) => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                hideCropModal({ resetFileInput: true });
+            });
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && cropModalEl.classList.contains('show')) {
+                hideCropModal({ resetFileInput: true });
+            }
+        });
+    }
+
+    if (cropApplyBtn) {
+        cropApplyBtn.addEventListener('click', function () {
+            if (!idPhotoInput) return;
+            if (!cropper) {
+                if (previewEl && idPhotoInput.files && idPhotoInput.files[0]) {
+                    previewEl.src = URL.createObjectURL(idPhotoInput.files[0]);
+                    if (previewEl.parentElement) {
+                        previewEl.parentElement.classList.remove('d-none');
+                    }
+                }
+                hideCropModal();
+                return;
+            }
+            const canvas = cropper.getCroppedCanvas({ width: 600, height: 600 });
+            if (base64Hidden) {
+                base64Hidden.value = canvas.toDataURL('image/jpeg', 0.95);
+            }
+            canvas.toBlob(function (blob) {
+                if (!blob) return;
+
+                try {
+                    const original = idPhotoInput.files && idPhotoInput.files[0] ? idPhotoInput.files[0] : null;
+                    const fileName = original ? original.name : 'id-card.jpg';
+                    const file = new File([blob], fileName, { type: 'image/jpeg' });
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    idPhotoInput.files = dt.files;
+
+                    if (previewEl) {
+                        previewEl.src = URL.createObjectURL(file);
+                        if (previewEl.parentElement) {
+                            previewEl.parentElement.classList.remove('d-none');
+                        }
+                    }
+                } catch (e) {
+                    // Fallback: server will use base64Hidden
+                }
+
+                hideCropModal();
+            }, 'image/jpeg', 0.95);
+        });
     }
 });
 </script>

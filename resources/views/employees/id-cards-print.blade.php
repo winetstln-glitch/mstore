@@ -19,6 +19,9 @@
             <button type="button" class="btn btn-dark" id="downloadAllBtn" onclick="downloadAllImages()">
                 <i class="fa-solid fa-download me-1"></i>Download Semua (Image)
             </button>
+                <button type="button" class="btn btn-success" id="downloadZipBtn" onclick="downloadAllZip()">
+                    <i class="fa-solid fa-file-zipper me-1"></i>Download ZIP
+                </button>
         </div>
     </div>
 
@@ -57,6 +60,8 @@
 
 @push('scripts')
 <x-id-card-scripts />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script>
 async function downloadPair(id, name) {
     const pair = document.getElementById(`card-pair-${id}`);
@@ -97,6 +102,50 @@ async function downloadAllImages() {
     btn.disabled = false;
     btn.innerHTML = originalText;
     alert('Selesai mendownload semua gambar.');
+}
+
+async function downloadAllZip() {
+    if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+        alert('ZIP dependencies failed to load.');
+        return;
+    }
+    const btn = document.getElementById('downloadZipBtn');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyiapkan ZIP...';
+
+    const zip = new JSZip();
+    const folder = zip.folder('id-cards') || zip;
+    const pairs = document.querySelectorAll('.id-card-pair');
+    let processed = 0;
+
+    for (const pair of pairs) {
+        const nameText = pair.querySelector('.name-block')?.textContent || 'karyawan';
+        const name = nameText.trim().toLowerCase().replace(/\s+/g, '-');
+        const front = pair.querySelector('.id-card-front');
+        const back = pair.querySelector('.id-card-back');
+
+        if (front) {
+            await waitForAssets(front);
+            const canvasF = await html2canvas(front, { scale: 4, useCORS: true, backgroundColor: '#ffffff' });
+            const blobF = await new Promise(res => canvasF.toBlob(res, 'image/jpeg', 0.95));
+            if (blobF) folder.file(`ID_Card_Depan_${name}.jpg`, blobF);
+        }
+        if (back) {
+            await waitForAssets(back);
+            const canvasB = await html2canvas(back, { scale: 4, useCORS: true, backgroundColor: '#ffffff' });
+            const blobB = await new Promise(res => canvasB.toBlob(res, 'image/jpeg', 0.95));
+            if (blobB) folder.file(`ID_Card_Belakang_${name}.jpg`, blobB);
+        }
+
+        processed++;
+        await new Promise(r => setTimeout(r, 200));
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, 'ID-Cards.zip');
+    btn.disabled = false;
+    btn.innerHTML = original;
 }
 </script>
 @endpush

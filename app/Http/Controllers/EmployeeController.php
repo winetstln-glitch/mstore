@@ -86,9 +86,10 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $validated = $this->validateEmployee($request);
         $validated['document_path'] = $this->storeDocument($request);
-        if ($this->hasIdCardColumns()) {
+        if ($this->hasIdCardPhotoColumn()) {
             $validated['id_card_photo_path'] = $this->storeIdCardPhoto($request);
-        } else {
+        }
+        if (! $this->hasIdCardExpiresColumn()) {
             unset($validated['id_card_expires_at']);
         }
 
@@ -101,6 +102,7 @@ class EmployeeController extends Controller implements HasMiddleware
                 'password' => bcrypt($validated['password'] ?? 'password'),
                 'role_id' => $validated['role_id'],
                 'phone' => $validated['phone'],
+                'avatar' => $validated['id_card_photo_path'] ?? null,
                 'is_active' => true,
             ]);
             $validated['user_id'] = $user->id;
@@ -117,6 +119,7 @@ class EmployeeController extends Controller implements HasMiddleware
                     'name' => $validated['full_name'],
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
+                    'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
                 ]);
 
                 // Then sync to ensure other fields are correct
@@ -140,7 +143,7 @@ class EmployeeController extends Controller implements HasMiddleware
     public function update(Request $request, Employee $employee)
     {
         $validated = $this->validateEmployee($request, $employee->id);
-        if (! $this->hasIdCardColumns()) {
+        if (! $this->hasIdCardExpiresColumn()) {
             unset($validated['id_card_expires_at']);
         }
         $newDocPath = $this->storeDocument($request);
@@ -150,7 +153,7 @@ class EmployeeController extends Controller implements HasMiddleware
             }
             $validated['document_path'] = $newDocPath;
         }
-        if ($this->hasIdCardColumns()) {
+        if ($this->hasIdCardPhotoColumn()) {
             $newPhotoPath = $this->storeIdCardPhoto($request);
             if ($newPhotoPath) {
                 if ($employee->id_card_photo_path) {
@@ -172,6 +175,9 @@ class EmployeeController extends Controller implements HasMiddleware
                     'role_id' => $validated['role_id'] ?? $user->role_id,
                     'phone' => $validated['phone'],
                 ];
+                if (! empty($validated['id_card_photo_path'])) {
+                    $userData['avatar'] = $validated['id_card_photo_path'];
+                }
                 if (! empty($validated['password'])) {
                     $userData['password'] = bcrypt($validated['password']);
                 }
@@ -185,6 +191,7 @@ class EmployeeController extends Controller implements HasMiddleware
                     'password' => bcrypt($validated['password'] ?? 'password'),
                     'role_id' => $validated['role_id'],
                     'phone' => $validated['phone'],
+                    'avatar' => $validated['id_card_photo_path'] ?? null,
                     'is_active' => true,
                 ]);
                 $validated['user_id'] = $user->id;
@@ -202,6 +209,7 @@ class EmployeeController extends Controller implements HasMiddleware
                     'name' => $validated['full_name'],
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
+                    'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
                 ]);
             }
         }
@@ -428,7 +436,7 @@ class EmployeeController extends Controller implements HasMiddleware
     {
         $userId = $id ? Employee::find($id)?->user_id : null;
 
-        return $request->validate([
+        $rules = [
             'full_name' => ['required', 'string', 'max:255'],
             'user_id' => ['nullable', 'exists:users,id'],
             'wash_employee_id' => ['nullable', 'exists:wash_employees,id'],
@@ -444,13 +452,19 @@ class EmployeeController extends Controller implements HasMiddleware
             'employment_status' => ['required', Rule::in(['Tetap', 'Kontrak', 'Magang'])],
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
             'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'id_card_expires_at' => ['nullable', 'date'],
+            'id_card_photo_base64' => ['nullable', 'string'],
             // User account fields
             'create_user_account' => ['nullable', 'boolean'],
             'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($userId)],
             'password' => ['nullable', 'string', 'min:6'],
             'role_id' => ['nullable', 'exists:roles,id'],
-        ]);
+        ];
+
+        if ($this->hasIdCardExpiresColumn()) {
+            $rules['id_card_expires_at'] = ['nullable', 'date'];
+        }
+
+        return $request->validate($rules);
     }
 
     private function storeDocument(Request $request): ?string
@@ -464,8 +478,25 @@ class EmployeeController extends Controller implements HasMiddleware
 
     private function storeIdCardPhoto(Request $request): ?string
     {
-        if (! $this->hasIdCardColumns()) {
+        if (! $this->hasIdCardPhotoColumn()) {
             return null;
+        }
+        if ($request->filled('id_card_photo_base64')) {
+            $base64 = (string) $request->input('id_card_photo_base64');
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
+                $base64 = substr($base64, strpos($base64, ',') + 1);
+                $type = strtolower($type[1]);
+                if (! in_array($type, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                    $type = 'jpg';
+                }
+                $data = base64_decode($base64);
+                if ($data !== false) {
+                    $filename = 'employee-id-cards/'.uniqid('idcard_', true).'.'.$type;
+                    \Storage::disk('public')->put($filename, $data);
+
+                    return $filename;
+                }
+            }
         }
         if (! $request->hasFile('id_card_photo')) {
             return null;
@@ -543,11 +574,17 @@ class EmployeeController extends Controller implements HasMiddleware
             });
     }
 
-    private function hasIdCardColumns(): bool
+    private function hasIdCardPhotoColumn(): bool
     {
-        return \Illuminate\Support\Facades\Cache::rememberForever('employees_id_card_columns', function () {
-            return Schema::hasColumn('employees', 'id_card_photo_path')
-                && Schema::hasColumn('employees', 'id_card_expires_at');
+        return \Illuminate\Support\Facades\Cache::rememberForever('employees_id_card_photo_column', function () {
+            return Schema::hasColumn('employees', 'id_card_photo_path');
+        });
+    }
+
+    private function hasIdCardExpiresColumn(): bool
+    {
+        return \Illuminate\Support\Facades\Cache::rememberForever('employees_id_card_expires_column', function () {
+            return Schema::hasColumn('employees', 'id_card_expires_at');
         });
     }
 }

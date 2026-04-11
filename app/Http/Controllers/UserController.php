@@ -235,6 +235,14 @@ class UserController extends Controller implements HasMiddleware
         }
         $user->update($updateData);
 
+        \App\Models\Employee::query()
+            ->where('user_id', $user->id)
+            ->update([
+                'full_name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ]);
+
         if ($request->filled('password')) {
             $request->validate([
                 'password' => ['confirmed', Rules\Password::defaults()],

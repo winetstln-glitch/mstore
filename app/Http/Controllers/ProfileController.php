@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules;
 
@@ -72,7 +73,7 @@ class ProfileController extends Controller implements HasMiddleware
      */
     public function update(Request $request)
     {
-        $user = Auth::user();
+        $user = Auth::user()->load('employee');
 
         // Check if we have a base64 avatar
         $hasBase64 = $request->filled('avatar_base64');
@@ -137,6 +138,20 @@ class ProfileController extends Controller implements HasMiddleware
         }
 
         $user->update($validated);
+
+        $employee = $user->employee;
+        if ($employee) {
+            $employeeUpdate = [
+                'full_name' => $user->name,
+                'email' => $user->email,
+            ];
+
+            if (array_key_exists('avatar', $validated) && Schema::hasColumn('employees', 'id_card_photo_path')) {
+                $employeeUpdate['id_card_photo_path'] = $user->avatar;
+            }
+
+            $employee->update($employeeUpdate);
+        }
 
         return back()->with('success', __('Profile updated successfully.'));
     }

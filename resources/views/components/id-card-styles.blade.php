@@ -195,6 +195,7 @@
     border: 1.5mm solid #ffffff;
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .photo-image {
@@ -490,6 +491,25 @@
     
     .employee-id-toolbar, nav, footer, .btn, .no-print, .dropdown, .dropdown-menu {
         display: none !important;
+    }
+
+    body * {
+        visibility: hidden !important;
+    }
+
+    .employee-print-sheet,
+    .employee-print-sheet *,
+    .id-card-sheet,
+    .id-card-sheet * {
+        visibility: visible !important;
+    }
+
+    .employee-print-sheet,
+    .id-card-sheet {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
     }
     
     .employee-print-sheet.is-preview {
