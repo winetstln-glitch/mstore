@@ -110,76 +110,69 @@
                         </div>
                     </div>
 
-                    {{-- Divider (desktop only) --}}
-                    <div class="d-none d-lg-block vr text-muted opacity-25"></div>
-
-                    {{-- Mode Toggle --}}
-                    <div class="filter-group">
-                        <div class="filter-label">Tampilan</div>
-                        <div class="btn-group btn-group-sm shadow-sm" role="group">
-                            <a href="{{ route('schedules.index', array_filter([
-                                'month' => $month, 'year' => $year, 'mode' => 'weekly',
-                                'group' => $selectedGroup ?? null, 'shift' => $selectedShift ?? null,
-                            ])) }}" 
-                               class="btn btn-outline-primary {{ $currentMode === 'weekly' ? 'active' : '' }}">
-                                <i class="fa-solid fa-calendar-week me-1"></i>Mingguan
-                            </a>
-                            <a href="{{ route('schedules.index', array_filter([
-                                'month' => $month, 'year' => $year, 'mode' => 'daily',
-                                'group' => $selectedGroup ?? null, 'shift' => $selectedShift ?? null,
-                                'start_date' => isset($dailyRangeStart) ? $dailyRangeStart->format('Y-m-d') : null,
-                                'end_date' => isset($dailyRangeEnd) ? $dailyRangeEnd->format('Y-m-d') : null,
-                            ])) }}" 
-                               class="btn btn-outline-primary {{ $currentMode === 'daily' ? 'active' : '' }}">
-                                <i class="fa-solid fa-calendar-day me-1"></i>Harian
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Divider (desktop only) --}}
-                    <div class="d-none d-lg-block vr text-muted opacity-25"></div>
-
-                    {{-- Export Buttons --}}
-                    <div class="filter-group">
-                        <div class="filter-label">Export</div>
-                        <div class="btn-group btn-group-sm shadow-sm" role="group">
-                            <a href="{{ route('schedules.export.pdf', $exportParams) }}" 
-                               class="btn btn-outline-danger" title="Export PDF">
-                                <i class="fa-regular fa-file-pdf me-1"></i><span class="d-none d-sm-inline">PDF</span>
-                            </a>
-                            <a href="{{ route('schedules.export.excel', $exportParams) }}" 
-                               class="btn btn-outline-success" title="Export Excel">
-                                <i class="fa-regular fa-file-excel me-1"></i><span class="d-none d-sm-inline">Excel</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Divider (desktop only) --}}
-                    @if($canManage)
-                        <div class="d-none d-lg-block vr text-muted opacity-25"></div>
-
-                        {{-- Admin Actions --}}
-                        <div class="filter-group">
-                            <div class="filter-label">Aksi</div>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary shadow-sm" 
-                                        data-bs-toggle="modal" data-bs-target="#importScheduleModal" title="Import Excel">
-                                    <i class="fa-solid fa-upload me-1"></i><span class="d-none d-md-inline">Import</span>
-                                </button>
-                                @if($currentMode === 'daily')
-                                    <button type="button" class="btn btn-dark shadow-sm" 
-                                            data-bs-toggle="modal" data-bs-target="#autoDailyScheduleModal" title="Auto Generate Harian">
-                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i><span class="d-none d-md-inline">Generate</span>
-                                    </button>
-                                @else
-                                    <button type="button" class="btn btn-dark shadow-sm" 
-                                            data-bs-toggle="modal" data-bs-target="#autoScheduleModal" title="Auto Generate Mingguan">
-                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i><span class="d-none d-md-inline">Generate</span>
-                                    </button>
-                                @endif
+                    <div class="right-toolbar d-flex gap-2 align-items-end justify-content-end flex-wrap flex-xl-nowrap ms-lg-auto">
+                        {{-- Mode Toggle --}}
+                        <div class="filter-group filter-group-min">
+                            <div class="filter-label">Tampilan</div>
+                            <div class="btn-group btn-group-sm shadow-sm" role="group">
+                                <a href="{{ route('schedules.index', array_filter([
+                                    'month' => $month, 'year' => $year, 'mode' => 'weekly',
+                                    'group' => $selectedGroup ?? null, 'shift' => $selectedShift ?? null,
+                                ])) }}" 
+                                   class="btn btn-outline-primary {{ $currentMode === 'weekly' ? 'active' : '' }}">
+                                    <i class="fa-solid fa-calendar-week me-1"></i>Mingguan
+                                </a>
+                                <a href="{{ route('schedules.index', array_filter([
+                                    'month' => $month, 'year' => $year, 'mode' => 'daily',
+                                    'group' => $selectedGroup ?? null, 'shift' => $selectedShift ?? null,
+                                    'start_date' => isset($dailyRangeStart) ? $dailyRangeStart->format('Y-m-d') : null,
+                                    'end_date' => isset($dailyRangeEnd) ? $dailyRangeEnd->format('Y-m-d') : null,
+                                ])) }}" 
+                                   class="btn btn-outline-primary {{ $currentMode === 'daily' ? 'active' : '' }}">
+                                    <i class="fa-solid fa-calendar-day me-1"></i>Harian
+                                </a>
                             </div>
                         </div>
-                    @endif
+
+                        {{-- Export Buttons --}}
+                        <div class="filter-group filter-group-min">
+                            <div class="filter-label">Export</div>
+                            <div class="btn-group btn-group-sm shadow-sm" role="group">
+                                <a href="{{ route('schedules.export.pdf', $exportParams) }}" 
+                                   class="btn btn-outline-danger" title="Export PDF">
+                                    <i class="fa-regular fa-file-pdf me-1"></i><span class="d-none d-sm-inline">PDF</span>
+                                </a>
+                                <a href="{{ route('schedules.export.excel', $exportParams) }}" 
+                                   class="btn btn-outline-success" title="Export Excel">
+                                    <i class="fa-regular fa-file-excel me-1"></i><span class="d-none d-sm-inline">Excel</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Admin Actions --}}
+                        @if($canManage)
+                            <div class="filter-group filter-group-min">
+                                <div class="filter-label">Aksi</div>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary shadow-sm" 
+                                            data-bs-toggle="modal" data-bs-target="#importScheduleModal" title="Import Excel">
+                                        <i class="fa-solid fa-upload me-1"></i><span class="d-none d-md-inline">Import</span>
+                                    </button>
+                                    @if($currentMode === 'daily')
+                                        <button type="button" class="btn btn-dark shadow-sm" 
+                                                data-bs-toggle="modal" data-bs-target="#autoDailyScheduleModal" title="Auto Generate Harian">
+                                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i><span class="d-none d-md-inline">Generate</span>
+                                        </button>
+                                    @else
+                                        <button type="button" class="btn btn-dark shadow-sm" 
+                                                data-bs-toggle="modal" data-bs-target="#autoScheduleModal" title="Auto Generate Mingguan">
+                                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i><span class="d-none d-md-inline">Generate</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -1036,6 +1029,21 @@ thead .schedule-name-col {
 .filter-group-filters { min-width: min(100%, 720px); }
 .schedule-filter-form .form-select { min-width: 0; }
 .schedule-filter-form .btn { white-space: nowrap; }
+
+/* Right toolbar alignment on desktop */
+.right-toolbar { border-left: none; padding-left: 0; }
+@media (min-width: 1200px) {
+    .right-toolbar { border-left: 1px solid var(--bs-border-color); padding-left: 12px; }
+}
+
+/* Minimal style for non-filter boxes on desktop */
+@media (min-width: 992px) {
+    .filter-group-min {
+        background: transparent;
+        border: 0;
+        padding: 0;
+    }
+}
 
 @media (max-width: 575.98px) {
     .filter-group { padding: 0.7rem 0.8rem; }
