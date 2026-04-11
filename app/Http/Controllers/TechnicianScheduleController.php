@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\XLSX\Reader as XLSXReader;
 use OpenSpout\Writer\XLSX\Writer;
 
 class TechnicianScheduleController extends Controller implements HasMiddleware
@@ -28,7 +29,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:schedule.view', only: ['index', 'exportPdf', 'exportExcel']),
-            new Middleware('permission:schedule.manage', only: ['updatePeriod', 'store', 'autoGenerate', 'dailyStore', 'dailyAutoGenerate']),
+            new Middleware('permission:schedule.manage', only: ['updatePeriod', 'store', 'autoGenerate', 'dailyStore', 'dailyAutoGenerate', 'importExcel']),
         ];
     }
 
@@ -41,6 +42,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $year = $request->input('year', now()->year);
         $month = $request->input('month', now()->month);
         $mode = (string) $request->input('mode', 'weekly');
+        $startDateParam = $request->input('start_date');
+        $endDateParam = $request->input('end_date');
+        $selectedGroup = (string) $request->input('group', 'all');
+        $selectedShift = (string) $request->input('shift', 'all'); // piket|backup|off|all
 
         if ($mode === 'daily' && ! Schema::hasTable('technician_daily_schedules')) {
             return redirect()
@@ -104,20 +109,84 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
         $calendarWeeks = [];
         $dailySchedules = collect();
+        $dailyRangeStart = null;
+        $dailyRangeEnd = null;
         if ($mode === 'daily') {
-            $calendarWeeks = $this->buildCalendarWeeks((int) $year, (int) $month);
-            if (! empty($calendarWeeks)) {
-                $rangeStart = $calendarWeeks[0]['days'][0]->copy();
-                $lastWeek = $calendarWeeks[count($calendarWeeks) - 1];
-                $rangeEnd = $lastWeek['days'][6]->copy();
-                $userIds = $technicians->pluck('id')->values();
+            $defaultStart = Carbon::createFromDate((int) $year, (int) $month, 1)->startOfDay();
+            $defaultEnd = Carbon::createFromDate((int) $year, (int) $month, 1)->endOfMonth()->startOfDay();
+            $dailyRangeStart = $defaultStart->copy();
+            $dailyRangeEnd = $defaultEnd->copy();
 
-                $dailySchedules = TechnicianDailySchedule::query()
-                    ->whereIn('user_id', $userIds)
-                    ->whereBetween('date', [$rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d')])
-                    ->get()
-                    ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+            if (! empty($startDateParam) && ! empty($endDateParam)) {
+                try {
+                    $s = Carbon::parse($startDateParam)->startOfDay();
+                    $e = Carbon::parse($endDateParam)->startOfDay();
+                    if ($e->lt($s)) {
+                        [$s, $e] = [$e, $s];
+                    }
+                    $dailyRangeStart = $s;
+                    $dailyRangeEnd = $e;
+                } catch (\Throwable $e) {
+                    // ignore invalid param, fallback to default month
+                }
             }
+
+            $calendarWeeks = [];
+            $rangeStartForWeeks = $dailyRangeStart->copy()->startOfWeek();
+            $rangeEndForWeeks = $dailyRangeEnd->copy()->endOfWeek();
+            for ($date = $rangeStartForWeeks->copy(); $date->lte($rangeEndForWeeks); $date->addWeek()) {
+                $weekStart = $date->copy()->startOfWeek();
+                $daysTmp = [];
+                for ($i = 0; $i < 7; $i++) {
+                    $daysTmp[] = $weekStart->copy()->addDays($i);
+                }
+                $calendarWeeks[] = ['start' => $daysTmp[0], 'end' => $daysTmp[6], 'days' => $daysTmp];
+            }
+
+            $userIds = $technicians->pluck('id')->values();
+            $dailySchedules = TechnicianDailySchedule::query()
+                ->whereIn('user_id', $userIds)
+                ->whereBetween('date', [$dailyRangeStart->format('Y-m-d'), $dailyRangeEnd->format('Y-m-d')])
+                ->get()
+                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+        }
+
+        // Apply group filter
+        if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
+            foreach ($groups as &$grp) {
+                if (($grp['key'] ?? '') !== $selectedGroup) {
+                    $grp['users'] = collect(); // hide
+                }
+            }
+            unset($grp);
+        }
+
+        // Apply shift filter
+        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+            $allowedIds = collect();
+            if ($mode === 'daily') {
+                $allowedIds = $dailySchedules
+                    ->flatMap(fn ($rows) => $rows)
+                    ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
+                    ->pluck('user_id')
+                    ->unique()
+                    ->values();
+            } else {
+                $weekNumbers = collect($weeksData)->pluck('week_number')->values();
+                $ids = collect();
+                foreach ($weekNumbers as $w) {
+                    $weekRows = $schedules->get($w);
+                    if ($weekRows) {
+                        $ids = $ids->merge($weekRows->where('status', $selectedShift)->pluck('user_id'));
+                    }
+                }
+                $allowedIds = $ids->unique()->values();
+            }
+
+            foreach ($groups as &$grp) {
+                $grp['users'] = ($grp['users'] ?? collect())->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+            }
+            unset($grp);
         }
 
         return view('schedules.index', compact(
@@ -131,6 +200,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'weeksData',
             'calendarWeeks',
             'dailySchedules',
+            'dailyRangeStart',
+            'dailyRangeEnd',
+            'selectedGroup',
+            'selectedShift',
             'shift1Start',
             'shift1End',
             'shift2Start',
@@ -205,18 +278,36 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 }
 
                 $rotation = $userIds->values();
+                $lastShift = [];
+                $userIndex = [];
+                foreach ($rotation as $idx => $id) {
+                    $userIndex[$id] = (int) $idx;
+                }
 
                 foreach ($weekNumbers as $wIndex => $weekNumber) {
                     $selectedS1 = collect();
                     $selectedS2 = collect();
 
-                    $pickCandidates = function () use (&$counts, $rotation) {
-                        return $rotation->sortBy(function ($id) use (&$counts) {
-                            return ($counts[$id]['assign'] * 100) + $counts[$id]['s1'] + $counts[$id]['s2'];
+                    $desiredShiftForWeek = function (int $userId, int $weekIndex) use ($userIndex): string {
+                        $idx = $userIndex[$userId] ?? 0;
+
+                        return ((($idx + $weekIndex) % 2) === 0) ? 'piket' : 'backup';
+                    };
+
+                    $pickCandidates = function (string $preferredShift) use (&$counts, $rotation, &$lastShift, $desiredShiftForWeek, $wIndex) {
+                        return $rotation->sortBy(function ($id) use (&$counts, &$lastShift, $preferredShift, $desiredShiftForWeek, $wIndex) {
+                            $repeatPenalty = (($lastShift[$id] ?? null) === $preferredShift) ? 1 : 0;
+                            $desiredPenalty = ($desiredShiftForWeek((int) $id, (int) $wIndex) === $preferredShift) ? 0 : 1;
+
+                            return ($counts[$id]['assign'] * 10000)
+                                + ($desiredPenalty * 1000)
+                                + ($repeatPenalty * 100)
+                                + $counts[$id]['s1']
+                                + $counts[$id]['s2'];
                         })->values();
                     };
 
-                    foreach ($pickCandidates() as $id) {
+                    foreach ($pickCandidates('piket') as $id) {
                         if ($selectedS1->count() >= $shift1Slots) {
                             break;
                         }
@@ -225,7 +316,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                         $counts[$id]['assign']++;
                     }
 
-                    foreach ($pickCandidates() as $id) {
+                    foreach ($pickCandidates('backup') as $id) {
                         if ($selectedS2->count() >= $shift2Slots) {
                             break;
                         }
@@ -243,6 +334,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                             $status = 'piket';
                         } elseif ($selectedS2->contains($id)) {
                             $status = 'backup';
+                        }
+
+                        if ($status !== 'off') {
+                            $lastShift[$id] = $status;
                         }
 
                         TechnicianSchedule::updateOrCreate(
@@ -323,16 +418,26 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     ->delete();
 
                 $plan = $this->generateDailyPlan($userIds->all(), $start->copy(), $end->copy(), $offDays);
+                $now = now();
+                $rows = [];
                 foreach ($plan as $date => $statusesByUserId) {
                     foreach ($statusesByUserId as $userId => $status) {
-                        TechnicianDailySchedule::create([
-                            'user_id' => $userId,
+                        $rows[] = [
+                            'user_id' => (int) $userId,
                             'date' => $date,
                             'status' => $status,
                             'notes' => null,
-                        ]);
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
                 }
+
+                DB::table('technician_daily_schedules')->upsert(
+                    $rows,
+                    ['user_id', 'date'],
+                    ['status', 'notes', 'updated_at']
+                );
             }
         });
 
@@ -357,6 +462,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
             $year = (int) $request->input('year', now()->year);
             $month = (int) $request->input('month', now()->month);
+            $startDateParam = $request->input('start_date');
+            $endDateParam = $request->input('end_date');
 
             $techniciansQuery = $this->scheduleUsersQuery();
             if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
@@ -386,10 +493,38 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ],
             ];
 
-            $calendarWeeks = $this->buildCalendarWeeks($year, $month);
-            $rangeStart = $calendarWeeks[0]['days'][0]->copy();
-            $lastWeek = $calendarWeeks[count($calendarWeeks) - 1];
-            $rangeEnd = $lastWeek['days'][6]->copy();
+            $selectedGroup = (string) $request->input('group', 'all');
+            $selectedShift = (string) $request->input('shift', 'all');
+
+            $defaultStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $defaultEnd = Carbon::createFromDate($year, $month, 1)->endOfMonth()->startOfDay();
+            $rangeStart = $defaultStart->copy();
+            $rangeEnd = $defaultEnd->copy();
+            if (! empty($startDateParam) && ! empty($endDateParam)) {
+                try {
+                    $s = Carbon::parse($startDateParam)->startOfDay();
+                    $e = Carbon::parse($endDateParam)->startOfDay();
+                    if ($e->lt($s)) {
+                        [$s, $e] = [$e, $s];
+                    }
+                    $rangeStart = $s;
+                    $rangeEnd = $e;
+                } catch (\Throwable $e) {
+                    // fallback ke default
+                }
+            }
+
+            $calendarWeeks = [];
+            $rangeStartForWeeks = $rangeStart->copy()->startOfWeek();
+            $rangeEndForWeeks = $rangeEnd->copy()->endOfWeek();
+            for ($date = $rangeStartForWeeks->copy(); $date->lte($rangeEndForWeeks); $date->addWeek()) {
+                $weekStart = $date->copy()->startOfWeek();
+                $daysTmp = [];
+                for ($i = 0; $i < 7; $i++) {
+                    $daysTmp[] = $weekStart->copy()->addDays($i);
+                }
+                $calendarWeeks[] = ['start' => $daysTmp[0], 'end' => $daysTmp[6], 'days' => $daysTmp];
+            }
             $userIds = $technicians->pluck('id')->values();
 
             $dailySchedules = TechnicianDailySchedule::query()
@@ -397,6 +532,27 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->whereBetween('date', [$rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d')])
                 ->get()
                 ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+
+            if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
+                foreach ($groups as &$grp) {
+                    if (($grp['key'] ?? '') !== $selectedGroup) {
+                        $grp['users'] = collect();
+                    }
+                }
+                unset($grp);
+            }
+            if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+                $allowedIds = $dailySchedules
+                    ->flatMap(fn ($rows) => $rows)
+                    ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
+                    ->pluck('user_id')
+                    ->unique()
+                    ->values();
+                foreach ($groups as &$grp) {
+                    $grp['users'] = ($grp['users'] ?? collect())->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+                }
+                unset($grp);
+            }
 
             $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
             $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
@@ -481,30 +637,130 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     {
         $this->ensureShiftSettings();
         $this->ensureScheduleUsers();
-        [$technicians, $weeks, $year, $month, $shift1Start, $shift1End, $shift2Start, $shift2End] = $this->buildScheduleExportData($request);
+        $this->ensureAutoScheduleSettings();
+        $this->ensureDailyScheduleSettings();
 
-        return response()->streamDownload(function () use ($technicians, $weeks, $shift1Start, $shift1End, $shift2Start, $shift2End) {
+        $mode = (string) $request->input('mode', 'weekly');
+        $year = (int) $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+
+        $techniciansQuery = $this->scheduleUsersQuery();
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+            $techniciansQuery->where('id', Auth::id());
+        }
+        $technicians = $techniciansQuery->orderBy('name')->get();
+        $this->applyScheduleDisplayNames($technicians);
+        $this->applyScheduleMeta($technicians);
+        $technicians = $this->deduplicateScheduleUsers($technicians);
+
+        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
+        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
+        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
+        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+
+        if ($mode === 'daily') {
+            if (! Schema::hasTable('technician_daily_schedules')) {
+                return redirect()->back()->with('error', 'Mode Harian membutuhkan migrasi database. Jalankan: php artisan migrate');
+            }
+
+            $start = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->startOfDay();
+            $startDateParam = $request->input('start_date');
+            $endDateParam = $request->input('end_date');
+            if (! empty($startDateParam) && ! empty($endDateParam)) {
+                try {
+                    $s = Carbon::parse($startDateParam)->startOfDay();
+                    $e = Carbon::parse($endDateParam)->startOfDay();
+                    if ($e->lt($s)) {
+                        [$s, $e] = [$e, $s];
+                    }
+                    $start = $s;
+                    $end = $e;
+                } catch (\Throwable $e) {
+                }
+            }
+            $dates = [];
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dates[] = $d->copy();
+            }
+
+            $userIds = $technicians->pluck('id')->values();
+            $rows = TechnicianDailySchedule::query()
+                ->whereIn('user_id', $userIds)
+                ->whereBetween('date', [$start->format('Y-m-d'), $end->format('Y-m-d')])
+                ->get()
+                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+
+            return response()->streamDownload(function () use ($technicians, $dates, $rows) {
+                $writer = new Writer;
+                $writer->openToFile('php://output');
+
+                $header = ['user_id', 'nama', 'group', 'department', 'position'];
+                foreach ($dates as $date) {
+                    $header[] = $date->format('Y-m-d');
+                }
+                $writer->addRow(Row::fromValues($header));
+
+                foreach ($technicians as $tech) {
+                    $row = [
+                        $tech->id,
+                        $tech->schedule_name ?? $tech->name,
+                        $tech->schedule_group ?? '',
+                        $tech->schedule_department ?? '',
+                        $tech->schedule_position ?? '',
+                    ];
+
+                    foreach ($dates as $date) {
+                        $key = $date->format('Y-m-d');
+                        $dayRows = $rows->get($key);
+                        $r = $dayRows ? $dayRows->firstWhere('user_id', $tech->id) : null;
+                        $status = $r?->status ?? 'off';
+                        $row[] = match ($status) {
+                            'piket' => 'S1',
+                            'backup' => 'S2',
+                            default => 'OFF',
+                        };
+                    }
+
+                    $writer->addRow(Row::fromValues($row));
+                }
+
+                $writer->close();
+            }, 'jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.xlsx');
+        }
+
+        $periods = SchedulePeriod::where('year', $year)->get()->keyBy('week_number');
+        $weeksData = $this->buildWeeksData($year, $month, $periods);
+        $weekNumbers = collect($weeksData)->pluck('week_number')->values();
+        $schedules = TechnicianSchedule::where('year', $year)->get()->groupBy('week_number');
+
+        return response()->streamDownload(function () use ($technicians, $weekNumbers, $schedules, $shift1Start, $shift1End, $shift2Start, $shift2End) {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
-            $header = ['Week', 'Date Range'];
-            foreach ($technicians as $tech) {
-                $header[] = $tech->schedule_name ?? $tech->name;
+            $header = ['user_id', 'nama', 'group', 'department', 'position'];
+            foreach ($weekNumbers as $weekNumber) {
+                $header[] = 'W'.$weekNumber;
             }
             $writer->addRow(Row::fromValues($header));
 
-            foreach ($weeks as $week) {
+            foreach ($technicians as $tech) {
                 $row = [
-                    'Week '.$week['week_number'],
-                    $week['range'],
+                    $tech->id,
+                    $tech->schedule_name ?? $tech->name,
+                    $tech->schedule_group ?? '',
+                    $tech->schedule_department ?? '',
+                    $tech->schedule_position ?? '',
                 ];
 
-                foreach ($technicians as $tech) {
-                    $status = $week['statuses'][$tech->id] ?? 'off';
+                foreach ($weekNumbers as $weekNumber) {
+                    $weekRows = $schedules->get($weekNumber);
+                    $schedule = $weekRows ? $weekRows->firstWhere('user_id', $tech->id) : null;
+                    $status = $schedule?->status ?? 'off';
                     $row[] = match ($status) {
-                        'piket' => "Shift 1 ({$shift1Start}-{$shift1End})",
-                        'backup' => "Shift 2 ({$shift2Start}-{$shift2End})",
-                        default => 'Off',
+                        'piket' => "S1 ({$shift1Start}-{$shift1End})",
+                        'backup' => "S2 ({$shift2Start}-{$shift2End})",
+                        default => 'OFF',
                     };
                 }
 
@@ -513,6 +769,120 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
             $writer->close();
         }, 'jadwal-shift-'.sprintf('%04d-%02d', $year, $month).'.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
+            'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'month' => ['required', 'integer', 'min:1', 'max:12'],
+            'mode' => ['required', 'in:weekly,daily'],
+        ]);
+
+        $year = (int) $request->input('year');
+        $month = (int) $request->input('month');
+        $mode = (string) $request->input('mode');
+
+        if ($mode === 'daily' && ! Schema::hasTable('technician_daily_schedules')) {
+            return redirect()->back()->with('error', 'Mode Harian membutuhkan migrasi database. Jalankan: php artisan migrate');
+        }
+
+        $reader = new XLSXReader;
+        $reader->open($request->file('file')->getRealPath());
+
+        $header = null;
+        $imported = 0;
+        $skipped = 0;
+
+        $statusFromCell = function ($value): string {
+            $v = strtoupper(trim((string) $value));
+            if ($v === '' || $v === '-' || $v === '0' || $v === 'OFF') {
+                return 'off';
+            }
+            if (in_array($v, ['S1', 'SHIFT1', 'SHIFT 1', '1', 'PIKET'], true)) {
+                return 'piket';
+            }
+            if (in_array($v, ['S2', 'SHIFT2', 'SHIFT 2', '2', 'BACKUP'], true)) {
+                return 'backup';
+            }
+            if (str_contains($v, 'S1')) {
+                return 'piket';
+            }
+            if (str_contains($v, 'S2')) {
+                return 'backup';
+            }
+
+            return 'off';
+        };
+
+        try {
+            DB::transaction(function () use ($reader, &$header, $mode, $year, $month, &$imported, &$skipped, $statusFromCell) {
+                foreach ($reader->getSheetIterator() as $sheet) {
+                    foreach ($sheet->getRowIterator() as $row) {
+                        $values = array_map(fn ($c) => $c->getValue(), $row->getCells());
+
+                        if ($header === null) {
+                            $header = array_map(fn ($v) => strtolower(trim((string) $v)), $values);
+
+                            continue;
+                        }
+
+                        if (count(array_filter($values, fn ($v) => trim((string) $v) !== '')) === 0) {
+                            continue;
+                        }
+
+                        $values = array_pad(array_slice($values, 0, count($header)), count($header), null);
+                        $rowMap = array_combine($header, $values);
+                        $userId = (int) ($rowMap['user_id'] ?? 0);
+                        if ($userId < 1 || ! User::query()->whereKey($userId)->exists()) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        if ($mode === 'daily') {
+                            foreach ($rowMap as $key => $val) {
+                                if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $key)) {
+                                    continue;
+                                }
+                                $date = Carbon::parse($key);
+                                if ($date->year !== $year || $date->month !== $month) {
+                                    continue;
+                                }
+                                TechnicianDailySchedule::updateOrCreate(
+                                    ['user_id' => $userId, 'date' => $date->format('Y-m-d')],
+                                    ['status' => $statusFromCell($val), 'notes' => null]
+                                );
+                                $imported++;
+                            }
+                        } else {
+                            foreach ($rowMap as $key => $val) {
+                                $k = strtoupper(trim((string) $key));
+                                if (! preg_match('/^W(\d{1,2})$/', $k, $m)) {
+                                    continue;
+                                }
+                                $weekNumber = (int) $m[1];
+                                TechnicianSchedule::updateOrCreate(
+                                    ['user_id' => $userId, 'week_number' => $weekNumber, 'year' => $year],
+                                    ['status' => $statusFromCell($val), 'notes' => null]
+                                );
+                                $imported++;
+                            }
+                        }
+                    }
+                }
+            });
+        } finally {
+            $reader->close();
+        }
+
+        return redirect()->route('schedules.index', ['year' => $year, 'month' => $month, 'mode' => $mode])
+            ->with('success', "Import Excel selesai. Imported: {$imported}, Skipped: {$skipped}");
     }
 
     public function updatePeriod(Request $request)
@@ -699,15 +1069,9 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         }
 
         $remainingOff = [];
-        $worked = [];
-        $s1 = [];
-        $s2 = [];
         $lastOff = [];
         foreach ($userIds as $id) {
             $remainingOff[$id] = $offDaysPerUser;
-            $worked[$id] = 0;
-            $s1[$id] = 0;
-            $s2[$id] = 0;
             $lastOff[$id] = null;
         }
 
@@ -715,6 +1079,17 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $daysCount = count($days);
         $baseOffPerDay = intdiv($totalOffSlots, $daysCount);
         $extraOffDays = $totalOffSlots % $daysCount;
+
+        $weekStart = $start->copy()->startOfWeek();
+        $weekIndexByDate = [];
+        foreach ($days as $day) {
+            $weekIndexByDate[$day->format('Y-m-d')] = (int) floor($weekStart->diffInDays($day->copy()->startOfWeek()) / 7);
+        }
+
+        $userIndex = [];
+        foreach ($userIds as $idx => $id) {
+            $userIndex[$id] = $idx;
+        }
 
         $plan = [];
         foreach ($days as $i => $day) {
@@ -725,7 +1100,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             }
 
             $candidates = array_values(array_filter($userIds, fn ($id) => $remainingOff[$id] > 0));
-            usort($candidates, function ($a, $b) use ($remainingOff, $worked, $lastOff, $day) {
+            usort($candidates, function ($a, $b) use ($remainingOff, $lastOff, $day) {
                 $yesterday = $day->copy()->subDay()->format('Y-m-d');
                 $aConsecutive = $lastOff[$a] === $yesterday ? 1 : 0;
                 $bConsecutive = $lastOff[$b] === $yesterday ? 1 : 0;
@@ -734,9 +1109,6 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 }
                 if ($remainingOff[$a] !== $remainingOff[$b]) {
                     return $remainingOff[$b] <=> $remainingOff[$a];
-                }
-                if ($worked[$a] !== $worked[$b]) {
-                    return $worked[$b] <=> $worked[$a];
                 }
 
                 return $a <=> $b;
@@ -750,26 +1122,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 $lastOff[$id] = $dateKey;
             }
 
-            $workUsers = array_values(array_filter($userIds, fn ($id) => ! isset($offSet[$id])));
-            $workCount = count($workUsers);
-            $shift1Count = (int) ceil($workCount / 2);
-
-            usort($workUsers, function ($a, $b) use ($s1, $worked, $s2) {
-                if ($s1[$a] !== $s1[$b]) {
-                    return $s1[$a] <=> $s1[$b];
-                }
-                if ($worked[$a] !== $worked[$b]) {
-                    return $worked[$a] <=> $worked[$b];
-                }
-                if ($s2[$a] !== $s2[$b]) {
-                    return $s2[$a] <=> $s2[$b];
-                }
-
-                return $a <=> $b;
-            });
-
-            $shift1Users = array_slice($workUsers, 0, $shift1Count);
-            $shift1Set = array_flip($shift1Users);
+            $weekIndex = $weekIndexByDate[$dateKey] ?? 0;
 
             $statuses = [];
             foreach ($userIds as $id) {
@@ -779,14 +1132,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                $worked[$id]++;
-                if (isset($shift1Set[$id])) {
-                    $statuses[$id] = 'piket';
-                    $s1[$id]++;
-                } else {
-                    $statuses[$id] = 'backup';
-                    $s2[$id]++;
-                }
+                $idx = $userIndex[$id] ?? 0;
+                $statuses[$id] = ((($idx + $weekIndex) % 2) === 0) ? 'piket' : 'backup';
             }
 
             $plan[$dateKey] = $statuses;
