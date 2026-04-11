@@ -5,9 +5,6 @@
     'scale' => 4
 ])
 
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     initBarcodes();
@@ -54,6 +51,10 @@ async function downloadElement(element, fileName) {
     await waitForAssets(element);
     
     try {
+        if (typeof html2canvas === 'undefined') {
+            alert('Fitur download image membutuhkan assets front-end. Jalankan: npm install && npm run build');
+            return;
+        }
         const canvas = await html2canvas(element, {
             scale: {{ $scale }},
             useCORS: true,

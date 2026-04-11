@@ -60,8 +60,6 @@
 
 @push('scripts')
 <x-id-card-scripts />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script>
 async function downloadPair(id, name) {
     const pair = document.getElementById(`card-pair-${id}`);
@@ -106,7 +104,7 @@ async function downloadAllImages() {
 
 async function downloadAllZip() {
     if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
-        alert('ZIP dependencies failed to load.');
+        alert('Fitur ZIP membutuhkan assets front-end. Jalankan: npm install && npm run build');
         return;
     }
     const btn = document.getElementById('downloadZipBtn');
@@ -124,6 +122,18 @@ async function downloadAllZip() {
         const name = nameText.trim().toLowerCase().replace(/\s+/g, '-');
         const front = pair.querySelector('.id-card-front');
         const back = pair.querySelector('.id-card-back');
+
+        const externalImgs = [...pair.querySelectorAll('img')].filter(img => {
+            try {
+                const u = new URL(img.src, window.location.href);
+                return u.origin !== window.location.origin;
+            } catch (_) {
+                return false;
+            }
+        });
+        if (externalImgs.length > 0) {
+            console.warn('Ada gambar eksternal yang dapat menyebabkan kegagalan capture karena CORS:', externalImgs.map(i => i.src));
+        }
 
         if (front) {
             await waitForAssets(front);
