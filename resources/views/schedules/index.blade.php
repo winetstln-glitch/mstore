@@ -52,7 +52,7 @@
                                     <input type="hidden" name="end_date" value="{{ $dailyRangeEnd->format('Y-m-d') }}">
                                 @endif
 
-                                <div class="row g-2 align-items-end">
+                                <div class="row g-1 align-items-end">
                                     <div class="col-6 col-md-3 col-xl-2">
                                         <label class="form-label small text-muted mb-1">Bulan</label>
                                         <select name="month" class="form-select form-select-sm shadow-sm">
@@ -82,17 +82,6 @@
                                             <option value="lainnya" {{ $currentGroup === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
                                         </select>
                                     </div>
-
-                                    <div class="col-12 col-md-3 col-xl-2">
-                                        <label class="form-label small text-muted mb-1">Shift</label>
-                                        <select name="shift" class="form-select form-select-sm shadow-sm">
-                                            <option value="all" {{ $currentShift === 'all' ? 'selected' : '' }}>Semua Shift</option>
-                                            <option value="piket" {{ $currentShift === 'piket' ? 'selected' : '' }}>S1</option>
-                                            <option value="backup" {{ $currentShift === 'backup' ? 'selected' : '' }}>S2</option>
-                                            <option value="off" {{ $currentShift === 'off' ? 'selected' : '' }}>OFF</option>
-                                        </select>
-                                    </div>
-
                                     <div class="col-12 col-xl-auto d-grid">
                                         <button type="submit" class="btn btn-primary btn-sm">
                                             <i class="fa-solid fa-filter me-1"></i>Terapkan
@@ -708,7 +697,7 @@ function editPeriod(year, week, start, end) {
    ======================================== */
 .schedule-card {
     border-radius: 0.75rem;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .date-range-filter {
@@ -721,11 +710,15 @@ function editPeriod(year, week, start, end) {
    GROUP SECTIONS (DAILY MODE)
    ======================================== */
 .schedule-group-section {
-    border-bottom: 2px solid var(--bs-border-color);
+    margin: 0.75rem 0.75rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    overflow: visible;
+    background: var(--bs-body-bg);
 }
 
 .schedule-group-section:last-child {
-    border-bottom: none;
+    margin-bottom: 0.75rem;
 }
 
 .schedule-group-header {
@@ -758,6 +751,10 @@ function editPeriod(year, week, start, end) {
     background: var(--bs-tertiary-bg);
     padding: 0.6rem 1.25rem;
     border-bottom: 2px solid var(--bs-border-color);
+}
+
+tbody tr.group-row:not(:first-child) td {
+    border-top: 10px solid var(--bs-body-bg);
 }
 
 /* ========================================
@@ -947,6 +944,7 @@ thead .schedule-name-col {
 .schedule-table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
 }
 
 .schedule-month-table {
@@ -1026,7 +1024,7 @@ thead .schedule-name-col {
 
 .filter-group .btn-group { width: auto; }
 
-.filter-group-filters { min-width: min(100%, 720px); }
+.filter-group-filters { min-width: min(100%, 535px); }
 .schedule-filter-form .form-select { min-width: 0; }
 .schedule-filter-form .btn { white-space: nowrap; }
 
