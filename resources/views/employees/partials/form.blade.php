@@ -23,7 +23,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small fw-bold">Tgl Lahir *</label>
-                        <input type="date" name="date_of_birth" class="form-control form-control-sm" value="{{ old('date_of_birth', isset($employee?->date_of_birth) ? $employee->date_of_birth->format('Y-m-d') : '') }}" required>
+                        <input type="date" name="date_of_birth" class="form-control form-control-sm" value="{{ old('date_of_birth', isset($employee?->date_of_birth) ? $employee?->date_of_birth->format('Y-m-d') : '') }}" required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small fw-bold">Gender *</label>
@@ -48,13 +48,13 @@
                 <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-key me-2"></i>Akun Login (User)</h6>
                 
                 <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="create_user_account" id="create_user_account" value="1" {{ old('create_user_account', $employee->user_id ? '1' : '') ? 'checked' : '' }}>
+                    <input class="form-check-input" type="checkbox" name="create_user_account" id="create_user_account" value="1" {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'checked' : '' }}>
                     <label class="form-check-label fw-bold small" for="create_user_account">
-                        {{ $employee->user_id ? 'Update / Aktifkan Akun' : 'Buat Akun Login Baru' }}
+                        {{ $employee?->user_id ? 'Update / Aktifkan Akun' : 'Buat Akun Login Baru' }}
                     </label>
                 </div>
 
-                <div id="user_account_fields" style="display: {{ old('create_user_account', $employee->user_id ? '1' : '') ? 'block' : 'none' }};">
+                <div id="user_account_fields" style="display: {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'block' : 'none' }};">
                     <div class="row g-2">
                         <div class="col-12">
                             <label class="form-label small fw-bold">Username *</label>
@@ -62,7 +62,7 @@
                             @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Password {{ $employee->user_id ? '(kosongkan jika tidak ganti)' : '*' }}</label>
+                            <label class="form-label small fw-bold">Password {{ $employee?->user_id ? '(kosongkan jika tidak ganti)' : '*' }}</label>
                             <input type="password" name="password" class="form-control form-control-sm @error('password') is-invalid @enderror">
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -82,7 +82,7 @@
                             <select name="user_id" id="user_id" class="form-select form-select-sm">
                                 <option value="">-- Cari Akun User --</option>
                                 @foreach(($users ?? []) as $u)
-                                    <option value="{{ $u->id }}" data-role-label="{{ $u->role?->label ?? $u->role?->name }}" data-role-name="{{ $u->role?->name }}" {{ (string) old('user_id', $employee->user_id ?? '') === (string) $u->id ? 'selected' : '' }}>
+                                    <option value="{{ $u->id }}" data-role-label="{{ $u->role?->label ?? $u->role?->name }}" data-role-name="{{ $u->role?->name }}" {{ (string) old('user_id', $employee?->user_id ?? '') === (string) $u->id ? 'selected' : '' }}>
                                         {{ $u->name }} ({{ $u->username }})
                                     </option>
                                 @endforeach
@@ -90,7 +90,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="no_account_msg" class="text-muted small italic" style="display: {{ old('create_user_account', $employee->user_id ? '1' : '') ? 'none' : 'block' }};">
+                <div id="no_account_msg" class="text-muted small italic" style="display: {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'none' : 'block' }};">
                     Karyawan ini tidak memiliki akses login ke sistem.
                 </div>
             </div>
@@ -126,7 +126,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small fw-bold">Tgl Masuk *</label>
-                        <input type="date" name="join_date" class="form-control form-control-sm" value="{{ old('join_date', isset($employee?->join_date) ? $employee->join_date->format('Y-m-d') : '') }}" required>
+                        <input type="date" name="join_date" class="form-control form-control-sm" value="{{ old('join_date', isset($employee?->join_date) ? $employee?->join_date->format('Y-m-d') : '') }}" required>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small fw-bold">Status *</label>
@@ -164,7 +164,7 @@
                         <input type="hidden" name="id_card_photo_base64" id="employee_id_card_photo_base64">
                         @if(!empty($employee?->id_card_photo_path))
                             <div class="mt-2">
-                                <img id="employeePhotoPreview" src="{{ asset('storage/'.$employee->id_card_photo_path) }}" class="img-thumbnail" style="height: 70px;">
+                                <img id="employeePhotoPreview" src="{{ asset('storage/'.$employee?->id_card_photo_path) }}" class="img-thumbnail" style="height: 70px;">
                             </div>
                         @else
                             <div class="mt-2 d-none">
@@ -174,7 +174,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Expired ID Card</label>
-                        <input type="date" name="id_card_expires_at" class="form-control form-control-sm" value="{{ old('id_card_expires_at', isset($employee?->id_card_expires_at) ? $employee->id_card_expires_at->format('Y-m-d') : '') }}">
+                        <input type="date" name="id_card_expires_at" class="form-control form-control-sm" value="{{ old('id_card_expires_at', isset($employee?->id_card_expires_at) ? $employee?->id_card_expires_at->format('Y-m-d') : '') }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Dokumen (PDF/DOC)</label>

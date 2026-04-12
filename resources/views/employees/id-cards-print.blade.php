@@ -25,6 +25,44 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm mb-3 no-print">
+        <div class="card-body py-2">
+            <form action="{{ route('employees.print.cards') }}" method="GET" class="row g-2 align-items-end">
+                @foreach((array) request()->query('selected_ids', []) as $selectedId)
+                    <input type="hidden" name="selected_ids[]" value="{{ (int) $selectedId }}">
+                @endforeach
+
+                <div class="col-12 col-md-5 col-lg-4">
+                    <label class="form-label mb-1 small text-muted fw-semibold">Filter Jabatan</label>
+                    <select name="position" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Semua Jabatan</option>
+                        @foreach(($positions ?? collect()) as $pos)
+                            <option value="{{ $pos }}" {{ ($selectedPosition ?? '') === $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-auto d-grid">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-filter me-1"></i>Terapkan
+                    </button>
+                </div>
+
+                <div class="col-12 col-md-auto d-grid">
+                    <a href="{{ route('employees.print.cards', array_filter([
+                            'selected_ids' => request()->query('selected_ids'),
+                        ])) }}" class="btn btn-light btn-sm">
+                        Reset
+                    </a>
+                </div>
+
+                <div class="col-12 col-md-auto ms-md-auto">
+                    <span class="badge bg-secondary">{{ count($cards ?? []) }} kartu</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="id-card-sheet">
         @forelse($cards as $row)
             @php
@@ -61,6 +99,7 @@
 @push('scripts')
 <x-id-card-scripts />
 <script>
+const positionFilter = @json($selectedPosition ?? '');
 async function downloadPair(id, name) {
     const pair = document.getElementById(`card-pair-${id}`);
     if (!pair) return;
@@ -153,7 +192,8 @@ async function downloadAllZip() {
     }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
-    saveAs(zipBlob, 'ID-Cards.zip');
+    const suffix = positionFilter ? `_${positionFilter.trim().toLowerCase().replace(/\\s+/g, '-')}` : '';
+    saveAs(zipBlob, `ID-Cards${suffix}.zip`);
     btn.disabled = false;
     btn.innerHTML = original;
 }

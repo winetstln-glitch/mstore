@@ -248,8 +248,21 @@ class EmployeeController extends Controller implements HasMiddleware
             ->unique()
             ->values();
 
+        $selectedPosition = trim((string) $request->query('position', ''));
+        $positions = Employee::query()
+            ->select('position')
+            ->whereNotNull('position')
+            ->where('position', '!=', '')
+            ->distinct()
+            ->orderBy('position')
+            ->pluck('position');
+
         $employees = $selectedIds->isNotEmpty()
-            ? Employee::query()->whereIn('id', $selectedIds)->orderBy('full_name')->get()
+            ? Employee::query()
+                ->whereIn('id', $selectedIds)
+                ->when($selectedPosition !== '', fn ($q) => $q->where('position', $selectedPosition))
+                ->orderBy('full_name')
+                ->get()
             : $this->filteredEmployees($request)->orderBy('full_name')->get();
 
         $cards = $employees->map(function (Employee $employee) {
@@ -267,7 +280,7 @@ class EmployeeController extends Controller implements HasMiddleware
             ];
         });
 
-        return view('employees.id-cards-print', compact('cards'));
+        return view('employees.id-cards-print', compact('cards', 'positions', 'selectedPosition'));
     }
 
     public function exportCsv(Request $request)
@@ -554,6 +567,7 @@ class EmployeeController extends Controller implements HasMiddleware
         $search = trim((string) $request->query('search', ''));
         $department = trim((string) $request->query('department', ''));
         $status = trim((string) $request->query('status', ''));
+        $position = trim((string) $request->query('position', ''));
 
         return Employee::query()
             ->when($search !== '', function ($query) use ($search) {
@@ -571,6 +585,9 @@ class EmployeeController extends Controller implements HasMiddleware
             })
             ->when($status !== '', function ($query) use ($status) {
                 $query->where('employment_status', $status);
+            })
+            ->when($position !== '', function ($query) use ($position) {
+                $query->where('position', $position);
             });
     }
 
