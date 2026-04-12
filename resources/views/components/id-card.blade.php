@@ -104,10 +104,6 @@
                 <div class="back-contact-value">{{ $storeAddress !== '' ? $storeAddress : '-' }}</div>
             </div>
             <div class="back-contact-item">
-                <div class="back-contact-label">Telepon</div>
-                <div class="back-contact-value">{{ $storePhone !== '' ? $storePhone : '-' }}</div>
-            </div>
-            <div class="back-contact-item">
                 <div class="back-contact-label">WhatsApp</div>
                 <div class="back-contact-value">{{ $recoveryContact }}</div>
             </div>

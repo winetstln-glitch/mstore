@@ -10,21 +10,46 @@ document.addEventListener('DOMContentLoaded', function () {
     initBarcodes();
 });
 
+// Jalankan juga segera jika JsBarcode sudah tersedia (antisipasi Vite loading)
+if (typeof JsBarcode !== 'undefined') {
+    initBarcodes();
+} else {
+    // Tunggu sebentar jika masih loading
+    let checkJsBarcode = setInterval(() => {
+        if (typeof JsBarcode !== 'undefined') {
+            initBarcodes();
+            clearInterval(checkJsBarcode);
+        }
+    }, 500);
+    // Hentikan setelah 5 detik
+    setTimeout(() => clearInterval(checkJsBarcode), 5000);
+}
+
 function initBarcodes() {
     if (typeof JsBarcode === 'undefined') return;
     
-    document.querySelectorAll('.barcode-svg').forEach((el) => {
+    const elements = document.querySelectorAll('.barcode-svg');
+    if (elements.length === 0) return;
+
+    elements.forEach((el) => {
         const code = el.dataset.code || '';
         if (!code) return;
+        
+        // Reset SVG content if it already has something
+        el.innerHTML = '';
 
-        JsBarcode(el, code, {
-            format: 'CODE128',
-            lineColor: '{{ $barcodeColor }}',
-            width: {{ $barcodeWidth }},
-            height: {{ $barcodeHeight }},
-            displayValue: false,
-            margin: 0,
-        });
+        try {
+            JsBarcode(el, code, {
+                format: 'CODE128',
+                lineColor: '{{ $barcodeColor }}',
+                width: {{ $barcodeWidth }},
+                height: {{ $barcodeHeight }},
+                displayValue: false,
+                margin: 0,
+            });
+        } catch (e) {
+            console.error('Barcode generation failed for code:', code, e);
+        }
     });
 }
 

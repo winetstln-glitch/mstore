@@ -30,6 +30,8 @@
     <link href="{{ app()->environment('production') ? secure_asset('css/app-android.css') : asset('css/app-android.css') }}" rel="stylesheet">
     <link href="{{ app()->environment('production') ? secure_asset('css/mstore-components.css') : asset('css/mstore-components.css') }}" rel="stylesheet">
 
+    @vite(['resources/js/app.js'])
+
     @stack('styles')
 
     <script>
