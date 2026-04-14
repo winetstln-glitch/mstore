@@ -12,6 +12,18 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     flex-shrink: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Capture Helper (Used by html2canvas) */
+.id-card-item.is-capturing {
+    width: 204.1px !important;
+    height: 323.5px !important;
+    border-radius: 17px !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 /* Page specific layouts */
@@ -142,18 +154,27 @@
     pointer-events: none;
 }
 
-.logo-diamond img {
-    width: 82%;
-    height: 82%;
-    object-fit: contain;
-    transform: rotate(-45deg);
+.logo-diamond .logo-img-wrapper {
+    width: 100%;
+    height: 100%;
     position: relative;
-    z-index: 1;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.logo-diamond .logo-img {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+    display: block;
 }
 
 .company-copy {
     min-width: 0;
-    max-width: 31mm;
+    flex: 1;
 }
 
 .company-name {
@@ -196,14 +217,28 @@
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
     overflow: hidden;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.photo-image {
+.photo-img-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 50%;
     display: block;
+    border-radius: 50%; /* Double down for better canvas support */
 }
 
 .photo-placeholder {
@@ -366,10 +401,20 @@
     box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
 }
 
-.back-logo-frame img {
-    width: 74%;
-    height: 74%;
-    object-fit: contain;
+.back-logo-frame .logo-img-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.back-logo-frame .logo-img {
+    max-width: 80%;
+    max-height: 80%;
+    width: auto;
+    height: auto;
 }
 
 .back-brand-name {

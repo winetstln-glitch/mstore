@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TechnicianDailySchedule extends Model
 {
+    const STATUS_OFF = 'off';
+    const STATUS_PIKET = 'piket';
+    const STATUS_BACKUP = 'backup';
+
     protected $fillable = [
         'user_id',
         'date',

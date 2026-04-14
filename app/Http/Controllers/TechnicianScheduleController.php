@@ -17,6 +17,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
@@ -35,6 +36,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        Gate::authorize('schedule.view');
+
         $this->ensureShiftSettings();
         $this->ensureAutoScheduleSettings();
         $this->ensureDailyScheduleSettings();
@@ -72,7 +75,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $schedules = TechnicianSchedule::where('year', $year)
             ->with('user')
             ->get()
-            ->groupBy('week_number');
+            ->groupBy('week_number')
+            ->map(function ($items) {
+                return $items->keyBy('user_id');
+            });
 
         $periods = SchedulePeriod::where('year', $year)
             ->get()
@@ -148,7 +154,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->whereIn('user_id', $userIds)
                 ->whereBetween('date', [$dailyRangeStart->format('Y-m-d'), $dailyRangeEnd->format('Y-m-d')])
                 ->get()
-                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'))
+                ->map(function ($items) {
+                    return $items->keyBy('user_id');
+                });
         }
 
         // Apply group filter
@@ -216,19 +225,20 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function autoGenerate(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         $request->validate([
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'shift1_slots' => ['nullable', 'integer', 'min:1', 'max:50'],
             'shift2_slots' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'user_ids' => ['nullable', 'array'],
+            'user_ids.*' => ['exists:users,id'],
         ]);
 
         $year = (int) $request->input('year');
         $month = (int) $request->input('month');
+        $selectedUserIds = $request->input('user_ids');
 
         $shift1Slots = (int) ($request->input('shift1_slots') ?? Setting::getValue('schedule_auto_shift1_slots', '1'));
         $shift2Slots = (int) ($request->input('shift2_slots') ?? Setting::getValue('schedule_auto_shift2_slots', '1'));
@@ -248,9 +258,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ['value' => (string) $shift2Slots, 'group' => 'schedule', 'type' => 'number', 'label' => 'Auto Schedule Slot Shift 2 per Minggu']
         );
 
-        $technicians = $this->scheduleUsersQuery()
-            ->orderBy('name')
-            ->get();
+        $techniciansQuery = $this->scheduleUsersQuery();
+        if (! empty($selectedUserIds)) {
+            $techniciansQuery->whereIn('id', $selectedUserIds);
+        }
+        $technicians = $techniciansQuery->orderBy('name')->get();
         $this->applyScheduleDisplayNames($technicians);
         $this->applyScheduleMeta($technicians);
         $technicians = $this->deduplicateScheduleUsers($technicians);
@@ -329,14 +341,14 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     }
 
                     foreach ($userIds as $id) {
-                        $status = 'off';
+                        $status = TechnicianDailySchedule::STATUS_OFF;
                         if ($selectedS1->contains($id)) {
-                            $status = 'piket';
+                            $status = TechnicianDailySchedule::STATUS_PIKET;
                         } elseif ($selectedS2->contains($id)) {
-                            $status = 'backup';
+                            $status = TechnicianDailySchedule::STATUS_BACKUP;
                         }
 
-                        if ($status !== 'off') {
+                        if ($status !== TechnicianDailySchedule::STATUS_OFF) {
                             $lastShift[$id] = $status;
                         }
 
@@ -361,9 +373,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function dailyAutoGenerate(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         if (! Schema::hasTable('technician_daily_schedules')) {
             return redirect()->back()->with('error', 'Tabel jadwal harian belum ada. Jalankan: php artisan migrate');
@@ -373,11 +383,14 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'off_days' => ['required', 'integer', 'min:0', 'max:10'],
+            'user_ids' => ['nullable', 'array'],
+            'user_ids.*' => ['exists:users,id'],
         ]);
 
         $year = (int) $request->input('year');
         $month = (int) $request->input('month');
         $offDays = (int) $request->input('off_days', 2);
+        $selectedUserIds = $request->input('user_ids');
 
         $daysInMonth = (int) Carbon::createFromDate($year, $month, 1)->daysInMonth;
         if ($offDays >= $daysInMonth) {
@@ -389,9 +402,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ['value' => (string) $offDays, 'group' => 'schedule', 'type' => 'number', 'label' => 'Libur per Bulan (Harian)']
         );
 
-        $technicians = $this->scheduleUsersQuery()
-            ->orderBy('name')
-            ->get();
+        $techniciansQuery = $this->scheduleUsersQuery();
+        if (! empty($selectedUserIds)) {
+            $techniciansQuery->whereIn('id', $selectedUserIds);
+        }
+        $technicians = $techniciansQuery->orderBy('name')->get();
         $this->applyScheduleDisplayNames($technicians);
         $this->applyScheduleMeta($technicians);
         $technicians = $this->deduplicateScheduleUsers($technicians);
@@ -451,50 +466,55 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $this->ensureAutoScheduleSettings();
         $this->ensureDailyScheduleSettings();
         $this->ensureScheduleUsers();
+        
         $mode = (string) $request->input('mode', 'weekly');
+        $year = (int) $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+        $selectedGroup = (string) $request->input('group', 'all');
+        $selectedShift = (string) $request->input('shift', 'all');
+
+        $techniciansQuery = $this->scheduleUsersQuery();
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+            $techniciansQuery->where('id', Auth::id());
+        }
+
+        $technicians = $techniciansQuery->orderBy('name')->get();
+        $this->applyScheduleDisplayNames($technicians);
+        $this->applyScheduleMeta($technicians);
+        $technicians = $this->deduplicateScheduleUsers($technicians);
+
+        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
+        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
+        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
+        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+
+        $groups = [
+            [
+                'key' => 'teknisi',
+                'label' => 'Shift Teknisi',
+                'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'teknisi')->values(),
+            ],
+            [
+                'key' => 'wash',
+                'label' => 'Shift Operator Wash',
+                'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'wash')->values(),
+            ],
+            [
+                'key' => 'lainnya',
+                'label' => 'Shift Lainnya',
+                'users' => $technicians->filter(fn ($u) => ! in_array(($u->schedule_group ?? ''), ['teknisi', 'wash'], true))->values(),
+            ],
+        ];
 
         if ($mode === 'daily') {
             if (! Schema::hasTable('technician_daily_schedules')) {
                 return redirect()
-                    ->route('schedules.index', ['year' => $request->input('year', now()->year), 'month' => $request->input('month', now()->month), 'mode' => 'weekly'])
+                    ->route('schedules.index', ['year' => $year, 'month' => $month, 'mode' => 'weekly'])
                     ->with('error', 'Mode Harian membutuhkan migrasi database. Jalankan: php artisan migrate');
             }
 
-            $year = (int) $request->input('year', now()->year);
-            $month = (int) $request->input('month', now()->month);
             $startDateParam = $request->input('start_date');
             $endDateParam = $request->input('end_date');
-
-            $techniciansQuery = $this->scheduleUsersQuery();
-            if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-                $techniciansQuery->where('id', Auth::id());
-            }
-
-            $technicians = $techniciansQuery->orderBy('name')->get();
-            $this->applyScheduleDisplayNames($technicians);
-            $this->applyScheduleMeta($technicians);
-            $technicians = $this->deduplicateScheduleUsers($technicians);
-
-            $groups = [
-                [
-                    'key' => 'teknisi',
-                    'label' => 'Shift Teknisi',
-                    'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'teknisi')->values(),
-                ],
-                [
-                    'key' => 'wash',
-                    'label' => 'Shift Operator Wash',
-                    'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'wash')->values(),
-                ],
-                [
-                    'key' => 'lainnya',
-                    'label' => 'Shift Lainnya',
-                    'users' => $technicians->filter(fn ($u) => ! in_array(($u->schedule_group ?? ''), ['teknisi', 'wash'], true))->values(),
-                ],
-            ];
-
-            $selectedGroup = (string) $request->input('group', 'all');
-            $selectedShift = (string) $request->input('shift', 'all');
 
             $defaultStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
             $defaultEnd = Carbon::createFromDate($year, $month, 1)->endOfMonth()->startOfDay();
@@ -510,7 +530,6 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     $rangeStart = $s;
                     $rangeEnd = $e;
                 } catch (\Throwable $e) {
-                    // fallback ke default
                 }
             }
 
@@ -531,7 +550,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->whereIn('user_id', $userIds)
                 ->whereBetween('date', [$rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d')])
                 ->get()
-                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'))
+                ->map(fn ($items) => $items->keyBy('user_id'));
 
             if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
                 foreach ($groups as &$grp) {
@@ -554,11 +574,6 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 unset($grp);
             }
 
-            $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-            $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-            $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-            $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
-
             $pdf = Pdf::loadView('schedules.pdf', compact(
                 'mode',
                 'technicians',
@@ -576,45 +591,35 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             return $pdf->download('jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.pdf');
         }
 
-        $year = (int) $request->input('year', now()->year);
-        $month = (int) $request->input('month', now()->month);
+        // Weekly Mode
+        $schedules = TechnicianSchedule::where('year', $year)
+            ->get()
+            ->groupBy('week_number')
+            ->map(fn ($items) => $items->keyBy('user_id'));
 
-        $techniciansQuery = $this->scheduleUsersQuery();
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            $techniciansQuery->where('id', Auth::id());
-        }
-
-        $technicians = $techniciansQuery->orderBy('name')->get();
-        $this->applyScheduleDisplayNames($technicians);
-        $this->applyScheduleMeta($technicians);
-        $technicians = $this->deduplicateScheduleUsers($technicians);
-
-        $schedules = TechnicianSchedule::where('year', $year)->get()->groupBy('week_number');
         $periods = SchedulePeriod::where('year', $year)->get()->keyBy('week_number');
         $weeksData = $this->buildWeeksData($year, $month, $periods);
 
-        $groups = [
-            [
-                'key' => 'teknisi',
-                'label' => 'Shift Teknisi',
-                'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'teknisi')->values(),
-            ],
-            [
-                'key' => 'wash',
-                'label' => 'Shift Operator Wash',
-                'users' => $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === 'wash')->values(),
-            ],
-            [
-                'key' => 'lainnya',
-                'label' => 'Shift Lainnya',
-                'users' => $technicians->filter(fn ($u) => ! in_array(($u->schedule_group ?? ''), ['teknisi', 'wash'], true))->values(),
-            ],
-        ];
-
-        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+        if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
+            foreach ($groups as &$grp) {
+                if (($grp['key'] ?? '') !== $selectedGroup) {
+                    $grp['users'] = collect();
+                }
+            }
+            unset($grp);
+        }
+        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+            $allowedIds = $schedules
+                ->flatMap(fn ($rows) => $rows)
+                ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
+                ->pluck('user_id')
+                ->unique()
+                ->values();
+            foreach ($groups as &$grp) {
+                $grp['users'] = ($grp['users'] ?? collect())->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+            }
+            unset($grp);
+        }
 
         $pdf = Pdf::loadView('schedules.pdf', compact(
             'mode',
@@ -643,6 +648,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $mode = (string) $request->input('mode', 'weekly');
         $year = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
+        $selectedGroup = (string) $request->input('group', 'all');
+        $selectedShift = (string) $request->input('shift', 'all');
 
         $techniciansQuery = $this->scheduleUsersQuery();
         if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
@@ -685,13 +692,30 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             }
 
             $userIds = $technicians->pluck('id')->values();
-            $rows = TechnicianDailySchedule::query()
+            $dailySchedules = TechnicianDailySchedule::query()
                 ->whereIn('user_id', $userIds)
                 ->whereBetween('date', [$start->format('Y-m-d'), $end->format('Y-m-d')])
                 ->get()
-                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'));
+                ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'))
+                ->map(fn ($items) => $items->keyBy('user_id'));
 
-            return response()->streamDownload(function () use ($technicians, $dates, $rows) {
+            // Apply Group Filter
+            if ($selectedGroup !== 'all') {
+                $technicians = $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === $selectedGroup)->values();
+            }
+
+            // Apply Shift Filter
+            if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+                $allowedIds = $dailySchedules
+                    ->flatMap(fn ($rows) => $rows)
+                    ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
+                    ->pluck('user_id')
+                    ->unique()
+                    ->values();
+                $technicians = $technicians->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+            }
+
+            return response()->streamDownload(function () use ($technicians, $dates, $dailySchedules) {
                 $writer = new Writer;
                 $writer->openToFile('php://output');
 
@@ -712,12 +736,12 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
                     foreach ($dates as $date) {
                         $key = $date->format('Y-m-d');
-                        $dayRows = $rows->get($key);
-                        $r = $dayRows ? $dayRows->firstWhere('user_id', $tech->id) : null;
-                        $status = $r?->status ?? 'off';
+                        $dayRows = $dailySchedules->get($key);
+                        $r = $dayRows ? $dayRows->get($tech->id) : null;
+                        $status = $r?->status ?? TechnicianDailySchedule::STATUS_OFF;
                         $row[] = match ($status) {
-                            'piket' => 'S1',
-                            'backup' => 'S2',
+                            TechnicianDailySchedule::STATUS_PIKET => 'S1',
+                            TechnicianDailySchedule::STATUS_BACKUP => 'S2',
                             default => 'OFF',
                         };
                     }
@@ -729,10 +753,30 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             }, 'jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.xlsx');
         }
 
+        // Weekly Excel
         $periods = SchedulePeriod::where('year', $year)->get()->keyBy('week_number');
         $weeksData = $this->buildWeeksData($year, $month, $periods);
         $weekNumbers = collect($weeksData)->pluck('week_number')->values();
-        $schedules = TechnicianSchedule::where('year', $year)->get()->groupBy('week_number');
+        $schedules = TechnicianSchedule::where('year', $year)
+            ->get()
+            ->groupBy('week_number')
+            ->map(fn ($items) => $items->keyBy('user_id'));
+
+        // Apply Group Filter
+        if ($selectedGroup !== 'all') {
+            $technicians = $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === $selectedGroup)->values();
+        }
+
+        // Apply Shift Filter
+        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+            $allowedIds = $schedules
+                ->flatMap(fn ($rows) => $rows)
+                ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
+                ->pluck('user_id')
+                ->unique()
+                ->values();
+            $technicians = $technicians->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+        }
 
         return response()->streamDownload(function () use ($technicians, $weekNumbers, $schedules, $shift1Start, $shift1End, $shift2Start, $shift2End) {
             $writer = new Writer;
@@ -755,11 +799,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
                 foreach ($weekNumbers as $weekNumber) {
                     $weekRows = $schedules->get($weekNumber);
-                    $schedule = $weekRows ? $weekRows->firstWhere('user_id', $tech->id) : null;
-                    $status = $schedule?->status ?? 'off';
+                    $schedule = $weekRows ? $weekRows->get($tech->id) : null;
+                    $status = $schedule?->status ?? TechnicianSchedule::STATUS_OFF;
                     $row[] = match ($status) {
-                        'piket' => "S1 ({$shift1Start}-{$shift1End})",
-                        'backup' => "S2 ({$shift2Start}-{$shift2End})",
+                        TechnicianSchedule::STATUS_PIKET => "S1 ({$shift1Start}-{$shift1End})",
+                        TechnicianSchedule::STATUS_BACKUP => "S2 ({$shift2Start}-{$shift2End})",
                         default => 'OFF',
                     };
                 }
@@ -773,9 +817,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function importExcel(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
@@ -802,22 +844,22 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $statusFromCell = function ($value): string {
             $v = strtoupper(trim((string) $value));
             if ($v === '' || $v === '-' || $v === '0' || $v === 'OFF') {
-                return 'off';
+                return TechnicianSchedule::STATUS_OFF;
             }
             if (in_array($v, ['S1', 'SHIFT1', 'SHIFT 1', '1', 'PIKET'], true)) {
-                return 'piket';
+                return TechnicianSchedule::STATUS_PIKET;
             }
             if (in_array($v, ['S2', 'SHIFT2', 'SHIFT 2', '2', 'BACKUP'], true)) {
-                return 'backup';
+                return TechnicianSchedule::STATUS_BACKUP;
             }
             if (str_contains($v, 'S1')) {
-                return 'piket';
+                return TechnicianSchedule::STATUS_PIKET;
             }
             if (str_contains($v, 'S2')) {
-                return 'backup';
+                return TechnicianSchedule::STATUS_BACKUP;
             }
 
-            return 'off';
+            return TechnicianSchedule::STATUS_OFF;
         };
 
         try {
@@ -887,9 +929,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function updatePeriod(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         $request->validate([
             'year' => 'required|integer',
@@ -914,9 +954,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -943,9 +981,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
     public function dailyStore(Request $request)
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized');
-        }
+        Gate::authorize('schedule.manage');
 
         if (! Schema::hasTable('technician_daily_schedules')) {
             return redirect()->back()->with('error', 'Tabel jadwal harian belum ada. Jalankan: php artisan migrate');
@@ -969,6 +1005,60 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         );
 
         return redirect()->back()->with('success', __('Schedule updated successfully.'));
+    }
+
+    public function bulkStore(Request $request)
+    {
+        Gate::authorize('schedule.manage');
+
+        $request->validate([
+            'year' => ['required', 'integer'],
+            'schedules' => ['required', 'array'],
+            'schedules.*' => ['array'],
+            'schedules.*.*' => ['required', 'in:piket,off,backup'],
+        ]);
+
+        $year = (int) $request->input('year');
+        $schedules = $request->input('schedules');
+
+        DB::transaction(function () use ($year, $schedules) {
+            foreach ($schedules as $userId => $weeks) {
+                foreach ($weeks as $weekNumber => $status) {
+                    TechnicianSchedule::updateOrCreate(
+                        ['user_id' => $userId, 'week_number' => $weekNumber, 'year' => $year],
+                        ['status' => $status, 'notes' => null]
+                    );
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', 'Perubahan jadwal mingguan berhasil disimpan.');
+    }
+
+    public function dailyBulkStore(Request $request)
+    {
+        Gate::authorize('schedule.manage');
+
+        $request->validate([
+            'schedules' => ['required', 'array'],
+            'schedules.*' => ['array'],
+            'schedules.*.*' => ['required', 'in:piket,off,backup'],
+        ]);
+
+        $schedules = $request->input('schedules');
+
+        DB::transaction(function () use ($schedules) {
+            foreach ($schedules as $userId => $dates) {
+                foreach ($dates as $date => $status) {
+                    TechnicianDailySchedule::updateOrCreate(
+                        ['user_id' => $userId, 'date' => $date],
+                        ['status' => $status, 'notes' => null]
+                    );
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', 'Perubahan jadwal harian berhasil disimpan.');
     }
 
     public function destroy(TechnicianSchedule $schedule)
@@ -1063,80 +1153,123 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         }
 
         $userIds = array_values($userIds);
-        $n = count($userIds);
-        if ($n === 0) {
+        $totalUsers = count($userIds);
+        $totalDays = count($days);
+
+        if ($totalUsers === 0) {
             return [];
         }
 
-        $remainingOff = [];
-        $lastOff = [];
-        foreach ($userIds as $id) {
-            $remainingOff[$id] = $offDaysPerUser;
-            $lastOff[$id] = null;
+        // Step 1: Tentukan hari OFF untuk setiap user terlebih dahulu (OFF First Strategy)
+        $userOffDays = [];
+        $dayOffCount = array_fill(0, $totalDays, 0);
+
+        foreach ($userIds as $uIdx => $userId) {
+            $offAssigned = 0;
+            $attempts = 0;
+            $userOffDays[$userId] = [];
+
+            // Coba sebar OFF dengan jarak minimal (misal 5 hari)
+            // Menggunakan algoritma sebaran user: (uIdx * 3 + j * 7) sebagai basis
+            for ($j = 0; $j < $offDaysPerUser; $j++) {
+                $found = false;
+                // Coba beberapa offset jika slot hari tersebut sudah terlalu banyak yang OFF
+                for ($offset = 0; $offset < $totalDays; $offset++) {
+                    $dIdx = ($uIdx * 7 + $j * 11 + $offset) % $totalDays;
+                    
+                    // Cek apakah hari ini sudah terlalu banyak yang OFF (max 25% dari total user)
+                    $maxOffToday = max(1, (int) ceil($totalUsers * 0.25));
+                    
+                    // Cek jarak dengan OFF yang sudah ada untuk user ini
+                    $tooClose = false;
+                    foreach ($userOffDays[$userId] as $existingDIdx) {
+                        if (abs($existingDIdx - $dIdx) < 5) {
+                            $tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if ($dayOffCount[$dIdx] < $maxOffToday && !$tooClose) {
+                        $userOffDays[$userId][] = $dIdx;
+                        $dayOffCount[$dIdx]++;
+                        $found = true;
+                        break;
+                    }
+                }
+
+                // Jika tidak ketemu slot ideal, ambil yang paling longgar
+                if (!$found) {
+                    $bestDIdx = 0;
+                    $minCount = 999;
+                    for ($d = 0; $d < $totalDays; $d++) {
+                        if ($dayOffCount[$d] < $minCount) {
+                            $minCount = $dayOffCount[$d];
+                            $bestDIdx = $d;
+                        }
+                    }
+                    $userOffDays[$userId][] = $bestDIdx;
+                    $dayOffCount[$bestDIdx]++;
+                }
+            }
         }
 
-        $totalOffSlots = $n * $offDaysPerUser;
-        $daysCount = count($days);
-        $baseOffPerDay = intdiv($totalOffSlots, $daysCount);
-        $extraOffDays = $totalOffSlots % $daysCount;
-
-        $weekStart = $start->copy()->startOfWeek();
-        $weekIndexByDate = [];
-        foreach ($days as $day) {
-            $weekIndexByDate[$day->format('Y-m-d')] = (int) floor($weekStart->diffInDays($day->copy()->startOfWeek()) / 7);
-        }
-
-        $userIndex = [];
-        foreach ($userIds as $idx => $id) {
-            $userIndex[$id] = $idx;
-        }
-
+        // Step 2: Isi S1 & S2 untuk sisa user yang tidak OFF
         $plan = [];
-        foreach ($days as $i => $day) {
+        $weekStart = $start->copy()->startOfWeek();
+
+        foreach ($days as $dIdx => $day) {
             $dateKey = $day->format('Y-m-d');
-            $offCountToday = $baseOffPerDay + ($i < $extraOffDays ? 1 : 0);
-            if ($offCountToday > $n) {
-                $offCountToday = $n;
+            $weekIndex = (int) floor($weekStart->diffInDays($day->copy()->startOfWeek()) / 7);
+            
+            $offUsersToday = [];
+            foreach ($userIds as $userId) {
+                if (in_array($dIdx, $userOffDays[$userId])) {
+                    $offUsersToday[$userId] = true;
+                }
             }
 
-            $candidates = array_values(array_filter($userIds, fn ($id) => $remainingOff[$id] > 0));
-            usort($candidates, function ($a, $b) use ($remainingOff, $lastOff, $day) {
-                $yesterday = $day->copy()->subDay()->format('Y-m-d');
-                $aConsecutive = $lastOff[$a] === $yesterday ? 1 : 0;
-                $bConsecutive = $lastOff[$b] === $yesterday ? 1 : 0;
-                if ($aConsecutive !== $bConsecutive) {
-                    return $aConsecutive <=> $bConsecutive;
+            $availableUsers = [];
+            foreach ($userIds as $userId) {
+                if (!isset($offUsersToday[$userId])) {
+                    $availableUsers[] = $userId;
                 }
-                if ($remainingOff[$a] !== $remainingOff[$b]) {
-                    return $remainingOff[$b] <=> $remainingOff[$a];
-                }
-
-                return $a <=> $b;
-            });
-
-            $offUsers = array_slice($candidates, 0, $offCountToday);
-            $offSet = array_flip($offUsers);
-
-            foreach ($offUsers as $id) {
-                $remainingOff[$id]--;
-                $lastOff[$id] = $dateKey;
             }
 
-            $weekIndex = $weekIndexByDate[$dateKey] ?? 0;
+            // Shuffle atau rotasi biar adil untuk penentuan S1/S2
+            // Kita gunakan rotasi berbasis dIdx agar konsisten tapi tetap bergantian
+            $nAvailable = count($availableUsers);
+            if ($nAvailable > 0) {
+                $rotationOffset = $dIdx % $nAvailable;
+                $rotated = array_merge(
+                    array_slice($availableUsers, $rotationOffset),
+                    array_slice($availableUsers, 0, $rotationOffset)
+                );
 
-            $statuses = [];
-            foreach ($userIds as $id) {
-                if (isset($offSet[$id])) {
-                    $statuses[$id] = 'off';
+                // Asumsi: S1 dan S2 dibagi rata dari yang tersedia
+                // Misal: 50% S1, sisanya S2
+                $s1Limit = (int) ceil($nAvailable / 2);
 
-                    continue;
+                $statuses = [];
+                foreach ($userIds as $userId) {
+                    if (isset($offUsersToday[$userId])) {
+                        $statuses[$userId] = TechnicianDailySchedule::STATUS_OFF;
+                    } else {
+                        // Cari posisi di array rotated
+                        $pos = array_search($userId, $rotated);
+                        $statuses[$userId] = ($pos < $s1Limit) 
+                            ? TechnicianDailySchedule::STATUS_PIKET 
+                            : TechnicianDailySchedule::STATUS_BACKUP;
+                    }
                 }
-
-                $idx = $userIndex[$id] ?? 0;
-                $statuses[$id] = ((($idx + $weekIndex) % 2) === 0) ? 'piket' : 'backup';
+                $plan[$dateKey] = $statuses;
+            } else {
+                // Kasus langka: semua OFF (tidak mungkin dengan limit maxOffToday)
+                $statuses = [];
+                foreach ($userIds as $userId) {
+                    $statuses[$userId] = TechnicianDailySchedule::STATUS_OFF;
+                }
+                $plan[$dateKey] = $statuses;
             }
-
-            $plan[$dateKey] = $statuses;
         }
 
         return $plan;

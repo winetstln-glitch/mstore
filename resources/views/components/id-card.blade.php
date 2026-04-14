@@ -35,7 +35,7 @@
 @endphp
 
 <!-- FRONT SIDE (Old Design Restore) -->
-<div class="id-card-item brand-{{ $brandKey }} id-card-front">
+<div class="id-card-item brand-{{ $brandKey }} id-card-front" id="id-card-front">
     <div class="wave-accent-top"></div>
     <div class="header-bg"></div>
     <div class="wave-accent-bottom"></div>
@@ -43,7 +43,11 @@
 
     <div class="logo-container">
         <div class="logo-diamond">
-            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer">
+            @if($logoUrl)
+                <div class="logo-img-wrapper">
+                    <img src="{{ $logoUrl }}" class="logo-img" alt="Logo {{ $brandName }}" crossorigin="anonymous">
+                </div>
+            @endif
         </div>
         <div class="company-copy">
             <div class="company-name">{{ $brandName }}</div>
@@ -54,7 +58,9 @@
     <div class="profile-container">
         <div class="profile-image">
             @if($photoUrl)
-                <img src="{{ $photoUrl }}" alt="Photo {{ $name }}" class="photo-image" crossorigin="anonymous" referrerpolicy="no-referrer">
+                <div class="photo-img-wrapper">
+                    <img src="{{ $photoUrl }}" class="photo-img" alt="Photo {{ $name }}" crossorigin="anonymous">
+                </div>
             @else
                 <div class="photo-placeholder"><i class="fa-solid fa-user"></i></div>
             @endif
@@ -76,14 +82,18 @@
 </div>
 
 <!-- BACK SIDE (Old Design Restore) -->
-<div class="id-card-item id-card-back brand-{{ $brandKey }} id-card-back">
+<div class="id-card-item id-card-back brand-{{ $brandKey }} id-card-back" id="id-card-back">
     <div class="back-header-bg"></div>
     <div class="back-accent-circle"></div>
     <div class="back-accent-line"></div>
 
     <div class="back-brand-lockup">
         <div class="back-logo-frame">
-            <img src="{{ $logoUrl }}" alt="Logo {{ $brandName }}" crossorigin="anonymous" referrerpolicy="no-referrer">
+            @if($logoUrl)
+                <div class="logo-img-wrapper">
+                    <img src="{{ $logoUrl }}" class="logo-img" alt="Logo {{ $brandName }}" crossorigin="anonymous">
+                </div>
+            @endif
         </div>
         <div class="back-brand-meta">
             <div class="back-brand-name">{{ $brandName }}</div>

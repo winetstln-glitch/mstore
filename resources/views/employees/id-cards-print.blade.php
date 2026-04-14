@@ -142,8 +142,8 @@ async function downloadAllImages() {
 }
 
 async function downloadAllZip() {
-    if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
-        alert('Fitur ZIP membutuhkan assets front-end. Jalankan: npm install && npm run build');
+    if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined' || typeof html2canvas === 'undefined') {
+        alert('Fitur ZIP membutuhkan assets front-end yang lengkap. Tunggu sebentar atau jalankan: npm install && npm run build');
         return;
     }
     const btn = document.getElementById('downloadZipBtn');
@@ -154,48 +154,62 @@ async function downloadAllZip() {
     const zip = new JSZip();
     const folder = zip.folder('id-cards') || zip;
     const pairs = document.querySelectorAll('.id-card-pair');
-    let processed = 0;
+    
+    // Config for html2canvas to prevent distortion
+    const captureOptions = {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false,
+        onclone: (clonedDoc) => {
+            const items = clonedDoc.querySelectorAll('.id-card-item');
+            items.forEach(item => {
+                item.classList.add('is-capturing');
+                item.style.position = 'relative';
+                item.style.margin = '0';
+                item.style.display = 'block';
+            });
+        }
+    };
 
-    for (const pair of pairs) {
-        const nameText = pair.querySelector('.name-block')?.textContent || 'karyawan';
-        const name = nameText.trim().toLowerCase().replace(/\s+/g, '-');
-        const front = pair.querySelector('.id-card-front');
-        const back = pair.querySelector('.id-card-back');
+    try {
+        for (const pair of pairs) {
+            const nameText = pair.querySelector('.name-block')?.textContent || 'karyawan';
+            const name = nameText.trim().toLowerCase().replace(/\s+/g, '-');
+            const front = pair.querySelector('.id-card-front');
+            const back = pair.querySelector('.id-card-back');
 
-        const externalImgs = [...pair.querySelectorAll('img')].filter(img => {
-            try {
-                const u = new URL(img.src, window.location.href);
-                return u.origin !== window.location.origin;
-            } catch (_) {
-                return false;
+            if (front) {
+                await waitForAssets(front);
+                const canvasF = await html2canvas(front, captureOptions);
+                const blobF = await new Promise(res => canvasF.toBlob(res, 'image/jpeg', 1.0));
+                if (blobF) folder.file(`ID_Card_Depan_${name}.jpg`, blobF);
             }
-        });
-        if (externalImgs.length > 0) {
-            console.warn('Ada gambar eksternal yang dapat menyebabkan kegagalan capture karena CORS:', externalImgs.map(i => i.src));
+            if (back) {
+                await waitForAssets(back);
+                const canvasB = await html2canvas(back, captureOptions);
+                const blobB = await new Promise(res => canvasB.toBlob(res, 'image/jpeg', 1.0));
+                if (blobB) folder.file(`ID_Card_Belakang_${name}.jpg`, blobB);
+            }
+
+            // Small delay to prevent UI freezing
+            await new Promise(r => setTimeout(r, 300));
         }
 
-        if (front) {
-            await waitForAssets(front);
-            const canvasF = await html2canvas(front, { scale: 4, useCORS: true, backgroundColor: '#ffffff' });
-            const blobF = await new Promise(res => canvasF.toBlob(res, 'image/jpeg', 0.95));
-            if (blobF) folder.file(`ID_Card_Depan_${name}.jpg`, blobF);
-        }
-        if (back) {
-            await waitForAssets(back);
-            const canvasB = await html2canvas(back, { scale: 4, useCORS: true, backgroundColor: '#ffffff' });
-            const blobB = await new Promise(res => canvasB.toBlob(res, 'image/jpeg', 0.95));
-            if (blobB) folder.file(`ID_Card_Belakang_${name}.jpg`, blobB);
-        }
-
-        processed++;
-        await new Promise(r => setTimeout(r, 200));
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const suffix = positionFilter ? `_${positionFilter.trim().toLowerCase().replace(/\s+/g, '-')}` : '';
+        saveAs(zipBlob, `ID-Cards${suffix}.zip`);
+    } catch (e) {
+        alert('Terjadi kesalahan saat membuat ZIP. Silakan coba lagi atau download satu per satu.');
+        console.error('ZIP Error:', e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
     }
-
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const suffix = positionFilter ? `_${positionFilter.trim().toLowerCase().replace(/\\s+/g, '-')}` : '';
-    saveAs(zipBlob, `ID-Cards${suffix}.zip`);
-    btn.disabled = false;
-    btn.innerHTML = original;
 }
 </script>
 @endpush
