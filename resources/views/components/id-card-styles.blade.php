@@ -156,8 +156,10 @@
 }
 
 .logo-diamond .logo-img {
-    width: 92%;
-    height: 92%;
+    max-width: 86%;
+    max-height: 86%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     display: block;
 }
@@ -400,15 +402,17 @@
 }
 
 .back-logo-frame .logo-img {
-    width: 90%;
-    height: 90%;
+    max-width: 85%;
+    max-height: 85%;
+    width: auto;
+    height: auto;
     object-fit: contain;
 }
 
 .back-brand-name {
     font-size: 3mm;
     font-weight: 900;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     line-height: 1.1;
     text-transform: uppercase;
     color: #fff;
