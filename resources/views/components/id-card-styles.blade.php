@@ -120,13 +120,13 @@
 
 .logo-container {
     position: absolute;
-    top: 4.5mm;
-    left: 4mm;
-    right: 4mm;
+    top: 5mm;
+    left: 5mm;
+    right: 5mm;
     z-index: 3;
     display: flex;
     align-items: center;
-    gap: 2.6mm;
+    gap: 3mm;
     color: #fff;
 }
 
@@ -134,24 +134,14 @@
     width: 11mm;
     height: 11mm;
     position: relative;
-    border-radius: 0.6mm;
+    border-radius: 1.2mm;
     background: #ffffff;
-    border: 0.7pt solid rgba(255, 255, 255, 0.96);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     transform: rotate(45deg);
-    box-shadow: 0 5px 12px rgba(15, 23, 42, 0.16);
-}
-
-.logo-diamond::before {
-    content: "";
-    position: absolute;
-    inset: 0.65mm;
-    border: 0.55pt solid rgba(212, 175, 55, 0.92);
-    border-radius: 0.4mm;
-    pointer-events: none;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
 .logo-diamond .logo-img-wrapper {
@@ -166,8 +156,8 @@
 }
 
 .logo-diamond .logo-img {
-    width: 85%;
-    height: 85%;
+    width: 92%;
+    height: 92%;
     object-fit: contain;
     display: block;
 }
@@ -180,7 +170,7 @@
 .company-name {
     font-size: 3mm;
     font-weight: 900;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     line-height: 1.1;
     text-transform: uppercase;
     white-space: nowrap;
@@ -390,15 +380,14 @@
 }
 
 .back-logo-frame {
-    width: 11.5mm;
-    height: 11.5mm;
-    border-radius: 3mm;
-    background: rgba(255, 255, 255, 0.96);
-    border: 0.7pt solid rgba(255, 255, 255, 0.98);
+    width: 11mm;
+    height: 11mm;
+    border-radius: 2.8mm;
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
 .back-logo-frame .logo-img-wrapper {
@@ -411,10 +400,9 @@
 }
 
 .back-logo-frame .logo-img {
-    max-width: 80%;
-    max-height: 80%;
-    width: auto;
-    height: auto;
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
 }
 
 .back-brand-name {
