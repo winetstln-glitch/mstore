@@ -46,9 +46,11 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $this->notifyConfig = $this->loadNotifyConfig();
 
         Customer::query()
-            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial', 'created_at'])
+            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial', 'genieacs_device_id', 'created_at'])
             ->where('status', 'active')
-            ->whereNotNull('onu_serial')
+            ->where(function($q) {
+                $q->whereNotNull('onu_serial')->orWhereNotNull('genieacs_device_id');
+            })
             ->orderBy('id')
             ->chunkById(200, function ($customers) use ($genieService, $telegramService): void {
                 foreach ($customers as $customer) {
@@ -68,8 +70,10 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             $connectionRequestUrl = '-';
             $lastInform = null;
 
-            if ($customer->onu_serial) {
-                $onuStatus = $genieService->getDeviceStatus($customer->onu_serial);
+            $deviceId = $customer->genieacs_device_id ?: $customer->onu_serial;
+
+            if ($deviceId) {
+                $onuStatus = $genieService->getDeviceStatus($deviceId);
                 $isOnlineNow = (bool) ($onuStatus['online'] ?? false);
                 $isOffline = ! $isOnlineNow;
                 $tr069Ip = (string) ($onuStatus['tr069_ip'] ?? '-');

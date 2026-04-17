@@ -1697,17 +1697,19 @@ class GenieACSService
     /**
      * Get device status by Serial Number (or OUI+ProductClass+Serial)
      */
-    public function getDeviceStatus($serialNumber)
+    public function getDeviceStatus($deviceId)
     {
         try {
-            // Mocking the query structure for GenieACS NBI
-            // Usually: /devices/?query={"_id":"<device_id>"} or by serial
-            // GenieACS ID is often OUI-ProductClass-SerialNumber
+            // Determine query: If it's a full GenieACS ID (OUI-PC-SN), use _id
+            // If it's just a serial, use _deviceId._SerialNumber
+            $query = ['_deviceId._SerialNumber' => $deviceId];
+            if (strpos($deviceId, '-') !== false) {
+                $query = ['_id' => $deviceId];
+            }
 
-            // For implementation simplicity, assuming we search by Serial
             $response = Http::timeout($this->timeout)
                 ->get("{$this->baseUrl}/devices", [
-                    'query' => json_encode(['_deviceId._SerialNumber' => $serialNumber]),
+                    'query' => json_encode($query),
                     'projection' => '_id,_lastInform,VirtualParameters.IPTR069,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,Device.ManagementServer.ConnectionRequestURL',
                 ]);
 

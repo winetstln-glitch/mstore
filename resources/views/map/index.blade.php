@@ -2100,7 +2100,7 @@
                     <div class="customer-card flex flex-col">
                         <div class="customer-header">
                             <div class="customer-header-left">
-                                <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}">✕</span>
+                                <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}" id="popup-status-dot-${customer.id}">✕</span>
                                 <span class="customer-header-title">${customer.id}-${customer.name}</span>
                             </div>
                             <span class="customer-badge">ONU</span>
@@ -2110,10 +2110,10 @@
                             <div class="top-row">
                                 <div class="ip-box">
                                     <i data-lucide="server" class="w-4 h-4 text-slate-400"></i>
-                                    <span class="ip-text">${tr069Ip}</span>
+                                    <span class="ip-text" id="popup-ip-text-${customer.id}">${tr069Ip}</span>
                                     <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i>
                                 </div>
-                                <button onclick="window.pingCustomer('${tr069Ip}', ${customer.id})" class="popup-btn btn-cyan" style="width:auto;min-width:78px">
+                                <button onclick="window.pingCustomer(document.getElementById('popup-ip-text-${customer.id}').innerText, ${customer.id})" class="popup-btn btn-cyan" style="width:auto;min-width:78px">
                                     <i data-lucide="terminal" class="w-4 h-4" id="ping-icon-${customer.id}"></i><span id="ping-text-${customer.id}">Ping</span>
                                 </button>
                             </div>
@@ -2122,7 +2122,7 @@
 
                             <div class="status-row">
                                 <span class="status-label">Status</span>
-                                <span class="status-value ${isOnline ? 'status-online' : 'status-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                                <span class="status-value ${isOnline ? 'status-online' : 'status-offline'}" id="popup-status-text-${customer.id}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
                             </div>
 
                             <div class="card-panel p-3">
@@ -2130,16 +2130,16 @@
                                     <div class="acs-title">
                                         <i data-lucide="zap" class="w-4 h-4"></i><span class="font-bold">ACS Aktif</span>
                                     </div>
-                                    <span class="acs-up">${hasGenieStatus ? `Last Inform: ${formatLastInform(lastInform)}` : 'Data GenieACS belum ada'}</span>
+                                    <span class="acs-up" id="popup-last-inform-${customer.id}">${hasGenieStatus ? `Last Inform: ${formatLastInform(lastInform)}` : 'Data GenieACS belum ada'}</span>
                                 </div>
                                 <div class="acs-grid">
                                     <div class="acs-item">
                                         <div class="acs-label">TR069 IP</div>
-                                        <div class="acs-value acs-value-start">${tr069Ip}</div>
+                                        <div class="acs-value acs-value-start" id="popup-acs-ip-${customer.id}">${tr069Ip}</div>
                                     </div>
                                     <div class="acs-item">
                                         <div class="acs-label">Last Reason</div>
-                                        <div class="acs-value ${isOnline ? 'acs-value-now-online' : 'acs-value-now-offline'}">${lastReason}</div>
+                                        <div class="acs-value ${isOnline ? 'acs-value-now-online' : 'acs-value-now-offline'}" id="popup-last-reason-${customer.id}">${lastReason}</div>
                                     </div>
                                 </div>
                             </div>
@@ -2235,6 +2235,39 @@
                                     if (ssidElement) {
                                         ssidElement.innerText = data.ssid_name;
                                     }
+                                }
+
+                                // Update Live Status (Bypass Stale DB)
+                                const statusDot = document.getElementById(`popup-status-dot-${customer.id}`);
+                                const statusText = document.getElementById(`popup-status-text-${customer.id}`);
+                                const ipText = document.getElementById(`popup-ip-text-${customer.id}`);
+                                const acsIp = document.getElementById(`popup-acs-ip-${customer.id}`);
+                                const lastInform = document.getElementById(`popup-last-inform-${customer.id}`);
+                                const lastReason = document.getElementById(`popup-last-reason-${customer.id}`);
+
+                                if (data.is_online) {
+                                    statusDot.className = 'status-dot status-online';
+                                    statusText.className = 'status-value status-online';
+                                    statusText.innerText = 'ONLINE';
+                                    if (lastReason) {
+                                        lastReason.className = 'acs-value acs-value-now-online';
+                                    }
+                                } else {
+                                    statusDot.className = 'status-dot status-offline';
+                                    statusText.className = 'status-value status-offline';
+                                    statusText.innerText = 'OFFLINE';
+                                    if (lastReason) {
+                                        lastReason.className = 'acs-value acs-value-now-offline';
+                                    }
+                                }
+
+                                if (data.tr069_ip) {
+                                    ipText.innerText = data.tr069_ip;
+                                    if (acsIp) acsIp.innerText = data.tr069_ip;
+                                }
+
+                                if (data.last_inform && lastInform) {
+                                    lastInform.innerText = `Last Inform: ${formatLastInform(data.last_inform)}`;
                                 }
                             } else {
                                 clientSpan.innerText = 'Offline';

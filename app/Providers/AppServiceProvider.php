@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Customer;
 use App\Models\Permission;
 use App\Models\User;
 use App\Models\WashEmployee;
+use App\Observers\CustomerObserver;
 use App\Observers\UserObserver;
 use App\Observers\WashEmployeeObserver;
 use Illuminate\Pagination\Paginator;
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
 
             if ($hasUsersTable) {
                 User::observe(UserObserver::class);
+                Customer::observe(CustomerObserver::class);
             }
 
             $hasWashEmployeesTable = Cache::rememberForever('has_wash_employees_table', function () {

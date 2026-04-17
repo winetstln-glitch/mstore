@@ -419,11 +419,37 @@ class MapController extends Controller implements HasMiddleware
                 data_get($device, 'Device.DeviceInfo.UpTime')
             );
 
+            // Determine live online status
+            $lastInformRaw = $device['_lastInform'] ?? null;
+            $isOnline = false;
+            $threshold = (int) \App\Models\Setting::getValue('genieacs_online_threshold_minutes', 15);
+            if ($lastInformRaw) {
+                $lastInformAt = \Carbon\Carbon::parse($lastInformRaw);
+                $isOnline = $lastInformAt->gte(now()->subMinutes($threshold)) && $lastInformAt->lte(now()->addMinutes(2));
+            }
+
+            $tr069Ip = $this->genieService->getTr069Ip($device);
+
+            // Sync with GenieDeviceStatus table
+            \App\Models\GenieDeviceStatus::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'onu_serial' => $customer->onu_serial,
+                    'is_online' => $isOnline,
+                    'last_inform' => $lastInformRaw,
+                    'tr069_ip' => $tr069Ip,
+                    'connection_request_url' => $this->genieService->getConnectionRequestUrl($device),
+                ]
+            );
+
             return response()->json([
                 'success' => true,
                 'total_clients' => $totalClients,
                 'ssid_name' => $ssid,
                 'uptime' => $uptime,
+                'is_online' => $isOnline,
+                'tr069_ip' => $tr069Ip,
+                'last_inform' => $lastInformRaw ? \Carbon\Carbon::parse($lastInformRaw)->toIso8601String() : null,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
