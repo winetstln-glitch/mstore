@@ -39,19 +39,14 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // Dynamic Permissions from Database
         try {
-            $hasPermissionsTable = Cache::rememberForever('has_permissions_table', function () {
-                return Schema::hasTable('permissions');
+            // Use Gate::before for dynamic permission checking
+            Gate::before(function ($user, $ability) {
+                if (method_exists($user, 'hasPermission')) {
+                    return $user->hasPermission($ability) ?: null;
+                }
             });
-
-            if ($hasPermissionsTable) {
-                // Use Gate::before for dynamic permission checking instead of defining hundreds of gates
-                Gate::before(function ($user, $ability) {
-                    if (method_exists($user, 'hasPermission')) {
-                        return $user->hasPermission($ability) ?: null;
-                    }
-                });
-            }
 
             $hasUsersTable = Cache::rememberForever('has_users_table', function () {
                 return Schema::hasTable('users');
@@ -69,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
                 WashEmployee::observe(WashEmployeeObserver::class);
             }
         } catch (\Exception $e) {
-            // Log::error($e->getMessage());
+            // Silently fail if table doesn't exist yet
         }
     }
 }

@@ -42,9 +42,9 @@ class DataVisibilityTest extends TestCase
         }
 
         // Create Users
-        $this->admin = User::factory()->create(['role_id' => $adminRole->id, 'name' => 'Admin User']);
-        $this->techA = User::factory()->create(['role_id' => $techRole->id, 'name' => 'Tech A']);
-        $this->techB = User::factory()->create(['role_id' => $techRole->id, 'name' => 'Tech B']);
+        $this->admin = User::factory()->create(['role_id' => $adminRole->id, 'name' => 'Admin User'])->refresh();
+        $this->techA = User::factory()->create(['role_id' => $techRole->id, 'name' => 'Tech A'])->refresh();
+        $this->techB = User::factory()->create(['role_id' => $techRole->id, 'name' => 'Tech B'])->refresh();
     }
 
     public function test_ticket_visibility()

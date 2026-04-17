@@ -45,7 +45,7 @@ class GenieACSServiceTest extends TestCase
             ], 200),
 
             // Mock setParameterValues
-            '*/devices/device-123/tasks?timeout=8000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
+            '*/devices/device-123/tasks?timeout=10000&connection_request' => Http::response(['name' => 'setParameterValues'], 200),
         ]);
 
         $service = new GenieACSService;
@@ -56,7 +56,7 @@ class GenieACSServiceTest extends TestCase
             'password_5g' => 'NewPass5G',
         ]);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
 
         // Verify the request sent to GenieACS
         Http::assertSent(function ($request) {
@@ -109,7 +109,7 @@ class GenieACSServiceTest extends TestCase
             'password_2g' => 'NewPass',
         ]);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
 
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), '/tasks')) {
@@ -158,7 +158,7 @@ class GenieACSServiceTest extends TestCase
             'password_2g' => 'NewPass',
         ]);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
 
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), '/tasks')) {
@@ -205,7 +205,7 @@ class GenieACSServiceTest extends TestCase
             'password_5g' => 'NewPass5G',
         ]);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
 
     }
 
@@ -232,7 +232,7 @@ class GenieACSServiceTest extends TestCase
             'ssid_5g' => 'NewSSID5G', // Should be ignored
         ]);
 
-        $this->assertTrue($result); // Should succeed for 2.4G
+        $this->assertTrue($result['success']); // Should succeed for 2.4G
 
     }
 
@@ -269,7 +269,7 @@ class GenieACSServiceTest extends TestCase
         $service = new GenieACSService;
         $result = $service->updateWanSettings('device-vlan', 'newuser', 'newpass', 200);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
     }
 
     public function test_set_parameter_values_treats_curl52_as_success()
@@ -286,7 +286,7 @@ class GenieACSServiceTest extends TestCase
             'Device.Test.Param' => 'value',
         ]);
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['success']);
     }
 
     public function test_reboot_device_falls_back_to_queue_on_failure()

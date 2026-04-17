@@ -28,14 +28,14 @@ class PiketAndLeaveTest extends TestCase
         $techRole = Role::create(['name' => 'technician', 'label' => 'Technician']);
 
         // Create Permissions
-        $perms = ['leave.manage', 'schedule.manage', 'setting.view'];
+        $perms = ['leave.manage', 'schedule.manage', 'schedule.view', 'setting.view'];
         foreach ($perms as $p) {
             $perm = Permission::create(['name' => $p, 'label' => $p, 'group' => 'attendance']);
             $adminRole->permissions()->attach($perm);
         }
 
         // Create Technician Permissions
-        $techPerms = ['leave.view', 'leave.create'];
+        $techPerms = ['leave.view', 'leave.create', 'schedule.view'];
         foreach ($techPerms as $p) {
             $perm = Permission::firstOrCreate(['name' => $p], ['label' => $p, 'group' => 'attendance']);
             $techRole->permissions()->attach($perm);
@@ -43,11 +43,11 @@ class PiketAndLeaveTest extends TestCase
 
         $this->admin = User::factory()->create([
             'role_id' => $adminRole->id,
-        ]);
+        ])->refresh();
 
         $this->technician = User::factory()->create([
             'role_id' => $techRole->id,
-        ]);
+        ])->refresh();
 
         // Ensure quota setting exists
         Setting::updateOrCreate(
