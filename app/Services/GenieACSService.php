@@ -1724,7 +1724,8 @@ class GenieACSService
                             $lastInformAt = Carbon::parse($lastInformRaw);
                             $now = now();
                             $tooFarInFuture = $lastInformAt->gt($now->copy()->addMinutes(2));
-                            $isRecent = $lastInformAt->gte($now->copy()->subMinutes(5));
+                            $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+                            $isRecent = $lastInformAt->gte($now->copy()->subMinutes($threshold));
                             $isOnline = (! $tooFarInFuture) && $isRecent;
                         } catch (\Throwable $e) {
                             $isOnline = false;
@@ -1830,7 +1831,7 @@ class GenieACSService
         try {
             $devices = $this->getDevices(500, 0);
             $now = Carbon::now();
-            $onlineThreshold = 10; // minutes
+            $onlineThreshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
 
             $online = 0;
             $offline = 0;

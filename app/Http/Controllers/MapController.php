@@ -126,9 +126,10 @@ class MapController extends Controller implements HasMiddleware
                 $isOnline = (bool) $status->is_online;
                 $lastInform = $status->last_inform;
                 
-                // If is_online is true but last inform is more than 5 minutes ago, 
-                // it might be "stale online"
-                if ($isOnline && $lastInform && $lastInform->diffInMinutes(now()) > 5) {
+                // Use configurable threshold for "stale online" check
+                $threshold = (int) \App\Models\Setting::getValue('genieacs_online_threshold_minutes', 15);
+                
+                if ($isOnline && $lastInform && $lastInform->diffInMinutes(now()) > $threshold) {
                     $isOnline = false; // Mark as offline if inform is too old
                 }
 

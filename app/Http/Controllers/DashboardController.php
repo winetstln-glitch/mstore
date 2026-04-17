@@ -29,7 +29,8 @@ class DashboardController extends Controller
             ->take($limit)
             ->get()
             ->map(function (GenieDeviceStatus $log) {
-                $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes(15));
+                $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+                $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes($threshold));
                 $isOnline = (bool) $log->is_online && $isFresh;
                 $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
                 $notifyUp = $log->last_notified_up_at ? $log->last_notified_up_at->format('d M H:i') : null;
