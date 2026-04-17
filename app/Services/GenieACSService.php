@@ -1725,9 +1725,12 @@ class GenieACSService
                         try {
                             $lastInformAt = Carbon::parse($lastInformRaw);
                             $now = now();
-                            $tooFarInFuture = $lastInformAt->gt($now->copy()->addMinutes(2));
                             $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+                            
                             $isRecent = $lastInformAt->gte($now->copy()->subMinutes($threshold));
+                            // Allow up to 2 hours in the future for significant clock drift/timezone mismatch
+                            $tooFarInFuture = $lastInformAt->gt($now->copy()->addHours(2));
+                            
                             $isOnline = (! $tooFarInFuture) && $isRecent;
                         } catch (\Throwable $e) {
                             $isOnline = false;
