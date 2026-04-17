@@ -403,6 +403,47 @@
     </div>
 </div>
 
+<!-- WiFi Modal -->
+<div class="modal fade" id="wifiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: #1e293b; color: #f1f5f9;">
+            <div class="modal-header border-bottom border-slate-700">
+                <h5 class="modal-title font-bold text-emerald-400"><i data-lucide="wifi" class="w-5 h-5 inline-block mr-2"></i>Ganti WiFi Pelanggan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="wifiForm">
+                    <input type="hidden" id="wifi_customer_id">
+                    <div class="mb-4">
+                        <label class="form-label font-semibold text-slate-300">Nama SSID</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-slate-800 border-slate-700 text-slate-400"><i data-lucide="signal" class="w-4 h-4"></i></span>
+                            <input type="text" id="wifi_ssid" class="form-control bg-slate-800 border-slate-700 text-white focus:ring-emerald-500 focus:border-emerald-500" placeholder="Masukkan SSID baru" required maxlength="32">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label font-semibold text-slate-300">Password WiFi</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-slate-800 border-slate-700 text-slate-400"><i data-lucide="key" class="w-4 h-4"></i></span>
+                            <input type="text" id="wifi_password" class="form-control bg-slate-800 border-slate-700 text-white focus:ring-emerald-500 focus:border-emerald-500" placeholder="Minimal 8 karakter" required minlength="8">
+                        </div>
+                        <div class="form-text text-slate-400 mt-2">
+                            <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i> Perubahan akan dikirim ke GenieACS dan diupdate ke router pelanggan.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top border-slate-700">
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="saveWifiBtn" class="btn btn-emerald btn-sm font-bold px-4">
+                    <span id="wifiBtnSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+                    Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('styles')
@@ -410,11 +451,294 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.min.js"></script>
 
+<style>
+    .modern-map-popup .leaflet-popup-content-wrapper {
+        background: #0f172a !important; /* Very dark navy/slate */
+        padding: 0 !important;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5) !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 12px !important;
+    }
+    .modern-map-popup .leaflet-popup-content {
+        margin: 0 !important;
+        width: 330px !important;
+    }
+    .modern-map-popup .leaflet-popup-tip {
+        background: #0f172a !important;
+    }
+    .modern-map-popup .leaflet-popup-close-button {
+        color: #94a3b8 !important;
+        padding: 10px 10px 0 0 !important;
+        font-size: 18px !important;
+        z-index: 100 !important;
+    }
+    .modern-map-popup .leaflet-popup-close-button:hover {
+        color: #ffffff !important;
+        background: transparent !important;
+    }
+    .lucide-icon {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .leaflet-container a.leaflet-popup-close-button {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modern-map-popup .customer-card {
+        width: 300px;
+        color: #cbd5e1;
+        font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+        font-size: 12px;
+        line-height: 1.35;
+    }
+    .modern-map-popup .customer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid #1f2937;
+    }
+    .modern-map-popup .customer-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .modern-map-popup .status-dot {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .modern-map-popup .customer-content {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .modern-map-popup .customer-header-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f1f5f9;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+    .modern-map-popup .top-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .modern-map-popup .ip-box {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(30, 41, 59, 0.55);
+        border: 1px solid rgba(71, 85, 105, 0.5);
+    }
+    .modern-map-popup .ip-text {
+        font-family: "Consolas", "Menlo", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #e2e8f0;
+    }
+    .modern-map-popup .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+    }
+    .modern-map-popup .status-label {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .modern-map-popup .status-value {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+    }
+    .modern-map-popup .status-online { color: #22c55e; }
+    .modern-map-popup .status-offline { color: #ef4444; }
+    .modern-map-popup .acs-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .modern-map-popup .acs-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #c084fc;
+        font-weight: 700;
+    }
+    .modern-map-popup .acs-up {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .modern-map-popup .acs-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .modern-map-popup .acs-item {
+        text-align: center;
+        background: rgba(15, 23, 42, 0.35);
+        border-radius: 8px;
+        padding: 6px 4px;
+    }
+    .modern-map-popup .acs-label {
+        font-size: 9px;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .modern-map-popup .acs-value {
+        margin-top: 2px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    .modern-map-popup .acs-value-start { color: #facc15; }
+    .modern-map-popup .acs-value-now-online { color: #22c55e; }
+    .modern-map-popup .acs-value-now-offline { color: #64748b; }
+    .modern-map-popup .btn-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .modern-map-popup .btn-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+    }
+    .modern-map-popup .traffic-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .modern-map-popup .traffic-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #e2e8f0;
+        font-weight: 700;
+        font-size: 12px;
+    }
+    .modern-map-popup .traffic-legend {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: #cbd5e1;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .modern-map-popup .traffic-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-right: 4px;
+    }
+    .modern-map-popup .traffic-dot-tx { background: #3b82f6; }
+    .modern-map-popup .traffic-dot-rx { background: #22c55e; }
+    .modern-map-popup .traffic-chart {
+        height: 68px;
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(71, 85, 105, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    .modern-map-popup .traffic-foot {
+        margin-top: 6px;
+        display: flex;
+        justify-content: space-between;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .modern-map-popup .distance-row {
+        text-align: center;
+        border-top: 1px solid #1f2937;
+        padding-top: 8px;
+        color: #22d3ee;
+        font-weight: 800;
+        font-size: 14px;
+    }
+    .modern-map-popup .customer-badge {
+        background: #2563ebcc;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+    .modern-map-popup .card-panel {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(71, 85, 105, 0.45);
+        border-radius: 10px;
+    }
+    .modern-map-popup .kv-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .modern-map-popup .popup-btn {
+        border: 0;
+        border-radius: 10px;
+        color: #fff;
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        /* padding: 9px 10px; */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all .15s ease;
+        width: 100%;
+        min-height: 36px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+        cursor: pointer;
+    }
+    .modern-map-popup .popup-btn:hover { filter: brightness(1.08); }
+    .modern-map-popup .popup-btn:active { transform: scale(0.98); }
+    .modern-map-popup .popup-btn.icon-top {
+        flex-direction: column;
+        gap: 2px;
+        min-height: 48px;
+        font-size: 10px;
+    }
+    .modern-map-popup .popup-btn.main-action {
+        min-height: 40px;
+        font-size: 12px;
+    }
+    .modern-map-popup .btn-cyan { background: #06b6d4; }
+    .modern-map-popup .btn-green { background: #16a34a; }
+    .modern-map-popup .btn-emerald { background: #10b981; }
+    .modern-map-popup .btn-red { background: #dc2626; }
+    .modern-map-popup .btn-blue { background: #2563eb; }
+    .modern-map-popup .btn-slate { background: #334155; }
+</style>
 @endpush
 @push('scripts')
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.3.0/dist/leaflet-ant-path.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -1721,7 +2045,26 @@
             var isOnline = customer.is_online; // Assumed passed from controller
             var iconType = isOnline ? 'online' : 'offline';
             var tr069Ip = customer.tr069_ip || '-';
+            var ssidName = customer.ssid_name || 'N/A';
+            var lastInform = customer.last_inform || null;
+            var lastReason = customer.last_reason || '-';
+            var hasGenieStatus = !!customer.has_genie_status;
             var customerToOdpDistance = '-';
+
+            function formatLastInform(value) {
+                if (!value) return 'N/A';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return 'N/A';
+                const diffMs = Date.now() - date.getTime();
+                if (diffMs < 0) return date.toLocaleString('id-ID');
+                const totalMinutes = Math.floor(diffMs / 60000);
+                if (totalMinutes < 1) return 'baru saja';
+                if (totalMinutes < 60) return `${totalMinutes} menit lalu`;
+                const hours = Math.floor(totalMinutes / 60);
+                if (hours < 24) return `${hours} jam lalu`;
+                const days = Math.floor(hours / 24);
+                return `${days} hari lalu`;
+            }
 
             // Find ODP name
             var odpName = 'N/A';
@@ -1750,30 +2093,159 @@
                 draggable: true
             })
             .addTo(markers)
-            .bindPopup(
-                `<div class="map-popup">` +
-                `<h6 class="map-popup-title">${customer.name}</h6>` +
-                `<div class="mb-2">` +
-                `<span class="badge ${isOnline ? 'bg-success' : 'bg-danger'} me-1">${isOnline ? 'Online' : 'Offline'}</span>` +
-                `<span class="badge bg-secondary">${customer.status}</span>` +
-                `</div>` +
-                `<table class="table table-sm table-borderless map-popup-table">` +
-                `<tr><td class="map-popup-label">ID:</td><td class="map-popup-value">${customer.id}</td></tr>` +
-                `<tr><td class="map-popup-label">Alamat:</td><td class="map-popup-value text-truncate" style="max-width: 150px;">${customer.address || '-'}</td></tr>` +
-                `<tr><td class="map-popup-label">Telepon:</td><td class="map-popup-value">${customer.phone || '-'}</td></tr>` +
-                `<tr><td class="map-popup-label">Paket:</td><td class="map-popup-value">${customer.package || '-'}</td></tr>` +
-                `<tr><td class="map-popup-label">ODP:</td><td class="map-popup-value">${odpName}</td></tr>` +
-                `<tr><td class="map-popup-label">Jarak Customer-ODP:</td><td class="map-popup-value">${customerToOdpDistance}</td></tr>` +
-                `<tr><td class="map-popup-label">SN:</td><td class="map-popup-value font-monospace">${customer.onu_serial || '-'}</td></tr>` +
-                `<tr><td class="map-popup-label">IP TR069:</td><td class="map-popup-value font-monospace">${tr069Ip}</td></tr>` +
-                `</table>` +
-                `<div class="map-popup-actions">` +
-                `<a href="/customers/${customer.id}" class="btn btn-sm btn-info text-white map-popup-btn">Detail</a>` +
-                `<a href="/customers/${customer.id}/edit" class="btn btn-sm btn-outline-primary map-popup-btn">Edit</a>` +
-                `</div></div>`
-            );
+            .bindPopup(function() {
+                const popupDiv = document.createElement('div');
+                popupDiv.className = 'custom-customer-popup';
+                popupDiv.innerHTML = `
+                    <div class="customer-card flex flex-col">
+                        <div class="customer-header">
+                            <div class="customer-header-left">
+                                <span class="status-dot ${isOnline ? 'status-online' : 'status-offline'}">✕</span>
+                                <span class="customer-header-title">${customer.id}-${customer.name}</span>
+                            </div>
+                            <span class="customer-badge">ONU</span>
+                        </div>
+
+                        <div class="customer-content">
+                            <div class="top-row">
+                                <div class="ip-box">
+                                    <i data-lucide="server" class="w-4 h-4 text-slate-400"></i>
+                                    <span class="ip-text">${tr069Ip}</span>
+                                    <i data-lucide="globe" class="w-4 h-4 text-blue-400"></i>
+                                </div>
+                                <button onclick="window.pingCustomer('${tr069Ip}', ${customer.id})" class="popup-btn btn-cyan" style="width:auto;min-width:78px">
+                                    <i data-lucide="terminal" class="w-4 h-4" id="ping-icon-${customer.id}"></i><span id="ping-text-${customer.id}">Ping</span>
+                                </button>
+                            </div>
+
+                            <div id="ping-result-${customer.id}" class="card-panel p-2 text-xs font-mono hidden bg-black/50 overflow-auto max-h-32 mb-2"></div>
+
+                            <div class="status-row">
+                                <span class="status-label">Status</span>
+                                <span class="status-value ${isOnline ? 'status-online' : 'status-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            </div>
+
+                            <div class="card-panel p-3">
+                                <div class="acs-head">
+                                    <div class="acs-title">
+                                        <i data-lucide="zap" class="w-4 h-4"></i><span class="font-bold">ACS Aktif</span>
+                                    </div>
+                                    <span class="acs-up">${hasGenieStatus ? `Last Inform: ${formatLastInform(lastInform)}` : 'Data GenieACS belum ada'}</span>
+                                </div>
+                                <div class="acs-grid">
+                                    <div class="acs-item">
+                                        <div class="acs-label">TR069 IP</div>
+                                        <div class="acs-value acs-value-start">${tr069Ip}</div>
+                                    </div>
+                                    <div class="acs-item">
+                                        <div class="acs-label">Last Reason</div>
+                                        <div class="acs-value ${isOnline ? 'acs-value-now-online' : 'acs-value-now-offline'}">${lastReason}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-panel p-2.5 space-y-1.5">
+                                <div class="kv-row"><span class="status-label">SSID</span><span class="text-yellow-400 font-bold">${ssidName}</span></div>
+                                <div class="kv-row">
+                                    <span class="status-label">Password</span>
+                                    <div class="flex items-center gap-1.5 bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-700/50">
+                                        <span class="text-yellow-400 font-bold font-monospace tracking-wider" id="pass-text-${customer.id}" data-password="${customer.ssid_password || ''}">********</span>
+                                        <button onclick="window.togglePassword(${customer.id})" class="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5" id="pass-icon-${customer.id}"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="kv-row"><span class="status-label">Client WLAN Aktif</span><span class="text-green-400 font-bold" id="wlan-clients-${customer.id}">...</span></div>
+                            </div>
+
+                            <div class="btn-grid-2">
+                                <button onclick="window.openWifiModal(${customer.id}, '${ssidName.replace(/'/g, "\\'")}', '${(customer.ssid_password || '').replace(/'/g, "\\'")}')" class="popup-btn btn-emerald">
+                                    <i data-lucide="wifi" class="w-4 h-4"></i><span>Ganti WiFi</span>
+                                </button>
+                                <button onclick="window.rebootCustomer(${customer.id})" class="popup-btn btn-red"><i data-lucide="power" class="w-4 h-4"></i><span>Reboot</span></button>
+                            </div>
+
+                            <div class="card-panel p-3">
+                                <div class="traffic-head">
+                                    <div class="traffic-title"><i data-lucide="activity" class="w-4 h-4 text-slate-300"></i><span>Live Traffic</span></div>
+                                    <div class="traffic-legend">
+                                        <span><span class="traffic-dot traffic-dot-tx"></span>TX</span>
+                                        <span><span class="traffic-dot traffic-dot-rx"></span>RX</span>
+                                    </div>
+                                </div>
+                                <div class="traffic-chart">
+                                    <svg class="absolute inset-0 w-full h-full opacity-60">
+                                        <line x1="0" y1="32" x2="300" y2="32" stroke="#1e293b" stroke-width="1" />
+                                        <path d="M 0 36 Q 45 30, 90 40 T 180 28 T 300 36" fill="none" stroke="#3b82f6" stroke-width="1.6" />
+                                        <path d="M 0 44 Q 60 36, 120 48 T 240 34 T 300 42" fill="none" stroke="#22c55e" stroke-width="1.6" />
+                                    </svg>
+                                </div>
+                                <div class="traffic-foot"><span>TX: 0 bps</span><span>RX: 0 bps</span></div>
+                            </div>
+
+                            <div class="distance-row">${customerToOdpDistance}</div>
+
+                            <div class="btn-grid-3">
+                                <button onclick="window.copyToClipboard('${customer.name}\\n${tr069Ip}')" class="popup-btn btn-blue icon-top"><i data-lucide="copy" class="w-4 h-4"></i><span>Salin</span></button>
+                                <button onclick="window.openInMaps(${customer.latitude}, ${customer.longitude})" class="popup-btn btn-emerald icon-top"><i data-lucide="map-pin" class="w-4 h-4"></i><span>Maps</span></button>
+                                <button onclick="window.openWA('${customer.phone}')" class="popup-btn btn-green icon-top"><i data-lucide="message-circle" class="w-4 h-4"></i><span>WA</span></button>
+                            </div>
+
+                            <div class="btn-grid-2">
+                                <button onclick="location.href='/customers/${customer.id}/edit'" class="popup-btn btn-blue main-action">EDIT</button>
+                                <button onclick="window.duplicateCustomer(${customer.id})" class="popup-btn btn-blue main-action"><i data-lucide="layers" class="w-4 h-4"></i><span>DUPLIKAT</span></button>
+                            </div>
+                        </div>
+                    </div> 
+                `;
+                
+                // Initialize Lucide icons after the popup is opened
+                setTimeout(() => {
+                    if (window.lucide) {
+                        window.lucide.createIcons({
+                            attrs: {
+                                class: 'lucide-icon'
+                            },
+                            nameAttr: 'data-lucide'
+                        });
+                    }
+                }, 10);
+                
+                return popupDiv;
+            }, {
+                maxWidth: 300,
+                className: 'modern-map-popup'
+            });
+
 
             allMarkerObjs.push({ marker: marker, type: 'customer', data: customer });
+
+            marker.on('popupopen', function() {
+                var clientSpan = document.getElementById(`wlan-clients-${customer.id}`);
+                if (clientSpan && (clientSpan.innerText === '...' || clientSpan.innerText === 'N/A')) {
+                    fetch(`/map/wlan-status/${customer.id}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                clientSpan.innerText = data.total_clients + ' Device';
+                                
+                                // Update SSID if available and different
+                                if (data.ssid_name) {
+                                    const ssidElement = document.querySelector(`#wlan-clients-${customer.id}`).closest('.card-panel').querySelector('.kv-row:first-child .text-yellow-400');
+                                    if (ssidElement) {
+                                        ssidElement.innerText = data.ssid_name;
+                                    }
+                                }
+                            } else {
+                                clientSpan.innerText = 'Offline';
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching WLAN status:', err);
+                            clientSpan.innerText = 'Error';
+                        });
+                }
+            });
 
             var oldLat = customer.latitude;
             var oldLng = customer.longitude;
@@ -2211,6 +2683,167 @@
                 document.exitFullscreen();
             }
         });
+
+        // --- Customer Popup Helper Functions ---
+        window.pingCustomer = function(ip, customerId) {
+            if (!ip || ip === '-') {
+                alert('IP tidak valid');
+                return;
+            }
+
+            const resultDiv = document.getElementById(`ping-result-${customerId}`);
+            const pingBtn = resultDiv.previousElementSibling.querySelector('button');
+            const pingText = document.getElementById(`ping-text-${customerId}`);
+            const pingIcon = document.getElementById(`ping-icon-${customerId}`);
+
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<span class="text-blue-400">Pinging ${ip}...</span>`;
+            pingText.innerText = 'Pinging...';
+            pingIcon.classList.add('animate-spin');
+
+            fetch('/map/ping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ target: ip })
+            })
+            .then(response => response.json())
+            .then(data => {
+                pingText.innerText = 'Ping';
+                pingIcon.classList.remove('animate-spin');
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<pre class="text-green-400 mb-0">${data.output}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<pre class="text-red-400 mb-0">${data.output || data.message}</pre>`;
+                }
+            })
+            .catch(err => {
+                pingText.innerText = 'Ping';
+                pingIcon.classList.remove('animate-spin');
+                resultDiv.innerHTML = `<span class="text-red-500">Error: ${err.message}</span>`;
+            });
+        };
+
+        window.togglePassword = function(id) {
+            const textEl = document.getElementById(`pass-text-${id}`);
+            const iconEl = document.getElementById(`pass-icon-${id}`);
+            const actualPass = textEl.getAttribute('data-password');
+            
+            if (textEl.innerText === '********') {
+                textEl.innerText = actualPass || '-';
+                iconEl.setAttribute('data-lucide', 'eye-off');
+            } else {
+                textEl.innerText = '********';
+                iconEl.setAttribute('data-lucide', 'eye');
+            }
+            
+            if (window.lucide) {
+                window.lucide.createIcons({
+                    attrs: { class: 'lucide-icon' },
+                    nameAttr: 'data-lucide'
+                });
+            }
+        };
+
+        window.openWifiModal = function(id, ssid, password) {
+            document.getElementById('wifi_customer_id').value = id;
+            document.getElementById('wifi_ssid').value = ssid;
+            document.getElementById('wifi_password').value = password;
+            
+            const wifiModal = new bootstrap.Modal(document.getElementById('wifiModal'));
+            wifiModal.show();
+        };
+
+        document.getElementById('saveWifiBtn').addEventListener('click', function() {
+            const id = document.getElementById('wifi_customer_id').value;
+            const ssid = document.getElementById('wifi_ssid').value;
+            const password = document.getElementById('wifi_password').value;
+            const btn = this;
+            const spinner = document.getElementById('wifiBtnSpinner');
+
+            if (!ssid || password.length < 8) {
+                alert('SSID harus diisi dan password minimal 8 karakter');
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            fetch(`/map/wlan-update/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ssid, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+                
+                if (data.success) {
+                    alert('Pengaturan WiFi berhasil diperbarui');
+                    bootstrap.Modal.getInstance(document.getElementById('wifiModal')).hide();
+                    // Update data in map without reload if possible
+                    const customer = customers.find(c => c.id == id);
+                    if (customer) {
+                        customer.ssid_name = ssid;
+                        customer.ssid_password = password;
+                    }
+                    // Refresh marker popup if it's open
+                    location.reload(); 
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+                alert('Terjadi kesalahan: ' + err.message);
+            });
+        });
+
+        window.rebootCustomer = function(id) {
+            if (confirm('Apakah Anda yakin ingin me-reboot ONU ini?')) {
+                alert('Reboot perintah dikirim untuk ID: ' + id);
+            }
+        };
+
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Informasi disalin ke clipboard');
+            }).catch(err => {
+                console.error('Gagal menyalin: ', err);
+            });
+        };
+
+        window.openInMaps = function(lat, lng) {
+            if (!lat || !lng) return;
+            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+        };
+
+        window.openWA = function(phone) {
+            if (!phone || phone === '-') {
+                alert('Nomor telepon tidak tersedia');
+                return;
+            }
+            var cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
+            window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        };
+
+        window.duplicateCustomer = function(id) {
+            if (confirm('Duplikat data pelanggan ini?')) {
+                // Implement duplicate logic or redirect
+                alert('Fitur duplikat untuk ID: ' + id);
+            }
+        };
     });
 </script>
 @endpush

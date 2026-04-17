@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader as XLSXReader;
 use OpenSpout\Writer\XLSX\Writer;
@@ -1359,77 +1360,113 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ->whereNull('user_id')
             ->orderBy('id')
             ->each(function (Employee $employee) use ($roleIds, $fallbackRoleId) {
-                $username = 'emp'.$employee->id;
-                if (User::query()->where('username', $username)->exists()) {
-                    $username = 'emp'.$employee->id.'_'.strtolower(substr(md5((string) $employee->id), 0, 4));
-                }
+                try {
+                    $baseUsername = 'emp'.$employee->id;
+                    $username = $baseUsername;
+                    $counter = 1;
+                    while (User::query()->where('username', $username)->exists()) {
+                        $username = $baseUsername.'_'.strtolower(substr(md5((string) ($employee->id + $counter)), 0, 4));
+                        $counter++;
+                        if ($counter > 10) {
+                            $username = $baseUsername.'_'.Str::random(4);
+                        }
+                    }
 
-                $email = $employee->email;
-                if ($email && User::query()->where('email', $email)->exists()) {
-                    $email = null;
-                }
-                if (! $email) {
-                    $email = $username.'@mstore.local';
-                }
-                if (User::query()->where('email', $email)->exists()) {
-                    $email = $username.'_'.strtolower(substr(md5($username), 0, 4)).'@mstore.local';
-                }
+                    $email = $employee->email;
+                    if ($email && User::query()->where('email', $email)->exists()) {
+                        $email = null;
+                    }
+                    if (! $email) {
+                        $email = $username.'@mstore.local';
+                    }
+                    
+                    $baseEmail = $email;
+                    $emailCounter = 1;
+                    while (User::query()->where('email', $email)->exists()) {
+                        $parts = explode('@', $baseEmail);
+                        $email = $parts[0].'_'.Str::random(4).'@'.($parts[1] ?? 'mstore.local');
+                        $emailCounter++;
+                        if ($emailCounter > 10) break;
+                    }
 
-                $department = strtolower(trim((string) $employee->department));
-                $position = strtolower(trim((string) $employee->position));
+                    $department = strtolower(trim((string) $employee->department));
+                    $position = strtolower(trim((string) $employee->position));
 
-                $roleId = $fallbackRoleId;
-                if ($department === 'wash') {
-                    $roleId = str_contains($position, 'kasir')
-                        ? ($roleIds['kasir-wash'] ?? $roleIds['karyawan-wash'] ?? $fallbackRoleId)
-                        : ($roleIds['karyawan-wash'] ?? $fallbackRoleId);
-                } elseif ($department === 'atk') {
-                    $roleId = $roleIds['kasir-atk'] ?? $fallbackRoleId;
-                } elseif ($department === 'keuangan') {
-                    $roleId = $roleIds['finance'] ?? $fallbackRoleId;
-                } elseif ($department === 'teknis' || str_contains($position, 'teknisi') || str_contains($position, 'technician')) {
-                    $roleId = $roleIds['technician'] ?? $fallbackRoleId;
+                    $roleId = $fallbackRoleId;
+                    if ($department === 'wash') {
+                        $roleId = str_contains($position, 'kasir')
+                            ? ($roleIds['kasir-wash'] ?? $roleIds['karyawan-wash'] ?? $fallbackRoleId)
+                            : ($roleIds['karyawan-wash'] ?? $fallbackRoleId);
+                    } elseif ($department === 'atk') {
+                        $roleId = $roleIds['kasir-atk'] ?? $fallbackRoleId;
+                    } elseif ($department === 'keuangan') {
+                        $roleId = $roleIds['finance'] ?? $fallbackRoleId;
+                    } elseif ($department === 'teknis' || str_contains($position, 'teknisi') || str_contains($position, 'technician')) {
+                        $roleId = $roleIds['technician'] ?? $fallbackRoleId;
+                    }
+
+                    DB::transaction(function () use ($employee, $username, $email, $roleId) {
+                        $user = User::create([
+                            'name' => $employee->full_name,
+                            'username' => $username,
+                            'email' => $email,
+                            'phone' => $employee->phone,
+                            'password' => Hash::make('password'),
+                            'role_id' => $roleId,
+                            'is_active' => true,
+                        ]);
+
+                        $employee->user_id = $user->id;
+                        $employee->save();
+                    });
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to auto-create user for employee ID '.$employee->id.': '.$e->getMessage());
                 }
-
-                $user = User::create([
-                    'name' => $employee->full_name,
-                    'username' => $username,
-                    'email' => $email,
-                    'phone' => $employee->phone,
-                    'password' => Hash::make('password'),
-                    'role_id' => $roleId,
-                    'is_active' => true,
-                ]);
-
-                $employee->user_id = $user->id;
-                $employee->save();
             });
 
         WashEmployee::query()
             ->whereNull('user_id')
             ->orderBy('id')
             ->each(function (WashEmployee $washEmployee) use ($roleIds, $fallbackRoleId) {
-                $username = 'wash'.$washEmployee->id;
-                if (User::query()->where('username', $username)->exists()) {
-                    $username = 'wash'.$washEmployee->id.'_'.strtolower(substr(md5((string) $washEmployee->id), 0, 4));
+                try {
+                    $baseUsername = 'wash'.$washEmployee->id;
+                    $username = $baseUsername;
+                    $counter = 1;
+                    while (User::query()->where('username', $username)->exists()) {
+                        $username = $baseUsername.'_'.strtolower(substr(md5((string) ($washEmployee->id + $counter)), 0, 4));
+                        $counter++;
+                        if ($counter > 10) {
+                            $username = $baseUsername.'_'.Str::random(4);
+                        }
+                    }
+
+                    $roleId = $roleIds['karyawan-wash'] ?? $fallbackRoleId;
+
+                    $email = $username.'@mstore.local';
+                    $emailCounter = 1;
+                    while (User::query()->where('email', $email)->exists()) {
+                        $email = $username.'_'.Str::random(4).'@mstore.local';
+                        $emailCounter++;
+                        if ($emailCounter > 10) break;
+                    }
+
+                    DB::transaction(function () use ($washEmployee, $username, $email, $roleId) {
+                        $user = User::create([
+                            'name' => $washEmployee->name,
+                            'username' => $username,
+                            'email' => $email,
+                            'phone' => $washEmployee->phone,
+                            'password' => Hash::make('password'),
+                            'role_id' => $roleId,
+                            'is_active' => true,
+                        ]);
+
+                        $washEmployee->user_id = $user->id;
+                        $washEmployee->save();
+                    });
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to auto-create user for wash employee ID '.$washEmployee->id.': '.$e->getMessage());
                 }
-
-                $roleId = $roleIds['karyawan-wash'] ?? $fallbackRoleId;
-
-                $user = User::create([
-                    'name' => $washEmployee->name,
-                    'username' => $username,
-                    'email' => User::query()->where('email', $username.'@mstore.local')->exists()
-                        ? $username.'_'.strtolower(substr(md5($username), 0, 4)).'@mstore.local'
-                        : $username.'@mstore.local',
-                    'phone' => $washEmployee->phone,
-                    'password' => Hash::make('password'),
-                    'role_id' => $roleId,
-                    'is_active' => true,
-                ]);
-
-                $washEmployee->user_id = $user->id;
-                $washEmployee->save();
             });
     }
 

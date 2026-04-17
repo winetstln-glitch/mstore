@@ -99,7 +99,7 @@ class MapController extends Controller implements HasMiddleware
             });
         }
 
-        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package', 'path'])
+        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package', 'path', 'ssid_name', 'ssid_password', 'genieacs_device_id'])
             ->with('odp:id,region_id')
             ->get();
 
@@ -123,13 +123,30 @@ class MapController extends Controller implements HasMiddleware
             }
 
             if ($status) {
-                $customer->is_online = (bool) $status->is_online;
+                $isOnline = (bool) $status->is_online;
+                $lastInform = $status->last_inform;
+                
+                // If is_online is true but last inform is more than 5 minutes ago, 
+                // it might be "stale online"
+                if ($isOnline && $lastInform && $lastInform->diffInMinutes(now()) > 5) {
+                    $isOnline = false; // Mark as offline if inform is too old
+                }
+
+                $customer->is_online = $isOnline;
                 $customer->tr069_ip = $status->tr069_ip;
+                $customer->last_inform = $lastInform?->toIso8601String();
+                $customer->last_reason = $status->last_reason;
+                $customer->connection_request_url = $status->connection_request_url;
+                $customer->has_genie_status = true;
                 $customer->rx_power = null;
                 $customer->genie_name = null;
             } else {
                 $customer->is_online = false;
                 $customer->tr069_ip = null;
+                $customer->last_inform = null;
+                $customer->last_reason = null;
+                $customer->connection_request_url = null;
+                $customer->has_genie_status = false;
                 $customer->rx_power = null;
                 $customer->genie_name = null;
             }
@@ -353,5 +370,150 @@ class MapController extends Controller implements HasMiddleware
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Get WLAN status for a specific customer from GenieACS.
+     */
+    public function getCustomerWlanStatus(Customer $customer)
+    {
+        $deviceId = $customer->genieacs_device_id;
+
+        if (! $deviceId && $customer->onu_serial) {
+            $deviceId = $customer->onu_serial;
+        }
+
+        if (! $deviceId) {
+            return response()->json(['success' => false, 'message' => 'No GenieACS ID available']);
+        }
+
+        try {
+            // Fetch device with limited fields for performance
+            $device = $this->genieService->getDeviceDetails($deviceId);
+            
+            if (!$device) {
+                return response()->json(['success' => false, 'message' => 'Device not found']);
+            }
+
+            $wifiClients = $this->genieService->getWifiClients($deviceId, $device);
+            $totalClients = 0;
+            if (is_array($wifiClients)) {
+                foreach ($wifiClients as $ssidIndex => $clients) {
+                    if (is_array($clients)) {
+                        $totalClients += count($clients);
+                    }
+                }
+            }
+
+            // Extract SSID and Uptime
+            $ssid = $this->genieService->getValue(
+                data_get($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') ?? 
+                data_get($device, 'Device.WiFi.SSID.1.SSID') ?? 
+                $customer->ssid_name
+            );
+
+            $uptime = $this->genieService->getValue(
+                data_get($device, 'VirtualParameters.getdeviceuptime') ?? 
+                data_get($device, 'InternetGatewayDevice.DeviceInfo.UpTime') ?? 
+                data_get($device, 'Device.DeviceInfo.UpTime')
+            );
+
+            return response()->json([
+                'success' => true,
+                'total_clients' => $totalClients,
+                'ssid_name' => $ssid,
+                'uptime' => $uptime,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Ping a target host/IP.
+     */
+    public function ping(Request $request)
+    {
+        $target = $request->input('target');
+        if (! $target) {
+            return response()->json(['success' => false, 'message' => 'Target IP/Host is required']);
+        }
+
+        // Clean target to avoid command injection
+        $target = escapeshellarg($target);
+
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $count = $isWindows ? '-n 4' : '-c 4';
+        $timeout = $isWindows ? '-w 1500' : '-W 2';
+        $command = "ping $count $timeout $target";
+
+        exec($command, $output, $result);
+
+        $success = ($result === 0);
+        $message = $success ? 'Ping success' : 'Ping failed / Timeout';
+        
+        if (!$success) {
+            $message .= ". Perangkat mungkin online ke ACS tapi tidak bisa di-ping langsung dari server (Firewall/NAT).";
+        }
+
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'output' => implode("\n", $output),
+        ]);
+    }
+
+    /**
+     * Update customer WLAN settings via GenieACS.
+     */
+    public function updateCustomerWlan(Request $request, Customer $customer)
+    {
+        $request->validate([
+            'ssid' => 'required|string|max:32',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $deviceId = $customer->genieacs_device_id ?: $customer->onu_serial;
+
+        if (! $deviceId) {
+            return response()->json(['success' => false, 'message' => 'No GenieACS ID available']);
+        }
+
+        try {
+            $data = [
+                'ssid_2g' => $request->ssid,
+                'password_2g' => $request->password,
+                'ssid_5g' => $request->ssid, // Usually same for simplicity in this context
+                'password_5g' => $request->password,
+            ];
+
+            $result = $this->genieService->updateWlanSettings($deviceId, $data);
+
+            if ($result['success']) {
+                // Also update local database
+                $customer->update([
+                    'ssid_name' => $request->ssid,
+                    'ssid_password' => $request->password,
+                ]);
+
+                $message = $result['message'] ?? 'WiFi settings updated successfully';
+                if (($result['status'] ?? '') === 'queued') {
+                    $message = 'WiFi sedang diproses (Antrian GenieACS). Perubahan akan diterapkan saat perangkat aktif.';
+                }
+
+                return response()->json([
+                    'success' => true, 
+                    'message' => $message,
+                    'status' => $result['status'] ?? 'immediate'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false, 
+                'message' => $result['message'] ?? 'Failed to update WiFi settings via GenieACS'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

@@ -121,8 +121,8 @@
 .logo-container {
     position: absolute;
     top: 5mm;
-    left: 5mm;
-    right: 5mm;
+    left: 4mm;
+    right: 4mm;
     z-index: 3;
     display: flex;
     align-items: center;
@@ -172,7 +172,7 @@
 .company-name {
     font-size: 3mm;
     font-weight: 900;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     line-height: 1.1;
     text-transform: uppercase;
     white-space: nowrap;

@@ -917,6 +917,7 @@ class GenieACSService
 
     /**
      * Set Parameter Values
+     * Returns ['success' => bool, 'status' => string, 'message' => string]
      */
     public function setParameterValues($deviceId, array $params)
     {
@@ -934,26 +935,32 @@ class GenieACSService
 
         // Attempt 1: Immediate execution (connection_request)
         try {
-            // Use a longer timeout (10s) for the immediate attempt
-            $response = Http::timeout(10)
-                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=8000&connection_request", [
+            // Use a longer timeout (12s) for the immediate attempt
+            $response = Http::timeout(12)
+                ->post("{$this->baseUrl}/devices/{$encodedId}/tasks?timeout=10000&connection_request", [
                     'name' => 'setParameterValues',
                     'parameterValues' => $parameterValues,
                 ]);
 
             if ($response->successful()) {
-                return true;
+                return [
+                    'success' => true,
+                    'status' => 'immediate',
+                    'message' => 'Applied immediately'
+                ];
             }
-            Log::warning('GenieACS SetParam Immediate Failed: '.$response->body());
+            
+            // If status is 202, it's usually queued anyway in some NBI versions, 
+            // but standard NBI returns 200 for successful connection request task.
+            Log::warning('GenieACS SetParam Immediate Failed (Status '.$response->status().'): '.$response->body());
         } catch (\Exception $e) {
             Log::error('GenieACS SetParam Immediate Error: '.$e->getMessage());
+            // If it's a timeout, we proceed to queue
         }
 
         // Attempt 2: Fallback to Queue only (no connection_request)
-        // This avoids timeouts or empty replies if the device is unreachable immediately
         try {
             Log::info("GenieACS: Retrying SetParam as Queued Task for $deviceId");
-            // Remove connection_request param and timeout to just queue it
             $response = Http::timeout($this->timeout)
                 ->post("{$this->baseUrl}/devices/{$encodedId}/tasks", [
                     'name' => 'setParameterValues',
@@ -961,30 +968,34 @@ class GenieACSService
                 ]);
 
             if ($response->successful()) {
-                return true;
+                return [
+                    'success' => true,
+                    'status' => 'queued',
+                    'message' => 'Command queued (Device unreachable for immediate update)'
+                ];
             }
 
-            // If even queuing fails, it might be a server issue, but let's try one more thing:
-            // Sometimes empty reply means it worked but connection dropped.
-            // Check if we got an empty body but 200 OK? No, successful() checks status.
-            // cURL 52 usually means the server dropped the connection.
-
             Log::error('GenieACS SetParam Queue Failed: '.$response->body());
-
-            // If the error is cURL 52 (Empty Reply), it's possible the server is just overloaded/badly configured
-            // but the request MIGHT have been processed.
-            // However, we can't be sure.
-
-            return false;
+            return [
+                'success' => false,
+                'status' => 'failed',
+                'message' => 'Failed to queue command: ' . $response->status()
+            ];
         } catch (\Exception $e) {
             Log::error('GenieACS SetParam Queue Error: '.$e->getMessage());
             if (str_contains($e->getMessage(), 'cURL error 52')) {
-                Log::warning("GenieACS SetParam Queue assumed success after cURL 52 for $deviceId");
-
-                return true;
+                return [
+                    'success' => true,
+                    'status' => 'queued',
+                    'message' => 'Command likely queued (Server connection reset)'
+                ];
             }
 
-            return false;
+            return [
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Connection error: ' . $e->getMessage()
+            ];
         }
     }
 
@@ -996,7 +1007,10 @@ class GenieACSService
         // 1. Get device to check model type
         $device = $this->getDeviceDetails($deviceId);
         if (! $device) {
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Device not found or unreachable'
+            ];
         }
 
         $params = [];
@@ -1043,7 +1057,10 @@ class GenieACSService
                 // Device.Ethernet.Link.1.X_...
             }
         } else {
-            return false; // Unknown model
+            return [
+                'success' => false,
+                'message' => 'Unknown device model structure'
+            ];
         }
 
         return $this->setParameterValues($deviceId, $params);
@@ -1058,7 +1075,10 @@ class GenieACSService
         if (! $device) {
             Log::error("GenieACS UpdateWlan: Device not found $deviceId");
 
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Device not found or unreachable'
+            ];
         }
 
         $params = [];
@@ -1140,13 +1160,19 @@ class GenieACSService
         } else {
             Log::error('GenieACS UpdateWlan: Unknown device model structure');
 
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Unknown device model structure'
+            ];
         }
 
         if (empty($params)) {
             Log::warning("GenieACS UpdateWlan: No parameters to update for $deviceId");
 
-            return false;
+            return [
+                'success' => false,
+                'message' => 'No parameters to update'
+            ];
         }
 
         return $this->setParameterValues($deviceId, $params);
@@ -1155,7 +1181,7 @@ class GenieACSService
     /**
      * Helper to safely extract value from GenieACS node
      */
-    private function getValue($node)
+    public function getValue($node)
     {
         if (is_array($node)) {
             return $node['_value'] ?? '';

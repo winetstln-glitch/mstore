@@ -232,6 +232,9 @@ Route::middleware('auth')->group(function () {
     Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])->name('map.update_path');
     Route::post('map/connections/save', [\App\Http\Controllers\MapConnectionController::class, 'save'])->name('map.connections.save');
     Route::get('map/connections', [\App\Http\Controllers\MapConnectionController::class, 'index'])->name('map.connections.index');
+    Route::get('map/wlan-status/{customer}', [MapController::class, 'getCustomerWlanStatus'])->name('map.wlan_status');
+    Route::post('map/wlan-update/{customer}', [MapController::class, 'updateCustomerWlan'])->name('map.wlan_update');
+    Route::post('map/ping', [MapController::class, 'ping'])->name('map.ping');
     Route::resource('map', MapController::class);
 
     // Tools
