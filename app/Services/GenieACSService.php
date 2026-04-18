@@ -615,6 +615,19 @@ class GenieACSService
                 }
             }
 
+            // Method 3: Query by Serial Number (important fallback when input is not full _id)
+            $response = Http::timeout($this->timeout)
+                ->get("{$this->baseUrl}/devices", [
+                    'query' => json_encode(['_deviceId._SerialNumber' => $deviceId]),
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (! empty($data) && is_array($data)) {
+                    return $data[0];
+                }
+            }
+
             Log::error('GenieACS Details Failed: '.$response->body());
 
             return null;
@@ -1700,52 +1713,60 @@ class GenieACSService
     public function getDeviceStatus($deviceId)
     {
         try {
-            // Determine query: If it's a full GenieACS ID (OUI-PC-SN), use _id
-            // If it's just a serial, use _deviceId._SerialNumber
-            $query = ['_deviceId._SerialNumber' => $deviceId];
-            if (strpos($deviceId, '-') !== false) {
-                $query = ['_id' => $deviceId];
-            }
+            $projection = '_id,_lastInform,VirtualParameters.IPTR069,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,Device.ManagementServer.ConnectionRequestURL';
 
-            $response = Http::timeout($this->timeout)
-                ->get("{$this->baseUrl}/devices", [
-                    'query' => json_encode($query),
-                    'projection' => '_id,_lastInform,VirtualParameters.IPTR069,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,Device.ManagementServer.ConnectionRequestURL',
-                ]);
+            // Try by _id first, then fallback to Serial Number.
+            // This avoids false-offline when serial has hyphen and was mistaken as full _id.
+            $queries = [
+                ['_id' => $deviceId],
+                ['_deviceId._SerialNumber' => $deviceId],
+            ];
 
-            if ($response->successful()) {
-                $devices = $response->json();
-                if (! empty($devices)) {
-                    $device = $devices[0];
-                    $tr069Ip = $this->getTr069Ip($device);
-                    $connectionRequestUrl = $this->getConnectionRequestUrl($device);
-                    $isOnline = false;
-                    $lastInformRaw = $device['_lastInform'] ?? null;
-                    if (is_string($lastInformRaw) && trim($lastInformRaw) !== '') {
-                        try {
-                            $lastInformAt = Carbon::parse($lastInformRaw);
-                            $now = now();
-                            $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
-                            
-                            $isRecent = $lastInformAt->gte($now->copy()->subMinutes($threshold));
-                            // Allow up to 2 hours in the future for significant clock drift/timezone mismatch
-                            $tooFarInFuture = $lastInformAt->gt($now->copy()->addHours(2));
-                            
-                            $isOnline = (! $tooFarInFuture) && $isRecent;
-                        } catch (\Throwable $e) {
-                            $isOnline = false;
-                        }
-                    }
+            foreach ($queries as $query) {
+                $response = Http::timeout($this->timeout)
+                    ->get("{$this->baseUrl}/devices", [
+                        'query' => json_encode($query),
+                        'projection' => $projection,
+                    ]);
 
-                    return [
-                        'online' => $isOnline,
-                        'last_inform' => $device['_lastInform'] ?? null,
-                        'raw' => $device,
-                        'id' => $device['_id'], // Return ID for linking
-                        'tr069_ip' => $tr069Ip,
-                        'connection_request_url' => $connectionRequestUrl,
-                    ];
+                if (! $response->successful()) {
+                    continue;
                 }
+
+                $devices = $response->json();
+                if (empty($devices)) {
+                    continue;
+                }
+
+                $device = $devices[0];
+                $tr069Ip = $this->getTr069Ip($device);
+                $connectionRequestUrl = $this->getConnectionRequestUrl($device);
+                $isOnline = false;
+                $lastInformRaw = $device['_lastInform'] ?? null;
+                if (is_string($lastInformRaw) && trim($lastInformRaw) !== '') {
+                    try {
+                        $lastInformAt = Carbon::parse($lastInformRaw);
+                        $now = now();
+                        $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+
+                        $isRecent = $lastInformAt->gte($now->copy()->subMinutes($threshold));
+                        // Allow up to 2 hours in the future for significant clock drift/timezone mismatch
+                        $tooFarInFuture = $lastInformAt->gt($now->copy()->addHours(2));
+
+                        $isOnline = (! $tooFarInFuture) && $isRecent;
+                    } catch (\Throwable $e) {
+                        $isOnline = false;
+                    }
+                }
+
+                return [
+                    'online' => $isOnline,
+                    'last_inform' => $device['_lastInform'] ?? null,
+                    'raw' => $device,
+                    'id' => $device['_id'], // Return ID for linking
+                    'tr069_ip' => $tr069Ip,
+                    'connection_request_url' => $connectionRequestUrl,
+                ];
             }
 
             return ['online' => false, 'error' => 'Device not found'];
