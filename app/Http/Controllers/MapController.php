@@ -403,6 +403,15 @@ class MapController extends Controller implements HasMiddleware
                 $customer->ssid_name
             );
 
+            $wifiPassword = $this->genieService->getValue(
+                data_get($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase') ??
+                data_get($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase') ??
+                data_get($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.PreSharedKey') ??
+                data_get($device, 'Device.WiFi.AccessPoint.1.Security.KeyPassphrase') ??
+                data_get($device, 'Device.WiFi.AccessPoint.1.Security.PreSharedKey') ??
+                $customer->ssid_password
+            );
+
             $uptime = $this->genieService->getValue(
                 data_get($device, 'VirtualParameters.getdeviceuptime') ?? 
                 data_get($device, 'InternetGatewayDevice.DeviceInfo.UpTime') ?? 
@@ -438,6 +447,7 @@ class MapController extends Controller implements HasMiddleware
                 'success' => true,
                 'total_clients' => $totalClients,
                 'ssid_name' => $ssid,
+                'ssid_password' => $wifiPassword,
                 'uptime' => $uptime,
                 'is_online' => $isOnline,
                 'tr069_ip' => $tr069Ip,

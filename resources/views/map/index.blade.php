@@ -2145,12 +2145,12 @@
                             </div>
 
                             <div class="card-panel p-2.5 space-y-1.5">
-                                <div class="kv-row"><span class="status-label">SSID</span><span class="text-yellow-400 font-bold">${ssidName}</span></div>
+                                <div class="kv-row"><span class="status-label">SSID</span><span class="text-yellow-400 font-bold" id="popup-ssid-${customer.id}">${ssidName}</span></div>
                                 <div class="kv-row">
                                     <span class="status-label">Password</span>
                                     <div class="flex items-center gap-1.5 bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-700/50">
                                         <span class="text-yellow-400 font-bold font-monospace tracking-wider" id="pass-text-${customer.id}" data-password="${customer.ssid_password || ''}">********</span>
-                                        <button onclick="window.togglePassword(${customer.id})" class="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all">
+                                        <button onclick="window.togglePassword(${customer.id}, this)" data-visible="0" title="Tampilkan Password" class="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all">
                                             <i data-lucide="eye" class="w-3.5 h-3.5" id="pass-icon-${customer.id}"></i>
                                         </button>
                                     </div>
@@ -2159,7 +2159,7 @@
                             </div>
 
                             <div class="btn-grid-2">
-                                <button onclick="window.openWifiModal(${customer.id}, '${ssidName.replace(/'/g, "\\'")}', '${(customer.ssid_password || '').replace(/'/g, "\\'")}')" class="popup-btn btn-emerald">
+                                <button onclick="window.openWifiModal(${customer.id})" class="popup-btn btn-emerald">
                                     <i data-lucide="wifi" class="w-4 h-4"></i><span>Ganti WiFi</span>
                                 </button>
                                 <button onclick="window.rebootCustomer(${customer.id})" class="popup-btn btn-red"><i data-lucide="power" class="w-4 h-4"></i><span>Reboot</span></button>
@@ -2229,11 +2229,16 @@
                             if (data.success) {
                                 clientSpan.innerText = data.total_clients + ' Device';
                                 
-                                // Update SSID if available and different
+                                // Update SSID/password from live ONU data
                                 if (data.ssid_name) {
-                                    const ssidElement = document.querySelector(`#wlan-clients-${customer.id}`).closest('.card-panel').querySelector('.kv-row:first-child .text-yellow-400');
-                                    if (ssidElement) {
-                                        ssidElement.innerText = data.ssid_name;
+                                    const ssidElement = document.getElementById(`popup-ssid-${customer.id}`);
+                                    if (ssidElement) ssidElement.innerText = data.ssid_name;
+                                }
+                                if (typeof data.ssid_password !== 'undefined') {
+                                    const passText = document.getElementById(`pass-text-${customer.id}`);
+                                    if (passText) {
+                                        passText.setAttribute('data-password', data.ssid_password || '');
+                                        passText.innerText = '********';
                                     }
                                 }
 
@@ -2761,28 +2766,35 @@
             });
         };
 
-        window.togglePassword = function(id) {
+        window.togglePassword = function(id, btnEl) {
             const textEl = document.getElementById(`pass-text-${id}`);
-            const iconEl = document.getElementById(`pass-icon-${id}`);
-            const actualPass = textEl.getAttribute('data-password');
+            if (!textEl) return;
+
+            const actualPass = textEl.getAttribute('data-password') || '';
+            const isVisible = btnEl && btnEl.getAttribute('data-visible') === '1';
             
-            if (textEl.innerText === '********') {
+            if (!isVisible) {
                 textEl.innerText = actualPass || '-';
-                iconEl.setAttribute('data-lucide', 'eye-off');
+                if (btnEl) {
+                    btnEl.setAttribute('data-visible', '1');
+                    btnEl.setAttribute('title', 'Sembunyikan Password');
+                }
             } else {
                 textEl.innerText = '********';
-                iconEl.setAttribute('data-lucide', 'eye');
-            }
-            
-            if (window.lucide) {
-                window.lucide.createIcons({
-                    attrs: { class: 'lucide-icon' },
-                    nameAttr: 'data-lucide'
-                });
+                if (btnEl) {
+                    btnEl.setAttribute('data-visible', '0');
+                    btnEl.setAttribute('title', 'Tampilkan Password');
+                }
             }
         };
 
-        window.openWifiModal = function(id, ssid, password) {
+        window.openWifiModal = function(id) {
+            const ssidEl = document.getElementById(`popup-ssid-${id}`);
+            const passEl = document.getElementById(`pass-text-${id}`);
+            const customer = customers.find(c => c.id == id) || {};
+            const ssid = ssidEl ? ssidEl.innerText : (customer.ssid_name || '');
+            const password = passEl ? (passEl.getAttribute('data-password') || '') : (customer.ssid_password || '');
+
             document.getElementById('wifi_customer_id').value = id;
             document.getElementById('wifi_ssid').value = ssid;
             document.getElementById('wifi_password').value = password;
