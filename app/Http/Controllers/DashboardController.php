@@ -12,6 +12,7 @@ use App\Models\Installation;
 use App\Models\InventoryItem;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
+use App\Models\TechnicianDailySchedule;
 use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\User;
@@ -84,7 +85,7 @@ class DashboardController extends Controller
             return redirect()->route('wash.dashboard');
         }
         if ($user && $user->hasRole('karyawan-wash')) {
-            return redirect()->route('attendance.create');
+            return redirect()->route('wash.dashboard');
         }
         if (! $user || ! $user->hasPermission('dashboard.view')) {
             abort(403);
@@ -96,6 +97,8 @@ class DashboardController extends Controller
             ->first();
 
         if ($user->hasRole('technician')) {
+            $attendanceOverview = $this->buildRoleAttendanceOverview('technician');
+            $shiftSchedule = $this->getTodayShiftSchedule($user->id);
             $stats = [
                 'assigned_tickets' => $user->tickets()->whereIn('status', ['assigned', 'in_progress'])->count(),
                 'assigned_installations' => $user->installations()->whereIn('status', ['assigned', 'survey'])->count(),
@@ -117,7 +120,14 @@ class DashboardController extends Controller
                 ->take(10)
                 ->get();
 
-            return view('technician.dashboard', compact('stats', 'activeTickets', 'pendingInstallations', 'todayAttendance'));
+            return view('technician.dashboard', compact(
+                'stats',
+                'activeTickets',
+                'pendingInstallations',
+                'todayAttendance',
+                'attendanceOverview',
+                'shiftSchedule'
+            ));
         }
 
         // Base Queries for Dashboard Logic (Coordinator / Admin / Finance)
@@ -493,5 +503,42 @@ class DashboardController extends Controller
             'pgsql' => "CAST(EXTRACT(MONTH FROM {$qualifiedDateColumn}) AS INTEGER)",
             default => "MONTH({$qualifiedDateColumn})",
         };
+    }
+
+    public function buildRoleAttendanceOverview(string $roleName): array
+    {
+        $roleUserIds = User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($query) use ($roleName) {
+                $query->where('name', $roleName);
+            })
+            ->pluck('id');
+
+        $presentCount = 0;
+        if ($roleUserIds->isNotEmpty()) {
+            $presentCount = TechnicianAttendance::query()
+                ->whereDate('clock_in', today())
+                ->whereIn('status', ['present', 'late'])
+                ->whereIn('user_id', $roleUserIds)
+                ->distinct('user_id')
+                ->count('user_id');
+        }
+
+        $totalEmployees = $roleUserIds->count();
+
+        return [
+            'role' => $roleName,
+            'total' => $totalEmployees,
+            'present' => $presentCount,
+            'not_present' => max($totalEmployees - $presentCount, 0),
+        ];
+    }
+
+    public function getTodayShiftSchedule(int $userId): ?TechnicianDailySchedule
+    {
+        return TechnicianDailySchedule::query()
+            ->where('user_id', $userId)
+            ->whereDate('date', today())
+            ->first();
     }
 }

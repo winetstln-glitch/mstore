@@ -71,6 +71,7 @@
            
             @php
                 $isKasirWashLimited = Auth::user()->hasRole('kasir-wash') || Auth::user()->hasRole('karyawan-wash');
+                $isTechnicianOnly = Auth::user()->hasRole('technician');
             @endphp
             <div class="sidebar-header mt-2">{{ __('Main Menu') }}</div>
 
@@ -570,9 +571,11 @@
                 </a>
                 <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
+                        @if(! $isTechnicianOnly)
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
                         </a>
+                        @endif
                         @if(Auth::user()->hasPermission('wash.manage'))
                         <a href="{{ route('wash.employees.index') }}" class="sidebar-item {{ request()->routeIs('wash.employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users-viewfinder"></i> {{ __('Karyawan Wash') }}

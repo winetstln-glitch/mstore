@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Journal;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
+use App\Models\TechnicianDailySchedule;
 use App\Models\WashCustomer;
 use App\Models\WashService;
 use App\Models\WashServicePriceRule;
@@ -48,8 +49,35 @@ class WashTransactionController extends Controller implements HasMiddleware
     {
         $today = now()->format('Y-m-d');
         $month = now()->format('Y-m');
+        $user = Auth::user();
         $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
             ->whereDate('clock_in', today())
+            ->first();
+        $isWashOnly = $user->hasRole('karyawan-wash');
+        $attendanceRole = $isWashOnly ? 'karyawan-wash' : 'kasir-wash';
+        $roleUserIds = \App\Models\User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($query) use ($attendanceRole) {
+                $query->where('name', $attendanceRole);
+            })
+            ->pluck('id');
+        $presentCount = $roleUserIds->isEmpty()
+            ? 0
+            : TechnicianAttendance::query()
+                ->whereDate('clock_in', today())
+                ->whereIn('status', ['present', 'late'])
+                ->whereIn('user_id', $roleUserIds)
+                ->distinct('user_id')
+                ->count('user_id');
+        $attendanceOverview = [
+            'role' => $attendanceRole,
+            'total' => $roleUserIds->count(),
+            'present' => $presentCount,
+            'not_present' => max($roleUserIds->count() - $presentCount, 0),
+        ];
+        $shiftSchedule = TechnicianDailySchedule::query()
+            ->where('user_id', $user->id)
+            ->whereDate('date', today())
             ->first();
 
         $dailySales = WashTransaction::whereDate('created_at', $today)->sum('total_amount');
@@ -84,7 +112,18 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->limit(5)
             ->get();
 
-        return view('wash.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'dailyAttendanceCount', 'serviceTrendLabels', 'serviceTrendData', 'topServices', 'todayAttendance'));
+        return view('wash.dashboard', compact(
+            'dailySales',
+            'monthlySales',
+            'transactionCount',
+            'dailyAttendanceCount',
+            'serviceTrendLabels',
+            'serviceTrendData',
+            'topServices',
+            'todayAttendance',
+            'attendanceOverview',
+            'shiftSchedule'
+        ));
     }
 
     public function pos()

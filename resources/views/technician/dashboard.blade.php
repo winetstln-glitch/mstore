@@ -183,6 +183,36 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="small text-uppercase text-body-secondary fw-bold mb-2">{{ __('Teknisi Hadir Hari Ini') }}</div>
+                <h3 class="fw-bold mb-1">{{ $attendanceOverview['present'] ?? 0 }}</h3>
+                <div class="small text-body-secondary">{{ __('Dari total :total teknisi aktif', ['total' => $attendanceOverview['total'] ?? 0]) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
+            <div class="card-body">
+                <div class="small text-uppercase text-body-secondary fw-bold mb-2">{{ __('Teknisi Tidak Hadir') }}</div>
+                <h3 class="fw-bold mb-1">{{ $attendanceOverview['not_present'] ?? 0 }}</h3>
+                <div class="small text-body-secondary">{{ __('Belum absen atau tidak masuk hari ini') }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="small text-uppercase text-body-secondary fw-bold mb-2">{{ __('Jadwal Shift Hari Ini') }}</div>
+                <h3 class="fw-bold mb-1">{{ $shiftSchedule?->status ? __(ucfirst($shiftSchedule->status)) : __('Belum Diatur') }}</h3>
+                <div class="small text-body-secondary">{{ $shiftSchedule?->notes ?: __('Belum ada catatan jadwal untuk hari ini.') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4">
     <!-- Priority Tickets -->
     <div class="col-lg-8">

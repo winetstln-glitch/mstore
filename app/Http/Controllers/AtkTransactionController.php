@@ -14,6 +14,7 @@ use App\Models\Investor;
 use App\Models\Journal;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
+use App\Models\TechnicianDailySchedule;
 use App\Services\AccountingPoster;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -42,8 +43,33 @@ class AtkTransactionController extends Controller implements HasMiddleware
     {
         $today = now()->format('Y-m-d');
         $month = now()->format('Y-m');
+        $user = Auth::user();
         $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
             ->whereDate('clock_in', today())
+            ->first();
+        $roleUserIds = \App\Models\User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($query) {
+                $query->where('name', 'kasir-atk');
+            })
+            ->pluck('id');
+        $presentCount = $roleUserIds->isEmpty()
+            ? 0
+            : TechnicianAttendance::query()
+                ->whereDate('clock_in', today())
+                ->whereIn('status', ['present', 'late'])
+                ->whereIn('user_id', $roleUserIds)
+                ->distinct('user_id')
+                ->count('user_id');
+        $attendanceOverview = [
+            'role' => 'kasir-atk',
+            'total' => $roleUserIds->count(),
+            'present' => $presentCount,
+            'not_present' => max($roleUserIds->count() - $presentCount, 0),
+        ];
+        $shiftSchedule = TechnicianDailySchedule::query()
+            ->where('user_id', $user->id)
+            ->whereDate('date', today())
             ->first();
 
         $dailySales = AtkTransaction::whereDate('created_at', $today)->sum('total_amount');
@@ -57,7 +83,15 @@ class AtkTransactionController extends Controller implements HasMiddleware
             ->limit(5)
             ->get();
 
-        return view('atk.dashboard', compact('dailySales', 'monthlySales', 'transactionCount', 'topProducts', 'todayAttendance'));
+        return view('atk.dashboard', compact(
+            'dailySales',
+            'monthlySales',
+            'transactionCount',
+            'topProducts',
+            'todayAttendance',
+            'attendanceOverview',
+            'shiftSchedule'
+        ));
     }
 
     public function pos()
