@@ -64,6 +64,10 @@
                                     <span class="fw-bold">Technician:</span> 
                                     {{ $installation->technician ? $installation->technician->name : 'Unassigned' }}
                                 </p>
+                                <p class="mb-2">
+                                    <span class="fw-bold">Pengurus:</span>
+                                    {{ $selectedCoordinator?->name ?: '-' }}
+                                </p>
                                 <p class="mb-0">
                                     <span class="fw-bold">Coordinates:</span> 
                                     {{ $installation->coordinates ?? 'Not Set' }}

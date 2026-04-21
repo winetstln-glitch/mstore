@@ -32,13 +32,10 @@
                                 @enderror
                             </div>
 
-                            <!-- Username -->
                             <div class="col-md-6">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-control @error('username') is-invalid @enderror">
-                                @error('username')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <label class="form-label">Username</label>
+                                <input type="text" id="username_preview" class="form-control" value="{{ old('name') ? Str::slug(old('name'), '_') : '' }}" placeholder="Otomatis dari nama" readonly>
+                                <div class="form-text">Username dibuat otomatis dari nama.</div>
                             </div>
 
                             <div class="col-md-6">
@@ -50,19 +47,10 @@
                                 @enderror
                             </div>
 
-                            <!-- Password -->
                             <div class="col-md-6">
-                                <label for="password" class="form-label">{{ __('Password') }}</label>
-                                <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" required>
-                                @error('password')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <!-- Confirm Password -->
-                            <div class="col-md-6">
-                                <label for="password_confirmation" class="form-label">{{ __('Confirm Password') }}</label>
-                                <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
+                                <label class="form-label">Password Default</label>
+                                <input type="text" class="form-control" value="12345678" readonly>
+                                <div class="form-text">Semua user baru memakai password default ini.</div>
                             </div>
 
                             <!-- Role -->
@@ -133,3 +121,26 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const nameInput = document.getElementById('name');
+        const usernamePreview = document.getElementById('username_preview');
+        if (!nameInput || !usernamePreview) {
+            return;
+        }
+        const slugify = (value) => value
+            .toLowerCase()
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+        const syncPreview = () => {
+            usernamePreview.value = slugify(nameInput.value);
+        };
+        nameInput.addEventListener('input', syncPreview);
+        syncPreview();
+    });
+</script>
+@endpush

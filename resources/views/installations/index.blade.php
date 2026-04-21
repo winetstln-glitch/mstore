@@ -39,6 +39,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-12 col-md-3">
+                            <select name="coordinator_id" class="form-select">
+                                <option value="">{{ __('All Pengurus') }}</option>
+                                @foreach(($coordinators ?? collect()) as $coordinator)
+                                    <option value="{{ $coordinator->id }}" {{ request('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
+                                        {{ $coordinator->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-12 col-md-4">
@@ -67,6 +77,7 @@
                                 <th scope="col">{{ __('Customer') }}</th>
                                 <th scope="col">{{ __('Plan Date') }}</th>
                                 <th scope="col">{{ __('Technician') }}</th>
+                                <th scope="col">{{ __('Pengurus') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
                                 <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
                             </tr>
@@ -84,6 +95,9 @@
                                     </td>
                                     <td>
                                         <div>{{ $installation->technician ? $installation->technician->name : __('Unassigned') }}</div>
+                                    </td>
+                                    <td>
+                                        <div>{{ optional($ticketCoordinatorsByCustomer->get($installation->customer_id))->name ?: '-' }}</div>
                                     </td>
                                     <td>
                                         @php
@@ -120,7 +134,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-body-secondary">
+                                    <td colspan="7" class="text-center py-5 text-body-secondary">
                                         <div class="mb-2"><i class="fa-solid fa-network-wired fa-2x opacity-25"></i></div>
                                         {{ __('No installations found.') }}
                                     </td>

@@ -72,6 +72,21 @@
                                 @enderror
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="coordinator_id" class="form-label">{{ __('Pengurus') }}</label>
+                                <select name="coordinator_id" id="coordinator_id" class="form-select @error('coordinator_id') is-invalid @enderror">
+                                    <option value="">{{ __('Pilih Pengurus') }}</option>
+                                    @foreach(($coordinators ?? collect()) as $coordinator)
+                                        <option value="{{ $coordinator->id }}" {{ old('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
+                                            {{ $coordinator->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('coordinator_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Coordinates -->
                             <div class="col-md-6">
                                 <label for="coordinates" class="form-label">{{ __('Coordinates (Lat, Long)') }}</label>

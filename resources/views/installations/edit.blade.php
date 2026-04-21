@@ -23,6 +23,31 @@
                                 <input type="text" value="{{ $installation->customer->name }}" class="form-control" disabled>
                             </div>
 
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('Phone') }}</label>
+                                <input type="text" value="{{ $installation->customer->phone ?: '-' }}" class="form-control" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('Email') }}</label>
+                                <input type="text" value="{{ $installation->customer->email ?: '-' }}" class="form-control" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('Package') }}</label>
+                                <input type="text" value="{{ $installation->customer->package ?: '-' }}" class="form-control" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('WiFi Name') }}</label>
+                                <input type="text" value="{{ $installation->customer->ssid_name ?: '-' }}" class="form-control" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">{{ __('WiFi Password') }}</label>
+                                <input type="text" value="{{ $installation->customer->ssid_password ?: '-' }}" class="form-control" disabled>
+                            </div>
+
                             <!-- Plan Date -->
                             <div class="col-md-6">
                                 <label for="plan_date" class="form-label">{{ __('Plan Date') }}</label>
@@ -59,6 +84,21 @@
                                     @endforeach
                                 </select>
                                 @error('technician_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="coordinator_id" class="form-label">{{ __('Pengurus') }}</label>
+                                <select name="coordinator_id" id="coordinator_id" class="form-select @error('coordinator_id') is-invalid @enderror">
+                                    <option value="">{{ __('Pilih Pengurus') }}</option>
+                                    @foreach(($coordinators ?? []) as $coordinator)
+                                        <option value="{{ $coordinator->id }}" {{ old('coordinator_id', $selectedCoordinatorId ?? null) == $coordinator->id ? 'selected' : '' }}>
+                                            {{ $coordinator->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('coordinator_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

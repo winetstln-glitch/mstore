@@ -11,7 +11,6 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -133,9 +132,7 @@ class UserController extends Controller implements HasMiddleware
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'username' => ['nullable', 'string', 'max:255', 'unique:users,username'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
@@ -149,7 +146,6 @@ class UserController extends Controller implements HasMiddleware
         // Prevent duplicates by checking name too
         $existing = User::findExistingUser([
             'email' => $validated['email'] ?? null,
-            'username' => $validated['username'] ?? null,
             'radius_username' => $validated['radius_username'] ?? null,
             'attendance_card_code' => $validated['attendance_card_code'] ?? null,
             'name' => $validated['name'],
@@ -160,17 +156,14 @@ class UserController extends Controller implements HasMiddleware
             return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email ?: $existing->username])])->withInput();
         }
 
-        $username = trim((string) ($validated['username'] ?? ''));
-        if ($username === '') {
-            $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
-        }
+        $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null);
 
         $createData = [
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'username' => $username,
             'radius_username' => $validated['radius_username'] ?? null,
-            'password' => Hash::make($validated['password']),
+            'password' => Hash::make('12345678'),
             'role_id' => $validated['role_id'],
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
@@ -203,7 +196,6 @@ class UserController extends Controller implements HasMiddleware
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -215,10 +207,18 @@ class UserController extends Controller implements HasMiddleware
         }
         $validated = $request->validate($rules);
 
-        $username = trim((string) ($validated['username'] ?? ''));
-        if ($username === '') {
-            $username = User::generateUniqueUsername($validated['name'], $validated['email'] ?? null);
+        $existing = User::findExistingUser([
+            'email' => $validated['email'] ?? null,
+            'radius_username' => $validated['radius_username'] ?? null,
+            'attendance_card_code' => $validated['attendance_card_code'] ?? null,
+            'name' => $validated['name'],
+            'phone' => $validated['phone'] ?? null,
+        ]);
+        if ($existing && (int) $existing->id !== (int) $user->id) {
+            return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email ?: $existing->username])])->withInput();
         }
+
+        $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null, (int) $user->id);
 
         $updateData = [
             'name' => $validated['name'],
@@ -243,12 +243,9 @@ class UserController extends Controller implements HasMiddleware
                 'phone' => $user->phone,
             ]);
 
-        if ($request->filled('password')) {
-            $request->validate([
-                'password' => ['confirmed', Rules\Password::defaults()],
-            ]);
+        if ($request->boolean('reset_default_password')) {
             $user->update([
-                'password' => Hash::make($request->password),
+                'password' => Hash::make('12345678'),
             ]);
         }
 
@@ -278,5 +275,43 @@ class UserController extends Controller implements HasMiddleware
         return \Illuminate\Support\Facades\Cache::rememberForever('users_attendance_card_column', function () {
             return Schema::hasColumn('users', 'attendance_card_code');
         });
+    }
+
+    private function buildUsernameFromName(string $name, ?string $fallbackEmail = null, ?int $ignoreId = null): string
+    {
+        $base = \Illuminate\Support\Str::of($name)
+            ->lower()
+            ->ascii()
+            ->replaceMatches('/[^a-z0-9]+/', '_')
+            ->trim('_')
+            ->value();
+
+        if ($base === '' && is_string($fallbackEmail) && $fallbackEmail !== '') {
+            $base = \Illuminate\Support\Str::before(strtolower($fallbackEmail), '@');
+            $base = \Illuminate\Support\Str::of($base)
+                ->ascii()
+                ->replaceMatches('/[^a-z0-9]+/', '_')
+                ->trim('_')
+                ->value();
+        }
+
+        if ($base === '') {
+            $base = 'user';
+        }
+
+        $base = mb_substr($base, 0, 40);
+        $candidate = $base;
+        $suffix = 1;
+
+        while (User::query()
+            ->where('username', $candidate)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $suffixText = '_'.$suffix;
+            $candidate = mb_substr($base, 0, max(1, 40 - strlen($suffixText))).$suffixText;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 }

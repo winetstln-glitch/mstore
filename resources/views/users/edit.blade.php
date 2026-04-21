@@ -36,10 +36,8 @@
                             <!-- Username -->
                             <div class="col-md-6">
                                 <label for="username" class="form-label">Username</label>
-                                <input type="text" name="username" id="username" value="{{ old('username', $user->username) }}" class="form-control @error('username') is-invalid @enderror">
-                                @error('username')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="username_preview" id="username_preview" value="{{ old('username', $user->username) }}" class="form-control" readonly>
+                                <div class="form-text">Username otomatis mengikuti nama.</div>
                             </div>
 
                             <div class="col-md-6">
@@ -103,27 +101,13 @@
                                 </div>
                             </div>
 
-                            <!-- Password Section -->
-                            <div class="col-12 mt-4">
+                            <div class="col-12 mt-2">
                                 <div class="border-top pt-3">
-                                    <h6 class="fw-bold mb-3">{{ __('Change Password') }}</h6>
-                                    <p class="text-muted small mb-3">{{ __("Leave blank if you don't want to change the password.") }}</p>
-                                    
-                                    <div class="row g-3">
-                                        <!-- Password -->
-                                        <div class="col-md-6">
-                                            <label for="password" class="form-label">{{ __('New Password') }}</label>
-                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror">
-                                            @error('password')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <!-- Confirm Password -->
-                                        <div class="col-md-6">
-                                            <label for="password_confirmation" class="form-label">{{ __('Confirm New Password') }}</label>
-                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control">
-                                        </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" name="reset_default_password" id="reset_default_password" value="1" class="form-check-input">
+                                        <label class="form-check-label" for="reset_default_password">
+                                            Reset password user ini ke default `12345678`
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -144,3 +128,26 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const nameInput = document.getElementById('name');
+        const usernamePreview = document.getElementById('username_preview');
+        if (!nameInput || !usernamePreview) {
+            return;
+        }
+        const slugify = (value) => value
+            .toLowerCase()
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+        const syncPreview = () => {
+            usernamePreview.value = slugify(nameInput.value);
+        };
+        nameInput.addEventListener('input', syncPreview);
+        syncPreview();
+    });
+</script>
+@endpush

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\Installation;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -44,14 +46,23 @@ class InstallationWebController extends Controller implements HasMiddleware
             $query->where('technician_id', $request->input('technician_id'));
         }
 
+        if ($request->has('coordinator_id') && $request->input('coordinator_id') != '') {
+            $coordinatorId = (int) $request->input('coordinator_id');
+            $query->whereHas('customer.tickets', function ($q) use ($coordinatorId) {
+                $q->where('type', 'pasang_baru')->where('coordinator_id', $coordinatorId);
+            });
+        }
+
         if ($request->has('date') && $request->input('date') != '') {
             $query->whereDate('plan_date', $request->input('date'));
         }
 
         $installations = $query->latest()->paginate(10)->withQueryString();
         $technicians = User::where('role_id', 3)->get(); // Assuming role_id 3 is technician
+        $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
+        $ticketCoordinatorsByCustomer = $this->ticketCoordinatorsByCustomer($installations->pluck('customer_id')->filter()->unique()->values()->all());
 
-        return view('installations.index', compact('installations', 'technicians'));
+        return view('installations.index', compact('installations', 'technicians', 'coordinators', 'ticketCoordinatorsByCustomer'));
     }
 
     /**
@@ -61,9 +72,10 @@ class InstallationWebController extends Controller implements HasMiddleware
     {
         $customers = Customer::all();
         $technicians = User::where('role_id', 3)->get();
+        $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $selected_customer_id = $request->input('customer_id');
 
-        return view('installations.create', compact('customers', 'technicians', 'selected_customer_id'));
+        return view('installations.create', compact('customers', 'technicians', 'coordinators', 'selected_customer_id'));
     }
 
     /**
@@ -74,13 +86,22 @@ class InstallationWebController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'technician_id' => 'nullable|exists:users,id',
+            'coordinator_id' => 'nullable|exists:coordinators,id',
             'plan_date' => 'required|date',
             'status' => 'required|in:registered,survey,approved,installation,completed,cancelled',
             'notes' => 'nullable|string',
             'coordinates' => 'nullable|string',
         ]);
 
-        Installation::create($validated);
+        Installation::create([
+            'customer_id' => $validated['customer_id'],
+            'technician_id' => $validated['technician_id'] ?? null,
+            'plan_date' => $validated['plan_date'],
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+            'coordinates' => $validated['coordinates'] ?? null,
+        ]);
+        $this->syncOpenInstallationTicketCoordinator((int) $validated['customer_id'], $validated['coordinator_id'] ?? null);
 
         return redirect()->route('installations.index')->with('success', __('Installation created successfully.'));
     }
@@ -91,8 +112,9 @@ class InstallationWebController extends Controller implements HasMiddleware
     public function show(Installation $installation)
     {
         $installation->load(['customer', 'technician']);
+        $selectedCoordinator = $this->latestInstallationTicketCoordinator((int) $installation->customer_id);
 
-        return view('installations.show', compact('installation'));
+        return view('installations.show', compact('installation', 'selectedCoordinator'));
     }
 
     /**
@@ -102,8 +124,11 @@ class InstallationWebController extends Controller implements HasMiddleware
     {
         $customers = Customer::all();
         $technicians = User::where('role_id', 3)->get();
+        $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
+        $selectedCoordinator = $this->latestInstallationTicketCoordinator((int) $installation->customer_id);
+        $selectedCoordinatorId = $selectedCoordinator?->id;
 
-        return view('installations.edit', compact('installation', 'customers', 'technicians'));
+        return view('installations.edit', compact('installation', 'customers', 'technicians', 'coordinators', 'selectedCoordinator', 'selectedCoordinatorId'));
     }
 
     /**
@@ -113,13 +138,21 @@ class InstallationWebController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'technician_id' => 'nullable|exists:users,id',
+            'coordinator_id' => 'nullable|exists:coordinators,id',
             'plan_date' => 'required|date',
             'status' => 'required|in:registered,survey,approved,installation,completed,cancelled',
             'notes' => 'nullable|string',
             'coordinates' => 'nullable|string',
         ]);
 
-        $installation->update($validated);
+        $installation->update([
+            'technician_id' => $validated['technician_id'] ?? null,
+            'plan_date' => $validated['plan_date'],
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+            'coordinates' => $validated['coordinates'] ?? null,
+        ]);
+        $this->syncOpenInstallationTicketCoordinator((int) $installation->customer_id, $validated['coordinator_id'] ?? null);
 
         return redirect()->route('installations.index')->with('success', __('Installation updated successfully.'));
     }
@@ -132,5 +165,40 @@ class InstallationWebController extends Controller implements HasMiddleware
         $installation->delete();
 
         return redirect()->route('installations.index')->with('success', __('Installation deleted successfully.'));
+    }
+
+    private function ticketCoordinatorsByCustomer(array $customerIds)
+    {
+        if ($customerIds === []) {
+            return collect();
+        }
+
+        return Ticket::with('coordinator')
+            ->whereIn('customer_id', $customerIds)
+            ->where('type', 'pasang_baru')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('customer_id')
+            ->map(fn ($rows) => $rows->first()?->coordinator);
+    }
+
+    private function latestInstallationTicketCoordinator(int $customerId): ?Coordinator
+    {
+        return Ticket::with('coordinator')
+            ->where('customer_id', $customerId)
+            ->where('type', 'pasang_baru')
+            ->latest('id')
+            ->first()?->coordinator;
+    }
+
+    private function syncOpenInstallationTicketCoordinator(int $customerId, ?int $coordinatorId): void
+    {
+        Ticket::query()
+            ->where('customer_id', $customerId)
+            ->where('type', 'pasang_baru')
+            ->whereIn('status', ['open', 'assigned', 'in_progress', 'pending', 'solved'])
+            ->latest('id')
+            ->first()
+            ?->update(['coordinator_id' => $coordinatorId]);
     }
 }
