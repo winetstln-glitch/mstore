@@ -14,9 +14,9 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Item') }}</label>
+                        <label class="form-label">{{ __('Barang') }}</label>
                         <select name="inventory_item_id" id="stockInItemId" class="form-select" required>
-                            <option value="">{{ __('Pilih item') }}</option>
+                            <option value="">{{ __('Pilih barang') }}</option>
                             @foreach($items as $item)
                             <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
                                 {{ $item->name }} (Stok: {{ $item->stock }} {{ $item->unit }})

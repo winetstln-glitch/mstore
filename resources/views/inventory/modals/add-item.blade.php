@@ -5,7 +5,7 @@
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ __('Tambah Item Baru') }}</h5>
+                    <h5 class="modal-title">{{ __('Tambah Barang Baru') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -14,7 +14,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Nama Item') }}</label>
+                        <label class="form-label">{{ __('Nama Barang') }}</label>
                         <input type="text" name="name" class="form-control" placeholder="Kabel Fiber 1 Core" required>
                     </div>
                     
@@ -23,10 +23,10 @@
                             <label class="form-label">{{ __('Kelompok') }}</label>
                             <select name="type_group" id="addTypeGroup" class="form-select" required>
                                 <option value="material" {{ request('type_group') == 'material' ? 'selected' : '' }}>
-                                    {{ __('Material / Device') }}
+                                    {{ __('Material / Perangkat') }}
                                 </option>
                                 <option value="tool" {{ request('type_group') == 'tool' ? 'selected' : '' }}>
-                                    {{ __('Tool / Asset') }}
+                                    {{ __('Alat / Aset') }}
                                 </option>
                             </select>
                         </div>
@@ -64,8 +64,8 @@
                     <div class="collapse mt-2" id="addAdvancedFields">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ __('Tipe') }}</label>
-                                <input type="text" name="type" class="form-control" placeholder="Router, Cable">
+                                <label class="form-label">{{ __('Jenis') }}</label>
+                                <input type="text" name="type" class="form-control" placeholder="Router, Kabel">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">{{ __('Merek') }}</label>

@@ -9,8 +9,8 @@
             <h1 class="h3 mb-0 text-body">{{ __('Laporan Laba Rugi & Kas') }}</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('finance.index') }}">{{ __('Finance') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Manager Report') }}</li>
+                    <li class="breadcrumb-item"><a href="{{ route('finance.index') }}">{{ __('Keuangan') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('Laporan Manajemen') }}</li>
                 </ol>
             </nav>
         </div>
@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <!-- Filter Section -->
+    <!-- Bagian Filter -->
     <div class="card shadow mb-4">
         <div class="card-body py-3">
             <form action="{{ route('finance.manager_report') }}" method="GET" class="row g-3 align-items-end">
@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <!-- Main Report Table -->
+    <!-- Tabel Laporan Utama -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 border-bottom">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-table-list me-2"></i>Rekonsiliasi Keuangan</h6>
@@ -71,7 +71,7 @@
         <div class="card-body">
             
             <!-- TABEL 1: PENDAPATAN -->
-            <h6 class="text-uppercase text-muted small fw-bold mb-2">A. Pendapatan (Revenue)</h6>
+            <h6 class="text-uppercase text-muted small fw-bold mb-2">{{ __('A. Pendapatan') }}</h6>
             <table class="table table-bordered table-responsive-mobile mb-4">
                 <tbody>
                     <tr>
@@ -93,7 +93,7 @@
             <h6 class="text-uppercase text-muted small fw-bold mb-2">B. Potongan & Beban Operasional</h6>
             <table class="table table-bordered table-responsive-mobile mb-4">
                 <tbody>
-                    <!-- Komisi (Otomatis) -->
+                    <!-- Komisi Otomatis -->
                     <tr>
                         <td style="width: 70%">
                             <span class="badge bg-danger">AUTO</span> {{ __('Komisi Pengurus') }}
@@ -102,7 +102,7 @@
                         <td class="text-end text-danger">- {{ number_format($coordCommission, 0, ',', '.') }}</td>
                     </tr>
                     
-                    <!-- Breakdown Pengeluaran (Manual) -->
+                    <!-- Rincian Pengeluaran Manual -->
                     <tr>
                         <td>{{ __('Transportasi') }}</td>
                         <td class="text-end text-danger">- {{ number_format($transportExpenses, 0, ',', '.') }}</td>
@@ -120,7 +120,7 @@
                         <td class="text-end text-danger">- {{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
                     </tr>
                     
-                    <!-- Total Expense -->
+                    <!-- Total Pengeluaran -->
                     <tr class="table-danger">
                         <td class="fw-bold">TOTAL PENGELUARAN & POTONGAN</td>
                         <td class="text-end fw-bold finance-total-value text-body">
@@ -135,7 +135,7 @@
             <table class="table table-bordered mb-0 table-responsive-mobile">
                 <tbody>
                     <tr>
-                        <td style="width: 70%" class="fw-bold ">LABA BERSIH (NET INCOME)</td>
+                        <td style="width: 70%" class="fw-bold ">{{ __('LABA BERSIH') }}</td>
                         <td class="text-end fw-bold finance-kpi-value">
                             {{ number_format($totalRevenue - ($coordCommission + $operatingExpenses), 0, ',', '.') }}
                         </td>
@@ -149,7 +149,7 @@
                     </tr>
                     <tr class="table-warning border border-warning border-2">
                         <td class="fw-bold fs-5">
-                            <i class="fa-solid fa-wallet me-2"></i> SISA SALDO / WAJIB SETOR
+                            <i class="fa-solid fa-wallet me-2"></i> {{ __('SISA SALDO / WAJIB SETOR') }}
                         </td>
                         <td class="text-end fw-bold fs-5 finance-kpi-value">{{ number_format($netBalance, 0, ',', '.') }}</td>
                     </tr>
@@ -158,7 +158,7 @@
 
         </div>
         <div class="card-footer small text-muted text-center">
-            * Laporan ini dihasilkan secara otomatis oleh sistem. Potongan Komisi dihitung berdasarkan persentase dari pendapatan kotor.
+            {{ __('Laporan ini dihasilkan secara otomatis oleh sistem. Potongan komisi dihitung berdasarkan persentase dari pendapatan kotor.') }}
         </div>
     </div>
 

@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', __('Finance Dashboard'))
+@section('title', __('Dasbor Keuangan'))
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h1 class="h3 mb-0 text-body">{{ __('Finance Dashboard') }}</h1>
+        <h1 class="h3 mb-0 text-body">{{ __('Dasbor Keuangan') }}</h1>
         <div class="row g-2 row-cols-2 row-cols-md-auto justify-content-md-end w-100 w-md-auto">
             @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
             <!-- PERBAIKAN: Ganti label menjadi sesuai konteks agar tidak menyesatkan auditor -->
@@ -58,7 +58,7 @@
                 </button>
             </div>
             <div class="col">
-                <button class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addTransactionModal" title="{{ __('Add Transaction') }}">
+                <button class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addTransactionModal" title="{{ __('Tambah Transaksi') }}">
                     <i class="fa-solid fa-plus me-1"></i> <span>{{ __('Transaksi') }}</span>
                 </button>
             </div>
@@ -114,7 +114,7 @@
                                     {{ __('Saldo Kas Perusahaan') }}</div>
                                 <div class="h5 mb-0 font-weight-bold finance-kpi-value text-body">{{ number_format($cashBalance ?? 0, 0, ',', '.') }}</div>
                                 <small class="text-body-secondary" style="font-size: 0.75rem;">
-                                    <span class="text-success">Income</span> - <span class="text-danger">Expense</span> - <span class="text-warning">Transfer</span>
+                                    <span class="text-success">Pendapatan</span> - <span class="text-danger">Pengeluaran</span> - <span class="text-warning">Transfer</span>
                                 </small>
                             </div>
                             <div class="col-auto">
@@ -193,7 +193,7 @@
                 <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2">
                         <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Pengurus (Cash Only)') }}</h6>
-                        <span class="badge bg-warning text-dark">Exclude Ambil Barang</span>
+                        <span class="badge bg-warning text-dark">{{ __('Tidak Termasuk Ambil Barang') }}</span>
                         @php $monthText = \Carbon\Carbon::createFromFormat('Y-m', request('month', now()->format('Y-m')))->translatedFormat('F Y'); @endphp
                         <span class="badge bg-light text-dark border">{{ __('Periode') }}: {{ $monthText }}</span>
                     </div>

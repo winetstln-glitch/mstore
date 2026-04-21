@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Hotspot Active Sessions'))
+@section('title', __('Sesi Hotspot Aktif'))
 
 @push('styles')
 <style>
@@ -194,10 +194,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1 fw-bold">
-                {{ __('Hotspot Active Sessions') }}
+                {{ __('Sesi Hotspot Aktif') }}
             </h1>
             <div class="text-muted small">
-                {{ __('Active Hotspot users from Mikrotik.') }}
+                {{ __('Pengguna hotspot aktif dari Mikrotik.') }}
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -213,7 +213,7 @@
                 </form>
             @endif
             <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="window.location.reload()">
-                <i class="fa-solid fa-arrows-rotate me-1"></i> {{ __('Refresh') }}
+                <i class="fa-solid fa-arrows-rotate me-1"></i> {{ __('Muat Ulang') }}
             </button>
         </div>
     </div>
@@ -224,7 +224,7 @@
                 <div class="card session-summary-card h-100">
                     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         <div class="text-center text-md-start w-100">
-                            <div class="session-summary-label mb-1">{{ __('Router Info') }}</div>
+                            <div class="session-summary-label mb-1">{{ __('Info Router') }}</div>
                             <div class="h5 mb-1 fw-bold">{{ $router->name }}</div>
                             <div class="text-muted small"><i class="fa-solid fa-server me-1"></i>{{ $router->host }}:{{ $router->port }}</div>
                         </div>
@@ -257,7 +257,7 @@
             <div class="card-header bg-body border-bottom-0 pt-3 pb-0 px-3">
                 <div class="row align-items-center">
                     <div class="col-md-6 mb-3 mb-md-0">
-                        <h5 class="fw-bold mb-0 text-dark">{{ __('User List') }}</h5>
+                        <h5 class="fw-bold mb-0 text-dark">{{ __('Daftar Pengguna') }}</h5>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="input-group">
@@ -276,12 +276,12 @@
                             <thead class="">
                                 <tr>
                                     <th class="session-index">#</th>
-                                    <th>{{ __('User') }}</th>
-                                    <th>{{ __('IP Address') }}</th>
-                                    <th>{{ __('MAC Address') }}</th>
+                                    <th>{{ __('Pengguna') }}</th>
+                                    <th>{{ __('Alamat IP') }}</th>
+                                    <th>{{ __('Alamat MAC') }}</th>
                                     <th>{{ __('Server') }}</th>
-                                    <th>{{ __('Login By') }}</th>
-                                    <th>{{ __('Uptime') }}</th>
+                                    <th>{{ __('Login Melalui') }}</th>
+                                    <th>{{ __('Durasi Aktif') }}</th>
                                     <th class="text-end">{{ __('Aksi') }}</th>
                                 </tr>
                             </thead>
@@ -297,7 +297,7 @@
                                         <td data-label="{{ __('Username') }}">
                                             <span class="fw-semibold text-dark">{{ $user }}</span>
                                         </td>
-                                        <td data-label="{{ __('IP Address') }}">
+                                        <td data-label="{{ __('Alamat IP') }}">
                                             @if($ip != '-')
                                                 <a href="http://{{ $ip }}" target="_blank" class="session-chip session-chip-accent text-decoration-none">
                                                     {{ $ip }} <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7em;"></i>
@@ -306,7 +306,7 @@
                                                 <span class="text-muted small">{{ $ip }}</span>
                                             @endif
                                         </td>
-                                        <td data-label="{{ __('MAC Address') }}">
+                                        <td data-label="{{ __('Alamat MAC') }}">
                                             <span class="session-chip session-chip-muted text-break">
                                                 {{ $mac }}
                                             </span>
@@ -314,12 +314,12 @@
                                         <td data-label="{{ __('Server') }}">
                                             <span class="small text-muted">{{ $session['server'] ?? '-' }}</span>
                                         </td>
-                                        <td data-label="{{ __('Login By') }}">
+                                        <td data-label="{{ __('Login Melalui') }}">
                                             <span class="badge  text-dark border">
                                                 {{ $session['login-by'] ?? '-' }}
                                             </span>
                                         </td>
-                                        <td data-label="{{ __('Uptime') }}">
+                                        <td data-label="{{ __('Durasi Aktif') }}">
                                             <span class="session-uptime text-primary"><i class="fa-regular fa-clock me-1"></i>{{ $session['uptime'] ?? '-' }}</span>
                                         </td>
                                         <td class="text-end" data-label="{{ __('Aksi') }}">
@@ -327,7 +327,7 @@
                                                 <button type="button"
                                                     class="btn btn-outline-danger btn-xs rounded-pill fw-semibold"
                                                     onclick="disconnectHotspotSession('{{ route('routers.hotspot.disconnect', $router) }}', '{{ $session['.id'] }}')">
-                                                    <i class="fa-solid fa-power-off me-1"></i> {{ __('Disconnect') }}
+                                                    <i class="fa-solid fa-power-off me-1"></i> {{ __('Putuskan') }}
                                                 </button>
                                             @endif
                                         </td>
@@ -357,7 +357,7 @@
             <i class="fa-solid fa-triangle-exclamation me-3 fs-4"></i>
             <div>
                 <strong>{{ __('Peringatan') }}</strong>
-                <div class="small">{{ __('No active router found or assigned.') }}</div>
+                <div class="small">{{ __('Tidak ada router aktif yang ditemukan atau ditugaskan.') }}</div>
             </div>
         </div>
     @endif
@@ -371,7 +371,7 @@
     }
 
     function disconnectHotspotSession(url, id) {
-        if (!confirm('{{ __('Disconnect Hotspot session for this user?') }}')) {
+        if (!confirm('{{ __('Putuskan sesi hotspot untuk pengguna ini?') }}')) {
             return;
         }
 
@@ -410,7 +410,7 @@
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'error',
-                        title: '{{ __('Error') }}',
+                        title: '{{ __('Kesalahan') }}',
                         text: '{{ __('Terjadi kesalahan saat memproses permintaan.') }}'
                     });
                 } else {

@@ -6,7 +6,7 @@
 
 <div class="mb-4">
     <h4 class="fw-bold text-primary mb-1">{{ __('Dashboard') }}</h4>
-    <p class="text-muted small mb-0">{{ __('Welcome back to your dashboard overview.') }}</p>
+    <p class="text-muted small mb-0">{{ __('Selamat datang kembali di ringkasan dasbor Anda.') }}</p>
 </div>
 
 @if(Auth::user()->hasPermission('attendance.view'))
@@ -15,32 +15,32 @@
         <div class="card border-0 shadow-sm border-start border-4 border-primary">
             <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h5 class="fw-bold mb-1">{{ __('My Attendance Today') }}</h5>
+                    <h5 class="fw-bold mb-1">{{ __('Absensi Saya Hari Ini') }}</h5>
                     <p class="mb-0 text-muted small">
                         @if($todayAttendance)
                             <span class="badge bg-{{ $todayAttendance->status == 'present' ? 'success' : ($todayAttendance->status == 'late' ? 'warning' : 'secondary') }}">
                                 {{ __(ucfirst($todayAttendance->status)) }}
                             </span>
                             <span class="ms-2">
-                                <i class="fa-solid fa-clock me-1"></i> {{ __('In') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
+                                <i class="fa-solid fa-clock me-1"></i> {{ __('Masuk') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
                                 @if($todayAttendance->clock_out)
-                                    | <i class="fa-solid fa-clock me-1"></i> {{ __('Out') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
+                                    | <i class="fa-solid fa-clock me-1"></i> {{ __('Pulang') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
                                 @endif
                             </span>
                         @else
-                            <span class="badge bg-secondary">{{ __('Not Present Yet') }}</span>
-                            <span class="ms-2 text-muted">{{ __('You have not clocked in today.') }}</span>
+                            <span class="badge bg-secondary">{{ __('Belum Hadir') }}</span>
+                            <span class="ms-2 text-muted">{{ __('Anda belum melakukan absen masuk hari ini.') }}</span>
                         @endif
                     </p>
                 </div>
                 <div>
                     <a href="{{ route('attendance.create') }}" class="btn btn-primary">
                         @if(!$todayAttendance)
-                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
+                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Masuk') }}</span>
                         @elseif(!$todayAttendance->clock_out)
-                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock Out') }}</span>
+                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Pulang') }}</span>
                         @else
-                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Attendance') }}</span>
+                            <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absensi') }}</span>
                         @endif
                     </a>
                 </div>
@@ -166,8 +166,8 @@
                             <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Status Hari Ini') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Clock In') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Clock Out') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Jam Masuk') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Jam Pulang') }}</th>
                             @if($attendanceRole === 'technician')
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status Tugas') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Tugas Aktif') }}</th>
@@ -229,7 +229,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Customers') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Pelanggan') }}</h6>
                     <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
                         <i class="fa-solid fa-users"></i>
                     </div>
@@ -237,7 +237,7 @@
                 <h3 class="fw-bold mb-1">{{ $stats['total_customers'] }}</h3>
                 <div class="small text-success">
                     <i class="fa-solid fa-arrow-trend-up me-1"></i>
-                    <span>+{{ $stats['new_customers_this_month'] }} {{ __('this month') }}</span>
+                    <span>+{{ $stats['new_customers_this_month'] }} {{ __('bulan ini') }}</span>
                 </div>
             </div>
         </div>
@@ -248,14 +248,14 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Active Tickets') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Tiket Aktif') }}</h6>
                     <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
                         <i class="fa-solid fa-ticket"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold mb-1">{{ $stats['open_tickets'] }}</h3>
                 <div class="small text-body-secondary">
-                    <span>{{ $stats['tickets_today'] }} {{ __('new today') }}</span>
+                    <span>{{ $stats['tickets_today'] }} {{ __('baru hari ini') }}</span>
                 </div>
             </div>
         </div>

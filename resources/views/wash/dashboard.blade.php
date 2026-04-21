@@ -60,7 +60,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                {{ __('Income Harian') }}</div>
+                                {{ __('Pendapatan Harian') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -78,7 +78,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                {{ __('Income Bulanan') }}</div>
+                                {{ __('Pendapatan Bulanan') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -112,7 +112,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Karyawan Masuk (Hari Ini)') }}</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Karyawan Hadir (Hari Ini)') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($dailyAttendanceCount, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -130,7 +130,7 @@
                 <div class="card-body">
                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Hadir Hari Ini') }}</div>
                     <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $attendanceOverview['present'] ?? 0 }}</div>
-                    <div class="small text-muted mt-2">{{ __('Total anggota role ini: :total', ['total' => $attendanceOverview['total'] ?? 0]) }}</div>
+                    <div class="small text-muted mt-2">{{ __('Total anggota peran ini: :total', ['total' => $attendanceOverview['total'] ?? 0]) }}</div>
                 </div>
             </div>
         </div>

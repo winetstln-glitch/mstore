@@ -5,7 +5,7 @@
             @csrf @method('PUT')
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ __('Edit Item') }}</h5>
+                    <h5 class="modal-title">{{ __('Ubah Barang') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -14,7 +14,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Nama Item') }}</label>
+                        <label class="form-label">{{ __('Nama Barang') }}</label>
                         <input type="text" name="name" id="editName" class="form-control" required>
                     </div>
                     
@@ -22,8 +22,8 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('Kelompok') }}</label>
                             <select name="type_group" id="editTypeGroup" class="form-select" required>
-                                <option value="material">{{ __('Material / Device') }}</option>
-                                <option value="tool">{{ __('Tool / Asset') }}</option>
+                                <option value="material">{{ __('Material / Perangkat') }}</option>
+                                <option value="tool">{{ __('Alat / Aset') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -55,7 +55,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('Penyesuaian Stok (+/-)') }}</label>
                             <input type="number" name="stock_adjustment" id="editStockAdjustment" class="form-control" value="0">
-                            <div class="form-text">Contoh: +10 masuk, -2 koreksi keluar</div>
+                            <div class="form-text">{{ __('Contoh: +10 stok masuk, -2 koreksi keluar') }}</div>
                         </div>
                     </div>
                     <input type="hidden" name="stock" id="editStock">
@@ -68,7 +68,7 @@
                     <div class="collapse mt-2" id="editAdvancedFields">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ __('Tipe') }}</label>
+                                <label class="form-label">{{ __('Jenis') }}</label>
                                 <input type="text" name="type" id="editType" class="form-control">
                             </div>
                             <div class="col-md-6 mb-3">

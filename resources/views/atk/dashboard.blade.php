@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', __('ATK Dashboard'))
+@section('title', __('Dasbor ATK'))
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('ATK Store Dashboard') }}</h1>
+        <h1 class="h3 mb-0 text-gray-800">{{ __('Dasbor Toko ATK') }}</h1>
         <a href="{{ route('atk.pos') }}" class="btn btn-primary">
-            <i class="fa-solid fa-cash-register me-2"></i> {{ __('Open POS') }}
+            <i class="fa-solid fa-cash-register me-2"></i> {{ __('Buka POS') }}
         </a>
     </div>
 
@@ -17,32 +17,32 @@
             <div class="card border-0 shadow-sm border-start border-4 border-primary">
                 <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
-                        <h5 class="fw-bold mb-1">{{ __('My Attendance Today') }}</h5>
+                        <h5 class="fw-bold mb-1">{{ __('Absensi Saya Hari Ini') }}</h5>
                         <p class="mb-0 text-muted small">
                             @if($todayAttendance)
                                 <span class="badge bg-{{ $todayAttendance->status == 'present' ? 'success' : ($todayAttendance->status == 'late' ? 'warning' : 'secondary') }}">
                                     {{ __(ucfirst($todayAttendance->status)) }}
                                 </span>
                                 <span class="ms-2">
-                                    <i class="fa-solid fa-clock me-1"></i> {{ __('In') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
+                                    <i class="fa-solid fa-clock me-1"></i> {{ __('Masuk') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_in)->format('H:i') }}
                                     @if($todayAttendance->clock_out)
-                                        | <i class="fa-solid fa-clock me-1"></i> {{ __('Out') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
+                                        | <i class="fa-solid fa-clock me-1"></i> {{ __('Pulang') }}: {{ \Carbon\Carbon::parse($todayAttendance->clock_out)->format('H:i') }}
                                     @endif
                                 </span>
                             @else
-                                <span class="badge bg-secondary">{{ __('Not Present Yet') }}</span>
-                                <span class="ms-2 text-muted">{{ __('You have not clocked in today.') }}</span>
+                                <span class="badge bg-secondary">{{ __('Belum Hadir') }}</span>
+                                <span class="ms-2 text-muted">{{ __('Anda belum melakukan absen masuk hari ini.') }}</span>
                             @endif
                         </p>
                     </div>
                     <div>
                         <a href="{{ route('attendance.create') }}" class="btn btn-primary">
                             @if(!$todayAttendance)
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock In') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Masuk') }}</span>
                             @elseif(!$todayAttendance->clock_out)
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Clock Out') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Pulang') }}</span>
                             @else
-                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Attendance') }}</span>
+                                <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absensi') }}</span>
                             @endif
                         </a>
                     </div>
@@ -59,7 +59,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                {{ __('Daily Sales') }}</div>
+                                {{ __('Penjualan Harian') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -76,7 +76,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                {{ __('Monthly Sales') }}</div>
+                                {{ __('Penjualan Bulanan') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
                         </div>
                         <div class="col-auto">
@@ -93,7 +93,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                {{ __('Transactions Today') }}</div>
+                                {{ __('Transaksi Hari Ini') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $transactionCount }}</div>
                         </div>
                         <div class="col-auto">
@@ -139,7 +139,7 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Top Selling Products') }}</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Produk Terlaris') }}</h6>
                 </div>
                 <div class="card-body">
                     @if($topProducts->count() > 0)
@@ -152,7 +152,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="text-center text-muted my-3">{{ __('No sales data available.') }}</p>
+                        <p class="text-center text-muted my-3">{{ __('Belum ada data penjualan.') }}</p>
                     @endif
                 </div>
             </div>
@@ -161,15 +161,15 @@
         <div class="col-lg-6 mb-4">
              <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Quick Actions') }}</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Aksi Cepat') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{{ route('atk.products.create') }}" class="btn btn-outline-primary">
-                            <i class="fa-solid fa-plus me-2"></i> {{ __('Add New Product') }}
+                            <i class="fa-solid fa-plus me-2"></i> {{ __('Tambah Produk Baru') }}
                         </a>
                         <a href="{{ route('atk.transactions.index') }}" class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-list me-2"></i> {{ __('View Transaction History') }}
+                            <i class="fa-solid fa-list me-2"></i> {{ __('Lihat Riwayat Transaksi') }}
                         </a>
                     </div>
                 </div>

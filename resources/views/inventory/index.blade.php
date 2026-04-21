@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 {{-- ============================================
@@ -35,9 +35,9 @@
                 {{-- Judul Halaman --}}
                 <h1 class="h3 mb-0 text-body text-truncate" style="max-width: 100%;">
                     @switch(request('type_group'))
-                        @case('tool') {{ __('Tools & Assets') }} @break
-                        @case('material') {{ __('Materials & Devices') }} @break
-                        @default {{ __('Inventory Management') }}
+                        @case('tool') {{ __('Peralatan & Aset') }} @break
+                        @case('material') {{ __('Material & Perangkat') }} @break
+                        @default {{ __('Manajemen Inventaris') }}
                     @endswitch
                 </h1>
                 
@@ -48,9 +48,9 @@
                     <div class="btn-group" role="group">
                         @php
                             $filterLinks = [
-                                '' => ['label' => __('All'), 'param' => []],
-                                'tool' => ['label' => __('Tools'), 'param' => ['type_group' => 'tool']],
-                                'material' => ['label' => __('Materials'), 'param' => ['type_group' => 'material']],
+                                '' => ['label' => __('Semua'), 'param' => []],
+                                'tool' => ['label' => __('Peralatan'), 'param' => ['type_group' => 'tool']],
+                                'material' => ['label' => __('Material'), 'param' => ['type_group' => 'material']],
                             ];
                         @endphp
                         @foreach($filterLinks as $key => $link)
@@ -67,13 +67,13 @@
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fa-solid fa-filter d-md-none"></i>
                                 <span class="d-none d-md-inline">
-                                    {{ request('category') ? ucfirst(request('category')) : __('Categories') }}
+                                    {{ request('category') ? ucfirst(request('category')) : __('Kategori') }}
                                 </span>
                             </button>
                             <ul class="dropdown-menu">
                                 <li>
                                     <a class="dropdown-item" href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}">
-                                        {{ __('All Categories') }}
+                                        {{ __('Semua Kategori') }}
                                     </a>
                                 </li>
                                 @foreach($categories as $cat)
@@ -91,24 +91,24 @@
                             <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
                                 <i class="fa-solid fa-ellipsis-vertical d-md-none"></i>
                                 <span class="d-none d-md-inline">
-                                    <i class="fa-solid fa-file-export me-1"></i> {{ __('Actions') }}
+                                    <i class="fa-solid fa-file-export me-1"></i> {{ __('Aksi') }}
                                 </span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <a class="dropdown-item" href="{{ route('inventory.export.excel') }}">
-                                        <i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Export Excel') }}
+                                        <i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Ekspor Excel') }}
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="{{ route('inventory.export.pdf') }}" target="_blank">
-                                        <i class="fa-solid fa-file-pdf me-2 text-danger"></i> {{ __('Export PDF') }}
+                                        <i class="fa-solid fa-file-pdf me-2 text-danger"></i> {{ __('Ekspor PDF') }}
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal">
-                                        <i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Import Excel') }}
+                                        <i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Impor Excel') }}
                                     </a>
                                 </li>
                             </ul>
@@ -118,28 +118,28 @@
                         <button type="button" class="btn btn-success flex-grow-1 flex-md-grow-0" 
                                 data-bs-toggle="modal" data-bs-target="#addItemModal">
                             <i class="fa-solid fa-plus me-1"></i> 
-                            <span class="d-none d-sm-inline">{{ __('Add Item') }}</span>
+                            <span class="d-none d-sm-inline">{{ __('Tambah Barang') }}</span>
                         </button>
                         
                         {{-- Tombol Stock Masuk --}}
                         <button type="button" class="btn btn-outline-success flex-grow-1 flex-md-grow-0" 
                                 data-bs-toggle="modal" data-bs-target="#stockInModal">
                             <i class="fa-solid fa-arrow-down-wide-short me-1"></i> 
-                            <span class="d-none d-sm-inline">{{ __('Stock In') }}</span>
+                            <span class="d-none d-sm-inline">{{ __('Stok Masuk') }}</span>
                         </button>
                     @endif
                     
                     {{-- Tombol Return --}}
-                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning" title="{{ __('Return Tool') }}">
+                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning" title="{{ __('Kembalikan Alat') }}">
                         <i class="fa-solid fa-rotate-left"></i> 
-                        <span class="d-none d-sm-inline ms-1">{{ __('Return') }}</span>
+                        <span class="d-none d-sm-inline ms-1">{{ __('Kembali') }}</span>
                     </a>
                     
                     {{-- Tombol Pickup --}}
                     <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" 
-                       class="btn btn-primary flex-grow-1 flex-md-grow-0" title="{{ __('Pickup Item') }}">
+                       class="btn btn-primary flex-grow-1 flex-md-grow-0" title="{{ __('Ambil Barang') }}">
                         <i class="fa-solid fa-box-open me-1"></i> 
-                        <span class="d-none d-sm-inline">{{ __('Pickup') }}</span>
+                        <span class="d-none d-sm-inline">{{ __('Ambil') }}</span>
                     </a>
                 </div>
             </div>
@@ -152,25 +152,25 @@
                 @php
                     $stats = [
                         [
-                            'label' => __('Stock Value'),
+                            'label' => __('Nilai Stok'),
                             'value' => 'Rp ' . number_format($totalStockValue, 0, ',', '.'),
                             'icon'  => 'fa-warehouse',
                             'color' => 'primary',
                         ],
                         [
-                            'label' => __('Total Items'),
+                            'label' => __('Total Barang'),
                             'value' => $totalItems,
                             'icon'  => 'fa-boxes-stacked',
                             'color' => 'success',
                         ],
                         [
-                            'label' => __('Purchases'),
+                            'label' => __('Pembelian'),
                             'value' => 'Rp ' . number_format($totalPurchases, 0, ',', '.'),
                             'icon'  => 'fa-cart-shopping',
                             'color' => 'info',
                         ],
                         [
-                            'label' => __('Sales/Usage'),
+                            'label' => __('Pemakaian/Keluar'),
                             'value' => 'Rp ' . number_format($totalSales, 0, ',', '.'),
                             'icon'  => 'fa-money-bill-transfer',
                             'color' => 'warning',
@@ -208,7 +208,7 @@
             <div class="card shadow-sm border-0 mb-4 border-start-info inventory-panel">
                 <div class="card-header py-3">
                     <h6 class="m-0 fw-bold text-info">
-                        <i class="fa-solid fa-toolbox me-2"></i>{{ __('My Assets') }}
+                        <i class="fa-solid fa-toolbox me-2"></i>{{ __('Aset Saya') }}
                     </h6>
                 </div>
                 <div class="card-body p-0">
@@ -216,12 +216,12 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th class="ps-4 py-3">{{ __('Asset Name') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Serial') }}</th>
+                                    <th class="ps-4 py-3">{{ __('Nama Aset') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Nomor Seri') }}</th>
                                     <th class="py-3">{{ __('Status') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Condition') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Note') }}</th>
-                                    <th class="text-end pe-4 py-3" style="width: 100px;">{{ __('Actions') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Kondisi') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Catatan') }}</th>
+                                    <th class="text-end pe-4 py-3" style="width: 100px;">{{ __('Aksi') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,10 +232,10 @@
                                         <div class="small text-muted d-none d-md-block">{{ $asset->asset_code }}</div>
                                     </td>
                                     <td class="d-none d-md-table-cell font-monospace small">{{ $asset->serial_number }}</td>
-                                    <td><span class="badge bg-primary small">{{ __('Deployed') }}</span></td>
+                                    <td><span class="badge bg-primary small">{{ __('Dipakai') }}</span></td>
                                     <td class="d-none d-md-table-cell">
                                         <span class="badge bg-{{ $asset->condition == 'good' ? 'success' : 'danger' }} small">
-                                            {{ $asset->condition == 'good' ? __('Good') : __('Damaged') }}
+                                            {{ $asset->condition == 'good' ? __('Baik') : __('Rusak') }}
                                         </span>
                                     </td>
                                     <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">
@@ -244,9 +244,9 @@
                                     <td class="text-end pe-4">
                                         <form action="{{ route('inventory.assets.return', $asset->id) }}" 
                                               method="POST" class="d-inline"
-                                              onsubmit="return confirm('{{ __('Return this asset?') }}')">
+                                              onsubmit="return confirm('{{ __('Kembalikan aset ini?') }}')">
                                             @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Return') }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Kembali') }}">
                                                 <i class="fa-solid fa-rotate-left"></i>
                                             </button>
                                         </form>
@@ -266,20 +266,20 @@
             @if($isAdminOrFinance)
             <div class="card shadow-sm border-0 mb-4 inventory-panel">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">{{ __('Inventory Items') }}</h6>
+                    <h6 class="m-0 fw-bold text-primary">{{ __('Daftar Inventaris') }}</h6>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th class="ps-4 py-3">{{ __('Type') }}</th>
-                                    <th class="py-3">{{ __('Name') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Category') }}</th>
-                                    <th class="d-none d-lg-table-cell py-3">{{ __('Brand/Model') }}</th>
-                                    <th class="py-3 text-center">{{ __('Stock') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Unit') }}</th>
-                                    <th class="pe-4 py-3 text-end" style="width: 140px;">{{ __('Actions') }}</th>
+                                    <th class="ps-4 py-3">{{ __('Tipe') }}</th>
+                                    <th class="py-3">{{ __('Nama') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Kategori') }}</th>
+                                    <th class="d-none d-lg-table-cell py-3">{{ __('Merek/Model') }}</th>
+                                    <th class="py-3 text-center">{{ __('Stok') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Satuan') }}</th>
+                                    <th class="pe-4 py-3 text-end" style="width: 140px;">{{ __('Aksi') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -288,7 +288,7 @@
                                     <td class="ps-4">
                                         <span class="badge bg-{{ $item->type_group == 'tool' ? 'primary' : 'secondary' }}">
                                             <i class="fa-solid fa-{{ $item->type_group == 'tool' ? 'toolbox' : 'cube' }} d-none d-md-inline me-1"></i>
-                                            {{ $item->type_group == 'tool' ? __('Tool') : __('Mat') }}
+                                            {{ $item->type_group == 'tool' ? __('Alat') : __('Material') }}
                                         </span>
                                     </td>
                                     <td class="fw-medium">
