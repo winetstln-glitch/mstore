@@ -55,7 +55,7 @@
                                                         <optgroup label="{{ ucfirst($group) }}">
                                                             @foreach($groupedItems as $item)
                                                                 <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
-                                                                    {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
+                                                                    {{ $item->name }} ({{ __('Stok') }}: {{ $item->stock }} {{ $item->unit }})
                                                                 </option>
                                                             @endforeach
                                                         </optgroup>

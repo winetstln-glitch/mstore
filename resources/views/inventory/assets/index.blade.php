@@ -52,7 +52,7 @@
                         </tr>
                         <tr>
                             <td class="fw-bold">{{ __('Registered Assets') }}</td>
-                            <td>{{ $assets->count() }} Units</td>
+                            <td>{{ $assets->count() }} {{ __('Unit') }}</td>
                         </tr>
                     </table>
                     <div class="alert alert-info small mb-0">
@@ -241,7 +241,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Asset Code (Optional)') }}</label>
-                        <input type="text" name="asset_code" class="form-control" placeholder="e.g. AST-001">
+                        <input type="text" name="asset_code" class="form-control" placeholder="Contoh: AST-001">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('MAC Address (Optional)') }}</label>
@@ -300,7 +300,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Notes') }}</label>
-                        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Handover for project X"></textarea>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Contoh: Serah terima untuk proyek X"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

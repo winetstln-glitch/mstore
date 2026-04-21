@@ -82,19 +82,19 @@
         <div class="container">
             <div class="row align-items-center g-5">
                 <div class="col-lg-7 fade-up">
-                    <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3 rounded-pill">#1 Trusted Digital Partner</span>
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3 rounded-pill">#1 Mitra Digital Terpercaya</span>
                     <h1 class="hero-title">Solusi Digital & Layanan Terlengkap</h1>
                     <p class="hero-desc text-secondary fs-5 mb-4">Mulai dari <b>Internet</b> fiber optic super cepat, perlengkapan kantor, hingga perawatan kendaraan profesional. Kami hadir untuk memudahkan hidup Anda.</p>
                     
                     <div class="d-flex flex-wrap gap-3">
                         <a href="https://buymstore.online" class="btn btn-primary">
-                            <i class="fas fa-rocket me-2"></i> Client Area
+                            <i class="fas fa-rocket me-2"></i> Area Pelanggan
                         </a>
                         <a href="{{ route('customers.public.register.create') }}" class="btn btn-outline-success">
                             <i class="fas fa-user-plus me-2"></i> Register Pelanggan
                         </a>
                         <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-primary" download>
-                            <i class="fa-brands fa-android me-2"></i> Get App
+                            <i class="fa-brands fa-android me-2"></i> Unduh Aplikasi
                         </a>
                     </div>
                 </div>
@@ -736,11 +736,11 @@
             <div class="d-flex justify-content-between align-items-center px-2">
                 <a href="#home" class="bottom-item active d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-home mb-1"></i>
-                    <span>Home</span>
+                    <span>Beranda</span>
                 </a>
                 <a href="#packages" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-wifi mb-1"></i>
-                    <span>Net</span>
+                    <span>Internet</span>
                 </a>
                 <a href="#atk-promo" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-shopping-bag mb-1"></i>
@@ -752,7 +752,7 @@
                 </a>
                 <a href="{{ route('login') }}" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-user-circle mb-1"></i>
-                    <span>User</span>
+                    <span>Akun</span>
                 </a>
             </div>
         </div>
@@ -764,7 +764,7 @@
             <div class="chat-header p-3 bg-primary text-white d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
                     <i class="fas fa-robot"></i>
-                    <span class="fw-bold">MStore AI Assistant</span>
+                    <span class="fw-bold">Asisten AI MStore</span>
                 </div>
                 <button class="btn btn-sm text-white" onclick="toggleChat()"><i class="fas fa-times"></i></button>
             </div>
