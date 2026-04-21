@@ -57,6 +57,9 @@
                     <button type="button" class="btn btn-success flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#addItemModal">
                         <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">{{ __('Add Item') }}</span>
                     </button>
+                    <button type="button" class="btn btn-outline-success flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#stockInModal">
+                        <i class="fa-solid fa-arrow-down-wide-short me-1"></i> <span class="d-none d-sm-inline">{{ __('Stock In') }}</span>
+                    </button>
                     @endif
                     
                     <!-- Return Button: Icon only on mobile -->
@@ -304,10 +307,62 @@
             </div>
             @endif
 
-            <!-- Recent Transactions -->
+            @php
+                $movementPeriod = request('movement_period', 'day');
+                $movementType = request('movement_type', '');
+                $movementDay = request('movement_day', now()->toDateString());
+                $movementMonth = request('movement_month', now()->format('Y-m'));
+            @endphp
+
+            <!-- Stock Movements -->
             <div class="card shadow-sm border-0 inventory-panel">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Recent Pickups') }}</h6>
+                <div class="card-header bg-white py-3 d-flex flex-column flex-lg-row gap-2 justify-content-between align-items-lg-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Recent Stock Movements') }}</h6>
+                    <form method="GET" action="{{ route('inventory.index') }}" class="d-flex flex-wrap gap-2 align-items-center">
+                        @if(request('type_group'))
+                            <input type="hidden" name="type_group" value="{{ request('type_group') }}">
+                        @endif
+                        @if(request('category'))
+                            <input type="hidden" name="category" value="{{ request('category') }}">
+                        @endif
+
+                        <select name="movement_type" class="form-select form-select-sm" style="min-width: 130px;">
+                            <option value="">{{ __('Semua') }}</option>
+                            <option value="in" {{ $movementType === 'in' ? 'selected' : '' }}>{{ __('Barang Masuk') }}</option>
+                            <option value="out" {{ $movementType === 'out' ? 'selected' : '' }}>{{ __('Barang Keluar') }}</option>
+                        </select>
+
+                        <select name="movement_period" id="movementPeriod" class="form-select form-select-sm" style="min-width: 120px;">
+                            <option value="day" {{ $movementPeriod === 'day' ? 'selected' : '' }}>{{ __('Per Hari') }}</option>
+                            <option value="month" {{ $movementPeriod === 'month' ? 'selected' : '' }}>{{ __('Per Bulan') }}</option>
+                        </select>
+
+                        <input
+                            type="date"
+                            name="movement_day"
+                            id="movementDayFilter"
+                            class="form-control form-control-sm {{ $movementPeriod === 'day' ? '' : 'd-none' }}"
+                            value="{{ $movementDay }}"
+                        >
+
+                        <input
+                            type="month"
+                            name="movement_month"
+                            id="movementMonthFilter"
+                            class="form-control form-control-sm {{ $movementPeriod === 'month' ? '' : 'd-none' }}"
+                            value="{{ $movementMonth }}"
+                        >
+
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
+                        </button>
+                        <a href="{{ route('inventory.index', array_filter(['type_group' => request('type_group'), 'category' => request('category')])) }}" class="btn btn-sm btn-outline-secondary">
+                            {{ __('Reset') }}
+                        </a>
+                        <a href="{{ route('inventory.movements.export.excel', request()->except('page')) }}" class="btn btn-sm btn-success">
+                            <i class="fa-solid fa-file-excel me-1"></i>{{ __('Download Excel') }}
+                        </a>
+                    </form>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -315,14 +370,16 @@
                             <thead class="">
                                 <tr>
                                     <th class="ps-4 py-3">{{ __('Date') }}</th>
+                                    <th class="py-3">{{ __('Move') }}</th>
                                     <!-- Hidden on mobile -->
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Type') }}</th>
+                                    <th class="d-none d-md-table-cell py-3">{{ __('Item Type') }}</th>
                                     <!-- Hidden on mobile -->
                                     <th class="d-none d-md-table-cell py-3">{{ __('User') }}</th>
                                     <th class="py-3">{{ __('Item') }}</th>
                                     <th class="py-3 text-end">{{ __('Qty') }}</th>
                                     <!-- Hidden on mobile -->
                                     <th class="d-none d-md-table-cell py-3">{{ __('Desc') }}</th>
+                                    <th class="d-none d-md-table-cell py-3 text-end">{{ __('Cost') }}</th>
                                     <th class="pe-4 py-3 text-end">{{ __('Proof') }}</th>
                                     <th class="pe-4 py-3 text-end" style="width: 110px;">{{ __('Actions') }}</th>
                                 </tr>
@@ -330,7 +387,14 @@
                             <tbody>
                                 @forelse($transactions as $transaction)
                                     <tr>
-                                        <td class="ps-4 small">{{ $transaction->created_at->format('d M') }}</td>
+                                        <td class="ps-4 small">{{ $transaction->created_at->format('d M H:i') }}</td>
+                                        <td>
+                                            @if($transaction->type === 'in')
+                                                <span class="badge bg-success">IN</span>
+                                            @else
+                                                <span class="badge bg-danger">OUT</span>
+                                            @endif
+                                        </td>
                                         <td class="d-none d-md-table-cell">
                                             @if($transaction->item->type_group == 'tool')
                                                 <span class="badge bg-primary small"><i class="fa-solid fa-toolbox"></i></span>
@@ -342,8 +406,17 @@
                                         <td>
                                             <div class="fw-bold text-truncate" style="max-width: 150px;">{{ $transaction->item->name }}</div>
                                         </td>
-                                        <td class="text-end small text-danger">-{{ $transaction->quantity }}</td>
+                                        <td class="text-end small {{ $transaction->type === 'in' ? 'text-success' : 'text-danger' }}">
+                                            {{ $transaction->type === 'in' ? '+' : '-' }}{{ $transaction->quantity }}
+                                        </td>
                                         <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">{{ $transaction->description ?: '-' }}</td>
+                                        <td class="d-none d-md-table-cell text-end small">
+                                            @if(!is_null($transaction->total_cost))
+                                                Rp {{ number_format((float) $transaction->total_cost, 0, ',', '.') }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td class="pe-4 text-end">
                                             @if($transaction->proof_image)
                                                 <a href="{{ Storage::url($transaction->proof_image) }}" target="_blank" class="btn btn-sm btn-outline-info inventory-action-btn">
@@ -354,7 +427,7 @@
                                             @endif
                                         </td>
                                         <td class="pe-4 text-end">
-                                            @if(Auth::id() === $transaction->user_id || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+                                            @if($transaction->type === 'out' && (Auth::id() === $transaction->user_id || Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')))
                                             <div class="d-inline-flex align-items-center gap-1">
                                             <button type="button" class="btn btn-sm btn-outline-primary inventory-action-btn" 
                                                 data-bs-toggle="modal" 
@@ -375,12 +448,14 @@
                                                 </button>
                                             </form>
                                             </div>
+                                            @else
+                                                <span class="text-muted small">-</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
+                                        <td colspan="10" class="text-center py-5 text-muted">
                                             <i class="fa-solid fa-clock-rotate-left fa-2x mb-3 opacity-25"></i>
                                             <p class="mb-0">{{ __('No history found.') }}</p>
                                         </td>
@@ -400,6 +475,72 @@
     </div>
 </div>
 
+<!-- Stock In Modal -->
+<div class="modal fade" id="stockInModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ route('inventory.stock-in.store') }}" method="POST">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Barang Masuk (Pembelian Stok)') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border small">
+                        {{ __('Gunakan form ini untuk pembelian stok agar histori gudang dan biaya pembelian tercatat otomatis.') }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Item') }}</label>
+                        <select name="inventory_item_id" id="stockInItemId" class="form-select" required>
+                            <option value="">{{ __('Pilih item') }}</option>
+                            @foreach($items as $item)
+                                <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
+                                    {{ $item->name }} (Stock: {{ $item->stock }} {{ $item->unit }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Qty Masuk') }}</label>
+                            <div class="input-group">
+                                <input type="number" name="quantity" min="1" class="form-control" required>
+                                <span class="input-group-text" id="stockInUnit">pcs</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Harga Modal / Unit') }}</label>
+                            <input type="number" name="unit_cost" class="form-control" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Tanggal Beli') }}</label>
+                            <input type="date" name="purchase_date" class="form-control" value="{{ now()->toDateString() }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Supplier') }}</label>
+                            <input type="text" name="supplier_name" class="form-control" placeholder="Contoh: PT ABC">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('No Referensi / Invoice') }}</label>
+                        <input type="text" name="reference_no" class="form-control" placeholder="INV-001/PO-001">
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">{{ __('Keterangan') }}</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="{{ __('Opsional') }}"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success">{{ __('Simpan Barang Masuk') }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -411,24 +552,24 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Item Name') }}</label>
-                        <input type="text" name="name" class="form-control" required>
+                    <div class="alert alert-light border small">
+                        <strong>{{ __('Simple Input') }}:</strong> {{ __('Isi nama, kelompok, kategori, unit, stok awal, dan harga modal. Kolom lainnya opsional.') }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Type Group') }}</label>
-                        <select name="type_group" class="form-select" required>
-                            <option value="material" {{ request('type_group') == 'material' ? 'selected' : '' }}>{{ __('Material / Device (Consumable)') }}</option>
-                            <option value="tool" {{ request('type_group') == 'tool' ? 'selected' : '' }}>{{ __('Tool / Asset (Returnable)') }}</option>
-                        </select>
-                        <div class="form-text small text-muted">
-                            {{ __('Select "Material" for consumables/devices given to customers. Select "Tool" for equipment used by technicians.') }}
-                        </div>
+                        <label class="form-label">{{ __('Item Name') }}</label>
+                        <input type="text" name="name" class="form-control" placeholder="Contoh: Kabel Fiber 1 Core" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Type Group') }}</label>
+                            <select name="type_group" id="addTypeGroup" class="form-select" required>
+                                <option value="material" {{ request('type_group') == 'material' ? 'selected' : '' }}>{{ __('Material / Device') }}</option>
+                                <option value="tool" {{ request('type_group') == 'tool' ? 'selected' : '' }}>{{ __('Tool / Asset') }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('Category') }}</label>
-                            <select name="category" class="form-select" required>
+                            <select name="category" id="addCategory" class="form-select" required>
                                 <option value="device">Device (Perangkat Aktif)</option>
                                 <option value="fiber">Fiber (Material Pasif)</option>
                                 <option value="tool">Tool (Alat Kerja)</option>
@@ -436,36 +577,44 @@
                                 <option value="general">General (Umum)</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Type') }}</label>
-                            <input type="text" name="type" class="form-control" placeholder="e.g. Router, Cable">
-                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Brand') }}</label>
-                            <input type="text" name="brand" class="form-control">
+                            <label class="form-label">{{ __('Unit') }}</label>
+                            <input type="text" name="unit" id="addUnit" class="form-control" placeholder="pcs, meter, roll, unit" required>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Initial Stock') }}</label>
+                            <input type="number" name="stock" class="form-control" value="0" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Price') }} ({{ __('Modal per unit') }})</label>
+                        <input type="number" name="price" class="form-control" value="0" min="0" step="0.01" required>
+                    </div>
+
+                    <button type="button" class="btn btn-link px-0" data-bs-toggle="collapse" data-bs-target="#addAdvancedFields" aria-expanded="false">
+                        {{ __('Advanced Details (Optional)') }}
+                    </button>
+                    <div class="collapse" id="addAdvancedFields">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ __('Type') }}</label>
+                                <input type="text" name="type" class="form-control" placeholder="Contoh: Router, Cable">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ __('Brand') }}</label>
+                                <input type="text" name="brand" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">{{ __('Model') }}</label>
                             <input type="text" name="model" class="form-control">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Unit') }}</label>
-                        <input type="text" name="unit" class="form-control" placeholder="e.g. pcs, meter, roll" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Initial Stock') }}</label>
-                        <input type="number" name="stock" class="form-control" value="0" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Price') }} (per unit)</label>
-                        <input type="number" name="price" class="form-control" value="0" min="0" step="0.01" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Description') }}</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
+                        <div class="mb-0">
+                            <label class="form-label">{{ __('Description') }}</label>
+                            <textarea name="description" class="form-control" rows="3"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -489,18 +638,21 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-light border small">
+                        <strong>{{ __('Simple Edit') }}:</strong> {{ __('Ubah data utama dan gunakan penyesuaian stok (+/-).') }}
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Item Name') }}</label>
                         <input type="text" name="name" id="editName" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Type Group') }}</label>
-                        <select name="type_group" id="editTypeGroup" class="form-select" required>
-                            <option value="material">{{ __('Material / Device (Consumable)') }}</option>
-                            <option value="tool">{{ __('Tool / Asset (Returnable)') }}</option>
-                        </select>
-                    </div>
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Type Group') }}</label>
+                            <select name="type_group" id="editTypeGroup" class="form-select" required>
+                                <option value="material">{{ __('Material / Device') }}</option>
+                                <option value="tool">{{ __('Tool / Asset') }}</option>
+                            </select>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('Category') }}</label>
                             <select name="category" id="editCategory" class="form-select" required>
@@ -511,36 +663,52 @@
                                 <option value="general">General (Umum)</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Type') }}</label>
-                            <input type="text" name="type" id="editType" class="form-control">
+                            <label class="form-label">{{ __('Unit') }}</label>
+                            <input type="text" name="unit" id="editUnit" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Price') }} ({{ __('Modal per unit') }})</label>
+                            <input type="number" name="price" id="editPrice" class="form-control" min="0" step="0.01" required>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Brand') }}</label>
-                            <input type="text" name="brand" id="editBrand" class="form-control">
+                            <label class="form-label">{{ __('Current Stock') }}</label>
+                            <input type="number" id="editCurrentStock" class="form-control" readonly>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ __('Stock Adjustment (+/-)') }}</label>
+                            <input type="number" name="stock_adjustment" id="editStockAdjustment" class="form-control" value="0">
+                            <div class="form-text">{{ __('Contoh: +10 untuk barang masuk, -2 untuk koreksi keluar.') }}</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="stock" id="editStock">
+
+                    <button type="button" class="btn btn-link px-0" data-bs-toggle="collapse" data-bs-target="#editAdvancedFields" aria-expanded="false">
+                        {{ __('Advanced Details (Optional)') }}
+                    </button>
+                    <div class="collapse" id="editAdvancedFields">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ __('Type') }}</label>
+                                <input type="text" name="type" id="editType" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ __('Brand') }}</label>
+                                <input type="text" name="brand" id="editBrand" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">{{ __('Model') }}</label>
                             <input type="text" name="model" id="editModel" class="form-control">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Unit') }}</label>
-                        <input type="text" name="unit" id="editUnit" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Stock') }}</label>
-                        <input type="number" name="stock" id="editStock" class="form-control" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Price') }}</label>
-                        <input type="number" name="price" id="editPrice" class="form-control" min="0" step="0.01" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Description') }}</label>
-                        <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+                        <div class="mb-0">
+                            <label class="form-label">{{ __('Description') }}</label>
+                            <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -623,6 +791,47 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        function applyDefaultByTypeGroup(typeGroupValue, categorySelect, unitInput) {
+            if (!categorySelect || !unitInput) {
+                return;
+            }
+
+            if (typeGroupValue === 'tool') {
+                if (!['tool', 'vehicle', 'general'].includes(categorySelect.value)) {
+                    categorySelect.value = 'tool';
+                }
+                if (!unitInput.value) {
+                    unitInput.value = 'unit';
+                }
+            } else {
+                if (!['device', 'fiber', 'general'].includes(categorySelect.value)) {
+                    categorySelect.value = 'device';
+                }
+                if (!unitInput.value) {
+                    unitInput.value = 'pcs';
+                }
+            }
+        }
+
+        var addTypeGroup = document.getElementById('addTypeGroup');
+        var addCategory = document.getElementById('addCategory');
+        var addUnit = document.getElementById('addUnit');
+        if (addTypeGroup && addCategory && addUnit) {
+            addTypeGroup.addEventListener('change', function () {
+                applyDefaultByTypeGroup(addTypeGroup.value, addCategory, addUnit);
+            });
+            applyDefaultByTypeGroup(addTypeGroup.value, addCategory, addUnit);
+        }
+
+        var stockInItemSelect = document.getElementById('stockInItemId');
+        var stockInUnit = document.getElementById('stockInUnit');
+        if (stockInItemSelect && stockInUnit) {
+            stockInItemSelect.addEventListener('change', function () {
+                var option = stockInItemSelect.options[stockInItemSelect.selectedIndex];
+                stockInUnit.textContent = option ? (option.getAttribute('data-unit') || 'pcs') : 'pcs';
+            });
+        }
+
         var editItemModal = document.getElementById('editItemModal');
         editItemModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
@@ -650,9 +859,35 @@
             editItemModal.querySelector('#editBrand').value = brand;
             editItemModal.querySelector('#editModel').value = model;
             editItemModal.querySelector('#editUnit').value = unit;
+            editItemModal.querySelector('#editCurrentStock').value = stock;
             editItemModal.querySelector('#editStock').value = stock;
+            editItemModal.querySelector('#editStockAdjustment').value = 0;
             editItemModal.querySelector('#editPrice').value = price;
             editItemModal.querySelector('#editDescription').value = description;
+
+            applyDefaultByTypeGroup(editItemModal.querySelector('#editTypeGroup').value, editItemModal.querySelector('#editCategory'), editItemModal.querySelector('#editUnit'));
+        });
+
+        var editTypeGroup = document.getElementById('editTypeGroup');
+        if (editTypeGroup) {
+            editTypeGroup.addEventListener('change', function () {
+                applyDefaultByTypeGroup(editTypeGroup.value, document.getElementById('editCategory'), document.getElementById('editUnit'));
+            });
+        }
+
+        var editItemForm = document.getElementById('editItemForm');
+        if (editItemForm) {
+            editItemForm.addEventListener('submit', function (e) {
+                var currentStock = parseInt(document.getElementById('editCurrentStock').value || '0', 10);
+                var adjustment = parseInt(document.getElementById('editStockAdjustment').value || '0', 10);
+                var finalStock = currentStock + adjustment;
+                if (finalStock < 0) {
+                    e.preventDefault();
+                    alert('{{ __("Stock akhir tidak boleh minus.") }}');
+                    return;
+                }
+                document.getElementById('editStock').value = finalStock;
+            });
         });
 
         var editPickupModal = document.getElementById('editPickupModal');
@@ -672,6 +907,23 @@
             editPickupModal.querySelector('#editPickupUnit').textContent = unit;
             editPickupModal.querySelector('#editPickupDescription').value = description;
         });
+
+        var movementPeriod = document.getElementById('movementPeriod');
+        var movementDayFilter = document.getElementById('movementDayFilter');
+        var movementMonthFilter = document.getElementById('movementMonthFilter');
+        if (movementPeriod && movementDayFilter && movementMonthFilter) {
+            var toggleMovementPeriodInput = function () {
+                if (movementPeriod.value === 'month') {
+                    movementMonthFilter.classList.remove('d-none');
+                    movementDayFilter.classList.add('d-none');
+                } else {
+                    movementDayFilter.classList.remove('d-none');
+                    movementMonthFilter.classList.add('d-none');
+                }
+            };
+            movementPeriod.addEventListener('change', toggleMovementPeriodInput);
+            toggleMovementPeriodInput();
+        }
     });
 </script>
 @endsection

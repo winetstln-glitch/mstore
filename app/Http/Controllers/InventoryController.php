@@ -7,6 +7,7 @@ use App\Models\Coordinator;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -22,8 +23,8 @@ class InventoryController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:inventory.view', only: ['index', 'exportPdf', 'exportExcel', 'downloadTemplate']),
-            new Middleware('permission:inventory.manage', only: ['storeItem', 'updateItem', 'destroyItem', 'updatePickup', 'destroyPickup', 'importExcel']),
+            new Middleware('permission:inventory.view', only: ['index', 'exportPdf', 'exportExcel', 'exportMovementExcel', 'downloadTemplate']),
+            new Middleware('permission:inventory.manage', only: ['storeItem', 'storeStockIn', 'updateItem', 'destroyItem', 'updatePickup', 'destroyPickup', 'importExcel']),
             new Middleware('permission:inventory.pickup', only: ['createPickup', 'storePickup']),
         ];
     }
@@ -60,21 +61,11 @@ class InventoryController extends Controller implements HasMiddleware
             ->where('reference_number', 'like', 'INV-OUT-%')
             ->sum('amount');
 
-        // Transaction History
-        $query = InventoryTransaction::with(['user', 'item', 'coordinator'])
-            ->where('type', 'out');
-
-        if ($request->has('type_group') && $request->type_group != '') {
-            $query->whereHas('item', function ($q) use ($request) {
-                $q->where('type_group', $request->type_group);
-            });
-        }
-
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
-            $query->where('user_id', Auth::id());
-        }
-
-        $transactions = $query->latest()->paginate(10);
+        // Transaction History (Stock Movements: in/out)
+        $transactions = $this->buildMovementQuery($request)
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         // My Assigned Assets (For Technicians/Coordinators)
         $user = Auth::user();
@@ -97,6 +88,46 @@ class InventoryController extends Controller implements HasMiddleware
         $myAssets = $myAssetsQuery->get();
 
         return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalSales', 'categories', 'myAssets'));
+    }
+
+    private function buildMovementQuery(Request $request)
+    {
+        $query = InventoryTransaction::with(['user', 'item', 'coordinator']);
+
+        if ($request->filled('type_group')) {
+            $query->whereHas('item', function ($q) use ($request) {
+                $q->where('type_group', $request->type_group);
+            });
+        }
+
+        if ($request->filled('movement_type') && in_array($request->movement_type, ['in', 'out'], true)) {
+            $query->where('type', $request->movement_type);
+        }
+
+        if ($request->input('movement_period') === 'day' && $request->filled('movement_day')) {
+            try {
+                $day = Carbon::createFromFormat('Y-m-d', $request->movement_day)->toDateString();
+                $query->whereDate('created_at', $day);
+            } catch (\Throwable $e) {
+                // Ignore invalid filter format.
+            }
+        }
+
+        if ($request->input('movement_period') === 'month' && $request->filled('movement_month')) {
+            try {
+                $month = Carbon::createFromFormat('Y-m', $request->movement_month);
+                $query->whereYear('created_at', $month->year)
+                    ->whereMonth('created_at', $month->month);
+            } catch (\Throwable $e) {
+                // Ignore invalid filter format.
+            }
+        }
+
+        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query;
     }
 
     public function createPickup(Request $request)
@@ -162,6 +193,9 @@ class InventoryController extends Controller implements HasMiddleware
                         'inventory_item_id' => $row['inventory_item_id'],
                         'type' => 'out',
                         'quantity' => $row['quantity'],
+                        'unit_cost' => $item?->price ?? 0,
+                        'total_cost' => ($item?->price ?? 0) * $row['quantity'],
+                        'source_type' => 'pickup',
                         'proof_image' => $path,
                         'description' => $finalDescription,
                     ]);
@@ -235,6 +269,9 @@ class InventoryController extends Controller implements HasMiddleware
                     'inventory_item_id' => $request->inventory_item_id,
                     'type' => 'out',
                     'quantity' => $request->quantity,
+                    'unit_cost' => $item->price,
+                    'total_cost' => $item->price * $request->quantity,
+                    'source_type' => 'pickup',
                     'proof_image' => $path,
                     'description' => '['.__($request->usage).'] '.$request->description,
                 ]);
@@ -280,6 +317,68 @@ class InventoryController extends Controller implements HasMiddleware
         return redirect()->route('inventory.index')->with('success', __('Items picked up successfully.'));
     }
 
+    public function storeStockIn(Request $request)
+    {
+        $validated = $request->validate([
+            'inventory_item_id' => 'required|exists:inventory_items,id',
+            'quantity' => 'required|integer|min:1',
+            'unit_cost' => 'required|numeric|min:0',
+            'purchase_date' => 'nullable|date',
+            'supplier_name' => 'nullable|string|max:150',
+            'reference_no' => 'nullable|string|max:100',
+            'description' => 'nullable|string',
+        ]);
+
+        $purchaseDate = $validated['purchase_date'] ?? now()->toDateString();
+
+        $item = DB::transaction(function () use ($validated, $purchaseDate) {
+            $item = InventoryItem::lockForUpdate()->findOrFail($validated['inventory_item_id']);
+            $qty = (int) $validated['quantity'];
+            $unitCost = (float) $validated['unit_cost'];
+            $totalCost = $qty * $unitCost;
+
+            $oldStock = (int) $item->stock;
+            $oldPrice = (float) $item->price;
+            $newStock = $oldStock + $qty;
+            $newAveragePrice = $newStock > 0
+                ? (($oldStock * $oldPrice) + $totalCost) / $newStock
+                : $oldPrice;
+
+            $item->update([
+                'stock' => $newStock,
+                'price' => $newAveragePrice,
+            ]);
+
+            $inventoryIn = InventoryTransaction::create([
+                'user_id' => Auth::id(),
+                'inventory_item_id' => $item->id,
+                'type' => 'in',
+                'quantity' => $qty,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
+                'source_type' => 'purchase',
+                'supplier_name' => $validated['supplier_name'] ?? null,
+                'reference_no' => $validated['reference_no'] ?? null,
+                'description' => $validated['description'] ?? 'Barang masuk dari pembelian stok',
+            ]);
+
+            Transaction::create([
+                'user_id' => Auth::id(),
+                'type' => 'expense',
+                'category' => 'Pembelian Alat',
+                'amount' => $totalCost,
+                'transaction_date' => $purchaseDate,
+                'description' => 'Pembelian stok '.$item->name.' ('.$qty.' '.$item->unit.')',
+                'reference_number' => 'INV-IN-'.$inventoryIn->id,
+            ]);
+
+            return $item;
+        });
+
+        return redirect()->route('inventory.index', ['type_group' => $item->type_group])
+            ->with('success', __('Stock in recorded successfully.'));
+    }
+
     public function storeItem(Request $request)
     {
         $validated = $request->validate([
@@ -296,6 +395,19 @@ class InventoryController extends Controller implements HasMiddleware
         ]);
 
         $item = InventoryItem::create($validated);
+
+        if ($item->stock > 0) {
+            InventoryTransaction::create([
+                'user_id' => Auth::id(),
+                'inventory_item_id' => $item->id,
+                'type' => 'in',
+                'quantity' => $item->stock,
+                'unit_cost' => $item->price,
+                'total_cost' => $item->stock * $item->price,
+                'source_type' => 'opening_balance',
+                'description' => 'Stok awal item dibuat',
+            ]);
+        }
 
         if ($item->stock > 0 && $item->price > 0) {
             Transaction::create([
@@ -323,23 +435,54 @@ class InventoryController extends Controller implements HasMiddleware
             'model' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'unit' => 'required|string|max:50',
-            'stock' => 'required|integer|min:0',
+            'stock' => 'nullable|integer|min:0',
+            'stock_adjustment' => 'nullable|integer',
             'price' => 'required|numeric|min:0',
         ]);
 
         $oldStock = $item->stock;
-        $item->update($validated);
+        $stockAdjustment = (int) ($validated['stock_adjustment'] ?? 0);
+        unset($validated['stock_adjustment']);
 
-        if ($validated['stock'] > $oldStock && $validated['price'] > 0) {
-            $diff = $validated['stock'] - $oldStock;
+        if ($stockAdjustment !== 0) {
+            $newStock = $oldStock + $stockAdjustment;
+            if ($newStock < 0) {
+                return back()->withInput()->withErrors([
+                    'stock_adjustment' => __('Stock adjustment causes negative stock.'),
+                ]);
+            }
+            $validated['stock'] = $newStock;
+        } elseif (! array_key_exists('stock', $validated) || $validated['stock'] === null) {
+            $validated['stock'] = $oldStock;
+        }
+
+        $item->update($validated);
+        $stockDiff = $item->stock - $oldStock;
+
+        if ($stockDiff !== 0) {
+            InventoryTransaction::create([
+                'user_id' => Auth::id(),
+                'inventory_item_id' => $item->id,
+                'type' => $stockDiff > 0 ? 'in' : 'out',
+                'quantity' => abs($stockDiff),
+                'unit_cost' => $item->price,
+                'total_cost' => abs($stockDiff) * $item->price,
+                'source_type' => 'adjustment',
+                'description' => $stockDiff > 0
+                    ? 'Penyesuaian stok masuk via edit item'
+                    : 'Penyesuaian stok keluar via edit item',
+            ]);
+        }
+
+        if ($stockDiff > 0 && $validated['price'] > 0) {
             Transaction::create([
                 'user_id' => Auth::id(),
                 'type' => 'expense',
                 'category' => 'Pembelian Alat',
-                'amount' => $diff * $validated['price'],
+                'amount' => $stockDiff * $validated['price'],
                 'transaction_date' => now()->toDateString(),
                 'description' => 'Penambahan stok '.$item->name,
-                'reference_number' => 'INV-ADD-'.$item->id.'-'.time(),
+                'reference_number' => 'INV-IN-ADJ-'.$item->id.'-'.time(),
             ]);
         }
 
@@ -443,6 +586,54 @@ class InventoryController extends Controller implements HasMiddleware
 
             $writer->close();
         }, 'inventory_report.xlsx');
+    }
+
+    public function exportMovementExcel(Request $request)
+    {
+        return response()->streamDownload(function () use ($request) {
+            $writer = new Writer;
+            $writer->openToFile('php://output');
+
+            $writer->addRow(Row::fromValues([
+                'Tanggal',
+                'Jenis',
+                'Tipe Item',
+                'User',
+                'Item',
+                'Qty',
+                'Unit',
+                'Unit Cost',
+                'Total Cost',
+                'Sumber',
+                'Supplier',
+                'Ref No',
+                'Deskripsi',
+            ]));
+
+            $this->buildMovementQuery($request)
+                ->orderBy('id')
+                ->chunk(200, function ($movements) use ($writer) {
+                    foreach ($movements as $movement) {
+                        $writer->addRow(Row::fromValues([
+                            optional($movement->created_at)->format('Y-m-d H:i:s'),
+                            strtoupper((string) $movement->type),
+                            $movement->item?->type_group,
+                            $movement->user?->name,
+                            $movement->item?->name,
+                            (int) $movement->quantity,
+                            $movement->item?->unit,
+                            (float) ($movement->unit_cost ?? 0),
+                            (float) ($movement->total_cost ?? 0),
+                            $movement->source_type,
+                            $movement->supplier_name,
+                            $movement->reference_no,
+                            $movement->description,
+                        ]));
+                    }
+                });
+
+            $writer->close();
+        }, 'inventory_stock_movements_'.now()->format('Ymd_His').'.xlsx');
     }
 
     public function downloadTemplate()

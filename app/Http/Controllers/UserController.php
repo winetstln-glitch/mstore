@@ -40,7 +40,10 @@ class UserController extends Controller implements HasMiddleware
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('attendance_card_code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -66,7 +69,10 @@ class UserController extends Controller implements HasMiddleware
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('attendance_card_code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -84,7 +90,8 @@ class UserController extends Controller implements HasMiddleware
                 'ID',
                 'Name',
                 'Email',
-                'Password',
+                'Username',
+                'Attendance Card Code',
                 'Role',
                 'Phone',
                 'Daily Salary',
@@ -97,7 +104,8 @@ class UserController extends Controller implements HasMiddleware
                     $user->id,
                     $user->name,
                     $user->email,
-                    $user->password,
+                    $user->username,
+                    $user->attendance_card_code,
                     $user->role ? $user->role->label : 'No Role',
                     $user->phone,
                     $user->daily_salary,

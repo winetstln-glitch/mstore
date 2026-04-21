@@ -293,6 +293,7 @@
 
         $hotspotInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'hotspot')->values();
         $pppoeInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'pppoe')->values();
+        $voucherProfiles = collect($voucherTemplates ?? [])->values();
         $internetPromoEnabled = \App\Models\Setting::getValue('landing_internet_promo_enabled', '1') === '1';
         $internetPromoPercent = (int) \App\Models\Setting::getValue('landing_internet_promo_percent', '10');
         $internetPromoPercent = max(0, min($internetPromoPercent, 90));
@@ -310,12 +311,29 @@
 
             return $speedText;
         };
+        $formatVoucherDuration = function ($secondsValue) {
+            $seconds = (int) $secondsValue;
+            if ($seconds <= 0) {
+                return '-';
+            }
+            if ($seconds % 86400 === 0) {
+                return ($seconds / 86400).' Hari';
+            }
+            if ($seconds % 3600 === 0) {
+                return ($seconds / 3600).' Jam';
+            }
+            if ($seconds % 60 === 0) {
+                return ($seconds / 60).' Menit';
+            }
+
+            return $seconds.' Detik';
+        };
     @endphp
     <section id="packages" class="py-2 bg-black bg-opacity-25 internet-packages-section">
         <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Layanan Internet</h6>
-                <h2 class="display-6 fw-800">Paket Internet Fiber</h2>
+                <h6 class="text-primary fw-bold text-uppercase">MSTORE.NET</h6>
+                <h2 class="display-6 fw-bold fw-600">LAYANAN JARINGAN INTERNET 100% FIBER OPTIC</h2>
                 @if($showInternetPromo)
                 <div class="internet-promo-banner mt-3">
                     <i class="fas fa-bolt"></i>
@@ -435,27 +453,54 @@
             </div>
 
             <div class="fade-up mt-4">
-                <h5 class="fw-bold mb-2">Beli Voucher Hotspot Online</h5>
+                <h5 class="fw-bold mb-2">Profile Voucher Hotspot</h5>
                 <div class="scroll-container">
-                    @forelse($hotspotInternetPackages->take(6) as $package)
-                    @php
-                        $normalPrice = (int) $package->price;
-                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
-                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
-                    @endphp
+                    @forelse($voucherProfiles as $profile)
                     <div class="scroll-item">
                         <div class="card">
                             <div class="pricing-header">
-                                <div class="speed">{{ $package->name }}</div>
-                                <div class="text-muted">Voucher Hotspot</div>
+                                <div class="speed">{{ $profile->name }}</div>
+                                <div class="text-muted">{{ $profile->rate_limit ?: 'Rate menyesuaikan' }}</div>
                             </div>
                             <div class="pricing-body d-flex flex-column">
                                 <div class="price text-primary">
-                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
+                                    Rp {{ number_format((float) $profile->price, 0, ',', '.') }}
                                 </div>
-                                @if($packagePromoEnabled)
-                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
-                                @endif
+                                <ul class="features">
+                                    <li><i class="fas fa-check-circle text-primary"></i> Durasi: {{ $formatVoucherDuration($profile->duration_seconds) }}</li>
+                                    <li><i class="fas fa-check-circle text-primary"></i> Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</li>
+                                    <li><i class="fas fa-check-circle text-primary"></i> Profile: {{ $profile->rate_limit ?: '-' }}</li>
+                                </ul>
+                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                    Pilih Voucher
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center w-100 py-2">
+                        <p class="text-muted">Profile voucher belum tersedia.</p>
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="fade-up mt-4">
+                <h5 class="fw-bold mb-2">Beli Voucher Hotspot Online</h5>
+                <div class="scroll-container">
+                    @forelse($voucherProfiles->take(6) as $profile)
+                    <div class="scroll-item">
+                        <div class="card">
+                            <div class="pricing-header">
+                                <div class="speed">{{ $profile->name }}</div>
+                                <div class="text-muted">{{ $profile->rate_limit ?: 'Voucher Hotspot' }}</div>
+                            </div>
+                            <div class="pricing-body d-flex flex-column">
+                                <div class="price text-primary">
+                                    Rp {{ number_format((float) $profile->price, 0, ',', '.') }}
+                                </div>
+                                <div class="small text-muted mb-2">Durasi: {{ $formatVoucherDuration($profile->duration_seconds) }}</div>
+                                <div class="small text-muted mb-3">Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</div>
                                 <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
                                     Beli Online
                                 </a>
@@ -467,7 +512,7 @@
                         <div class="card">
                             <div class="pricing-header">
                                 <div class="speed">Voucher Hotspot</div>
-                                <div class="text-muted">Pembelian Online</div>
+                                <div class="text-muted">Data profile belum tersedia</div>
                             </div>
                             <div class="pricing-body d-flex flex-column">
                                 <p class="text-muted mb-3">Voucher hotspot tersedia dan bisa dibeli langsung via portal online.</p>

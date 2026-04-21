@@ -7,6 +7,7 @@ use App\Models\Odp;
 use App\Models\Package;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
+use App\Models\VoucherTemplate;
 use App\Models\WashService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -101,6 +102,21 @@ class LandingController extends Controller
             $odps = collect([]);
         }
 
+        // Safely fetch Voucher Profiles
+        try {
+            if (class_exists(VoucherTemplate::class) && Schema::hasTable('voucher_templates')) {
+                $voucherTemplates = VoucherTemplate::query()
+                    ->where('is_active', true)
+                    ->orderBy('price')
+                    ->orderBy('name')
+                    ->get();
+            } else {
+                $voucherTemplates = collect([]);
+            }
+        } catch (\Exception $e) {
+            $voucherTemplates = collect([]);
+        }
+
         try {
             $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
             $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
@@ -113,6 +129,6 @@ class LandingController extends Controller
             $clockOutEnd = '01:00';
         }
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'washMainServices', 'washAddonServices', 'waNumber', 'odps', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'washMainServices', 'washAddonServices', 'waNumber', 'odps', 'voucherTemplates', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
     }
 }
