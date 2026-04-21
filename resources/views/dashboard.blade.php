@@ -64,7 +64,7 @@
                     <span>{{ __('Dari total') }} {{ $stats['technician_total'] }} {{ __('teknisi aktif') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present']) }}" aria-label="Lihat teknisi masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -81,7 +81,7 @@
                     <span>{{ __('Belum melakukan absensi hari ini') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present']) }}" aria-label="Lihat teknisi tidak masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi tidak masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -98,7 +98,7 @@
                     <span>{{ __('Dari total') }} {{ $stats['wash_employee_total'] }} {{ __('karyawan wash aktif') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present']) }}" aria-label="Lihat karyawan wash masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -115,7 +115,7 @@
                     <span>{{ __('Belum melakukan absensi hari ini') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present']) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
         </div>
     </div>
 </div>
@@ -126,19 +126,25 @@
             <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0 fw-bold">{{ __('Data Absensi Karyawan') }}</h6>
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present']) }}"
+                    <form action="{{ route('dashboard') }}" method="GET" class="d-flex gap-2 flex-wrap align-items-center">
+                        <input type="hidden" name="attendance_role" value="{{ $attendanceRole }}">
+                        <input type="hidden" name="attendance_state" value="{{ $attendanceState }}">
+                        <input type="date" name="attendance_date" value="{{ $attendanceDate ?? now()->toDateString() }}" class="form-control form-control-sm" style="max-width: 170px;">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Terapkan</button>
+                    </form>
+                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
                        class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'present' ? 'btn-primary' : 'btn-outline-primary' }}">
                         Teknisi Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present']) }}"
+                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
                        class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'not_present' ? 'btn-danger' : 'btn-outline-danger' }}">
                         Teknisi Tidak Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present']) }}"
+                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
                        class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'present' ? 'btn-info' : 'btn-outline-info' }}">
                         Karyawan Wash Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present']) }}"
+                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
                        class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'not_present' ? 'btn-warning' : 'btn-outline-warning' }}">
                         Karyawan Wash Tidak Masuk
                     </a>
@@ -147,6 +153,9 @@
                     </span>
                     <span class="badge {{ $attendanceState === 'present' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
                         {{ $attendanceState === 'present' ? 'Status: Masuk' : 'Status: Tidak Masuk' }}
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        Tanggal: {{ $attendanceDateLabel ?? now()->translatedFormat('d M Y') }}
                     </span>
                 </div>
             </div>

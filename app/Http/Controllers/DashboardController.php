@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\WashTransaction;
 use App\Services\MixRadiusService;
 use App\Services\SystemMetricsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -173,9 +174,16 @@ class DashboardController extends Controller
         if (! in_array($attendanceState, ['present', 'not_present'], true)) {
             $attendanceState = 'present';
         }
+        $attendanceDateInput = (string) $request->query('attendance_date', now()->toDateString());
+        try {
+            $attendanceDate = Carbon::createFromFormat('Y-m-d', $attendanceDateInput)->toDateString();
+        } catch (\Throwable $e) {
+            $attendanceDate = now()->toDateString();
+        }
+        $attendanceDateLabel = Carbon::parse($attendanceDate)->translatedFormat('d M Y');
         $selectedRoleIds = $attendanceRole === 'karyawan-wash' ? $washEmployeeIds : $technicianIds;
         $attendanceByUser = TechnicianAttendance::query()
-            ->whereDate('clock_in', today())
+            ->whereDate('clock_in', $attendanceDate)
             ->whereIn('user_id', $selectedRoleIds)
             ->orderByDesc('clock_in')
             ->get()
@@ -451,6 +459,8 @@ class DashboardController extends Controller
             'monitorLogs',
             'attendanceRole',
             'attendanceState',
+            'attendanceDate',
+            'attendanceDateLabel',
             'attendanceEmployees',
             'attendanceByUser',
             'technicianTaskSummary'
