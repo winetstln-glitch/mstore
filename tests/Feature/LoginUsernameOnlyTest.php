@@ -32,8 +32,8 @@ class LoginUsernameOnlyTest extends TestCase
             ['role' => 'technician', 'redirect' => route('dashboard')],
             ['role' => 'noc', 'redirect' => route('dashboard')],
             ['role' => 'kasir-atk', 'redirect' => route('dashboard')],
-            ['role' => 'kasir-wash', 'redirect' => route('dashboard')],
-            ['role' => 'karyawan-wash', 'redirect' => route('dashboard')],
+            ['role' => 'kasir-wash', 'redirect' => route('attendance.create')],
+            ['role' => 'karyawan-wash', 'redirect' => route('attendance.create')],
             ['role' => 'staff', 'redirect' => route('dashboard')],
             ['role' => 'customer', 'redirect' => route('client.dashboard')],
         ];

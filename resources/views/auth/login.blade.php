@@ -60,7 +60,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('login') }}" class="w-100">
+                <form method="POST" action="{{ route('login', [], false) }}" class="w-100">
                     @csrf
 
                     <div class="mb-3">

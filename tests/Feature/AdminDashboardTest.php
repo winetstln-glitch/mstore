@@ -66,7 +66,9 @@ class AdminDashboardTest extends TestCase
 
         $this->assertDatabaseHas('tickets', ['id' => $ticket->id]);
 
-        $response = $this->actingAs($this->admin)->delete(route('tickets.destroy', $ticket));
+        $response = $this->actingAs($this->admin)
+            ->withSession(['_token' => 'test-token'])
+            ->delete(route('tickets.destroy', $ticket), [], ['X-CSRF-TOKEN' => 'test-token']);
 
         $response->assertRedirect(route('tickets.index'));
         $this->assertDatabaseMissing('tickets', ['id' => $ticket->id]);

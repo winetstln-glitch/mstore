@@ -84,7 +84,9 @@ class AttendanceSettingsTest extends TestCase
             'attendance_radius' => '200',
         ];
 
-        $response = $this->actingAs($this->admin)->post(route('settings.update'), $payload);
+        $response = $this->actingAs($this->admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('settings.update'), $payload, ['X-CSRF-TOKEN' => 'test-token']);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');

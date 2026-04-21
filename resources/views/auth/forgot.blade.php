@@ -19,7 +19,7 @@
                         @if (session('success'))
                             <div class="alert alert-success">{{ session('success') }}</div>
                         @endif
-                        <form method="POST" action="{{ route('password.send_otp') }}">
+                        <form method="POST" action="{{ route('password.send_otp', [], false) }}">
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label">Email atau Nomor HP</label>
