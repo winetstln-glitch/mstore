@@ -64,6 +64,9 @@
                     <button class="btn btn-icon rounded-circle bg-dark-subtle" id="themeToggle">
                         <i class="fas fa-moon"></i>
                     </button>
+                    <a href="{{ route('customers.public.register.create') }}" class="btn btn-outline-success btn-sm">
+                        Register
+                    </a>
                     @auth
                         <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
                     @else
@@ -86,6 +89,9 @@
                     <div class="d-flex flex-wrap gap-3">
                         <a href="https://buymstore.online" class="btn btn-primary">
                             <i class="fas fa-rocket me-2"></i> Client Area
+                        </a>
+                        <a href="{{ route('customers.public.register.create') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-plus me-2"></i> Register Pelanggan
                         </a>
                         <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-primary" download>
                             <i class="fa-brands fa-android me-2"></i> Get App
@@ -694,6 +700,10 @@
                 <a href="#atk-promo" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-shopping-bag mb-1"></i>
                     <span>ATK</span>
+                </a>
+                <a href="{{ route('customers.public.register.create') }}" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
+                    <i class="fas fa-user-plus mb-1"></i>
+                    <span>Daftar</span>
                 </a>
                 <a href="{{ route('login') }}" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
                     <i class="fas fa-user-circle mb-1"></i>
