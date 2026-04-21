@@ -13,9 +13,11 @@ use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\Ticket;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Models\WashTransaction;
 use App\Services\MixRadiusService;
 use App\Services\SystemMetricsService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -65,7 +67,7 @@ class DashboardController extends Controller
             ->all();
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         if ($user && $user->hasRole('customer')) {
@@ -76,6 +78,9 @@ class DashboardController extends Controller
         }
         if ($user && $user->hasRole('kasir-wash')) {
             return redirect()->route('wash.dashboard');
+        }
+        if ($user && $user->hasRole('karyawan-wash')) {
+            return redirect()->route('attendance.create');
         }
         if (! $user || ! $user->hasPermission('dashboard.view')) {
             abort(403);
@@ -137,6 +142,104 @@ class DashboardController extends Controller
             }
         }
 
+        $technicianIds = User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($q) {
+                $q->where('name', 'technician');
+            })
+            ->pluck('id');
+        $washEmployeeIds = User::query()
+            ->where('is_active', true)
+            ->whereHas('role', function ($q) {
+                $q->where('name', 'karyawan-wash');
+            })
+            ->pluck('id');
+        $technicianPresentToday = TechnicianAttendance::whereDate('clock_in', today())
+            ->whereIn('status', ['present', 'late'])
+            ->whereIn('user_id', $technicianIds)
+            ->distinct('user_id')
+            ->count('user_id');
+        $washEmployeePresentToday = TechnicianAttendance::whereDate('clock_in', today())
+            ->whereIn('status', ['present', 'late'])
+            ->whereIn('user_id', $washEmployeeIds)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $attendanceRole = (string) $request->query('attendance_role', 'technician');
+        if (! in_array($attendanceRole, ['technician', 'karyawan-wash'], true)) {
+            $attendanceRole = 'technician';
+        }
+        $attendanceState = (string) $request->query('attendance_state', 'present');
+        if (! in_array($attendanceState, ['present', 'not_present'], true)) {
+            $attendanceState = 'present';
+        }
+        $selectedRoleIds = $attendanceRole === 'karyawan-wash' ? $washEmployeeIds : $technicianIds;
+        $attendanceByUser = TechnicianAttendance::query()
+            ->whereDate('clock_in', today())
+            ->whereIn('user_id', $selectedRoleIds)
+            ->orderByDesc('clock_in')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($rows) => $rows->first());
+        $presentStatuses = ['present', 'late'];
+        $presentUserIds = $attendanceByUser
+            ->filter(fn ($attendance) => in_array((string) $attendance->status, $presentStatuses, true))
+            ->keys()
+            ->values()
+            ->all();
+        $attendanceEmployeesQuery = User::query()
+            ->with('role')
+            ->where('is_active', true)
+            ->whereHas('role', function ($q) use ($attendanceRole) {
+                $q->where('name', $attendanceRole);
+            });
+        if ($attendanceState === 'present') {
+            if ($presentUserIds === []) {
+                $attendanceEmployees = collect();
+            } else {
+                $attendanceEmployees = $attendanceEmployeesQuery
+                    ->whereIn('id', $presentUserIds)
+                    ->orderBy('name')
+                    ->get();
+            }
+        } else {
+            $attendanceEmployees = $attendanceEmployeesQuery
+                ->when($presentUserIds !== [], fn ($q) => $q->whereNotIn('id', $presentUserIds))
+                ->orderBy('name')
+                ->get();
+        }
+        $technicianTaskSummary = collect();
+        if ($attendanceRole === 'technician' && $attendanceEmployees->isNotEmpty()) {
+            $technicianIdsForTable = $attendanceEmployees->pluck('id')->values()->all();
+            $activeTicketCounts = DB::table('ticket_user')
+                ->join('tickets', 'tickets.id', '=', 'ticket_user.ticket_id')
+                ->select('ticket_user.user_id', DB::raw('COUNT(DISTINCT tickets.id) as total'))
+                ->whereIn('ticket_user.user_id', $technicianIdsForTable)
+                ->whereIn('tickets.status', ['open', 'assigned', 'in_progress', 'pending'])
+                ->groupBy('ticket_user.user_id')
+                ->pluck('total', 'ticket_user.user_id');
+            $activeInstallationCounts = Installation::query()
+                ->select('technician_id', DB::raw('COUNT(*) as total'))
+                ->whereIn('technician_id', $technicianIdsForTable)
+                ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
+                ->groupBy('technician_id')
+                ->pluck('total', 'technician_id');
+            $technicianTaskSummary = $attendanceEmployees->mapWithKeys(function ($employee) use ($activeTicketCounts, $activeInstallationCounts) {
+                $ticketCount = (int) ($activeTicketCounts[$employee->id] ?? 0);
+                $installationCount = (int) ($activeInstallationCounts[$employee->id] ?? 0);
+                $totalTask = $ticketCount + $installationCount;
+
+                return [
+                    $employee->id => [
+                        'ticket_active' => $ticketCount,
+                        'installation_active' => $installationCount,
+                        'total_active' => $totalTask,
+                        'label' => $totalTask > 0 ? 'Bertugas' : 'Standby',
+                    ],
+                ];
+            });
+        }
+
         $stats = [
             'total_customers' => $customerQuery->count(),
             'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', now()->startOfMonth())->count(),
@@ -147,14 +250,12 @@ class DashboardController extends Controller
             'atk_month_revenue' => AtkTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
             'wash_today' => WashTransaction::whereDate('created_at', today())->count(),
             'wash_month_revenue' => WashTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
-            'technician_present_today' => TechnicianAttendance::whereDate('clock_in', today())
-                ->whereIn('status', ['present', 'late'])
-                ->distinct('user_id')
-                ->count('user_id'),
-            'technician_leave_absent_today' => TechnicianAttendance::whereDate('clock_in', today())
-                ->whereIn('status', ['leave', 'permit', 'sick', 'alpha'])
-                ->distinct('user_id')
-                ->count('user_id'),
+            'technician_total' => $technicianIds->count(),
+            'technician_present_today' => $technicianPresentToday,
+            'technician_not_present_today' => max($technicianIds->count() - $technicianPresentToday, 0),
+            'wash_employee_total' => $washEmployeeIds->count(),
+            'wash_employee_present_today' => $washEmployeePresentToday,
+            'wash_employee_not_present_today' => max($washEmployeeIds->count() - $washEmployeePresentToday, 0),
         ];
 
         // Traffic Data (Orders & Tickets per Month)
@@ -347,7 +448,12 @@ class DashboardController extends Controller
             'mixRadiusOk',
             'monitorSummary',
             'monitorTrend',
-            'monitorLogs'
+            'monitorLogs',
+            'attendanceRole',
+            'attendanceState',
+            'attendanceEmployees',
+            'attendanceByUser',
+            'technicianTaskSummary'
         ));
     }
 

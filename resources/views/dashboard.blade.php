@@ -49,45 +49,165 @@
     </div>
 </div>
 @endif
-<!-- Vuexy-like Analytics Widgets -->
 <div class="row g-4 mb-4">
-    <!-- Sales Overview (Area) -->
-    <div class="col-xl-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Sales Overview') }}</h6>
-                <span class="badge bg-primary-subtle text-primary">
-                    {{ ($trafficStats['orders_growth_percent'] >= 0 ? '+' : '') . $trafficStats['orders_growth_percent'] . '%' }}
-                </span>
-            </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success position-relative">
             <div class="card-body">
-                <div id="salesOverviewChart" style="height: 300px;"></div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Teknisi Masuk') }}</h6>
+                    <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['technician_present_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Dari total') }} {{ $stats['technician_total'] }} {{ __('teknisi aktif') }}</span>
+                </div>
             </div>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present']) }}" aria-label="Lihat teknisi masuk"></a>
         </div>
     </div>
-    <!-- Support Tracker (Radial) -->
-    <div class="col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Server CPU Usage') }}</h6>
-                <small class="text-muted">{{ __('Realtime') }}</small>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger position-relative">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Teknisi Tidak Masuk') }}</h6>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['technician_not_present_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Belum melakukan absensi hari ini') }}</span>
+                </div>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <div id="supportTrackerChart" style="height: 240px; width: 100%;"></div>
-            </div>
-            <div class="card-footer bg-transparent border-0 text-center pb-3">
-                <div class="small text-body-secondary">{{ __('Load Average') }}: {{ implode(' / ', $systemMetrics['loadavg']) }} ({{ $systemMetrics['cores'] }} {{ __('cores') }})</div>
-            </div>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present']) }}" aria-label="Lihat teknisi tidak masuk"></a>
         </div>
     </div>
-    <!-- Revenue Sources (Donut) -->
-    <div class="col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Server Memory & Swap') }}</h6>
-            </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info position-relative">
             <div class="card-body">
-                <div id="revenueSourcesChart" style="height: 240px;"></div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Karyawan Wash Masuk') }}</h6>
+                    <div class="bg-info bg-opacity-10 text-info rounded p-2">
+                        <i class="fa-solid fa-soap"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['wash_employee_present_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Dari total') }} {{ $stats['wash_employee_total'] }} {{ __('karyawan wash aktif') }}</span>
+                </div>
+            </div>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present']) }}" aria-label="Lihat karyawan wash masuk"></a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning position-relative">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Karyawan Wash Tidak Masuk') }}</h6>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['wash_employee_not_present_today'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Belum melakukan absensi hari ini') }}</span>
+                </div>
+            </div>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present']) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">{{ __('Data Absensi Karyawan') }}</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present']) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'present' ? 'btn-primary' : 'btn-outline-primary' }}">
+                        Teknisi Masuk
+                    </a>
+                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present']) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'not_present' ? 'btn-danger' : 'btn-outline-danger' }}">
+                        Teknisi Tidak Masuk
+                    </a>
+                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present']) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'present' ? 'btn-info' : 'btn-outline-info' }}">
+                        Karyawan Wash Masuk
+                    </a>
+                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present']) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'not_present' ? 'btn-warning' : 'btn-outline-warning' }}">
+                        Karyawan Wash Tidak Masuk
+                    </a>
+                    <span class="badge bg-primary-subtle text-primary">
+                        {{ $attendanceRole === 'technician' ? 'Role: Teknisi' : 'Role: Karyawan Wash' }}
+                    </span>
+                    <span class="badge {{ $attendanceState === 'present' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                        {{ $attendanceState === 'present' ? 'Status: Masuk' : 'Status: Tidak Masuk' }}
+                    </span>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Status Hari Ini') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Clock In') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Clock Out') }}</th>
+                            @if($attendanceRole === 'technician')
+                                <th class="text-uppercase small text-muted border-0">{{ __('Status Tugas') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Tugas Aktif') }}</th>
+                            @endif
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($attendanceEmployees as $employee)
+                            @php
+                                $attendanceRow = $attendanceByUser->get($employee->id);
+                                $taskSummary = $technicianTaskSummary->get($employee->id, [
+                                    'label' => 'Standby',
+                                    'total_active' => 0,
+                                    'ticket_active' => 0,
+                                    'installation_active' => 0,
+                                ]);
+                            @endphp
+                            <tr>
+                                <td class="ps-4 fw-medium">{{ $employee->name }}</td>
+                                <td>{{ $employee->role->label ?? '-' }}</td>
+                                <td>
+                                    @if($attendanceRow && in_array($attendanceRow->status, ['present', 'late']))
+                                        <span class="badge bg-success-subtle text-success">{{ ucfirst($attendanceRow->status) }}</span>
+                                    @elseif($attendanceRow)
+                                        <span class="badge bg-warning-subtle text-warning">{{ ucfirst($attendanceRow->status) }}</span>
+                                    @else
+                                        <span class="badge bg-danger-subtle text-danger">{{ __('Tidak Masuk') }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ $attendanceRow?->clock_in ? \Carbon\Carbon::parse($attendanceRow->clock_in)->format('H:i') : '-' }}</td>
+                                <td>{{ $attendanceRow?->clock_out ? \Carbon\Carbon::parse($attendanceRow->clock_out)->format('H:i') : '-' }}</td>
+                                @if($attendanceRole === 'technician')
+                                    <td>
+                                        <span class="badge {{ $taskSummary['total_active'] > 0 ? 'bg-info-subtle text-info' : 'bg-secondary-subtle text-secondary' }}">
+                                            {{ $taskSummary['label'] }}
+                                        </span>
+                                    </td>
+                                    <td class="small">
+                                        Ticket: {{ $taskSummary['ticket_active'] }} | Installasi: {{ $taskSummary['installation_active'] }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="{{ $attendanceRole === 'technician' ? 7 : 5 }}" class="text-center py-4 text-muted">{{ __('Tidak ada data karyawan untuk filter ini.') }}</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -145,40 +265,6 @@
                 <h3 class="fw-bold mb-1">{{ $stats['pending_installations'] }}</h3>
                 <div class="small text-body-secondary">
                     <span>{{ __('Scheduled for this week') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Technician Masuk') }}</h6>
-                    <div class="bg-success bg-opacity-10 text-success rounded p-2">
-                        <i class="fa-solid fa-user-check"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1">{{ $stats['technician_present_today'] }}</h3>
-                <div class="small text-body-secondary">
-                    <span>{{ __('Hari ini') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Technician Izin / Tidak Masuk') }}</h6>
-                    <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
-                        <i class="fa-solid fa-user-xmark"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1">{{ $stats['technician_leave_absent_today'] }}</h3>
-                <div class="small text-body-secondary">
-                    <span>{{ __('Hari ini') }}</span>
                 </div>
             </div>
         </div>
@@ -666,7 +752,6 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('financialChart').getContext('2d');
@@ -862,59 +947,6 @@
         applyMonitorLogFilters();
         setInterval(refreshMonitorLogs, 15000);
 
-        // Sales Overview (Area)
-        const salesOptions = {
-            chart: { type: 'area', height: 300, toolbar: { show: false } },
-            series: [
-                { name: '{{ __("Order") }}', data: @json($trafficData['orders']) },
-                { name: '{{ __("Tickets") }}', data: @json($trafficData['tickets']) },
-            ],
-            colors: ['#7367F0', '#00CFE8'],
-            dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 2 },
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
-            xaxis: { categories: @json($trafficData['labels']) },
-            yaxis: { labels: { formatter: val => Math.round(val) } },
-            legend: { position: 'top' }
-        };
-        const salesChart = new ApexCharts(document.querySelector('#salesOverviewChart'), salesOptions);
-        salesChart.render();
-
-        // Support Tracker (Radial) -> CPU Usage
-        const supportOptions = {
-            chart: { type: 'radialBar', height: 240 },
-            series: [{{ $systemMetrics['cpu_usage_pct'] }}],
-            colors: ['#28C76F'],
-            plotOptions: {
-                radialBar: {
-                    hollow: { size: '60%' },
-                    dataLabels: {
-                        name: { show: true, fontSize: '14px', color: '#6e6b7b' },
-                        value: { show: true, formatter: v => v + '%', fontSize: '22px' }
-                    }
-                }
-            },
-            labels: ['CPU']
-        };
-        const supportChart = new ApexCharts(document.querySelector('#supportTrackerChart'), supportOptions);
-        supportChart.render();
-
-        // Revenue Sources (Donut) -> RAM & Swap breakdown (MB)
-        const revenueOptions = {
-            chart: { type: 'donut', height: 240 },
-            series: [
-                {{ $systemMetrics['ram_used_mb'] }},
-                {{ $systemMetrics['ram_free_mb'] }},
-                {{ $systemMetrics['swap_used_mb'] }},
-                {{ $systemMetrics['swap_free_mb'] }}
-            ],
-            labels: ['RAM Used', 'RAM Free', 'Swap Used', 'Swap Free'],
-            colors: ['#7367F0', '#00CFE8', '#FF9F43', '#EA5455'],
-            legend: { position: 'bottom' },
-            dataLabels: { enabled: false }
-        };
-        const revenueChart = new ApexCharts(document.querySelector('#revenueSourcesChart'), revenueOptions);
-        revenueChart.render();
     });
 </script>
 @endpush

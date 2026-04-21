@@ -83,7 +83,7 @@ class LoginController extends Controller
                     }
                 }
             }
-            $fallback = $user && $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+            $fallback = $user ? $this->defaultRedirectForUser($user) : route('dashboard');
 
             return redirect()->intended($fallback);
         }
@@ -155,7 +155,7 @@ class LoginController extends Controller
 
                 Auth::login($user, $remember);
                 $request->session()->regenerate();
-                $fallback = $user->hasRole('customer') ? route('client.dashboard') : route('dashboard');
+                $fallback = $this->defaultRedirectForUser($user);
 
                 return redirect()->intended($fallback);
             }
@@ -329,5 +329,18 @@ class LoginController extends Controller
         }
 
         return $user;
+    }
+
+    protected function defaultRedirectForUser(User $user): string
+    {
+        if ($user->hasRole('customer')) {
+            return route('client.dashboard');
+        }
+
+        if ($user->hasRole('karyawan-wash') || $user->hasRole('kasir-wash')) {
+            return route('attendance.create');
+        }
+
+        return route('dashboard');
     }
 }
