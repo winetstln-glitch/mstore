@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Coordinator;
 use App\Models\InventoryTransaction;
+use App\Models\Investor;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Services\AccountingPoster;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -34,64 +36,19 @@ class FinanceController extends Controller implements HasMiddleware
             abort(403, 'Unauthorized action.');
         }
 
-        $incomeBreakdowns = [];
         $recentIncomes = Transaction::where('type', 'income')
             ->whereIn('category', ['Member Income', 'Voucher Income'])
-            ->with('coordinator')
+            ->with('coordinator:id,name')
             ->latest('transaction_date')
             ->take(10)
             ->get();
-
-        foreach ($recentIncomes as $inc) {
-            $com = Transaction::where('reference_number', 'COM-'.$inc->id)->value('amount') ?? 0;
-            $isp = Transaction::where('reference_number', 'ISP-'.$inc->id)->value('amount') ?? 0;
-            $tool = Transaction::where('reference_number', 'TOOL-'.$inc->id)->value('amount') ?? 0;
-            $cash = Transaction::where('reference_number', 'INV-CASH-'.$inc->id)->value('amount') ?? 0;
-            $shares = Transaction::where('reference_number', 'INV-'.$inc->id)->sum('amount');
-
-            // Fetch Investors linked to this transaction
-            $investorNames = Transaction::where('reference_number', 'INV-'.$inc->id)
-                ->with('investor')
-                ->get()
-                ->pluck('investor.name')
-                ->unique()
-                ->implode(', ');
-
-            $netBalance = $inc->amount - $com - $isp - $tool;
-            $managerIncome = $com + $isp + $tool;
-
-            // Cascading remainders for display
-            $remaining1 = $inc->amount - $com;
-            $remaining2 = $remaining1 - $isp;
-            $remaining3 = $remaining2 - $tool; // Should equal netBalance
-
-            $incomeBreakdowns[] = (object) [
-                'id' => $inc->id,
-                'date' => $inc->transaction_date,
-                'coordinator_name' => $inc->coordinator->name ?? '-',
-                'gross_amount' => $inc->amount,
-                'commission' => $com,
-                'isp_share' => $isp,
-                'tool_fund' => $tool,
-                'manager_income' => $managerIncome,
-                'net_balance' => $netBalance,
-                'remaining_1' => $remaining1,
-                'remaining_2' => $remaining2,
-                'remaining_3' => $remaining3,
-                'cash_fund' => $cash,
-                'investor_share' => $shares,
-                'investor_names' => $investorNames,
-            ];
-        }
+        $incomeBreakdowns = $this->buildIncomeBreakdowns($recentIncomes);
 
         $coordRate = Setting::getValue('commission_coordinator_percent', 15);
         $ispRate = Setting::getValue('commission_isp_percent', 25);
         $toolRate = Setting::getValue('commission_tool_percent', 20);
         $investorCashRate = Setting::getValue('investor_cash_percent', 5);
         $managerRate = $coordRate + $ispRate + $toolRate;
-
-        // Convert array to Collection for view methods like sum()
-        $incomeBreakdowns = collect($incomeBreakdowns);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.income_breakdown_pdf', compact('incomeBreakdowns', 'coordRate', 'ispRate', 'toolRate', 'investorCashRate', 'managerRate'));
         $pdf->setPaper('a4', 'landscape');
@@ -105,82 +62,8 @@ class FinanceController extends Controller implements HasMiddleware
             abort(403, 'Unauthorized action.');
         }
 
-        $coordinatorSummaries = [];
-        $coordinators = \App\Models\Coordinator::all();
-
-        foreach ($coordinators as $coordinator) {
-            $grossRevenue = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('type', 'income')
-                ->whereIn('category', ['Member Income', 'Voucher Income'])
-                ->sum('amount');
-
-            $commission = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Coordinator Commission')
-                ->sum('amount');
-
-            $ispShare = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'ISP Payment')
-                ->sum('amount');
-
-            $toolFund = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Tool Fund')
-                ->sum('amount');
-
-            $investorShareByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Investor Profit Share')
-                ->sum('amount');
-
-            $investorCashByCoordinator = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Investor Cash Fund')
-                ->sum('amount');
-
-            $deposited = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('category', 'Deposit to Company')
-                ->sum('amount');
-
-            // Calculate Total Expenses (including Inventory)
-            $totalExpenses = Transaction::where('coordinator_id', $coordinator->id)
-                ->where('type', 'expense')
-                ->whereNotIn('category', [
-                    'Coordinator Commission',
-                    'ISP Payment',
-                    'Tool Fund',
-                    'Investor Profit Share',
-                    'Investor Cash Fund',
-                    'Pembayaran ISP',
-                    'Deposit to Company',
-                ])
-                ->sum('amount');
-
-            // Calculate Inventory Expenses to Exclude
-            $inventoryExpenses = Transaction::where('coordinator_id', $coordinator->id)
-                ->where(function ($q) {
-                    $q->where('category', 'Ambil Barang')
-                        ->orWhere(function ($sub) {
-                            $sub->where('category', 'Pengeluaran Pengurus')
-                                ->where('reference_number', 'like', 'INV-OUT-%');
-                        });
-                })
-                ->sum('amount');
-
-            $expenses = $totalExpenses - $inventoryExpenses;
-
-            $netBalance = $grossRevenue - $commission - $expenses - $deposited;
-
-            $coordinatorSummaries[] = (object) [
-                'id' => $coordinator->id,
-                'name' => $coordinator->name,
-                'gross_revenue' => $grossRevenue,
-                'commission' => $commission,
-                'isp_share' => $ispShare,
-                'tools_cost' => $toolFund,
-                'investor_share' => $investorShareByCoordinator,
-                'investor_cash' => $investorCashByCoordinator,
-                'expenses' => $expenses,
-                'deposited' => $deposited,
-                'net_balance' => $netBalance,
-            ];
-        }
+        $coordinators = Coordinator::query()->select('id', 'name')->orderBy('name')->get();
+        $coordinatorSummaries = $this->buildCoordinatorSummaries($coordinators);
 
         $investorDetailsByCoordinator = [];
 
@@ -217,6 +100,126 @@ class FinanceController extends Controller implements HasMiddleware
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('finance.investor_share_pdf', compact('coordinatorSummaries', 'investorDetailsByCoordinator'));
 
         return $pdf->stream('investor_share_per_coordinator.pdf', ['Attachment' => false]);
+    }
+
+    protected function buildIncomeBreakdowns(Collection $recentIncomes): Collection
+    {
+        if ($recentIncomes->isEmpty()) {
+            return collect();
+        }
+
+        $incomeIds = $recentIncomes->pluck('id')->all();
+        $referenceNumbers = [];
+
+        foreach ($incomeIds as $incomeId) {
+            $referenceNumbers[] = 'COM-'.$incomeId;
+            $referenceNumbers[] = 'ISP-'.$incomeId;
+            $referenceNumbers[] = 'TOOL-'.$incomeId;
+            $referenceNumbers[] = 'INV-CASH-'.$incomeId;
+            $referenceNumbers[] = 'INV-'.$incomeId;
+        }
+
+        $relatedTransactions = Transaction::query()
+            ->with('investor:id,name')
+            ->whereIn('reference_number', $referenceNumbers)
+            ->get(['reference_number', 'amount', 'investor_id']);
+
+        $relatedByReference = $relatedTransactions->groupBy('reference_number');
+
+        return $recentIncomes->map(function (Transaction $inc) use ($relatedByReference) {
+            $commissionRows = $relatedByReference->get('COM-'.$inc->id, collect());
+            $ispRows = $relatedByReference->get('ISP-'.$inc->id, collect());
+            $toolRows = $relatedByReference->get('TOOL-'.$inc->id, collect());
+            $cashRows = $relatedByReference->get('INV-CASH-'.$inc->id, collect());
+            $shareRows = $relatedByReference->get('INV-'.$inc->id, collect());
+
+            $com = (float) $commissionRows->sum('amount');
+            $isp = (float) $ispRows->sum('amount');
+            $tool = (float) $toolRows->sum('amount');
+            $cash = (float) $cashRows->sum('amount');
+            $shares = (float) $shareRows->sum('amount');
+            $investorNames = $shareRows
+                ->pluck('investor.name')
+                ->filter()
+                ->unique()
+                ->implode(', ');
+
+            $netBalance = (float) $inc->amount - $com - $isp - $tool;
+            $managerIncome = $com + $isp + $tool;
+            $remaining1 = (float) $inc->amount - $com;
+            $remaining2 = $remaining1 - $isp;
+            $remaining3 = $remaining2 - $tool;
+
+            return (object) [
+                'id' => $inc->id,
+                'date' => $inc->transaction_date,
+                'coordinator_name' => $inc->coordinator->name ?? '-',
+                'gross_amount' => $inc->amount,
+                'commission' => $com,
+                'isp_share' => $isp,
+                'tool_fund' => $tool,
+                'manager_income' => $managerIncome,
+                'net_balance' => $netBalance,
+                'remaining_1' => $remaining1,
+                'remaining_2' => $remaining2,
+                'remaining_3' => $remaining3,
+                'cash_fund' => $cash,
+                'investor_share' => $shares,
+                'investor_names' => $investorNames,
+            ];
+        })->values();
+    }
+
+    protected function buildCoordinatorSummaries(Collection $coordinators): array
+    {
+        if ($coordinators->isEmpty()) {
+            return [];
+        }
+
+        $summaryRows = Transaction::query()
+            ->select(
+                'coordinator_id',
+                DB::raw("SUM(CASE WHEN type = 'income' AND category IN ('Member Income', 'Voucher Income') THEN amount ELSE 0 END) as gross_revenue"),
+                DB::raw("SUM(CASE WHEN category = 'Coordinator Commission' THEN amount ELSE 0 END) as commission"),
+                DB::raw("SUM(CASE WHEN category = 'ISP Payment' THEN amount ELSE 0 END) as isp_share"),
+                DB::raw("SUM(CASE WHEN category = 'Tool Fund' THEN amount ELSE 0 END) as tool_fund"),
+                DB::raw("SUM(CASE WHEN category = 'Investor Profit Share' THEN amount ELSE 0 END) as investor_share"),
+                DB::raw("SUM(CASE WHEN category = 'Investor Cash Fund' THEN amount ELSE 0 END) as investor_cash"),
+                DB::raw("SUM(CASE WHEN category = 'Deposit to Company' THEN amount ELSE 0 END) as deposited"),
+                DB::raw("SUM(CASE WHEN type = 'expense' AND category NOT IN ('Coordinator Commission', 'ISP Payment', 'Tool Fund', 'Investor Profit Share', 'Investor Cash Fund', 'Pembayaran ISP', 'Deposit to Company') THEN amount ELSE 0 END) as total_expenses"),
+                DB::raw("SUM(CASE WHEN category = 'Ambil Barang' OR (category = 'Pengeluaran Pengurus' AND reference_number LIKE 'INV-OUT-%') THEN amount ELSE 0 END) as inventory_expenses")
+            )
+            ->whereIn('coordinator_id', $coordinators->pluck('id')->all())
+            ->groupBy('coordinator_id')
+            ->get()
+            ->keyBy('coordinator_id');
+
+        return $coordinators->map(function (Coordinator $coordinator) use ($summaryRows) {
+            $row = $summaryRows->get($coordinator->id);
+            $grossRevenue = (float) ($row->gross_revenue ?? 0);
+            $commission = (float) ($row->commission ?? 0);
+            $ispShare = (float) ($row->isp_share ?? 0);
+            $toolFund = (float) ($row->tool_fund ?? 0);
+            $investorShare = (float) ($row->investor_share ?? 0);
+            $investorCash = (float) ($row->investor_cash ?? 0);
+            $deposited = (float) ($row->deposited ?? 0);
+            $expenses = (float) ($row->total_expenses ?? 0) - (float) ($row->inventory_expenses ?? 0);
+            $netBalance = $grossRevenue - $commission - $expenses - $deposited;
+
+            return (object) [
+                'id' => $coordinator->id,
+                'name' => $coordinator->name,
+                'gross_revenue' => $grossRevenue,
+                'commission' => $commission,
+                'isp_share' => $ispShare,
+                'tools_cost' => $toolFund,
+                'investor_share' => $investorShare,
+                'investor_cash' => $investorCash,
+                'expenses' => $expenses,
+                'deposited' => $deposited,
+                'net_balance' => $netBalance,
+            ];
+        })->all();
     }
 
     public function investorReport(Request $request)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\Asset;
 use App\Models\AtkTransaction;
 use App\Models\Coordinator;
@@ -21,18 +22,20 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
     protected function monitorLogsData(int $limit = 20): array
     {
+        $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+
         return GenieDeviceStatus::with('customer:id,name')
             ->orderByDesc('updated_at')
             ->take($limit)
             ->get()
-            ->map(function (GenieDeviceStatus $log) {
-                $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+            ->map(function (GenieDeviceStatus $log) use ($threshold) {
                 $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes($threshold));
                 $isOnline = (bool) $log->is_online && $isFresh;
                 $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
@@ -121,10 +124,14 @@ class DashboardController extends Controller
         $customerQuery = Customer::query();
         $ticketQuery = Ticket::query();
         $installationQuery = Installation::query();
+        $currentYear = now()->year;
+        $currentMonthStart = now()->copy()->startOfMonth();
+        $prevMonthStart = now()->copy()->subMonthNoOverflow()->startOfMonth();
+        $prevMonthEnd = now()->copy()->subMonthNoOverflow()->endOfMonth();
 
         // Filter Logic: Exclude Admin and Finance Staff from filtering
         if (! $user->hasRole('admin') && ! $user->hasRole('finance')) {
-            $coordinator = Coordinator::where('user_id', $user->id)->first();
+            $coordinator = Coordinator::select('id', 'region_id')->where('user_id', $user->id)->first();
             if ($coordinator && $coordinator->region_id) {
                 // Filter Customers by Region
                 $customerQuery->whereHas('odp', function ($q) use ($coordinator) {
@@ -250,14 +257,14 @@ class DashboardController extends Controller
 
         $stats = [
             'total_customers' => $customerQuery->count(),
-            'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', now()->startOfMonth())->count(),
+            'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', $currentMonthStart)->count(),
             'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
             'tickets_today' => $ticketQuery->clone()->whereDate('created_at', today())->count(),
             'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
             'atk_today' => AtkTransaction::whereDate('created_at', today())->count(),
-            'atk_month_revenue' => AtkTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
+            'atk_month_revenue' => AtkTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
             'wash_today' => WashTransaction::whereDate('created_at', today())->count(),
-            'wash_month_revenue' => WashTransaction::where('created_at', '>=', now()->startOfMonth())->sum('total_amount'),
+            'wash_month_revenue' => WashTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
             'technician_total' => $technicianIds->count(),
             'technician_present_today' => $technicianPresentToday,
             'technician_not_present_today' => max($technicianIds->count() - $technicianPresentToday, 0),
@@ -273,27 +280,9 @@ class DashboardController extends Controller
             'tickets' => [],
         ];
 
-        $atkMonthly = AtkTransaction::whereYear('created_at', now()->year)
-            ->get()
-            ->groupBy(function ($t) {
-                return $t->created_at->format('n');
-            })
-            ->map->count();
-
-        $washMonthly = WashTransaction::whereYear('created_at', now()->year)
-            ->get()
-            ->groupBy(function ($t) {
-                return $t->created_at->format('n');
-            })
-            ->map->count();
-
-        $ticketsMonthly = $ticketQuery->clone()
-            ->whereYear('created_at', now()->year)
-            ->get()
-            ->groupBy(function ($ticket) {
-                return $ticket->created_at->format('n');
-            })
-            ->map->count();
+        $atkMonthly = $this->aggregateCountByMonth(AtkTransaction::query(), 'created_at', $currentYear);
+        $washMonthly = $this->aggregateCountByMonth(WashTransaction::query(), 'created_at', $currentYear);
+        $ticketsMonthly = $this->aggregateCountByMonth($ticketQuery->clone(), 'created_at', $currentYear);
 
         for ($i = 1; $i <= 12; $i++) {
             $trafficData['labels'][] = \Carbon\Carbon::create(null, $i, 1)->format('F');
@@ -303,10 +292,8 @@ class DashboardController extends Controller
         }
 
         // Orders Month-over-Month Growth
-        $ordersCurrentMonth = AtkTransaction::where('created_at', '>=', now()->startOfMonth())->count()
-            + WashTransaction::where('created_at', '>=', now()->startOfMonth())->count();
-        $prevMonthStart = now()->subMonthNoOverflow()->startOfMonth();
-        $prevMonthEnd = now()->subMonthNoOverflow()->endOfMonth();
+        $ordersCurrentMonth = AtkTransaction::where('created_at', '>=', $currentMonthStart)->count()
+            + WashTransaction::where('created_at', '>=', $currentMonthStart)->count();
         $ordersPrevMonth = AtkTransaction::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->count()
             + WashTransaction::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])->count();
         $ordersGrowthPercent = $ordersPrevMonth > 0
@@ -335,24 +322,27 @@ class DashboardController extends Controller
             ->get();
 
         // Monthly Ticket Recap (Current Year)
-        $monthlyTickets = $ticketQuery->clone()
-            ->whereYear('created_at', now()->year)
-            ->get()
-            ->groupBy(function ($ticket) {
-                return $ticket->created_at->format('m');
-            });
+        $monthlyTicketTotals = $this->aggregateCountByMonth($ticketQuery->clone(), 'created_at', $currentYear);
+        $monthlyTicketResolved = $this->aggregateCountByMonth(
+            $ticketQuery->clone()->whereIn('status', ['solved', 'closed']),
+            'created_at',
+            $currentYear
+        );
+        $monthlyTicketOpen = $this->aggregateCountByMonth(
+            $ticketQuery->clone()->whereIn('status', ['open', 'assigned', 'in_progress', 'pending']),
+            'created_at',
+            $currentYear
+        );
 
         $ticketRecap = [];
         for ($i = 1; $i <= 12; $i++) {
-            $monthNum = str_pad($i, 2, '0', STR_PAD_LEFT);
             $monthName = \Carbon\Carbon::create(null, $i, 1)->format('F');
-            $ticketsInMonth = $monthlyTickets->get($monthNum, collect());
 
             $ticketRecap[] = [
                 'month' => $monthName,
-                'total' => $ticketsInMonth->count(),
-                'resolved' => $ticketsInMonth->whereIn('status', ['solved', 'closed'])->count(),
-                'open' => $ticketsInMonth->whereIn('status', ['open', 'assigned', 'in_progress', 'pending'])->count(),
+                'total' => (int) ($monthlyTicketTotals->get($i, 0)),
+                'resolved' => (int) ($monthlyTicketResolved->get($i, 0)),
+                'open' => (int) ($monthlyTicketOpen->get($i, 0)),
             ];
         }
 
@@ -375,26 +365,18 @@ class DashboardController extends Controller
         ];
 
         // Fetch Income Data (Collection-based grouping for DB compatibility)
-        $incomeData = Transaction::where('type', 'income')
-            ->whereYear('transaction_date', now()->year)
-            ->get()
-            ->groupBy(function ($transaction) {
-                return $transaction->transaction_date->format('n'); // Group by month number (1-12)
-            })
-            ->map(function ($transactions) {
-                return $transactions->sum('amount');
-            });
-
-        // Fetch Expense Data
-        $expenseData = Transaction::where('type', 'expense')
-            ->whereYear('transaction_date', now()->year)
-            ->get()
-            ->groupBy(function ($transaction) {
-                return $transaction->transaction_date->format('n'); // Group by month number (1-12)
-            })
-            ->map(function ($transactions) {
-                return $transactions->sum('amount');
-            });
+        $incomeData = $this->aggregateSumByMonth(
+            Transaction::query()->where('type', 'income'),
+            'transaction_date',
+            'amount',
+            $currentYear
+        );
+        $expenseData = $this->aggregateSumByMonth(
+            Transaction::query()->where('type', 'expense'),
+            'transaction_date',
+            'amount',
+            $currentYear
+        );
 
         for ($i = 1; $i <= 12; $i++) {
             $financialData['labels'][] = \Carbon\Carbon::create(null, $i, 1)->format('F');
@@ -477,5 +459,39 @@ class DashboardController extends Controller
         return response()->json([
             'logs' => $this->monitorLogsData(),
         ]);
+    }
+
+    protected function aggregateCountByMonth(Builder $query, string $dateColumn, int $year): Collection
+    {
+        return $this->aggregateByMonth($query, $dateColumn, 'COUNT(*)', 'total', $year);
+    }
+
+    protected function aggregateSumByMonth(Builder $query, string $dateColumn, string $sumColumn, int $year): Collection
+    {
+        $qualifiedColumn = $query->getModel()->qualifyColumn($sumColumn);
+
+        return $this->aggregateByMonth($query, $dateColumn, 'COALESCE(SUM('.$qualifiedColumn.'), 0)', 'total', $year);
+    }
+
+    protected function aggregateByMonth(Builder $query, string $dateColumn, string $aggregateExpression, string $alias, int $year): Collection
+    {
+        $qualifiedDateColumn = $query->getModel()->qualifyColumn($dateColumn);
+        $monthExpression = $this->monthExpression($qualifiedDateColumn);
+
+        return $query
+            ->whereYear($dateColumn, $year)
+            ->selectRaw($monthExpression.' as month_key, '.$aggregateExpression.' as '.$alias)
+            ->groupBy('month_key')
+            ->pluck($alias, 'month_key')
+            ->mapWithKeys(fn ($value, $month) => [(int) $month => $value]);
+    }
+
+    protected function monthExpression(string $qualifiedDateColumn): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => "CAST(strftime('%m', {$qualifiedDateColumn}) AS INTEGER)",
+            'pgsql' => "CAST(EXTRACT(MONTH FROM {$qualifiedDateColumn}) AS INTEGER)",
+            default => "MONTH({$qualifiedDateColumn})",
+        };
     }
 }

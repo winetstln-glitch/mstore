@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader;
@@ -44,22 +45,48 @@ class InventoryController extends Controller implements HasMiddleware
         // Default sorting: Tools first, then Materials, then by Name
         $query->orderBy('type_group', 'desc')->orderBy('name', 'asc');
 
-        $items = $query->get();
-        $categories = InventoryItem::select('category')->distinct()->pluck('category');
+        $items = (clone $query)
+            ->select([
+                'id',
+                'name',
+                'category',
+                'type_group',
+                'type',
+                'brand',
+                'model',
+                'unit',
+                'stock',
+                'price',
+                'description',
+                'created_at',
+            ])
+            ->get();
+        $categories = Cache::remember('inventory.categories', now()->addMinutes(10), function () {
+            return InventoryItem::query()
+                ->whereNotNull('category')
+                ->where('category', '!=', '')
+                ->orderBy('category')
+                ->distinct()
+                ->pluck('category');
+        });
 
         // Dashboard Stats
-        $totalStockValue = $items->sum(function ($item) {
-            return $item->stock * $item->price;
-        });
-        $totalItems = $items->count();
+        $totalStockValue = (clone $query)
+            ->selectRaw('COALESCE(SUM(stock * price), 0) as total_stock_value')
+            ->value('total_stock_value') ?? 0;
+        $totalItems = (clone $query)->count();
 
         // Total Pembelian (Purchases) - Expense 'Pembelian Alat'
-        $totalPurchases = Transaction::where('category', 'Pembelian Alat')->sum('amount');
+        $totalPurchases = Cache::remember('inventory.total_purchases', now()->addMinutes(5), function () {
+            return Transaction::where('category', 'Pembelian Alat')->sum('amount');
+        });
 
         // Total Penjualan/Pemakaian (Sales) - Expense 'Pengeluaran Pengurus' linked to Inventory
-        $totalSales = Transaction::where('category', 'Pengeluaran Pengurus')
-            ->where('reference_number', 'like', 'INV-OUT-%')
-            ->sum('amount');
+        $totalSales = Cache::remember('inventory.total_sales', now()->addMinutes(5), function () {
+            return Transaction::where('category', 'Pengeluaran Pengurus')
+                ->where('reference_number', 'like', 'INV-OUT-%')
+                ->sum('amount');
+        });
 
         // Transaction History (Stock Movements: in/out)
         $transactions = $this->buildMovementQuery($request)
@@ -69,21 +96,22 @@ class InventoryController extends Controller implements HasMiddleware
 
         // My Assigned Assets (For Technicians/Coordinators)
         $user = Auth::user();
-        $myAssetsQuery = Asset::with('item')
+        $coordinatorId = Coordinator::where('user_id', $user->id)->value('id');
+        $myAssetsQuery = Asset::query()
+            ->with(['item:id,name,unit'])
             ->where(function ($q) use ($user) {
                 $q->where(function ($sub) use ($user) {
                     $sub->where('holder_type', User::class)
                         ->where('holder_id', $user->id);
                 });
 
-                $coordinator = Coordinator::where('user_id', $user->id)->first();
-                if ($coordinator) {
-                    $q->orWhere(function ($sub) use ($coordinator) {
-                        $sub->where('holder_type', Coordinator::class)
-                            ->where('holder_id', $coordinator->id);
-                    });
-                }
             });
+        if ($coordinatorId) {
+            $myAssetsQuery->orWhere(function ($sub) use ($coordinatorId) {
+                $sub->where('holder_type', Coordinator::class)
+                    ->where('holder_id', $coordinatorId);
+            });
+        }
 
         $myAssets = $myAssetsQuery->get();
 
@@ -92,7 +120,11 @@ class InventoryController extends Controller implements HasMiddleware
 
     private function buildMovementQuery(Request $request)
     {
-        $query = InventoryTransaction::with(['user', 'item', 'coordinator']);
+        $query = InventoryTransaction::query()->with([
+            'user:id,name',
+            'item:id,name,unit,type_group',
+            'coordinator:id,name',
+        ]);
 
         if ($request->filled('type_group')) {
             $query->whereHas('item', function ($q) use ($request) {
