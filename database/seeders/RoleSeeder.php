@@ -22,6 +22,7 @@ class RoleSeeder extends Seeder
             ['name' => 'customer', 'label' => 'Customer'],
             ['name' => 'reseller', 'label' => 'Reseller'],
             ['name' => 'finance', 'label' => 'Finance Staff'],
+            ['name' => 'hrd-manager', 'label' => 'HRD Manager'],
             ['name' => 'kasir-atk', 'label' => 'Kasir ATK'],
             ['name' => 'kasir-wash', 'label' => 'Kasir Wash'],
             ['name' => 'karyawan-wash', 'label' => 'Karyawan Wash'],
@@ -120,60 +121,32 @@ class RoleSeeder extends Seeder
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'finance') {
-                // Finance Staff permissions
-                // Grant access to all major operational modules for visibility (Audit/Reporting)
-                // and full management for Finance-specific modules.
-
-                // 1. Full Management Access
-                $manageGroups = [
-                    'Finance',
-                    'Investor Management',
-                    'Package Management',
-                    'Inventory',
-                    'Profile',
-                    'Notification',
-                ];
-                $managePermissions = Permission::whereIn('group', $manageGroups)->get();
-
-                // 2. View Only Access (for Menu visibility and Audit)
-                $viewPermissionNames = [
-                    // Core
+                // Samakan izin finance dengan teknisi
+                $permissions = Permission::whereIn('name', [
                     'dashboard.view',
-
-                    // Operations
-                    'customer.view',
                     'ticket.view',
+                    'ticket.edit',
                     'installation.view',
-                    'technician.view',
-                    'coordinator.view',
-                    'region.view',
-
-                    // HR / Payroll
+                    'installation.edit',
                     'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
                     'attendance.report',
-                    'leave.view',
-                    'schedule.view',
-
-                    // Network Assets (for Asset Tracking/Audit)
                     'map.view',
-                    'olt.view',
-                    'odc.view',
                     'odp.view',
-                    'htb.view',
-                    'router.view',
-                    'genieacs.view',
-
-                    // Communications & Tools
-                    'chat.view',     // WhatsApp
-                    'telegram.view', // Telegram
-                    'calculator.view',
-
-                    // Settings (View only)
-                    'setting.view',
-                ];
-                $viewPermissions = Permission::whereIn('name', $viewPermissionNames)->get();
-
-                $role->permissions()->sync($managePermissions->merge($viewPermissions));
+                    'odp.edit',
+                    'odc.edit',
+                    'leave.view',
+                    'leave.create',
+                    'schedule.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
+                    'inventory.view',
+                    'inventory.pickup',
+                ])->get();
+                $role->permissions()->sync($permissions);
             } elseif ($role->name === 'kasir-atk') {
                 // Kasir ATK: hanya menu ATK
                 $permissions = Permission::whereIn('name', [
@@ -188,26 +161,92 @@ class RoleSeeder extends Seeder
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'kasir-wash') {
-                // Kasir Wash: menu Wash lengkap (POS + Laporan)
+                // Izin kasir-wash: teknisi + modul wash
                 $permissions = Permission::whereIn('name', [
-                    'wash.view',
-                    'wash.pos',
-                    'wash.report',
+                    'dashboard.view',
+                    'ticket.view',
+                    'ticket.edit',
+                    'installation.view',
+                    'installation.edit',
                     'attendance.view',
                     'attendance.create',
                     'attendance.edit',
+                    'attendance.report',
+                    'map.view',
+                    'odp.view',
+                    'odp.edit',
+                    'odc.edit',
+                    'leave.view',
+                    'leave.create',
+                    'schedule.view',
                     'profile.view',
                     'profile.update',
+                    'notification.view',
+                    'notification.manage',
+                    'inventory.view',
+                    'inventory.pickup',
+                    'wash.view',
+                    'wash.pos',
+                    'wash.manage',
+                    'wash.report',
                 ])->get();
                 $role->permissions()->sync($permissions);
             } elseif ($role->name === 'karyawan-wash') {
-                // Karyawan Wash: hanya View & Absensi
+                // Izin karyawan-wash: teknisi + modul wash
                 $permissions = Permission::whereIn('name', [
-                    'wash.view',
+                    'dashboard.view',
+                    'ticket.view',
+                    'ticket.edit',
+                    'installation.view',
+                    'installation.edit',
                     'attendance.view',
                     'attendance.create',
+                    'attendance.edit',
+                    'attendance.report',
+                    'map.view',
+                    'odp.view',
+                    'odp.edit',
+                    'odc.edit',
+                    'leave.view',
+                    'leave.create',
+                    'schedule.view',
                     'profile.view',
                     'profile.update',
+                    'notification.view',
+                    'notification.manage',
+                    'inventory.view',
+                    'inventory.pickup',
+                    'wash.view',
+                    'wash.pos',
+                    'wash.manage',
+                    'wash.report',
+                ])->get();
+                $role->permissions()->sync($permissions);
+            } elseif ($role->name === 'hrd-manager') {
+                // Samakan izin hrd-manager dengan teknisi
+                $permissions = Permission::whereIn('name', [
+                    'dashboard.view',
+                    'ticket.view',
+                    'ticket.edit',
+                    'installation.view',
+                    'installation.edit',
+                    'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
+                    'attendance.report',
+                    'map.view',
+                    'odp.view',
+                    'odp.edit',
+                    'odc.edit',
+                    'leave.view',
+                    'leave.create',
+                    'schedule.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
+                    'inventory.view',
+                    'inventory.pickup',
                 ])->get();
                 $role->permissions()->sync($permissions);
             }

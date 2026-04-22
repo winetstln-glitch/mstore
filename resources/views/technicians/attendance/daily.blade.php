@@ -21,7 +21,7 @@
                             </div>
                             <div class="col-12 col-md-auto">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fa-solid fa-filter me-1"></i> {{ __('Filter') }}
+                                    <i class="fa-solid fa-filter me-1"></i> {{ __('Terapkan') }}
                                 </button>
                             </div>
                         </div>
@@ -41,7 +41,7 @@
                             <tr>
                                 <th style="width: 50px;">#</th>
                                 <th>{{ __('Karyawan') }}</th>
-                                <th>{{ __('Role') }}</th>
+                                <th>{{ __('Peran') }}</th>
                                 <th>{{ __('Jam Masuk') }}</th>
                                 <th>{{ __('Jam Keluar') }}</th>
                                 <th>{{ __('Status') }}</th>

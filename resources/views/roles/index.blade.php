@@ -30,6 +30,11 @@
                             <tr>
                                 <td class="ps-3 fw-medium">
                                     {{ $role->name }}
+                                    @if(in_array($role->name, ['kasir-wash', 'karyawan-wash']))
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">
+                                            {{ __('Teknisi + Wash') }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
                                     {{ $role->label }}

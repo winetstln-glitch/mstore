@@ -6,9 +6,9 @@
         <div class="col-md-12">
             <div class="card shadow-sm border-0 border-top border-4 border-primary">
                 <div class="card-header bg-body border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Create Installation') }}</h5>
+                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Tambah Pemasangan') }}</h5>
                     <a href="{{ route('installations.index') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back to List') }}
+                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali ke Daftar') }}
                     </a>
                 </div>
                 <div class="card-body p-4">
@@ -16,11 +16,11 @@
                         @csrf
                         
                         <div class="row g-3">
-                            <!-- Customer Selection -->
+                            <!-- Pilih pelanggan -->
                             <div class="col-md-6">
-                                <label for="customer_id" class="form-label">{{ __('Customer') }}</label>
+                                <label for="customer_id" class="form-label">{{ __('Pelanggan') }}</label>
                                 <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
-                                    <option value="">{{ __('Select Customer') }}</option>
+                                    <option value="">{{ __('Pilih Pelanggan') }}</option>
                                     @foreach($customers as $customer)
                                         <option value="{{ $customer->id }}" {{ (old('customer_id') == $customer->id || (isset($selected_customer_id) && $selected_customer_id == $customer->id)) ? 'selected' : '' }}>
                                             {{ $customer->name }} ({{ $customer->address }})
@@ -32,9 +32,9 @@
                                 @enderror
                             </div>
 
-                            <!-- Plan Date -->
+                            <!-- Tanggal rencana -->
                             <div class="col-md-6">
-                                <label for="plan_date" class="form-label">{{ __('Plan Date') }}</label>
+                                <label for="plan_date" class="form-label">{{ __('Tanggal Rencana') }}</label>
                                 <input type="date" name="plan_date" id="plan_date" value="{{ old('plan_date') }}" class="form-control @error('plan_date') is-invalid @enderror" required>
                                 @error('plan_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -56,11 +56,11 @@
                                 @enderror
                             </div>
 
-                            <!-- Technician Assignment -->
+                            <!-- Penugasan teknisi -->
                             <div class="col-md-6">
-                                <label for="technician_id" class="form-label">{{ __('Technician') }}</label>
+                                <label for="technician_id" class="form-label">{{ __('Teknisi') }}</label>
                                 <select name="technician_id" id="technician_id" class="form-select @error('technician_id') is-invalid @enderror">
-                                    <option value="">{{ __('Unassigned') }}</option>
+                                    <option value="">{{ __('Belum Ditugaskan') }}</option>
                                     @foreach($technicians as $tech)
                                         <option value="{{ $tech->id }}" {{ old('technician_id') == $tech->id ? 'selected' : '' }}>
                                             {{ $tech->name }}
@@ -87,18 +87,18 @@
                                 @enderror
                             </div>
 
-                            <!-- Coordinates -->
+                            <!-- Koordinat -->
                             <div class="col-md-6">
-                                <label for="coordinates" class="form-label">{{ __('Coordinates (Lat, Long)') }}</label>
+                                <label for="coordinates" class="form-label">{{ __('Koordinat (Lintang, Bujur)') }}</label>
                                 <input type="text" name="coordinates" id="coordinates" value="{{ old('coordinates') }}" class="form-control @error('coordinates') is-invalid @enderror" placeholder="-6.2088, 106.8456">
                                 @error('coordinates')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <!-- Notes -->
+                            <!-- Catatan -->
                             <div class="col-12">
-                                <label for="notes" class="form-label">{{ __('Notes') }}</label>
+                                <label for="notes" class="form-label">{{ __('Catatan') }}</label>
                                 <textarea name="notes" id="notes" rows="3" class="form-control @error('notes') is-invalid @enderror">{{ old('notes') }}</textarea>
                                 @error('notes')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -108,7 +108,7 @@
 
                         <div class="mt-4 text-end">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save"></i> {{ __('Create Installation') }}
+                                <i class="fa-solid fa-save"></i> {{ __('Simpan Pemasangan') }}
                             </button>
                         </div>
                     </form>

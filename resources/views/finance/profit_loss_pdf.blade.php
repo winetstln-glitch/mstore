@@ -74,7 +74,7 @@
         </thead>
         <tbody>
             <tr class="section-header">
-                <td colspan="2">PENDAPATAN (REVENUE)</td>
+                <td colspan="2">PENDAPATAN</td>
             </tr>
             <tr>
                 <td>Pendapatan Member</td>
@@ -98,7 +98,7 @@
             </tr>
 
             <tr class="section-header">
-                <td colspan="2">BEBAN POKOK PENDAPATAN (COST OF REVENUE)</td>
+                <td colspan="2">BEBAN POKOK PENDAPATAN</td>
             </tr>
             <tr>
                 <td>Komisi Pengurus (±{{ number_format($coordRate, 1) }}%)</td>
@@ -109,7 +109,7 @@
                 <td class="text-right">-{{ number_format($ispPayment, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Tool Fund / Manajemen (±{{ number_format($toolRate, 1) }}%)</td>
+                <td>Dana Alat / Manajemen (±{{ number_format($toolRate, 1) }}%)</td>
                 <td class="text-right">-{{ number_format($toolFund, 0, ',', '.') }}</td>
             </tr>
             <tr>
@@ -122,7 +122,7 @@
             </tr>
 
             <tr>
-                <td><strong>Laba Kotor (Gross Profit)</strong></td>
+                <td><strong>Laba Kotor</strong></td>
                 <td class="text-right"><strong>{{ number_format($grossProfit, 0, ',', '.') }}</strong></td>
             </tr>
 
@@ -131,14 +131,14 @@
             </tr>
 
             <tr class="section-header">
-                <td colspan="2">BIAYA OPERASIONAL (OPERATING EXPENSES)</td>
+                <td colspan="2">BIAYA OPERASIONAL</td>
             </tr>
             <tr>
-                <td>Server / Operational</td>
+                <td>Server / Operasional</td>
                 <td class="text-right">-{{ number_format($serverExpenses, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Transport</td>
+                <td>Transportasi</td>
                 <td class="text-right">-{{ number_format($transportExpenses, 0, ',', '.') }}</td>
             </tr>
             <tr>
@@ -172,7 +172,7 @@
             </tr>
 
             <tr>
-                <td><strong>Laba Bersih (Net Profit)</strong></td>
+                <td><strong>Laba Bersih</strong></td>
                 <td class="text-right"><strong>{{ number_format($netProfit, 0, ',', '.') }}</strong></td>
             </tr>
             <tr>

@@ -24,7 +24,6 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouterController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TechnicianAttendanceController;
-use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\TicketWebController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
@@ -141,7 +140,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketWebController::class);
 
     Route::resource('installations', InstallationWebController::class);
-    Route::resource('technicians', TechnicianController::class);
+    Route::permanentRedirect('technicians', 'employees');
+    Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
+        ->where('any', '.*');
 
     // Technician Attendance
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
@@ -397,7 +398,9 @@ Route::middleware('auth')->group(function () {
         'update' => 'wash.services.update',
         'destroy' => 'wash.services.destroy',
     ])->except(['show']);
-    Route::resource('wash/employees', \App\Http\Controllers\WashEmployeeController::class)->names('wash.employees');
+    Route::permanentRedirect('wash/employees', 'employees');
+    Route::any('wash/employees/{any}', fn () => redirect()->route('employees.index', [], 301))
+        ->where('any', '.*');
 
     // ATK Store Routes
     Route::prefix('atk')->name('atk.')->group(function () {

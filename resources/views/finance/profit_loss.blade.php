@@ -3,10 +3,10 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h1 class="h3 mb-0 text-body">{{ __('Profit & Loss Statement') }}</h1>
+        <h1 class="h3 mb-0 text-body">{{ __('Laporan Laba Rugi') }}</h1>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
-                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
+                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
             </a>
             <a href="{{ route('finance.profit_loss.excel', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-success btn-lg w-100 w-md-auto">
                 <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
@@ -15,14 +15,14 @@
                 <i class="fa-solid fa-file-pdf me-1"></i> {{ __('PDF') }}
             </a>
             <button onclick="window.print()" class="btn btn-primary btn-lg w-100 w-md-auto">
-                <i class="fa-solid fa-print me-1"></i> {{ __('Print') }}
+                <i class="fa-solid fa-print me-1"></i> {{ __('Cetak') }}
             </button>
         </div>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-            <h6 class="m-0 font-weight-bold text-primary">{{ __('Report Period') }}</h6>
+            <h6 class="m-0 font-weight-bold text-primary">{{ __('Periode Laporan') }}</h6>
             <form action="{{ route('finance.profit_loss') }}" method="GET" class="d-flex flex-column flex-md-row align-items-center gap-2 w-100 w-md-auto">
                 <select name="coordinator_id" class="form-select form-select-lg" onchange="this.form.submit()">
                     <option value="">{{ __('Semua Pengurus') }}</option>
@@ -40,7 +40,7 @@
                 <div class="col-md-3 mb-3">
                     <div class="card border-left-success h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Revenue') }}</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Total Pendapatan') }}</div>
                             <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($totalRevenue, 0, ',', '.') }}</div>
                         </div>
                     </div>
@@ -48,7 +48,7 @@
                 <div class="col-md-3 mb-3">
                     <div class="card border-left-warning h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Total Cost of Revenue') }}</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Total Beban Pokok') }}</div>
                             <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">-{{ number_format($totalCOGS, 0, ',', '.') }}</div>
                         </div>
                     </div>
@@ -56,7 +56,7 @@
                 <div class="col-md-3 mb-3">
                     <div class="card border-left-info h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Gross Profit') }}</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Laba Kotor') }}</div>
                             <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($grossProfit, 0, ',', '.') }}</div>
                         </div>
                     </div>
@@ -64,7 +64,7 @@
                 <div class="col-md-3 mb-3">
                     <div class="card border-left-primary h-100">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Net Profit') }}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Laba Bersih') }}</div>
                             <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($netProfit, 0, ',', '.') }}</div>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
                 <td colspan="3" class="text-uppercase text-warning">{{ __('Beban Pokok Pendapatan') }}</td>
             </tr>
             <tr>
-                <td>{{ __('Komisi Koordinator') }} (±{{ number_format($coordRate, 1) }}%)</td>
+                <td>{{ __('Komisi Pengurus') }} (±{{ number_format($coordRate, 1) }}%)</td>
                 <td class="text-end text-muted">-</td>
                 <td class="text-end text-muted">{{ number_format($coordCommission, 0, ',', '.') }}</td>
             </tr>
@@ -183,7 +183,7 @@
 
             {{-- ================= LABA BERSIH ================= --}}
             <tr class="table-primary text-white fw-bold">
-                <td>{{ __('Laba Bersih (Investor Share)') }}</td>
+                <td>{{ __('Laba Bersih') }}</td>
                 <td class="text-end">{{ number_format($netProfit, 0, ',', '.') }}</td>
                 <td class="text-end">-</td>
             </tr>

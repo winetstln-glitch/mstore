@@ -5,9 +5,9 @@
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold">{{ __('Technician Management') }}</h5>
+                <h5 class="mb-0 fw-bold">{{ __('Manajemen Teknisi') }}</h5>
                 <a href="{{ route('technicians.create') }}" class="btn btn-primary">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Add Technician') }}
+                    <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Teknisi') }}
                 </a>
             </div>
 
@@ -18,11 +18,11 @@
                     <table class="table table-hover align-middle table-responsive-mobile">
                         <thead class="">
                             <tr>
-                                <th scope="col" class="ps-3">{{ __('Name') }}</th>
-                                <th scope="col">{{ __('Contact') }}</th>
+                                <th scope="col" class="ps-3">{{ __('Nama') }}</th>
+                                <th scope="col">{{ __('Kontak') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col">{{ __('Joined') }}</th>
-                                <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
+                                <th scope="col">{{ __('Bergabung') }}</th>
+                                <th scope="col" class="text-end pe-3">{{ __('Aksi') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -38,14 +38,14 @@
                                     </td>
                                     <td>
                                         <div class="small">{{ $technician->email }}</div>
-                                        <div class="text-muted small">{{ $technician->phone ?? __('No phone') }}</div>
+                                        <div class="text-muted small">{{ $technician->phone ?? __('Tidak ada nomor') }}</div>
                                         @if($technician->telegram_chat_id)
                                             <div class="small text-info"><i class="fa-brands fa-telegram"></i> {{ $technician->telegram_chat_id }}</div>
                                         @endif
                                     </td>
                                     <td>
                                         <span class="badge {{ $technician->is_active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }}">
-                                            {{ $technician->is_active ? __('Active') : __('Inactive') }}
+                                            {{ $technician->is_active ? __('Aktif') : __('Tidak Aktif') }}
                                         </span>
                                     </td>
                                     <td class="text-muted small">
@@ -53,16 +53,16 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="d-flex justify-content-end gap-1">
-                                            <a href="{{ route('technicians.show', $technician) }}" class="btn btn-sm btn-outline-info" title="{{ __('View') }}">
+                                            <a href="{{ route('technicians.show', $technician) }}" class="btn btn-sm btn-outline-info" title="{{ __('Lihat') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('technicians.edit', $technician) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
+                                            <a href="{{ route('technicians.edit', $technician) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Ubah') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
-                                            <form action="{{ route('technicians.destroy', $technician) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this technician?') }}')">
+                                            <form action="{{ route('technicians.destroy', $technician) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus teknisi ini?') }}')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
@@ -72,7 +72,7 @@
                             @empty
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
-                                        {{ __('No technicians found.') }}
+                                        {{ __('Tidak ada teknisi.') }}
                                     </td>
                                 </tr>
                             @endforelse

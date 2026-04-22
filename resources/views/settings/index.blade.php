@@ -1,20 +1,19 @@
 @extends('layouts.app')
 
-@section('title', __('Settings'))
+@section('title', __('Pengaturan'))
 
 @section('content')
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header py-3">
-                <h5 class="mb-0 fw-bold">{{ __('Settings') }}</h5>
+                <h5 class="mb-0 fw-bold">{{ __('Pengaturan') }}</h5>
             </div>
 
             <div class="card-body">
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @php
-                        $attendanceOnly = request('section') === 'attendance';
                         $receiptIdentityKeys = [
                             'store_name',
                             'store_address',
@@ -88,13 +87,6 @@
                             'mixradius_api_token',
                         ];
                     @endphp
-                    @if($attendanceOnly)
-                    <div class="alert alert-info border-0 mb-3">
-                        <i class="fa-solid fa-user-clock me-1"></i>
-                        Anda sedang mengedit <strong>Pengaturan Attendance</strong> dari menu SDM & Kehadiran.
-                    </div>
-                    @endif
-                    @if(! $attendanceOnly)
                     <div class="mb-4 pb-3 border-bottom">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-receipt me-1"></i> Identitas Struk
@@ -410,7 +402,7 @@
                     
                     <div class="mb-4 pb-3 border-bottom">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
-                            <i class="fa-solid fa-wifi me-1"></i> {{ __('MixRADIUS Connection Settings') }}
+                            <i class="fa-solid fa-wifi me-1"></i> {{ __('Pengaturan Koneksi MixRADIUS') }}
                         </h6>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -426,11 +418,11 @@
                                 <input type="text" class="form-control" id="mixradius_invoice_html_url" name="mixradius_invoice_html_url" value="{{ \App\Models\Setting::getValue('mixradius_invoice_html_url', env('MIXRADIUS_INVOICE_HTML_URL')) }}">
                             </div>
                             <div class="col-md-6">
-                                <label for="mixradius_enforce_customer_login" class="form-label fw-medium">Enforce Customer Login via MixRADIUS</label>
+                                <label for="mixradius_enforce_customer_login" class="form-label fw-medium">Wajibkan Login Pelanggan via MixRADIUS</label>
                                 @php $enf = \App\Models\Setting::getValue('mixradius_enforce_customer_login', env('MIXRADIUS_ENFORCE_CUSTOMER_LOGIN', false) ? '1':'0'); @endphp
                                 <select name="mixradius_enforce_customer_login" id="mixradius_enforce_customer_login" class="form-select">
-                                    <option value="1" {{ $enf == '1' ? 'selected' : '' }}>{{ __('Yes') }}</option>
-                                    <option value="0" {{ $enf == '0' ? 'selected' : '' }}>{{ __('No') }}</option>
+                                    <option value="1" {{ $enf == '1' ? 'selected' : '' }}>{{ __('Ya') }}</option>
+                                    <option value="0" {{ $enf == '0' ? 'selected' : '' }}>{{ __('Tidak') }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -440,18 +432,16 @@
                             </div>
                         </div>
                     </div>
-                    @endif
-                    
                     @foreach($settings as $group => $groupSettings)
                         @php
                             $isAttendanceGroup = str_contains(strtolower((string) $group), 'attendance');
                         @endphp
-                        @if($attendanceOnly && ! $isAttendanceGroup)
+                        @if($isAttendanceGroup)
                             @continue
                         @endif
-                        <div class="mb-4 pb-3 border-bottom last:border-0" @if($attendanceOnly) id="attendance-settings-section" @endif>
+                        <div class="mb-4 pb-3 border-bottom last:border-0">
                             <h6 class="fw-bold text-primary text-uppercase mb-3">
-                                <i class="fa-solid fa-layer-group me-1"></i> {{ __(str_replace('_', ' ', $group)) }} {{ __('Settings') }}
+                                <i class="fa-solid fa-layer-group me-1"></i> {{ __(str_replace('_', ' ', $group)) }} {{ __('Pengaturan') }}
                             </h6>
                             
                             <div class="row g-3">
@@ -463,7 +453,7 @@
                                         <label for="{{ $setting->key }}" class="form-label fw-medium">
                                             {{ $setting->label ?? ucwords(str_replace('_', ' ', $setting->key)) }}
                                             @if($setting->type == 'schedule_weekly')
-                                                <span class="text-muted small">(Weekly Work Schedule)</span>
+                                                <span class="text-muted small">({{ __('Jadwal Kerja Mingguan') }})</span>
                                             @endif
                                         </label>
                                         
@@ -473,8 +463,8 @@
                                             <input type="number" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
                                         @elseif($setting->type == 'boolean')
                                             <select name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-select">
-                                                <option value="1" {{ $setting->value == '1' ? 'selected' : '' }}>{{ __('Yes') }}</option>
-                                                <option value="0" {{ $setting->value == '0' ? 'selected' : '' }}>{{ __('No') }}</option>
+                                                <option value="1" {{ $setting->value == '1' ? 'selected' : '' }}>{{ __('Ya') }}</option>
+                                                <option value="0" {{ $setting->value == '0' ? 'selected' : '' }}>{{ __('Tidak') }}</option>
                                             </select>
                                         @elseif($setting->type == 'schedule_weekly')
                                             <div>
@@ -486,10 +476,10 @@
                                                     <table class="table table-bordered table-sm align-middle">
                                                         <thead class="">
                                                             <tr>
-                                                                <th>{{ __('Day') }}</th>
-                                                                <th class="text-center" style="width: 100px">{{ __('Working Day') }}</th>
-                                                                <th>{{ __('Start Time') }}</th>
-                                                                <th>{{ __('End Time') }}</th>
+                                                                <th>{{ __('Hari') }}</th>
+                                                                <th class="text-center" style="width: 100px">{{ __('Hari Kerja') }}</th>
+                                                                <th>{{ __('Jam Mulai') }}</th>
+                                                                <th>{{ __('Jam Selesai') }}</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -537,8 +527,8 @@
                                                 <table class="table table-bordered table-sm align-middle mb-0">
                                                     <thead class="">
                                                         <tr>
-                                                            <th style="width: 60%">{{ __('Name') }}</th>
-                                                            <th style="width: 40%">{{ __('Price') }}</th>
+                                                            <th style="width: 60%">{{ __('Nama') }}</th>
+                                                            <th style="width: 40%">{{ __('Harga') }}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -569,7 +559,7 @@
 
                     <div class="d-flex justify-content-end pt-3">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-save me-1"></i> {{ __('Save Settings') }}
+                            <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengaturan') }}
                         </button>
                     </div>
                 </form>

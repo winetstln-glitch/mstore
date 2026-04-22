@@ -246,7 +246,7 @@
             <div class="col-lg-4 col-md-5">
                 <div class="card session-summary-card bg-primary bg-opacity-10 border-primary border-opacity-25 h-100">
                     <div class="card-body text-center d-flex flex-column justify-content-center">
-                        <div class="session-summary-label mb-1">{{ __('Total Active') }}</div>
+                        <div class="session-summary-label mb-1">{{ __('Total Aktif') }}</div>
                         <div class="session-summary-value text-primary mb-0">{{ count($hotspotActiveSessions) }}</div>
                     </div>
                 </div>

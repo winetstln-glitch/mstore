@@ -47,7 +47,7 @@
             </div>
 
             <div class="col">
-                <a href="{{ route('finance.export_accounting') }}" class="btn btn-success w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Export Jurnal') }}">
+                <a href="{{ route('finance.export_accounting') }}" class="btn btn-success w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Ekspor Jurnal') }}">
                     <i class="fa-solid fa-file-excel me-1"></i> <span>{{ __('Jurnal') }}</span>
                 </a>
             </div>
@@ -429,7 +429,7 @@
                                 </select>
                             </div>
                             <div class="col">
-                                <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+                                <button type="submit" class="btn btn-primary btn-sm w-100">{{ __('Terapkan') }}</button>
                             </div>
                         </div>
                     </form>
@@ -572,19 +572,19 @@
 </form>
 
 <!-- MODALS (SAMA SEPERTI SEBELUMNYA) -->
-<!-- Add Transaction Modal -->
+<!-- Modal Tambah Transaksi -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Add Transaction') }}</h5>
+                <h5 class="modal-title">{{ __('Tambah Transaksi') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('finance.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Type') }}</label>
+                        <label class="form-label">{{ __('Tipe') }}</label>
                         <select name="type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
@@ -592,7 +592,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Category') }}</label>
+                        <label class="form-label">{{ __('Kategori') }}</label>
                         <select name="category" class="form-select" required>
                             <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
@@ -605,42 +605,42 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Amount') }}</label>
+                        <label class="form-label">{{ __('Jumlah') }}</label>
                         <input type="number" name="amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
+                        <label class="form-label">{{ __('Koordinator') }} ({{ __('Opsional') }})</label>
                         <select name="coordinator_id" class="form-select">
-                            <option value="">-- None --</option>
+                            <option value="">{{ __('-- Tidak Ada --') }}</option>
                             @foreach($coordinators ?? [] as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Description') }}</label>
+                        <label class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea name="description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Date') }}</label>
+                        <label class="form-label">{{ __('Tanggal') }}</label>
                         <input type="date" name="transaction_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Simpan') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Edit Transaction Modal -->
+<!-- Modal Ubah Transaksi -->
 <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Edit Transaction') }}</h5>
+                <h5 class="modal-title">{{ __('Ubah Transaksi') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editTransactionForm" method="POST">
@@ -648,7 +648,7 @@
                 @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Type') }}</label>
+                        <label class="form-label">{{ __('Tipe') }}</label>
                         <select name="type" id="edit_type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
@@ -656,7 +656,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Category') }}</label>
+                        <label class="form-label">{{ __('Kategori') }}</label>
                         <select name="category" id="edit_category" class="form-select" required>
                             <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
@@ -669,24 +669,24 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Amount') }}</label>
+                        <label class="form-label">{{ __('Jumlah') }}</label>
                         <input type="number" name="amount" id="edit_amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
+                        <label class="form-label">{{ __('Koordinator') }} ({{ __('Opsional') }})</label>
                         <select name="coordinator_id" id="edit_coordinator_id" class="form-select">
-                            <option value="">-- None --</option>
+                            <option value="">{{ __('-- Tidak Ada --') }}</option>
                             @foreach($coordinators ?? [] as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Description') }}</label>
+                        <label class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Date') }}</label>
+                        <label class="form-label">{{ __('Tanggal') }}</label>
                         <input type="date" name="transaction_date" id="edit_transaction_date" class="form-control" required>
                     </div>
                     <div class="mb-3">
@@ -695,8 +695,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Perbarui') }}</button>
                 </div>
             </form>
         </div>

@@ -5,13 +5,13 @@
     <div class="col-md-8">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header  py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Closure Details') }}</h5>
+                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Detail Closure') }}</h5>
                 <div class="d-flex gap-2">
                     <a href="{{ route('closures.edit', $closure->id) }}" class="btn btn-warning btn-sm">
-                        <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit') }}
+                        <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Ubah') }}
                     </a>
                     <a href="{{ route('closures.index') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
+                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
                     </a>
                 </div>
             </div>
@@ -25,7 +25,7 @@
                             <div class=" d-flex align-items-center justify-content-center text-muted border rounded" style="width: 100%; height: 200px;">
                                 <div class="text-center">
                                     <i class="fa-solid fa-image fa-3x mb-2"></i>
-                                    <p class="mb-0 small">{{ __('No Image Available') }}</p>
+                                    <p class="mb-0 small">{{ __('Gambar tidak tersedia') }}</p>
                                 </div>
                             </div>
                         @endif
@@ -35,11 +35,11 @@
                         <table class="table table-borderless">
                             <tbody>
                                 <tr>
-                                    <th class="ps-0" style="width: 150px;">{{ __('Name') }}</th>
+                                    <th class="ps-0" style="width: 150px;">{{ __('Nama') }}</th>
                                     <td>: <span class="fw-bold">{{ $closure->name }}</span></td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">{{ __('Region') }}</th>
+                                    <th class="ps-0">{{ __('Wilayah') }}</th>
                                     <td>: {{ $closure->region ? $closure->region->name : '-' }}</td>
                                 </tr>
                                 <tr>
@@ -55,11 +55,11 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">{{ __('Capacity') }}</th>
-                                    <td>: {{ $closure->capacity }} Ports</td>
+                                    <th class="ps-0">{{ __('Kapasitas') }}</th>
+                                    <td>: {{ $closure->capacity }} {{ __('Port') }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">{{ __('Filled') }}</th>
+                                    <th class="ps-0">{{ __('Terisi') }}</th>
                                     <td>: 
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="progress flex-grow-1" style="height: 10px; max-width: 100px;">
@@ -73,7 +73,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">{{ __('Coordinates') }}</th>
+                                    <th class="ps-0">{{ __('Koordinat') }}</th>
                                     <td>: 
                                         @if($closure->latitude && $closure->longitude)
                                             <a href="https://www.google.com/maps?q={{ $closure->latitude }},{{ $closure->longitude }}" target="_blank" class="text-decoration-none">
@@ -85,7 +85,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">{{ __('Description') }}</th>
+                                    <th class="ps-0">{{ __('Deskripsi') }}</th>
                                     <td>: {{ $closure->description ?? '-' }}</td>
                                 </tr>
                             </tbody>

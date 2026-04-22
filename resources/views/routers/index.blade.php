@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Router Management'))
+@section('title', __('Manajemen Router'))
 
 @section('content')
     @php
@@ -12,7 +12,7 @@
     <div class="content-header">
         <div>
             <h1 class="content-header-title mb-1">
-                {{ __('VPN Management') }}
+                {{ __('Manajemen VPN') }}
                 <span class="badge bg-primary-subtle text-primary vpn-badge ms-2">Mikrotik</span>
             </h1>
             <div class="content-header-subtitle">
@@ -20,8 +20,8 @@
             </div>
         </div>
         <div class="toolbar-scroll">
-            <button type="button" class="btn btn-outline-secondary" id="refreshRouters" data-bs-toggle="tooltip" title="{{ __('Refresh Status') }}">
-                <i class="fa-solid fa-arrows-rotate"></i> <span class="d-none d-sm-inline ms-1">{{ __('Refresh Status') }}</span>
+            <button type="button" class="btn btn-outline-secondary" id="refreshRouters" data-bs-toggle="tooltip" title="{{ __('Muat Ulang Status') }}">
+                <i class="fa-solid fa-arrows-rotate"></i> <span class="d-none d-sm-inline ms-1">{{ __('Muat Ulang Status') }}</span>
             </button>
             <a href="{{ route('routers.create') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Tambah Router VPN') }}">
                 <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Tambah Router VPN') }}</span>
@@ -128,13 +128,13 @@
                                         <i class="fa-solid fa-plug-circle-bolt"></i> <span class="d-none d-sm-inline ms-1">{{ __('Test') }}</span>
                                     </button>
                                     @endif
-                                    <a href="{{ route('routers.edit', $router) }}" class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Edit') }}">
-                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">{{ __('Edit') }}</span>
+                                    <a href="{{ route('routers.edit', $router) }}" class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="tooltip" title="{{ __('Ubah') }}">
+                                        <i class="fa-solid fa-pen-to-square"></i> <span class="d-none d-sm-inline ms-1">{{ __('Ubah') }}</span>
                                     </a>
                                     <form action="{{ route('routers.destroy', $router) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('{{ __('Are you sure?') }}')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('{{ __('Yakin ingin menghapus router ini?') }}')">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </form>
@@ -162,13 +162,13 @@
 @push('scripts')
 <script>
     function testConnection(url, button) {
-        if (!confirm('{{ __('Test connection to this router?') }}')) {
+        if (!confirm('{{ __('Tes koneksi ke router ini?') }}')) {
             return;
         }
 
         var originalHtml = button.innerHTML;
         button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>{{ __('Testing...') }}';
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>{{ __('Sedang Dites...') }}';
 
         var tokenMeta = document.querySelector('meta[name="csrf-token"]');
         var csrfToken = tokenMeta ? tokenMeta.getAttribute('content') : '{{ csrf_token() }}';
@@ -199,11 +199,11 @@
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'error',
-                        title: '{{ __('Error') }}',
-                        text: '{{ __('An error occurred while testing connection.') }}'
+                        title: '{{ __('Kesalahan') }}',
+                        text: '{{ __('Terjadi kesalahan saat menguji koneksi.') }}'
                     });
                 } else {
-                    alert('{{ __('An error occurred while testing connection.') }}');
+                    alert('{{ __('Terjadi kesalahan saat menguji koneksi.') }}');
                 }
             })
             .finally(function () {

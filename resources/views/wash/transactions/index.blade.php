@@ -103,6 +103,7 @@
                             <th>Tanggal</th>
                             <th>No. Transaksi</th>
                             <th>Pelanggan</th>
+                            <th>No. WhatsApp</th>
                             <th>No. Plat</th>
                             <th>Total</th>
                             <th>Pembayaran</th>
@@ -123,6 +124,7 @@
                                 <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
                                 <td>{{ $transaction->transaction_number }}</td>
                                 <td>{{ $transaction->customer_name ?? '-' }}</td>
+                                <td>{{ $transaction->washCustomer->phone ?? '-' }}</td>
                                 <td>{{ $transaction->vehicle_plate ?? '-' }}</td>
                                 <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
                                 <td>{{ ucfirst($transaction->payment_method) }}</td>
@@ -166,7 +168,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ Auth::user()->hasPermission('wash.manage') ? 9 : 8 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
+                                <td colspan="{{ Auth::user()->hasPermission('wash.manage') ? 10 : 9 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>

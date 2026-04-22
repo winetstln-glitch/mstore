@@ -13,7 +13,7 @@
         'col_type' => 'Tipe Paket',
         'col_price' => 'Harga',
         'col_speed' => 'Kecepatan',
-        'col_devices' => 'Devices',
+        'col_devices' => 'Jumlah Perangkat',
         'col_promo' => 'Promo',
         'col_status' => 'Status',
         'col_actions' => 'Aksi',
@@ -52,7 +52,7 @@
         $html = '';
         foreach ($rows as $package) {
             $packageTypeText = $inferPackageType($package) === 'hotspot' ? 'Hotspot / Member' : 'PPPoE / Rumahan';
-            $devicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
+            $devicesText = is_null($package->devices_limit) ? 'Tanpa Batas' : ((int) $package->devices_limit.' Perangkat');
             $statusBadge = $package->is_active
                 ? '<span class="badge bg-success-subtle text-success">'.$labels['status_active'].'</span>'
                 : '<span class="badge bg-secondary-subtle text-secondary">'.$labels['status_inactive'].'</span>';

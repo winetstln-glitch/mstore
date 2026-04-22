@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Script VPN Router')
+@section('title', 'Script Router VPN')
 
 @section('content')
 <div class="container py-3">
@@ -50,7 +50,7 @@ function copyScript(){
     var el=document.getElementById('scriptText');
     el.select();
     document.execCommand('copy');
-    if(window.Swal){Swal.fire({icon:'success',title:'Tersalin','text':'Script berhasil disalin'});}else{alert('Script tersalin');}
+    if(window.Swal){Swal.fire({icon:'success',title:'Tersalin','text':'Script berhasil disalin'});}else{alert('Script berhasil disalin');}
 }
 </script>
 @endpush

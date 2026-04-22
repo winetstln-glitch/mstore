@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <!-- Header Section -->
+    <!-- Bagian Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h1 class="h3 mb-0 text-gray-800 fw-bold">{{ __('Laporan Pembukuan Pengembang') }}</h1>
@@ -10,12 +10,12 @@
         </div>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <a href="{{ route('finance.developer.pdf', request()->all()) }}" class="btn btn-danger btn-lg w-100 w-md-auto" target="_blank">
-                <i class="fas fa-file-pdf me-1"></i> {{ __('Export PDF') }}
+                <i class="fas fa-file-pdf me-1"></i> {{ __('Ekspor PDF') }}
             </a>
         </div>
     </div>
 
-    <!-- Filter Section -->
+    <!-- Bagian Filter -->
     <div class="card shadow-sm mb-4 border-0">
         <div class="card-body rounded-3">
             <form action="{{ route('finance.developer') }}" method="GET" class="row g-3 align-items-end">
@@ -108,7 +108,7 @@
                                     <td class="text-end text-success fw-bold">Rp {{ number_format($incomeISP, 0, ',', '.') }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Pendapatan Management (20% dari Coordinator)</td>
+                                    <td>Pendapatan Manajemen (20% dari Pengurus)</td>
                                     <td class="text-end text-success fw-bold">Rp {{ number_format($incomeMgmt, 0, ',', '.') }}</td>
                                 </tr>
                                 <tr>

@@ -72,8 +72,8 @@
                 @endif
             </div>
             
-            <div class="table-responsive">
-                <table class="table table-hover align-middle schedule-month-table mb-0">
+            <div class="table-responsive schedule-daily-scroll">
+                <table class="table table-hover align-middle schedule-month-table schedule-daily-table mb-0">
                     <thead>
                         <tr>
                             <th class="schedule-name-col">

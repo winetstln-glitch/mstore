@@ -2,31 +2,46 @@
      SHIFT LEGEND BAR 
      ============================================ --}}
 <div class="shift-legend-bar mb-4">
-    <div class="row g-0 align-items-center">
-        <div class="col-auto">
+    @php
+        $teknisiShift = $shiftConfig['teknisi'] ?? null;
+        $washShift = $shiftConfig['wash'] ?? null;
+    @endphp
+    <div class="row g-2 align-items-center">
+        @if($teknisiShift)
+        <div class="col-12 col-lg-auto">
+            <small class="text-muted d-block mb-1 fw-semibold">Teknisi</small>
             <div class="legend-item">
                 <span class="legend-dot bg-success"></span>
                 <span class="legend-label">Shift 1</span>
-                <code class="legend-code">{{ $shift1Start }} - {{ $shift1End }}</code>
+                <code class="legend-code">{{ $teknisiShift['shift_1_start'] }} - {{ $teknisiShift['shift_1_end'] }}</code>
             </div>
-        </div>
-        <div class="col-auto px-4">
             <div class="legend-item">
                 <span class="legend-dot bg-warning"></span>
                 <span class="legend-label">Shift 2</span>
-                <code class="legend-code">{{ $shift2Start }} - {{ $shift2End }}</code>
+                <code class="legend-code">{{ $teknisiShift['shift_2_start'] }} - {{ $teknisiShift['shift_2_end'] }}</code>
             </div>
         </div>
-        <div class="col-auto px-4">
+        @endif
+        @if($washShift)
+        <div class="col-12 col-lg-auto px-lg-4">
+            <small class="text-muted d-block mb-1 fw-semibold">Operator Wash</small>
+            <div class="legend-item">
+                <span class="legend-dot bg-success"></span>
+                <span class="legend-label">Shift 1</span>
+                <code class="legend-code">{{ $washShift['shift_1_start'] }} - {{ $washShift['shift_1_end'] }}</code>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot bg-warning"></span>
+                <span class="legend-label">Shift 2</span>
+                <code class="legend-code">{{ $washShift['shift_2_start'] }} - {{ $washShift['shift_2_end'] }}</code>
+            </div>
+        </div>
+        @endif
+        <div class="col-auto px-2 px-lg-4">
             <div class="legend-item">
                 <span class="legend-dot bg-secondary"></span>
                 <span class="legend-label">Off</span>
             </div>
-        </div>
-        <div class="col-auto ms-auto">
-            <small class="text-muted">
-                <i class="fa-solid fa-gear me-1"></i>Ubah jam shift di <a href="#" class="text-decoration-underline">Pengaturan Attendance</a>
-            </small>
         </div>
     </div>
 </div>

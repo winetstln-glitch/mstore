@@ -385,7 +385,7 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = WashTransaction::with(['user', 'items']);
+        $query = WashTransaction::with(['user', 'items', 'washCustomer']);
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [

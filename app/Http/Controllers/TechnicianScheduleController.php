@@ -105,10 +105,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ],
         ];
 
-        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+        $shiftConfig = $this->getShiftConfig();
 
         $autoShift1Slots = (int) Setting::getValue('schedule_auto_shift1_slots', '1');
         $autoShift2Slots = (int) Setting::getValue('schedule_auto_shift2_slots', '1');
@@ -214,10 +211,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'dailyRangeEnd',
             'selectedGroup',
             'selectedShift',
-            'shift1Start',
-            'shift1End',
-            'shift2Start',
-            'shift2End',
+            'shiftConfig',
             'autoShift1Slots',
             'autoShift2Slots',
             'dailyOffDays'
@@ -484,10 +478,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $this->applyScheduleMeta($technicians);
         $technicians = $this->deduplicateScheduleUsers($technicians);
 
-        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+        $shiftConfig = $this->getShiftConfig();
 
         $groups = [
             [
@@ -583,10 +574,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 'dailySchedules',
                 'year',
                 'month',
-                'shift1Start',
-                'shift1End',
-                'shift2Start',
-                'shift2End'
+                'shiftConfig'
             ))->setPaper('a4', 'landscape');
 
             return $pdf->download('jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.pdf');
@@ -630,10 +618,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'schedules',
             'year',
             'month',
-            'shift1Start',
-            'shift1End',
-            'shift2Start',
-            'shift2End'
+            'shiftConfig'
         ))->setPaper('a4', 'landscape');
 
         return $pdf->download('jadwal-shift-'.sprintf('%04d-%02d', $year, $month).'.pdf');
@@ -661,10 +646,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $this->applyScheduleMeta($technicians);
         $technicians = $this->deduplicateScheduleUsers($technicians);
 
-        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+        $shiftConfig = $this->getShiftConfig();
 
         if ($mode === 'daily') {
             if (! Schema::hasTable('technician_daily_schedules')) {
@@ -779,7 +761,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $technicians = $technicians->filter(fn ($u) => $allowedIds->contains($u->id))->values();
         }
 
-        return response()->streamDownload(function () use ($technicians, $weekNumbers, $schedules, $shift1Start, $shift1End, $shift2Start, $shift2End) {
+        return response()->streamDownload(function () use ($technicians, $weekNumbers, $schedules, $shiftConfig) {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
@@ -802,9 +784,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     $weekRows = $schedules->get($weekNumber);
                     $schedule = $weekRows ? $weekRows->get($tech->id) : null;
                     $status = $schedule?->status ?? TechnicianSchedule::STATUS_OFF;
+                    $groupKey = ($tech->schedule_group ?? '') === 'wash' ? 'wash' : 'teknisi';
+                    $groupShift = $shiftConfig[$groupKey] ?? $shiftConfig['teknisi'];
                     $row[] = match ($status) {
-                        TechnicianSchedule::STATUS_PIKET => "S1 ({$shift1Start}-{$shift1End})",
-                        TechnicianSchedule::STATUS_BACKUP => "S2 ({$shift2Start}-{$shift2End})",
+                        TechnicianSchedule::STATUS_PIKET => 'S1 ('.$groupShift['shift_1_start'].'-'.$groupShift['shift_1_end'].')',
+                        TechnicianSchedule::STATUS_BACKUP => 'S2 ('.$groupShift['shift_2_start'].'-'.$groupShift['shift_2_end'].')',
                         default => 'OFF',
                     };
                 }
@@ -1076,6 +1060,14 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ['key' => 'attendance_shift_1_end', 'value' => '16:00', 'label' => 'Jam Selesai Shift 1'],
             ['key' => 'attendance_shift_2_start', 'value' => '16:00', 'label' => 'Jam Mulai Shift 2'],
             ['key' => 'attendance_shift_2_end', 'value' => '23:00', 'label' => 'Jam Selesai Shift 2'],
+            ['key' => 'schedule_teknisi_shift_1_start', 'value' => '08:00', 'label' => 'Jadwal Teknisi Shift 1 Mulai'],
+            ['key' => 'schedule_teknisi_shift_1_end', 'value' => '17:00', 'label' => 'Jadwal Teknisi Shift 1 Selesai'],
+            ['key' => 'schedule_teknisi_shift_2_start', 'value' => '15:00', 'label' => 'Jadwal Teknisi Shift 2 Mulai'],
+            ['key' => 'schedule_teknisi_shift_2_end', 'value' => '00:00', 'label' => 'Jadwal Teknisi Shift 2 Selesai'],
+            ['key' => 'schedule_wash_shift_1_start', 'value' => '08:00', 'label' => 'Jadwal Operator Wash Shift 1 Mulai'],
+            ['key' => 'schedule_wash_shift_1_end', 'value' => '17:00', 'label' => 'Jadwal Operator Wash Shift 1 Selesai'],
+            ['key' => 'schedule_wash_shift_2_start', 'value' => '13:00', 'label' => 'Jadwal Operator Wash Shift 2 Mulai'],
+            ['key' => 'schedule_wash_shift_2_end', 'value' => '22:00', 'label' => 'Jadwal Operator Wash Shift 2 Selesai'],
         ];
 
         foreach ($defaults as $item) {
@@ -1083,12 +1075,32 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ['key' => $item['key']],
                 [
                     'value' => $item['value'],
-                    'group' => 'attendance',
+                    'group' => str_starts_with($item['key'], 'schedule_') ? 'schedule' : 'attendance',
                     'type' => 'time',
                     'label' => $item['label'],
                 ]
             );
         }
+    }
+
+    private function getShiftConfig(): array
+    {
+        return [
+            'teknisi' => [
+                'label' => 'Teknisi',
+                'shift_1_start' => Setting::getValue('schedule_teknisi_shift_1_start', '08:00'),
+                'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
+                'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
+                'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
+            ],
+            'wash' => [
+                'label' => 'Operator Wash',
+                'shift_1_start' => Setting::getValue('schedule_wash_shift_1_start', '08:00'),
+                'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
+                'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
+                'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
+            ],
+        ];
     }
 
     private function ensureAutoScheduleSettings(): void
@@ -1589,12 +1601,9 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ];
         }
 
-        $shift1Start = Setting::getValue('attendance_shift_1_start', '08:00');
-        $shift1End = Setting::getValue('attendance_shift_1_end', '16:00');
-        $shift2Start = Setting::getValue('attendance_shift_2_start', '16:00');
-        $shift2End = Setting::getValue('attendance_shift_2_end', '23:00');
+        $shiftConfig = $this->getShiftConfig();
 
-        return [$technicians, $weeks, $year, $month, $shift1Start, $shift1End, $shift2Start, $shift2End];
+        return [$technicians, $weeks, $year, $month, $shiftConfig];
     }
 
     private function applyScheduleDisplayNames($users): void

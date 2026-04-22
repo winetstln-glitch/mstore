@@ -6,10 +6,10 @@
         <div class="card shadow-sm border-0 border-top border-4 border-warning">
             <div class="card-header py-3">
                 <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Installation Management') }}</h5>
+                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('Manajemen Pemasangan') }}</h5>
                     <div class="toolbar-scroll">
-                        <a href="{{ route('installations.create') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Add Installation') }}">
-                            <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add Installation') }}</span>
+                        <a href="{{ route('installations.create') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Tambah Pemasangan') }}">
+                            <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Tambah Pemasangan') }}</span>
                         </a>
                     </div>
                 </div>
@@ -21,7 +21,7 @@
                     <div class="row g-3">
                         <div class="col-12 col-md-2">
                             <select name="status" class="form-select">
-                                <option value="">{{ __('All Statuses') }}</option>
+                                <option value="">{{ __('Semua Status') }}</option>
                                 @foreach(['registered', 'survey', 'approved', 'installation', 'completed', 'cancelled'] as $status)
                                     <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
                                         {{ __(ucfirst($status)) }}
@@ -31,7 +31,7 @@
                         </div>
                         <div class="col-12 col-md-3">
                             <select name="technician_id" class="form-select">
-                                <option value="">{{ __('All Technicians') }}</option>
+                                <option value="">{{ __('Semua Teknisi') }}</option>
                                 @foreach($technicians as $tech)
                                     <option value="{{ $tech->id }}" {{ request('technician_id') == $tech->id ? 'selected' : '' }}>
                                         {{ $tech->name }}
@@ -54,7 +54,7 @@
                         <div class="col-12 col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
-                                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Search customer...') }}">
+                                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari pelanggan...') }}">
                             </div>
                         </div>
                         <div class="col-12 col-md-2">
@@ -63,7 +63,7 @@
                     </div>
                     <div class="row g-3 mt-2">
                         <div class="col-12 col-md-2">
-                            <button type="submit" class="btn btn-dark w-100">{{ __('Filter') }}</button>
+                            <button type="submit" class="btn btn-dark w-100">{{ __('Terapkan') }}</button>
                         </div>
                     </div>
                 </form>
@@ -74,12 +74,12 @@
                         <thead class="">
                             <tr>
                                 <th scope="col" class="ps-3">ID</th>
-                                <th scope="col">{{ __('Customer') }}</th>
-                                <th scope="col">{{ __('Plan Date') }}</th>
-                                <th scope="col">{{ __('Technician') }}</th>
+                                <th scope="col">{{ __('Pelanggan') }}</th>
+                                <th scope="col">{{ __('Tanggal Rencana') }}</th>
+                                <th scope="col">{{ __('Teknisi') }}</th>
                                 <th scope="col">{{ __('Pengurus') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
+                                <th scope="col" class="text-end pe-3">{{ __('Aksi') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -91,10 +91,10 @@
                                         <div class="small text-body-secondary">{{ Str::limit($installation->customer->address, 30) }}</div>
                                     </td>
                                     <td>
-                                        <div>{{ $installation->plan_date ? $installation->plan_date->translatedFormat('d M Y') : __('Not Set') }}</div>
+                                        <div>{{ $installation->plan_date ? $installation->plan_date->translatedFormat('d M Y') : __('Belum Diatur') }}</div>
                                     </td>
                                     <td>
-                                        <div>{{ $installation->technician ? $installation->technician->name : __('Unassigned') }}</div>
+                                        <div>{{ $installation->technician ? $installation->technician->name : __('Belum Ditugaskan') }}</div>
                                     </td>
                                     <td>
                                         <div>{{ optional($ticketCoordinatorsByCustomer->get($installation->customer_id))->name ?: '-' }}</div>
@@ -116,16 +116,16 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
-                                            <a href="{{ route('installations.show', $installation) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View') }}">
+                                            <a href="{{ route('installations.show', $installation) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('installations.edit', $installation) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Edit') }}">
+                                            <a href="{{ route('installations.edit', $installation) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Ubah') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
-                                            <form action="{{ route('installations.destroy', $installation) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this installation?') }}')">
+                                            <form action="{{ route('installations.destroy', $installation) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus data pemasangan ini?') }}')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="{{ __('Delete') }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="{{ __('Hapus') }}">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
@@ -136,7 +136,7 @@
                                 <tr>
                                     <td colspan="7" class="text-center py-5 text-body-secondary">
                                         <div class="mb-2"><i class="fa-solid fa-network-wired fa-2x opacity-25"></i></div>
-                                        {{ __('No installations found.') }}
+                                        {{ __('Tidak ada data pemasangan.') }}
                                     </td>
                                 </tr>
                             @endforelse

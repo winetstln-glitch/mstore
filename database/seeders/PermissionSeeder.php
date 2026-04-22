@@ -15,6 +15,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             // Dashboard
             ['name' => 'dashboard.view', 'label' => 'View Dashboard', 'group' => 'Dashboard'],
+            ['name' => 'ai.view', 'label' => 'View AI Center', 'group' => 'Dashboard'],
 
             // User Management
             ['name' => 'user.view', 'label' => 'View Users', 'group' => 'User Management'],

@@ -9,7 +9,7 @@
                     <div class="header-title text-truncate" style="max-width: 100%;">
                         <h5 class="mb-0 fw-bold text-body-emphasis">
                             <i class="fa-solid fa-pen-to-square me-2 text-primary"></i>
-                            {{ __('Edit Customer') }}: <span class="text-truncate d-inline-block align-bottom" style="max-width: 150px; vertical-align: middle;">{{ $customer->name }}</span>
+                            {{ __('Ubah Pelanggan') }}: <span class="text-truncate d-inline-block align-bottom" style="max-width: 150px; vertical-align: middle;">{{ $customer->name }}</span>
                         </h5>
                         <div class="small text-muted mt-1 d-md-none">ID: {{ $customer->id }}</div>
                     </div>
@@ -17,11 +17,11 @@
                     <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
                         @if($customer->onu_serial)
                         <a href="{{ route('customers.settings', $customer) }}" class="btn btn-info btn-sm text-white">
-                            <i class="fa-solid fa-sliders"></i> <span class="d-none d-sm-inline">{{ __('Settings') }}</span>
+                            <i class="fa-solid fa-sliders"></i> <span class="d-none d-sm-inline">{{ __('Pengaturan') }}</span>
                         </a>
                         @endif
                         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Back') }}</span>
+                            <i class="fa-solid fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">{{ __('Kembali') }}</span>
                         </a>
                     </div>
                 </div>
@@ -32,11 +32,11 @@
                     @csrf
                     @method('PUT')
 
-                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3">{{ __('Personal Information') }}</h6>
+                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3">{{ __('Informasi Pribadi') }}</h6>
                     <div class="row g-3 mb-4">
                         <!-- Name -->
                         <div class="col-md-6">
-                            <label for="name" class="form-label small text-muted fw-bold">{{ __('Full Name') }}</label>
+                            <label for="name" class="form-label small text-muted fw-bold">{{ __('Nama Lengkap') }}</label>
                             <input type="text" name="name" id="name" value="{{ old('name', $customer->name) }}" required class="form-control @error('name') is-invalid @enderror">
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -45,7 +45,7 @@
 
                         <!-- Phone -->
                         <div class="col-md-6">
-                            <label for="phone" class="form-label small text-muted fw-bold">{{ __('Phone Number') }}</label>
+                            <label for="phone" class="form-label small text-muted fw-bold">{{ __('Nomor HP') }}</label>
                             <input type="tel" name="phone" id="phone" value="{{ old('phone', $customer->phone) }}" class="form-control @error('phone') is-invalid @enderror">
                             @error('phone')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -54,7 +54,7 @@
 
                         <!-- Address -->
                         <div class="col-12">
-                            <label for="address" class="form-label small text-muted fw-bold">{{ __('Address') }}</label>
+                            <label for="address" class="form-label small text-muted fw-bold">{{ __('Alamat') }}</label>
                             <textarea name="address" id="address" rows="2" class="form-control @error('address') is-invalid @enderror">{{ old('address', $customer->address) }}</textarea>
                             @error('address')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -63,13 +63,13 @@
                         
                         <!-- Link to User (Client Portal) -->
                         <div class="col-12">
-                            <h6 class="fw-bold text-body-secondary text-uppercase small mt-3 mb-3 border-top pt-3">{{ __('Portal Account') }}</h6>
+                            <h6 class="fw-bold text-body-secondary text-uppercase small mt-3 mb-3 border-top pt-3">{{ __('Akun Portal') }}</h6>
                             <div class="row g-3">
                                 @if(!$customer->user_id)
                                 <div class="col-md-12 mb-2">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" name="create_user" id="create_user" value="1" {{ old('create_user') ? 'checked' : '' }} onchange="togglePortalFields()">
-                                        <label class="form-check-label fw-bold" for="create_user">{{ __('Create Portal Account for this Customer') }}</label>
+                                        <label class="form-check-label fw-bold" for="create_user">{{ __('Buat Akun Portal untuk Pelanggan Ini') }}</label>
                                     </div>
                                 </div>
                                 @endif
@@ -77,23 +77,23 @@
                                 <div id="portal_fields" class="{{ ($customer->user_id || old('create_user')) ? '' : 'd-none' }}">
                                     <div class="row g-3">
                                         <div class="col-md-4">
-                                            <label for="username" class="form-label small text-muted fw-bold">{{ __('Portal Username') }}</label>
+                                            <label for="username" class="form-label small text-muted fw-bold">{{ __('Username Portal') }}</label>
                                             <input type="text" name="username" id="username" value="{{ old('username', $customer->user?->username) }}" class="form-control @error('username') is-invalid @enderror" placeholder="username">
                                             @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="email" class="form-label small text-muted fw-bold">{{ __('Portal Email') }}</label>
+                                            <label for="email" class="form-label small text-muted fw-bold">{{ __('Email Portal') }}</label>
                                             <input type="email" name="email" id="email" value="{{ old('email', $customer->user?->email) }}" class="form-control @error('email') is-invalid @enderror" placeholder="email@example.com">
                                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="password" class="form-label small text-muted fw-bold">{{ __('Portal Password') }} {{ $customer->user_id ? __('(Leave blank to keep current)') : '' }}</label>
-                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="min 8 chars">
+                                            <label for="password" class="form-label small text-muted fw-bold">{{ __('Password Portal') }} {{ $customer->user_id ? __('(Kosongkan jika tidak diubah)') : '' }}</label>
+                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('minimal 8 karakter') }}">
                                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="password_confirmation" class="form-label small text-muted fw-bold">{{ __('Confirm Password') }}</label>
-                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="confirm password">
+                                            <label for="password_confirmation" class="form-label small text-muted fw-bold">{{ __('Konfirmasi Password') }}</label>
+                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="{{ __('ulangi password') }}">
                                         </div>
                                     </div>
                                 </div>
@@ -122,7 +122,7 @@
 
                         <!-- Location -->
                         <div class="col-md-6">
-                            <label for="latitude" class="form-label small text-muted">{{ __('Latitude') }}</label>
+                            <label for="latitude" class="form-label small text-muted">{{ __('Lintang') }}</label>
                             <div class="input-group">
                                 <span class="input-group-text "><i class="fa-solid fa-map-pin text-muted"></i></span>
                                 <input type="text" name="latitude" id="latitude" value="{{ old('latitude', $customer->latitude) }}" class="form-control @error('latitude') is-invalid @enderror" placeholder="-6.200000">
@@ -133,7 +133,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="longitude" class="form-label small text-muted">{{ __('Longitude') }}</label>
+                            <label for="longitude" class="form-label small text-muted">{{ __('Bujur') }}</label>
                             <div class="input-group">
                                 <span class="input-group-text "><i class="fa-solid fa-map-pin text-muted"></i></span>
                                 <input type="text" name="longitude" id="longitude" value="{{ old('longitude', $customer->longitude) }}" class="form-control @error('longitude') is-invalid @enderror" placeholder="106.816666">
@@ -144,7 +144,7 @@
                         </div>
 
                         <div class="col-12">
-                              <div class="form-text text-muted">{{ __('Click on the map below to select location.') }}</div>
+                              <div class="form-text text-muted">{{ __('Klik peta di bawah untuk memilih lokasi.') }}</div>
                             <div id="map-picker" class="border rounded"></div>
                         </div>
                     </div>
@@ -154,23 +154,23 @@
                         <div class="col-md-6">
                             <label for="closure_id" class="form-label small text-muted fw-bold">{{ __('Closure') }}</label>
                             <select id="closure_id" class="form-select">
-                                <option value="">{{ __('Select Closure (optional)') }}</option>
+                                <option value="">{{ __('Pilih Closure (opsional)') }}</option>
                                 @foreach(($closures ?? []) as $cl)
                                     <option value="{{ $cl->id }}" data-odc-id="{{ $cl->odc_id }}">{{ $cl->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small text-muted fw-bold">{{ __('ODC (auto from Closure)') }}</label>
+                            <label class="form-label small text-muted fw-bold">{{ __('ODC (otomatis dari Closure)') }}</label>
                             <input type="text" id="odc_display" class="form-control " readonly>
                         </div>
                     </div>
-                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Service Details') }}</h6>
+                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Detail Layanan') }}</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label for="package_id" class="form-label small text-muted fw-bold">{{ __('Package') }}</label>
                             <select name="package_id" id="package_id" class="form-select @error('package_id') is-invalid @enderror">
-                                <option value="">{{ __('Select package') }}</option>
+                                <option value="">{{ __('Pilih paket') }}</option>
                                 @foreach($packages as $pkg)
                                     <option value="{{ $pkg->id }}" {{ old('package_id', $customer->package_id) == $pkg->id ? 'selected' : '' }}>
                                         {{ $pkg->name }} @if($pkg->price) - {{ number_format($pkg->price, 0, ',', '.') }} @endif
@@ -184,7 +184,7 @@
 
                         <!-- IP Address -->
                         <div class="col-md-6">
-                            <label for="ip_address" class="form-label small text-muted fw-bold">{{ __('IP Address') }}</label>
+                            <label for="ip_address" class="form-label small text-muted fw-bold">{{ __('Alamat IP') }}</label>
                             <input type="text" name="ip_address" id="ip_address" value="{{ old('ip_address', $customer->ip_address) }}" class="form-control @error('ip_address') is-invalid @enderror" placeholder="192.168.x.x">
                             @error('ip_address')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -193,7 +193,7 @@
 
                         <!-- GenieACS Device ID -->
                         <div class="col-md-6">
-                            <label for="genieacs_device_id" class="form-label small text-muted fw-bold">{{ __('GenieACS Device ID') }}</label>
+                            <label for="genieacs_device_id" class="form-label small text-muted fw-bold">{{ __('ID Perangkat GenieACS') }}</label>
                             <input type="text" name="genieacs_device_id" id="genieacs_device_id" value="{{ old('genieacs_device_id', $customer->genieacs_device_id) }}" class="form-control @error('genieacs_device_id') is-invalid @enderror" placeholder="e.g. 64b8f9...">
                             @error('genieacs_device_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -220,12 +220,12 @@
 
                         <!-- ODP -->
                         <div class="col-md-6">
-                            <label for="odp_id" class="form-label small text-muted fw-bold">{{ __('ODP Connection') }}</label>
+                            <label for="odp_id" class="form-label small text-muted fw-bold">{{ __('Koneksi ODP') }}</label>
                             <select name="odp_id" id="odp_id" class="form-select @error('odp_id') is-invalid @enderror">
-                                <option value="">-- {{ __('Select ODP') }} --</option>
+                                <option value="">-- {{ __('Pilih ODP') }} --</option>
                                 @foreach($odps as $odp)
                                     <option value="{{ $odp->id }}" {{ old('odp_id', $customer->odp_id) == $odp->id ? 'selected' : '' }} {{ ($odp->capacity !== null && $odp->filled >= $odp->capacity && $customer->odp_id != $odp->id) ? 'disabled' : '' }}>
-                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Full' : '' }}
+                                        {{ $odp->name }} ({{ $odp->filled }}/{{ $odp->capacity ?? '∞' }}){{ ($odp->capacity !== null && $odp->filled >= $odp->capacity) ? ' - Penuh' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -236,12 +236,12 @@
 
                         <!-- HTB -->
                         <div class="col-md-6">
-                            <label for="htb_id" class="form-label small text-muted fw-bold">{{ __('HTB Connection') }}</label>
+                            <label for="htb_id" class="form-label small text-muted fw-bold">{{ __('Koneksi HTB') }}</label>
                             <select name="htb_id" id="htb_id" class="form-select @error('htb_id') is-invalid @enderror">
-                                <option value="">-- {{ __('Select HTB') }} --</option>
+                                <option value="">-- {{ __('Pilih HTB') }} --</option>
                                 @foreach($htbs as $htb)
                                     <option value="{{ $htb->id }}" {{ old('htb_id', $customer->htb_id) == $htb->id ? 'selected' : '' }} {{ ($htb->id != $customer->htb_id && $htb->capacity !== null && $htb->filled >= $htb->capacity) ? 'disabled' : '' }}>
-                                        {{ $htb->name }} {{ $htb->parent ? '(via ' . $htb->parent->name . ')' : '' }} ({{ $htb->filled }}/{{ $htb->capacity ?? '∞' }}){{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? ' - Full' : '' }}
+                                        {{ $htb->name }} {{ $htb->parent ? '(' . __('via') . ' ' . $htb->parent->name . ')' : '' }} ({{ $htb->filled }}/{{ $htb->capacity ?? '∞' }}){{ ($htb->capacity !== null && $htb->filled >= $htb->capacity) ? ' - Penuh' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -253,7 +253,7 @@
                         <!-- ONU Serial -->
                         <div class="col-md-6">
                             <label for="onu_serial" class="form-label small text-muted fw-bold">{{ __('ONU Serial') }}</label>
-                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $customer->onu_serial) }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Type or select...') }}">
+                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $customer->onu_serial) }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Ketik atau pilih...') }}">
                             <datalist id="onu_list">
                                 @foreach($onuDevices as $device)
                                     <option value="{{ $device['serial'] }}">{{ $device['serial'] }} - {{ $device['model'] }}</option>
@@ -266,7 +266,7 @@
 
                         <!-- Device Model -->
                         <div class="col-md-6">
-                            <label for="device_model" class="form-label small text-muted">{{ __('Device Model') }}</label>
+                            <label for="device_model" class="form-label small text-muted">{{ __('Model Perangkat') }}</label>
                             <input type="text" name="device_model" id="device_model" value="{{ old('device_model', $customer->device_model) }}" class="form-control  @error('device_model') is-invalid @enderror" readonly>
                             @error('device_model')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -275,7 +275,7 @@
 
                         <!-- SSID Name -->
                         <div class="col-6">
-                            <label for="ssid_name" class="form-label small text-muted">{{ __('SSID Name') }}</label>
+                            <label for="ssid_name" class="form-label small text-muted">{{ __('Nama SSID') }}</label>
                             <input type="text" name="ssid_name" id="ssid_name" value="{{ old('ssid_name', $customer->ssid_name) }}" class="form-control @error('ssid_name') is-invalid @enderror">
                             @error('ssid_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -284,7 +284,7 @@
 
                         <!-- SSID Password -->
                         <div class="col-6">
-                            <label for="ssid_password" class="form-label small text-muted">{{ __('SSID Password') }}</label>
+                            <label for="ssid_password" class="form-label small text-muted">{{ __('Password SSID') }}</label>
                             <div class="input-group">
                                 <input type="password" name="ssid_password" id="ssid_password" value="{{ old('ssid_password', $customer->ssid_password) }}" class="form-control @error('ssid_password') is-invalid @enderror">
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('ssid_password')">
@@ -300,9 +300,9 @@
                         <div class="col-md-6">
                             <label for="status" class="form-label small text-muted fw-bold">{{ __('Status') }}</label>
                             <select name="status" id="status" class="form-select @error('status') is-invalid @enderror">
-                                <option value="active" {{ old('status', $customer->status) == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
+                                <option value="active" {{ old('status', $customer->status) == 'active' ? 'selected' : '' }}>{{ __('Aktif') }}</option>
                                 <option value="suspend" {{ old('status', $customer->status) == 'suspend' ? 'selected' : '' }}>{{ __('Suspend') }}</option>
-                                <option value="terminated" {{ old('status', $customer->status) == 'terminated' ? 'selected' : '' }}>{{ __('Terminated') }}</option>
+                                <option value="terminated" {{ old('status', $customer->status) == 'terminated' ? 'selected' : '' }}>{{ __('Berhenti') }}</option>
                             </select>
                             @error('status')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -312,8 +312,8 @@
 
                     <!-- Sticky Footer -->
                     <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2 border-top pt-4 mobile-sticky-footer">
-                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary w-100 w-md-auto">{{ __('Cancel') }}</a>
-                        <button type="submit" class="btn btn-primary w-100 w-md-auto px-4">{{ __('Update Customer') }}</button>
+                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary w-100 w-md-auto">{{ __('Batal') }}</a>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto px-4">{{ __('Perbarui Pelanggan') }}</button>
                     </div>
                 </form>
             </div>
@@ -365,7 +365,7 @@
         odpSelect.innerHTML = '';
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = '-- {{ __('Select ODP') }} --';
+            placeholder.textContent = '-- {{ __('Pilih ODP') }} --';
         odpSelect.appendChild(placeholder);
 
         const list = selectedOdcId ? odpList.filter(o => String(o.odc_id) === String(selectedOdcId)) : odpList;
@@ -373,7 +373,7 @@
             const opt = document.createElement('option');
             opt.value = o.id;
             const cap = (o.capacity !== null && o.capacity !== undefined) ? o.capacity : '∞';
-            opt.textContent = `${o.name} (${o.filled}/${cap})${(o.capacity !== null && o.filled >= o.capacity) ? ' - Full' : ''}`;
+            opt.textContent = `${o.name} (${o.filled}/${cap})${(o.capacity !== null && o.filled >= o.capacity) ? ' - Penuh' : ''}`;
             if (o.capacity !== null && o.filled >= o.capacity) opt.disabled = true;
             odpSelect.appendChild(opt);
         });
@@ -386,13 +386,13 @@
         }
     }
 
-    // Auto-populate from GenieACS
+    // Isi otomatis dari GenieACS.
     document.getElementById('onu_serial').addEventListener('change', function() {
         var serial = this.value;
         if (serial) {
             fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial))
                 .then(response => {
-                    if (!response.ok) throw new Error('Device not found');
+                    if (!response.ok) throw new Error('{{ __('Perangkat tidak ditemukan') }}');
                     return response.json();
                 })
                 .then(data => {
@@ -417,7 +417,7 @@
                     setFieldValue('ssid_name', data.ssid_name);
                     setFieldValue('ssid_password', data.ssid_password);
                 })
-                .catch(error => console.log('GenieACS Auto-populate:', error));
+                .catch(error => console.log('{{ __('Isi otomatis GenieACS') }}:', error));
         }
     });
 
@@ -426,7 +426,7 @@
         var lng = @json(old('longitude', $customer->longitude));
         var zoom = 15;
 
-        // Handle null, empty string, or non-numeric values
+        // Tangani nilai kosong atau tidak valid.
         if (lat === null || lat === '') lat = -6.200000;
         if (lng === null || lng === '') lng = 106.816666;
 
@@ -471,7 +471,7 @@
             };
             L.control.layers(baseMaps).addTo(map);
 
-            // Fix map rendering issues
+            // Perbaiki render peta saat awal dimuat.
             setTimeout(function() {
                 map.invalidateSize();
             }, 500);
@@ -504,7 +504,7 @@
             });
         } catch (error) {
             console.error("Map Error:", error);
-            if(mapContainer) mapContainer.innerHTML = '<div class="alert alert-danger">Failed to load map.</div>';
+            if(mapContainer) mapContainer.innerHTML = '<div class="alert alert-danger">{{ __('Gagal memuat peta.') }}</div>';
         }
     });
 
@@ -512,7 +512,7 @@
         const closureSelect = document.getElementById('closure_id');
         const currentOdcId = @json(optional($customer->odp)->odc_id ?? null);
         if (closureSelect) {
-            // Preselect closure by matching ODC
+            // Pilih closure awal berdasarkan ODC yang cocok.
             if (currentOdcId) {
                 const toSelect = Array.from(closureSelect.options).find(opt => String(opt.dataset.odcId || opt.getAttribute('data-odc-id')) === String(currentOdcId));
                 if (toSelect) {

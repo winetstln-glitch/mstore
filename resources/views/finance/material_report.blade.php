@@ -11,7 +11,7 @@
         </div>
         <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
-                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
+                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
             </a>
             <!-- Tombol Download Excel/PDF disarankan ditambahkan di sini jika ada -->
             <button onclick="window.print()" class="btn btn-primary btn-lg w-100 w-md-auto">
@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    <!-- FILTER SECTION -->
+    <!-- Bagian Filter -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-filter me-2"></i>{{ __('Filter Laporan') }}</h6>
@@ -48,14 +48,14 @@
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary btn-lg w-100">
-                        <i class="fa-solid fa-magnifying-glass me-1"></i> Tampilkan Data
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> {{ __('Tampilkan Data') }}
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SUMMARY CARDS -->
+    <!-- Ringkasan -->
     <div class="row mb-4">
         <div class="col-md-4 mb-3">
             <div class="card border-left-info shadow h-100 py-2" style="border-left: 0.25rem solid #36b9cc !important;">
@@ -63,7 +63,7 @@
                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                         {{ __('Total Item Terjual') }}</div>
                     <div class="h5 mb-0 font-weight-bold finance-kpi-value text-gray-800">{{ number_format($totalQuantity, 0, ',', '.') }} Unit</div>
-                    <small class="text-muted">Transaksi Sukses</small>
+                    <small class="text-muted">{{ __('Transaksi Sukses') }}</small>
                 </div>
             </div>
         </div>
@@ -88,7 +88,7 @@
         </div>
     </div>
 
-    <!-- TABLE SECTION -->
+    <!-- Tabel -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">{{ __('Rincian Transaksi Material') }}</h6>
@@ -140,14 +140,14 @@
                         <tr>
                             <td colspan="6" class="text-center py-4 text-muted">
                                 <i class="fa-solid fa-box-open fa-2x mb-2 d-block"></i>
-                                Tidak ada transaksi material pada periode ini.
+                                {{ __('Tidak ada transaksi material pada periode ini.') }}
                             </td>
                         </tr>
                         @endforelse
                     </tbody>
                     <tfoot class="fw-bold">
                         <tr class="table-light">
-                            <td colspan="3" class="text-end">GRAND TOTAL</td>
+                            <td colspan="3" class="text-end">{{ __('TOTAL KESELURUHAN') }}</td>
                             <td class="text-center">{{ number_format($totalQuantity, 0, ',', '.') }}</td>
                             <td class="text-end">{{ number_format($totalValue, 0, ',', '.') }}</td>
                             <td class="text-end">{{ number_format($netTotal, 0, ',', '.') }}</td>
@@ -157,7 +157,7 @@
             </div>
             <div class="alert alert-light border mt-3 mb-0 small">
                 <i class="fa-solid fa-circle-info me-1"></i>
-                <strong>Catatan:</strong> Pendapatan Bersih (Net) adalah Total Harga dikurangi Komisi Pengurus sebesar <strong>{{ $commissionRate }}%</strong>.
+                <strong>{{ __('Catatan:') }}</strong> {{ __('Pendapatan Bersih (Net) adalah total harga dikurangi komisi pengurus sebesar') }} <strong>{{ $commissionRate }}%</strong>.
             </div>
         </div>
     </div>

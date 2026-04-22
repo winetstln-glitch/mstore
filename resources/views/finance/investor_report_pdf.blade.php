@@ -171,7 +171,7 @@
             <tr>
                 <th style="width: 30px; color: white;">#</th>
                 <th style="color: white;">{{ __('Nama Investor') }}</th>
-                <th style="color: white;">{{ __('Role') }}</th>
+                <th style="color: white;">{{ __('Peran') }}</th>
                 <th class="text-end" style="color: white;">{{ __('Pembagian Laba (IDR)') }}</th>
             </tr>
         </thead>

@@ -85,7 +85,9 @@
 
     /* Existing Styles */
     .schedule-main-card { border-radius: 12px; overflow: hidden; }
-    .schedule-table-wrapper { max-height: 75vh; overflow-y: auto; overflow-x: auto; }
+    .schedule-table-wrapper { max-height: 75vh; overflow-y: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .schedule-daily-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .schedule-daily-table { min-width: max-content; width: auto; }
     
     .table thead th { 
         position: sticky; top: 0; z-index: 10; 

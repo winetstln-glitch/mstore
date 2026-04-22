@@ -69,21 +69,17 @@
             
             {{-- User Panel (Simplified) --}}
            
-            @php
-                $isKasirWashLimited = Auth::user()->hasRole('kasir-wash') || Auth::user()->hasRole('karyawan-wash');
-                $isTechnicianOnly = Auth::user()->hasRole('technician');
-            @endphp
-            <div class="sidebar-header mt-2">{{ __('Main Menu') }}</div>
+            <div class="sidebar-header mt-2">{{ __('Menu Utama') }}</div>
 
             {{-- Dashboard --}}
             @if(Auth::user()->hasPermission('dashboard.view'))
             <a href="{{ route('dashboard') }}" class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <i class="fa fa-tachometer-alt"></i> {{ __('Dashboard') }}
+                <i class="fa fa-tachometer-alt"></i> {{ __('Dasbor') }}
             </a>
             @endif
 
             {{-- AI Center --}}
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasPermission('ai.view'))
             <a href="{{ route('ai.index') }}" class="sidebar-item {{ request()->routeIs('ai.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-robot"></i> {{ __('Pusat AI') }} <span class="badge bg-primary ms-auto" style="font-size: 0.6rem;">BETA</span>
             </a>
@@ -91,7 +87,7 @@
 
             {{-- Client Portal (Grouped) --}}
             @if(Auth::user()->hasRole('customer'))
-            <div class="sidebar-header mt-2">{{ __('Client Portal') }}</div>
+            <div class="sidebar-header mt-2">{{ __('Portal Pelanggan') }}</div>
             @php
                 $clientRoutesActive = request()->routeIs('client.*') || request()->routeIs('profile.edit') || request()->routeIs('profile.id_card');
             @endphp
@@ -129,7 +125,14 @@
             @endif
 
             {{-- Pelanggan & Layanan Group --}}
-            @if(! $isKasirWashLimited)
+            @if(
+                Auth::user()->hasPermission('customer.view') ||
+                Auth::user()->hasPermission('installation.view') ||
+                Auth::user()->hasPermission('hotspot.view') ||
+                Auth::user()->hasPermission('router.view') ||
+                Auth::user()->hasPermission('pppoe.view') ||
+                Auth::user()->hasPermission('package.view')
+            )
             <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
             @php
                 $customerDataActive = request()->routeIs('customers.*') || request()->routeIs('installations.*');
@@ -170,12 +173,12 @@
                         <div class="ps-3">
                             @if(Auth::user()->hasPermission('hotspot.view'))
                             <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
-                                <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Active') }}
+                                <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Aktif') }}
                             </a>
                             @endif
                             @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
                             <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
-                                <i class="fa-solid fa-globe"></i> {{ __('PPPoE Active') }}
+                                <i class="fa-solid fa-globe"></i> {{ __('PPPoE Aktif') }}
                             </a>
                             @endif
                             @if(Auth::user()->hasPermission('package.view'))
@@ -196,7 +199,18 @@
             @endif
 
             {{-- Jaringan Group --}}
-            @if(! $isKasirWashLimited)
+            @if(
+                Auth::user()->hasPermission('map.view') ||
+                Auth::user()->hasPermission('genieacs.view') ||
+                Auth::user()->hasPermission('genieacs_server.view') ||
+                Auth::user()->hasPermission('calculator.view') ||
+                Auth::user()->hasPermission('router.view') ||
+                Auth::user()->hasPermission('olt.view') ||
+                Auth::user()->hasPermission('odc.view') ||
+                Auth::user()->hasPermission('odp.view') ||
+                Auth::user()->hasPermission('closure.view') ||
+                Auth::user()->hasPermission('htb.view')
+            )
             <div class="sidebar-header mt-2">{{ __('Jaringan') }}</div>
 
             @php
@@ -224,7 +238,7 @@
                             @endif
                             @if(Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view'))
                             <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.index') ? 'active' : '' }}">
-                                <i class="fa-solid fa-network-wired"></i> {{ __('Network Monitor') }}
+                                <i class="fa-solid fa-network-wired"></i> {{ __('Monitor Jaringan') }}
                             </a>
                             @endif
                             @if(Auth::user()->hasPermission('genieacs_server.view'))
@@ -239,7 +253,7 @@
                             @endif
                             @if(Auth::user()->hasPermission('router.view'))
                             <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ request()->routeIs('network.analyzer') ? 'active' : '' }}">
-                                <i class="fa-solid fa-gauge-high"></i> {{ __('Network Analyzer') }}
+                                <i class="fa-solid fa-gauge-high"></i> {{ __('Analisis Jaringan') }}
                             </a>
                             @endif
                         </div>
@@ -305,7 +319,7 @@
             @endif
 
             {{-- Keuangan Group --}}
-            @if(! $isKasirWashLimited && (Auth::user()->hasPermission('finance.view') || Auth::user()->hasPermission('investor.view')))
+            @if(Auth::user()->hasPermission('finance.view') || Auth::user()->hasPermission('investor.view'))
             <div class="sidebar-header mt-2">{{ __('Keuangan') }}</div>
             @php
                 $financeSummaryActive = request()->routeIs('finance.index') || request()->routeIs('finance.profit_loss*') || request()->routeIs('finance.material_report') || request()->routeIs('finance.manager_report*');
@@ -326,10 +340,10 @@
                     <div class="collapse {{ $financeSummaryActive ? 'show' : '' }}" id="financeSummaryCollapse">
                         <div class="ps-3">
                             <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.index') ? 'active' : '' }}">
-                                <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard Keuangan') }}
+                                <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor Keuangan') }}
                             </a>
                             <a href="{{ route('finance.profit_loss') }}" class="sidebar-item {{ request()->routeIs('finance.profit_loss*') ? 'active' : '' }}">
-                                <i class="fa-solid fa-chart-line"></i> {{ __('Profit & Loss') }}
+                                <i class="fa-solid fa-chart-line"></i> {{ __('Laba Rugi') }}
                             </a>
                             <a href="{{ route('finance.material_report') }}" class="sidebar-item {{ request()->routeIs('finance.material_report') ? 'active' : '' }}">
                                 <i class="fa-solid fa-boxes-stacked"></i> {{ __('Laporan Material') }}
@@ -387,7 +401,7 @@
             @endif
 
             {{-- Toko ATK Group --}}
-            @if(! $isKasirWashLimited && (Auth::user()->hasPermission('atk.view') || Auth::user()->hasPermission('atk.pos')))
+            @if(Auth::user()->hasPermission('atk.view') || Auth::user()->hasPermission('atk.pos'))
             <div class="sidebar-header mt-2">{{ __('Toko ATK') }}</div>
 
             @php
@@ -405,7 +419,7 @@
                 <div class="ps-3">
                     @if(Auth::user()->hasPermission('atk.view'))
                     <a href="{{ route('atk.dashboard') }}" class="sidebar-item {{ $atkDashboardActive ? 'active' : '' }}">
-                        <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard') }}
+                        <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor') }}
                     </a>
                     @endif
 
@@ -484,7 +498,7 @@
                 <div class="ps-3">
                     @if(Auth::user()->hasPermission('wash.view'))
                     <a href="{{ route('wash.dashboard') }}" class="sidebar-item {{ $washDashboardActive ? 'active' : '' }}">
-                        <i class="fa-solid fa-chart-pie"></i> {{ __('Dashboard') }}
+                        <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor') }}
                     </a>
                     @endif
 
@@ -546,16 +560,13 @@
 
             {{-- Operasional Group (guarded by permissions) --}}
             @if(
-                ! $isKasirWashLimited &&
-                (
-                    Auth::user()->hasPermission('ticket.view') ||
-                    Auth::user()->hasPermission('inventory.view') ||
-                    Auth::user()->hasPermission('technician.view') ||
-                    Auth::user()->hasPermission('attendance.view') ||
-                    Auth::user()->hasPermission('attendance.report') ||
-                    Auth::user()->hasPermission('schedule.view') ||
-                    Auth::user()->hasPermission('leave.view')
-                )
+                Auth::user()->hasPermission('ticket.view') ||
+                Auth::user()->hasPermission('inventory.view') ||
+                Auth::user()->hasPermission('employee.view') ||
+                Auth::user()->hasPermission('attendance.view') ||
+                Auth::user()->hasPermission('attendance.report') ||
+                Auth::user()->hasPermission('schedule.view') ||
+                Auth::user()->hasPermission('leave.view')
             )
                 <div class="sidebar-header mt-2">{{ __('Operasional') }}</div>
 
@@ -565,25 +576,14 @@
                 </a>
                 @endif
 
-                @php $attendanceSettingsActive = request()->routeIs('settings.index') && request('section') === 'attendance'; @endphp
-                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
+                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('technicians.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('wash.employees.*') || $attendanceSettingsActive) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
-                        @if(! $isTechnicianOnly)
+                        @if(Auth::user()->hasPermission('employee.view'))
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
-                        </a>
-                        @endif
-                        @if(Auth::user()->hasPermission('wash.manage'))
-                        <a href="{{ route('wash.employees.index') }}" class="sidebar-item {{ request()->routeIs('wash.employees.*') ? 'active' : '' }}">
-                            <i class="fa-solid fa-users-viewfinder"></i> {{ __('Karyawan Wash') }}
-                        </a>
-                        @endif
-                        @if(Auth::user()->hasPermission('technician.view'))
-                        <a href="{{ route('technicians.index') }}" class="sidebar-item {{ request()->routeIs('technicians.*') ? 'active' : '' }}">
-                            <i class="fa-solid fa-user-gear"></i> {{ __('Teknisi') }}
                         </a>
                         @endif
                         @if(Auth::user()->hasPermission('attendance.view'))
@@ -601,11 +601,6 @@
                             <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('setting.view'))
-                        <a href="{{ route('settings.index', ['section' => 'attendance']) }}" class="sidebar-item {{ $attendanceSettingsActive ? 'active' : '' }}">
-                            <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Attendance') }}
-                        </a>
-                        @endif
                         @if(Auth::user()->hasPermission('leave.view'))
                         <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
                             <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
@@ -616,12 +611,12 @@
 
                 @if(Auth::user()->hasPermission('inventory.view'))
                 <a class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsAssetCollapse" role="button" aria-expanded="{{ request()->routeIs('inventory.*') ? 'true' : 'false' }}" aria-controls="opsAssetCollapse">
-                    <i class="fa fa-tools"></i> {{ __('Aset & Tools') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    <i class="fa fa-tools"></i> {{ __('Aset & Peralatan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
                 <div class="collapse {{ request()->routeIs('inventory.*') ? 'show' : '' }}" id="opsAssetCollapse">
                     <div class="ps-3">
                         <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
-                            <i class="fa-solid fa-toolbox"></i> {{ __('Inventory / Tools') }}
+                            <i class="fa-solid fa-toolbox"></i> {{ __('Inventaris / Peralatan') }}
                         </a>
                         <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
                             <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
@@ -635,7 +630,7 @@
             @endif
 
             {{-- Sistem Group --}}
-            @if(! $isKasirWashLimited && (Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view')))
+            @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view'))
             <div class="sidebar-header mt-2">{{ __('Sistem') }}</div>
 
             @php
@@ -680,7 +675,7 @@
                     </div>
 
                     <a class="sidebar-item {{ $userAreaActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemUserCollapse" role="button" aria-expanded="{{ $userAreaActive ? 'true' : 'false' }}" aria-controls="systemUserCollapse">
-                        <i class="fa-solid fa-users-gear"></i> {{ __('User Management') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                        <i class="fa-solid fa-users-gear"></i> {{ __('Manajemen Pengguna') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $userAreaActive ? 'show' : '' }}" id="systemUserCollapse">
                         <div class="ps-3">
@@ -691,7 +686,7 @@
                             @endif
                             @if(Auth::user()->hasPermission('role.view'))
                             <a href="{{ route('roles.index') }}" class="sidebar-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
-                                <i class="fa-regular fa-id-card"></i> {{ __('Manajemen Role') }}
+                                <i class="fa-regular fa-id-card"></i> {{ __('Manajemen Peran') }}
                             </a>
                             @endif
                         </div>
@@ -704,7 +699,7 @@
                         <div class="ps-3">
                             @if(Auth::user()->hasPermission('chat.view'))
                             <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
-                                <i class="fa-brands fa-whatsapp"></i> {{ __('Whatsapp API') }}
+                                <i class="fa-brands fa-whatsapp"></i> {{ __('API WhatsApp') }}
                             </a>
                             @endif
                             @if(Auth::user()->hasPermission('telegram.view'))
@@ -714,7 +709,7 @@
                             @endif
                             @if(Auth::user()->hasPermission('apikey.view'))
                             <a href="{{ route('apikeys.index') }}" class="sidebar-item {{ request()->routeIs('apikeys.*') ? 'active' : '' }}">
-                                <i class="fa-regular fa-circle"></i> {{ __('Google Map API') }}
+                                <i class="fa-regular fa-circle"></i> {{ __('API Google Maps') }}
                             </a>
                             @endif
                         </div>
@@ -758,29 +753,29 @@
                         @if(Auth::user()->unreadNotifications->count() > 0)
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                 {{ Auth::user()->unreadNotifications->count() }}
-                                <span class="visually-hidden">{{ __('unread messages') }}</span>
+                                <span class="visually-hidden">{{ __('pesan belum dibaca') }}</span>
                             </span>
                         @endif
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-0" style="width: 300px; max-height: 400px; overflow-y: auto;">
-                        <li><span class="dropdown-header border-bottom py-2 bg-body-tertiary">{{ __('Notifications') }}</span></li>
+                        <li><span class="dropdown-header border-bottom py-2 bg-body-tertiary">{{ __('Notifikasi') }}</span></li>
                         @forelse(Auth::user()->unreadNotifications as $notification)
                             <li>
                                 <a class="dropdown-item py-2 border-bottom" href="{{ route('notifications.redirect', $notification->id) }}">
-                                    <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notification' }}</div>
+                                    <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notifikasi' }}</div>
                                     <div class="small text-muted text-truncate">{{ $notification->data['message'] ?? '' }}</div>
                                     <div class="small text-muted mt-1" style="font-size: 0.75rem;">{{ $notification->created_at->diffForHumans() }}</div>
                                 </a>
                             </li>
                         @empty
-                            <li class="text-center py-3 text-muted small">{{ __('No new notifications') }}</li>
+                            <li class="text-center py-3 text-muted small">{{ __('Tidak ada notifikasi baru') }}</li>
                         @endforelse
                         @if(Auth::user()->unreadNotifications->count() > 0)
                             <li>
                                 <form method="POST" action="{{ route('notifications.markAllAsRead') }}">
                                     @csrf
                                     <button type="submit" class="dropdown-item text-center small text-primary py-2 w-100 bg-transparent border-0">
-                                        {{ __('Mark all as read') }}
+                                        {{ __('Tandai semua sudah dibaca') }}
                                     </button>
                                 </form>
                             </li>
@@ -800,17 +795,17 @@
                         <span class="d-none d-md-inline fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
-                        <li><span class="dropdown-header text-uppercase small">{{ __('Account') }}</span></li>
-                        <li><a class="dropdown-item" href="{{ route('landing') }}"><i class="fa-solid fa-globe me-2"></i> {{ __('Landing') }}</a></li>
+                        <li><span class="dropdown-header text-uppercase small">{{ __('Akun') }}</span></li>
+                        <li><a class="dropdown-item" href="{{ route('landing') }}"><i class="fa-solid fa-globe me-2"></i> {{ __('Halaman Landing') }}</a></li>
                         @if(Auth::user()->hasPermission('profile.view'))
-                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profile') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profil') }}</a></li>
                         @endif
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="dropdown-item text-danger">
-                                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> {{ __('Logout') }}
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> {{ __('Keluar') }}
                                 </button>
                             </form>
                         </li>

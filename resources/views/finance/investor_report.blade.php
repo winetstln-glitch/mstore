@@ -20,10 +20,10 @@
             </form>
             <div class="d-flex flex-column flex-md-row gap-2">
                 <a href="{{ route('finance.investor_report.pdf', ['month' => $selectedMonth, 'coordinator_id' => $coordinatorId]) }}" class="btn btn-danger btn-lg w-100 w-md-auto" target="_blank">
-                    <i class="fas fa-file-pdf me-1"></i> {{ __('Export PDF') }}
+                    <i class="fas fa-file-pdf me-1"></i> {{ __('Ekspor PDF') }}
                 </a>
                 <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
-                    <i class="fas fa-arrow-left me-1"></i> {{ __('Back') }}
+                    <i class="fas fa-arrow-left me-1"></i> {{ __('Kembali') }}
                 </a>
             </div>
         </div>
@@ -113,7 +113,7 @@
                             <tr>
                                 <th style="width: 50px;">#</th>
                                 <th>{{ __('Nama Investor') }}</th>
-                                <th>{{ __('Role') }}</th>
+                                <th>{{ __('Peran') }}</th>
                                 <th class="text-end text-muted">{{ __('Pembagian Laba (IDR)') }}</th>
                             </tr>
                         </thead>

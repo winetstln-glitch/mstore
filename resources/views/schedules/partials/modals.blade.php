@@ -60,6 +60,11 @@
                         <p class="text-muted small mb-4">
                             Tentukan jumlah slot per minggu untuk masing-masing shift. Sisa karyawan akan otomatis mendapat status Off.
                         </p>
+                        <div class="alert alert-light border small mb-4">
+                            <div class="fw-semibold mb-1">Referensi Jam Shift</div>
+                            <div>Teknisi: S1 08:00-17:00, S2 15:00-00:00</div>
+                            <div>Operator Wash: S1 08:00-17:00, S2 13:00-22:00</div>
+                        </div>
                         
                         <div class="row g-4 mb-4">
                             <div class="col-sm-6">
@@ -142,6 +147,11 @@
                         <p class="text-muted small mb-4">
                             Sistem akan membagi jadwal S1/S2/OFF secara merata dan memastikan tiap orang mendapat jumlah libur yang sama.
                         </p>
+                        <div class="alert alert-light border small mb-4">
+                            <div class="fw-semibold mb-1">Referensi Jam Shift</div>
+                            <div>Teknisi: S1 08:00-17:00, S2 15:00-00:00</div>
+                            <div>Operator Wash: S1 08:00-17:00, S2 13:00-22:00</div>
+                        </div>
                         
                         <div class="d-flex justify-content-center mb-4">
                             <div class="slot-config" style="width: 100%; max-width: 400px;">

@@ -46,7 +46,7 @@ class RoleController extends Controller implements HasMiddleware
 
         $technicianNames = [
             'dashboard.view', 'ticket.view', 'ticket.edit', 'installation.view', 'installation.edit',
-            'attendance.view', 'attendance.create', 'attendance.report', 'map.view',
+            'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.report', 'map.view',
             'odp.view', 'odp.edit', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view',
             'profile.view', 'profile.update', 'notification.view', 'notification.manage',
             'inventory.view', 'inventory.pickup',
@@ -72,21 +72,11 @@ class RoleController extends Controller implements HasMiddleware
             'profile.view', 'profile.update',
         ];
 
-        $cashierWashNames = [
-            'wash.view', 'wash.pos', 'wash.report',
-            'attendance.view', 'attendance.create', 'attendance.edit',
-            'profile.view', 'profile.update',
-        ];
-
-        // Finance: Full Management for some, View for others
-        $financeManageGroups = ['Finance', 'Investor Management', 'Package Management', 'Inventory (Alat & Material)', 'Profile', 'Notification'];
-        $financeViewNames = [
-            'dashboard.view', 'customer.view', 'ticket.view', 'installation.view',
-            'technician.view', 'coordinator.view', 'region.view', 'attendance.view',
-            'attendance.report', 'leave.view', 'schedule.view', 'map.view', 'olt.view',
-            'odc.view', 'odp.view', 'htb.view', 'router.view', 'genieacs.view',
-            'chat.view', 'telegram.view', 'calculator.view', 'setting.view',
-        ];
+        $washNames = ['wash.view', 'wash.pos', 'wash.manage', 'wash.report'];
+        $cashierWashNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
+        $washEmployeeNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
+        $financeStaffNames = $technicianNames;
+        $hrdManagerNames = $technicianNames;
 
         return [
             'Administrator' => $allPermissions->pluck('id')->values()->toArray(),
@@ -94,11 +84,11 @@ class RoleController extends Controller implements HasMiddleware
             'Technician' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
             'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
             'Reseller' => $allPermissions->whereIn('name', $resellerNames)->pluck('id')->values()->toArray(),
-            'Finance Staff' => $allPermissions->filter(function ($perm) use ($financeManageGroups, $financeViewNames) {
-                return in_array($perm->group, $financeManageGroups) || in_array($perm->name, $financeViewNames);
-            })->pluck('id')->values()->toArray(),
+            'Finance Staff' => $allPermissions->whereIn('name', $financeStaffNames)->pluck('id')->values()->toArray(),
             'Kasir ATK' => $allPermissions->whereIn('name', $cashierAtkNames)->pluck('id')->values()->toArray(),
             'Kasir Wash' => $allPermissions->whereIn('name', $cashierWashNames)->pluck('id')->values()->toArray(),
+            'Karyawan Wash' => $allPermissions->whereIn('name', $washEmployeeNames)->pluck('id')->values()->toArray(),
+            'HRD Manager' => $allPermissions->whereIn('name', $hrdManagerNames)->pluck('id')->values()->toArray(),
             'Customer' => [],
         ];
     }

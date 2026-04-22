@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', __('Dashboard'))
+@section('title', __('Dasbor'))
 
 @section('content')
 
 <div class="mb-4">
-    <h4 class="fw-bold text-primary mb-1">{{ __('Dashboard') }}</h4>
+    <h4 class="fw-bold text-primary mb-1">{{ __('Dasbor') }}</h4>
     <p class="text-muted small mb-0">{{ __('Selamat datang kembali di ringkasan dasbor Anda.') }}</p>
 </div>
 
@@ -149,13 +149,13 @@
                         Karyawan Wash Tidak Masuk
                     </a>
                     <span class="badge bg-primary-subtle text-primary">
-                        {{ $attendanceRole === 'technician' ? 'Role: Teknisi' : 'Role: Karyawan Wash' }}
+                        {{ $attendanceRole === 'technician' ? 'Peran: Teknisi' : 'Peran: Karyawan Wash' }}
                     </span>
                     <span class="badge {{ $attendanceState === 'present' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
                         {{ $attendanceState === 'present' ? 'Status: Masuk' : 'Status: Tidak Masuk' }}
                     </span>
                     <span class="badge bg-secondary-subtle text-secondary">
-                        Tanggal: {{ $attendanceDateLabel ?? now()->translatedFormat('d M Y') }}
+                        {{ __('Tanggal') }}: {{ $attendanceDateLabel ?? now()->translatedFormat('d M Y') }}
                     </span>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                     <thead class="bg-light">
                         <tr>
                             <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Peran') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Status Hari Ini') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Jam Masuk') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Jam Pulang') }}</th>
@@ -206,7 +206,7 @@
                                         </span>
                                     </td>
                                     <td class="small">
-                                        Ticket: {{ $taskSummary['ticket_active'] }} | Installasi: {{ $taskSummary['installation_active'] }}
+                                        {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }} | {{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}
                                     </td>
                                 @endif
                             </tr>
@@ -266,14 +266,14 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Pending Installs') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Instalasi Tertunda') }}</h6>
                     <div class="bg-info bg-opacity-10 text-info rounded p-2">
                         <i class="fa-solid fa-calendar-check"></i>
                     </div>
                 </div>
                 <h3 class="fw-bold mb-1">{{ $stats['pending_installations'] }}</h3>
                 <div class="small text-body-secondary">
-                    <span>{{ __('Scheduled for this week') }}</span>
+                    <span>{{ __('Dijadwalkan minggu ini') }}</span>
                 </div>
             </div>
         </div>
@@ -284,7 +284,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Monitor Summary') }}</h6>
+                    <h6 class="text-uppercase text-muted small fw-bold mb-0">{{ __('Ringkasan Monitor') }}</h6>
                     <div class="bg-success bg-opacity-10 text-success rounded p-2">
                         <i class="fa-solid fa-server"></i>
                     </div>
@@ -292,18 +292,18 @@
                 @if($monitorSummary)
                 <h3 class="fw-bold mb-1">{{ number_format((int) ($monitorSummary['checked'] ?? 0)) }}</h3>
                 <div class="small text-body-secondary mb-1">
-                    <span>{{ __('Checked devices') }}</span>
+                    <span>{{ __('Perangkat yang dicek') }}</span>
                 </div>
                 <div class="small text-body-secondary">
-                    <span>{{ __('Down') }}: {{ number_format((int) ($monitorSummary['down'] ?? 0)) }}</span>
+                    <span>{{ __('Gangguan') }}: {{ number_format((int) ($monitorSummary['down'] ?? 0)) }}</span>
                     <span class="mx-1">•</span>
-                    <span>{{ __('Tickets') }}: {{ number_format((int) ($monitorSummary['tickets_created'] ?? 0)) }}</span>
+                    <span>{{ __('Tiket') }}: {{ number_format((int) ($monitorSummary['tickets_created'] ?? 0)) }}</span>
                     <span class="mx-1">•</span>
-                    <span>{{ __('Errors') }}: {{ number_format((int) ($monitorSummary['errors'] ?? 0)) }}</span>
+                    <span>{{ __('Kesalahan') }}: {{ number_format((int) ($monitorSummary['errors'] ?? 0)) }}</span>
                 </div>
                 @if(!empty($monitorTrend))
                 <div class="mt-2">
-                    <div class="small text-muted mb-1">{{ __('7-day down trend') }}</div>
+                    <div class="small text-muted mb-1">{{ __('Tren gangguan 7 hari') }}</div>
                     <div class="d-flex flex-wrap gap-1">
                         @foreach($monitorTrend as $trend)
                         <span class="badge {{ ($trend['down'] ?? 0) > 0 ? 'bg-warning text-dark' : 'bg-light text-muted' }}">
@@ -315,17 +315,17 @@
                 @endif
                 @if(!empty($monitorSummary['ran_at']))
                 <div class="small text-muted mt-1">
-                    <span>{{ __('Updated') }} {{ \Carbon\Carbon::parse($monitorSummary['ran_at'])->diffForHumans() }}</span>
+                    <span>{{ __('Diperbarui') }} {{ \Carbon\Carbon::parse($monitorSummary['ran_at'])->diffForHumans() }}</span>
                 </div>
                 @endif
                 @else
                 <h3 class="fw-bold mb-1">0</h3>
                 <div class="small text-body-secondary">
-                    <span>{{ __('No monitor data yet') }}</span>
+                    <span>{{ __('Belum ada data monitor') }}</span>
                 </div>
                 @if(!empty($monitorTrend))
                 <div class="mt-2">
-                    <div class="small text-muted mb-1">{{ __('7-day down trend') }}</div>
+                    <div class="small text-muted mb-1">{{ __('Tren gangguan 7 hari') }}</div>
                     <div class="d-flex flex-wrap gap-1">
                         @foreach($monitorTrend as $trend)
                         <span class="badge {{ ($trend['down'] ?? 0) > 0 ? 'bg-warning text-dark' : 'bg-light text-muted' }}">
@@ -417,19 +417,19 @@
                 <div class="d-flex justify-content-between mb-4">
                     <div class="text-center w-50 border-end">
                         <h3 class="fw-bold text-primary mb-0">{{ $inventoryItems->count() }}</h3>
-                        <small class="text-muted">{{ __('Items') }}</small>
+                        <small class="text-muted">{{ __('Barang') }}</small>
                     </div>
                     <div class="text-center w-50">
                         <h4 class="fw-bold text-success mb-0">{{ number_format($totalInventoryValue, 0, ',', '.') }}</h4>
-                        <small class="text-muted">{{ __('Total Value') }}</small>
+                        <small class="text-muted">{{ __('Total Nilai') }}</small>
                     </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="text-uppercase small text-muted border-0">{{ __('Item') }}</th>
-                                <th class="text-end text-uppercase small text-muted border-0">{{ __('Stock') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Barang') }}</th>
+                                <th class="text-end text-uppercase small text-muted border-0">{{ __('Stok') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -456,7 +456,7 @@
                     </table>
                 </div>
                 <div class="text-center mt-3">
-                    <a href="{{ route('inventory.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('View All Inventory') }}</a>
+                    <a href="{{ route('inventory.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('Lihat Semua Inventaris') }}</a>
                 </div>
             </div>
         </div>
@@ -469,10 +469,10 @@
                 <h6 class="mb-0 fw-bold">{{ __('Pendapatan & Pengeluaran') }} ({{ date('Y') }})</h6>
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        {{ __('This Year') }}
+                        {{ __('Tahun Ini') }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item active" href="#">{{ __('This Year') }}</a></li>
+                        <li><a class="dropdown-item active" href="#">{{ __('Tahun Ini') }}</a></li>
                     </ul>
                 </div>
             </div>
@@ -491,7 +491,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('ATK Sales') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Penjualan ATK') }}</h6>
                     <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
                         <i class="fa-solid fa-cash-register"></i>
                     </div>
@@ -513,7 +513,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Car Wash Sales') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Penjualan Car Wash') }}</h6>
                     <div class="bg-info bg-opacity-10 text-info rounded p-2">
                         <i class="fa-solid fa-car"></i>
                     </div>
@@ -539,18 +539,18 @@
         <!-- Monthly Recap Section -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-transparent border-0 py-3">
-                <h6 class="mb-0 fw-bold">{{ __('Monthly Ticket Recap') }} ({{ date('Y') }})</h6>
+                <h6 class="mb-0 fw-bold">{{ __('Rekap Tiket Bulanan') }} ({{ date('Y') }})</h6>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Month') }}</th>
+                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Bulan') }}</th>
                                 <th class="text-center text-uppercase small text-muted border-0">{{ __('Total') }}</th>
-                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Resolved') }}</th>
-                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Open/Pending') }}</th>
-                                <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Completion Rate') }}</th>
+                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Selesai') }}</th>
+                                <th class="text-center text-uppercase small text-muted border-0">{{ __('Buka/Tertunda') }}</th>
+                                <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Tingkat Penyelesaian') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -584,18 +584,18 @@
 
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ __('Recent Support Tickets') }}</h6>
-                <a href="{{ route('tickets.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('View All') }}</a>
+                <h6 class="mb-0 fw-bold">{{ __('Tiket Dukungan Terbaru') }}</h6>
+                <a href="{{ route('tickets.index') }}" class="btn btn-link btn-sm text-decoration-none">{{ __('Lihat Semua') }}</a>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Ticket ID') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Customer') }}</th>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('ID Tiket') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Pelanggan') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Subject') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Date') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Tanggal') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -606,9 +606,9 @@
                             <td>{{ Str::limit($ticket->subject, 30) }}</td>
                             <td>
                                 @if($ticket->status === 'open')
-                                    <span class="badge bg-danger-subtle text-danger">{{ __('Open') }}</span>
+                                    <span class="badge bg-danger-subtle text-danger">{{ __('Buka') }}</span>
                                 @elseif($ticket->status === 'closed')
-                                    <span class="badge bg-success-subtle text-success">{{ __('Closed') }}</span>
+                                    <span class="badge bg-success-subtle text-success">{{ __('Tutup') }}</span>
                                 @else
                                     <span class="badge bg-warning-subtle text-warning">{{ ucfirst($ticket->status) }}</span>
                                 @endif
@@ -617,7 +617,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">{{ __('No recent tickets found.') }}</td>
+                            <td colspan="5" class="text-center py-4 text-muted">{{ __('Belum ada tiket terbaru.') }}</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -639,9 +639,9 @@
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     @if(!empty($mixRadiusOk))
-                        <span id="mixradius-badge" class="badge bg-success">Connected</span>
+                        <span id="mixradius-badge" class="badge bg-success">{{ __('Terhubung') }}</span>
                     @else
-                        <span id="mixradius-badge" class="badge bg-danger">Disconnected</span>
+                        <span id="mixradius-badge" class="badge bg-danger">{{ __('Terputus') }}</span>
                     @endif
                 </div>
             </div>
@@ -649,18 +649,18 @@
         <!-- Info Card -->
         <div class="card border-0 shadow-sm mb-4 bg-primary text-white">
             <div class="card-body p-4">
-                <h5 class="fw-bold mb-3">{{ __('System Information') }}</h5>
+                <h5 class="fw-bold mb-3">{{ __('Informasi Sistem') }}</h5>
                 <div class="d-flex align-items-center mb-3">
                     <div class="me-3 opacity-75"><i class="fa-regular fa-clock fa-2x"></i></div>
                     <div>
-                        <div class="small opacity-75 text-uppercase">{{ __('Server Time') }}</div>
+                        <div class="small opacity-75 text-uppercase">{{ __('Waktu Server') }}</div>
                         <div class="fw-bold">{{ now()->format('H:i:s') }}</div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center">
                     <div class="me-3 opacity-75"><i class="fa-regular fa-calendar fa-2x"></i></div>
                     <div>
-                        <div class="small opacity-75 text-uppercase">{{ __('Date') }}</div>
+                        <div class="small opacity-75 text-uppercase">{{ __('Tanggal') }}</div>
                         <div class="fw-bold">{{ now()->format('l, d F Y') }}</div>
                     </div>
                 </div>
@@ -670,7 +670,7 @@
         <!-- Upcoming Installations -->
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0 py-3">
-                <h6 class="mb-0 fw-bold">{{ __('Upcoming Installations') }}</h6>
+                <h6 class="mb-0 fw-bold">{{ __('Instalasi Mendatang') }}</h6>
             </div>
             <div class="list-group list-group-flush">
                 @forelse($upcomingInstallations as $install)
@@ -681,18 +681,18 @@
                     <div class="flex-grow-1">
                         <h6 class="mb-1 text-body-emphasis fw-semibold">{{ $install->customer->name }}</h6>
                         <p class="mb-1 small text-body-secondary"><i class="fa-solid fa-location-dot me-1"></i> {{ Str::limit($install->customer->address, 30) }}</p>
-                        <span class="badge bg-info-subtle text-info">{{ $install->plan_date ? $install->plan_date->format('H:i') : 'TBD' }} WIB</span>
+                        <span class="badge bg-info-subtle text-info">{{ $install->plan_date ? $install->plan_date->format('H:i') : __('Belum Dijadwalkan') }} WIB</span>
                     </div>
                 </div>
                 @empty
                 <div class="p-4 text-center text-muted small">
-                    {{ __('No upcoming installations.') }}
+                    {{ __('Tidak ada instalasi mendatang.') }}
                 </div>
                 @endforelse
             </div>
             <div class="card-footer bg-transparent border-0 text-center pb-3">
                 @if (Route::has('installations.index'))
-                    <a href="{{ route('installations.index') }}" class="text-decoration-none small fw-bold">{{ __('View Calendar') }} <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                    <a href="{{ route('installations.index') }}" class="text-decoration-none small fw-bold">{{ __('Lihat Kalender') }} <i class="fa-solid fa-arrow-right ms-1"></i></a>
                 @endif
             </div>
         </div>
@@ -710,12 +710,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Asset Code') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Item Name') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Holder') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Role') }}</th>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Kode Aset') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Nama Barang') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Pemegang') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Peran') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
-                            <th class="text-uppercase small text-muted border-0">{{ __('Condition') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Kondisi') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -737,11 +737,11 @@
                             </td>
                             <td>
                                 @if($asset->holder_type == 'App\Models\User')
-                                    <span class="badge bg-info-subtle text-info">{{ __('Technician') }}</span>
+                                    <span class="badge bg-info-subtle text-info">{{ __('Teknisi') }}</span>
                                 @elseif($asset->holder_type == 'App\Models\Coordinator')
-                                    <span class="badge bg-warning-subtle text-warning">{{ __('Coordinator') }}</span>
+                                    <span class="badge bg-warning-subtle text-warning">{{ __('Pengurus') }}</span>
                                 @else
-                                    <span class="badge bg-secondary">{{ __('Unknown') }}</span>
+                                    <span class="badge bg-secondary">{{ __('Tidak Diketahui') }}</span>
                                 @endif
                             </td>
                             <td><span class="badge bg-success">{{ ucfirst($asset->status) }}</span></td>
@@ -749,7 +749,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">{{ __('No tools currently deployed to staff.') }}</td>
+                            <td colspan="6" class="text-center py-4 text-muted">{{ __('Belum ada alat yang dipinjamkan ke staf.') }}</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -843,7 +843,7 @@
                 if (!res.ok) throw new Error('network');
                 const data = await res.json();
                 const ok = !!data.ok;
-                badge.textContent = ok ? 'Connected' : 'Disconnected';
+                badge.textContent = ok ? 'Terhubung' : 'Terputus';
                 badge.className = 'badge ' + (ok ? 'bg-success' : 'bg-danger');
                 if (meta) {
                     const ts = data.checked_at ? new Date(data.checked_at) : null;
@@ -858,7 +858,7 @@
                     }
                 }
             } catch (e) {
-                badge.textContent = 'Disconnected';
+                badge.textContent = 'Terputus';
                 badge.className = 'badge bg-danger';
                 if (meta) {
                     meta.style.display = '';

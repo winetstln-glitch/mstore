@@ -21,4 +21,9 @@ class WashTransaction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function washCustomer()
+    {
+        return $this->belongsTo(WashCustomer::class);
+    }
 }

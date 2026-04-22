@@ -67,7 +67,7 @@ class EmployeeController extends Controller implements HasMiddleware
 
         $employees = $query;
         $departments = Employee::query()->select('department')->whereNotNull('department')->distinct()->orderBy('department')->pluck('department');
-        $statuses = ['Tetap', 'Kontrak', 'Magang'];
+        $statuses = ['Tetap', 'Training'];
 
         return view('employees.index', compact('employees', 'search', 'departments', 'statuses', 'department', 'status'));
     }
@@ -462,7 +462,7 @@ class EmployeeController extends Controller implements HasMiddleware
             'position' => ['required', 'string', 'max:255'],
             'department' => ['required', 'string', 'max:255'],
             'join_date' => ['required', 'date'],
-            'employment_status' => ['required', Rule::in(['Tetap', 'Kontrak', 'Magang'])],
+            'employment_status' => ['required', Rule::in(['Tetap', 'Training'])],
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
             'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'id_card_photo_base64' => ['nullable', 'string'],

@@ -6,7 +6,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0 border-top border-4 border-primary">
                 <div class="card-header py-3">
-                    <h5 class="mb-0 fw-bold">{{ __('Create New User') }}</h5>
+                    <h5 class="mb-0 fw-bold">{{ __('Tambah Pengguna Baru') }}</h5>
                 </div>
 
                 <div class="card-body">
@@ -14,9 +14,9 @@
                         @csrf
 
                         <div class="row g-3">
-                            <!-- Name -->
+                            <!-- Nama -->
                             <div class="col-md-6">
-                                <label for="name" class="form-label">{{ __('Name') }}</label>
+                                <label for="name" class="form-label">{{ __('Nama') }}</label>
                                 <input type="text" name="name" id="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" required>
                                 @error('name')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -33,13 +33,13 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Username</label>
+                                <label class="form-label">{{ __('Username') }}</label>
                                 <input type="text" id="username_preview" class="form-control" value="{{ old('name') ? Str::slug(old('name'), '_') : '' }}" placeholder="Otomatis dari nama" readonly>
                                 <div class="form-text">Username dibuat otomatis dari nama.</div>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="attendance_card_code" class="form-label">Kode ID Card Absensi</label>
+                                <label for="attendance_card_code" class="form-label">{{ __('Kode ID Card Absensi') }}</label>
                                 <input type="text" name="attendance_card_code" id="attendance_card_code" value="{{ old('attendance_card_code') }}" class="form-control @error('attendance_card_code') is-invalid @enderror">
                                 <div class="form-text">Jika kosong, otomatis pakai username.</div>
                                 @error('attendance_card_code')
@@ -48,16 +48,16 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Password Default</label>
+                                <label class="form-label">{{ __('Password Default') }}</label>
                                 <input type="text" class="form-control" value="12345678" readonly>
                                 <div class="form-text">Semua user baru memakai password default ini.</div>
                             </div>
 
-                            <!-- Role -->
+                            <!-- Peran -->
                             <div class="col-md-6">
-                                <label for="role_id" class="form-label">{{ __('Role') }}</label>
+                                <label for="role_id" class="form-label">{{ __('Peran') }}</label>
                                 <select name="role_id" id="role_id" class="form-select @error('role_id') is-invalid @enderror">
-                                    <option value="">{{ __('Select Role') }}</option>
+                                    <option value="">{{ __('Pilih Peran') }}</option>
                                     @foreach($roles as $role)
                                         <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>{{ $role->label }}</option>
                                     @endforeach
@@ -67,16 +67,16 @@
                                 @enderror
                             </div>
 
-                            <!-- Phone -->
+                            <!-- Nomor HP -->
                             <div class="col-md-6">
-                                <label for="phone" class="form-label">{{ __('Phone') }}</label>
+                                <label for="phone" class="form-label">{{ __('Nomor HP') }}</label>
                                 <input type="text" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <!-- Radius Username -->
+                            <!-- Username Radius -->
                             <div class="col-md-6">
                                 <label for="radius_username" class="form-label">Radius Username</label>
                                 <input type="text" name="radius_username" id="radius_username" value="{{ old('radius_username') }}" class="form-control @error('radius_username') is-invalid @enderror">
@@ -85,9 +85,9 @@
                                 @enderror
                             </div>
 
-                            <!-- Daily Salary -->
+                            <!-- Gaji harian -->
                             <div class="col-md-6">
-                                <label for="daily_salary" class="form-label">{{ __('Daily Salary (IDR)') }}</label>
+                                <label for="daily_salary" class="form-label">{{ __('Gaji Harian (IDR)') }}</label>
                                 <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
                                 <div class="form-text">{{ __('Gaji per hari kehadiran (untuk teknisi/staff).') }}</div>
                                 @error('daily_salary')
@@ -95,12 +95,12 @@
                                 @enderror
                             </div>
 
-                            <!-- Active Status -->
+                            <!-- Status aktif -->
                             <div class="col-12">
                                 <div class="form-check">
                                     <input type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }} class="form-check-input">
                                     <label for="is_active" class="form-check-label">
-                                        {{ __('Active Account') }}
+                                        {{ __('Akun Aktif') }}
                                     </label>
                                 </div>
                             </div>
@@ -108,10 +108,10 @@
 
                         <div class="d-flex justify-content-end gap-2 mt-4">
                             <a href="{{ route('users.index') }}" class="btn btn-secondary">
-                                {{ __('Cancel') }}
+                                {{ __('Batal') }}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save me-1"></i> {{ __('Create User') }}
+                                <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengguna') }}
                             </button>
                         </div>
                     </form>

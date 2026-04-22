@@ -234,7 +234,7 @@
             @empty
             <tr>
                 <td colspan="5" class="text-center text-muted" style="padding: 20px;">
-                    Tidak ada transaksi manual yang diinput pada periode ini.
+                    {{ __('Tidak ada transaksi manual yang diinput pada periode ini.') }}
                 </td>
             </tr>
             @endforelse
@@ -253,14 +253,14 @@
 
     <!-- FOOTER & TANDA TANGAN -->
     <div style="font-size: 9px; color: #777; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 5px;">
-        <em>Catatan: Nilai Komisi Pengurus dihitung otomatis oleh sistem berdasarkan % dari pendapatan kotor. Laporan ini digenerate pada {{ now()->format('d M Y H:i:s') }}.</em>
+        <em>{{ __('Catatan: Nilai komisi pengurus dihitung otomatis oleh sistem berdasarkan persentase dari pendapatan kotor. Laporan ini dibuat pada') }} {{ now()->format('d M Y H:i:s') }}.</em>
     </div>
 
     <!-- AREA TANDA TANGAN -->
     <div class="signature-section">
         <div class="sign-box">
             <div>Mengetahui,</div>
-            <div class="sign-line">{{ $managerName ?? 'Manager Finance' }}</div>
+            <div class="sign-line">{{ $managerName ?? __('Manajer Keuangan') }}</div>
             <div>Manager Pengelola</div>
         </div>
         <div class="sign-box">

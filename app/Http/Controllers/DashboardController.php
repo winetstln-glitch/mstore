@@ -78,13 +78,14 @@ class DashboardController extends Controller
         if ($user && $user->hasRole('customer')) {
             return redirect()->route('client.dashboard');
         }
-        if ($user && $user->hasRole('kasir-atk')) {
+        if ($user && $user->hasRole('kasir-atk') && $user->hasPermission('atk.view')) {
             return redirect()->route('atk.dashboard');
         }
-        if ($user && $user->hasRole('kasir-wash')) {
-            return redirect()->route('wash.dashboard');
-        }
-        if ($user && $user->hasRole('karyawan-wash')) {
+        if (
+            $user &&
+            ($user->hasRole('kasir-wash') || $user->hasRole('karyawan-wash')) &&
+            $user->hasPermission('wash.view')
+        ) {
             return redirect()->route('wash.dashboard');
         }
         if (! $user || ! $user->hasPermission('dashboard.view')) {

@@ -16,7 +16,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label small text-muted fw-bold">Filter Tipe</label>
+                    <label class="form-label small text-muted fw-bold">{{ __('Filter Tipe') }}</label>
                     <select name="type" class="form-select form-select-lg">
                         <option value="">{{ __('Semua') }}</option>
                         <option value="income" {{ request('type') == 'income' ? 'selected' : '' }}>{{ __('Pemasukan') }}</option>
@@ -27,7 +27,7 @@
 
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary btn-lg w-100">
-                        <i class="fa-solid fa-filter me-1"></i> Filter
+                        <i class="fa-solid fa-filter me-1"></i> {{ __('Terapkan') }}
                     </button>
                 </div>
             </form>
@@ -325,7 +325,7 @@
             <div class="d-flex justify-content-between mt-4 px-5">
                 <div class="text-center">
                     <div class="mb-5">Mengetahui,</div>
-                    <div class="fw-bold text-decoration-underline">Manager Finance</div>
+                    <div class="fw-bold text-decoration-underline">{{ __('Manajer Keuangan') }}</div>
                 </div>
                 <div class="text-center">
                     <div class="mb-5">Diperiksa,</div>
@@ -343,12 +343,12 @@
 
 </div>
 
-<!-- Edit Transaction Modal -->
+<!-- Modal Ubah Transaksi -->
 <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Edit Transaction') }}</h5>
+                <h5 class="modal-title">{{ __('Ubah Transaksi') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editTransactionForm" method="POST">
@@ -356,7 +356,7 @@
                 @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Type') }}</label>
+                        <label class="form-label">{{ __('Tipe') }}</label>
                         <select name="type" id="edit_type" class="form-select" required>
                             <option value="income">{{ __('Pemasukan') }}</option>
                             <option value="expense">{{ __('Pengeluaran') }}</option>
@@ -364,7 +364,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Category') }}</label>
+                        <label class="form-label">{{ __('Kategori') }}</label>
                         <select name="category" id="edit_category" class="form-select" required>
                             <option value="Member Income">{{ __('Iuran Bulanan (Member Income)') }}</option>
                             <option value="Voucher Income">{{ __('Voucher (Voucher Income)') }}</option>
@@ -377,11 +377,11 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Amount') }}</label>
+                        <label class="form-label">{{ __('Jumlah') }}</label>
                         <input type="number" name="amount" id="edit_amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Coordinator') }} (Optional)</label>
+                        <label class="form-label">{{ __('Koordinator') }} ({{ __('Opsional') }})</label>
                         <select name="coordinator_id" id="edit_coordinator_id" class="form-select">
                             <option value="{{ $coordinator->id }}">{{ $coordinator->name }}</option>
                              @foreach(\App\Models\Coordinator::where('id', '!=', $coordinator->id)->get() as $c)
@@ -390,11 +390,11 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Description') }}</label>
+                        <label class="form-label">{{ __('Deskripsi') }}</label>
                         <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Date') }}</label>
+                        <label class="form-label">{{ __('Tanggal') }}</label>
                         <input type="date" name="transaction_date" id="edit_transaction_date" class="form-control" required>
                     </div>
                     <div class="mb-3">
@@ -403,8 +403,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Perbarui') }}</button>
                 </div>
             </form>
         </div>

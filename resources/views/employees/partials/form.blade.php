@@ -131,7 +131,7 @@
                     <div class="col-md-2">
                         <label class="form-label small fw-bold">Status *</label>
                         <select name="employment_status" class="form-select form-select-sm" required>
-                            @foreach(['Tetap','Kontrak','Magang'] as $s)
+                            @foreach(['Tetap','Training'] as $s)
                                 <option value="{{ $s }}" {{ old('employment_status', $employee->employment_status ?? '') === $s ? 'selected' : '' }}>{{ $s }}</option>
                             @endforeach
                         </select>
