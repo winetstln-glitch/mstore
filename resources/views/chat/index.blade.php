@@ -36,6 +36,12 @@
 
 @section('content')
 @php $currentUserId = (int) Auth::id(); @endphp
+@php
+    $otherParticipantId = null;
+    if ($selectedThread) {
+        $otherParticipantId = (int) ($selectedThread->user_one_id === $currentUserId ? $selectedThread->user_two_id : $selectedThread->user_one_id);
+    }
+@endphp
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -49,6 +55,7 @@
         class="row g-3 chat-layout"
         data-current-user-id="{{ $currentUserId }}"
         data-thread-id="{{ $selectedThread?->id }}"
+        data-other-user-id="{{ $otherParticipantId }}"
         data-messages-endpoint-template="{{ route('chat.messages', ['chat' => '__THREAD__']) }}"
         data-presence-endpoint-template="{{ route('chat.presence', ['chat' => '__THREAD__']) }}"
         data-typing-endpoint-template="{{ route('chat.typing', ['chat' => '__THREAD__']) }}"
@@ -166,6 +173,7 @@
         const sendEndpoint = app.dataset.sendEndpoint || '';
         const startEndpoint = app.dataset.startEndpoint || '';
         const threadId = Number(app.dataset.threadId || 0);
+        const otherUserId = Number(app.dataset.otherUserId || 0);
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const messageListEl = document.getElementById('chatMessageList');
@@ -180,6 +188,7 @@
         let lastMessageId = 0;
         let pollingTimer = null;
         let lastTypingPingAt = 0;
+        let typingTimeoutHandle = null;
 
         const escapeHtml = (value) => String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -252,6 +261,15 @@
             }
         };
 
+        const showTyping = () => {
+            if (!typingStatus) return;
+            typingStatus.classList.remove('d-none');
+            if (typingTimeoutHandle) clearTimeout(typingTimeoutHandle);
+            typingTimeoutHandle = setTimeout(() => {
+                typingStatus.classList.add('d-none');
+            }, 3000);
+        };
+
         const pollPresence = async () => {
             if (!threadId || !presenceEndpointTemplate) return;
             const endpoint = presenceEndpointTemplate.replace('__THREAD__', String(threadId));
@@ -311,6 +329,31 @@
                 pollMessages();
                 pollPresence();
             }, 2500);
+
+            if (window.Echo) {
+                window.Echo.private('chat.thread.' + threadId)
+                    .listen('.chat.message.sent', (event) => {
+                        if (event?.message) {
+                            appendMessage(event.message);
+                            scrollToBottom();
+                        }
+                    })
+                    .listen('.chat.typing', (event) => {
+                        if (Number(event?.senderId || 0) !== currentUserId) {
+                            showTyping();
+                        }
+                    });
+            }
+
+            if (window.Echo && otherUserId > 0) {
+                window.Echo.private('presence.user.' + otherUserId)
+                    .listen('.presence.updated', (event) => {
+                        if (!presenceBadge) return;
+                        const online = event?.online === true;
+                        presenceBadge.className = 'badge ' + (online ? 'text-bg-success' : 'text-bg-secondary');
+                        presenceBadge.textContent = online ? 'Online' : 'Offline';
+                    });
+            }
         }
 
         if (sendForm && messageInput && sendBtn) {

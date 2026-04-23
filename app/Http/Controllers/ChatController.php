@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ChatMessageSent;
+use App\Events\ChatTyping;
 use App\Models\ChatMessage;
 use App\Models\ChatThread;
 use App\Models\User;
@@ -132,6 +134,9 @@ class ChatController extends Controller implements HasMiddleware
         $thread->save();
 
         $message->load('sender:id,name,avatar');
+        $payload = $this->formatMessage($message);
+
+        broadcast(new ChatMessageSent((int) $thread->id, $payload))->toOthers();
 
         $recipientId = (int) $thread->user_one_id === $currentUserId
             ? (int) $thread->user_two_id
@@ -144,7 +149,7 @@ class ChatController extends Controller implements HasMiddleware
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => $this->formatMessage($message),
+                'message' => $payload,
                 'thread_id' => $thread->id,
             ]);
         }
@@ -262,8 +267,14 @@ class ChatController extends Controller implements HasMiddleware
     public function typing(ChatThread $chat): JsonResponse
     {
         $this->authorizeThreadAccess($chat);
+        $currentUser = Auth::user();
         $key = $this->typingCacheKey((int) $chat->id, (int) Auth::id());
         Cache::put($key, true, now()->addSeconds(8));
+        broadcast(new ChatTyping(
+            threadId: (int) $chat->id,
+            senderId: (int) Auth::id(),
+            senderName: (string) ($currentUser->name ?? 'Pengguna'),
+        ))->toOthers();
 
         return response()->json(['ok' => true]);
     }

@@ -321,6 +321,7 @@ class DashboardController extends Controller
                     'id' => $presenceUser->id,
                     'name' => $presenceUser->name,
                     'role' => optional($presenceUser->role)->label ?? '-',
+                    'role_name' => optional($presenceUser->role)->name,
                     'online' => in_array($presenceUser->id, $onlineUserIds, true),
                     'last_seen' => $presenceUser->last_seen_at,
                     'attendance_state' => $attendanceState,

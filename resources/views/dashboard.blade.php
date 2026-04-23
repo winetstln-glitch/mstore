@@ -230,7 +230,7 @@
                     <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Teknisi Online') }}</h6>
                     <div class="bg-success bg-opacity-10 text-success rounded p-2"><i class="fa-solid fa-signal"></i></div>
                 </div>
-                <h3 class="fw-bold mb-1">{{ $onlineTechnicians ?? 0 }}</h3>
+                <h3 class="fw-bold mb-1" id="onlineTechniciansCount">{{ $onlineTechnicians ?? 0 }}</h3>
                 <div class="small text-body-secondary">{{ __('Realtime terdeteksi aktif') }}</div>
             </div>
         </div>
@@ -242,7 +242,7 @@
                     <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Wash Online') }}</h6>
                     <div class="bg-info bg-opacity-10 text-info rounded p-2"><i class="fa-solid fa-wifi"></i></div>
                 </div>
-                <h3 class="fw-bold mb-1">{{ $onlineWashEmployees ?? 0 }}</h3>
+                <h3 class="fw-bold mb-1" id="onlineWashCount">{{ $onlineWashEmployees ?? 0 }}</h3>
                 <div class="small text-body-secondary">{{ __('Karyawan wash sedang aktif') }}</div>
             </div>
         </div>
@@ -266,11 +266,11 @@
                     </thead>
                     <tbody>
                         @forelse(($presenceRows ?? collect()) as $presenceRow)
-                            <tr>
+                            <tr data-presence-user-id="{{ $presenceRow['id'] }}" data-role-name="{{ $presenceRow['role_name'] ?? '' }}">
                                 <td class="ps-4 fw-medium">{{ $presenceRow['name'] }}</td>
                                 <td>{{ $presenceRow['role'] }}</td>
                                 <td>
-                                    <span class="badge {{ $presenceRow['online'] ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
+                                    <span class="badge presence-online-badge {{ $presenceRow['online'] ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
                                         {{ $presenceRow['online'] ? 'Online' : 'Offline' }}
                                     </span>
                                 </td>
@@ -286,7 +286,7 @@
                                         <span class="badge bg-secondary-subtle text-secondary">{{ ucfirst($state) }}</span>
                                     @endif
                                 </td>
-                                <td class="small text-muted">
+                                <td class="small text-muted presence-last-seen" data-last-seen="{{ $presenceRow['last_seen'] ? \Carbon\Carbon::parse($presenceRow['last_seen'])->toIso8601String() : '' }}">
                                     {{ $presenceRow['last_seen'] ? \Carbon\Carbon::parse($presenceRow['last_seen'])->diffForHumans() : '-' }}
                                 </td>
                             </tr>
@@ -301,6 +301,80 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (!window.Echo) return;
+
+    const onlineTechEl = document.getElementById('onlineTechniciansCount');
+    const onlineWashEl = document.getElementById('onlineWashCount');
+    const rows = Array.from(document.querySelectorAll('tr[data-presence-user-id]'));
+    const thresholdSeconds = {{ (int) ($presenceThresholdSeconds ?? 90) }};
+
+    const refreshCounters = () => {
+        let techCount = 0;
+        let washCount = 0;
+        rows.forEach((row) => {
+            const isOnline = row.querySelector('.presence-online-badge')?.textContent?.trim().toLowerCase() === 'online';
+            const roleName = (row.getAttribute('data-role-name') || '').toLowerCase();
+            if (isOnline && roleName === 'technician') techCount++;
+            if (isOnline && roleName === 'karyawan-wash') washCount++;
+        });
+        if (onlineTechEl) onlineTechEl.textContent = String(techCount);
+        if (onlineWashEl) onlineWashEl.textContent = String(washCount);
+    };
+
+    const recheckOfflineState = () => {
+        const now = Date.now();
+        rows.forEach((row) => {
+            const lastSeenEl = row.querySelector('.presence-last-seen');
+            const badge = row.querySelector('.presence-online-badge');
+            if (!lastSeenEl || !badge) return;
+
+            const iso = lastSeenEl.getAttribute('data-last-seen');
+            if (!iso) return;
+
+            const diffSeconds = Math.floor((now - new Date(iso).getTime()) / 1000);
+            if (diffSeconds > thresholdSeconds) {
+                badge.className = 'badge presence-online-badge bg-secondary-subtle text-secondary';
+                badge.textContent = 'Offline';
+            }
+        });
+        refreshCounters();
+    };
+
+    recheckOfflineState();
+    setInterval(recheckOfflineState, 10000);
+
+    window.Echo.private('presence.dashboard')
+        .listen('.presence.updated', (event) => {
+            const userId = Number(event?.userId || 0);
+            if (!userId) return;
+            const row = document.querySelector('tr[data-presence-user-id="' + userId + '"]');
+            if (!row) return;
+
+            const online = event.online === true;
+            const badge = row.querySelector('.presence-online-badge');
+            if (badge) {
+                badge.className = 'badge presence-online-badge ' + (online ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary');
+                badge.textContent = online ? 'Online' : 'Offline';
+            }
+
+            const lastSeen = row.querySelector('.presence-last-seen');
+            if (lastSeen) {
+                const normalizedTime = event.lastSeenAt || '';
+                if (normalizedTime) {
+                    lastSeen.setAttribute('data-last-seen', normalizedTime.replace(' ', 'T'));
+                }
+                lastSeen.textContent = online ? 'baru saja' : (event.lastSeenAt || '-');
+            }
+
+            refreshCounters();
+        });
+});
+</script>
+@endpush
 
 <!-- Stats Cards -->
 <div class="row g-4 mb-4">
