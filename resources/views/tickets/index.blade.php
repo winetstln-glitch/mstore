@@ -117,7 +117,7 @@
                                         </div>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <div class="btn-group">
+                                        <div class="d-flex justify-content-end gap-1">
                                             @if(Auth::user()->hasRole('admin'))
                                             <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kirim notifikasi WhatsApp ke teknisi yang ditugaskan?') }}');">
                                                 @csrf
