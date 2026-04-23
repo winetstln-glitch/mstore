@@ -374,10 +374,10 @@ class WhatsAppService
             }
             if (is_string($value)) {
                 $normalized = strtolower(trim($value));
-                if (in_array($normalized, ['connected', 'online', 'true', '1'], true)) {
+                if (in_array($normalized, ['connected', 'connect', 'online', 'true', '1'], true)) {
                     return true;
                 }
-                if (in_array($normalized, ['disconnected', 'offline', 'false', '0'], true)) {
+                if (in_array($normalized, ['disconnected', 'disconnect', 'offline', 'false', '0'], true)) {
                     return false;
                 }
             }

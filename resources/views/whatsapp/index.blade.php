@@ -78,8 +78,11 @@
                         <button type="submit" class="btn btn-success">
                             <i class="fa-solid fa-save"></i> Save
                         </button>
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="tab" data-bs-target="#test">
+                        <button type="submit" formmethod="POST" formaction="{{ route('whatsapp.check-status') }}" class="btn btn-outline-primary">
                             <i class="fa-solid fa-plug"></i> Test Connection
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tab" data-bs-target="#test">
+                            <i class="fa-solid fa-paper-plane"></i> Buka Form Send Test
                         </button>
                     </div>
                 </form>
