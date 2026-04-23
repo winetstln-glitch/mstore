@@ -276,12 +276,18 @@
 
                         <div class="col-md-6">
                             <label for="onu_serial" class="form-label small text-muted fw-bold">{{ __('ONU Serial') }}</label>
-                            <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $prefill['onu_serial'] ?? '') }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Ketik atau pilih...') }}">
+                            <div class="input-group">
+                                <input type="text" list="onu_list" name="onu_serial" id="onu_serial" value="{{ old('onu_serial', $prefill['onu_serial'] ?? '') }}" class="form-control @error('onu_serial') is-invalid @enderror" placeholder="{{ __('Ketik atau pilih...') }}">
+                                <button type="button" class="btn btn-outline-primary" id="syncGenieBtn">
+                                    <i class="fa-solid fa-rotate me-1"></i>{{ __('Sinkronkan') }}
+                                </button>
+                            </div>
                             <datalist id="onu_list">
                                 @foreach($onuDevices as $device)
                                     <option value="{{ $device['serial'] }}">{{ $device['serial'] }} - {{ $device['model'] }}</option>
                                 @endforeach
                             </datalist>
+                            <div id="syncGenieHint" class="form-text">{{ __('Klik Sinkronkan untuk mengambil data modem dari GenieACS.') }}</div>
                             @error('onu_serial')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -430,40 +436,79 @@
         }
     }
 
-    // Isi otomatis dari GenieACS.
-    document.getElementById('onu_serial').addEventListener('change', function() {
-        var serial = this.value;
-        if (serial) {
-            fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial))
-                .then(response => {
-                    if (!response.ok) throw new Error('{{ __('Perangkat tidak ditemukan') }}');
-                    return response.json();
-                })
-                .then(data => {
-                    const setFieldValue = (id, value) => {
-                        const element = document.getElementById(id);
-                        if (!element) return;
-                        if (value === undefined || value === null) return;
-                        const normalized = String(value).trim();
-                        if (normalized === '') return;
-                        element.value = normalized;
-                    };
-
-                    setFieldValue('onu_serial', data.onu_serial);
-                    setFieldValue('genieacs_device_id', data.genieacs_device_id);
-                    setFieldValue('name', data.name);
-                    setFieldValue('ip_address', data.ip_address);
-                    setFieldValue('vlan', data.vlan);
-                    setFieldValue('wan_mac', data.wan_mac);
-                    setFieldValue('device_model', data.device_model);
-                    setFieldValue('pppoe_user', data.pppoe_user);
-                    setFieldValue('pppoe_password', data.pppoe_password);
-                    setFieldValue('ssid_name', data.ssid_name);
-                    setFieldValue('ssid_password', data.ssid_password);
-                })
-                .catch(error => console.log('{{ __('Isi otomatis GenieACS') }}:', error));
+    function setSyncHint(message, type) {
+        const hint = document.getElementById('syncGenieHint');
+        if (!hint) return;
+        hint.classList.remove('text-danger', 'text-success', 'text-muted');
+        if (type === 'error') {
+            hint.classList.add('text-danger');
+        } else if (type === 'success') {
+            hint.classList.add('text-success');
+        } else {
+            hint.classList.add('text-muted');
         }
-    });
+        hint.textContent = message;
+    }
+
+    async function syncGenieFromSerial() {
+        const serialElement = document.getElementById('onu_serial');
+        const syncButton = document.getElementById('syncGenieBtn');
+        if (!serialElement || !syncButton) return;
+
+        const serial = (serialElement.value || '').trim();
+        if (!serial) {
+            setSyncHint('{{ __('Isi ONU Serial terlebih dahulu.') }}', 'error');
+            return;
+        }
+
+        const originalButtonHtml = syncButton.innerHTML;
+        syncButton.disabled = true;
+        syncButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>{{ __('Sinkron...') }}';
+
+        try {
+            const response = await fetch('{{ route("customers.genie_device") }}?serial=' + encodeURIComponent(serial));
+            if (!response.ok) {
+                throw new Error('{{ __('Perangkat tidak ditemukan di GenieACS.') }}');
+            }
+            const data = await response.json();
+            const setFieldValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (!element) return;
+                if (value === undefined || value === null) return;
+                const normalized = String(value).trim();
+                if (normalized === '') return;
+                element.value = normalized;
+            };
+
+            setFieldValue('onu_serial', data.onu_serial);
+            setFieldValue('genieacs_device_id', data.genieacs_device_id);
+            setFieldValue('name', data.name);
+            setFieldValue('ip_address', data.ip_address);
+            setFieldValue('vlan', data.vlan);
+            setFieldValue('wan_mac', data.wan_mac);
+            setFieldValue('device_model', data.device_model);
+            setFieldValue('pppoe_user', data.pppoe_user);
+            setFieldValue('pppoe_password', data.pppoe_password);
+            setFieldValue('ssid_name', data.ssid_name);
+            setFieldValue('ssid_password', data.ssid_password);
+            setSyncHint('{{ __('Sinkronisasi berhasil. Data perangkat sudah diperbarui.') }}', 'success');
+        } catch (error) {
+            console.error('Sync GenieACS:', error);
+            setSyncHint(error.message || '{{ __('Sinkronisasi gagal.') }}', 'error');
+        } finally {
+            syncButton.disabled = false;
+            syncButton.innerHTML = originalButtonHtml;
+        }
+    }
+
+    const onuSerialInput = document.getElementById('onu_serial');
+    if (onuSerialInput) {
+        onuSerialInput.addEventListener('change', syncGenieFromSerial);
+    }
+    const syncGenieBtn = document.getElementById('syncGenieBtn');
+    if (syncGenieBtn) {
+        syncGenieBtn.addEventListener('click', syncGenieFromSerial);
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         var lat = @json(old('latitude'));

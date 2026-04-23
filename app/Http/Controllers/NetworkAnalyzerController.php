@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Router;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
@@ -55,7 +57,14 @@ class NetworkAnalyzerController extends Controller implements HasMiddleware
         $publicIp = $validated['public_ip'] ?? $this->resolvePublicIpFromRequest($request, $clientIp);
 
         $macAddress = $this->detectMacAddress($localIp ?: $clientIp);
+        $customerIdentity = $this->resolveCustomerIdentity($ssid, $publicIp, $localIp);
+        if (! $macAddress && ! empty($customerIdentity['wan_mac'])) {
+            $macAddress = $this->normalizeMacAddress((string) $customerIdentity['wan_mac']);
+        }
         $vendorName = $macAddress ? $this->lookupMacVendor($macAddress) : null;
+        if (! $vendorName && ! empty($customerIdentity['device_model'])) {
+            $vendorName = (string) $customerIdentity['device_model'];
+        }
         $ispInfo = $this->lookupIspInfo($publicIp);
         $routerIdentity = $this->resolveRouterIdentity($ssid, $publicIp, $localIp);
 
@@ -176,14 +185,27 @@ class NetworkAnalyzerController extends Controller implements HasMiddleware
             $process->setTimeout(5);
             $process->run();
             $output = $process->getOutput().' '.$process->getErrorOutput();
-            if (preg_match('/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/', $output, $match)) {
-                return strtoupper(Str::replace('-', ':', $match[0]));
+            $normalized = $this->normalizeMacAddress($output);
+            if ($normalized) {
+                return $normalized;
             }
         } catch (\Throwable) {
             return null;
         }
 
         return null;
+    }
+
+    private function normalizeMacAddress(?string $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+        if (! preg_match('/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/', $value, $match)) {
+            return null;
+        }
+
+        return strtoupper(Str::replace('-', ':', $match[0]));
     }
 
     private function lookupMacVendor(string $macAddress): ?string
@@ -290,6 +312,69 @@ class NetworkAnalyzerController extends Controller implements HasMiddleware
             'name' => $routerBySsid->name,
             'host' => $routerBySsid->host,
             'match' => 'ssid',
+        ];
+    }
+
+    private function resolveCustomerIdentity(?string $ssid, ?string $publicIp, ?string $localIp): ?array
+    {
+        if (! Schema::hasTable('customers')) {
+            return null;
+        }
+
+        $columns = array_flip(Schema::getColumnListing('customers'));
+
+        $buildBaseQuery = function () use ($columns) {
+            $query = Customer::query();
+            if (isset($columns['status'])) {
+                $query->where('status', 'active');
+            }
+
+            return $query;
+        };
+
+        $customer = null;
+        if ($ssid && isset($columns['ssid_name'])) {
+            $customer = $buildBaseQuery()
+                ->where('ssid_name', $ssid)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $customer && $publicIp && isset($columns['ip_address'])) {
+            $customer = $buildBaseQuery()
+                ->where('ip_address', $publicIp)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $customer && $localIp && isset($columns['ip_address'])) {
+            $customer = $buildBaseQuery()
+                ->where('ip_address', $localIp)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $customer && $localIp && isset($columns['pppoe_ip_remote'])) {
+            $customer = $buildBaseQuery()
+                ->where('pppoe_ip_remote', $localIp)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $customer && $publicIp && isset($columns['pppoe_ip_remote'])) {
+            $customer = $buildBaseQuery()
+                ->where('pppoe_ip_remote', $publicIp)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $customer) {
+            return null;
+        }
+
+        return [
+            'wan_mac' => isset($columns['wan_mac']) ? (string) ($customer->wan_mac ?? '') : null,
+            'device_model' => isset($columns['device_model']) ? (string) ($customer->device_model ?? '') : null,
         ];
     }
 }
