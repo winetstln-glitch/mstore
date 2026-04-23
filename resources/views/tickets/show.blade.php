@@ -143,6 +143,25 @@
                     @endif
 
                     @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+                        <div class="alert alert-info small">
+                            <h6 class="fw-bold mb-2"><i class="fa-solid fa-book me-1"></i> {{ __('Panduan Menyelesaikan Tiket') }}</h6>
+                            <ol class="mb-2 ps-3">
+                                <li>{{ __('Konfirmasi keluhan pelanggan dan validasi lokasi perangkat/ODP.') }}</li>
+                                <li>{{ __('Lakukan pemeriksaan fisik dan teknis (kabel, adaptor, LOS, ONU/router, serta jalur distribusi).') }}</li>
+                                <li>{{ __('Jalankan tindakan perbaikan sesuai hasil diagnosa, lalu uji koneksi hingga layanan kembali normal.') }}</li>
+                                <li>{{ __('Ambil bukti foto sesudah perbaikan (wajib), dan foto sebelum perbaikan jika tersedia.') }}</li>
+                                <li>{{ __('Isi catatan penyelesaian dengan ringkas: penyebab, tindakan, dan hasil uji akhir.') }}</li>
+                            </ol>
+                            <div class="mb-0">
+                                <strong>{{ __('Checklist sebelum klik "Selesaikan Tiket":') }}</strong>
+                                {{ __('Layanan normal, pelanggan terkonfirmasi, bukti foto tersedia, dan catatan solusi sudah diisi.') }}
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ticketSopModal">
+                                    <i class="fa-solid fa-book-open me-1"></i> {{ __('Lihat SOP Lengkap Teknisi WiFi') }}
+                                </button>
+                            </div>
+                        </div>
                         <div class=" p-3 rounded border border-success-subtle">
                             <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-check-circle me-1"></i> {{ __('Tandai Selesai') }}</h6>
                             <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
@@ -446,10 +465,76 @@
 </div>
 @endif
 
+<div class="modal fade" id="ticketSopModal" tabindex="-1" aria-labelledby="ticketSopModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ticketSopModalLabel">{{ __('Standard Operating Procedure (SOP) Teknisi Jaringan WiFi') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Tutup') }}"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-secondary small">
+                    {{ __('Dokumen SOP ini mencakup seluruh siklus kerja teknisi: persiapan, instalasi, pemeliharaan, troubleshooting, hingga penutupan tiket.') }}
+                </div>
+
+                <h6 class="fw-bold">{{ __('1. Persiapan Sebelum Berangkat') }}</h6>
+                <ul class="small">
+                    <li>{{ __('Pelajari detail tiket: jenis gangguan, alamat, kontak pelanggan, riwayat tiket, ODP, dan catatan teknisi sebelumnya.') }}</li>
+                    <li>{{ __('Hubungi pelanggan untuk konfirmasi jadwal kunjungan dan pastikan akses lokasi tersedia.') }}</li>
+                    <li>{{ __('Siapkan peralatan kerja: tangga, toolkit, tang crimping, LAN tester, power meter, OTDR (jika ada), adaptor, konektor, patchcord, ONU/router cadangan.') }}</li>
+                    <li>{{ __('Gunakan APD standar: helm, rompi, sarung tangan, sepatu safety, dan perlengkapan kerja di ketinggian bila diperlukan.') }}</li>
+                </ul>
+
+                <h6 class="fw-bold">{{ __('2. SOP Instalasi / Aktivasi') }}</h6>
+                <ul class="small">
+                    <li>{{ __('Lakukan survey titik penarikan kabel paling aman, rapi, dan minim risiko gangguan.') }}</li>
+                    <li>{{ __('Pasang kabel sesuai standar: jalur rapi, tidak tertekuk tajam, dan diberi pengikat/label.') }}</li>
+                    <li>{{ __('Instal ONU/router, konfigurasi SSID dan password, lalu lakukan uji koneksi internet.') }}</li>
+                    <li>{{ __('Edukasi pelanggan tentang cara penggunaan dasar, restart perangkat, dan kontak bantuan.') }}</li>
+                    <li>{{ __('Dokumentasikan foto instalasi sebelum/akhir untuk bukti pekerjaan.') }}</li>
+                </ul>
+
+                <h6 class="fw-bold">{{ __('3. SOP Pemeliharaan Berkala') }}</h6>
+                <ul class="small">
+                    <li>{{ __('Periksa kualitas sinyal, performa koneksi, dan kondisi fisik perangkat serta kabel.') }}</li>
+                    <li>{{ __('Bersihkan perangkat dari debu/kelembapan dan rapikan kembali instalasi jika diperlukan.') }}</li>
+                    <li>{{ __('Lakukan update konfigurasi jika ada perubahan kebijakan jaringan atau keamanan.') }}</li>
+                    <li>{{ __('Catat hasil pemeriksaan secara detail di log tiket untuk histori perawatan.') }}</li>
+                </ul>
+
+                <h6 class="fw-bold">{{ __('4. SOP Penanganan Gangguan (Troubleshooting)') }}</h6>
+                <ul class="small">
+                    <li>{{ __('Identifikasi gejala: LOS merah, internet lambat, sering putus, tidak bisa autentikasi, atau perangkat mati.') }}</li>
+                    <li>{{ __('Cek berurutan dari sisi pelanggan ke jaringan inti: listrik/adaptor -> ONU/router -> kabel dropcore -> ODP -> uplink.') }}</li>
+                    <li>{{ __('Lakukan tindakan korektif: ganti adaptor/perangkat rusak, re-terminasi konektor, perbaikan jalur kabel, reconfig PPPoE/SSID.') }}</li>
+                    <li>{{ __('Uji hasil perbaikan: ping, browsing, speed test seperlunya, dan verifikasi stabilitas minimal beberapa menit.') }}</li>
+                    <li>{{ __('Jika eskalasi diperlukan, sertakan bukti teknis jelas: foto, nilai pengukuran, gejala, serta tindakan yang sudah dicoba.') }}</li>
+                </ul>
+
+                <h6 class="fw-bold">{{ __('5. Penutupan Tiket') }}</h6>
+                <ul class="small">
+                    <li>{{ __('Pastikan layanan sudah normal dan pelanggan menyatakan masalah selesai.') }}</li>
+                    <li>{{ __('Unggah foto sesudah perbaikan (wajib) dan foto sebelum (jika ada).') }}</li>
+                    <li>{{ __('Isi catatan penyelesaian yang mencakup akar masalah, tindakan, material yang dipakai, dan hasil akhir.') }}</li>
+                    <li>{{ __('Klik "Selesaikan Tiket" hanya setelah semua data pendukung lengkap.') }}</li>
+                </ul>
+
+                <h6 class="fw-bold">{{ __('6. Standar Keselamatan Kerja') }}</h6>
+                <ul class="small mb-0">
+                    <li>{{ __('Dilarang bekerja di titik berbahaya tanpa APD dan tanpa pengamanan area kerja.') }}</li>
+                    <li>{{ __('Utamakan keselamatan manusia dibanding kecepatan penyelesaian pekerjaan.') }}</li>
+                    <li>{{ __('Laporkan segera jika ada potensi bahaya listrik, ketinggian, atau kondisi lingkungan tidak aman.') }}</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 
-@push('scripts')
-<script>
+
     document.addEventListener('DOMContentLoaded', function() {
         const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
         const locationInput = document.getElementById('location');

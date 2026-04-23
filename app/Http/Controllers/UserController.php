@@ -282,6 +282,10 @@ class UserController extends Controller implements HasMiddleware
 
     public function sendWhatsAppAccount(User $user, WhatsAppService $wa)
     {
+        $validated = request()->validate([
+            'send_password' => ['nullable', 'string', 'max:100'],
+        ]);
+
         if (! $user->phone) {
             return back()->with('error', __('Pengguna tidak memiliki nomor HP.'));
         }
@@ -291,17 +295,24 @@ class UserController extends Controller implements HasMiddleware
             return back()->with('error', __('Nomor HP pengguna tidak valid.'));
         }
 
+        $passwordToSend = trim((string) ($validated['send_password'] ?? ''));
+        if ($passwordToSend === '') {
+            $passwordToSend = '12345678';
+        }
+
         $vars = [
             'nama' => (string) $user->name,
             'username' => (string) ($user->username ?: '-'),
             'email' => (string) ($user->email ?: '-'),
             'peran' => (string) ($user->role?->label ?: 'Tanpa Peran'),
-            'password' => 'Sesuai password yang sudah diberikan admin.',
+            'nomor_hp' => (string) ($user->phone ?: '-'),
+            'status' => $user->is_active ? 'Aktif' : 'Tidak Aktif',
+            'password' => $passwordToSend,
             'login_url' => route('login'),
         ];
 
         $tpl = Setting::where('key', 'whatsapp_user_account_template')->value('value')
-            ?? "*INFORMASI AKUN SISTEM*\nNama: {{nama}}\nUsername: {{username}}\nEmail: {{email}}\nPeran: {{peran}}\nPassword: {{password}}\nLogin: {{login_url}}";
+            ?? "*INFORMASI AKUN SISTEM*\n\nNama: {{nama}}\nUsername: {{username}}\nEmail: {{email}}\nNomor HP: {{nomor_hp}}\nPeran: {{peran}}\nStatus: {{status}}\nPassword: {{password}}\n\nLogin: {{login_url}}\n\nMohon simpan informasi akun ini dengan aman.";
 
         $message = $wa->renderTemplate($tpl, $vars);
 

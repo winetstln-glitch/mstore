@@ -105,12 +105,20 @@
                                         <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Ubah') }}">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
-                                        <form action="{{ route('users.send-whatsapp-account', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kirim informasi akun ke WhatsApp pengguna ini?') }}');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="{{ __('WhatsApp Notif') }}" {{ empty($user->phone) ? 'disabled' : '' }}>
-                                                <i class="fa-brands fa-whatsapp"></i>
-                                            </button>
-                                        </form>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-success"
+                                            title="{{ __('WhatsApp Notif') }}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#sendAccountWaModal"
+                                            data-send-url="{{ route('users.send-whatsapp-account', $user) }}"
+                                            data-user-name="{{ $user->name }}"
+                                            data-user-username="{{ $user->username }}"
+                                            data-user-phone="{{ $user->phone }}"
+                                            {{ empty($user->phone) ? 'disabled' : '' }}
+                                        >
+                                            <i class="fa-brands fa-whatsapp"></i>
+                                        </button>
                                         
                                         @if($user->id !== auth()->id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus pengguna ini?') }}');">
@@ -139,4 +147,60 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="sendAccountWaModal" tabindex="-1" aria-labelledby="sendAccountWaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" id="sendAccountWaForm">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sendAccountWaModalLabel">{{ __('Kirim Akun via WhatsApp') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Tutup') }}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="small text-muted mb-2">{{ __('Data akun akan dikirim lengkap ke WhatsApp pengguna ini:') }}</div>
+                    <div class="mb-2"><strong>{{ __('Nama') }}:</strong> <span id="waUserName">-</span></div>
+                    <div class="mb-2"><strong>{{ __('Username') }}:</strong> <span id="waUsername">-</span></div>
+                    <div class="mb-3"><strong>{{ __('Nomor HP') }}:</strong> <span id="waUserPhone">-</span></div>
+                    <label for="send_password" class="form-label">{{ __('Password yang akan dikirim') }}</label>
+                    <input type="text" class="form-control" id="send_password" name="send_password" value="12345678" required>
+                    <div class="form-text">{{ __('Silakan isi password akun yang benar sebelum mengirim.') }}</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                    <button type="submit" class="btn btn-success">{{ __('Kirim ke WhatsApp') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('sendAccountWaModal');
+    if (!modal) return;
+
+    modal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (!button) return;
+
+        const sendUrl = button.getAttribute('data-send-url') || '';
+        const userName = button.getAttribute('data-user-name') || '-';
+        const username = button.getAttribute('data-user-username') || '-';
+        const phone = button.getAttribute('data-user-phone') || '-';
+
+        const form = document.getElementById('sendAccountWaForm');
+        if (form) form.action = sendUrl;
+
+        const nameEl = document.getElementById('waUserName');
+        const usernameEl = document.getElementById('waUsername');
+        const phoneEl = document.getElementById('waUserPhone');
+        if (nameEl) nameEl.textContent = userName;
+        if (usernameEl) usernameEl.textContent = username;
+        if (phoneEl) phoneEl.textContent = phone;
+    });
+});
+</script>
+@endpush
