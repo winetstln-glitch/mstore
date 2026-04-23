@@ -56,11 +56,12 @@ class UserController extends Controller implements HasMiddleware
 
         $users = $query->paginate(10)->withQueryString();
         $roles = Role::orderBy('label')->get();
-        $whatsAppAccountLogs = DB::table('whatsapp_account_send_logs as logs')
+        $waLogQuery = DB::table('whatsapp_account_send_logs as logs')
             ->leftJoin('users as sender', 'sender.id', '=', 'logs.sender_user_id')
             ->leftJoin('users as target', 'target.id', '=', 'logs.target_user_id')
             ->select([
                 'logs.id',
+                'logs.sender_user_id',
                 'logs.target_phone',
                 'logs.status',
                 'logs.message_excerpt',
@@ -68,12 +69,43 @@ class UserController extends Controller implements HasMiddleware
                 'logs.created_at',
                 'sender.name as sender_name',
                 'target.name as target_name',
-            ])
-            ->orderByDesc('logs.id')
-            ->limit(12)
-            ->get();
+            ]);
 
-        return view('users.index', compact('users', 'roles', 'whatsAppAccountLogs'));
+        if ($request->filled('wa_status')) {
+            $waLogQuery->where('logs.status', (string) $request->input('wa_status'));
+        }
+        if ($request->filled('wa_sender')) {
+            $waLogQuery->where('logs.sender_user_id', (int) $request->input('wa_sender'));
+        }
+        if ($request->filled('wa_date_from')) {
+            $waLogQuery->whereDate('logs.created_at', '>=', (string) $request->input('wa_date_from'));
+        }
+        if ($request->filled('wa_date_to')) {
+            $waLogQuery->whereDate('logs.created_at', '<=', (string) $request->input('wa_date_to'));
+        }
+        if ($request->filled('wa_q')) {
+            $waSearch = (string) $request->input('wa_q');
+            $waLogQuery->where(function ($q) use ($waSearch) {
+                $q->where('target.name', 'like', "%{$waSearch}%")
+                    ->orWhere('sender.name', 'like', "%{$waSearch}%")
+                    ->orWhere('logs.target_phone', 'like', "%{$waSearch}%")
+                    ->orWhere('logs.message_excerpt', 'like', "%{$waSearch}%");
+            });
+        }
+
+        $whatsAppAccountLogs = $waLogQuery
+            ->orderByDesc('logs.id')
+            ->paginate(12, ['*'], 'wa_logs_page')
+            ->withQueryString();
+
+        $waSenders = User::query()
+            ->whereHas('role', function ($q) {
+                $q->where('name', '!=', 'customer');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('users.index', compact('users', 'roles', 'whatsAppAccountLogs', 'waSenders'));
     }
 
     public function export(Request $request)
