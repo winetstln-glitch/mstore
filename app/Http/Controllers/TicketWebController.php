@@ -408,6 +408,8 @@ class TicketWebController extends Controller implements HasMiddleware
             'photo_before' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'photo_proof' => 'required|image|mimes:jpeg,png,jpg|max:10240',
             'description' => 'nullable|string',
+            'completion_onu_serial' => 'nullable|string|max:100',
+            'completion_wan_mac' => ['nullable', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
         ]);
 
         if ($request->hasFile('photo_before')) {
@@ -424,11 +426,53 @@ class TicketWebController extends Controller implements HasMiddleware
         $ticket->closed_at = now();
         $ticket->save();
 
+        $typeNormalized = strtolower((string) $ticket->type);
+        $isOnuProvisioningTask = $typeNormalized === 'pasang_baru'
+            || str_contains($typeNormalized, 'pergantian')
+            || str_contains($typeNormalized, 'pergati')
+            || str_contains($typeNormalized, 'ganti_onu')
+            || str_contains($typeNormalized, 'penggantian_onu');
+
+        $updatedOnuSerial = null;
+        $updatedWanMac = null;
+        if ($ticket->customer && $isOnuProvisioningTask) {
+            $customerUpdates = [];
+
+            $completionOnuSerial = trim((string) $request->input('completion_onu_serial', ''));
+            if ($completionOnuSerial !== '') {
+                $customerUpdates['onu_serial'] = $completionOnuSerial;
+                $updatedOnuSerial = $completionOnuSerial;
+            }
+
+            $completionWanMac = trim((string) $request->input('completion_wan_mac', ''));
+            if ($completionWanMac !== '') {
+                $normalizedWanMac = strtoupper(str_replace('-', ':', $completionWanMac));
+                $customerUpdates['wan_mac'] = $normalizedWanMac;
+                $updatedWanMac = $normalizedWanMac;
+            }
+
+            if (! empty($customerUpdates)) {
+                $ticket->customer->update($customerUpdates);
+            }
+        }
+
+        $completionNote = $request->description ? " Note: {$request->description}" : '';
+        $deviceNoteParts = [];
+        if ($updatedOnuSerial) {
+            $deviceNoteParts[] = "ONU SN: {$updatedOnuSerial}";
+        }
+        if ($updatedWanMac) {
+            $deviceNoteParts[] = "WAN MAC: {$updatedWanMac}";
+        }
+        if (! empty($deviceNoteParts)) {
+            $completionNote .= ' Device: '.implode(', ', $deviceNoteParts);
+        }
+
         TicketLog::create([
             'ticket_id' => $ticket->id,
             'user_id' => Auth::id(),
             'action' => 'completed',
-            'description' => 'Ticket marked as solved with photos.'.($request->description ? " Note: {$request->description}" : ''),
+            'description' => 'Ticket marked as solved with photos.'.$completionNote,
         ]);
 
         DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
@@ -492,7 +536,13 @@ class TicketWebController extends Controller implements HasMiddleware
         if (! ($isAdmin || $canEdit || $canComplete || $isAssigned)) {
             abort(403);
         }
-        if ($ticket->type !== 'pasang_baru' || ! $ticket->customer) {
+        $typeNormalized = strtolower((string) $ticket->type);
+        $isOnuProvisioningTask = $typeNormalized === 'pasang_baru'
+            || str_contains($typeNormalized, 'pergantian')
+            || str_contains($typeNormalized, 'pergati')
+            || str_contains($typeNormalized, 'ganti_onu')
+            || str_contains($typeNormalized, 'penggantian_onu');
+        if (! $isOnuProvisioningTask || ! $ticket->customer) {
             abort(403);
         }
         $validated = $request->validate([
@@ -503,10 +553,14 @@ class TicketWebController extends Controller implements HasMiddleware
             'pppoe_user' => 'nullable|string|max:100',
             'pppoe_password' => 'nullable|string|max:100',
             'onu_serial' => 'nullable|string|max:100',
+            'wan_mac' => ['nullable', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
             'device_model' => 'nullable|string|max:100',
             'ssid_name' => 'nullable|string|max:100',
             'ssid_password' => 'nullable|string|max:100',
         ]);
+        if (isset($validated['wan_mac']) && is_string($validated['wan_mac']) && trim($validated['wan_mac']) !== '') {
+            $validated['wan_mac'] = strtoupper(str_replace('-', ':', $validated['wan_mac']));
+        }
         $ticket->customer->update($validated);
         TicketLog::create([
             'ticket_id' => $ticket->id,

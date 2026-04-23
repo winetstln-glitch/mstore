@@ -164,6 +164,12 @@
                         </div>
                         <div class=" p-3 rounded border border-success-subtle">
                             <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-check-circle me-1"></i> {{ __('Tandai Selesai') }}</h6>
+                            @php
+                                $showCompletionOnuScan = $ticket->customer && (
+                                    $ticket->type === 'pasang_baru'
+                                    || Str::contains(strtolower((string) $ticket->type), ['pergantian', 'pergati', 'ganti_onu', 'penggantian_onu'])
+                                );
+                            @endphp
                             <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
@@ -183,6 +189,48 @@
                                         @enderror
                                     </div>
                                 </div>
+                                @if($showCompletionOnuScan)
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label for="completion_onu_serial" class="form-label small fw-bold">{{ __('ONU SN') }}</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control @error('completion_onu_serial') is-invalid @enderror" id="completion_onu_serial" name="completion_onu_serial" value="{{ old('completion_onu_serial', $ticket->customer->onu_serial ?? '') }}" placeholder="{{ __('Contoh: ZTEGC1234567') }}">
+                                                <button class="btn btn-outline-primary" type="button" id="startCompleteOnuQrScan">
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR ONU SN') }}
+                                                </button>
+                                            </div>
+                                            @error('completion_onu_serial')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div id="completionOnuQrScanStatus" class="small text-muted mt-2"></div>
+                                            <div id="completionOnuQrScannerWrapper" class="mt-2 d-none">
+                                                <div id="completion-onu-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCompleteOnuQrScan">
+                                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="completion_wan_mac" class="form-label small fw-bold">{{ __('WAN MAC') }}</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
+                                                <button class="btn btn-outline-primary" type="button" id="startCompleteMacQrScan">
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR MAC') }}
+                                                </button>
+                                            </div>
+                                            @error('completion_wan_mac')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div id="completionMacQrScanStatus" class="small text-muted mt-2"></div>
+                                            <div id="completionMacQrScannerWrapper" class="mt-2 d-none">
+                                                <div id="completion-mac-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCompleteMacQrScan">
+                                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="mb-3">
                                     <label for="description" class="form-label small fw-bold">{{ __('Catatan Penyelesaian') }} ({{ __('Opsional') }})</label>
                                     <textarea class="form-control" id="description" name="description" rows="2" placeholder="{{ __('Jelaskan solusi yang dilakukan...') }}"></textarea>
@@ -253,7 +301,11 @@
                     </ul>
                     <div class="d-grid gap-2 mt-3">
                         <a href="{{ route('customers.edit', $ticket->customer) }}" class="btn btn-outline-primary btn-sm">{{ __('Lihat Pelanggan') }}</a>
-                        @if($ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+                        @php
+                            $isOnuProvisioningTicket = $ticket->type === 'pasang_baru'
+                                || Str::contains(strtolower((string) $ticket->type), ['pergantian', 'pergati', 'ganti_onu', 'penggantian_onu']);
+                        @endphp
+                        @if($isOnuProvisioningTicket && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
                             <i class="fa-solid fa-user-pen me-1"></i> {{ __('Ubah Pelanggan') }}
                         </button>
@@ -363,7 +415,7 @@
 </div>
 @endif
 
-@if($ticket->customer && $ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+@if($ticket->customer && $isOnuProvisioningTicket && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
 <div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
@@ -394,7 +446,35 @@
                         </div>
                         <div class="col-md-6">
                             <label for="cust_onu_serial" class="form-label">{{ __('ONU Serial') }}</label>
-                            <input type="text" class="form-control" id="cust_onu_serial" name="onu_serial" value="{{ $ticket->customer->onu_serial }}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="cust_onu_serial" name="onu_serial" value="{{ $ticket->customer->onu_serial }}">
+                                <button class="btn btn-outline-primary" type="button" id="startOnuQrScan">
+                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR') }}
+                                </button>
+                            </div>
+                            <div id="onuQrScanStatus" class="small text-muted mt-2"></div>
+                            <div id="onuQrScannerWrapper" class="mt-2 d-none">
+                                <div id="ticket-onu-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopOnuQrScan">
+                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cust_wan_mac" class="form-label">{{ __('WAN MAC') }}</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="cust_wan_mac" name="wan_mac" value="{{ $ticket->customer->wan_mac }}" placeholder="{{ __('AA:BB:CC:DD:EE:FF') }}">
+                                <button class="btn btn-outline-primary" type="button" id="startCustMacQrScan">
+                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR MAC') }}
+                                </button>
+                            </div>
+                            <div id="custMacQrScanStatus" class="small text-muted mt-2"></div>
+                            <div id="custMacQrScannerWrapper" class="mt-2 d-none">
+                                <div id="ticket-cust-mac-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCustMacQrScan">
+                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label for="cust_device_model" class="form-label">{{ __('Model Perangkat') }}</label>
@@ -447,8 +527,18 @@
                             <button class="btn btn-outline-secondary" type="button" id="getCurrentLocation">
                                 <i class="fa-solid fa-crosshairs"></i>
                             </button>
+                            <button class="btn btn-outline-primary" type="button" id="startQrScan">
+                                <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR') }}
+                            </button>
                         </div>
-                        <div class="form-text">{{ __('Klik ikon bidik untuk mengambil lokasi saat ini.') }}</div>
+                        <div class="form-text">{{ __('Klik ikon bidik untuk mengambil lokasi saat ini atau gunakan Scan QR.') }}</div>
+                        <div id="qrScanStatus" class="small text-muted mt-2"></div>
+                    </div>
+                    <div id="qrScannerWrapper" class="mt-2 d-none">
+                        <div id="ticket-qr-reader" style="width: 100%; max-width: 420px;"></div>
+                        <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopQrScan">
+                            <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                        </button>
                     </div>
                     <div class="mt-3">
                         <div class="form-text text-muted mb-2">{{ __('Ketuk peta untuk menentukan lokasi.') }}</div>
@@ -535,9 +625,294 @@
 
 
 
+@push('scripts')
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
         const locationInput = document.getElementById('location');
+        const startQrScanBtn = document.getElementById('startQrScan');
+        const stopQrScanBtn = document.getElementById('stopQrScan');
+        const qrScannerWrapper = document.getElementById('qrScannerWrapper');
+        const qrScanStatus = document.getElementById('qrScanStatus');
+        const qrReaderElementId = 'ticket-qr-reader';
+        const onuSerialInput = document.getElementById('cust_onu_serial');
+        const custWanMacInput = document.getElementById('cust_wan_mac');
+        const startOnuQrScanBtn = document.getElementById('startOnuQrScan');
+        const stopOnuQrScanBtn = document.getElementById('stopOnuQrScan');
+        const onuQrScannerWrapper = document.getElementById('onuQrScannerWrapper');
+        const onuQrScanStatus = document.getElementById('onuQrScanStatus');
+        const onuQrReaderElementId = 'ticket-onu-qr-reader';
+        const startCustMacQrScanBtn = document.getElementById('startCustMacQrScan');
+        const stopCustMacQrScanBtn = document.getElementById('stopCustMacQrScan');
+        const custMacQrScannerWrapper = document.getElementById('custMacQrScannerWrapper');
+        const custMacQrScanStatus = document.getElementById('custMacQrScanStatus');
+        const custMacQrReaderElementId = 'ticket-cust-mac-qr-reader';
+        const completionOnuInput = document.getElementById('completion_onu_serial');
+        const completionWanMacInput = document.getElementById('completion_wan_mac');
+        const startCompleteOnuQrScanBtn = document.getElementById('startCompleteOnuQrScan');
+        const stopCompleteOnuQrScanBtn = document.getElementById('stopCompleteOnuQrScan');
+        const completionOnuQrScannerWrapper = document.getElementById('completionOnuQrScannerWrapper');
+        const completionOnuQrScanStatus = document.getElementById('completionOnuQrScanStatus');
+        const completionOnuQrReaderElementId = 'completion-onu-qr-reader';
+        const startCompleteMacQrScanBtn = document.getElementById('startCompleteMacQrScan');
+        const stopCompleteMacQrScanBtn = document.getElementById('stopCompleteMacQrScan');
+        const completionMacQrScannerWrapper = document.getElementById('completionMacQrScannerWrapper');
+        const completionMacQrScanStatus = document.getElementById('completionMacQrScanStatus');
+        const completionMacQrReaderElementId = 'completion-mac-qr-reader';
+        let qrScanner = null;
+        let isQrScannerRunning = false;
+        let onuQrScanner = null;
+        let isOnuQrScannerRunning = false;
+        let custMacQrScanner = null;
+        let isCustMacQrScannerRunning = false;
+        let completionOnuQrScanner = null;
+        let isCompletionOnuQrScannerRunning = false;
+        let completionMacQrScanner = null;
+        let isCompletionMacQrScannerRunning = false;
+
+        const setQrStatus = (message, type = 'muted') => {
+            if (!qrScanStatus) return;
+            qrScanStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+            if (type === 'error') {
+                qrScanStatus.classList.add('text-danger');
+            } else if (type === 'success') {
+                qrScanStatus.classList.add('text-success');
+            } else {
+                qrScanStatus.classList.add('text-muted');
+            }
+            qrScanStatus.textContent = message;
+        };
+
+        const parseCoordinatesFromQr = (rawText) => {
+            if (!rawText) return null;
+            const text = String(rawText).trim();
+
+            const strictPair = text.match(/(-?\d{1,3}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
+            if (strictPair) {
+                const lat = Number(strictPair[1]);
+                const lng = Number(strictPair[2]);
+                if (!Number.isNaN(lat) && !Number.isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                    return `${lat}, ${lng}`;
+                }
+            }
+
+            try {
+                const url = new URL(text);
+                const mapQuery = url.searchParams.get('query') || url.searchParams.get('q');
+                if (mapQuery) {
+                    const queryPair = mapQuery.match(/(-?\d{1,3}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
+                    if (queryPair) {
+                        return `${Number(queryPair[1])}, ${Number(queryPair[2])}`;
+                    }
+                }
+                const atMarker = url.pathname.match(/@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+                if (atMarker) {
+                    return `${Number(atMarker[1])}, ${Number(atMarker[2])}`;
+                }
+            } catch (e) {
+                // Bukan URL, lanjut cek format lain.
+            }
+
+            const geoPair = text.match(/^geo:(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/i);
+            if (geoPair) {
+                return `${Number(geoPair[1])}, ${Number(geoPair[2])}`;
+            }
+
+            return null;
+        };
+
+        const setOnuQrStatus = (message, type = 'muted') => {
+            if (!onuQrScanStatus) return;
+            onuQrScanStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+            if (type === 'error') {
+                onuQrScanStatus.classList.add('text-danger');
+            } else if (type === 'success') {
+                onuQrScanStatus.classList.add('text-success');
+            } else {
+                onuQrScanStatus.classList.add('text-muted');
+            }
+            onuQrScanStatus.textContent = message;
+        };
+
+        const parseOnuSerialFromQr = (rawText) => {
+            if (!rawText) return null;
+            const text = String(rawText).trim();
+            const firstLine = text.split(/\r?\n/).map((line) => line.trim()).find((line) => line !== '') || '';
+            const source = firstLine || text;
+
+            const taggedMatch = source.match(/(?:SN|SERIAL|ONU)[\s:=-]*([A-Za-z0-9._:-]+)/i);
+            if (taggedMatch && taggedMatch[1]) {
+                return taggedMatch[1].trim();
+            }
+
+            try {
+                const url = new URL(source);
+                const serialParam = url.searchParams.get('serial') || url.searchParams.get('onu_serial') || url.searchParams.get('sn');
+                if (serialParam) {
+                    return serialParam.trim();
+                }
+                const pathnamePart = url.pathname.split('/').filter(Boolean).pop();
+                if (pathnamePart) {
+                    return pathnamePart.trim();
+                }
+            } catch (e) {
+                // Bukan URL, lanjutkan sebagai teks biasa.
+            }
+
+            return source.trim() !== '' ? source.trim() : null;
+        };
+
+        const parseWanMacFromQr = (rawText) => {
+            if (!rawText) return null;
+            const text = String(rawText).trim();
+
+            const toMacWithColon = (macRaw) => {
+                const normalized = macRaw.replace(/[^0-9A-Fa-f]/g, '');
+                if (normalized.length !== 12) return null;
+                return normalized.match(/.{1,2}/g).join(':').toUpperCase();
+            };
+
+            const directMatch = text.match(/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/);
+            if (directMatch && directMatch[0]) {
+                return toMacWithColon(directMatch[0]);
+            }
+
+            const compactMatch = text.match(/\b[0-9A-Fa-f]{12}\b/);
+            if (compactMatch && compactMatch[0]) {
+                return toMacWithColon(compactMatch[0]);
+            }
+
+            try {
+                const url = new URL(text);
+                const macParam = url.searchParams.get('mac')
+                    || url.searchParams.get('wan_mac')
+                    || url.searchParams.get('mac_address');
+                if (macParam) {
+                    return toMacWithColon(macParam);
+                }
+            } catch (e) {
+                // Bukan URL, lanjutkan sebagai teks biasa.
+            }
+
+            return null;
+        };
+
+        const normalizeMacInputValue = (value) => {
+            if (!value) return '';
+            const normalized = String(value).replace(/[^0-9A-Fa-f]/g, '');
+            if (normalized.length !== 12) return String(value).trim().toUpperCase();
+            return normalized.match(/.{1,2}/g).join(':').toUpperCase();
+        };
+
+        const stopQrScanner = async () => {
+            if (!qrScanner || !isQrScannerRunning) return;
+            try {
+                await qrScanner.stop();
+                await qrScanner.clear();
+            } catch (error) {
+                console.warn('Stop QR scanner error:', error);
+            } finally {
+                isQrScannerRunning = false;
+                if (qrScannerWrapper) qrScannerWrapper.classList.add('d-none');
+                if (startQrScanBtn) startQrScanBtn.disabled = false;
+            }
+        };
+
+        const stopOnuQrScanner = async () => {
+            if (!onuQrScanner || !isOnuQrScannerRunning) return;
+            try {
+                await onuQrScanner.stop();
+                await onuQrScanner.clear();
+            } catch (error) {
+                console.warn('Stop ONU QR scanner error:', error);
+            } finally {
+                isOnuQrScannerRunning = false;
+                if (onuQrScannerWrapper) onuQrScannerWrapper.classList.add('d-none');
+                if (startOnuQrScanBtn) startOnuQrScanBtn.disabled = false;
+            }
+        };
+
+        const setCustMacQrStatus = (message, type = 'muted') => {
+            if (!custMacQrScanStatus) return;
+            custMacQrScanStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+            if (type === 'error') {
+                custMacQrScanStatus.classList.add('text-danger');
+            } else if (type === 'success') {
+                custMacQrScanStatus.classList.add('text-success');
+            } else {
+                custMacQrScanStatus.classList.add('text-muted');
+            }
+            custMacQrScanStatus.textContent = message;
+        };
+
+        const stopCustMacQrScanner = async () => {
+            if (!custMacQrScanner || !isCustMacQrScannerRunning) return;
+            try {
+                await custMacQrScanner.stop();
+                await custMacQrScanner.clear();
+            } catch (error) {
+                console.warn('Stop customer MAC scanner error:', error);
+            } finally {
+                isCustMacQrScannerRunning = false;
+                if (custMacQrScannerWrapper) custMacQrScannerWrapper.classList.add('d-none');
+                if (startCustMacQrScanBtn) startCustMacQrScanBtn.disabled = false;
+            }
+        };
+
+        const setCompletionOnuQrStatus = (message, type = 'muted') => {
+            if (!completionOnuQrScanStatus) return;
+            completionOnuQrScanStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+            if (type === 'error') {
+                completionOnuQrScanStatus.classList.add('text-danger');
+            } else if (type === 'success') {
+                completionOnuQrScanStatus.classList.add('text-success');
+            } else {
+                completionOnuQrScanStatus.classList.add('text-muted');
+            }
+            completionOnuQrScanStatus.textContent = message;
+        };
+
+        const setCompletionMacQrStatus = (message, type = 'muted') => {
+            if (!completionMacQrScanStatus) return;
+            completionMacQrScanStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+            if (type === 'error') {
+                completionMacQrScanStatus.classList.add('text-danger');
+            } else if (type === 'success') {
+                completionMacQrScanStatus.classList.add('text-success');
+            } else {
+                completionMacQrScanStatus.classList.add('text-muted');
+            }
+            completionMacQrScanStatus.textContent = message;
+        };
+
+        const stopCompletionOnuQrScanner = async () => {
+            if (!completionOnuQrScanner || !isCompletionOnuQrScannerRunning) return;
+            try {
+                await completionOnuQrScanner.stop();
+                await completionOnuQrScanner.clear();
+            } catch (error) {
+                console.warn('Stop completion ONU scanner error:', error);
+            } finally {
+                isCompletionOnuQrScannerRunning = false;
+                if (completionOnuQrScannerWrapper) completionOnuQrScannerWrapper.classList.add('d-none');
+                if (startCompleteOnuQrScanBtn) startCompleteOnuQrScanBtn.disabled = false;
+            }
+        };
+
+        const stopCompletionMacQrScanner = async () => {
+            if (!completionMacQrScanner || !isCompletionMacQrScannerRunning) return;
+            try {
+                await completionMacQrScanner.stop();
+                await completionMacQrScanner.clear();
+            } catch (error) {
+                console.warn('Stop completion MAC scanner error:', error);
+            } finally {
+                isCompletionMacQrScannerRunning = false;
+                if (completionMacQrScannerWrapper) completionMacQrScannerWrapper.classList.add('d-none');
+                if (startCompleteMacQrScanBtn) startCompleteMacQrScanBtn.disabled = false;
+            }
+        };
 
         if (getCurrentLocationBtn && locationInput) {
             getCurrentLocationBtn.addEventListener('click', function() {
@@ -556,6 +931,307 @@
                 } else {
                     alert('{{ __('Geolocation tidak didukung.') }}');
                 }
+            });
+        }
+
+        if (startQrScanBtn && locationInput) {
+            startQrScanBtn.addEventListener('click', async function() {
+                if (typeof Html5Qrcode === 'undefined') {
+                    setQrStatus('{{ __('Library QR scanner tidak tersedia.') }}', 'error');
+                    return;
+                }
+                if (isQrScannerRunning) {
+                    setQrStatus('{{ __('Scanner sudah aktif.') }}', 'muted');
+                    return;
+                }
+
+                try {
+                    await stopOnuQrScanner();
+                    await stopCustMacQrScanner();
+                    await stopCompletionOnuQrScanner();
+                    await stopCompletionMacQrScanner();
+                    qrScanner = qrScanner || new Html5Qrcode(qrReaderElementId);
+                    if (qrScannerWrapper) qrScannerWrapper.classList.remove('d-none');
+                    setQrStatus('{{ __('Arahkan kamera ke QR berisi koordinat.') }}', 'muted');
+                    startQrScanBtn.disabled = true;
+
+                    await qrScanner.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: 220 },
+                        async (decodedText) => {
+                            const coords = parseCoordinatesFromQr(decodedText);
+                            if (!coords) {
+                                setQrStatus('{{ __('QR terdeteksi, tetapi format koordinat tidak dikenali.') }}', 'error');
+                                return;
+                            }
+                            locationInput.value = coords;
+                            setQrStatus('{{ __('Koordinat berhasil dibaca dari QR.') }}', 'success');
+                            await stopQrScanner();
+                        },
+                        () => {
+                            // Diamkan callback error per frame agar tidak spam.
+                        }
+                    );
+                    isQrScannerRunning = true;
+                } catch (error) {
+                    setQrStatus('{{ __('Gagal mengakses kamera. Pastikan izin kamera diberikan.') }}', 'error');
+                    if (startQrScanBtn) startQrScanBtn.disabled = false;
+                    console.error('Start QR scanner error:', error);
+                }
+            });
+        }
+
+        if (stopQrScanBtn) {
+            stopQrScanBtn.addEventListener('click', async function() {
+                await stopQrScanner();
+                setQrStatus('{{ __('Scanner dihentikan.') }}', 'muted');
+            });
+        }
+
+        if (startOnuQrScanBtn && onuSerialInput) {
+            startOnuQrScanBtn.addEventListener('click', async function() {
+                if (typeof Html5Qrcode === 'undefined') {
+                    setOnuQrStatus('{{ __('Library QR scanner tidak tersedia.') }}', 'error');
+                    return;
+                }
+                if (isOnuQrScannerRunning) {
+                    setOnuQrStatus('{{ __('Scanner ONU sudah aktif.') }}', 'muted');
+                    return;
+                }
+
+                try {
+                    await stopQrScanner();
+                    await stopCustMacQrScanner();
+                    await stopCompletionOnuQrScanner();
+                    await stopCompletionMacQrScanner();
+                    onuQrScanner = onuQrScanner || new Html5Qrcode(onuQrReaderElementId);
+                    if (onuQrScannerWrapper) onuQrScannerWrapper.classList.remove('d-none');
+                    setOnuQrStatus('{{ __('Arahkan kamera ke QR label ONU.') }}', 'muted');
+                    startOnuQrScanBtn.disabled = true;
+
+                    await onuQrScanner.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: 220 },
+                        async (decodedText) => {
+                            const serial = parseOnuSerialFromQr(decodedText);
+                            if (!serial) {
+                                setOnuQrStatus('{{ __('QR terdeteksi, tetapi serial ONU tidak terbaca.') }}', 'error');
+                                return;
+                            }
+                            onuSerialInput.value = serial;
+                            setOnuQrStatus('{{ __('ONU Serial berhasil dibaca dari QR.') }}', 'success');
+                            if (custWanMacInput && !custWanMacInput.value) {
+                                custWanMacInput.focus();
+                            }
+                            await stopOnuQrScanner();
+                        },
+                        () => {
+                            // Diamkan callback error per frame agar tidak spam.
+                        }
+                    );
+                    isOnuQrScannerRunning = true;
+                } catch (error) {
+                    setOnuQrStatus('{{ __('Gagal mengakses kamera. Pastikan izin kamera diberikan.') }}', 'error');
+                    if (startOnuQrScanBtn) startOnuQrScanBtn.disabled = false;
+                    console.error('Start ONU QR scanner error:', error);
+                }
+            });
+        }
+
+        if (startCustMacQrScanBtn && custWanMacInput) {
+            startCustMacQrScanBtn.addEventListener('click', async function() {
+                if (typeof Html5Qrcode === 'undefined') {
+                    setCustMacQrStatus('{{ __('Library QR scanner tidak tersedia.') }}', 'error');
+                    return;
+                }
+                if (isCustMacQrScannerRunning) {
+                    setCustMacQrStatus('{{ __('Scanner MAC sudah aktif.') }}', 'muted');
+                    return;
+                }
+
+                try {
+                    await stopQrScanner();
+                    await stopOnuQrScanner();
+                    await stopCompletionOnuQrScanner();
+                    await stopCompletionMacQrScanner();
+                    custMacQrScanner = custMacQrScanner || new Html5Qrcode(custMacQrReaderElementId);
+                    if (custMacQrScannerWrapper) custMacQrScannerWrapper.classList.remove('d-none');
+                    setCustMacQrStatus('{{ __('Arahkan kamera ke QR MAC Address.') }}', 'muted');
+                    startCustMacQrScanBtn.disabled = true;
+
+                    await custMacQrScanner.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: 220 },
+                        async (decodedText) => {
+                            const mac = parseWanMacFromQr(decodedText);
+                            if (!mac) {
+                                setCustMacQrStatus('{{ __('QR terdeteksi, tetapi MAC Address tidak terbaca.') }}', 'error');
+                                return;
+                            }
+                            custWanMacInput.value = normalizeMacInputValue(mac);
+                            setCustMacQrStatus('{{ __('MAC Address berhasil dibaca dari QR.') }}', 'success');
+                            await stopCustMacQrScanner();
+                        },
+                        () => {
+                            // Diamkan callback error per frame agar tidak spam.
+                        }
+                    );
+                    isCustMacQrScannerRunning = true;
+                } catch (error) {
+                    setCustMacQrStatus('{{ __('Gagal mengakses kamera. Pastikan izin kamera diberikan.') }}', 'error');
+                    if (startCustMacQrScanBtn) startCustMacQrScanBtn.disabled = false;
+                    console.error('Start customer MAC scanner error:', error);
+                }
+            });
+        }
+
+        if (stopCustMacQrScanBtn) {
+            stopCustMacQrScanBtn.addEventListener('click', async function() {
+                await stopCustMacQrScanner();
+                setCustMacQrStatus('{{ __('Scanner MAC dihentikan.') }}', 'muted');
+            });
+        }
+
+        if (startCompleteOnuQrScanBtn && completionOnuInput) {
+            startCompleteOnuQrScanBtn.addEventListener('click', async function() {
+                if (typeof Html5Qrcode === 'undefined') {
+                    setCompletionOnuQrStatus('{{ __('Library QR scanner tidak tersedia.') }}', 'error');
+                    return;
+                }
+                if (isCompletionOnuQrScannerRunning) {
+                    setCompletionOnuQrStatus('{{ __('Scanner ONU SN sudah aktif.') }}', 'muted');
+                    return;
+                }
+
+                try {
+                    await stopQrScanner();
+                    await stopOnuQrScanner();
+                    await stopCompletionMacQrScanner();
+                    completionOnuQrScanner = completionOnuQrScanner || new Html5Qrcode(completionOnuQrReaderElementId);
+                    if (completionOnuQrScannerWrapper) completionOnuQrScannerWrapper.classList.remove('d-none');
+                    setCompletionOnuQrStatus('{{ __('Arahkan kamera ke QR ONU SN.') }}', 'muted');
+                    startCompleteOnuQrScanBtn.disabled = true;
+
+                    await completionOnuQrScanner.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: 220 },
+                        async (decodedText) => {
+                            const serial = parseOnuSerialFromQr(decodedText);
+                            if (!serial) {
+                                setCompletionOnuQrStatus('{{ __('QR terdeteksi, tetapi ONU SN tidak terbaca.') }}', 'error');
+                                return;
+                            }
+                            completionOnuInput.value = serial;
+                            setCompletionOnuQrStatus('{{ __('ONU SN berhasil dibaca dari QR.') }}', 'success');
+                            if (completionWanMacInput && !completionWanMacInput.value) {
+                                completionWanMacInput.focus();
+                            }
+                            await stopCompletionOnuQrScanner();
+                        },
+                        () => {
+                            // Diamkan callback error per frame agar tidak spam.
+                        }
+                    );
+                    isCompletionOnuQrScannerRunning = true;
+                } catch (error) {
+                    setCompletionOnuQrStatus('{{ __('Gagal mengakses kamera. Pastikan izin kamera diberikan.') }}', 'error');
+                    if (startCompleteOnuQrScanBtn) startCompleteOnuQrScanBtn.disabled = false;
+                    console.error('Start completion ONU scanner error:', error);
+                }
+            });
+        }
+
+        if (stopCompleteOnuQrScanBtn) {
+            stopCompleteOnuQrScanBtn.addEventListener('click', async function() {
+                await stopCompletionOnuQrScanner();
+                setCompletionOnuQrStatus('{{ __('Scanner ONU SN dihentikan.') }}', 'muted');
+            });
+        }
+
+        if (startCompleteMacQrScanBtn && completionWanMacInput) {
+            startCompleteMacQrScanBtn.addEventListener('click', async function() {
+                if (typeof Html5Qrcode === 'undefined') {
+                    setCompletionMacQrStatus('{{ __('Library QR scanner tidak tersedia.') }}', 'error');
+                    return;
+                }
+                if (isCompletionMacQrScannerRunning) {
+                    setCompletionMacQrStatus('{{ __('Scanner MAC sudah aktif.') }}', 'muted');
+                    return;
+                }
+
+                try {
+                    await stopQrScanner();
+                    await stopOnuQrScanner();
+                    await stopCompletionOnuQrScanner();
+                    completionMacQrScanner = completionMacQrScanner || new Html5Qrcode(completionMacQrReaderElementId);
+                    if (completionMacQrScannerWrapper) completionMacQrScannerWrapper.classList.remove('d-none');
+                    setCompletionMacQrStatus('{{ __('Arahkan kamera ke QR MAC Address.') }}', 'muted');
+                    startCompleteMacQrScanBtn.disabled = true;
+
+                    await completionMacQrScanner.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: 220 },
+                        async (decodedText) => {
+                            const mac = parseWanMacFromQr(decodedText);
+                            if (!mac) {
+                                setCompletionMacQrStatus('{{ __('QR terdeteksi, tetapi MAC Address tidak terbaca.') }}', 'error');
+                                return;
+                            }
+                            completionWanMacInput.value = normalizeMacInputValue(mac);
+                            setCompletionMacQrStatus('{{ __('MAC Address berhasil dibaca dari QR.') }}', 'success');
+                            await stopCompletionMacQrScanner();
+                        },
+                        () => {
+                            // Diamkan callback error per frame agar tidak spam.
+                        }
+                    );
+                    isCompletionMacQrScannerRunning = true;
+                } catch (error) {
+                    setCompletionMacQrStatus('{{ __('Gagal mengakses kamera. Pastikan izin kamera diberikan.') }}', 'error');
+                    if (startCompleteMacQrScanBtn) startCompleteMacQrScanBtn.disabled = false;
+                    console.error('Start completion MAC scanner error:', error);
+                }
+            });
+        }
+
+        if (stopCompleteMacQrScanBtn) {
+            stopCompleteMacQrScanBtn.addEventListener('click', async function() {
+                await stopCompletionMacQrScanner();
+                setCompletionMacQrStatus('{{ __('Scanner MAC dihentikan.') }}', 'muted');
+            });
+        }
+
+        if (custWanMacInput) {
+            custWanMacInput.addEventListener('blur', function() {
+                custWanMacInput.value = normalizeMacInputValue(custWanMacInput.value);
+            });
+        }
+
+        if (completionWanMacInput) {
+            completionWanMacInput.addEventListener('blur', function() {
+                completionWanMacInput.value = normalizeMacInputValue(completionWanMacInput.value);
+            });
+        }
+
+        if (stopOnuQrScanBtn) {
+            stopOnuQrScanBtn.addEventListener('click', async function() {
+                await stopOnuQrScanner();
+                setOnuQrStatus('{{ __('Scanner ONU dihentikan.') }}', 'muted');
+            });
+        }
+
+        const editLocationModal = document.getElementById('editLocationModal');
+        if (editLocationModal) {
+            editLocationModal.addEventListener('hidden.bs.modal', function() {
+                stopQrScanner();
+            });
+        }
+
+        const editCustomerModal = document.getElementById('editCustomerModal');
+        if (editCustomerModal) {
+            editCustomerModal.addEventListener('hidden.bs.modal', function() {
+                stopOnuQrScanner();
+                stopCustMacQrScanner();
             });
         }
     });
