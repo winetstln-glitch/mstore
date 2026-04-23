@@ -14,12 +14,9 @@
                     </div>
                     <div class="d-flex gap-2 w-100 w-md-auto justify-content-md-end">
                         @if(Auth::user()->hasRole('admin'))
-                        <form action="{{ route('tickets.notify', $ticket) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-success text-white btn-sm flex-grow-1 flex-md-grow-0" onclick="return confirm('{{ __('Kirim notifikasi WhatsApp?') }}')">
-                                <i class="fa-brands fa-whatsapp me-1"></i> <span class="d-none d-sm-inline">{{ __('Notifikasi') }}</span>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-success text-white btn-sm flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#ticketNotifyModal">
+                            <i class="fa-brands fa-whatsapp me-1"></i> <span class="d-none d-sm-inline">{{ __('Notifikasi') }}</span>
+                        </button>
                         @endif
                         @can('ticket.edit')
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-warning text-white btn-sm flex-grow-1 flex-md-grow-0">
@@ -316,6 +313,36 @@
         </div>
     </div>
 </div>
+
+@if(Auth::user()->hasRole('admin'))
+@php
+    $ticketNotifyTemplate = \App\Models\Setting::getValue('whatsapp_ticket_template', \App\Notifications\TicketAssignedNotification::defaultTemplate());
+@endphp
+<div class="modal fade" id="ticketNotifyModal" tabindex="-1" aria-labelledby="ticketNotifyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ticketNotifyModalLabel">{{ __('Template Notifikasi Teknisi') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('tickets.notify', $ticket) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p class="text-muted small mb-2">{{ __('Pesan akan dikirim ke masing-masing teknisi yang ditugaskan. Placeholder akan diisi otomatis.') }}</p>
+                    <textarea class="form-control" name="notification_template" rows="12">{{ $ticketNotifyTemplate }}</textarea>
+                    <div class="form-text mt-2">
+                        Placeholder: <code>{technician_name}</code>, <code>{ticket_number}</code>, <code>{subject}</code>, <code>{customer_name}</code>, <code>{location}</code>, <code>{priority}</code>, <code>{description}</code>, <code>{url}</code>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                    <button type="submit" class="btn btn-success">{{ __('Kirim Ke Teknisi Ditugaskan') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 
 @if($ticket->customer && $ticket->type === 'pasang_baru' && !in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
 <div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">

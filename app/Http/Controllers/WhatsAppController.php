@@ -27,14 +27,7 @@ class WhatsAppController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $defaultTemplate = "*TUGAS BARU (TICKET ASSIGNED)*\n\n".
-                           "Halo {technician_name},\n".
-                           "Anda telah ditugaskan untuk tiket berikut:\n\n".
-                           "🎫 *No Tiket:* {ticket_number}\n".
-                           "📝 *Subject:* {subject}\n".
-                           "👤 *Customer:* {customer_name}\n".
-                           "📍 *Lokasi:* {location}\n\n".
-                           "Segera proses tiket ini melalui link berikut:\n{url}";
+        $defaultTemplate = \App\Notifications\TicketAssignedNotification::defaultTemplate();
 
         $template = Setting::firstOrCreate(
             ['key' => 'whatsapp_ticket_template'],
@@ -45,6 +38,10 @@ class WhatsAppController extends Controller implements HasMiddleware
                 'label' => 'Ticket Notification Template',
             ]
         );
+        if (blank($template->value)) {
+            $template->value = $defaultTemplate;
+            $template->save();
+        }
 
         $defaultAtkReceipt = "🧾 *STRUK PEMBELIAN*\n\n🏪 {{nama_toko}}\n📍 {{alamat_toko}}\n☎ {{no_toko}}\n\n━━━━━━━━━━━━━━━━━━\n\nNo Invoice : {{invoice}}\nTanggal    : {{tanggal}}\nCustomer   : {{nama_customer}}\n\n━━━━━━━━━━━━━━━━━━\n\n📦 Detail Barang:\n\n{{#each items}}\n{{nama_produk}}\n{{qty}} x Rp{{harga}} = Rp{{total}}\n{{/each}}\n\n━━━━━━━━━━━━━━━━━━\nSubtotal : Rp{{subtotal}}\nDiskon   : Rp{{diskon}}\nPajak    : Rp{{pajak}}\n━━━━━━━━━━━━━━━━━━\n💰 *Total Bayar : Rp{{grand_total}}*\n\nMetode Bayar : {{metode_bayar}}\nStatus       : {{status}}\n\n━━━━━━━━━━━━━━━━━━\nTerima kasih telah berbelanja 🙏";
         $defaultWashReceipt = "🚗 *STRUK LAYANAN CUCI KENDARAAN*\n\n🏪 {{nama_usaha}}\n📍 {{alamat}}\n☎ {{no_hp}}\n\n━━━━━━━━━━━━━━━━━━\n\nNo Transaksi : {{invoice}}\nTanggal      : {{tanggal}}\nCustomer     : {{nama_customer}}\nKendaraan    : {{jenis_kendaraan}} - {{plat_nomor}}\n\n━━━━━━━━━━━━━━━━━━\n\n🧼 Layanan:\n{{#each items}}\n• {{nama_layanan}} - Rp{{harga}}\n{{/each}}\n\n━━━━━━━━━━━━━━━━━━\nSubtotal : Rp{{subtotal}}\nDiskon   : Rp{{diskon}}\n━━━━━━━━━━━━━━━━━━\n💰 *Total Bayar : Rp{{total}}*\n\nMetode Bayar : {{metode_bayar}}\nStatus       : {{status}}\n\n━━━━━━━━━━━━━━━━━━\nTerima kasih 🙏";
@@ -170,7 +167,9 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_api_key' => 'nullable|string',
         ]);
 
-        $this->upsertWhatsappSetting('whatsapp_ticket_template', $request->whatsapp_ticket_template, 'textarea', 'Ticket Notification Template');
+        if ($request->has('whatsapp_ticket_template')) {
+            $this->upsertWhatsappSetting('whatsapp_ticket_template', $request->whatsapp_ticket_template, 'textarea', 'Ticket Notification Template');
+        }
         if ($request->has('whatsapp_atk_receipt_template')) {
             $this->upsertWhatsappSetting('whatsapp_atk_receipt_template', $request->whatsapp_atk_receipt_template, 'textarea', 'ATK Receipt Template');
         }

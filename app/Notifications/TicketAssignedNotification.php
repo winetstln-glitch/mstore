@@ -40,30 +40,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
      */
     public function toWhatsApp(object $notifiable)
     {
-        $url = route('tickets.show', $this->ticket->id);
-        $customerName = $this->ticket->customer->name ?? 'Unknown';
-        $location = $this->ticket->location ?? '-';
-
-        // Fetch template from settings or use default
-        $template = Setting::where('key', 'whatsapp_ticket_template')->value('value');
-
-        if (! $template) {
-            return "*TUGAS BARU (TICKET ASSIGNED)*\n\n".
-                   "Halo {$notifiable->name},\n".
-                   "Anda telah ditugaskan untuk tiket berikut:\n\n".
-                   "🎫 *No Tiket:* {$this->ticket->ticket_number}\n".
-                   "📝 *Subject:* {$this->ticket->subject}\n".
-                   "👤 *Customer:* {$customerName}\n".
-                   "📍 *Lokasi:* {$location}\n\n".
-                   "Segera proses tiket ini melalui link berikut:\n{$url}";
-        }
-
-        // Replace placeholders
-        return str_replace(
-            ['{technician_name}', '{ticket_number}', '{subject}', '{customer_name}', '{location}', '{url}'],
-            [$notifiable->name, $this->ticket->ticket_number, $this->ticket->subject, $customerName, $location, $url],
-            $template
-        );
+        return self::buildMessage($this->ticket, $notifiable);
     }
 
     public function toTelegram(object $notifiable)
@@ -87,5 +64,47 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
             'message' => "New ticket assigned: {$this->ticket->ticket_number} - {$this->ticket->subject}",
             'url' => route('tickets.show', $this->ticket->id),
         ];
+    }
+
+    public static function defaultTemplate(): string
+    {
+        return "*TUGAS BARU (TICKET ASSIGNED)*\n\n".
+            "Halo {technician_name},\n".
+            "Anda telah ditugaskan untuk tiket berikut:\n\n".
+            "🎫 *No Tiket:* {ticket_number}\n".
+            "📝 *Subject:* {subject}\n".
+            "👤 *Customer:* {customer_name}\n".
+            "📍 *Lokasi:* {location}\n".
+            "⚠️ *Prioritas:* {priority}\n".
+            "📄 *Deskripsi:* {description}\n\n".
+            "Segera proses tiket ini melalui link berikut:\n{url}";
+    }
+
+    public static function buildMessage(Ticket $ticket, object $notifiable, ?string $customTemplate = null): string
+    {
+        $template = trim((string) ($customTemplate ?? ''));
+        if ($template === '') {
+            $template = (string) Setting::getValue('whatsapp_ticket_template', self::defaultTemplate());
+        }
+
+        $customerName = $ticket->customer->name ?? 'Unknown';
+        $location = $ticket->location ?? '-';
+        $description = $ticket->description ?: '-';
+        $url = route('tickets.show', $ticket->id);
+
+        return str_replace(
+            ['{technician_name}', '{ticket_number}', '{subject}', '{customer_name}', '{location}', '{priority}', '{description}', '{url}'],
+            [
+                $notifiable->name ?? 'Teknisi',
+                $ticket->ticket_number,
+                $ticket->subject,
+                $customerName,
+                $location,
+                ucfirst((string) $ticket->priority),
+                $description,
+                $url,
+            ],
+            $template
+        );
     }
 }

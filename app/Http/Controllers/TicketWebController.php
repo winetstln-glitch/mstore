@@ -521,11 +521,15 @@ class TicketWebController extends Controller implements HasMiddleware
     /**
      * Manually send WhatsApp notification to assigned technicians.
      */
-    public function sendNotification(Ticket $ticket, \App\Services\WhatsAppService $whatsappService)
+    public function sendNotification(Request $request, Ticket $ticket, \App\Services\WhatsAppService $whatsappService)
     {
         if (! Auth::user()->hasRole('admin')) {
             abort(403);
         }
+
+        $request->validate([
+            'notification_template' => 'nullable|string',
+        ]);
 
         if ($ticket->technicians->isEmpty()) {
             return back()->with('error', __('No technicians assigned to this ticket.'));
@@ -535,12 +539,14 @@ class TicketWebController extends Controller implements HasMiddleware
         $failCount = 0;
         $errors = [];
 
-        $notification = new TicketAssignedNotification($ticket);
+        $customTemplate = $request->filled('notification_template')
+            ? (string) $request->input('notification_template')
+            : null;
 
         foreach ($ticket->technicians as $technician) {
             try {
-                // Use notification class to generate message consistency
-                $message = $notification->toWhatsApp($technician);
+                // Build personalized message for each assigned technician.
+                $message = TicketAssignedNotification::buildMessage($ticket, $technician, $customTemplate);
 
                 if (empty($technician->phone)) {
                     $failCount++;
@@ -578,7 +584,7 @@ class TicketWebController extends Controller implements HasMiddleware
             ]));
         }
 
-        return back()->with('success', __('Notification sent to assigned technicians via WhatsApp.'));
+        return back()->with('success', __('Notification sent to :count assigned technicians via WhatsApp.', ['count' => $successCount]));
     }
 
     /**

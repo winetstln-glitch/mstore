@@ -114,6 +114,23 @@
                     @csrf
                     <div class="row">
                         <div class="col-md-6">
+                            <label>Template Notifikasi Tiket Teknisi</label>
+                            <textarea class="form-control" rows="12" name="whatsapp_ticket_template" id="ticketTpl">{{ \App\Models\Setting::getValue('whatsapp_ticket_template', \App\Notifications\TicketAssignedNotification::defaultTemplate()) }}</textarea>
+                            <div class="form-text">
+                                Placeholder: <code>{technician_name}</code>, <code>{ticket_number}</code>, <code>{subject}</code>, <code>{customer_name}</code>, <code>{location}</code>, <code>{priority}</code>, <code>{description}</code>, <code>{url}</code>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="useTicketDefaultBtn">
+                                Gunakan Template Default
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Live Preview Tiket</label>
+                            <div class="border p-3" style="min-height:300px; white-space:pre-wrap;" id="ticketPreview"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
                             <label>ATK Receipt Template</label>
                             <textarea class="form-control" rows="12" name="whatsapp_atk_receipt_template" id="atkTpl">{{ \App\Models\Setting::getValue('whatsapp_atk_receipt_template', '') }}</textarea>
                         </div>
@@ -202,6 +219,24 @@
         });
         return t;
     }
+    function renderTicketTemplate(tpl, vars) {
+        let t = tpl;
+        Object.keys(vars).forEach(k => {
+            t = t.replaceAll('{' + k + '}', String(vars[k]));
+        });
+        return t;
+    }
+    const ticketVars = {
+        technician_name: 'Teknisi Demo',
+        ticket_number: 'TCK-2026-0001',
+        subject: 'Internet putus sejak pagi',
+        customer_name: 'Budi Santoso',
+        location: '-6.200000, 106.816666',
+        priority: 'High',
+        description: 'Lampu LOS merah, mohon cek jalur ODP dan ONU.',
+        url: @json(url('/tickets/1'))
+    };
+    const defaultTicketTemplate = @json(\App\Notifications\TicketAssignedNotification::defaultTemplate());
     const atkVars = {
         nama_toko: @json(config('app.name')),
         alamat_toko: @json(\App\Models\Setting::getValue('store_address','Jl. Contoh No. 1')),
@@ -239,18 +274,28 @@
             { nama_layanan: 'Cuci Interior', harga: '10.000' }
         ]
     };
-    function updatePreview(idTpl, idPrev, vars) {
+    function updatePreview(idTpl, idPrev, vars, renderer = renderSimple) {
         const elTpl = document.getElementById(idTpl);
         const elPrev = document.getElementById(idPrev);
         if (!elTpl || !elPrev) return;
-        const result = renderSimple(elTpl.value, vars);
+        const result = renderer(elTpl.value, vars);
         elPrev.textContent = result;
     }
     document.addEventListener('DOMContentLoaded', function () {
+        updatePreview('ticketTpl', 'ticketPreview', ticketVars, renderTicketTemplate);
         updatePreview('atkTpl', 'atkPreview', atkVars);
         updatePreview('washTpl', 'washPreview', washVars);
+        const ticketEl = document.getElementById('ticketTpl');
         const atkEl = document.getElementById('atkTpl');
         const washEl = document.getElementById('washTpl');
+        const defaultBtn = document.getElementById('useTicketDefaultBtn');
+        if (ticketEl) ticketEl.addEventListener('input', () => updatePreview('ticketTpl', 'ticketPreview', ticketVars, renderTicketTemplate));
+        if (defaultBtn && ticketEl) {
+            defaultBtn.addEventListener('click', () => {
+                ticketEl.value = defaultTicketTemplate;
+                updatePreview('ticketTpl', 'ticketPreview', ticketVars, renderTicketTemplate);
+            });
+        }
         if (atkEl) atkEl.addEventListener('input', () => updatePreview('atkTpl', 'atkPreview', atkVars));
         if (washEl) washEl.addEventListener('input', () => updatePreview('washTpl', 'washPreview', washVars));
     });
