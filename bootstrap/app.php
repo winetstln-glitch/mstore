@@ -54,6 +54,13 @@ return Application::configure(basePath: dirname(__DIR__))
             if (config('app.debug')) {
                 return null;
             }
+            if (
+                $e instanceof \Illuminate\Validation\ValidationException ||
+                $e instanceof \Illuminate\Auth\AuthenticationException ||
+                $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+            ) {
+                return null;
+            }
             $errorId = app()->bound('last_error_id') ? app('last_error_id') : (string) Str::uuid();
             $acceptsJson = $request->expectsJson();
             if ($acceptsJson) {
