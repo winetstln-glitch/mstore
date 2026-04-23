@@ -117,6 +117,7 @@ class WhatsAppService
 
                 if (! $isSent) {
                     $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
+                    $error = $this->humanizeProviderError($error);
                     throw new \Exception('Gateway WhatsApp menolak pesan: '.$error);
                 }
 
@@ -180,6 +181,7 @@ class WhatsAppService
 
                 if (! $isSent) {
                     $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
+                    $error = $this->humanizeProviderError($error);
                     throw new \Exception('Gateway WhatsApp menolak pesan media: '.$error);
                 }
 
@@ -307,10 +309,12 @@ class WhatsAppService
 
             $providerValidation = $this->validateProviderResponse($body, (string) $response->body());
             if (! $response->successful() || ! $providerValidation['ok']) {
+                $error = $providerValidation['error'] ?: ('HTTP '.$response->status());
+                $error = $this->humanizeProviderError($error);
                 return [
                     'ok' => false,
                     'connected' => false,
-                    'message' => $providerValidation['error'] ?: ('HTTP '.$response->status()),
+                    'message' => $error,
                     'provider_response' => $response->body(),
                 ];
             }
@@ -387,5 +391,15 @@ class WhatsAppService
         }
 
         return true;
+    }
+
+    private function humanizeProviderError(string $error): string
+    {
+        $normalized = strtolower($error);
+        if (str_contains($normalized, 'disconnected device') || str_contains($normalized, 'device disconnected')) {
+            return 'Perangkat WhatsApp gateway belum terhubung. Silakan buka panel provider dan sambungkan ulang device.';
+        }
+
+        return $error;
     }
 }
