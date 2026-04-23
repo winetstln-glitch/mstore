@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\ChatMessageSent;
+use App\Events\ChatMessagesRead;
 use App\Events\ChatTyping;
 use App\Models\ChatMessage;
 use App\Models\ChatThread;
@@ -72,11 +73,7 @@ class ChatController extends Controller implements HasMiddleware
                 ->reverse()
                 ->values();
 
-            ChatMessage::query()
-                ->where('thread_id', $selectedThread->id)
-                ->where('sender_id', '!=', $currentUserId)
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+            $this->markThreadMessagesAsRead($selectedThread, $currentUserId);
         }
 
         $contacts = User::query()
@@ -222,11 +219,7 @@ class ChatController extends Controller implements HasMiddleware
             $messages = $query->latest('id')->take(100)->get()->reverse()->values();
         }
 
-        ChatMessage::query()
-            ->where('thread_id', $chat->id)
-            ->where('sender_id', '!=', $currentUserId)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $this->markThreadMessagesAsRead($chat, $currentUserId);
 
         return response()->json([
             'messages' => $messages->map(fn (ChatMessage $message) => $this->formatMessage($message)),
@@ -237,11 +230,7 @@ class ChatController extends Controller implements HasMiddleware
     {
         $this->authorizeThreadAccess($chat);
 
-        ChatMessage::query()
-            ->where('thread_id', $chat->id)
-            ->where('sender_id', '!=', (int) Auth::id())
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $this->markThreadMessagesAsRead($chat, (int) Auth::id());
 
         return response()->json(['ok' => true]);
     }
@@ -296,6 +285,7 @@ class ChatController extends Controller implements HasMiddleware
             'sender_avatar' => optional($message->sender)->avatar,
             'body' => (string) $message->body,
             'read_at' => $message->read_at?->toDateTimeString(),
+            'read_at_human' => $message->read_at?->diffForHumans(),
             'created_at' => $message->created_at?->toDateTimeString(),
             'created_at_human' => $message->created_at?->diffForHumans(),
         ];
@@ -304,5 +294,41 @@ class ChatController extends Controller implements HasMiddleware
     private function typingCacheKey(int $threadId, int $userId): string
     {
         return 'chat:typing:'.$threadId.':'.$userId;
+    }
+
+    /**
+     * @return array{ids: array<int>, read_at: string}|null
+     */
+    private function markThreadMessagesAsRead(ChatThread $chat, int $readerId): ?array
+    {
+        $ids = ChatMessage::query()
+            ->where('thread_id', (int) $chat->id)
+            ->where('sender_id', '!=', $readerId)
+            ->whereNull('read_at')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return null;
+        }
+
+        $readAt = now();
+        ChatMessage::query()
+            ->whereIn('id', $ids)
+            ->update(['read_at' => $readAt]);
+
+        broadcast(new ChatMessagesRead(
+            threadId: (int) $chat->id,
+            readerId: $readerId,
+            messageIds: $ids,
+            readAt: $readAt->toDateTimeString(),
+        ))->toOthers();
+
+        return [
+            'ids' => $ids,
+            'read_at' => $readAt->toDateTimeString(),
+        ];
     }
 }

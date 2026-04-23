@@ -120,6 +120,7 @@
                                 <span>{{ __('Thread #') }}{{ $selectedThread->id }}</span>
                                 <span id="chatPresenceBadge" class="badge text-bg-secondary">{{ __('Offline') }}</span>
                             </div>
+                            <div id="chatLastSeenStatus" class="small text-muted">{{ __('Terakhir aktif: -') }}</div>
                             <div id="chatTypingStatus" class="small text-primary mt-1 d-none">{{ __('Sedang mengetik...') }}</div>
                         </div>
                     </div>
@@ -133,7 +134,12 @@
                                     @endif
                                     <div>{{ $message->body }}</div>
                                     <div class="small mt-1 {{ $mine ? 'text-white-50' : 'text-muted' }}">
-                                        {{ optional($message->created_at)->format('d/m/Y H:i') }}
+                                        <span>{{ optional($message->created_at)->format('d/m/Y H:i') }}</span>
+                                        @if($mine)
+                                            <span class="message-status ms-2" data-message-status-for="{{ $message->id }}">
+                                                {{ $message->read_at ? 'Seen' : 'Terkirim' }}
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -181,6 +187,7 @@
         const sendBtn = document.getElementById('chatSendBtn');
         const messageInput = document.getElementById('chatMessageInput');
         const presenceBadge = document.getElementById('chatPresenceBadge');
+        const lastSeenStatus = document.getElementById('chatLastSeenStatus');
         const typingStatus = document.getElementById('chatTypingStatus');
         const startBtn = document.getElementById('chatStartBtn');
         const recipientSelect = document.getElementById('chatRecipient');
@@ -225,16 +232,30 @@
             const timeLabel = escapeHtml(message.created_at_human || '');
             const bubbleClass = mine ? 'mine' : 'other';
             const timeClass = mine ? 'text-white-50' : 'text-muted';
+            const statusLabel = mine ? (message.read_at ? 'Seen' : 'Terkirim') : '';
+            const statusHtml = mine
+                ? '<span class="message-status ms-2" data-message-status-for="' + String(message.id) + '">' + escapeHtml(statusLabel) + '</span>'
+                : '';
 
             wrap.innerHTML = '' +
                 '<div class="chat-bubble ' + bubbleClass + ' rounded-3 px-3 py-2">' +
                     senderHtml +
                     '<div>' + escapeHtml(message.body || '') + '</div>' +
-                    '<div class="small mt-1 ' + timeClass + '">' + timeLabel + '</div>' +
+                    '<div class="small mt-1 ' + timeClass + '"><span>' + timeLabel + '</span>' + statusHtml + '</div>' +
                 '</div>';
 
             messageListEl.appendChild(wrap);
             lastMessageId = Math.max(lastMessageId, Number(message.id));
+        };
+
+        const updateSeenStatus = (messageIds) => {
+            if (!Array.isArray(messageIds)) return;
+            messageIds.forEach((id) => {
+                const statusNode = document.querySelector('[data-message-status-for="' + String(id) + '"]');
+                if (statusNode) {
+                    statusNode.textContent = 'Seen';
+                }
+            });
         };
 
         const pollMessages = async () => {
@@ -285,6 +306,10 @@
                     const online = payload.online === true;
                     presenceBadge.className = 'badge ' + (online ? 'text-bg-success' : 'text-bg-secondary');
                     presenceBadge.textContent = online ? 'Online' : 'Offline';
+                    if (lastSeenStatus) {
+                        const lastSeenText = payload.last_seen_at ? payload.last_seen_at : '-';
+                        lastSeenStatus.textContent = online ? 'Aktif sekarang' : ('Terakhir aktif: ' + lastSeenText);
+                    }
                 }
 
                 if (typingStatus) {
@@ -342,6 +367,11 @@
                         if (Number(event?.senderId || 0) !== currentUserId) {
                             showTyping();
                         }
+                    })
+                    .listen('.chat.messages.read', (event) => {
+                        if (Number(event?.readerId || 0) !== currentUserId) {
+                            updateSeenStatus(event?.messageIds || []);
+                        }
                     });
             }
 
@@ -352,6 +382,10 @@
                         const online = event?.online === true;
                         presenceBadge.className = 'badge ' + (online ? 'text-bg-success' : 'text-bg-secondary');
                         presenceBadge.textContent = online ? 'Online' : 'Offline';
+                        if (lastSeenStatus) {
+                            const lastSeenText = event?.lastSeenAt || '-';
+                            lastSeenStatus.textContent = online ? 'Aktif sekarang' : ('Terakhir aktif: ' + lastSeenText);
+                        }
                     });
             }
         }
