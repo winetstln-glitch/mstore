@@ -13,6 +13,8 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        $chatPermissionIds = Permission::whereIn('name', ['chat.view', 'chat.manage'])->pluck('id')->all();
+
         $roles = [
             ['name' => 'admin', 'label' => 'Administrator'],
             ['name' => 'noc', 'label' => 'Network Operations Center'],
@@ -249,6 +251,10 @@ class RoleSeeder extends Seeder
                     'inventory.pickup',
                 ])->get();
                 $role->permissions()->sync($permissions);
+            }
+
+            if (! empty($chatPermissionIds)) {
+                $role->permissions()->syncWithoutDetaching($chatPermissionIds);
             }
         }
     }

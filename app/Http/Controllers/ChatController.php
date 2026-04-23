@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChatMessage;
 use App\Models\ChatThread;
 use App\Models\User;
+use App\Notifications\ChatMessageNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -130,6 +131,15 @@ class ChatController extends Controller implements HasMiddleware
         $thread->save();
 
         $message->load('sender:id,name,avatar');
+
+        $recipientId = (int) $thread->user_one_id === $currentUserId
+            ? (int) $thread->user_two_id
+            : (int) $thread->user_one_id;
+        $recipient = User::find($recipientId);
+        if ($recipient) {
+            $senderName = (string) (Auth::user()->name ?? 'Pengguna');
+            $recipient->notify(new ChatMessageNotification($thread, $message, $senderName));
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
