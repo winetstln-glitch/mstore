@@ -49,6 +49,59 @@
 </div>
 
 <div class="row">
+    <div class="col-12 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-bold text-success mb-3">
+                    <i class="fa-brands fa-whatsapp me-1"></i>{{ __('Riwayat Pengiriman Akun WhatsApp') }}
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>{{ __('Waktu') }}</th>
+                                <th>{{ __('Pengirim') }}</th>
+                                <th>{{ __('Penerima') }}</th>
+                                <th>{{ __('Nomor Tujuan') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Ringkasan') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(($whatsAppAccountLogs ?? collect()) as $log)
+                                <tr>
+                                    <td class="small text-muted">{{ \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $log->sender_name ?: '-' }}</td>
+                                    <td>{{ $log->target_name ?: '-' }}</td>
+                                    <td>{{ $log->target_phone ?: '-' }}</td>
+                                    <td>
+                                        @if($log->status === 'sent')
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Terkirim') }}</span>
+                                        @elseif($log->status === 'failed')
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ __('Gagal') }}</span>
+                                        @else
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ __('Pending') }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="small">
+                                        {{ $log->message_excerpt ?: '-' }}
+                                        @if(!empty($log->error_message))
+                                            <div class="text-danger">{{ \Illuminate\Support\Str::limit($log->error_message, 120) }}</div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">{{ __('Belum ada riwayat pengiriman akun WhatsApp.') }}</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">

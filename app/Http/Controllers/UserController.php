@@ -10,6 +10,7 @@ use App\Traits\HasIdCard;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -55,8 +56,24 @@ class UserController extends Controller implements HasMiddleware
 
         $users = $query->paginate(10)->withQueryString();
         $roles = Role::orderBy('label')->get();
+        $whatsAppAccountLogs = DB::table('whatsapp_account_send_logs as logs')
+            ->leftJoin('users as sender', 'sender.id', '=', 'logs.sender_user_id')
+            ->leftJoin('users as target', 'target.id', '=', 'logs.target_user_id')
+            ->select([
+                'logs.id',
+                'logs.target_phone',
+                'logs.status',
+                'logs.message_excerpt',
+                'logs.error_message',
+                'logs.created_at',
+                'sender.name as sender_name',
+                'target.name as target_name',
+            ])
+            ->orderByDesc('logs.id')
+            ->limit(12)
+            ->get();
 
-        return view('users.index', compact('users', 'roles'));
+        return view('users.index', compact('users', 'roles', 'whatsAppAccountLogs'));
     }
 
     public function export(Request $request)
@@ -315,12 +332,34 @@ class UserController extends Controller implements HasMiddleware
             ?? "*INFORMASI AKUN SISTEM*\n\nNama: {{nama}}\nUsername: {{username}}\nEmail: {{email}}\nNomor HP: {{nomor_hp}}\nPeran: {{peran}}\nStatus: {{status}}\nPassword: {{password}}\n\nLogin: {{login_url}}\n\nMohon simpan informasi akun ini dengan aman.";
 
         $message = $wa->renderTemplate($tpl, $vars);
+        $auditId = DB::table('whatsapp_account_send_logs')->insertGetId([
+            'sender_user_id' => auth()->id(),
+            'target_user_id' => $user->id,
+            'target_phone' => $phone,
+            'status' => 'pending',
+            'message_excerpt' => 'Informasi akun dikirim untuk username: '.($user->username ?: '-'),
+            'password_included' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         try {
             $wa->sendMessage($phone, $message, 'user_account');
         } catch (\Throwable $e) {
+            DB::table('whatsapp_account_send_logs')->where('id', $auditId)->update([
+                'status' => 'failed',
+                'error_message' => mb_substr((string) $e->getMessage(), 0, 500),
+                'updated_at' => now(),
+            ]);
+
             return back()->with('error', __('Gagal mengirim WhatsApp: :message', ['message' => $e->getMessage()]));
         }
+
+        DB::table('whatsapp_account_send_logs')->where('id', $auditId)->update([
+            'status' => 'sent',
+            'error_message' => null,
+            'updated_at' => now(),
+        ]);
 
         return back()->with('success', __('Informasi akun berhasil dikirim ke WhatsApp.'));
     }
