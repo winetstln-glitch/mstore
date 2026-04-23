@@ -43,19 +43,25 @@
         padding: 1rem;
     }
     .chat-bubble {
-        max-width: 78%;
+        max-width: 64%;
         white-space: pre-wrap;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        word-break: break-word;
+        line-height: 1.35;
+        font-size: 0.92rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
     }
     .chat-bubble.mine {
         margin-left: auto;
         background: var(--bs-primary);
         color: #fff;
+        border-top-right-radius: 6px;
     }
     .chat-bubble.other {
         margin-right: auto;
         background: var(--bs-body-bg);
         border: 1px solid var(--bs-border-color);
+        border-top-left-radius: 6px;
     }
     .chat-composer {
         position: sticky;
@@ -72,6 +78,10 @@
         .chat-message-list {
             height: calc(100vh - 480px);
             min-height: 260px;
+        }
+        .chat-bubble {
+            max-width: 84%;
+            font-size: 0.9rem;
         }
     }
 </style>
@@ -184,7 +194,7 @@
                             @foreach($messages as $message)
                                 @php $mine = (int) $message->sender_id === $currentUserId; @endphp
                                 <div class="mb-2 d-flex {{ $mine ? 'justify-content-end' : 'justify-content-start' }}" data-message-id="{{ $message->id }}">
-                                    <div class="chat-bubble {{ $mine ? 'mine' : 'other' }} rounded-3 px-3 py-2">
+                                    <div class="chat-bubble {{ $mine ? 'mine' : 'other' }} px-2 py-2">
                                         @if(! $mine)
                                             <div class="fw-semibold small mb-1">{{ $message->sender->name ?? __('Pengguna') }}</div>
                                         @endif
@@ -297,7 +307,7 @@
                 : '';
 
             wrap.innerHTML = '' +
-                '<div class="chat-bubble ' + bubbleClass + ' rounded-3 px-3 py-2">' +
+                '<div class="chat-bubble ' + bubbleClass + ' px-2 py-2">' +
                     senderHtml +
                     '<div>' + escapeHtml(message.body || '') + '</div>' +
                     '<div class="small mt-1 ' + timeClass + '"><span>' + timeLabel + '</span>' + statusHtml + '</div>' +
