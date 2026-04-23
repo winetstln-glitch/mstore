@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GenieAcsServer;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
