@@ -50,6 +50,8 @@
         data-current-user-id="{{ $currentUserId }}"
         data-thread-id="{{ $selectedThread?->id }}"
         data-messages-endpoint-template="{{ route('chat.messages', ['chat' => '__THREAD__']) }}"
+        data-presence-endpoint-template="{{ route('chat.presence', ['chat' => '__THREAD__']) }}"
+        data-typing-endpoint-template="{{ route('chat.typing', ['chat' => '__THREAD__']) }}"
         data-send-endpoint="{{ route('chat.store') }}"
         data-start-endpoint="{{ route('chat.start') }}"
     >
@@ -107,7 +109,11 @@
                     <div class="card-header bg-body d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-semibold">{{ $otherParticipant?->name ?? __('Pengguna') }}</div>
-                            <div class="small text-muted">{{ __('Thread #') }}{{ $selectedThread->id }}</div>
+                            <div class="small text-muted d-flex align-items-center gap-2">
+                                <span>{{ __('Thread #') }}{{ $selectedThread->id }}</span>
+                                <span id="chatPresenceBadge" class="badge text-bg-secondary">{{ __('Offline') }}</span>
+                            </div>
+                            <div id="chatTypingStatus" class="small text-primary mt-1 d-none">{{ __('Sedang mengetik...') }}</div>
                         </div>
                     </div>
                     <div id="chatMessageList" class="card-body chat-message-list">
@@ -155,6 +161,8 @@
 
         const currentUserId = Number(app.dataset.currentUserId || 0);
         const messagesEndpointTemplate = app.dataset.messagesEndpointTemplate || '';
+        const presenceEndpointTemplate = app.dataset.presenceEndpointTemplate || '';
+        const typingEndpointTemplate = app.dataset.typingEndpointTemplate || '';
         const sendEndpoint = app.dataset.sendEndpoint || '';
         const startEndpoint = app.dataset.startEndpoint || '';
         const threadId = Number(app.dataset.threadId || 0);
@@ -164,11 +172,14 @@
         const sendForm = document.getElementById('chatSendForm');
         const sendBtn = document.getElementById('chatSendBtn');
         const messageInput = document.getElementById('chatMessageInput');
+        const presenceBadge = document.getElementById('chatPresenceBadge');
+        const typingStatus = document.getElementById('chatTypingStatus');
         const startBtn = document.getElementById('chatStartBtn');
         const recipientSelect = document.getElementById('chatRecipient');
 
         let lastMessageId = 0;
         let pollingTimer = null;
+        let lastTypingPingAt = 0;
 
         const escapeHtml = (value) => String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -241,16 +252,69 @@
             }
         };
 
+        const pollPresence = async () => {
+            if (!threadId || !presenceEndpointTemplate) return;
+            const endpoint = presenceEndpointTemplate.replace('__THREAD__', String(threadId));
+            try {
+                const response = await fetch(endpoint, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) return;
+                const payload = await response.json();
+
+                if (presenceBadge) {
+                    const online = payload.online === true;
+                    presenceBadge.className = 'badge ' + (online ? 'text-bg-success' : 'text-bg-secondary');
+                    presenceBadge.textContent = online ? 'Online' : 'Offline';
+                }
+
+                if (typingStatus) {
+                    const typing = payload.typing === true;
+                    typingStatus.classList.toggle('d-none', !typing);
+                }
+            } catch (error) {
+                console.warn('Chat presence polling failed:', error);
+            }
+        };
+
+        const pingTyping = async () => {
+            if (!threadId || !typingEndpointTemplate) return;
+            const nowTs = Date.now();
+            if (nowTs - lastTypingPingAt < 1800) return;
+            lastTypingPingAt = nowTs;
+            const endpoint = typingEndpointTemplate.replace('__THREAD__', String(threadId));
+            try {
+                await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ typing: true }),
+                });
+            } catch (_) {
+                // ignore
+            }
+        };
+
         if (messageListEl) {
             lastMessageId = findLastMessageId();
             scrollToBottom();
         }
 
         if (threadId && messagesEndpointTemplate) {
-            pollingTimer = setInterval(pollMessages, 2500);
+            pollPresence();
+            pollingTimer = setInterval(function () {
+                pollMessages();
+                pollPresence();
+            }, 2500);
         }
 
         if (sendForm && messageInput && sendBtn) {
+            messageInput.addEventListener('input', pingTyping);
             sendForm.addEventListener('submit', async function (event) {
                 event.preventDefault();
                 const body = messageInput.value.trim();
@@ -329,4 +393,3 @@
     });
 </script>
 @endpush
-

@@ -37,6 +37,11 @@ class User extends Authenticatable
         'is_active',
         'daily_salary',
         'avatar',
+        'last_seen_at',
+        'last_seen_ip',
+        'last_seen_user_agent',
+        'attendance_device_hash',
+        'attendance_device_locked_at',
     ];
 
     /**
@@ -60,7 +65,18 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'last_seen_at' => 'datetime',
+            'attendance_device_locked_at' => 'datetime',
         ];
+    }
+
+    public function isOnline(int $thresholdSeconds = 90): bool
+    {
+        if (! $this->last_seen_at) {
+            return false;
+        }
+
+        return $this->last_seen_at->gte(now()->subSeconds(max(10, $thresholdSeconds)));
     }
 
     public function role(): BelongsTo

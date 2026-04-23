@@ -102,6 +102,7 @@
                         
                         <input type="hidden" name="latitude" id="latitude">
                         <input type="hidden" name="longitude" id="longitude">
+                        <input type="hidden" name="device_fingerprint" id="deviceFingerprint">
 
                         @if($isOut)
                         <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-3 text-center mb-4 small">
@@ -207,6 +208,7 @@
     const fingerprintContainer = document.getElementById('fingerprintContainer');
     const uploadArea = document.getElementById('upload-area');
     const attendanceForm = document.getElementById('attendanceForm');
+    const deviceFingerprintInput = document.getElementById('deviceFingerprint');
 
     function setSubmitEnabled(enabled) {
         if (!submitBtn || !fingerprintContainer) return;
@@ -214,7 +216,44 @@
         fingerprintContainer.classList.toggle('fingerprint-ready', enabled);
     }
 
+    async function buildDeviceFingerprint() {
+        const payload = [
+            navigator.userAgent || '',
+            navigator.platform || '',
+            navigator.language || '',
+            String(new Date().getTimezoneOffset()),
+            window.screen ? `${screen.width}x${screen.height}x${screen.colorDepth}` : '',
+            navigator.hardwareConcurrency || '',
+            navigator.deviceMemory || '',
+        ].join('|');
+
+        if (window.crypto?.subtle && window.TextEncoder) {
+            const buffer = new TextEncoder().encode(payload);
+            const digest = await window.crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        let hash = 0;
+        for (let i = 0; i < payload.length; i++) {
+            hash = ((hash << 5) - hash) + payload.charCodeAt(i);
+            hash |= 0;
+        }
+        return 'legacy-' + Math.abs(hash);
+    }
+
     if (attendanceForm && submitBtn) {
+        buildDeviceFingerprint()
+            .then((fingerprint) => {
+                if (deviceFingerprintInput) {
+                    deviceFingerprintInput.value = fingerprint;
+                }
+            })
+            .catch(() => {
+                if (deviceFingerprintInput) {
+                    deviceFingerprintInput.value = '';
+                }
+            });
+
         attendanceForm.addEventListener('submit', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';

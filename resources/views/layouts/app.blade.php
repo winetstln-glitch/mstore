@@ -1260,6 +1260,32 @@
     });
 </script>
 
+@auth
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const endpoint = @json(route('presence.ping'));
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        if (!endpoint || !csrfToken) return;
+
+        const sendPresencePing = () => {
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ ping: true }),
+            }).catch(() => {});
+        };
+
+        sendPresencePing();
+        setInterval(sendPresencePing, 25000);
+    });
+</script>
+@endauth
+
 @stack('scripts')
 
 </body>

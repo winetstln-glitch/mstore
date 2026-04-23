@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller implements HasMiddleware
@@ -17,8 +18,8 @@ class ChatController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:chat.view', only: ['index', 'show', 'messages']),
-            new Middleware('permission:chat.manage', only: ['store', 'start', 'markRead']),
+            new Middleware('permission:chat.view', only: ['index', 'show', 'messages', 'presence']),
+            new Middleware('permission:chat.manage', only: ['store', 'start', 'markRead', 'typing']),
         ];
     }
 
@@ -240,6 +241,33 @@ class ChatController extends Controller implements HasMiddleware
         return response()->json(['ok' => true]);
     }
 
+    public function presence(ChatThread $chat): JsonResponse
+    {
+        $this->authorizeThreadAccess($chat);
+        $currentUserId = (int) Auth::id();
+        $otherId = (int) $chat->user_one_id === $currentUserId
+            ? (int) $chat->user_two_id
+            : (int) $chat->user_one_id;
+
+        $other = User::find($otherId);
+        $typingKey = $this->typingCacheKey((int) $chat->id, $otherId);
+
+        return response()->json([
+            'online' => $other ? $other->isOnline() : false,
+            'last_seen_at' => $other?->last_seen_at?->toDateTimeString(),
+            'typing' => Cache::get($typingKey, false) === true,
+        ]);
+    }
+
+    public function typing(ChatThread $chat): JsonResponse
+    {
+        $this->authorizeThreadAccess($chat);
+        $key = $this->typingCacheKey((int) $chat->id, (int) Auth::id());
+        Cache::put($key, true, now()->addSeconds(8));
+
+        return response()->json(['ok' => true]);
+    }
+
     private function authorizeThreadAccess(ChatThread $thread): void
     {
         $currentUserId = (int) Auth::id();
@@ -260,5 +288,10 @@ class ChatController extends Controller implements HasMiddleware
             'created_at' => $message->created_at?->toDateTimeString(),
             'created_at_human' => $message->created_at?->diffForHumans(),
         ];
+    }
+
+    private function typingCacheKey(int $threadId, int $userId): string
+    {
+        return 'chat:typing:'.$threadId.':'.$userId;
     }
 }

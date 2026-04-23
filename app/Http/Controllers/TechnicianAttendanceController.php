@@ -686,7 +686,21 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo' => 'required|image|max:10240',
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
+                'device_fingerprint' => 'required|string|min:8|max:128',
             ]);
+
+            $deviceFingerprint = trim((string) $request->input('device_fingerprint'));
+            $currentUser = Auth::user();
+            if (! $currentUser->attendance_device_hash) {
+                $currentUser->forceFill([
+                    'attendance_device_hash' => $deviceFingerprint,
+                    'attendance_device_locked_at' => now(),
+                ])->save();
+            } elseif ((string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
+                return back()->withErrors([
+                    'message' => __('Perangkat tidak terdaftar untuk absensi akun ini. Hubungi admin untuk reset perangkat absensi.'),
+                ]);
+            }
 
             // Radius Check
             $officeLat = Setting::getValue('attendance_office_lat');
@@ -708,6 +722,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo_clock_in' => $path,
                 'lat_clock_in' => $request->latitude,
                 'lng_clock_in' => $request->longitude,
+                'device_fingerprint_clock_in' => $deviceFingerprint,
+                'ip_clock_in' => (string) ($request->ip() ?? ''),
+                'user_agent_clock_in' => mb_substr((string) $request->userAgent(), 0, 255),
                 'status' => $this->determineClockInStatus($clockInStart, $now),
                 'notes' => $request->notes,
             ]);
@@ -770,7 +787,21 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'photo' => 'required|image|max:10240',
             'latitude' => 'nullable',
             'longitude' => 'nullable',
+            'device_fingerprint' => 'required|string|min:8|max:128',
         ]);
+
+        $deviceFingerprint = trim((string) $request->input('device_fingerprint'));
+        $currentUser = Auth::user();
+        if ($currentUser->attendance_device_hash && (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
+            return back()->withErrors([
+                'message' => __('Perangkat tidak terdaftar untuk absensi akun ini. Hubungi admin untuk reset perangkat absensi.'),
+            ]);
+        }
+        if ($attendance->device_fingerprint_clock_in && (string) $attendance->device_fingerprint_clock_in !== $deviceFingerprint) {
+            return back()->withErrors([
+                'message' => __('Absen pulang harus dari perangkat yang sama dengan absen masuk.'),
+            ]);
+        }
 
         // Radius Check
         $officeLat = Setting::getValue('attendance_office_lat');
@@ -791,6 +822,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'photo_clock_out' => $path,
             'lat_clock_out' => $request->latitude,
             'lng_clock_out' => $request->longitude,
+            'device_fingerprint_clock_out' => $deviceFingerprint,
+            'ip_clock_out' => (string) ($request->ip() ?? ''),
+            'user_agent_clock_out' => mb_substr((string) $request->userAgent(), 0, 255),
             'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
 

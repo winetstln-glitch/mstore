@@ -222,6 +222,86 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Teknisi Online') }}</h6>
+                    <div class="bg-success bg-opacity-10 text-success rounded p-2"><i class="fa-solid fa-signal"></i></div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $onlineTechnicians ?? 0 }}</h3>
+                <div class="small text-body-secondary">{{ __('Realtime terdeteksi aktif') }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Wash Online') }}</h6>
+                    <div class="bg-info bg-opacity-10 text-info rounded p-2"><i class="fa-solid fa-wifi"></i></div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $onlineWashEmployees ?? 0 }}</h3>
+                <div class="small text-body-secondary">{{ __('Karyawan wash sedang aktif') }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ __('Status Online/Offline Akun') }}</h6>
+                <span class="badge bg-secondary-subtle text-secondary">{{ __('Ambang online :sec detik', ['sec' => $presenceThresholdSeconds ?? 90]) }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Peran') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Online') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Absensi Hari Ini') }}</th>
+                            <th class="text-uppercase small text-muted border-0">{{ __('Terakhir Aktif') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($presenceRows ?? collect()) as $presenceRow)
+                            <tr>
+                                <td class="ps-4 fw-medium">{{ $presenceRow['name'] }}</td>
+                                <td>{{ $presenceRow['role'] }}</td>
+                                <td>
+                                    <span class="badge {{ $presenceRow['online'] ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
+                                        {{ $presenceRow['online'] ? 'Online' : 'Offline' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @php $state = $presenceRow['attendance_state']; @endphp
+                                    @if($state === 'present')
+                                        <span class="badge bg-success-subtle text-success">{{ __('Sudah Absen') }}</span>
+                                    @elseif($state === 'late')
+                                        <span class="badge bg-warning-subtle text-warning">{{ __('Terlambat') }}</span>
+                                    @elseif($state === 'not_present')
+                                        <span class="badge bg-danger-subtle text-danger">{{ __('Belum Absen') }}</span>
+                                    @else
+                                        <span class="badge bg-secondary-subtle text-secondary">{{ ucfirst($state) }}</span>
+                                    @endif
+                                </td>
+                                <td class="small text-muted">
+                                    {{ $presenceRow['last_seen'] ? \Carbon\Carbon::parse($presenceRow['last_seen'])->diffForHumans() : '-' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">{{ __('Belum ada data presence akun.') }}</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Stats Cards -->
 <div class="row g-4 mb-4">
     <!-- Customers -->

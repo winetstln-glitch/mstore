@@ -20,6 +20,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OLTController;
 use App\Http\Controllers\OnuController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouterController;
 use App\Http\Controllers\SettingController;
@@ -61,6 +62,7 @@ Route::middleware('auth')->group(function () {
         ->name('ai.chat');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
     Route::get('/dashboard/monitor-logs', [DashboardController::class, 'monitorLogs'])->name('dashboard.monitor_logs');
     Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
         return response()->json($mix->health());
@@ -281,6 +283,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('investors', InvestorController::class);
     Route::post('chat/start', [ChatController::class, 'start'])->name('chat.start');
     Route::get('chat/{chat}/messages', [ChatController::class, 'messages'])->name('chat.messages');
+    Route::get('chat/{chat}/presence', [ChatController::class, 'presence'])->name('chat.presence');
+    Route::post('chat/{chat}/typing', [ChatController::class, 'typing'])->name('chat.typing');
     Route::post('chat/{chat}/read', [ChatController::class, 'markRead'])->name('chat.read');
     Route::resource('chat', ChatController::class)->only(['index', 'show', 'store']);
 
