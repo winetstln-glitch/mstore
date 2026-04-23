@@ -50,6 +50,7 @@ class LoginController extends Controller
             }
         }
 
+        $localUser = $this->resolveLocalUserByLogin($login, $isEmailInput, $legacyEmailUser);
         $identity = $this->resolveIdentity($login, $mixRadius);
 
         $attempted = false;
@@ -169,10 +170,12 @@ class LoginController extends Controller
                 'identity' => $identity,
                 'message' => $e->getMessage(),
             ]);
-            throw ValidationException::withMessages(['login' => 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.']);
+            throw ValidationException::withMessages([
+                'login' => $this->buildInvalidLoginMessage($localUser),
+            ]);
         }
 
-        throw ValidationException::withMessages(['login' => 'Username atau password salah, atau akun tidak ditemukan.']);
+        throw ValidationException::withMessages(['login' => $this->buildInvalidLoginMessage($localUser)]);
     }
 
     public function destroy(Request $request)
@@ -342,5 +345,35 @@ class LoginController extends Controller
         }
 
         return route('dashboard');
+    }
+
+    protected function resolveLocalUserByLogin(string $login, bool $isEmailInput, ?User $legacyEmailUser): ?User
+    {
+        if ($isEmailInput) {
+            return $legacyEmailUser;
+        }
+
+        $user = User::query()->where('username', $login)->first();
+        if ($user) {
+            return $user;
+        }
+
+        return User::query()
+            ->whereNull('username')
+            ->where('email', 'like', $login.'@%')
+            ->first();
+    }
+
+    protected function buildInvalidLoginMessage(?User $localUser): string
+    {
+        if (! $localUser) {
+            return 'Username tidak ditemukan.';
+        }
+
+        if (! $localUser->is_active) {
+            return 'Akun tidak aktif. Hubungi admin untuk aktivasi ulang.';
+        }
+
+        return 'Password salah.';
     }
 }
