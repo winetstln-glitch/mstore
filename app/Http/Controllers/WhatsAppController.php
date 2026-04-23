@@ -170,30 +170,26 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_api_key' => 'nullable|string',
         ]);
 
-        Setting::where('key', 'whatsapp_ticket_template')->update([
-            'value' => $request->whatsapp_ticket_template,
-        ]);
+        $this->upsertWhatsappSetting('whatsapp_ticket_template', $request->whatsapp_ticket_template, 'textarea', 'Ticket Notification Template');
         if ($request->has('whatsapp_atk_receipt_template')) {
-            Setting::where('key', 'whatsapp_atk_receipt_template')->update([
-                'value' => $request->whatsapp_atk_receipt_template,
-            ]);
+            $this->upsertWhatsappSetting('whatsapp_atk_receipt_template', $request->whatsapp_atk_receipt_template, 'textarea', 'ATK Receipt Template');
         }
         if ($request->has('whatsapp_wash_receipt_template')) {
-            Setting::where('key', 'whatsapp_wash_receipt_template')->update([
-                'value' => $request->whatsapp_wash_receipt_template,
-            ]);
+            $this->upsertWhatsappSetting('whatsapp_wash_receipt_template', $request->whatsapp_wash_receipt_template, 'textarea', 'Wash Receipt Template');
         }
-        foreach ([
-            'whatsapp_atk_invoice_pdf_template',
-            'whatsapp_wash_ready_template',
-            'whatsapp_isp_bill_template',
-            'whatsapp_isp_reminder_template',
-            'whatsapp_isp_payment_success_template',
-            'whatsapp_isp_suspend_template',
-        ] as $k) {
-            if ($request->has($k)) {
-                Setting::where('key', $k)->update(['value' => $request->input($k)]);
+        $templateLabels = [
+            'whatsapp_atk_invoice_pdf_template' => 'ATK Invoice PDF Template',
+            'whatsapp_wash_ready_template' => 'Wash Ready Template',
+            'whatsapp_isp_bill_template' => 'ISP Monthly Bill Template',
+            'whatsapp_isp_reminder_template' => 'ISP Reminder Template',
+            'whatsapp_isp_payment_success_template' => 'ISP Payment Success Template',
+            'whatsapp_isp_suspend_template' => 'ISP Suspend Template',
+        ];
+        foreach ($templateLabels as $k => $label) {
+            if (! $request->has($k)) {
+                continue;
             }
+            $this->upsertWhatsappSetting($k, (string) $request->input($k), 'textarea', $label);
         }
         if ($request->has('whatsapp_api_url')) {
             $url = trim((string) $request->whatsapp_api_url);
@@ -201,16 +197,15 @@ class WhatsAppController extends Controller implements HasMiddleware
             if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL) === false) {
                 return redirect()->back()->withErrors(['whatsapp_api_url' => __('URL WhatsApp API tidak valid')]);
             }
-            Setting::where('key', 'whatsapp_api_url')->update([
-                'value' => $url,
-            ]);
+            $this->upsertWhatsappSetting('whatsapp_api_url', $url, 'text', 'WhatsApp API URL');
         }
         if ($request->has('whatsapp_api_key') && $request->whatsapp_api_key !== '') {
             $key = trim((string) $request->whatsapp_api_key);
-            Setting::where('key', 'whatsapp_api_key')->update([
-                'value' => $key,
-            ]);
+            $this->upsertWhatsappSetting('whatsapp_api_key', $key, 'password', 'WhatsApp API Key');
         }
+
+        // Query builder updates do not trigger model events; force refresh cached settings.
+        Setting::forgetCache();
 
         return redirect()->route('whatsapp.index')->with('success', __('WhatsApp settings updated successfully.'));
     }
@@ -317,5 +312,18 @@ class WhatsAppController extends Controller implements HasMiddleware
         $type = $status['ok'] && $status['connected'] ? 'success' : 'error';
 
         return back()->with($type, $status['message'])->with('wa_gateway_status', $status);
+    }
+
+    private function upsertWhatsappSetting(string $key, ?string $value, string $type, string $label): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => $value ?? '',
+                'group' => 'whatsapp',
+                'type' => $type,
+                'label' => $label,
+            ]
+        );
     }
 }

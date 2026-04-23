@@ -41,6 +41,13 @@
         <div class="tab-content">
 
             <div class="tab-pane fade show active" id="api">
+                @php
+                    $savedApiUrl = \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL'));
+                    $savedApiKey = \App\Models\Setting::getValue('whatsapp_api_key', env('WHATSAPP_API_KEY'));
+                    $maskedApiKey = is_string($savedApiKey) && $savedApiKey !== ''
+                        ? str_repeat('*', max(strlen($savedApiKey) - 4, 0)).substr($savedApiKey, -4)
+                        : null;
+                @endphp
                 @php($gatewayStatus = session('wa_gateway_status'))
                 @if(is_array($gatewayStatus))
                     <div class="alert {{ ($gatewayStatus['ok'] ?? false) && ($gatewayStatus['connected'] ?? false) ? 'alert-success' : 'alert-warning' }}">
@@ -54,38 +61,51 @@
                     </div>
                 @endif
 
+                <div class="alert alert-info">
+                    <div class="fw-semibold mb-1">Status Konfigurasi Tersimpan</div>
+                    <div>API URL: <code>{{ $savedApiUrl ?: '-' }}</code></div>
+                    <div>API Key: <code>{{ $maskedApiKey ?: 'Belum diatur' }}</code></div>
+                </div>
+
                 <form method="POST" action="{{ route('whatsapp.check-status') }}" class="mb-3">
                     @csrf
                     <button type="submit" class="btn btn-outline-dark btn-sm">
                         <i class="fa-solid fa-signal me-1"></i> Cek Status Gateway
                     </button>
+                    <span class="text-muted ms-2 small">Tidak menyimpan perubahan form.</span>
                 </form>
 
                 <form method="POST" action="{{ route('whatsapp.update') }}">
                     @csrf
                     <div class="alert alert-secondary">
-                        Endpoint harus base URL. Sistem otomatis append <code>/send</code>.
+                        Endpoint harus base URL. Sistem otomatis append <code>/send</code> untuk Fonnte.
                     </div>
                     <div class="mb-3">
                         <label>API URL</label>
-                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL')) }}">
+                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ $savedApiUrl }}">
                     </div>
                     <div class="mb-3">
-                        <label>API Key</label>
-                        <input type="password" class="form-control" name="whatsapp_api_key" placeholder="••••••">
+                        <label>API Key Baru</label>
+                        <input type="password" class="form-control" name="whatsapp_api_key" placeholder="Isi hanya jika ingin mengganti API key">
+                        <div class="form-text">Kosongkan jika tidak ingin mengubah API key yang sudah tersimpan.</div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success">
-                            <i class="fa-solid fa-save"></i> Save
-                        </button>
-                        <button type="submit" formmethod="POST" formaction="{{ route('whatsapp.check-status') }}" class="btn btn-outline-primary">
-                            <i class="fa-solid fa-plug"></i> Test Connection
+                            <i class="fa-solid fa-save"></i> Simpan Konfigurasi
                         </button>
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tab" data-bs-target="#test">
                             <i class="fa-solid fa-paper-plane"></i> Buka Form Send Test
                         </button>
                     </div>
                 </form>
+
+                <div class="alert alert-light border mt-3 mb-0">
+                    <div class="fw-semibold mb-2">Panduan Singkat Pengaturan API WhatsApp</div>
+                    <div>1. Isi <strong>API URL</strong> dan <strong>API Key Baru</strong>, lalu klik <strong>Simpan Konfigurasi</strong>.</div>
+                    <div>2. Klik <strong>Cek Status Gateway</strong> untuk memastikan device status <strong>Terhubung</strong>.</div>
+                    <div>3. Jika status belum terhubung, login ke panel provider (Fonnte) dan scan QR perangkat WA.</div>
+                    <div>4. Setelah terhubung, buka tab <strong>Testing</strong> lalu kirim <strong>Send Test</strong> ke nomor tujuan.</div>
+                </div>
             </div>
 
 
