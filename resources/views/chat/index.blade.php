@@ -332,9 +332,13 @@
                                     <a href="{{ $attachmentUrl }}" target="_blank" rel="noopener noreferrer">
                                         <img src="{{ $attachmentUrl }}" alt="{{ $message->attachment_name ?? 'image' }}" class="chat-attachment-image">
                                     </a>
+                                    <a href="{{ route('chat.attachments.download', ['message' => $message->id]) }}" class="chat-attachment-link" data-chat-download="1" data-filename="{{ $message->attachment_name ?? 'image' }}">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span>{{ __('Download gambar') }}</span>
+                                    </a>
                                 @else
-                                    <a href="{{ $attachmentUrl }}" target="_blank" rel="noopener noreferrer" class="chat-attachment-link">
-                                        <i class="fa-solid fa-paperclip"></i>
+                                    <a href="{{ route('chat.attachments.download', ['message' => $message->id]) }}" class="chat-attachment-link" data-chat-download="1" data-filename="{{ $message->attachment_name ?? 'file' }}">
+                                        <i class="fa-solid fa-download"></i>
                                         <span>{{ $message->attachment_name ?? __('File') }}</span>
                                     </a>
                                 @endif
@@ -461,20 +465,41 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const renderAttachmentHtml = (message) => {
-        if (!message || !message.has_attachment || !message.attachment_url) return '';
+        if (!message || !message.has_attachment) return '';
+        const downloadUrl = escapeHtml(message.attachment_download_url || message.attachment_url || '');
+        if (!downloadUrl) return '';
         const fileName = escapeHtml(message.attachment_name || 'File');
         const fileSize = message.attachment_size ? (' (' + escapeHtml(formatBytes(message.attachment_size)) + ')') : '';
         if (message.is_image_attachment) {
             return ''
                 + '<a href="' + escapeHtml(message.attachment_url) + '" target="_blank" rel="noopener noreferrer">'
                 + '<img src="' + escapeHtml(message.attachment_url) + '" alt="' + fileName + '" class="chat-attachment-image">'
+                + '</a>'
+                + '<a href="' + downloadUrl + '" class="chat-attachment-link" data-chat-download="1" data-filename="' + fileName + '">'
+                + '<i class="fa-solid fa-download"></i>'
+                + '<span>Download gambar</span>'
                 + '</a>';
         }
         return ''
-            + '<a href="' + escapeHtml(message.attachment_url) + '" target="_blank" rel="noopener noreferrer" class="chat-attachment-link">'
-            + '<i class="fa-solid fa-paperclip"></i>'
+            + '<a href="' + downloadUrl + '" class="chat-attachment-link" data-chat-download="1" data-filename="' + fileName + '">'
+            + '<i class="fa-solid fa-download"></i>'
             + '<span>' + fileName + fileSize + '</span>'
             + '</a>';
+    };
+
+    const extractFileNameFromDisposition = (disposition) => {
+        const value = String(disposition || '');
+        if (!value) return '';
+        const utf8 = value.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8 && utf8[1]) {
+            try {
+                return decodeURIComponent(utf8[1]);
+            } catch (_) {
+                return utf8[1];
+            }
+        }
+        const ascii = value.match(/filename="?([^"]+)"?/i);
+        return ascii?.[1] || '';
     };
 
     const scrollToBottom = () => {
@@ -517,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         wrapper.innerHTML = ''
             + senderHtml
-            + '<div class="message-text">' + escapeHtml(message.body || '') + '</div>'
+            + (String(message.body || '') !== '' ? ('<div class="message-text">' + escapeHtml(message.body || '') + '</div>') : '')
             + renderAttachmentHtml(message)
             + '<div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">'
             + '<span>' + clock + '</span>'
@@ -625,6 +650,45 @@ document.addEventListener('DOMContentLoaded', function () {
     if (messageListEl) {
         lastMessageId = findLastMessageId();
         scrollToBottom();
+        messageListEl.addEventListener('click', async (event) => {
+            const link = event.target.closest('a[data-chat-download="1"]');
+            if (!link) return;
+            event.preventDefault();
+            if (link.dataset.downloading === '1') return;
+
+            link.dataset.downloading = '1';
+            try {
+                const response = await fetch(link.href, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': '*/*',
+                    },
+                });
+                if (!response.ok) {
+                    throw new Error('Gagal mengunduh file.');
+                }
+
+                const blob = await response.blob();
+                const disposition = response.headers.get('content-disposition');
+                const serverFileName = extractFileNameFromDisposition(disposition);
+                const fallbackName = link.getAttribute('data-filename') || 'attachment';
+                const fileName = serverFileName || fallbackName;
+
+                const objectUrl = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = objectUrl;
+                anchor.download = fileName;
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+            } catch (error) {
+                alert(error?.message || 'Gagal mengunduh file.');
+            } finally {
+                link.dataset.downloading = '0';
+            }
+        });
     }
 
     if (threadId > 0) {

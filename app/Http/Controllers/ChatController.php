@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class ChatController extends Controller implements HasMiddleware
@@ -25,6 +26,7 @@ class ChatController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:chat.view', only: ['index', 'show', 'messages', 'presence']),
+            new Middleware('permission:chat.view', only: ['downloadAttachment']),
             new Middleware('permission:chat.manage', only: ['store', 'start', 'markRead', 'typing']),
         ];
     }
@@ -299,6 +301,25 @@ class ChatController extends Controller implements HasMiddleware
         return response()->json(['ok' => true]);
     }
 
+    public function downloadAttachment(ChatMessage $message): StreamedResponse
+    {
+        $thread = ChatThread::findOrFail((int) $message->thread_id);
+        $this->authorizeThreadAccess($thread);
+
+        abort_unless($message->attachment_path, 404);
+
+        $disk = (string) ($message->attachment_disk ?: 'public');
+        $path = (string) $message->attachment_path;
+        $name = (string) ($message->attachment_name ?: 'attachment');
+        $mime = (string) ($message->attachment_mime ?: 'application/octet-stream');
+
+        abort_unless(Storage::disk($disk)->exists($path), 404);
+
+        return Storage::disk($disk)->download($path, $name, [
+            'Content-Type' => $mime,
+        ]);
+    }
+
     private function authorizeThreadAccess(ChatThread $thread): void
     {
         $currentUserId = (int) Auth::id();
@@ -319,6 +340,7 @@ class ChatController extends Controller implements HasMiddleware
             'attachment_mime' => $message->attachment_mime,
             'attachment_size' => $message->attachment_size,
             'attachment_url' => $this->attachmentUrl($message),
+            'attachment_download_url' => $message->attachment_path ? route('chat.attachments.download', ['message' => $message->id]) : null,
             'has_attachment' => (bool) $message->attachment_path,
             'is_image_attachment' => $this->isImageAttachment($message),
             'read_at' => $message->read_at?->toDateTimeString(),

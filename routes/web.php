@@ -286,6 +286,7 @@ Route::middleware('auth')->group(function () {
     Route::get('chat/{chat}/presence', [ChatController::class, 'presence'])->name('chat.presence');
     Route::post('chat/{chat}/typing', [ChatController::class, 'typing'])->name('chat.typing');
     Route::post('chat/{chat}/read', [ChatController::class, 'markRead'])->name('chat.read');
+    Route::get('chat/messages/{message}/download', [ChatController::class, 'downloadAttachment'])->name('chat.attachments.download');
     Route::resource('chat', ChatController::class)->only(['index', 'show', 'store']);
 
     // Telegram Settings
