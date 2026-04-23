@@ -56,6 +56,7 @@
         flex-direction: column;
         background-color: var(--chat-bg);
         position: relative;
+        min-height: 0;
     }
 
     .chat-header {
@@ -67,6 +68,7 @@
 
     .chat-message-list {
         flex: 1;
+        min-height: 0;
         overflow-y: auto;
         padding: 20px;
         display: flex;
@@ -124,6 +126,9 @@
         background: #fff;
         padding: 15px 20px;
         border-top: 1px solid #eaeaea;
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
     }
 
     .chat-input {
@@ -135,6 +140,13 @@
 
     .chat-input:focus {
         background-color: #fff;
+    }
+
+    .chat-send-btn {
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Mobile Responsive */
@@ -277,7 +289,7 @@
                         <input type="hidden" id="chatThreadId" value="{{ $selectedThread->id }}">
                         <input type="text" id="chatMessageInput" class="form-control chat-input" 
                                placeholder="{{ __('Tulis pesan...') }}" autocomplete="off">
-                        <button type="submit" id="chatSendBtn" class="btn btn-primary rounded-pill ms-2 px-4">
+                        <button type="submit" id="chatSendBtn" class="btn btn-primary rounded-pill ms-2 px-3 chat-send-btn">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </form>
@@ -548,295 +560,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!response.ok) throw new Error('Start thread failed');
                 const payload = await response.json();
                 if (payload.url) window.location.href = payload.url;
-            } catch (error) {
-                alert('{{ __('Gagal membuat percakapan baru.') }}');
-            } finally {
-                startBtn.disabled = false;
-            }
-        });
-    }
-
-    window.addEventListener('beforeunload', function () {
-        if (pollingTimer) clearInterval(pollingTimer);
-    });
-});
-</script>
-@endpush
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const app = document.getElementById('chatApp');
-    if (!app) return;
-
-    const currentUserId = Number(app.dataset.currentUserId || 0);
-    const threadId = Number(app.dataset.threadId || 0);
-    const otherUserId = Number(app.dataset.otherUserId || 0);
-    const messagesEndpointTemplate = app.dataset.messagesEndpointTemplate || '';
-    const presenceEndpointTemplate = app.dataset.presenceEndpointTemplate || '';
-    const typingEndpointTemplate = app.dataset.typingEndpointTemplate || '';
-    const sendEndpoint = app.dataset.sendEndpoint || '';
-    const startEndpoint = app.dataset.startEndpoint || '';
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    const messageListEl = document.getElementById('chatMessageList');
-    const sendForm = document.getElementById('chatSendForm');
-    const sendBtn = document.getElementById('chatSendBtn');
-    const messageInput = document.getElementById('chatMessageInput');
-    const presenceDot = document.getElementById('chatPresenceBadge');
-    const lastSeenStatus = document.getElementById('chatLastSeenStatus');
-    const typingStatus = document.getElementById('chatTypingStatus');
-    const startBtn = document.getElementById('chatStartBtn');
-    const recipientSelect = document.getElementById('chatRecipient');
-
-    let lastMessageId = 0;
-    let pollingTimer = null;
-    let lastTypingPingAt = 0;
-    let typingTimeoutHandle = null;
-
-    const escapeHtml = (value) => String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-
-    const scrollToBottom = () => {
-        if (!messageListEl) return;
-        messageListEl.scrollTop = messageListEl.scrollHeight;
-    };
-
-    const findLastMessageId = () => {
-        if (!messageListEl) return 0;
-        const nodes = messageListEl.querySelectorAll('[data-message-id]');
-        if (!nodes.length) return 0;
-        return Number(nodes[nodes.length - 1].getAttribute('data-message-id') || 0);
-    };
-
-    const updateSeenStatus = (messageIds) => {
-        if (!Array.isArray(messageIds)) return;
-        messageIds.forEach((id) => {
-            const icon = document.querySelector('[data-message-status-for="' + String(id) + '"]');
-            if (icon) {
-                icon.classList.add('text-info');
-            }
-        });
-    };
-
-    const appendMessage = (message) => {
-        if (!messageListEl || !message || !message.id) return;
-        if (messageListEl.querySelector('[data-message-id="' + message.id + '"]')) return;
-
-        const mine = Number(message.sender_id) === currentUserId;
-        const wrap = document.createElement('div');
-        wrap.className = 'chat-bubble ' + (mine ? 'mine' : 'other');
-        wrap.setAttribute('data-message-id', String(message.id));
-
-        const senderHtml = mine
-            ? ''
-            : '<div class="fw-bold tiny mb-1" style="font-size: 0.75rem;">' + escapeHtml(message.sender_name || 'User') + '</div>';
-        const timeLabel = escapeHtml((message.created_at || '').slice(11, 16) || '');
-        const readClass = mine && message.read_at ? 'text-info' : '';
-        const readIconHtml = mine
-            ? '<i class="fa-solid fa-check-double ' + readClass + '" data-message-status-for="' + String(message.id) + '"></i>'
-            : '';
-
-        wrap.innerHTML = ''
-            + senderHtml
-            + '<div class="message-text">' + escapeHtml(message.body || '') + '</div>'
-            + '<div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">'
-            + '<span>' + timeLabel + '</span>'
-            + readIconHtml
-            + '</div>';
-
-        messageListEl.appendChild(wrap);
-        lastMessageId = Math.max(lastMessageId, Number(message.id));
-        scrollToBottom();
-    };
-
-    const applyPresenceState = (online, lastSeenAt) => {
-        if (presenceDot) {
-            presenceDot.className = 'status-dot ' + (online ? 'bg-success' : 'bg-secondary');
-        }
-        if (lastSeenStatus) {
-            if (online) {
-                lastSeenStatus.textContent = 'Online';
-            } else {
-                lastSeenStatus.textContent = lastSeenAt ? ('Terakhir aktif: ' + lastSeenAt) : 'Offline';
-            }
-        }
-    };
-
-    const showTyping = () => {
-        if (!typingStatus) return;
-        typingStatus.classList.remove('d-none');
-        if (typingTimeoutHandle) clearTimeout(typingTimeoutHandle);
-        typingTimeoutHandle = setTimeout(() => {
-            typingStatus.classList.add('d-none');
-        }, 3000);
-    };
-
-    const pollMessages = async () => {
-        if (!threadId || !messagesEndpointTemplate) return;
-        const endpoint = messagesEndpointTemplate.replace('__THREAD__', String(threadId));
-        const query = lastMessageId > 0 ? ('?after_id=' + encodeURIComponent(lastMessageId)) : '';
-
-        try {
-            const response = await fetch(endpoint + query, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin',
-            });
-            if (!response.ok) return;
-            const payload = await response.json();
-            const messages = Array.isArray(payload.messages) ? payload.messages : [];
-            messages.forEach(appendMessage);
-        } catch (error) {
-            console.warn('Polling messages failed:', error);
-        }
-    };
-
-    const pollPresence = async () => {
-        if (!threadId || !presenceEndpointTemplate) return;
-        const endpoint = presenceEndpointTemplate.replace('__THREAD__', String(threadId));
-        try {
-            const response = await fetch(endpoint, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin',
-            });
-            if (!response.ok) return;
-            const payload = await response.json();
-            applyPresenceState(payload.online === true, payload.last_seen_at || null);
-            if (payload.typing === true) {
-                showTyping();
-            }
-        } catch (error) {
-            console.warn('Polling presence failed:', error);
-        }
-    };
-
-    const pingTyping = async () => {
-        if (!threadId || !typingEndpointTemplate) return;
-        const nowTs = Date.now();
-        if (nowTs - lastTypingPingAt < 1800) return;
-        lastTypingPingAt = nowTs;
-        const endpoint = typingEndpointTemplate.replace('__THREAD__', String(threadId));
-
-        try {
-            await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ typing: true }),
-            });
-        } catch (_) {
-            // ignore
-        }
-    };
-
-    if (messageListEl) {
-        lastMessageId = findLastMessageId();
-        scrollToBottom();
-    }
-
-    if (threadId > 0) {
-        pollPresence();
-        pollingTimer = setInterval(() => {
-            pollMessages();
-            pollPresence();
-        }, 2500);
-
-        if (window.Echo) {
-            window.Echo.private('chat.thread.' + threadId)
-                .listen('.chat.message.sent', (event) => {
-                    if (event?.message) {
-                        appendMessage(event.message);
-                    }
-                })
-                .listen('.chat.typing', (event) => {
-                    if (Number(event?.senderId || 0) !== currentUserId) {
-                        showTyping();
-                    }
-                })
-                .listen('.chat.messages.read', (event) => {
-                    if (Number(event?.readerId || 0) !== currentUserId) {
-                        updateSeenStatus(event?.messageIds || []);
-                    }
-                });
-        }
-
-        if (window.Echo && otherUserId > 0) {
-            window.Echo.private('presence.user.' + otherUserId)
-                .listen('.presence.updated', (event) => {
-                    applyPresenceState(event?.online === true, event?.lastSeenAt || null);
-                });
-        }
-    }
-
-    if (sendForm && messageInput && sendBtn) {
-        messageInput.addEventListener('input', pingTyping);
-        sendForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const body = messageInput.value.trim();
-            if (!body || !threadId) return;
-
-            sendBtn.disabled = true;
-            try {
-                const response = await fetch(sendEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        thread_id: threadId,
-                        body: body,
-                    }),
-                });
-                if (!response.ok) throw new Error('Send failed');
-                const payload = await response.json();
-                if (payload.message) {
-                    appendMessage(payload.message);
-                }
-                messageInput.value = '';
-            } catch (error) {
-                alert('{{ __('Gagal mengirim pesan.') }}');
-            } finally {
-                sendBtn.disabled = false;
-            }
-        });
-    }
-
-    if (startBtn && recipientSelect) {
-        startBtn.addEventListener('click', async () => {
-            const recipientId = Number(recipientSelect.value || 0);
-            if (!recipientId) {
-                alert('{{ __('Pilih akun terlebih dahulu.') }}');
-                return;
-            }
-
-            startBtn.disabled = true;
-            try {
-                const response = await fetch(startEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ recipient_id: recipientId }),
-                });
-                if (!response.ok) throw new Error('Start thread failed');
-                const payload = await response.json();
-                if (payload.url) {
-                    window.location.href = payload.url;
-                }
             } catch (error) {
                 alert('{{ __('Gagal membuat percakapan baru.') }}');
             } finally {
