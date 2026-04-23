@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -16,6 +17,7 @@ class WhatsAppController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:setting.view', only: ['index']),
+            new Middleware('permission:setting.view', only: ['checkStatus']),
             new Middleware('permission:setting.update', only: ['update', 'test']),
         ];
     }
@@ -223,7 +225,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'test_mode' => 'nullable|string',
         ]);
 
-        $whatsappService = new \App\Services\WhatsAppService;
+        $whatsappService = app(WhatsAppService::class);
         $phone = preg_replace('/\D+/', '', (string) $request->test_phone);
         if (str_starts_with($phone, '0')) {
             $phone = '62'.substr($phone, 1);
@@ -307,5 +309,13 @@ class WhatsAppController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             return back()->with('error', 'Error: '.$e->getMessage());
         }
+    }
+
+    public function checkStatus(WhatsAppService $whatsappService)
+    {
+        $status = $whatsappService->checkGatewayStatus();
+        $type = $status['ok'] && $status['connected'] ? 'success' : 'error';
+
+        return back()->with($type, $status['message'])->with('wa_gateway_status', $status);
     }
 }

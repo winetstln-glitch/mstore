@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     // User Management
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::get('users/{user}/id-card', [UserController::class, 'idCard'])->name('users.id-card');
+    Route::post('users/{user}/send-whatsapp-account', [UserController::class, 'sendWhatsAppAccount'])->name('users.send-whatsapp-account');
     Route::resource('users', UserController::class);
 
     // Settings
@@ -292,6 +293,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
     Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
     Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
+    Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check-status');
 
     Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
     Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\WhatsAppService;
 use App\Traits\HasIdCard;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -23,7 +25,7 @@ class UserController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:user.view', only: ['index', 'export', 'idCard']),
             new Middleware('permission:user.create', only: ['create', 'store']),
-            new Middleware('permission:user.edit', only: ['edit', 'update']),
+            new Middleware('permission:user.edit', only: ['edit', 'update', 'sendWhatsAppAccount']),
             new Middleware('permission:user.delete', only: ['destroy']),
         ];
     }
@@ -278,6 +280,40 @@ class UserController extends Controller implements HasMiddleware
         }
     }
 
+    public function sendWhatsAppAccount(User $user, WhatsAppService $wa)
+    {
+        if (! $user->phone) {
+            return back()->with('error', __('Pengguna tidak memiliki nomor HP.'));
+        }
+
+        $phone = $this->normalizePhone((string) $user->phone);
+        if ($phone === '') {
+            return back()->with('error', __('Nomor HP pengguna tidak valid.'));
+        }
+
+        $vars = [
+            'nama' => (string) $user->name,
+            'username' => (string) ($user->username ?: '-'),
+            'email' => (string) ($user->email ?: '-'),
+            'peran' => (string) ($user->role?->label ?: 'Tanpa Peran'),
+            'password' => 'Sesuai password yang sudah diberikan admin.',
+            'login_url' => route('login'),
+        ];
+
+        $tpl = Setting::where('key', 'whatsapp_user_account_template')->value('value')
+            ?? "*INFORMASI AKUN SISTEM*\nNama: {{nama}}\nUsername: {{username}}\nEmail: {{email}}\nPeran: {{peran}}\nPassword: {{password}}\nLogin: {{login_url}}";
+
+        $message = $wa->renderTemplate($tpl, $vars);
+
+        try {
+            $wa->sendMessage($phone, $message, 'user_account');
+        } catch (\Throwable $e) {
+            return back()->with('error', __('Gagal mengirim WhatsApp: :message', ['message' => $e->getMessage()]));
+        }
+
+        return back()->with('success', __('Informasi akun berhasil dikirim ke WhatsApp.'));
+    }
+
     private function hasAttendanceCardColumn(): bool
     {
         return \Illuminate\Support\Facades\Cache::rememberForever('users_attendance_card_column', function () {
@@ -321,5 +357,23 @@ class UserController extends Controller implements HasMiddleware
         }
 
         return $candidate;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (! is_string($digits) || $digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '0')) {
+            return '62'.substr($digits, 1);
+        }
+
+        if (str_starts_with($digits, '62')) {
+            return $digits;
+        }
+
+        return '62'.$digits;
     }
 }

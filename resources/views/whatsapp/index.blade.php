@@ -41,6 +41,26 @@
         <div class="tab-content">
 
             <div class="tab-pane fade show active" id="api">
+                @php($gatewayStatus = session('wa_gateway_status'))
+                @if(is_array($gatewayStatus))
+                    <div class="alert {{ ($gatewayStatus['ok'] ?? false) && ($gatewayStatus['connected'] ?? false) ? 'alert-success' : 'alert-warning' }}">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div>
+                                <strong>Status Gateway:</strong>
+                                {{ ($gatewayStatus['ok'] ?? false) && ($gatewayStatus['connected'] ?? false) ? 'Terhubung' : 'Belum Terhubung' }}
+                            </div>
+                            <small class="text-muted">{{ $gatewayStatus['message'] ?? '-' }}</small>
+                        </div>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('whatsapp.check-status') }}" class="mb-3">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-dark btn-sm">
+                        <i class="fa-solid fa-signal me-1"></i> Cek Status Gateway
+                    </button>
+                </form>
+
                 <form method="POST" action="{{ route('whatsapp.update') }}">
                     @csrf
                     <div class="alert alert-secondary">

@@ -108,12 +108,19 @@ class WhatsAppService
                     ]);
                 }
 
+                $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+                $isSent = $response->successful() && $providerValidation['ok'];
                 DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => $response->successful() ? 'sent' : 'failed',
+                    'status' => $isSent ? 'sent' : 'failed',
                     'response' => $response->body(),
                 ]);
 
-                return $response->successful();
+                if (! $isSent) {
+                    $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
+                    throw new \Exception('Gateway WhatsApp menolak pesan: '.$error);
+                }
+
+                return true;
             } catch (\Exception $e) {
                 Log::error('WhatsApp Error: '.$e->getMessage());
                 DB::table('notification_logs')->where('id', $logId)->update([
@@ -164,12 +171,19 @@ class WhatsAppService
                     'countryCode' => '62',
                 ]);
 
+                $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+                $isSent = $response->successful() && $providerValidation['ok'];
                 DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => $response->successful() ? 'sent' : 'failed',
+                    'status' => $isSent ? 'sent' : 'failed',
                     'response' => $response->body(),
                 ]);
 
-                return $response->successful();
+                if (! $isSent) {
+                    $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
+                    throw new \Exception('Gateway WhatsApp menolak pesan media: '.$error);
+                }
+
+                return true;
             } catch (\Exception $e) {
                 Log::error('WhatsApp Media Error: '.$e->getMessage());
                 DB::table('notification_logs')->where('id', $logId)->update([
@@ -257,5 +271,121 @@ class WhatsAppService
         }
 
         return $count;
+    }
+
+    public function checkGatewayStatus(): array
+    {
+        if (! $this->baseUrl || ! $this->apiKey) {
+            return [
+                'ok' => false,
+                'connected' => false,
+                'message' => 'Konfigurasi WhatsApp belum lengkap (URL/API Key).',
+                'provider_response' => null,
+            ];
+        }
+
+        try {
+            if (str_contains($this->baseUrl, 'fonnte.com')) {
+                $response = Http::timeout(8)
+                    ->connectTimeout(3)
+                    ->retry(1, 200)
+                    ->withHeaders(['Authorization' => $this->apiKey])
+                    ->post($this->baseUrl.'/device');
+            } else {
+                $response = Http::timeout(8)
+                    ->connectTimeout(3)
+                    ->retry(1, 200)
+                    ->post($this->baseUrl.'/status', [
+                        'api_key' => $this->apiKey,
+                    ]);
+            }
+
+            $body = $response->json();
+            if (! is_array($body)) {
+                $body = [];
+            }
+
+            $providerValidation = $this->validateProviderResponse($body, (string) $response->body());
+            if (! $response->successful() || ! $providerValidation['ok']) {
+                return [
+                    'ok' => false,
+                    'connected' => false,
+                    'message' => $providerValidation['error'] ?: ('HTTP '.$response->status()),
+                    'provider_response' => $response->body(),
+                ];
+            }
+
+            $connected = $this->extractConnectionFlag($body);
+
+            return [
+                'ok' => true,
+                'connected' => $connected,
+                'message' => $connected ? 'Device WhatsApp terhubung.' : 'Device WhatsApp belum terhubung.',
+                'provider_response' => $response->body(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'connected' => false,
+                'message' => $e->getMessage(),
+                'provider_response' => null,
+            ];
+        }
+    }
+
+    private function validateProviderResponse($jsonBody, string $rawBody): array
+    {
+        if (! is_array($jsonBody)) {
+            return ['ok' => true, 'error' => null];
+        }
+
+        if (array_key_exists('status', $jsonBody)) {
+            $status = filter_var($jsonBody['status'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($status === false) {
+                $reason = $jsonBody['reason'] ?? $jsonBody['message'] ?? $rawBody;
+                return ['ok' => false, 'error' => (string) $reason];
+            }
+        }
+
+        if (array_key_exists('success', $jsonBody)) {
+            $success = filter_var($jsonBody['success'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($success === false) {
+                $reason = $jsonBody['reason'] ?? $jsonBody['message'] ?? $rawBody;
+                return ['ok' => false, 'error' => (string) $reason];
+            }
+        }
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    private function extractConnectionFlag(array $body): bool
+    {
+        foreach (['device_status', 'deviceStatus', 'connected', 'is_connected', 'isConnected'] as $key) {
+            if (! array_key_exists($key, $body)) {
+                continue;
+            }
+            $value = $body[$key];
+            if (is_bool($value)) {
+                return $value;
+            }
+            if (is_string($value)) {
+                $normalized = strtolower(trim($value));
+                if (in_array($normalized, ['connected', 'online', 'true', '1'], true)) {
+                    return true;
+                }
+                if (in_array($normalized, ['disconnected', 'offline', 'false', '0'], true)) {
+                    return false;
+                }
+            }
+            if (is_numeric($value)) {
+                return (int) $value === 1;
+            }
+        }
+
+        if (isset($body['reason']) && is_string($body['reason']) && str_contains(strtolower($body['reason']), 'disconnected')) {
+            return false;
+        }
+
+        return true;
     }
 }

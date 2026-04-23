@@ -60,6 +60,7 @@
                             <tr>
                                 <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Email') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Nomor HP') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Peran') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
                                 <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Aksi') }}</th>
@@ -74,6 +75,9 @@
                                 </td>
                                 <td>
                                     {{ $user->email }}
+                                </td>
+                                <td>
+                                    {{ $user->phone ?: '-' }}
                                 </td>
                                 <td>
                                     @if($user->role)
@@ -101,6 +105,12 @@
                                         <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Ubah') }}">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
+                                        <form action="{{ route('users.send-whatsapp-account', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kirim informasi akun ke WhatsApp pengguna ini?') }}');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="{{ __('WhatsApp Notif') }}" {{ empty($user->phone) ? 'disabled' : '' }}>
+                                                <i class="fa-brands fa-whatsapp"></i>
+                                            </button>
+                                        </form>
                                         
                                         @if($user->id !== auth()->id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus pengguna ini?') }}');">
