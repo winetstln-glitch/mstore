@@ -30,6 +30,7 @@
 
     .thread-scroll {
         flex: 1;
+        min-height: 0;
         overflow-y: auto;
     }
 
@@ -56,6 +57,12 @@
         flex-direction: column;
         background-color: var(--chat-bg);
         position: relative;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .chat-sidebar {
+        height: 100%;
         min-height: 0;
     }
 
@@ -71,9 +78,11 @@
         min-height: 0;
         overflow-y: auto;
         padding: 20px;
+        padding-bottom: 12px;
         display: flex;
         flex-direction: column;
         gap: 8px;
+        overscroll-behavior: contain;
     }
 
     /* Custom Chat Bubbles */
@@ -126,9 +135,7 @@
         background: #fff;
         padding: 15px 20px;
         border-top: 1px solid #eaeaea;
-        position: sticky;
-        bottom: 0;
-        z-index: 5;
+        flex-shrink: 0;
     }
 
     .chat-input {
@@ -147,6 +154,40 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .chat-attachment-image {
+        max-width: 220px;
+        max-height: 220px;
+        border-radius: 10px;
+        display: block;
+        margin-top: 6px;
+        object-fit: cover;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .chat-attachment-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .chat-bubble.mine .chat-attachment-link {
+        color: #fff;
+    }
+
+    .chat-bubble.other .chat-attachment-link {
+        color: #0d6efd;
+    }
+
+    .chat-file-hint {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 6px;
+        display: none;
     }
 
     /* Mobile Responsive */
@@ -222,7 +263,13 @@
                                 </span>
                             </div>
                             <div class="text-muted small text-truncate">
-                                {{ $latest?->body ?? __('Belum ada pesan') }}
+                                @if(!empty($latest?->body))
+                                    {{ $latest->body }}
+                                @elseif(!empty($latest?->attachment_name))
+                                    📎 {{ $latest->attachment_name }}
+                                @else
+                                    {{ __('Belum ada pesan') }}
+                                @endif
                             </div>
                         </div>
                         @if(($thread->unread_count ?? 0) > 0)
@@ -272,7 +319,26 @@
                             @if(!$mine)
                                 <div class="fw-bold tiny mb-1" style="font-size: 0.75rem;">{{ $message->sender->name }}</div>
                             @endif
-                            <div class="message-text">{{ $message->body }}</div>
+                            @if($message->body !== '')
+                                <div class="message-text">{{ $message->body }}</div>
+                            @endif
+                            @if($message->attachment_path)
+                                @php
+                                    $attachmentUrl = Storage::disk((string) ($message->attachment_disk ?: 'public'))->url((string) $message->attachment_path);
+                                    $attachmentMime = (string) ($message->attachment_mime ?? '');
+                                    $isImageAttachment = str_starts_with($attachmentMime, 'image/');
+                                @endphp
+                                @if($isImageAttachment)
+                                    <a href="{{ $attachmentUrl }}" target="_blank" rel="noopener noreferrer">
+                                        <img src="{{ $attachmentUrl }}" alt="{{ $message->attachment_name ?? 'image' }}" class="chat-attachment-image">
+                                    </a>
+                                @else
+                                    <a href="{{ $attachmentUrl }}" target="_blank" rel="noopener noreferrer" class="chat-attachment-link">
+                                        <i class="fa-solid fa-paperclip"></i>
+                                        <span>{{ $message->attachment_name ?? __('File') }}</span>
+                                    </a>
+                                @endif
+                            @endif
                             <div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">
                                 <span>{{ optional($message->created_at)->format('H:i') }}</span>
                                 @if($mine)
@@ -287,12 +353,17 @@
                 <div class="chat-footer">
                     <form id="chatSendForm" class="input-group">
                         <input type="hidden" id="chatThreadId" value="{{ $selectedThread->id }}">
+                        <input type="file" id="chatAttachmentInput" class="d-none" accept="image/*,.pdf,.txt,.zip,.doc,.docx,.xls,.xlsx">
+                        <button type="button" id="chatAttachBtn" class="btn btn-outline-secondary rounded-pill me-2" title="{{ __('Lampirkan file') }}">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
                         <input type="text" id="chatMessageInput" class="form-control chat-input" 
                                placeholder="{{ __('Tulis pesan...') }}" autocomplete="off">
                         <button type="submit" id="chatSendBtn" class="btn btn-primary rounded-pill ms-2 px-3 chat-send-btn">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </form>
+                    <div id="chatAttachmentHint" class="chat-file-hint"></div>
                 </div>
             @else
                 <!-- Empty State -->
@@ -329,6 +400,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const sendForm = document.getElementById('chatSendForm');
     const sendBtn = document.getElementById('chatSendBtn');
     const messageInput = document.getElementById('chatMessageInput');
+    const attachmentInput = document.getElementById('chatAttachmentInput');
+    const attachmentHint = document.getElementById('chatAttachmentHint');
+    const attachBtn = document.getElementById('chatAttachBtn');
     const presenceDot = document.getElementById('chatPresenceBadge');
     const lastSeenStatus = document.getElementById('chatLastSeenStatus');
     const typingStatus = document.getElementById('chatTypingStatus');
@@ -340,12 +414,68 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastTypingPingAt = 0;
     let typingTimeoutHandle = null;
 
+    const parseResponsePayload = async (response) => {
+        const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+            try {
+                return await response.json();
+            } catch (_) {
+                return null;
+            }
+        }
+        try {
+            const text = await response.text();
+            return { message: text ? text.slice(0, 300) : null };
+        } catch (_) {
+            return null;
+        }
+    };
+
+    const extractErrorMessage = (payload, fallbackMessage) => {
+        if (payload && typeof payload.message === 'string' && payload.message.trim() !== '') {
+            return payload.message;
+        }
+        if (payload && payload.errors && typeof payload.errors === 'object') {
+            const firstError = Object.values(payload.errors).flat()[0];
+            if (typeof firstError === 'string' && firstError.trim() !== '') {
+                return firstError;
+            }
+        }
+        return fallbackMessage;
+    };
+
     const escapeHtml = (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+
+    const formatBytes = (size) => {
+        const bytes = Number(size || 0);
+        if (!bytes || bytes < 1024) return bytes + ' B';
+        const kb = bytes / 1024;
+        if (kb < 1024) return kb.toFixed(1) + ' KB';
+        const mb = kb / 1024;
+        return mb.toFixed(1) + ' MB';
+    };
+
+    const renderAttachmentHtml = (message) => {
+        if (!message || !message.has_attachment || !message.attachment_url) return '';
+        const fileName = escapeHtml(message.attachment_name || 'File');
+        const fileSize = message.attachment_size ? (' (' + escapeHtml(formatBytes(message.attachment_size)) + ')') : '';
+        if (message.is_image_attachment) {
+            return ''
+                + '<a href="' + escapeHtml(message.attachment_url) + '" target="_blank" rel="noopener noreferrer">'
+                + '<img src="' + escapeHtml(message.attachment_url) + '" alt="' + fileName + '" class="chat-attachment-image">'
+                + '</a>';
+        }
+        return ''
+            + '<a href="' + escapeHtml(message.attachment_url) + '" target="_blank" rel="noopener noreferrer" class="chat-attachment-link">'
+            + '<i class="fa-solid fa-paperclip"></i>'
+            + '<span>' + fileName + fileSize + '</span>'
+            + '</a>';
+    };
 
     const scrollToBottom = () => {
         if (!messageListEl) return;
@@ -388,6 +518,7 @@ document.addEventListener('DOMContentLoaded', function () {
         wrapper.innerHTML = ''
             + senderHtml
             + '<div class="message-text">' + escapeHtml(message.body || '') + '</div>'
+            + renderAttachmentHtml(message)
             + '<div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">'
             + '<span>' + clock + '</span>'
             + readIcon
@@ -396,6 +527,26 @@ document.addEventListener('DOMContentLoaded', function () {
         messageListEl.appendChild(wrapper);
         lastMessageId = Math.max(lastMessageId, Number(message.id));
         scrollToBottom();
+    };
+
+    const appendPendingMineMessage = (body, fileName) => {
+        if (!messageListEl) return null;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chat-bubble mine';
+        wrapper.setAttribute('data-pending-message', '1');
+        wrapper.style.opacity = '0.7';
+
+        wrapper.innerHTML = ''
+            + '<div class="message-text">' + escapeHtml(body || '') + '</div>'
+            + (fileName ? '<div class="small mt-1"><i class="fa-solid fa-paperclip me-1"></i>' + escapeHtml(fileName) + '</div>' : '')
+            + '<div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">'
+            + '<span>Mengirim...</span>'
+            + '</div>';
+
+        messageListEl.appendChild(wrapper);
+        scrollToBottom();
+        return wrapper;
     };
 
     const applyPresenceState = (online, lastSeenAt) => {
@@ -506,31 +657,79 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    if (attachmentInput && attachmentHint) {
+        attachmentInput.addEventListener('change', function () {
+            const file = attachmentInput.files?.[0] || null;
+            if (!file) {
+                attachmentHint.style.display = 'none';
+                attachmentHint.textContent = '';
+                return;
+            }
+            attachmentHint.style.display = 'block';
+            attachmentHint.textContent = 'Lampiran: ' + file.name + ' (' + formatBytes(file.size) + ')';
+        });
+    }
+
+    if (attachBtn && attachmentInput) {
+        attachBtn.addEventListener('click', function () {
+            attachmentInput.click();
+        });
+    }
+
     if (sendForm && messageInput && sendBtn) {
         messageInput.addEventListener('input', pingTyping);
         sendForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const body = messageInput.value.trim();
-            if (!body || !threadId) return;
+            const file = attachmentInput?.files?.[0] || null;
+            if ((!body && !file) || !threadId) return;
+            if (sendBtn.disabled) return;
 
             sendBtn.disabled = true;
+            messageInput.value = '';
+            const pendingEl = appendPendingMineMessage(body, file?.name || '');
+            if (attachmentInput) attachmentInput.value = '';
+            if (attachmentHint) {
+                attachmentHint.style.display = 'none';
+                attachmentHint.textContent = '';
+            }
+
             try {
+                const formData = new FormData();
+                formData.append('thread_id', String(threadId));
+                formData.append('body', body);
+                if (otherUserId > 0) formData.append('recipient_id', String(otherUserId));
+                if (file) formData.append('attachment', file);
+
                 const response = await fetch(sendEndpoint, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrfToken,
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ thread_id: threadId, body }),
+                    body: formData,
                 });
-                if (!response.ok) throw new Error('Send failed');
-                const payload = await response.json();
+
+                const payload = await parseResponsePayload(response);
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 419) {
+                        throw new Error('Sesi login habis. Silakan refresh halaman lalu coba kirim lagi.');
+                    }
+                    throw new Error(extractErrorMessage(payload, 'Gagal mengirim pesan.'));
+                }
+
+                if (pendingEl) pendingEl.remove();
                 if (payload.message) appendMessage(payload.message);
-                messageInput.value = '';
             } catch (error) {
-                alert('{{ __('Gagal mengirim pesan.') }}');
+                if (pendingEl) pendingEl.remove();
+                messageInput.value = body;
+                messageInput.focus();
+                if (file && attachmentHint) {
+                    attachmentHint.style.display = 'block';
+                    attachmentHint.textContent = 'Lampiran: ' + file.name + ' (' + formatBytes(file.size) + ')';
+                }
+                alert(error?.message || '{{ __('Gagal mengirim pesan.') }}');
             } finally {
                 sendBtn.disabled = false;
             }
@@ -557,11 +756,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     credentials: 'same-origin',
                     body: JSON.stringify({ recipient_id: recipientId }),
                 });
-                if (!response.ok) throw new Error('Start thread failed');
-                const payload = await response.json();
+
+                const payload = await parseResponsePayload(response);
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 419) {
+                        throw new Error('Sesi login habis. Silakan refresh halaman lalu coba lagi.');
+                    }
+                    throw new Error(extractErrorMessage(payload, 'Gagal membuat percakapan baru.'));
+                }
+
                 if (payload.url) window.location.href = payload.url;
             } catch (error) {
-                alert('{{ __('Gagal membuat percakapan baru.') }}');
+                alert(error?.message || '{{ __('Gagal membuat percakapan baru.') }}');
             } finally {
                 startBtn.disabled = false;
             }

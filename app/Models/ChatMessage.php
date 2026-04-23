@@ -11,6 +11,11 @@ class ChatMessage extends Model
         'thread_id',
         'sender_id',
         'body',
+        'attachment_disk',
+        'attachment_path',
+        'attachment_name',
+        'attachment_mime',
+        'attachment_size',
         'read_at',
     ];
 
@@ -18,6 +23,7 @@ class ChatMessage extends Model
     {
         return [
             'read_at' => 'datetime',
+            'attachment_size' => 'integer',
         ];
     }
 
@@ -31,4 +37,3 @@ class ChatMessage extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 }
-

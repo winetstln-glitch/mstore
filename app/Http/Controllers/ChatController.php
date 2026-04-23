@@ -15,6 +15,9 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ChatController extends Controller implements HasMiddleware
 {
@@ -101,8 +104,17 @@ class ChatController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'thread_id' => 'nullable|integer|exists:chat_threads,id',
             'recipient_id' => 'nullable|integer|exists:users,id|different:'.Auth::id(),
-            'body' => 'required|string|max:5000',
+            'body' => 'nullable|string|max:5000',
+            'attachment' => 'nullable|file|max:10240|mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,application/zip,application/x-zip-compressed,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+
+        $body = trim((string) ($validated['body'] ?? ''));
+        $attachment = $request->file('attachment');
+        if ($body === '' && ! $attachment) {
+            return response()->json([
+                'message' => __('Pesan atau lampiran wajib diisi.'),
+            ], 422);
+        }
 
         $thread = null;
         if (! empty($validated['thread_id'])) {
@@ -124,8 +136,24 @@ class ChatController extends Controller implements HasMiddleware
         $message = ChatMessage::create([
             'thread_id' => $thread->id,
             'sender_id' => $currentUserId,
-            'body' => trim((string) $validated['body']),
+            'body' => $body,
+            'attachment_disk' => null,
+            'attachment_path' => null,
+            'attachment_name' => null,
+            'attachment_mime' => null,
+            'attachment_size' => null,
         ]);
+
+        if ($attachment) {
+            $storedPath = $attachment->store('chat-attachments/'.(int) $thread->id, 'public');
+            $message->forceFill([
+                'attachment_disk' => 'public',
+                'attachment_path' => $storedPath,
+                'attachment_name' => $attachment->getClientOriginalName(),
+                'attachment_mime' => $attachment->getClientMimeType(),
+                'attachment_size' => $attachment->getSize(),
+            ])->save();
+        }
 
         $thread->last_message_at = now();
         $thread->save();
@@ -133,7 +161,10 @@ class ChatController extends Controller implements HasMiddleware
         $message->load('sender:id,name,avatar');
         $payload = $this->formatMessage($message);
 
-        broadcast(new ChatMessageSent((int) $thread->id, $payload))->toOthers();
+        $this->safeBroadcast(
+            new ChatMessageSent((int) $thread->id, $payload),
+            'chat.message.sent'
+        );
 
         $recipientId = (int) $thread->user_one_id === $currentUserId
             ? (int) $thread->user_two_id
@@ -259,11 +290,11 @@ class ChatController extends Controller implements HasMiddleware
         $currentUser = Auth::user();
         $key = $this->typingCacheKey((int) $chat->id, (int) Auth::id());
         Cache::put($key, true, now()->addSeconds(8));
-        broadcast(new ChatTyping(
+        $this->safeBroadcast(new ChatTyping(
             threadId: (int) $chat->id,
             senderId: (int) Auth::id(),
             senderName: (string) ($currentUser->name ?? 'Pengguna'),
-        ))->toOthers();
+        ), 'chat.typing');
 
         return response()->json(['ok' => true]);
     }
@@ -284,6 +315,12 @@ class ChatController extends Controller implements HasMiddleware
             'sender_name' => (string) optional($message->sender)->name,
             'sender_avatar' => optional($message->sender)->avatar,
             'body' => (string) $message->body,
+            'attachment_name' => $message->attachment_name,
+            'attachment_mime' => $message->attachment_mime,
+            'attachment_size' => $message->attachment_size,
+            'attachment_url' => $this->attachmentUrl($message),
+            'has_attachment' => (bool) $message->attachment_path,
+            'is_image_attachment' => $this->isImageAttachment($message),
             'read_at' => $message->read_at?->toDateTimeString(),
             'read_at_human' => $message->read_at?->diffForHumans(),
             'created_at' => $message->created_at?->toDateTimeString(),
@@ -319,16 +356,44 @@ class ChatController extends Controller implements HasMiddleware
             ->whereIn('id', $ids)
             ->update(['read_at' => $readAt]);
 
-        broadcast(new ChatMessagesRead(
+        $this->safeBroadcast(new ChatMessagesRead(
             threadId: (int) $chat->id,
             readerId: $readerId,
             messageIds: $ids,
             readAt: $readAt->toDateTimeString(),
-        ))->toOthers();
+        ), 'chat.messages.read');
 
         return [
             'ids' => $ids,
             'read_at' => $readAt->toDateTimeString(),
         ];
+    }
+
+    private function safeBroadcast(object $event, string $eventName): void
+    {
+        try {
+            broadcast($event)->toOthers();
+        } catch (Throwable $exception) {
+            Log::warning('Chat broadcast skipped because websocket server is unavailable.', [
+                'event' => $eventName,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function attachmentUrl(ChatMessage $message): ?string
+    {
+        if (! $message->attachment_path) {
+            return null;
+        }
+
+        return Storage::disk((string) ($message->attachment_disk ?: 'public'))
+            ->url((string) $message->attachment_path);
+    }
+
+    private function isImageAttachment(ChatMessage $message): bool
+    {
+        $mime = (string) ($message->attachment_mime ?? '');
+        return str_starts_with($mime, 'image/');
     }
 }

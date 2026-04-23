@@ -27,15 +27,19 @@ class ChatMessageNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $messagePreview = trim((string) $this->message->body);
+        if ($messagePreview === '' && ! empty($this->message->attachment_name)) {
+            $messagePreview = 'Mengirim lampiran: '.$this->message->attachment_name;
+        }
+
         return [
             'type' => 'chat_message',
             'thread_id' => $this->thread->id,
             'message_id' => $this->message->id,
             'subject' => 'Pesan baru dari '.$this->senderName,
-            'message' => mb_strimwidth((string) $this->message->body, 0, 120, '...'),
+            'message' => mb_strimwidth($messagePreview, 0, 120, '...'),
             'sender_name' => $this->senderName,
             'url' => route('chat.index', ['thread' => $this->thread->id]),
         ];
     }
 }
-
