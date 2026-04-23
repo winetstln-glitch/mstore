@@ -7,19 +7,45 @@
     .chat-layout {
         min-height: calc(100vh - 180px);
     }
+    .chat-panel {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .chat-thread-list {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+    }
+    .chat-thread-item {
+        border-left: 3px solid transparent !important;
+    }
     .chat-thread-item.active {
-        background-color: rgba(13, 110, 253, 0.1);
-        border-color: rgba(13, 110, 253, 0.25) !important;
+        background-color: rgba(13, 110, 253, 0.08);
+        border-left-color: var(--bs-primary) !important;
+    }
+    .chat-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.82rem;
+        background: rgba(13, 110, 253, 0.12);
+        color: var(--bs-primary);
+        flex-shrink: 0;
     }
     .chat-message-list {
-        height: calc(100vh - 360px);
+        height: calc(100vh - 390px);
         min-height: 320px;
         overflow-y: auto;
         background: var(--bs-tertiary-bg);
+        padding: 1rem;
     }
     .chat-bubble {
         max-width: 78%;
         white-space: pre-wrap;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
     }
     .chat-bubble.mine {
         margin-left: auto;
@@ -30,6 +56,23 @@
         margin-right: auto;
         background: var(--bs-body-bg);
         border: 1px solid var(--bs-border-color);
+    }
+    .chat-composer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bs-body-bg);
+    }
+    .chat-send-btn {
+        min-width: 96px;
+    }
+    @media (max-width: 991.98px) {
+        .chat-thread-list {
+            max-height: 260px;
+        }
+        .chat-message-list {
+            height: calc(100vh - 480px);
+            min-height: 260px;
+        }
     }
 </style>
 @endpush
@@ -63,7 +106,7 @@
         data-start-endpoint="{{ route('chat.start') }}"
     >
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 chat-panel">
                 <div class="card-body border-bottom">
                     <label for="chatRecipient" class="form-label small fw-semibold mb-1">{{ __('Mulai Obrolan Baru') }}</label>
                     <div class="input-group">
@@ -76,7 +119,7 @@
                         <button type="button" id="chatStartBtn" class="btn btn-primary">{{ __('Mulai') }}</button>
                     </div>
                 </div>
-                <div class="list-group list-group-flush overflow-auto">
+                <div class="list-group list-group-flush chat-thread-list">
                     @forelse($threads as $thread)
                         @php
                             $other = $thread->otherParticipant($currentUserId);
@@ -88,6 +131,9 @@
                             class="list-group-item list-group-item-action chat-thread-item {{ $isActive ? 'active' : '' }}"
                         >
                             <div class="d-flex align-items-start justify-content-between gap-2">
+                                <span class="chat-avatar">
+                                    {{ strtoupper(substr((string) ($other?->name ?? 'U'), 0, 1)) }}
+                                </span>
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold text-truncate">{{ $other?->name ?? __('Pengguna') }}</div>
                                     <div class="small text-muted text-truncate">
@@ -110,11 +156,15 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100 d-flex flex-column">
+            <div class="card border-0 shadow-sm h-100 d-flex flex-column chat-panel">
                 @if($selectedThread)
                     @php $otherParticipant = $selectedThread->otherParticipant($currentUserId); @endphp
-                    <div class="card-header bg-body d-flex justify-content-between align-items-center">
-                        <div>
+                    <div class="card-header bg-body d-flex justify-content-between align-items-center py-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="chat-avatar">
+                                {{ strtoupper(substr((string) ($otherParticipant?->name ?? 'U'), 0, 1)) }}
+                            </span>
+                            <div>
                             <div class="fw-semibold">{{ $otherParticipant?->name ?? __('Pengguna') }}</div>
                             <div class="small text-muted d-flex align-items-center gap-2">
                                 <span>{{ __('Thread #') }}{{ $selectedThread->id }}</span>
@@ -122,34 +172,43 @@
                             </div>
                             <div id="chatLastSeenStatus" class="small text-muted">{{ __('Terakhir aktif: -') }}</div>
                             <div id="chatTypingStatus" class="small text-primary mt-1 d-none">{{ __('Sedang mengetik...') }}</div>
+                            </div>
                         </div>
                     </div>
                     <div id="chatMessageList" class="card-body chat-message-list">
-                        @foreach($messages as $message)
-                            @php $mine = (int) $message->sender_id === $currentUserId; @endphp
-                            <div class="mb-2 d-flex {{ $mine ? 'justify-content-end' : 'justify-content-start' }}" data-message-id="{{ $message->id }}">
-                                <div class="chat-bubble {{ $mine ? 'mine' : 'other' }} rounded-3 px-3 py-2">
-                                    @if(! $mine)
-                                        <div class="fw-semibold small mb-1">{{ $message->sender->name ?? __('Pengguna') }}</div>
-                                    @endif
-                                    <div>{{ $message->body }}</div>
-                                    <div class="small mt-1 {{ $mine ? 'text-white-50' : 'text-muted' }}">
-                                        <span>{{ optional($message->created_at)->format('d/m/Y H:i') }}</span>
-                                        @if($mine)
-                                            <span class="message-status ms-2" data-message-status-for="{{ $message->id }}">
-                                                {{ $message->read_at ? 'Seen' : 'Terkirim' }}
-                                            </span>
+                        @if($messages->isEmpty())
+                            <div class="text-center text-muted py-5 small">
+                                {{ __('Belum ada pesan. Mulai kirim pesan pertama.') }}
+                            </div>
+                        @else
+                            @foreach($messages as $message)
+                                @php $mine = (int) $message->sender_id === $currentUserId; @endphp
+                                <div class="mb-2 d-flex {{ $mine ? 'justify-content-end' : 'justify-content-start' }}" data-message-id="{{ $message->id }}">
+                                    <div class="chat-bubble {{ $mine ? 'mine' : 'other' }} rounded-3 px-3 py-2">
+                                        @if(! $mine)
+                                            <div class="fw-semibold small mb-1">{{ $message->sender->name ?? __('Pengguna') }}</div>
                                         @endif
+                                        <div>{{ $message->body }}</div>
+                                        <div class="small mt-1 {{ $mine ? 'text-white-50' : 'text-muted' }}">
+                                            <span>{{ optional($message->created_at)->format('d/m/Y H:i') }}</span>
+                                            @if($mine)
+                                                <span class="message-status ms-2" data-message-status-for="{{ $message->id }}">
+                                                    {{ $message->read_at ? 'Seen' : 'Terkirim' }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        @endif
                     </div>
-                    <div class="card-footer bg-body border-top">
+                    <div class="card-footer bg-body border-top chat-composer">
                         <form id="chatSendForm" class="d-flex gap-2">
                             <input type="hidden" id="chatThreadId" value="{{ $selectedThread->id }}">
-                            <textarea id="chatMessageInput" class="form-control" rows="2" maxlength="5000" placeholder="{{ __('Tulis pesan...') }}" required></textarea>
-                            <button type="submit" id="chatSendBtn" class="btn btn-primary px-3">{{ __('Kirim') }}</button>
+                            <textarea id="chatMessageInput" class="form-control rounded-3" rows="2" maxlength="5000" placeholder="{{ __('Tulis pesan...') }}" required></textarea>
+                            <button type="submit" id="chatSendBtn" class="btn btn-primary px-3 chat-send-btn">
+                                <i class="fa-solid fa-paper-plane me-1"></i>{{ __('Kirim') }}
+                            </button>
                         </form>
                     </div>
                 @else
