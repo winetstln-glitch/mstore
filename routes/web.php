@@ -279,7 +279,10 @@ Route::middleware('auth')->group(function () {
     Route::get('investors/export/pdf', [InvestorController::class, 'exportPdf'])->name('investors.export.pdf');
     Route::get('investors/export/excel', [InvestorController::class, 'exportExcel'])->name('investors.export.excel');
     Route::resource('investors', InvestorController::class);
-    Route::resource('chat', ChatController::class);
+    Route::post('chat/start', [ChatController::class, 'start'])->name('chat.start');
+    Route::get('chat/{chat}/messages', [ChatController::class, 'messages'])->name('chat.messages');
+    Route::post('chat/{chat}/read', [ChatController::class, 'markRead'])->name('chat.read');
+    Route::resource('chat', ChatController::class)->only(['index', 'show', 'store']);
 
     // Telegram Settings
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');

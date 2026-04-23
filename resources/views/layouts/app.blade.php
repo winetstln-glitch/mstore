@@ -85,6 +85,12 @@
             </a>
             @endif
 
+            @if(Auth::user()->hasPermission('chat.view'))
+            <a href="{{ route('chat.index') }}" class="sidebar-item {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+                <i class="fa-regular fa-comments"></i> {{ __('Messenger Internal') }}
+            </a>
+            @endif
+
             {{-- Client Portal (Grouped) --}}
             @if(Auth::user()->hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Portal Pelanggan') }}</div>
