@@ -301,6 +301,7 @@ class TicketWebController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'technicians' => 'nullable|array',
             'technicians.*' => 'exists:users,id',
+            'type' => 'sometimes|required|string|max:100',
             'subject' => 'sometimes|required|string|max:255',
             'priority' => 'sometimes|required|in:low,medium,high',
             'status' => 'sometimes|required|in:open,assigned,in_progress,pending,solved,closed',

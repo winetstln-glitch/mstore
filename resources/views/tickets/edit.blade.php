@@ -17,8 +17,37 @@
                     @method('PUT')
 
                     <div class="row g-3 mb-4">
+                        @php
+                            $ticketTypeOptions = [
+                                'gangguan' => __('Gangguan'),
+                                'pasang_baru' => __('Pasang Baru'),
+                                'maintenance' => __('Maintenance'),
+                                'pergantian_onu' => __('Pergantian ONU'),
+                                'ganti_onu' => __('Ganti ONU'),
+                                'other' => __('Lainnya'),
+                            ];
+                            $currentTicketType = old('type', $ticket->type);
+                            if (! array_key_exists($currentTicketType, $ticketTypeOptions) && filled($currentTicketType)) {
+                                $ticketTypeOptions[$currentTicketType] = __(ucfirst(str_replace('_', ' ', $currentTicketType)));
+                            }
+                        @endphp
+                        <!-- Jenis Tiket -->
+                        <div class="col-md-6">
+                            <label for="type" class="form-label">{{ __('Jenis Tiket') }}</label>
+                            <select name="type" id="type" required class="form-select @error('type') is-invalid @enderror">
+                                @foreach($ticketTypeOptions as $ticketTypeValue => $ticketTypeLabel)
+                                    <option value="{{ $ticketTypeValue }}" {{ $currentTicketType === $ticketTypeValue ? 'selected' : '' }}>
+                                        {{ $ticketTypeLabel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('type')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Subjek -->
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label for="subject" class="form-label">{{ __('Subjek') }}</label>
                             <input type="text" name="subject" id="subject" value="{{ old('subject', $ticket->subject) }}" required class="form-control @error('subject') is-invalid @enderror">
                             @error('subject')
