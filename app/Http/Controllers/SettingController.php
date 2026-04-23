@@ -17,7 +17,7 @@ class SettingController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:setting.view', only: ['index', 'atk', 'wash']),
+            new Middleware('permission:setting.view', only: ['index', 'attendance', 'atk', 'wash']),
             new Middleware('permission:setting.update', only: ['update']),
         ];
     }
@@ -42,6 +42,27 @@ class SettingController extends Controller implements HasMiddleware
         $accountOptions = Account::orderBy('code')->get();
 
         return view('settings.index', compact('settings', 'accountOptions'));
+    }
+
+    public function attendance()
+    {
+        $legacyKeys = [
+            'attendance_shift_1_start',
+            'attendance_shift_1_end',
+            'attendance_shift_2_start',
+            'attendance_shift_2_end',
+            'work_schedule',
+        ];
+
+        $settings = Setting::query()
+            ->whereIn('group', ['attendance', 'schedule'])
+            ->whereNotIn('key', $legacyKeys)
+            ->orderBy('group')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('group');
+
+        return view('settings.attendance', compact('settings'));
     }
 
     public function atk()

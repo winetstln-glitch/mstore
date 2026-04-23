@@ -576,10 +576,10 @@
                 </a>
                 @endif
 
-                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
+                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*')) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
                         @if(Auth::user()->hasPermission('employee.view'))
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
@@ -599,6 +599,11 @@
                         @if(Auth::user()->hasPermission('schedule.view'))
                         <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
                             <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
+                        </a>
+                        @endif
+                        @if(Auth::user()->hasPermission('setting.view'))
+                        <a href="{{ route('settings.attendance.index') }}" class="sidebar-item {{ request()->routeIs('settings.attendance.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Absensi') }}
                         </a>
                         @endif
                         @if(Auth::user()->hasPermission('leave.view'))
@@ -634,8 +639,9 @@
             <div class="sidebar-header mt-2">{{ __('Sistem') }}</div>
 
             @php
-                $systemActive = request()->routeIs('settings.*') || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('whatsapp.*') || request()->routeIs('telegram.*') || request()->routeIs('apikeys.*');
-                $settingsAreaActive = request()->routeIs('settings.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*');
+                $attendanceSettingsRoute = request()->routeIs('settings.attendance.*');
+                $systemActive = (request()->routeIs('settings.*') && ! $attendanceSettingsRoute) || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('whatsapp.*') || request()->routeIs('telegram.*') || request()->routeIs('apikeys.*');
+                $settingsAreaActive = ((request()->routeIs('settings.*') && ! $attendanceSettingsRoute) || request()->routeIs('regions.*') || request()->routeIs('coordinators.*'));
                 $userAreaActive = request()->routeIs('users.*') || request()->routeIs('roles.*');
                 $integrationAreaActive = request()->routeIs('whatsapp.*') || request()->routeIs('telegram.*') || request()->routeIs('apikeys.*');
             @endphp

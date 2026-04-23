@@ -434,7 +434,8 @@
                     </div>
                     @foreach($settings as $group => $groupSettings)
                         @php
-                            $isAttendanceGroup = str_contains(strtolower((string) $group), 'attendance');
+                            $normalizedGroup = strtolower((string) $group);
+                            $isAttendanceGroup = in_array($normalizedGroup, ['attendance', 'schedule'], true);
                         @endphp
                         @if($isAttendanceGroup)
                             @continue
