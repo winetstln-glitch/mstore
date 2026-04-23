@@ -507,8 +507,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
         $leaveQuota = Setting::getValue('technician_leave_quota', 3);
-        // Force disable face verification per user request to simplify attendance
-        $faceVerificationEnabled = '0';
+        $faceVerificationEnabled = (string) Setting::getValue('attendance_face_verification_enabled', '1');
         $shiftInfo = $this->resolveTodayShiftInfo(Auth::user());
 
         return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo'));
