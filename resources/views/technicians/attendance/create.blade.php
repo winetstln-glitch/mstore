@@ -60,6 +60,17 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="alert alert-primary rounded-4 border-0 shadow-sm mb-4 small">
+                    <div class="fw-bold mb-1">
+                        <i class="fa-solid fa-business-time me-1"></i>{{ __('Informasi Shift Hari Ini') }}
+                    </div>
+                    <div>{{ __('Grup: :group', ['group' => $shiftInfo['group_label'] ?? '-']) }}</div>
+                    <div>{{ __('Status Jadwal: :status', ['status' => $shiftInfo['status_label'] ?? '-']) }}</div>
+                    <div>{{ __('Shift: :shift', ['shift' => $shiftInfo['shift_label'] ?? '-']) }}</div>
+                    <div>{{ __('Jam Shift: :start - :end WIB', ['start' => $shiftInfo['shift_start'] ?? '-', 'end' => $shiftInfo['shift_end'] ?? '-']) }}</div>
+                </div>
+
                 @if(Auth::user()->hasPermission('leave.create') || Auth::user()->hasPermission('leave.view'))
                 <div class="d-grid mb-4 px-1">
                     <button type="button" class="btn btn-outline-primary rounded-4 fw-semibold py-2" data-bs-toggle="modal" data-bs-target="#attendanceLeaveModal">

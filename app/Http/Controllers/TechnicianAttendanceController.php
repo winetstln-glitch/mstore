@@ -4,15 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\SalaryAdjustment;
 use App\Models\Setting;
+use App\Models\TechnicianDailySchedule;
 use App\Models\TechnicianAttendance;
+use App\Models\TechnicianSchedule;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WashEmployee;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -497,15 +501,17 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'sakit' => $monthAttendances->where('status', 'sick')->count(),
         ];
 
-        $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
-        $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+        $clockInWindow = $this->resolveClockInWindow(Auth::user());
+        $clockInStart = $clockInWindow['start'];
+        $clockInEnd = $clockInWindow['end'];
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
         $leaveQuota = Setting::getValue('technician_leave_quota', 3);
         // Force disable face verification per user request to simplify attendance
         $faceVerificationEnabled = '0';
+        $shiftInfo = $this->resolveTodayShiftInfo(Auth::user());
 
-        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota'));
+        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo'));
     }
 
     public function kiosk()
@@ -554,10 +560,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ], 422);
             }
 
-            $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
-            $lateTolerance = (int) Setting::getValue('attendance_late_tolerance', 0);
-            $lateAt = Carbon::today()->setTimeFromTimeString($clockInStart)->addMinutes(max(0, $lateTolerance));
-            $status = now()->greaterThan($lateAt) ? 'late' : 'present';
+            $clockInWindow = $this->resolveClockInWindow($user);
+            $clockInStart = $clockInWindow['start'];
+            $clockInEnd = $clockInWindow['end'];
+            $currentTime = now()->format('H:i');
+            if (! $this->isTimeWithinRange($currentTime, $clockInStart, $clockInEnd)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd]),
+                ], 422);
+            }
+
+            $status = $this->determineClockInStatus($clockInStart);
 
             $attendance = TechnicianAttendance::create([
                 'user_id' => $user->id,
@@ -637,14 +651,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         try {
-            // Validation: Clock In Allowed based on Settings
-            $clockInStart = Setting::getValue('attendance_clock_in_start', '07:00');
-            $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+            // Validation: Clock In allowed based on user shift (fallback to global settings)
+            $clockInWindow = $this->resolveClockInWindow(Auth::user());
+            $clockInStart = $clockInWindow['start'];
+            $clockInEnd = $clockInWindow['end'];
 
             $now = now();
             $currentTime = $now->format('H:i');
 
-            if ($currentTime < $clockInStart || $currentTime > $clockInEnd) {
+            if (! $this->isTimeWithinRange($currentTime, $clockInStart, $clockInEnd)) {
                 return back()->withErrors(['message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd])]);
             }
 
@@ -693,7 +708,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo_clock_in' => $path,
                 'lat_clock_in' => $request->latitude,
                 'lng_clock_in' => $request->longitude,
-                'status' => 'present',
+                'status' => $this->determineClockInStatus($clockInStart, $now),
                 'notes' => $request->notes,
             ]);
 
@@ -906,7 +921,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockInEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $currentTime = now()->format('H:i');
 
-        return $currentTime >= $clockInStart && $currentTime <= $clockInEnd;
+        return $this->isTimeWithinRange($currentTime, $clockInStart, $clockInEnd);
     }
 
     private function isWithinClockOutWindow(): bool
@@ -915,10 +930,144 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
         $currentTime = now()->format('H:i');
 
-        if ($clockOutStart > $clockOutEnd) {
-            return $currentTime >= $clockOutStart || $currentTime <= $clockOutEnd;
+        return $this->isTimeWithinRange($currentTime, $clockOutStart, $clockOutEnd);
+    }
+
+    private function resolveClockInWindow(User $user): array
+    {
+        $globalStart = Setting::getValue('attendance_clock_in_start', '07:00');
+        $globalEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+        $shiftInfo = $this->resolveTodayShiftInfo($user);
+
+        $fromSchedule = in_array($shiftInfo['source'] ?? 'default', ['daily', 'weekly'], true);
+        $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP], true);
+
+        if ($fromSchedule && $isWorkShift) {
+            return [
+                'start' => (string) ($shiftInfo['shift_start'] ?? $globalStart),
+                'end' => (string) ($shiftInfo['shift_end'] ?? $globalEnd),
+            ];
         }
 
-        return $currentTime >= $clockOutStart && $currentTime <= $clockOutEnd;
+        return [
+            'start' => (string) $globalStart,
+            'end' => (string) $globalEnd,
+        ];
+    }
+
+    private function determineClockInStatus(string $clockInStart, ?Carbon $now = null): string
+    {
+        $checkTime = $now ?? now();
+        $lateTolerance = (int) Setting::getValue('attendance_late_tolerance', 0);
+        $lateAt = $checkTime->copy()->startOfDay()->setTimeFromTimeString($clockInStart)->addMinutes(max(0, $lateTolerance));
+
+        return $checkTime->greaterThan($lateAt) ? 'late' : 'present';
+    }
+
+    private function isTimeWithinRange(string $currentTime, string $startTime, string $endTime): bool
+    {
+        if ($startTime > $endTime) {
+            return $currentTime >= $startTime || $currentTime <= $endTime;
+        }
+
+        return $currentTime >= $startTime && $currentTime <= $endTime;
+    }
+
+    private function resolveTodayShiftInfo(User $user): array
+    {
+        $group = $this->resolveScheduleGroup($user);
+        $status = null;
+        $source = 'default';
+        $today = now();
+
+        if (Schema::hasTable('technician_daily_schedules')) {
+            $daily = TechnicianDailySchedule::query()
+                ->where('user_id', $user->id)
+                ->whereDate('date', $today->toDateString())
+                ->first();
+            if ($daily) {
+                $status = (string) $daily->status;
+                $source = 'daily';
+            }
+        }
+
+        if ($status === null && Schema::hasTable('technician_schedules')) {
+            $weekly = TechnicianSchedule::query()
+                ->where('user_id', $user->id)
+                ->where('year', $today->year)
+                ->where('week_number', $today->weekOfYear)
+                ->first();
+            if ($weekly) {
+                $status = (string) $weekly->status;
+                $source = 'weekly';
+            }
+        }
+
+        if (! in_array($status, [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_OFF], true)) {
+            $status = TechnicianSchedule::STATUS_OFF;
+            $source = 'default';
+        }
+
+        $shiftConfig = $this->attendanceShiftConfig($group);
+        $shiftLabel = '-';
+        $shiftStart = '-';
+        $shiftEnd = '-';
+
+        if ($status === TechnicianSchedule::STATUS_PIKET) {
+            $shiftLabel = 'Shift 1';
+            $shiftStart = (string) $shiftConfig['shift_1_start'];
+            $shiftEnd = (string) $shiftConfig['shift_1_end'];
+        } elseif ($status === TechnicianSchedule::STATUS_BACKUP) {
+            $shiftLabel = 'Shift 2';
+            $shiftStart = (string) $shiftConfig['shift_2_start'];
+            $shiftEnd = (string) $shiftConfig['shift_2_end'];
+        }
+
+        return [
+            'group_label' => $group === 'wash' ? 'Operator Wash' : 'Teknisi',
+            'status' => $status,
+            'status_label' => match ($status) {
+                TechnicianSchedule::STATUS_PIKET => 'Piket',
+                TechnicianSchedule::STATUS_BACKUP => 'Backup',
+                default => 'Off',
+            },
+            'shift_label' => $shiftLabel,
+            'shift_start' => $shiftStart,
+            'shift_end' => $shiftEnd,
+            'source' => $source,
+        ];
+    }
+
+    private function attendanceShiftConfig(string $group): array
+    {
+        if ($group === 'wash') {
+            return [
+                'shift_1_start' => Setting::getValue('schedule_wash_shift_1_start', '08:00'),
+                'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
+                'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
+                'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
+            ];
+        }
+
+        return [
+            'shift_1_start' => Setting::getValue('schedule_teknisi_shift_1_start', '08:00'),
+            'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
+            'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
+            'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
+        ];
+    }
+
+    private function resolveScheduleGroup(User $user): string
+    {
+        $roleName = strtolower((string) ($user->role?->name ?? ''));
+        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+            return 'wash';
+        }
+
+        if (Schema::hasTable('wash_employees') && WashEmployee::query()->where('user_id', $user->id)->exists()) {
+            return 'wash';
+        }
+
+        return 'teknisi';
     }
 }
