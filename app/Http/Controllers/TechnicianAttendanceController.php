@@ -507,7 +507,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
         $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
         $leaveQuota = Setting::getValue('technician_leave_quota', 3);
-        $faceVerificationEnabled = (string) Setting::getValue('attendance_face_verification_enabled', '1');
+        $faceVerificationEnabled = (string) Setting::getValue('attendance_face_verification_enabled', '0');
         $shiftInfo = $this->resolveTodayShiftInfo(Auth::user());
 
         return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo'));
@@ -1014,11 +1014,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function determineClockInStatus(string $clockInStart, ?Carbon $now = null): string
     {
-        $checkTime = $now ?? now();
+        $checkTime = ($now ?? now())->copy()->timezone(config('app.timezone', 'Asia/Jakarta'));
         $lateTolerance = (int) Setting::getValue('attendance_late_tolerance', 0);
-        $lateAt = $checkTime->copy()->startOfDay()->setTimeFromTimeString($clockInStart)->addMinutes(max(0, $lateTolerance));
+        $lateTolerance = max(0, $lateTolerance);
 
-        return $checkTime->greaterThan($lateAt) ? 'late' : 'present';
+        $clockInStartMinutes = $this->timeToMinutes($clockInStart, 8 * 60);
+        $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
+        $lateThreshold = min((23 * 60) + 59, $clockInStartMinutes + $lateTolerance);
+
+        return $currentMinutes > $lateThreshold ? 'late' : 'present';
     }
 
     private function isTimeWithinRange(string $currentTime, string $startTime, string $endTime): bool
@@ -1047,6 +1051,22 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         } catch (\Throwable $e) {
             return $time;
         }
+    }
+
+    private function timeToMinutes(string $time, int $default): int
+    {
+        if (! preg_match('/^\s*(\d{1,2}):(\d{2})\s*$/', $time, $matches)) {
+            return $default;
+        }
+
+        $hours = (int) $matches[1];
+        $minutes = (int) $matches[2];
+
+        if ($hours < 0 || $hours > 23 || $minutes < 0 || $minutes > 59) {
+            return $default;
+        }
+
+        return ($hours * 60) + $minutes;
     }
 
     private function resolveTodayShiftInfo(User $user): array
