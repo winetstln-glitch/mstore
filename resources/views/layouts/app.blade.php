@@ -999,7 +999,13 @@
                     form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (button) {
                         button.disabled = true;
                     });
-                    window.mstoreNotify.loading(form.dataset.loadingMessage || 'Memproses data...');
+                    const loadingDelay = Number(form.dataset.loadingDelay || 300);
+                    window.setTimeout(function () {
+                        if (form.dataset.isSubmitting !== '1') {
+                            return;
+                        }
+                        window.mstoreNotify.loading(form.dataset.loadingMessage || 'Memproses data...');
+                    }, Number.isFinite(loadingDelay) ? loadingDelay : 300);
                 });
             });
         };

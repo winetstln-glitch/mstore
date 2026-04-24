@@ -238,6 +238,15 @@ class DashboardController extends Controller
         $technicianTaskSummary = collect();
         if ($attendanceRole === 'technician' && $attendanceEmployees->isNotEmpty()) {
             $technicianIdsForTable = $attendanceEmployees->pluck('id')->values()->all();
+            $activeTicketRows = DB::table('ticket_user')
+                ->join('tickets', 'tickets.id', '=', 'ticket_user.ticket_id')
+                ->whereIn('ticket_user.user_id', $technicianIdsForTable)
+                ->whereIn('tickets.status', ['open', 'assigned', 'in_progress', 'pending'])
+                ->orderByDesc('tickets.updated_at')
+                ->get(['ticket_user.user_id', 'tickets.id']);
+            $activeTicketIdsByUser = $activeTicketRows
+                ->groupBy('user_id')
+                ->map(fn (Collection $rows) => (int) optional($rows->first())->id);
             $activeTicketCounts = DB::table('ticket_user')
                 ->join('tickets', 'tickets.id', '=', 'ticket_user.ticket_id')
                 ->select('ticket_user.user_id', DB::raw('COUNT(DISTINCT tickets.id) as total'))
@@ -251,13 +260,14 @@ class DashboardController extends Controller
                 ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
                 ->groupBy('technician_id')
                 ->pluck('total', 'technician_id');
-            $technicianTaskSummary = $attendanceEmployees->mapWithKeys(function ($employee) use ($activeTicketCounts, $activeInstallationCounts) {
+            $technicianTaskSummary = $attendanceEmployees->mapWithKeys(function ($employee) use ($activeTicketCounts, $activeInstallationCounts, $activeTicketIdsByUser) {
                 $ticketCount = (int) ($activeTicketCounts[$employee->id] ?? 0);
                 $installationCount = (int) ($activeInstallationCounts[$employee->id] ?? 0);
                 $totalTask = $ticketCount + $installationCount;
 
                 return [
                     $employee->id => [
+                        'active_ticket_id' => (int) ($activeTicketIdsByUser[$employee->id] ?? 0),
                         'ticket_active' => $ticketCount,
                         'installation_active' => $installationCount,
                         'total_active' => $totalTask,

@@ -181,6 +181,7 @@
                                 $taskSummary = $technicianTaskSummary->get($employee->id, [
                                     'label' => 'Standby',
                                     'total_active' => 0,
+                                    'active_ticket_id' => 0,
                                     'ticket_active' => 0,
                                     'installation_active' => 0,
                                 ]);
@@ -206,7 +207,14 @@
                                         </span>
                                     </td>
                                     <td class="small">
-                                        {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }} | {{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}
+                                        @if(($taskSummary['active_ticket_id'] ?? 0) > 0)
+                                            <a href="{{ route('tickets.show', $taskSummary['active_ticket_id']) }}" class="text-decoration-none fw-semibold">
+                                                {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}
+                                            </a>
+                                        @else
+                                            {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}
+                                        @endif
+                                        | {{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}
                                     </td>
                                 @endif
                             </tr>
