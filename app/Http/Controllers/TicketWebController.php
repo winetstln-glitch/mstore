@@ -79,7 +79,7 @@ class TicketWebController extends Controller implements HasMiddleware
                 ->from('technician_attendances as ta')
                 ->whereColumn('ta.user_id', 'users.id')
                 ->whereDate('ta.clock_in', today())
-                ->where('ta.status', 'present');
+                ->whereIn('ta.status', ['present', 'late']);
         })->whereDoesntHave('tickets', function ($q) {
             $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
         })->get();
@@ -119,7 +119,7 @@ class TicketWebController extends Controller implements HasMiddleware
                     ->from('technician_attendances as ta')
                     ->whereColumn('ta.user_id', 'users.id')
                     ->whereDate('ta.clock_in', today())
-                    ->where('ta.status', 'present');
+                    ->whereIn('ta.status', ['present', 'late']);
             })->whereDoesntHave('tickets', function ($q) {
                 $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
             })->pluck('id')->toArray();
@@ -249,7 +249,7 @@ class TicketWebController extends Controller implements HasMiddleware
                 ->from('technician_attendances as ta')
                 ->whereColumn('ta.user_id', 'users.id')
                 ->whereDate('ta.clock_in', today())
-                ->where('ta.status', 'present');
+                ->whereIn('ta.status', ['present', 'late']);
         })->get();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
@@ -273,7 +273,7 @@ class TicketWebController extends Controller implements HasMiddleware
                         ->from('technician_attendances as ta')
                         ->whereColumn('ta.user_id', 'users.id')
                         ->whereDate('ta.clock_in', today())
-                        ->where('ta.status', 'present');
+                        ->whereIn('ta.status', ['present', 'late']);
                 })->whereDoesntHave('tickets', function ($sub) use ($ticket) {
                     $sub->whereIn('status', ['assigned', 'in_progress', 'pending'])
                         ->where('tickets.id', '<>', $ticket->id);
@@ -342,7 +342,7 @@ class TicketWebController extends Controller implements HasMiddleware
                         ->from('technician_attendances as ta')
                         ->whereColumn('ta.user_id', 'users.id')
                         ->whereDate('ta.clock_in', today())
-                        ->where('ta.status', 'present');
+                        ->whereIn('ta.status', ['present', 'late']);
                 })->whereDoesntHave('tickets', function ($q) use ($ticket) {
                     $q->whereIn('status', ['assigned', 'in_progress', 'pending'])
                         ->where('tickets.id', '<>', $ticket->id);

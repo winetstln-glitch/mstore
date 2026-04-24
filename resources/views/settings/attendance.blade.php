@@ -32,6 +32,15 @@
                                             <input type="time" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
                                         @elseif($setting->type === 'number')
                                             <input type="number" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
+                                            @if($setting->key === 'attendance_clock_in_early_minutes')
+                                                <div class="form-text">{{ __('Contoh: isi 60 agar absen masuk boleh 1 jam sebelum jam shift.') }}</div>
+                                            @elseif($setting->key === 'attendance_photo_max_kb')
+                                                <div class="form-text">{{ __('Ukuran lebih kecil mempercepat upload. Rekomendasi 1024 - 3072 KB.') }}</div>
+                                            @elseif($setting->key === 'attendance_photo_max_width')
+                                                <div class="form-text">{{ __('Lebar foto akan dikecilkan otomatis di browser sebelum upload.') }}</div>
+                                            @elseif($setting->key === 'attendance_photo_compress_quality')
+                                                <div class="form-text">{{ __('Rentang 45 - 95. Semakin kecil, upload semakin cepat.') }}</div>
+                                            @endif
                                         @elseif($setting->type === 'boolean')
                                             <select name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-select">
                                                 <option value="1" {{ (string) $setting->value === '1' ? 'selected' : '' }}>{{ __('Ya') }}</option>

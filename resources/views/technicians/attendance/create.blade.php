@@ -121,6 +121,7 @@
                                 </div>
                                 <img id="image-preview" class="modern-preview-img" src="#" alt="Preview">
                                 <input type="file" name="photo" id="photo" accept="image/*" capture="user" required onchange="previewImage(event)">
+                                <div id="photo-upload-note" class="small text-muted mt-2 px-3 text-center"></div>
                             </label>
                         </div>
 
@@ -203,12 +204,16 @@
 <script>
     const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights';
     const faceVerificationEnabled = {{ $faceVerificationEnabled == '1' ? 'true' : 'false' }};
+    const attendancePhotoMaxKb = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_max_kb', 2048)));
+    const attendancePhotoMaxWidth = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_max_width', 1280)));
+    const attendancePhotoCompressQuality = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_compress_quality', 78)));
     const submitBtn = document.getElementById('submitBtn');
     const instructionText = document.getElementById('instruction-text');
     const fingerprintContainer = document.getElementById('fingerprintContainer');
     const uploadArea = document.getElementById('upload-area');
     const attendanceForm = document.getElementById('attendanceForm');
     const deviceFingerprintInput = document.getElementById('deviceFingerprint');
+    const photoUploadNote = document.getElementById('photo-upload-note');
 
     function setSubmitEnabled(enabled) {
         if (!submitBtn || !fingerprintContainer) return;
@@ -275,13 +280,115 @@
 
     if (faceVerificationEnabled) loadModels();
 
+    function formatFileSize(bytes) {
+        const size = Number(bytes || 0);
+        if (!Number.isFinite(size) || size <= 0) return '0 KB';
+        if (size < 1024 * 1024) return (size / 1024).toFixed(0) + ' KB';
+        return (size / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    async function replaceInputFile(inputEl, file) {
+        if (!inputEl || !file) return;
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        inputEl.files = dataTransfer.files;
+    }
+
+    async function optimizePhotoFile(file) {
+        if (!file || !String(file.type || '').startsWith('image/')) {
+            return file;
+        }
+
+        const maxKb = Number.isFinite(attendancePhotoMaxKb) && attendancePhotoMaxKb > 0 ? attendancePhotoMaxKb : 2048;
+        const maxWidth = Number.isFinite(attendancePhotoMaxWidth) && attendancePhotoMaxWidth > 0 ? attendancePhotoMaxWidth : 1280;
+        const qualityPercent = Number.isFinite(attendancePhotoCompressQuality) ? attendancePhotoCompressQuality : 78;
+        const quality = Math.min(0.95, Math.max(0.45, qualityPercent / 100));
+
+        const imageUrl = URL.createObjectURL(file);
+        try {
+            const img = new Image();
+            img.src = imageUrl;
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
+
+            let targetWidth = img.naturalWidth || img.width;
+            let targetHeight = img.naturalHeight || img.height;
+            if (targetWidth > maxWidth) {
+                const ratio = maxWidth / targetWidth;
+                targetWidth = Math.round(targetWidth * ratio);
+                targetHeight = Math.round(targetHeight * ratio);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d', { alpha: false });
+            if (!ctx) {
+                return file;
+            }
+
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+            const maxBytes = maxKb * 1024;
+            const blobCandidates = await Promise.all([
+                new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/webp', quality)),
+                new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)),
+            ]);
+
+            const candidates = blobCandidates
+                .filter((blob) => blob && blob.size > 0)
+                .filter((blob) => blob.size <= maxBytes)
+                .sort((a, b) => a.size - b.size);
+
+            if (candidates.length === 0) {
+                return file;
+            }
+
+            const bestBlob = candidates[0];
+            if (bestBlob.size >= file.size) {
+                return file;
+            }
+
+            const mime = String(bestBlob.type || 'image/jpeg').toLowerCase();
+            const extension = mime.includes('webp') ? 'webp' : 'jpg';
+            const originalName = String(file.name || 'attendance-photo');
+            const normalizedName = originalName.replace(/\.[a-zA-Z0-9]+$/, '');
+            return new File([bestBlob], normalizedName + '.' + extension, {
+                type: mime,
+                lastModified: Date.now(),
+            });
+        } catch (error) {
+            return file;
+        } finally {
+            URL.revokeObjectURL(imageUrl);
+        }
+    }
+
     async function previewImage(event) {
-        const file = event.target.files[0];
+        const inputEl = event.target;
+        const file = inputEl.files[0];
         if (!file) return;
 
+        setSubmitEnabled(false);
+        if (photoUploadNote) {
+            photoUploadNote.textContent = 'Mengoptimalkan foto...';
+        }
+
+        const optimizedFile = await optimizePhotoFile(file);
+        if (optimizedFile !== file) {
+            await replaceInputFile(inputEl, optimizedFile);
+        }
+
         const preview = document.getElementById('image-preview');
-        preview.src = URL.createObjectURL(file);
+        preview.src = URL.createObjectURL(optimizedFile);
         uploadArea.classList.add('has-image');
+        if (photoUploadNote) {
+            photoUploadNote.textContent = 'Ukuran upload: '
+                + formatFileSize(optimizedFile.size)
+                + ' (asli: ' + formatFileSize(file.size) + ')'
+                + ' | format: ' + (String(optimizedFile.type || file.type || '').replace('image/', '').toUpperCase() || 'IMAGE');
+        }
 
         if (!faceVerificationEnabled) {
             setSubmitEnabled(true);
@@ -296,7 +403,7 @@
         });
 
         try {
-            const img = await faceapi.bufferToImage(file);
+            const img = await faceapi.bufferToImage(optimizedFile);
             const detection = await faceapi.detectSingleFace(img);
             
             if (!detection) {
@@ -318,6 +425,9 @@
         document.getElementById('photo').value = '';
         document.getElementById('image-preview').style.display = 'none';
         uploadArea.classList.remove('has-image');
+        if (photoUploadNote) {
+            photoUploadNote.textContent = '';
+        }
         setSubmitEnabled(false);
     }
 

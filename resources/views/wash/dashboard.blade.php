@@ -36,7 +36,7 @@
                         </p>
                     </div>
                     <div>
-                        <a href="{{ route('attendance.create') }}" class="btn btn-primary">
+                        <a href="{{ route('attendance.create') }}" class="btn {{ !$todayAttendance ? 'btn-primary' : (!$todayAttendance->clock_out ? 'btn-danger' : 'btn-primary') }}">
                             @if(!$todayAttendance)
                                 <i class="fa-solid fa-fingerprint"></i> <span class="d-none d-md-inline ms-1">{{ __('Absen Masuk') }}</span>
                             @elseif(!$todayAttendance->clock_out)

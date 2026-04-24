@@ -13,6 +13,7 @@ use App\Models\InventoryItem;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\TechnicianDailySchedule;
+use App\Models\TechnicianSchedule;
 use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\User;
@@ -590,9 +591,29 @@ class DashboardController extends Controller
 
     public function getTodayShiftSchedule(int $userId): ?TechnicianDailySchedule
     {
-        return TechnicianDailySchedule::query()
+        $daily = TechnicianDailySchedule::query()
             ->where('user_id', $userId)
             ->whereDate('date', today())
             ->first();
+        if ($daily) {
+            return $daily;
+        }
+
+        $weekly = TechnicianSchedule::query()
+            ->where('user_id', $userId)
+            ->where('year', now()->weekYear)
+            ->where('week_number', now()->weekOfYear)
+            ->first();
+        if (! $weekly) {
+            return null;
+        }
+
+        $fallback = new TechnicianDailySchedule;
+        $fallback->user_id = $userId;
+        $fallback->date = today();
+        $fallback->status = (string) ($weekly->status ?: TechnicianSchedule::STATUS_OFF);
+        $fallback->notes = $weekly->notes;
+
+        return $fallback;
     }
 }

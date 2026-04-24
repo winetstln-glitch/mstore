@@ -70,6 +70,34 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Jeda Minimal Masuk ke Pulang (Menit)',
             ],
+            [
+                'key' => 'attendance_clock_in_early_minutes',
+                'value' => '60',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Boleh Absen Masuk Lebih Awal (Menit)',
+            ],
+            [
+                'key' => 'attendance_photo_max_kb',
+                'value' => '2048',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Maksimal Ukuran Foto Absensi (KB)',
+            ],
+            [
+                'key' => 'attendance_photo_max_width',
+                'value' => '1280',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Lebar Maksimal Foto Absensi (px)',
+            ],
+            [
+                'key' => 'attendance_photo_compress_quality',
+                'value' => '78',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Kualitas Kompresi Foto Absensi (%)',
+            ],
             // Finance Settings
             [
                 'key' => 'commission_coordinator_percent',

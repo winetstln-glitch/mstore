@@ -17,8 +17,12 @@ class WhatsAppService
     public function __construct()
     {
         // Prefer DB settings, fallback to .env
-        $this->apiKey = Setting::getValue('whatsapp_api_key', config('services.whatsapp.key'));
-        $this->baseUrl = Setting::getValue('whatsapp_api_url', config('services.whatsapp.url'));
+        $this->apiKey = trim((string) Setting::getValue('whatsapp_api_key', config('services.whatsapp.key')));
+        $rawBaseUrl = trim((string) Setting::getValue('whatsapp_api_url', config('services.whatsapp.url')));
+        if ($rawBaseUrl !== '' && ! preg_match('#^https?://#i', $rawBaseUrl)) {
+            $rawBaseUrl = 'https://'.$rawBaseUrl;
+        }
+        $this->baseUrl = rtrim($rawBaseUrl, '/');
         if (empty($this->baseUrl) && ! empty($this->apiKey)) {
             $this->baseUrl = 'https://api.fonnte.com';
         }
@@ -340,7 +344,16 @@ class WhatsAppService
     private function validateProviderResponse($jsonBody, string $rawBody): array
     {
         if (! is_array($jsonBody)) {
-            return ['ok' => true, 'error' => null];
+            $raw = trim($rawBody);
+            if ($raw === '') {
+                return ['ok' => false, 'error' => 'Respon gateway WhatsApp kosong.'];
+            }
+            if (preg_match('/^\s*<(?:!doctype|html)/i', $raw) === 1) {
+                return ['ok' => false, 'error' => 'Respon gateway WhatsApp tidak valid (HTML).'];
+            }
+
+            // Avoid false "sent" when provider response cannot be parsed as expected JSON.
+            return ['ok' => false, 'error' => 'Respon gateway WhatsApp tidak valid.'];
         }
 
         if (array_key_exists('status', $jsonBody)) {
@@ -398,6 +411,15 @@ class WhatsAppService
         $normalized = strtolower($error);
         if (str_contains($normalized, 'disconnected device') || str_contains($normalized, 'device disconnected')) {
             return 'Perangkat WhatsApp gateway belum terhubung. Silakan buka panel provider dan sambungkan ulang device.';
+        }
+        if (str_contains($normalized, 'http 502') || str_contains($normalized, 'bad gateway')) {
+            return 'Server gateway WhatsApp sedang bermasalah (502 Bad Gateway). Coba lagi beberapa menit, atau cek status provider.';
+        }
+        if (str_contains($normalized, 'http 503') || str_contains($normalized, 'service unavailable')) {
+            return 'Layanan gateway WhatsApp sedang tidak tersedia (503). Coba lagi beberapa menit.';
+        }
+        if (str_contains($normalized, 'http 401') || str_contains($normalized, 'unauthorized')) {
+            return 'API key WhatsApp tidak valid atau ditolak provider (401 Unauthorized).';
         }
 
         return $error;

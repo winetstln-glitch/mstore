@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -219,13 +220,25 @@ class EmployeeController extends Controller implements HasMiddleware
 
     public function destroy(Employee $employee)
     {
-        if ($employee->document_path) {
-            Storage::disk('public')->delete($employee->document_path);
-        }
-        if ($this->hasIdCardColumns() && $employee->id_card_photo_path) {
-            Storage::disk('public')->delete($employee->id_card_photo_path);
-        }
-        $employee->delete();
+        DB::transaction(function () use ($employee) {
+            $employee->loadMissing('user');
+
+            if ($employee->document_path) {
+                Storage::disk('public')->delete($employee->document_path);
+            }
+            if ($this->hasIdCardColumns() && $employee->id_card_photo_path) {
+                Storage::disk('public')->delete($employee->id_card_photo_path);
+            }
+
+            $linkedUser = $employee->user;
+            $employee->forceDelete();
+
+            if ($linkedUser && Schema::hasColumn('users', 'attendance_card_code')) {
+                $linkedUser->forceFill([
+                    'attendance_card_code' => null,
+                ])->save();
+            }
+        });
 
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil dihapus.');
     }

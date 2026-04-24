@@ -127,7 +127,7 @@
                                     <td>{{ $log->target_phone ?: '-' }}</td>
                                     <td>
                                         @if($log->status === 'sent')
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Terkirim') }}</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Diterima Gateway') }}</span>
                                         @elseif($log->status === 'failed')
                                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ __('Gagal') }}</span>
                                         @else

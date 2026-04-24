@@ -570,7 +570,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ], 422);
             }
 
-            $status = $this->determineClockInStatus($clockInStart);
+            $status = $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart));
 
             $attendance = TechnicianAttendance::create([
                 'user_id' => $user->id,
@@ -681,8 +681,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 return back()->withErrors(['message' => __('Gagal: Anda sedang dalam masa cuti/izin hari ini.')]);
             }
 
+            $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
             $request->validate([
-                'photo' => 'required|image|max:10240',
+                'photo' => 'required|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
                 'device_fingerprint' => 'required|string|min:8|max:128',
@@ -724,7 +725,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'device_fingerprint_clock_in' => $deviceFingerprint,
                 'ip_clock_in' => (string) ($request->ip() ?? ''),
                 'user_agent_clock_in' => mb_substr((string) $request->userAgent(), 0, 255),
-                'status' => $this->determineClockInStatus($clockInStart, $now),
+                'status' => $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), $now),
                 'notes' => $request->notes,
             ]);
 
@@ -782,8 +783,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ])]);
         }
 
+        $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
         $request->validate([
-            'photo' => 'required|image|max:10240',
+            'photo' => 'required|image|max:'.$photoMaxKb,
             'latitude' => 'nullable',
             'longitude' => 'nullable',
             'device_fingerprint' => 'required|string|min:8|max:128',
@@ -901,6 +903,19 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return $request->routeIs('landing.attendance.*') ? 'landing' : 'attendance.create';
     }
 
+    private function resolveAttendancePhotoMaxKb(): int
+    {
+        $maxKb = (int) Setting::getValue('attendance_photo_max_kb', 2048);
+        if ($maxKb < 256) {
+            return 256;
+        }
+        if ($maxKb > 10240) {
+            return 10240;
+        }
+
+        return $maxKb;
+    }
+
     private function resolveAttendanceUser(string $cardCode): ?User
     {
         $code = trim($cardCode);
@@ -970,21 +985,30 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         $globalStart = Setting::getValue('attendance_clock_in_start', '07:00');
         $globalEnd = Setting::getValue('attendance_clock_in_end', '13:00');
+        $earlyMinutes = (int) Setting::getValue('attendance_clock_in_early_minutes', 60);
+        if ($earlyMinutes < 0) {
+            $earlyMinutes = 0;
+        }
         $shiftInfo = $this->resolveTodayShiftInfo($user);
 
         $fromSchedule = in_array($shiftInfo['source'] ?? 'default', ['daily', 'weekly'], true);
         $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP], true);
 
         if ($fromSchedule && $isWorkShift) {
+            $officialStart = (string) ($shiftInfo['shift_start'] ?? $globalStart);
+            $effectiveStart = $this->subtractMinutesFromTime($officialStart, $earlyMinutes);
             return [
-                'start' => (string) ($shiftInfo['shift_start'] ?? $globalStart),
+                'start' => $effectiveStart,
                 'end' => (string) ($shiftInfo['shift_end'] ?? $globalEnd),
+                'official_start' => $officialStart,
             ];
         }
 
+        $globalStartText = (string) $globalStart;
         return [
-            'start' => (string) $globalStart,
+            'start' => $this->subtractMinutesFromTime($globalStartText, $earlyMinutes),
             'end' => (string) $globalEnd,
+            'official_start' => $globalStartText,
         ];
     }
 
@@ -1006,6 +1030,25 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return $currentTime >= $startTime && $currentTime <= $endTime;
     }
 
+    private function subtractMinutesFromTime(string $time, int $minutes): string
+    {
+        if ($minutes <= 0) {
+            return $time;
+        }
+
+        try {
+            $base = now()->copy()->startOfDay()->setTimeFromTimeString($time);
+            $reduced = $base->copy()->subMinutes($minutes);
+            if ($reduced->lt($base->copy()->startOfDay())) {
+                return '00:00';
+            }
+
+            return $reduced->format('H:i');
+        } catch (\Throwable $e) {
+            return $time;
+        }
+    }
+
     private function resolveTodayShiftInfo(User $user): array
     {
         $group = $this->resolveScheduleGroup($user);
@@ -1025,9 +1068,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         if ($status === null && Schema::hasTable('technician_schedules')) {
+            $weekYear = (int) $today->copy()->weekYear;
             $weekly = TechnicianSchedule::query()
                 ->where('user_id', $user->id)
-                ->where('year', $today->year)
+                ->where('year', $weekYear)
                 ->where('week_number', $today->weekOfYear)
                 ->first();
             if ($weekly) {

@@ -46,6 +46,8 @@ class SettingController extends Controller implements HasMiddleware
 
     public function attendance()
     {
+        $this->ensureAttendanceSettings();
+
         $legacyKeys = [
             'attendance_shift_1_start',
             'attendance_shift_1_end',
@@ -832,5 +834,53 @@ class SettingController extends Controller implements HasMiddleware
         }
 
         \Illuminate\Support\Facades\Cache::put('settings_ensured', true, now()->addHour());
+    }
+
+    private function ensureAttendanceSettings(): void
+    {
+        $defaults = [
+            [
+                'key' => 'attendance_clock_in_early_minutes',
+                'value' => '60',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Boleh Absen Masuk Lebih Awal (Menit)',
+            ],
+            [
+                'key' => 'attendance_photo_max_kb',
+                'value' => '2048',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Maksimal Ukuran Foto Absensi (KB)',
+            ],
+            [
+                'key' => 'attendance_photo_max_width',
+                'value' => '1280',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Lebar Maksimal Foto Absensi (px)',
+            ],
+            [
+                'key' => 'attendance_photo_compress_quality',
+                'value' => '78',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Kualitas Kompresi Foto Absensi (%)',
+            ],
+        ];
+
+        foreach ($defaults as $setting) {
+            $existing = Setting::query()->where('key', $setting['key'])->first();
+            if ($existing) {
+                $existing->update([
+                    'group' => $setting['group'],
+                    'type' => $setting['type'],
+                    'label' => $setting['label'],
+                ]);
+                continue;
+            }
+
+            Setting::create($setting);
+        }
     }
 }

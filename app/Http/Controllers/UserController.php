@@ -13,6 +13,7 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -318,7 +319,21 @@ class UserController extends Controller implements HasMiddleware
         }
 
         try {
-            $user->delete();
+            DB::transaction(function () use ($user) {
+                $user->loadMissing('employee');
+
+                if ($user->employee) {
+                    if ($user->employee->document_path) {
+                        Storage::disk('public')->delete($user->employee->document_path);
+                    }
+                    if ($user->employee->id_card_photo_path) {
+                        Storage::disk('public')->delete($user->employee->id_card_photo_path);
+                    }
+                    $user->employee->forceDelete();
+                }
+
+                $user->delete();
+            });
 
             return redirect()->route('users.index')->with('success', __('User deleted successfully.'));
         } catch (\Illuminate\Database\QueryException $e) {
@@ -375,6 +390,18 @@ class UserController extends Controller implements HasMiddleware
             'updated_at' => now(),
         ]);
 
+        $gatewayStatus = $wa->checkGatewayStatus();
+        if (! ($gatewayStatus['ok'] ?? false) || ! ($gatewayStatus['connected'] ?? false)) {
+            $gatewayError = mb_substr((string) ($gatewayStatus['message'] ?? 'Gateway WhatsApp belum siap.'), 0, 500);
+            DB::table('whatsapp_account_send_logs')->where('id', $auditId)->update([
+                'status' => 'failed',
+                'error_message' => $gatewayError,
+                'updated_at' => now(),
+            ]);
+
+            return back()->with('error', __('Gagal mengirim WhatsApp: :message', ['message' => $gatewayError]));
+        }
+
         try {
             $wa->sendMessage($phone, $message, 'user_account');
         } catch (\Throwable $e) {
@@ -393,7 +420,7 @@ class UserController extends Controller implements HasMiddleware
             'updated_at' => now(),
         ]);
 
-        return back()->with('success', __('Informasi akun berhasil dikirim ke WhatsApp.'));
+        return back()->with('success', __('Informasi akun berhasil dikirim ke gateway WhatsApp.'));
     }
 
     private function hasAttendanceCardColumn(): bool
@@ -453,9 +480,18 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (str_starts_with($digits, '62')) {
+            if (strlen($digits) < 10 || strlen($digits) > 16) {
+                return '';
+            }
+
             return $digits;
         }
 
-        return '62'.$digits;
+        $normalized = '62'.$digits;
+        if (strlen($normalized) < 10 || strlen($normalized) > 16) {
+            return '';
+        }
+
+        return $normalized;
     }
 }
