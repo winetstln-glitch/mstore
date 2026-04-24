@@ -156,6 +156,12 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->map(function ($items) {
                     return $items->keyBy('user_id');
                 });
+            $dailySchedules = $this->mergeDailyWithWeeklyFallback(
+                $dailySchedules,
+                $userIds->all(),
+                $dailyRangeStart,
+                $dailyRangeEnd
+            );
         }
 
         // Apply group filter
@@ -544,6 +550,12 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->get()
                 ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'))
                 ->map(fn ($items) => $items->keyBy('user_id'));
+            $dailySchedules = $this->mergeDailyWithWeeklyFallback(
+                $dailySchedules,
+                $userIds->all(),
+                $rangeStart,
+                $rangeEnd
+            );
 
             if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
                 foreach ($groups as &$grp) {
@@ -681,6 +693,12 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 ->get()
                 ->groupBy(fn (TechnicianDailySchedule $row) => $row->date->format('Y-m-d'))
                 ->map(fn ($items) => $items->keyBy('user_id'));
+            $dailySchedules = $this->mergeDailyWithWeeklyFallback(
+                $dailySchedules,
+                $userIds->all(),
+                $start,
+                $end
+            );
 
             // Apply Group Filter
             if ($selectedGroup !== 'all') {
@@ -1644,5 +1662,72 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 return strtolower(trim((string) ($user->schedule_name ?? $user->name ?? '')));
             })
             ->values();
+    }
+
+    private function mergeDailyWithWeeklyFallback(
+        \Illuminate\Support\Collection $dailySchedules,
+        array $userIds,
+        Carbon $startDate,
+        Carbon $endDate
+    ): \Illuminate\Support\Collection {
+        if (empty($userIds)) {
+            return $dailySchedules;
+        }
+
+        $candidateYears = collect([$startDate->year, $endDate->year, $startDate->weekYear, $endDate->weekYear])
+            ->map(fn ($y) => (int) $y)
+            ->unique()
+            ->values();
+
+        $weeklyRows = TechnicianSchedule::query()
+            ->whereIn('user_id', $userIds)
+            ->whereIn('year', $candidateYears)
+            ->get(['user_id', 'year', 'week_number', 'status']);
+
+        $weeklyByUser = [];
+        foreach ($weeklyRows as $row) {
+            $year = (int) $row->year;
+            $week = (int) $row->week_number;
+            $uid = (int) $row->user_id;
+            $weeklyByUser[$uid][$year][$week] = (string) $row->status;
+        }
+
+        $merged = $dailySchedules;
+        for ($day = $startDate->copy(); $day->lte($endDate); $day->addDay()) {
+            $dayKey = $day->format('Y-m-d');
+            $week = (int) $day->weekOfYear;
+            $weekYear = (int) $day->weekYear;
+            $calendarYear = (int) $day->year;
+            $rows = $merged->get($dayKey, collect());
+
+            foreach ($userIds as $userId) {
+                $uid = (int) $userId;
+                if ($rows->has($uid)) {
+                    continue;
+                }
+
+                $fallbackStatus = $weeklyByUser[$uid][$weekYear][$week]
+                    ?? $weeklyByUser[$uid][$calendarYear][$week]
+                    ?? null;
+                if (! in_array($fallbackStatus, [
+                    TechnicianSchedule::STATUS_PIKET,
+                    TechnicianSchedule::STATUS_BACKUP,
+                    TechnicianSchedule::STATUS_OFF,
+                ], true)) {
+                    continue;
+                }
+
+                $rows->put($uid, new TechnicianDailySchedule([
+                    'user_id' => $uid,
+                    'date' => $dayKey,
+                    'status' => $fallbackStatus,
+                    'notes' => null,
+                ]));
+            }
+
+            $merged->put($dayKey, $rows);
+        }
+
+        return $merged;
     }
 }

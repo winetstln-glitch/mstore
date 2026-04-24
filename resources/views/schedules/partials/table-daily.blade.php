@@ -120,7 +120,7 @@
                                                 <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_BACKUP }}" {{ $status === \App\Models\TechnicianDailySchedule::STATUS_BACKUP ? 'selected' : '' }}>S2</option>
                                             </select>
                                         @else
-                                            <span class="shift-badge {{ $cellClass }}">
+                                            <span class="shift-badge {{ str_contains($cellClass, 'piket') ? 'piket' : (str_contains($cellClass, 'backup') ? 'backup' : 'off') }}">
                                                 {{ $status === \App\Models\TechnicianDailySchedule::STATUS_PIKET ? 'S1' : ($status === \App\Models\TechnicianDailySchedule::STATUS_BACKUP ? 'S2' : 'Off') }}
                                             </span>
                                         @endif
