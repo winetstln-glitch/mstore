@@ -21,8 +21,9 @@
                             $ticketTypeOptions = [
                                 'gangguan' => __('Gangguan'),
                                 'pasang_baru' => __('Pasang Baru'),
-                                'pasang_odc' => __('Pasang ODC'),
+                                'pasang_odc' => __('Instalasi'),
                                 'tarik_jalur' => __('Tarik Jalur'),
+                                'perbaikan' => __('Perbaikan'),
                                 'maintenance' => __('Maintenance'),
                                 'pergantian_onu' => __('Pergantian ONU'),
                                 'ganti_onu' => __('Ganti ONU'),

@@ -106,7 +106,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'odp_id' => 'nullable|exists:odps,id',
             'coordinator_id' => 'nullable|exists:coordinators,id',
             // Conditional validation
-            'customer_id' => 'required_if:type,gangguan,maintenance,other|nullable|exists:customers,id',
+            'customer_id' => 'required_if:type,gangguan,other|nullable|exists:customers,id',
             'new_customer_name' => 'required_if:type,pasang_baru|nullable|string|max:255',
             'new_customer_address' => 'required_if:type,pasang_baru|nullable|string',
         ]);

@@ -22,8 +22,9 @@
                             <select name="type" id="type" required class="form-select @error('type') is-invalid @enderror">
                                 <option value="gangguan" {{ old('type') == 'gangguan' ? 'selected' : '' }}>{{ __('Gangguan') }}</option>
                                 <option value="pasang_baru" {{ old('type') == 'pasang_baru' ? 'selected' : '' }}>{{ __('Pasang Baru') }}</option>
-                                <option value="pasang_odc" {{ old('type') == 'pasang_odc' ? 'selected' : '' }}>{{ __('Pasang ODC') }}</option>
+                                <option value="pasang_odc" {{ old('type') == 'pasang_odc' ? 'selected' : '' }}>{{ __('Instalasi') }}</option>
                                 <option value="tarik_jalur" {{ old('type') == 'tarik_jalur' ? 'selected' : '' }}>{{ __('Tarik Jalur') }}</option>
+                                <option value="perbaikan" {{ old('type') == 'perbaikan' ? 'selected' : '' }}>{{ __('Perbaikan') }}</option>
                                 <option value="maintenance" {{ old('type') == 'maintenance' ? 'selected' : '' }}>{{ __('Maintenance') }}</option>
                                 <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>{{ __('Lainnya') }}</option>
                             </select>
@@ -208,7 +209,7 @@
         const newCustomerSection = $('#new-customer-section');
         const customerSelect = $('#customer_id');
         const newCustomerInputs = $('#new_customer_name, #new_customer_address');
-        const customerOptionalTypes = ['pasang_odc', 'tarik_jalur'];
+        const customerOptionalTypes = ['pasang_odc', 'tarik_jalur', 'perbaikan', 'maintenance'];
         const locationInput = document.getElementById('location');
         const mapLink = document.getElementById('view-map-link');
 
