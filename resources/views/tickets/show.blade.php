@@ -30,6 +30,13 @@
                 </div>
 
                 <!-- Ringkasan info -->
+                @php
+                    $elapsedMinutes = $ticket->created_at ? $ticket->created_at->diffInMinutes(now()) : 0;
+                    $hasEstimate = !is_null($ticket->estimated_duration_minutes);
+                    $isOverEstimate = $hasEstimate
+                        && !in_array($ticket->status, ['solved', 'closed'])
+                        && $elapsedMinutes > $ticket->estimated_duration_minutes;
+                @endphp
                 <div class="row g-2 g-md-3 mb-4">
                     <div class="col-6 col-md-3">
                         <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Status') }}</small>
@@ -67,7 +74,24 @@
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Dibuat') }}</small>
                         <span class="d-block mt-1 fw-medium small">{{ $ticket->created_at->format('d M Y') }}</span>
                     </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Estimasi') }}</small>
+                        @if($hasEstimate)
+                            <span class="d-block mt-1 fw-medium small">{{ $ticket->estimated_duration_minutes }} {{ __('menit') }}</span>
+                            <small class="{{ $isOverEstimate ? 'text-danger fw-semibold' : 'text-muted' }}">
+                                {{ __('Durasi berjalan') }}: {{ $elapsedMinutes }} {{ __('menit') }}
+                            </small>
+                        @else
+                            <span class="d-block mt-1 fw-medium small text-muted">{{ __('Belum diatur') }}</span>
+                        @endif
+                    </div>
                 </div>
+                @if($isOverEstimate)
+                    <div class="alert alert-warning small py-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        {{ __('Durasi pengerjaan sudah melewati estimasi. Mohon percepat proses atau lakukan eskalasi jika kendala belum teratasi.') }}
+                    </div>
+                @endif
 
                 <div class="mb-4">
                     <h6 class="fw-bold border-bottom pb-2 mb-3">{{ __('Deskripsi') }}</h6>
@@ -160,6 +184,9 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ticketSopModal">
                                     <i class="fa-solid fa-book-open me-1"></i> {{ __('Lihat SOP Lengkap Teknisi WiFi') }}
                                 </button>
+                                <a href="{{ route('tickets.sop.pdf', $ticket) }}" class="btn btn-sm btn-outline-success">
+                                    <i class="fa-solid fa-file-pdf me-1"></i> {{ __('Unduh SOP PDF') }}
+                                </a>
                             </div>
                         </div>
                         <div class=" p-3 rounded border border-success-subtle">
@@ -170,7 +197,7 @@
                                     || Str::contains(strtolower((string) $ticket->type), ['pergantian', 'pergati', 'ganti_onu', 'penggantian_onu'])
                                 );
                             @endphp
-                            <form action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
+                            <form id="completeTicketForm" action="{{ route('tickets.complete', $ticket) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <div class="row mb-3">
@@ -192,9 +219,9 @@
                                 @if($showCompletionOnuScan)
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-6">
-                                            <label for="completion_onu_serial" class="form-label small fw-bold">{{ __('ONU SN') }}</label>
+                                            <label for="completion_onu_serial" class="form-label small fw-bold">{{ __('ONU SN') }} <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control @error('completion_onu_serial') is-invalid @enderror" id="completion_onu_serial" name="completion_onu_serial" value="{{ old('completion_onu_serial', $ticket->customer->onu_serial ?? '') }}" placeholder="{{ __('Contoh: ZTEGC1234567') }}">
+                                                <input type="text" class="form-control @error('completion_onu_serial') is-invalid @enderror" id="completion_onu_serial" name="completion_onu_serial" required value="{{ old('completion_onu_serial', $ticket->customer->onu_serial ?? '') }}" placeholder="{{ __('Contoh: ZTEGC1234567') }}">
                                                 <button class="btn btn-outline-primary" type="button" id="startCompleteOnuQrScan">
                                                     <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR ONU SN') }}
                                                 </button>
@@ -211,9 +238,9 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="completion_wan_mac" class="form-label small fw-bold">{{ __('WAN MAC') }}</label>
+                                            <label for="completion_wan_mac" class="form-label small fw-bold">{{ __('WAN MAC') }} <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
+                                                <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" required value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
                                                 <button class="btn btn-outline-primary" type="button" id="startCompleteMacQrScan">
                                                     <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR MAC') }}
                                                 </button>
@@ -232,6 +259,12 @@
                                     </div>
                                 @endif
                                 <div class="mb-3">
+                                    @if($showCompletionOnuScan)
+                                        <div class="alert alert-warning small py-2">
+                                            <i class="fa-solid fa-circle-info me-1"></i>
+                                            {{ __('Untuk instalasi baru/pergantian, SN ONU dan WAN MAC wajib diisi sebelum tiket diselesaikan.') }}
+                                        </div>
+                                    @endif
                                     <label for="description" class="form-label small fw-bold">{{ __('Catatan Penyelesaian') }} ({{ __('Opsional') }})</label>
                                     <textarea class="form-control" id="description" name="description" rows="2" placeholder="{{ __('Jelaskan solusi yang dilakukan...') }}"></textarea>
                                 </div>
@@ -423,7 +456,7 @@
                 <h5 class="modal-title" id="editCustomerModalLabel">{{ __('Ubah Pelanggan') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('tickets.updateCustomer', $ticket) }}" method="POST">
+            <form id="editCustomerForm" action="{{ route('tickets.updateCustomer', $ticket) }}" method="POST">
                 @csrf
                 @method('PATCH')
                 <div class="modal-body">
@@ -445,9 +478,9 @@
                             <input type="text" class="form-control" id="cust_package" name="package" value="{{ $ticket->customer->package }}">
                         </div>
                         <div class="col-md-6">
-                            <label for="cust_onu_serial" class="form-label">{{ __('ONU Serial') }}</label>
+                            <label for="cust_onu_serial" class="form-label">{{ __('ONU Serial') }} <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="cust_onu_serial" name="onu_serial" value="{{ $ticket->customer->onu_serial }}">
+                                <input type="text" class="form-control" id="cust_onu_serial" name="onu_serial" required value="{{ $ticket->customer->onu_serial }}">
                                 <button class="btn btn-outline-primary" type="button" id="startOnuQrScan">
                                     <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR') }}
                                 </button>
@@ -461,9 +494,9 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="cust_wan_mac" class="form-label">{{ __('WAN MAC') }}</label>
+                            <label for="cust_wan_mac" class="form-label">{{ __('WAN MAC') }} <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="cust_wan_mac" name="wan_mac" value="{{ $ticket->customer->wan_mac }}" placeholder="{{ __('AA:BB:CC:DD:EE:FF') }}">
+                                <input type="text" class="form-control" id="cust_wan_mac" name="wan_mac" required value="{{ $ticket->customer->wan_mac }}" placeholder="{{ __('AA:BB:CC:DD:EE:FF') }}">
                                 <button class="btn btn-outline-primary" type="button" id="startCustMacQrScan">
                                     <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR MAC') }}
                                 </button>
@@ -617,6 +650,9 @@
                 </ul>
             </div>
             <div class="modal-footer">
+                <a href="{{ route('tickets.sop.pdf', $ticket) }}" class="btn btn-success">
+                    <i class="fa-solid fa-download me-1"></i> {{ __('Unduh PDF') }}
+                </a>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
             </div>
         </div>
@@ -823,6 +859,12 @@
             const normalized = String(value).replace(/[^0-9A-Fa-f]/g, '');
             if (normalized.length !== 12) return String(value).trim().toUpperCase();
             return normalized.match(/.{1,2}/g).join(':').toUpperCase();
+        };
+
+        const normalizeMacAsTyping = (value) => {
+            if (!value) return '';
+            const hexOnly = String(value).replace(/[^0-9A-Fa-f]/g, '').toUpperCase().slice(0, 12);
+            return hexOnly.match(/.{1,2}/g)?.join(':') ?? hexOnly;
         };
 
         const stopQrScanner = async () => {
@@ -1221,14 +1263,35 @@
             });
         }
 
-        if (custWanMacInput) {
-            custWanMacInput.addEventListener('blur', function() {
+        const bindMacAutoFormat = (input) => {
+            if (!input) return;
+            input.setAttribute('autocomplete', 'off');
+            input.addEventListener('input', function() {
+                input.value = normalizeMacAsTyping(input.value);
+            });
+            input.addEventListener('blur', function() {
+                input.value = normalizeMacInputValue(input.value);
+            });
+            input.addEventListener('paste', function() {
+                setTimeout(function() {
+                    input.value = normalizeMacAsTyping(input.value);
+                }, 0);
+            });
+        };
+
+        bindMacAutoFormat(custWanMacInput);
+        bindMacAutoFormat(completionWanMacInput);
+
+        const editCustomerForm = document.getElementById('editCustomerForm');
+        if (editCustomerForm && custWanMacInput) {
+            editCustomerForm.addEventListener('submit', function() {
                 custWanMacInput.value = normalizeMacInputValue(custWanMacInput.value);
             });
         }
 
-        if (completionWanMacInput) {
-            completionWanMacInput.addEventListener('blur', function() {
+        const completeTicketForm = document.getElementById('completeTicketForm');
+        if (completeTicketForm && completionWanMacInput) {
+            completeTicketForm.addEventListener('submit', function() {
                 completionWanMacInput.value = normalizeMacInputValue(completionWanMacInput.value);
             });
         }

@@ -17,6 +17,7 @@ class Ticket extends Model
         'technician_id',
         'type',
         'priority',
+        'estimated_duration_minutes',
         'status',
         'description',
         'photo_before',
@@ -31,6 +32,7 @@ class Ticket extends Model
     protected $casts = [
         'sla_deadline' => 'datetime',
         'closed_at' => 'datetime',
+        'estimated_duration_minutes' => 'integer',
     ];
 
     public function customer(): BelongsTo

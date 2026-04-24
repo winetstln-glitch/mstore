@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Coordinator;
 use App\Models\Customer;
 use App\Models\Odp;
@@ -21,7 +22,7 @@ class TicketWebController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ticket.view', only: ['index', 'show']),
+            new Middleware('permission:ticket.view', only: ['index', 'show', 'sopPdf']),
             new Middleware('permission:ticket.create', only: ['create', 'store']),
             new Middleware('permission:ticket.edit', only: ['edit']),
             new Middleware('permission:ticket.delete', only: ['destroy']),
@@ -99,6 +100,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'subject' => 'required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'required|in:low,medium,high',
+            'estimated_duration_minutes' => 'nullable|integer|min:15|max:1440',
             'technicians' => 'nullable|array',
             'technicians.*' => 'exists:users,id',
             'location' => 'nullable|string',
@@ -154,6 +156,9 @@ class TicketWebController extends Controller implements HasMiddleware
             'subject' => $request->subject,
             'description' => $request->description,
             'priority' => $request->priority,
+            'estimated_duration_minutes' => $request->filled('estimated_duration_minutes')
+                ? (int) $request->estimated_duration_minutes
+                : null,
             'status' => $request->has('technicians') && count($request->technicians) > 0 ? 'assigned' : 'open',
             'location' => $request->location ?? ($request->type === 'pasang_baru' && $request->new_customer_lat && $request->new_customer_lng ? "{$request->new_customer_lat}, {$request->new_customer_lng}" : null),
             'address' => $request->address ?? ($request->type === 'pasang_baru' ? $request->new_customer_address : null),
@@ -304,6 +309,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'type' => 'sometimes|required|string|max:100',
             'subject' => 'sometimes|required|string|max:255',
             'priority' => 'sometimes|required|in:low,medium,high',
+            'estimated_duration_minutes' => 'nullable|integer|min:15|max:1440',
             'status' => 'sometimes|required|in:open,assigned,in_progress,pending,solved,closed',
             'description' => 'nullable|string',
             'location' => 'nullable|string',
@@ -405,13 +411,37 @@ class TicketWebController extends Controller implements HasMiddleware
         if (! ($isAdmin || $hasPermission || $isAssigned)) {
             abort(403);
         }
-        $request->validate([
+        $validated = $request->validate([
             'photo_before' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'photo_proof' => 'required|image|mimes:jpeg,png,jpg|max:10240',
             'description' => 'nullable|string',
             'completion_onu_serial' => 'nullable|string|max:100',
             'completion_wan_mac' => ['nullable', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
         ]);
+
+        $typeNormalized = strtolower((string) $ticket->type);
+        $isOnuProvisioningTask = $typeNormalized === 'pasang_baru'
+            || str_contains($typeNormalized, 'pergantian')
+            || str_contains($typeNormalized, 'pergati')
+            || str_contains($typeNormalized, 'ganti_onu')
+            || str_contains($typeNormalized, 'penggantian_onu');
+
+        if ($ticket->customer && $isOnuProvisioningTask) {
+            $finalOnuSerial = trim((string) ($validated['completion_onu_serial'] ?? $ticket->customer->onu_serial ?? ''));
+            $finalWanMac = trim((string) ($validated['completion_wan_mac'] ?? $ticket->customer->wan_mac ?? ''));
+
+            if ($finalOnuSerial === '' || $finalWanMac === '') {
+                $errorBag = [];
+                if ($finalOnuSerial === '') {
+                    $errorBag['completion_onu_serial'] = __('SN ONU wajib diisi untuk tiket instalasi baru/pergantian.');
+                }
+                if ($finalWanMac === '') {
+                    $errorBag['completion_wan_mac'] = __('WAN MAC wajib diisi untuk tiket instalasi baru/pergantian.');
+                }
+
+                return back()->withErrors($errorBag)->withInput();
+            }
+        }
 
         if ($request->hasFile('photo_before')) {
             $pathBefore = $request->file('photo_before')->store('ticket-proofs', 'public');
@@ -426,13 +456,6 @@ class TicketWebController extends Controller implements HasMiddleware
         $ticket->status = 'solved';
         $ticket->closed_at = now();
         $ticket->save();
-
-        $typeNormalized = strtolower((string) $ticket->type);
-        $isOnuProvisioningTask = $typeNormalized === 'pasang_baru'
-            || str_contains($typeNormalized, 'pergantian')
-            || str_contains($typeNormalized, 'pergati')
-            || str_contains($typeNormalized, 'ganti_onu')
-            || str_contains($typeNormalized, 'penggantian_onu');
 
         $updatedOnuSerial = null;
         $updatedWanMac = null;
@@ -553,8 +576,8 @@ class TicketWebController extends Controller implements HasMiddleware
             'package' => 'nullable|string|max:100',
             'pppoe_user' => 'nullable|string|max:100',
             'pppoe_password' => 'nullable|string|max:100',
-            'onu_serial' => 'nullable|string|max:100',
-            'wan_mac' => ['nullable', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
+            'onu_serial' => 'required|string|max:100',
+            'wan_mac' => ['required', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
             'device_model' => 'nullable|string|max:100',
             'ssid_name' => 'nullable|string|max:100',
             'ssid_password' => 'nullable|string|max:100',
@@ -650,5 +673,15 @@ class TicketWebController extends Controller implements HasMiddleware
         $ticket->delete();
 
         return redirect()->route('tickets.index')->with('success', __('Ticket deleted successfully.'));
+    }
+
+    public function sopPdf(Ticket $ticket)
+    {
+        $pdf = Pdf::loadView('tickets.sop_pdf', [
+            'ticket' => $ticket,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('sop-teknisi-'.$ticket->ticket_number.'.pdf');
     }
 }

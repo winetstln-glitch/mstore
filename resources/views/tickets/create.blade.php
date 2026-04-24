@@ -122,6 +122,25 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-12">
+                            <label for="estimated_duration_minutes" class="form-label">{{ __('Estimasi Pekerjaan (Menit)') }}</label>
+                            <input
+                                type="number"
+                                min="15"
+                                max="1440"
+                                step="5"
+                                name="estimated_duration_minutes"
+                                id="estimated_duration_minutes"
+                                value="{{ old('estimated_duration_minutes') }}"
+                                class="form-control @error('estimated_duration_minutes') is-invalid @enderror"
+                                placeholder="{{ __('Contoh: 90') }}"
+                            >
+                            <div class="form-text text-muted">{{ __('Gunakan estimasi realistis agar durasi pengerjaan lebih terkontrol.') }}</div>
+                            @error('estimated_duration_minutes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Deskripsi -->
                         <div class="col-12">
                             <label for="description" class="form-label">{{ __('Deskripsi') }}</label>
@@ -210,8 +229,18 @@
         const customerSelect = $('#customer_id');
         const newCustomerInputs = $('#new_customer_name, #new_customer_address');
         const customerOptionalTypes = ['pasang_odc', 'tarik_jalur', 'perbaikan', 'maintenance'];
+        const estimatedInput = $('#estimated_duration_minutes');
         const locationInput = document.getElementById('location');
         const mapLink = document.getElementById('view-map-link');
+        const estimateByType = {
+            'gangguan': 90,
+            'pasang_baru': 180,
+            'pasang_odc': 240,
+            'tarik_jalur': 240,
+            'perbaikan': 120,
+            'maintenance': 90,
+            'other': 120
+        };
 
         function toggleCustomerForm() {
             if (typeSelect.val() === 'pasang_baru') {
@@ -234,9 +263,29 @@
 
         // Cek awal
         toggleCustomerForm();
+        if (estimatedInput.val() === '') {
+            const suggestedInitial = estimateByType[typeSelect.val()];
+            if (suggestedInitial) {
+                estimatedInput.val(suggestedInitial);
+                estimatedInput.data('auto', 1);
+            }
+        }
 
         // Saat tipe berubah
-        typeSelect.on('change', toggleCustomerForm);
+        typeSelect.on('change', function() {
+            toggleCustomerForm();
+            if (estimatedInput.val() === '' || estimatedInput.data('auto') === 1) {
+                const suggested = estimateByType[typeSelect.val()];
+                if (suggested) {
+                    estimatedInput.val(suggested);
+                    estimatedInput.data('auto', 1);
+                }
+            }
+        });
+
+        estimatedInput.on('input', function() {
+            estimatedInput.data('auto', 0);
+        });
 
         // Logika lokasi pelanggan lama
         function updateMapLink() {

@@ -87,6 +87,24 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-6">
+                            <label for="estimated_duration_minutes" class="form-label">{{ __('Estimasi Pekerjaan (Menit)') }}</label>
+                            <input
+                                type="number"
+                                min="15"
+                                max="1440"
+                                step="5"
+                                name="estimated_duration_minutes"
+                                id="estimated_duration_minutes"
+                                value="{{ old('estimated_duration_minutes', $ticket->estimated_duration_minutes) }}"
+                                class="form-control @error('estimated_duration_minutes') is-invalid @enderror"
+                                placeholder="{{ __('Contoh: 90') }}"
+                            >
+                            @error('estimated_duration_minutes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Penugasan teknisi -->
                         <div class="col-12">
                             <label for="technicians" class="form-label">{{ __('Tugaskan Teknisi') }}</label>

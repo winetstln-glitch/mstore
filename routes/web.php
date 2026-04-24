@@ -138,6 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', CustomerWebController::class);
 
     Route::put('tickets/{ticket}/complete', [TicketWebController::class, 'complete'])->name('tickets.complete');
+    Route::get('tickets/{ticket}/sop-pdf', [TicketWebController::class, 'sopPdf'])->name('tickets.sop.pdf');
     Route::post('tickets/{ticket}/notify', [TicketWebController::class, 'sendNotification'])->name('tickets.notify');
     Route::patch('tickets/{ticket}/location', [TicketWebController::class, 'updateLocation'])->name('tickets.updateLocation');
     Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');

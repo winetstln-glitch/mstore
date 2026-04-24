@@ -8,6 +8,7 @@ use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -65,7 +66,7 @@ class OdcController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'nullable|string|max:255|unique:odcs',
+            'name' => ['nullable', 'string', 'max:255', Rule::unique('odcs', 'name')],
             'olt_id' => 'required|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'required|string',
@@ -76,6 +77,8 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'required|numeric|between:-180,180',
             'capacity' => 'required|integer|min:0',
             'description' => 'nullable|string',
+        ], [
+            'name.unique' => __('Nama ODC sudah digunakan. Gunakan nama lain.'),
         ]);
 
         if (empty($validated['name'])) {
@@ -120,7 +123,7 @@ class OdcController extends Controller implements HasMiddleware
     public function update(Request $request, Odc $odc)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|nullable|string|max:255|unique:odcs,name,'.$odc->id,
+            'name' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('odcs', 'name')->ignore($odc->id)],
             'olt_id' => 'sometimes|required|exists:olts,id',
             'region_id' => 'nullable|exists:regions,id',
             'pon_port' => 'sometimes|required|string',
@@ -131,6 +134,8 @@ class OdcController extends Controller implements HasMiddleware
             'longitude' => 'nullable|numeric|between:-180,180',
             'capacity' => 'sometimes|required|integer|min:0',
             'description' => 'nullable|string',
+        ], [
+            'name.unique' => __('Nama ODC sudah digunakan. Gunakan nama lain.'),
         ]);
 
         if (array_key_exists('name', $validated) && empty($validated['name'])) {
