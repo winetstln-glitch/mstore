@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         @forelse($recentTickets as $ticket)
                         <tr>
                             <td class="ps-4"><span class="fw-medium">#{{ $ticket->ticket_number }}</span></td>
-                            <td>{{ $ticket->customer->name }}</td>
+                            <td>{{ $ticket->customer?->name ?? __('Tanpa Pelanggan') }}</td>
                             <td>{{ Str::limit($ticket->subject, 30) }}</td>
                             <td>
                                 @if($ticket->status === 'open')
