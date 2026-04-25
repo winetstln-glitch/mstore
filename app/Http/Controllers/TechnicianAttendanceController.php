@@ -686,10 +686,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo' => 'required|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
-                'device_fingerprint' => 'required|string|min:8|max:128',
+                'device_fingerprint' => 'nullable|string|min:8|max:128',
             ]);
 
-            $deviceFingerprint = trim((string) $request->input('device_fingerprint'));
+            $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
             $currentUser = Auth::user();
             if (! $currentUser->attendance_device_hash) {
                 $currentUser->forceFill([
@@ -697,9 +697,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                     'attendance_device_locked_at' => now(),
                 ])->save();
             } elseif ((string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
-                return back()->withErrors([
-                    'message' => __('Perangkat tidak terdaftar untuk absensi akun ini. Hubungi admin untuk reset perangkat absensi.'),
-                ]);
+                // Permudah alur absensi: jika perangkat berubah, re-bind otomatis saat clock in.
+                $currentUser->forceFill([
+                    'attendance_device_hash' => $deviceFingerprint,
+                    'attendance_device_locked_at' => now(),
+                ])->save();
             }
 
             // Radius Check
@@ -788,20 +790,21 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'photo' => 'required|image|max:'.$photoMaxKb,
             'latitude' => 'nullable',
             'longitude' => 'nullable',
-            'device_fingerprint' => 'required|string|min:8|max:128',
+            'device_fingerprint' => 'nullable|string|min:8|max:128',
         ]);
 
-        $deviceFingerprint = trim((string) $request->input('device_fingerprint'));
+        $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
         $currentUser = Auth::user();
-        if ($currentUser->attendance_device_hash && (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
-            return back()->withErrors([
-                'message' => __('Perangkat tidak terdaftar untuk absensi akun ini. Hubungi admin untuk reset perangkat absensi.'),
-            ]);
-        }
         if ($attendance->device_fingerprint_clock_in && (string) $attendance->device_fingerprint_clock_in !== $deviceFingerprint) {
             return back()->withErrors([
                 'message' => __('Absen pulang harus dari perangkat yang sama dengan absen masuk.'),
             ]);
+        }
+        if (! $currentUser->attendance_device_hash || (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
+            $currentUser->forceFill([
+                'attendance_device_hash' => $deviceFingerprint,
+                'attendance_device_locked_at' => now(),
+            ])->save();
         }
 
         // Radius Check
@@ -914,6 +917,23 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         return $maxKb;
+    }
+
+    private function resolveAttendanceDeviceFingerprint(Request $request): string
+    {
+        $rawFingerprint = trim((string) $request->input('device_fingerprint', ''));
+        if ($rawFingerprint !== '') {
+            return $rawFingerprint;
+        }
+
+        // Fallback agar absensi tidak gagal saat browser tidak mengirim fingerprint.
+        $fallbackPayload = implode('|', [
+            (string) Auth::id(),
+            mb_substr((string) $request->userAgent(), 0, 255),
+            (string) ($request->ip() ?? ''),
+        ]);
+
+        return hash('sha256', $fallbackPayload);
     }
 
     private function resolveAttendanceUser(string $cardCode): ?User
