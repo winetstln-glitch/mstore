@@ -705,9 +705,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
             $request->validate([
-                'photo' => 'required|image|max:'.$photoMaxKb,
-                'latitude' => 'nullable',
-                'longitude' => 'nullable',
+                'photo' => 'nullable|image|max:'.$photoMaxKb,
+                'latitude' => 'required',
+                'longitude' => 'required',
                 'device_fingerprint' => 'nullable|string|min:8|max:128',
             ]);
 
@@ -738,7 +738,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 }
             }
 
-            $path = $request->file('photo')->store('attendance-photos', 'public');
+            $path = $request->hasFile('photo')
+                ? $request->file('photo')->store('attendance-photos', 'public')
+                : null;
 
             TechnicianAttendance::create([
                 'user_id' => Auth::id(),
@@ -809,9 +811,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
         $request->validate([
-            'photo' => 'required|image|max:'.$photoMaxKb,
-            'latitude' => 'nullable',
-            'longitude' => 'nullable',
+            'photo' => 'nullable|image|max:'.$photoMaxKb,
+            'latitude' => 'required',
+            'longitude' => 'required',
             'device_fingerprint' => 'nullable|string|min:8|max:128',
         ]);
 
@@ -837,7 +839,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
         }
 
-        $path = $request->file('photo')->store('attendance-photos', 'public');
+        $path = $request->hasFile('photo')
+            ? $request->file('photo')->store('attendance-photos', 'public')
+            : null;
 
         $attendance->update([
             'clock_out' => now(),

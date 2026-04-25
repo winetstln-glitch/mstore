@@ -111,16 +111,16 @@
                         @endif
 
                         <div class="camera-card p-3 rounded-5 shadow-sm mb-2 text-center border position-relative">
-                            <h6 class="text-muted text-center small fw-bold mb-3 text-uppercase text-start ps-2">{{ __('VERIFIKASI WAJAH') }}</h6>
+                            <h6 class="text-muted text-center small fw-bold mb-3 text-uppercase text-start ps-2">{{ __('FOTO SELFIE (OPSIONAL)') }}</h6>
                             <label class="modern-camera-box" id="upload-area">
                                 <div id="upload-placeholder" class="d-flex flex-column align-items-center justify-content-center h-100">
                                     <div class="icon-camera-bg mb-2">
                                         <i class="fa-solid fa-camera"></i>
                                     </div>
-                                    <span class="text-muted small fw-bold">{{ __('Ambil Foto Selfie') }}</span>
+                                    <span class="text-muted small fw-bold">{{ __('Ambil Foto Selfie (Opsional)') }}</span>
                                 </div>
                                 <img id="image-preview" class="modern-preview-img" src="#" alt="Preview">
-                                <input type="file" name="photo" id="photo" accept="image/*" capture="user" required onchange="previewImage(event)">
+                                <input type="file" name="photo" id="photo" accept="image/*" capture="user" onchange="previewImage(event)">
                                 <div id="photo-upload-note" class="small text-muted mt-2 px-3 text-center"></div>
                             </label>
                         </div>
@@ -141,7 +141,7 @@
                                     {{ $isOut ? __('PRESENSI PULANG') : __('PRESENSI MASUK') }}
                                 </h5>
                                 <p class="text-muted small px-5" id="instruction-text">
-                                    {{ __('Silahkan ambil foto selfie untuk mengaktifkan tombol absen.') }}
+                                    {{ __('Izinkan lokasi untuk mengaktifkan tombol absen. Foto selfie bersifat opsional.') }}
                                 </p>
                             </div>
                         </div>
@@ -214,6 +214,19 @@
     const attendanceForm = document.getElementById('attendanceForm');
     const deviceFingerprintInput = document.getElementById('deviceFingerprint');
     const photoUploadNote = document.getElementById('photo-upload-note');
+    const latitudeInput = document.getElementById('latitude');
+    const longitudeInput = document.getElementById('longitude');
+
+    function hasValidLocation() {
+        if (!latitudeInput || !longitudeInput) return false;
+        const lat = String(latitudeInput.value || '').trim();
+        const lng = String(longitudeInput.value || '').trim();
+        return lat !== '' && lng !== '';
+    }
+
+    function refreshSubmitState() {
+        setSubmitEnabled(hasValidLocation());
+    }
 
     function setSubmitEnabled(enabled) {
         if (!submitBtn || !fingerprintContainer) return;
@@ -262,6 +275,7 @@
     }
 
     if (attendanceForm && submitBtn) {
+        refreshSubmitState();
         buildDeviceFingerprint()
             .then((fingerprint) => {
                 if (deviceFingerprintInput) {
@@ -383,7 +397,10 @@
     async function previewImage(event) {
         const inputEl = event.target;
         const file = inputEl.files[0];
-        if (!file) return;
+        if (!file) {
+            refreshSubmitState();
+            return;
+        }
 
         setSubmitEnabled(false);
         if (photoUploadNote) {
@@ -406,7 +423,7 @@
         }
 
         if (!faceVerificationEnabled) {
-            setSubmitEnabled(true);
+            refreshSubmitState();
             return;
         }
 
@@ -426,8 +443,8 @@
                 resetCamera();
             } else {
                 Swal.close();
-                setSubmitEnabled(true);
-                instructionText.textContent = "Verifikasi Berhasil! Silahkan tekan tombol sidik jari.";
+                refreshSubmitState();
+                instructionText.textContent = "Lokasi terdeteksi. Selfie berhasil diverifikasi (opsional).";
                 instructionText.className = "text-success small px-5";
             }
         } catch (err) {
@@ -443,7 +460,7 @@
         if (photoUploadNote) {
             photoUploadNote.textContent = '';
         }
-        setSubmitEnabled(false);
+        refreshSubmitState();
     }
 
     setInterval(() => {
@@ -456,7 +473,14 @@
             document.getElementById('longitude').value = p.coords.longitude;
             document.getElementById('location-status').textContent = 'Lokasi Terdeteksi';
             document.getElementById('location-status').className = 'clock-location-status is-detected';
+            refreshSubmitState();
+        }, () => {
+            document.getElementById('location-status').textContent = 'Lokasi gagal dideteksi';
+            refreshSubmitState();
         });
+    } else {
+        document.getElementById('location-status').textContent = 'Geolokasi tidak didukung';
+        refreshSubmitState();
     }
 </script>
 @endsection
