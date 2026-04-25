@@ -669,7 +669,7 @@
         object-fit: cover;
         border-radius: 0.5rem;
         /* Sedikit tingkatkan kontras agar pola QR/barcode lebih mudah dikenali kamera */
-        filter: contrast(1.12) saturate(1.06);
+        filter: brightness(1.18) contrast(1.15) saturate(1.08);
     }
 </style>
 @endpush
@@ -775,6 +775,46 @@
             video.setAttribute('playsinline', 'true');
             video.setAttribute('autoplay', 'true');
             video.setAttribute('muted', 'true');
+            video.style.filter = 'brightness(1.18) contrast(1.15) saturate(1.08)';
+        };
+
+        const applyTrackConstraints = async (track, constraints) => {
+            if (!track || typeof track.applyConstraints !== 'function') {
+                return false;
+            }
+            try {
+                await track.applyConstraints(constraints);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
+
+        const optimizeScannerTrack = async (scanner) => {
+            const runningTrack = scanner?.getRunningTrack?.() || null;
+            if (!runningTrack) {
+                return;
+            }
+
+            const optimizations = [
+                { advanced: [{ focusMode: 'continuous' }] },
+                { advanced: [{ exposureMode: 'continuous' }] },
+                { advanced: [{ whiteBalanceMode: 'continuous' }] },
+                { advanced: [{ brightness: 0.2 }] },
+                { advanced: [{ contrast: 0.3 }] }
+            ];
+
+            for (const constraint of optimizations) {
+                await applyTrackConstraints(runningTrack, constraint);
+            }
+
+            let capabilities = {};
+            if (typeof runningTrack.getCapabilities === 'function') {
+                capabilities = runningTrack.getCapabilities() || {};
+            }
+            if (capabilities.torch) {
+                await applyTrackConstraints(runningTrack, { advanced: [{ torch: true }] });
+            }
         };
 
         const startScannerWithBestCamera = async (scanner, readerElementId, onDecodeSuccess, onDecodeError) => {
@@ -785,6 +825,9 @@
                 try {
                     await scanner.start(camera.id, config, onDecodeSuccess, onDecodeError);
                     setTimeout(() => enhanceReaderVideo(readerElementId), 250);
+                    setTimeout(() => {
+                        optimizeScannerTrack(scanner);
+                    }, 320);
                     return;
                 } catch (error) {
                     // Coba kamera berikutnya.
@@ -802,6 +845,9 @@
                 onDecodeError
             );
             setTimeout(() => enhanceReaderVideo(readerElementId), 250);
+            setTimeout(() => {
+                optimizeScannerTrack(scanner);
+            }, 320);
         };
 
         const setQrStatus = (message, type = 'muted') => {

@@ -12,6 +12,9 @@
                     <div class="input-group">
                         <span class="input-group-text  border-end-0"><i class="fas fa-search text-body-secondary"></i></span>
                         <input type="text" id="productSearch" class="form-control border-start-0 ps-0" placeholder="Search products by name or code...">
+                        <button type="button" class="btn btn-outline-primary" id="openAtkBarcodeScan" title="Scan barcode via kamera">
+                            <i class="fa-solid fa-barcode"></i>
+                        </button>
                     </div>
                     <div class="mt-2">
                         <div class="btn-group btn-group-sm" role="group">
@@ -232,10 +235,218 @@
     </div>
 </div>
 
+<div class="modal fade" id="atkBarcodeScanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scan Barcode Produk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="atk-barcode-reader" class="atk-scan-reader" style="width:100%;"></div>
+                <button id="atkToggleTorchBtn" type="button" class="btn btn-sm btn-warning w-100 mt-3" disabled>
+                    Nyalakan Flash
+                </button>
+                <div id="atkScanStatus" class="small text-muted mt-2">
+                    Arahkan kamera ke barcode pada produk.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" id="stopAtkBarcodeScan">Hentikan Scan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+    .atk-scan-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        filter: brightness(1.2) contrast(1.15) saturate(1.05);
+    }
+</style>
 <script>
     let cart = [];
+    let atkBarcodeScanner = null;
+    let isAtkBarcodeScannerRunning = false;
+    let atkScannerTrack = null;
+    let atkTorchSupported = false;
+    let atkTorchEnabled = false;
+
+    function setAtkScanStatus(message, type = 'muted') {
+        const statusEl = document.getElementById('atkScanStatus');
+        if (!statusEl) return;
+        statusEl.classList.remove('text-muted', 'text-danger', 'text-success');
+        if (type === 'error') {
+            statusEl.classList.add('text-danger');
+        } else if (type === 'success') {
+            statusEl.classList.add('text-success');
+        } else {
+            statusEl.classList.add('text-muted');
+        }
+        statusEl.textContent = message;
+    }
+
+    function updateAtkTorchButton() {
+        const btn = document.getElementById('atkToggleTorchBtn');
+        if (!btn) return;
+        btn.disabled = !atkTorchSupported;
+        btn.textContent = atkTorchSupported
+            ? (atkTorchEnabled ? 'Matikan Flash' : 'Nyalakan Flash')
+            : 'Flash tidak didukung di perangkat ini';
+    }
+
+    async function applyAtkTrackConstraints(track, constraints) {
+        if (!track || typeof track.applyConstraints !== 'function') {
+            return false;
+        }
+        try {
+            await track.applyConstraints(constraints);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async function optimizeAtkScannerTrack() {
+        atkScannerTrack = atkBarcodeScanner?.getRunningTrack?.() || null;
+        atkTorchSupported = false;
+        atkTorchEnabled = false;
+        updateAtkTorchButton();
+        if (!atkScannerTrack) {
+            return;
+        }
+
+        const optimizations = [
+            { advanced: [{ focusMode: 'continuous' }] },
+            { advanced: [{ exposureMode: 'continuous' }] },
+            { advanced: [{ whiteBalanceMode: 'continuous' }] },
+            { advanced: [{ brightness: 0.2 }] },
+            { advanced: [{ contrast: 0.3 }] }
+        ];
+        for (const constraint of optimizations) {
+            await applyAtkTrackConstraints(atkScannerTrack, constraint);
+        }
+
+        let capabilities = {};
+        if (typeof atkScannerTrack.getCapabilities === 'function') {
+            capabilities = atkScannerTrack.getCapabilities() || {};
+        }
+        atkTorchSupported = !!capabilities.torch;
+        if (atkTorchSupported) {
+            atkTorchEnabled = await applyAtkTrackConstraints(atkScannerTrack, { advanced: [{ torch: true }] });
+        }
+        updateAtkTorchButton();
+    }
+
+    async function stopAtkBarcodeScanner() {
+        if (!atkBarcodeScanner || !isAtkBarcodeScannerRunning) return;
+        try {
+            await atkBarcodeScanner.stop();
+            await atkBarcodeScanner.clear();
+        } catch (error) {
+            console.warn('Stop ATK barcode scanner error:', error);
+        } finally {
+            isAtkBarcodeScannerRunning = false;
+            atkScannerTrack = null;
+            atkTorchSupported = false;
+            atkTorchEnabled = false;
+            updateAtkTorchButton();
+        }
+    }
+
+    async function startAtkBarcodeScanner() {
+        if (typeof Html5Qrcode === 'undefined') {
+            setAtkScanStatus('Library scanner belum tersedia.', 'error');
+            return;
+        }
+        if (isAtkBarcodeScannerRunning) {
+            setAtkScanStatus('Scanner sudah aktif.');
+            return;
+        }
+        atkBarcodeScanner = atkBarcodeScanner || new Html5Qrcode('atk-barcode-reader');
+        const config = {
+            fps: 12,
+            qrbox: { width: 260, height: 260 },
+            aspectRatio: 1.333334,
+            disableFlip: true
+        };
+        try {
+            await atkBarcodeScanner.start(
+                {
+                    facingMode: { exact: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                config,
+                async (decodedText) => {
+                    const productSearchInput = document.getElementById('productSearch');
+                    if (productSearchInput) {
+                        productSearchInput.value = String(decodedText || '').trim();
+                        productSearchInput.dispatchEvent(new Event('input'));
+                    }
+                    setAtkScanStatus('Barcode berhasil dibaca.', 'success');
+                    await stopAtkBarcodeScanner();
+                    const modalEl = document.getElementById('atkBarcodeScanModal');
+                    if (modalEl && window.bootstrap) {
+                        const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modalInstance.hide();
+                    }
+                }
+            );
+        } catch (primaryError) {
+            try {
+                await atkBarcodeScanner.start(
+                    {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    config,
+                    async (decodedText) => {
+                        const productSearchInput = document.getElementById('productSearch');
+                        if (productSearchInput) {
+                            productSearchInput.value = String(decodedText || '').trim();
+                            productSearchInput.dispatchEvent(new Event('input'));
+                        }
+                        setAtkScanStatus('Barcode berhasil dibaca.', 'success');
+                        await stopAtkBarcodeScanner();
+                        const modalEl = document.getElementById('atkBarcodeScanModal');
+                        if (modalEl && window.bootstrap) {
+                            const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                            modalInstance.hide();
+                        }
+                    }
+                );
+            } catch (fallbackError) {
+                setAtkScanStatus('Gagal membuka kamera scanner.', 'error');
+                return;
+            }
+        }
+
+        isAtkBarcodeScannerRunning = true;
+        setAtkScanStatus('Arahkan kamera ke barcode pada produk.');
+        setTimeout(() => {
+            optimizeAtkScannerTrack();
+        }, 280);
+    }
+
+    async function toggleAtkTorch() {
+        if (!atkScannerTrack || !atkTorchSupported) {
+            return;
+        }
+        const nextState = !atkTorchEnabled;
+        const success = await applyAtkTrackConstraints(atkScannerTrack, { advanced: [{ torch: nextState }] });
+        if (success) {
+            atkTorchEnabled = nextState;
+            updateAtkTorchButton();
+        }
+    }
 
     function isMobileDevice() {
         const ua = navigator.userAgent || navigator.vendor || '';
@@ -353,6 +564,36 @@
     
     // Attach click handlers to product/service cards
     document.addEventListener('DOMContentLoaded', function () {
+        const openScanBtn = document.getElementById('openAtkBarcodeScan');
+        const stopScanBtn = document.getElementById('stopAtkBarcodeScan');
+        const torchBtn = document.getElementById('atkToggleTorchBtn');
+        const scanModalEl = document.getElementById('atkBarcodeScanModal');
+
+        if (openScanBtn && scanModalEl && window.bootstrap) {
+            openScanBtn.addEventListener('click', async function () {
+                const modalInstance = window.bootstrap.Modal.getOrCreateInstance(scanModalEl);
+                modalInstance.show();
+                await startAtkBarcodeScanner();
+            });
+        }
+        if (stopScanBtn) {
+            stopScanBtn.addEventListener('click', async function () {
+                await stopAtkBarcodeScanner();
+                setAtkScanStatus('Scan dihentikan.');
+            });
+        }
+        if (torchBtn) {
+            torchBtn.addEventListener('click', async function () {
+                await toggleAtkTorch();
+            });
+        }
+        if (scanModalEl) {
+            scanModalEl.addEventListener('hidden.bs.modal', async function () {
+                await stopAtkBarcodeScanner();
+                setAtkScanStatus('Arahkan kamera ke barcode pada produk.');
+            });
+        }
+
         const cashDiv = document.getElementById('cashInputDiv');
         const methodSel = document.getElementById('paymentMethod');
         methodSel.addEventListener('change', function () {

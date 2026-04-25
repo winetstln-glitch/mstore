@@ -16,6 +16,10 @@
         width: 100%;
         border-radius: 8px;
         overflow: hidden;
+        background: #000;
+    }
+    #reader video {
+        filter: brightness(1.2) contrast(1.15) saturate(1.05);
     }
     #map {
         height: 300px;
@@ -138,6 +142,11 @@
                 </button>
             </div>
             <div id="reader"></div>
+            <div class="mt-3">
+                <button id="toggleTorchBtn" type="button" onclick="toggleTorch()" class="w-full bg-amber-50 text-amber-700 px-3 py-2 rounded-lg border border-amber-200 text-sm font-semibold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Nyalakan Flash
+                </button>
+            </div>
             <p class="text-center text-sm text-gray-500 mt-4">Arahkan kamera ke barcode/QR pada modem</p>
         </div>
     </div>
@@ -151,6 +160,9 @@
 <script>
     let activeTargetInput = '';
     let html5QrCode = null;
+    let currentVideoTrack = null;
+    let torchSupported = false;
+    let torchEnabled = false;
     let map = null;
     let marker = null;
     let mapPickerWindow = null;
@@ -226,6 +238,76 @@
         return clean.match(/.{1,2}/g).join(':');
     }
 
+    function updateTorchButton() {
+        const torchButton = document.getElementById('toggleTorchBtn');
+        if (!torchButton) {
+            return;
+        }
+        torchButton.disabled = !torchSupported;
+        torchButton.textContent = torchSupported
+            ? (torchEnabled ? 'Matikan Flash' : 'Nyalakan Flash')
+            : 'Flash tidak didukung di perangkat ini';
+    }
+
+    async function applyTrackConstraints(track, constraints) {
+        if (!track || typeof track.applyConstraints !== 'function') {
+            return false;
+        }
+        try {
+            await track.applyConstraints(constraints);
+            return true;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    async function setupScannerTrack() {
+        currentVideoTrack = html5QrCode?.getRunningTrack?.() || null;
+        torchSupported = false;
+        torchEnabled = false;
+        updateTorchButton();
+
+        if (!currentVideoTrack) {
+            return;
+        }
+
+        const baseOptimizations = [
+            { advanced: [{ focusMode: 'continuous' }] },
+            { advanced: [{ exposureMode: 'continuous' }] },
+            { advanced: [{ whiteBalanceMode: 'continuous' }] },
+            { advanced: [{ sharpness: 1.0 }] },
+            { advanced: [{ brightness: 0.2 }] },
+            { advanced: [{ contrast: 0.3 }] }
+        ];
+
+        for (const constraint of baseOptimizations) {
+            await applyTrackConstraints(currentVideoTrack, constraint);
+        }
+
+        let capabilities = {};
+        if (typeof currentVideoTrack.getCapabilities === 'function') {
+            capabilities = currentVideoTrack.getCapabilities() || {};
+        }
+
+        torchSupported = !!capabilities.torch;
+        if (torchSupported) {
+            torchEnabled = await applyTrackConstraints(currentVideoTrack, { advanced: [{ torch: true }] });
+        }
+        updateTorchButton();
+    }
+
+    async function toggleTorch() {
+        if (!currentVideoTrack || !torchSupported) {
+            return;
+        }
+        const nextTorchState = !torchEnabled;
+        const success = await applyTrackConstraints(currentVideoTrack, { advanced: [{ torch: nextTorchState }] });
+        if (success) {
+            torchEnabled = nextTorchState;
+            updateTorchButton();
+        }
+    }
+
     async function openScanner(targetId) {
         activeTargetInput = targetId;
         document.getElementById('scannerModal').style.display = 'flex';
@@ -237,18 +319,38 @@
         html5QrCode = new Html5Qrcode('reader');
         const config = {
             fps: 10,
-            qrbox: { width: 250, height: 250 }
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.333334,
+            disableFlip: true
         };
 
         try {
-            await html5QrCode.start({ facingMode: 'environment' }, config, async (decodedText) => {
+            await html5QrCode.start({
+                facingMode: { exact: 'environment' },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }, config, async (decodedText) => {
                 const finalValue = activeTargetInput === 'macAddress' ? normalizeMac(decodedText) : decodedText;
                 document.getElementById(activeTargetInput).value = finalValue;
                 await closeScanner();
             });
+            await setupScannerTrack();
         } catch (err) {
-            console.error('Gagal memulai kamera', err);
-            alert('Gagal membuka kamera untuk scan barcode.');
+            try {
+                await html5QrCode.start({
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }, config, async (decodedText) => {
+                    const finalValue = activeTargetInput === 'macAddress' ? normalizeMac(decodedText) : decodedText;
+                    document.getElementById(activeTargetInput).value = finalValue;
+                    await closeScanner();
+                });
+                await setupScannerTrack();
+            } catch (fallbackErr) {
+                console.error('Gagal memulai kamera', fallbackErr);
+                alert('Gagal membuka kamera untuk scan barcode.');
+            }
         }
     }
 
@@ -261,6 +363,10 @@
         } catch (err) {
             console.warn('Scanner stop error:', err);
         } finally {
+            currentVideoTrack = null;
+            torchSupported = false;
+            torchEnabled = false;
+            updateTorchButton();
             document.getElementById('scannerModal').style.display = 'none';
         }
     }

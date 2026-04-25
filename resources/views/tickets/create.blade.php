@@ -256,6 +256,16 @@
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<style>
+    #create-onu-qr-reader video,
+    #create-mac-qr-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        filter: brightness(1.2) contrast(1.15) saturate(1.05);
+    }
+</style>
 @endpush
 
 @push('scripts')
@@ -456,6 +466,80 @@
             }
         };
 
+        const applyTrackConstraints = async (track, constraints) => {
+            if (!track || typeof track.applyConstraints !== 'function') {
+                return false;
+            }
+            try {
+                await track.applyConstraints(constraints);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        const enhanceScannerTrack = async (scannerRef) => {
+            const runningTrack = scannerRef?.getRunningTrack?.() || null;
+            if (!runningTrack) {
+                return;
+            }
+
+            const baseOptimizations = [
+                { advanced: [{ focusMode: 'continuous' }] },
+                { advanced: [{ exposureMode: 'continuous' }] },
+                { advanced: [{ whiteBalanceMode: 'continuous' }] },
+                { advanced: [{ brightness: 0.2 }] },
+                { advanced: [{ contrast: 0.3 }] }
+            ];
+
+            for (const constraint of baseOptimizations) {
+                await applyTrackConstraints(runningTrack, constraint);
+            }
+
+            let capabilities = {};
+            if (typeof runningTrack.getCapabilities === 'function') {
+                capabilities = runningTrack.getCapabilities() || {};
+            }
+            if (capabilities.torch) {
+                await applyTrackConstraints(runningTrack, { advanced: [{ torch: true }] });
+            }
+        };
+
+        const startScanner = async (scannerRef, readerId, onDecode) => {
+            const config = buildScannerConfig();
+            try {
+                await scannerRef.start(
+                    {
+                        facingMode: { exact: 'environment' },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    config,
+                    onDecode
+                );
+            } catch (primaryError) {
+                await scannerRef.start(
+                    {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    config,
+                    onDecode
+                );
+            }
+            setTimeout(() => {
+                const root = document.getElementById(readerId);
+                const video = root ? root.querySelector('video') : null;
+                if (video) {
+                    video.setAttribute('playsinline', 'true');
+                    video.setAttribute('autoplay', 'true');
+                    video.setAttribute('muted', 'true');
+                }
+            }, 200);
+            await enhanceScannerTrack(scannerRef);
+        };
+
         $('#startCreateOnuQrScan').on('click', async function() {
             const wrapper = $('#createOnuQrScannerWrapper');
             const statusEl = $('#createOnuQrScanStatus');
@@ -464,16 +548,12 @@
             await stopScanner(createOnuScanner);
             createOnuScanner = new Html5Qrcode('create-onu-qr-reader');
             try {
-                await createOnuScanner.start(
-                    { facingMode: 'environment' },
-                    buildScannerConfig(),
-                    async (decodedText) => {
-                        $('#new_customer_onu_serial').val(String(decodedText).trim());
-                        statusEl.text("{{ __('SN berhasil discan.') }}");
-                        await stopScanner(createOnuScanner);
-                        wrapper.addClass('d-none');
-                    }
-                );
+                await startScanner(createOnuScanner, 'create-onu-qr-reader', async (decodedText) => {
+                    $('#new_customer_onu_serial').val(String(decodedText).trim());
+                    statusEl.text("{{ __('SN berhasil discan.') }}");
+                    await stopScanner(createOnuScanner);
+                    wrapper.addClass('d-none');
+                });
             } catch (err) {
                 statusEl.text("{{ __('Gagal membuka kamera.') }}");
             }
@@ -493,16 +573,12 @@
             await stopScanner(createMacScanner);
             createMacScanner = new Html5Qrcode('create-mac-qr-reader');
             try {
-                await createMacScanner.start(
-                    { facingMode: 'environment' },
-                    buildScannerConfig(),
-                    async (decodedText) => {
-                        $('#new_customer_wan_mac').val(normalizeMac(decodedText));
-                        statusEl.text("{{ __('MAC berhasil discan.') }}");
-                        await stopScanner(createMacScanner);
-                        wrapper.addClass('d-none');
-                    }
-                );
+                await startScanner(createMacScanner, 'create-mac-qr-reader', async (decodedText) => {
+                    $('#new_customer_wan_mac').val(normalizeMac(decodedText));
+                    statusEl.text("{{ __('MAC berhasil discan.') }}");
+                    await stopScanner(createMacScanner);
+                    wrapper.addClass('d-none');
+                });
             } catch (err) {
                 statusEl.text("{{ __('Gagal membuka kamera.') }}");
             }
