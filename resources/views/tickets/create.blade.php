@@ -67,6 +67,48 @@
                                             <label for="new_customer_phone" class="form-label">{{ __('Nomor HP') }}</label>
                                             <input type="text" class="form-control" id="new_customer_phone" name="new_customer_phone" value="{{ old('new_customer_phone') }}">
                                         </div>
+                                        <div class="col-md-6">
+                                            <label for="new_customer_modem_type" class="form-label">{{ __('Type Modem') }}</label>
+                                            <input type="text" class="form-control" id="new_customer_modem_type" name="new_customer_modem_type" value="{{ old('new_customer_modem_type') }}" placeholder="{{ __('Contoh: ZTE F609') }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="new_customer_onu_serial" class="form-label">{{ __('SN Modem/ONU') }}</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control @error('new_customer_onu_serial') is-invalid @enderror" id="new_customer_onu_serial" name="new_customer_onu_serial" value="{{ old('new_customer_onu_serial') }}" placeholder="{{ __('Contoh: ZTEGC1234567') }}">
+                                                <button class="btn btn-outline-primary" type="button" id="startCreateOnuQrScan">
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan SN') }}
+                                                </button>
+                                            </div>
+                                            @error('new_customer_onu_serial')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            <div id="createOnuQrScanStatus" class="small text-muted mt-2"></div>
+                                            <div id="createOnuQrScannerWrapper" class="mt-2 d-none">
+                                                <div id="create-onu-qr-reader" style="width: 100%; max-width: 520px;"></div>
+                                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCreateOnuQrScan">
+                                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="new_customer_wan_mac" class="form-label">{{ __('MAC Modem (WAN)') }}</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control @error('new_customer_wan_mac') is-invalid @enderror" id="new_customer_wan_mac" name="new_customer_wan_mac" value="{{ old('new_customer_wan_mac') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
+                                                <button class="btn btn-outline-primary" type="button" id="startCreateMacQrScan">
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan MAC') }}
+                                                </button>
+                                            </div>
+                                            @error('new_customer_wan_mac')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            <div id="createMacQrScanStatus" class="small text-muted mt-2"></div>
+                                            <div id="createMacQrScannerWrapper" class="mt-2 d-none">
+                                                <div id="create-mac-qr-reader" style="width: 100%; max-width: 520px;"></div>
+                                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCreateMacQrScan">
+                                                    <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div class="col-12">
                                             <label for="new_customer_address" class="form-label">{{ __('Alamat') }} <span class="text-danger">*</span></label>
                                             <textarea class="form-control" id="new_customer_address" name="new_customer_address" rows="2">{{ old('new_customer_address') }}</textarea>
@@ -78,6 +120,12 @@
                                         <div class="col-md-6">
                                             <label for="new_customer_lng" class="form-label">{{ __('Bujur') }}</label>
                                             <input type="text" class="form-control" id="new_customer_lng" name="new_customer_lng" value="{{ old('new_customer_lng') }}">
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="getNewCustomerLocation">
+                                                <i class="fa-solid fa-location-crosshairs me-1"></i>{{ __('Ambil Location Map') }}
+                                            </button>
+                                            <small id="newCustomerLocationStatus" class="text-muted ms-2"></small>
                                         </div>
                                     </div>
                                 </div>
@@ -213,6 +261,7 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
     $(document).ready(function() {
         // Inisialisasi Select2
@@ -232,6 +281,9 @@
         const estimatedInput = $('#estimated_duration_minutes');
         const locationInput = document.getElementById('location');
         const mapLink = document.getElementById('view-map-link');
+        const newCustomerLatInput = $('#new_customer_lat');
+        const newCustomerLngInput = $('#new_customer_lng');
+        const newCustomerLocationStatus = $('#newCustomerLocationStatus');
         const estimateByType = {
             'gangguan': 90,
             'pasang_baru': 180,
@@ -329,6 +381,137 @@
                 locationInput.value = `${lat}, ${lng}`;
                 updateMapLink();
             }
+        });
+
+        // Ambil lokasi dari GPS browser untuk pelanggan baru
+        $('#getNewCustomerLocation').on('click', function() {
+            if (! navigator.geolocation) {
+                newCustomerLocationStatus.text("{{ __('Browser tidak mendukung geolocation.') }}");
+                return;
+            }
+            newCustomerLocationStatus.text("{{ __('Mengambil lokasi...') }}");
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude.toFixed(7);
+                const lng = position.coords.longitude.toFixed(7);
+                newCustomerLatInput.val(lat);
+                newCustomerLngInput.val(lng);
+                if (locationInput) {
+                    locationInput.value = `${lat}, ${lng}`;
+                    updateMapLink();
+                }
+                newCustomerLocationStatus.text("{{ __('Lokasi berhasil diambil.') }}");
+            }, function(error) {
+                let msg = "{{ __('Gagal mengambil lokasi.') }}";
+                if (error && error.message) {
+                    msg += ' ' + error.message;
+                }
+                newCustomerLocationStatus.text(msg);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        });
+
+        // QR/Barcode scanner untuk SN dan MAC
+        let createOnuScanner = null;
+        let createMacScanner = null;
+        const scannerFormats = [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+        ];
+
+        const buildScannerConfig = () => ({
+            fps: 15,
+            qrbox: { width: 320, height: 320 },
+            formatsToSupport: scannerFormats,
+            videoConstraints: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                facingMode: 'environment'
+            }
+        });
+
+        const normalizeMac = (value) => {
+            const clean = String(value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+            if (clean.length !== 12) {
+                return String(value || '').trim();
+            }
+            return clean.match(/.{1,2}/g).join(':');
+        };
+
+        const stopScanner = async (scannerRef) => {
+            if (scannerRef && scannerRef.isScanning) {
+                try {
+                    await scannerRef.stop();
+                } catch (e) {}
+                try {
+                    await scannerRef.clear();
+                } catch (e) {}
+            }
+        };
+
+        $('#startCreateOnuQrScan').on('click', async function() {
+            const wrapper = $('#createOnuQrScannerWrapper');
+            const statusEl = $('#createOnuQrScanStatus');
+            wrapper.removeClass('d-none');
+            statusEl.text("{{ __('Membuka kamera untuk scan SN...') }}");
+            await stopScanner(createOnuScanner);
+            createOnuScanner = new Html5Qrcode('create-onu-qr-reader');
+            try {
+                await createOnuScanner.start(
+                    { facingMode: 'environment' },
+                    buildScannerConfig(),
+                    async (decodedText) => {
+                        $('#new_customer_onu_serial').val(String(decodedText).trim());
+                        statusEl.text("{{ __('SN berhasil discan.') }}");
+                        await stopScanner(createOnuScanner);
+                        wrapper.addClass('d-none');
+                    }
+                );
+            } catch (err) {
+                statusEl.text("{{ __('Gagal membuka kamera.') }}");
+            }
+        });
+
+        $('#stopCreateOnuQrScan').on('click', async function() {
+            await stopScanner(createOnuScanner);
+            $('#createOnuQrScannerWrapper').addClass('d-none');
+            $('#createOnuQrScanStatus').text("{{ __('Scan SN dihentikan.') }}");
+        });
+
+        $('#startCreateMacQrScan').on('click', async function() {
+            const wrapper = $('#createMacQrScannerWrapper');
+            const statusEl = $('#createMacQrScanStatus');
+            wrapper.removeClass('d-none');
+            statusEl.text("{{ __('Membuka kamera untuk scan MAC...') }}");
+            await stopScanner(createMacScanner);
+            createMacScanner = new Html5Qrcode('create-mac-qr-reader');
+            try {
+                await createMacScanner.start(
+                    { facingMode: 'environment' },
+                    buildScannerConfig(),
+                    async (decodedText) => {
+                        $('#new_customer_wan_mac').val(normalizeMac(decodedText));
+                        statusEl.text("{{ __('MAC berhasil discan.') }}");
+                        await stopScanner(createMacScanner);
+                        wrapper.addClass('d-none');
+                    }
+                );
+            } catch (err) {
+                statusEl.text("{{ __('Gagal membuka kamera.') }}");
+            }
+        });
+
+        $('#stopCreateMacQrScan').on('click', async function() {
+            await stopScanner(createMacScanner);
+            $('#createMacQrScannerWrapper').addClass('d-none');
+            $('#createMacQrScanStatus').text("{{ __('Scan MAC dihentikan.') }}");
         });
     });
 </script>

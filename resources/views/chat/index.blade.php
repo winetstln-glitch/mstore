@@ -192,8 +192,13 @@
 
     /* Mobile Responsive */
     @media (max-width: 768px) {
+        .chat-page-container {
+            padding-left: 0;
+            padding-right: 0;
+        }
         .chat-wrapper {
-            height: calc(100vh - 80px);
+            height: calc(100dvh - 76px - var(--nav-height, 65px) - env(safe-area-inset-bottom));
+            min-height: calc(100dvh - 76px - var(--nav-height, 65px) - env(safe-area-inset-bottom));
             border-radius: 0;
         }
         .chat-sidebar {
@@ -201,6 +206,25 @@
         }
         .chat-main {
             display: {{ $selectedThread ? 'flex' : 'none' }};
+            overflow: hidden;
+        }
+        .chat-message-list {
+            padding: 12px;
+        }
+        .chat-footer {
+            position: sticky;
+            bottom: 0;
+            z-index: 20;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        }
+        .chat-footer .input-group {
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+        .chat-input {
+            min-width: 0;
+            padding-left: 14px;
+            padding-right: 14px;
         }
     }
 </style>
@@ -215,7 +239,7 @@
     }
 @endphp
 
-<div class="container py-2">
+<div class="container py-2 chat-page-container">
     <div class="chat-wrapper row g-0" id="chatApp"
         data-current-user-id="{{ $currentUserId }}"
         data-thread-id="{{ $selectedThread?->id }}"

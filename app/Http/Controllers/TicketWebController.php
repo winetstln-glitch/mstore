@@ -111,6 +111,9 @@ class TicketWebController extends Controller implements HasMiddleware
             // Conditional validation
             'customer_id' => 'required_if:type,gangguan,other|nullable|exists:customers,id',
             'new_customer_name' => 'required_if:type,pasang_baru|nullable|string|max:255',
+            'new_customer_modem_type' => 'nullable|string|max:100',
+            'new_customer_onu_serial' => 'nullable|string|max:100',
+            'new_customer_wan_mac' => ['nullable', 'string', 'max:20', 'regex:/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/'],
             'new_customer_address' => 'required_if:type,pasang_baru|nullable|string',
         ]);
 
@@ -143,6 +146,9 @@ class TicketWebController extends Controller implements HasMiddleware
                 'name' => $request->new_customer_name,
                 'address' => $request->new_customer_address,
                 'phone' => $request->new_customer_phone,
+                'device_model' => $request->new_customer_modem_type,
+                'onu_serial' => $request->new_customer_onu_serial,
+                'wan_mac' => $request->new_customer_wan_mac ? strtoupper(trim($request->new_customer_wan_mac)) : null,
                 // Assuming latitude/longitude columns exist on customers table as per view usage
                 'latitude' => $request->new_customer_lat,
                 'longitude' => $request->new_customer_lng,

@@ -750,6 +750,7 @@
         var odcs = @json($odcs) || [];
         var olts = @json($olts) || [];
         var assets = @json($assets) || [];
+        var modemDataRecords = @json($modemDataRecords ?? []) || [];
         var coordinatorRegionId = @json($coordinatorRegionId ?? null);
 
         // Initialize map
@@ -834,6 +835,7 @@
         */
 
         var map = L.map('map').setView([defaultLat, defaultLng], initialZoom);
+        var isPickerMode = new URLSearchParams(window.location.search).get('picker') === '1';
 
         var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -2300,6 +2302,38 @@
             });
         });
 
+        // Draw Modem Data Records (hasil input form pendataan modem)
+        modemDataRecords.forEach(function(record) {
+            if (!record.latitude || !record.longitude) return;
+            var linkedCustomer = record.customer_id ? customers.find(c => c.id == record.customer_id) : null;
+            var marker = L.marker([record.latitude, record.longitude], {
+                icon: createIcon('asset'),
+                draggable: false
+            }).addTo(markers);
+
+            var customerLink = linkedCustomer
+                ? `<a href="/customers/${linkedCustomer.id}/edit" class="btn btn-sm btn-outline-primary map-popup-btn">Lihat Customer</a>`
+                : '';
+            var customerLabel = linkedCustomer ? `${linkedCustomer.id} - ${linkedCustomer.name}` : (record.customer_name || '-');
+
+            marker.bindPopup(`
+                <div class="map-popup">
+                    <h6 class="map-popup-title">Data Modem</h6>
+                    <table class="table table-sm table-borderless map-popup-table">
+                        <tr><td class="map-popup-label">Pelanggan:</td><td class="map-popup-value">${customerLabel}</td></tr>
+                        <tr><td class="map-popup-label">Type:</td><td class="map-popup-value">${record.modem_type || '-'}</td></tr>
+                        <tr><td class="map-popup-label">MAC:</td><td class="map-popup-value">${record.mac_address || '-'}</td></tr>
+                        <tr><td class="map-popup-label">SN:</td><td class="map-popup-value">${record.serial_number || '-'}</td></tr>
+                    </table>
+                    <div class="map-popup-actions">
+                        ${customerLink}
+                    </div>
+                </div>
+            `);
+
+            allMarkerObjs.push({ marker: marker, type: 'asset', data: record });
+        });
+
         // Filter Listener
         var areaFilter = document.getElementById('areaFilter');
         if (areaFilter) {
@@ -2357,10 +2391,22 @@
         btnCancel.addEventListener('click', function() { setMode(null); });
 
         map.on('click', function(e) {
-            if (!addMode) return;
-
             var lat = e.latlng.lat;
             var lng = e.latlng.lng;
+
+            if (isPickerMode) {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage({
+                        type: 'mstore-map-picked',
+                        lat: lat,
+                        lng: lng,
+                    }, window.location.origin);
+                }
+                window.close();
+                return;
+            }
+
+            if (!addMode) return;
 
             if (addMode === 'olt') {
                 document.getElementById('oltForm').reset();

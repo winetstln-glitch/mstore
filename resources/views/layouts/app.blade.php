@@ -580,6 +580,9 @@
                 <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
                     <i class="fa fa-ticket-alt"></i> {{ __('Tiket & Gangguan') }}
                 </a>
+                <a href="{{ route('modem-data.index') }}" class="sidebar-item {{ request()->routeIs('modem-data.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-wifi"></i> {{ __('Pendataan Modem') }}
+                </a>
                 @endif
 
                 <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">

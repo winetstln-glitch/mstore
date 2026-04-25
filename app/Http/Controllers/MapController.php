@@ -15,6 +15,7 @@ use App\Services\GenieACSService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class MapController extends Controller implements HasMiddleware
 {
@@ -151,7 +152,21 @@ class MapController extends Controller implements HasMiddleware
             ->whereNotNull('longitude')
             ->get();
 
-        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'coordinators', 'isAdmin', 'closures'));
+        $modemDataRecords = DB::table('modem_data_records')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereNotNull('customer_id')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('customers')
+                    ->whereColumn('customers.id', 'modem_data_records.customer_id');
+            })
+            ->select(['id', 'customer_id', 'customer_name', 'modem_type', 'mac_address', 'serial_number', 'latitude', 'longitude', 'created_at'])
+            ->orderByDesc('id')
+            ->limit(500)
+            ->get();
+
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'modemDataRecords', 'coordinators', 'isAdmin', 'closures'));
     }
 
     public function onlinePaths(Request $request)

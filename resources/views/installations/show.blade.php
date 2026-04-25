@@ -35,6 +35,14 @@
                                     <span class="fw-bold">{{ __('Nomor HP:') }}</span> 
                                     {{ $installation->customer->phone }}
                                 </p>
+                                <p class="mb-2">
+                                    <span class="fw-bold">SN ONU:</span>
+                                    {{ $installation->serial_number ?: ($installation->customer->onu_serial ?: '-') }}
+                                </p>
+                                <p class="mb-2">
+                                    <span class="fw-bold">MAC WAN:</span>
+                                    {{ $installation->mac_address ?: ($installation->customer->wan_mac ?: '-') }}
+                                </p>
                                 <p class="mb-0">
                                     <span class="fw-bold">{{ __('Paket:') }}</span> 
                                     {{ $installation->customer->package }}

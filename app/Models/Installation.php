@@ -14,6 +14,8 @@ class Installation extends Model
         'plan_date',
         'notes',
         'coordinates',
+        'serial_number',
+        'mac_address',
         'photo_before',
         'photo_after',
     ];

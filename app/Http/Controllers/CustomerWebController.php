@@ -1012,7 +1012,12 @@ class CustomerWebController extends Controller implements HasMiddleware
      */
     public function destroy(Customer $customer)
     {
-        $customer->delete();
+        DB::transaction(function () use ($customer) {
+            DB::table('modem_data_records')->where('customer_id', $customer->id)->delete();
+            DB::table('installations')->where('customer_id', $customer->id)->delete();
+            GenieDeviceStatus::where('customer_id', $customer->id)->delete();
+            $customer->delete();
+        });
 
         return redirect()->route('customers.index')->with('success', __('Customer deleted successfully.'));
     }
@@ -1114,10 +1119,12 @@ class CustomerWebController extends Controller implements HasMiddleware
             return redirect()->back()->with('error', 'No customers selected.');
         }
 
-        $customers = Customer::whereIn('id', $ids)->get();
-        foreach ($customers as $customer) {
-            $customer->delete();
-        }
+        DB::transaction(function () use ($ids) {
+            DB::table('modem_data_records')->whereIn('customer_id', $ids)->delete();
+            DB::table('installations')->whereIn('customer_id', $ids)->delete();
+            GenieDeviceStatus::whereIn('customer_id', $ids)->delete();
+            Customer::whereIn('id', $ids)->delete();
+        });
 
         return redirect()->back()->with('success', count($ids).' customers deleted successfully.');
     }

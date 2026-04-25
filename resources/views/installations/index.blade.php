@@ -65,6 +65,9 @@
                         <div class="col-12 col-md-2">
                             <button type="submit" class="btn btn-dark w-100">{{ __('Terapkan') }}</button>
                         </div>
+                        <div class="col-12 col-md-2">
+                            <a href="{{ route('installations.index') }}" class="btn btn-outline-secondary w-100">{{ __('Reset Filter') }}</a>
+                        </div>
                     </div>
                 </form>
 
@@ -75,6 +78,8 @@
                             <tr>
                                 <th scope="col" class="ps-3">ID</th>
                                 <th scope="col">{{ __('Pelanggan') }}</th>
+                                <th scope="col">SN</th>
+                                <th scope="col">MAC</th>
                                 <th scope="col">{{ __('Tanggal Rencana') }}</th>
                                 <th scope="col">{{ __('Teknisi') }}</th>
                                 <th scope="col">{{ __('Pengurus') }}</th>
@@ -90,6 +95,8 @@
                                         <div class="fw-bold">{{ $installation->customer->name }}</div>
                                         <div class="small text-body-secondary">{{ Str::limit($installation->customer->address, 30) }}</div>
                                     </td>
+                                    <td class="text-body-secondary">{{ $installation->serial_number ?: ($installation->customer->onu_serial ?: '-') }}</td>
+                                    <td class="text-body-secondary">{{ $installation->mac_address ?: ($installation->customer->wan_mac ?: '-') }}</td>
                                     <td>
                                         <div>{{ $installation->plan_date ? $installation->plan_date->translatedFormat('d M Y') : __('Belum Diatur') }}</div>
                                     </td>
@@ -134,7 +141,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5 text-body-secondary">
+                                    <td colspan="9" class="text-center py-5 text-body-secondary">
                                         <div class="mb-2"><i class="fa-solid fa-network-wired fa-2x opacity-25"></i></div>
                                         {{ __('Tidak ada data pemasangan.') }}
                                     </td>
