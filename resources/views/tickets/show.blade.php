@@ -223,7 +223,7 @@
                                             <div class="input-group">
                                                 <input type="text" class="form-control @error('completion_onu_serial') is-invalid @enderror" id="completion_onu_serial" name="completion_onu_serial" required value="{{ old('completion_onu_serial', $ticket->customer->onu_serial ?? '') }}" placeholder="{{ __('Contoh: ZTEGC1234567') }}">
                                                 <button class="btn btn-outline-primary" type="button" id="startCompleteOnuQrScan">
-                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR ONU SN') }}
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan SN') }}
                                                 </button>
                                             </div>
                                             @error('completion_onu_serial')
@@ -231,7 +231,7 @@
                                             @enderror
                                             <div id="completionOnuQrScanStatus" class="small text-muted mt-2"></div>
                                             <div id="completionOnuQrScannerWrapper" class="mt-2 d-none">
-                                                <div id="completion-onu-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                                <div id="completion-onu-qr-reader" class="ticket-qr-reader" style="width: 100%; max-width: 520px;"></div>
                                                 <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCompleteOnuQrScan">
                                                     <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
                                                 </button>
@@ -242,7 +242,7 @@
                                             <div class="input-group">
                                                 <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" required value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
                                                 <button class="btn btn-outline-primary" type="button" id="startCompleteMacQrScan">
-                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR MAC') }}
+                                                    <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan MAC') }}
                                                 </button>
                                             </div>
                                             @error('completion_wan_mac')
@@ -250,7 +250,7 @@
                                             @enderror
                                             <div id="completionMacQrScanStatus" class="small text-muted mt-2"></div>
                                             <div id="completionMacQrScannerWrapper" class="mt-2 d-none">
-                                                <div id="completion-mac-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                                <div id="completion-mac-qr-reader" class="ticket-qr-reader" style="width: 100%; max-width: 520px;"></div>
                                                 <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCompleteMacQrScan">
                                                     <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
                                                 </button>
@@ -487,7 +487,7 @@
                             </div>
                             <div id="onuQrScanStatus" class="small text-muted mt-2"></div>
                             <div id="onuQrScannerWrapper" class="mt-2 d-none">
-                                <div id="ticket-onu-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                <div id="ticket-onu-qr-reader" class="ticket-qr-reader" style="width: 100%; max-width: 520px;"></div>
                                 <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopOnuQrScan">
                                     <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
                                 </button>
@@ -503,7 +503,7 @@
                             </div>
                             <div id="custMacQrScanStatus" class="small text-muted mt-2"></div>
                             <div id="custMacQrScannerWrapper" class="mt-2 d-none">
-                                <div id="ticket-cust-mac-qr-reader" style="width: 100%; max-width: 360px;"></div>
+                                <div id="ticket-cust-mac-qr-reader" class="ticket-qr-reader" style="width: 100%; max-width: 520px;"></div>
                                 <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopCustMacQrScan">
                                     <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
                                 </button>
@@ -568,7 +568,7 @@
                         <div id="qrScanStatus" class="small text-muted mt-2"></div>
                     </div>
                     <div id="qrScannerWrapper" class="mt-2 d-none">
-                        <div id="ticket-qr-reader" style="width: 100%; max-width: 420px;"></div>
+                        <div id="ticket-qr-reader" class="ticket-qr-reader" style="width: 100%; max-width: 520px;"></div>
                         <button class="btn btn-sm btn-outline-danger mt-2" type="button" id="stopQrScan">
                             <i class="fa-solid fa-stop me-1"></i>{{ __('Hentikan Scan') }}
                         </button>
@@ -661,6 +661,19 @@
 
 
 
+@push('styles')
+<style>
+    .ticket-qr-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        /* Sedikit tingkatkan kontras agar pola QR/barcode lebih mudah dikenali kamera */
+        filter: contrast(1.12) saturate(1.06);
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
@@ -719,12 +732,76 @@
             Html5QrcodeSupportedFormats.AZTEC,
             Html5QrcodeSupportedFormats.PDF_417
         ] : [];
-        const buildScannerConfig = () => {
-            const config = { fps: 10, qrbox: 220 };
+        const buildScannerConfig = (readerElementId) => {
+            const readerElement = document.getElementById(readerElementId);
+            const elementWidth = readerElement ? readerElement.clientWidth : 360;
+            const qrboxSize = Math.max(220, Math.min(360, Math.floor(elementWidth * 0.82)));
+            const config = {
+                fps: 14,
+                qrbox: { width: qrboxSize, height: qrboxSize },
+                aspectRatio: 1.7778,
+                disableFlip: false,
+            };
             if (scannerFormats.length > 0) {
                 config.formatsToSupport = scannerFormats;
             }
             return config;
+        };
+
+        const getPreferredCameraList = async () => {
+            if (typeof Html5Qrcode === 'undefined' || typeof Html5Qrcode.getCameras !== 'function') {
+                return [];
+            }
+
+            const cameras = await Html5Qrcode.getCameras();
+            if (!Array.isArray(cameras) || cameras.length === 0) {
+                return [];
+            }
+
+            const backCameraKeywords = /(back|rear|environment|belakang|traseira|trasera)/i;
+            const preferredBack = cameras.find((camera) => backCameraKeywords.test(String(camera.label || '')));
+            if (!preferredBack) {
+                return cameras;
+            }
+
+            return [preferredBack, ...cameras.filter((camera) => camera.id !== preferredBack.id)];
+        };
+
+        const enhanceReaderVideo = (readerElementId) => {
+            const root = document.getElementById(readerElementId);
+            if (!root) return;
+            const video = root.querySelector('video');
+            if (!video) return;
+            video.setAttribute('playsinline', 'true');
+            video.setAttribute('autoplay', 'true');
+            video.setAttribute('muted', 'true');
+        };
+
+        const startScannerWithBestCamera = async (scanner, readerElementId, onDecodeSuccess, onDecodeError) => {
+            const config = buildScannerConfig(readerElementId);
+            const preferredCameras = await getPreferredCameraList();
+
+            for (const camera of preferredCameras) {
+                try {
+                    await scanner.start(camera.id, config, onDecodeSuccess, onDecodeError);
+                    setTimeout(() => enhanceReaderVideo(readerElementId), 250);
+                    return;
+                } catch (error) {
+                    // Coba kamera berikutnya.
+                }
+            }
+
+            await scanner.start(
+                {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                },
+                config,
+                onDecodeSuccess,
+                onDecodeError
+            );
+            setTimeout(() => enhanceReaderVideo(readerElementId), 250);
         };
 
         const setQrStatus = (message, type = 'muted') => {
@@ -1017,9 +1094,9 @@
                     setQrStatus('{{ __('Arahkan kamera ke QR berisi koordinat.') }}', 'muted');
                     startQrScanBtn.disabled = true;
 
-                    await qrScanner.start(
-                        { facingMode: 'environment' },
-                        buildScannerConfig(),
+                    await startScannerWithBestCamera(
+                        qrScanner,
+                        qrReaderElementId,
                         async (decodedText) => {
                             const coords = parseCoordinatesFromQr(decodedText);
                             if (!coords) {
@@ -1071,9 +1148,9 @@
                     setOnuQrStatus('{{ __('Arahkan kamera ke QR label ONU.') }}', 'muted');
                     startOnuQrScanBtn.disabled = true;
 
-                    await onuQrScanner.start(
-                        { facingMode: 'environment' },
-                        buildScannerConfig(),
+                    await startScannerWithBestCamera(
+                        onuQrScanner,
+                        onuQrReaderElementId,
                         async (decodedText) => {
                             const serial = parseOnuSerialFromQr(decodedText);
                             if (!serial) {
@@ -1121,9 +1198,9 @@
                     setCustMacQrStatus('{{ __('Arahkan kamera ke QR MAC Address.') }}', 'muted');
                     startCustMacQrScanBtn.disabled = true;
 
-                    await custMacQrScanner.start(
-                        { facingMode: 'environment' },
-                        buildScannerConfig(),
+                    await startScannerWithBestCamera(
+                        custMacQrScanner,
+                        custMacQrReaderElementId,
                         async (decodedText) => {
                             const mac = parseWanMacFromQr(decodedText);
                             if (!mac) {
@@ -1174,9 +1251,9 @@
                     setCompletionOnuQrStatus('{{ __('Arahkan kamera ke QR ONU SN.') }}', 'muted');
                     startCompleteOnuQrScanBtn.disabled = true;
 
-                    await completionOnuQrScanner.start(
-                        { facingMode: 'environment' },
-                        buildScannerConfig(),
+                    await startScannerWithBestCamera(
+                        completionOnuQrScanner,
+                        completionOnuQrReaderElementId,
                         async (decodedText) => {
                             const serial = parseOnuSerialFromQr(decodedText);
                             if (!serial) {
@@ -1230,9 +1307,9 @@
                     setCompletionMacQrStatus('{{ __('Arahkan kamera ke QR MAC Address.') }}', 'muted');
                     startCompleteMacQrScanBtn.disabled = true;
 
-                    await completionMacQrScanner.start(
-                        { facingMode: 'environment' },
-                        buildScannerConfig(),
+                    await startScannerWithBestCamera(
+                        completionMacQrScanner,
+                        completionMacQrReaderElementId,
                         async (decodedText) => {
                             const mac = parseWanMacFromQr(decodedText);
                             if (!mac) {
