@@ -359,57 +359,66 @@
         if (scannerFormats.length > 0) {
             config.formatsToSupport = scannerFormats;
         }
+        const onDecoded = async (decodedText) => {
+            const productSearchInput = document.getElementById('productSearch');
+            if (productSearchInput) {
+                switchTab('products');
+                productSearchInput.value = String(decodedText || '').trim();
+                productSearchInput.dispatchEvent(new Event('input'));
+            }
+            setAtkScanStatus('Barcode berhasil dibaca.', 'success');
+            await stopAtkBarcodeScanner();
+            const modalEl = document.getElementById('atkBarcodeScanModal');
+            if (modalEl && window.bootstrap) {
+                const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                modalInstance.hide();
+            }
+        };
+
+        const onDecodeError = () => {};
+
+        const startByConstraints = async (constraints) => {
+            await atkBarcodeScanner.start(constraints, config, onDecoded, onDecodeError);
+        };
+
         try {
+            const cameras = (typeof Html5Qrcode.getCameras === 'function')
+                ? await Html5Qrcode.getCameras()
+                : [];
+            const sortedCameras = Array.isArray(cameras) ? [...cameras].sort((a, b) => {
+                const backRegex = /(back|rear|environment|belakang|traseira|trasera)/i;
+                const aBack = backRegex.test(String(a?.label || '')) ? 1 : 0;
+                const bBack = backRegex.test(String(b?.label || '')) ? 1 : 0;
+                return bBack - aBack;
+            }) : [];
+
+            let started = false;
+            for (const camera of sortedCameras) {
+                try {
+                    await startByConstraints(camera.id);
+                    started = true;
+                    break;
+                } catch (cameraError) {}
+            }
+
+            if (!started) {
+                await startByConstraints({
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                });
+            }
+        } catch (primaryError) {
             await atkBarcodeScanner.start(
                 {
-                    facingMode: { exact: 'environment' },
+                    facingMode: { ideal: 'environment' },
                     width: { ideal: 1920 },
                     height: { ideal: 1080 }
                 },
                 config,
-                async (decodedText) => {
-                    const productSearchInput = document.getElementById('productSearch');
-                    if (productSearchInput) {
-                        productSearchInput.value = String(decodedText || '').trim();
-                        productSearchInput.dispatchEvent(new Event('input'));
-                    }
-                    setAtkScanStatus('Barcode berhasil dibaca.', 'success');
-                    await stopAtkBarcodeScanner();
-                    const modalEl = document.getElementById('atkBarcodeScanModal');
-                    if (modalEl && window.bootstrap) {
-                        const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-                        modalInstance.hide();
-                    }
-                }
+                onDecoded,
+                onDecodeError
             );
-        } catch (primaryError) {
-            try {
-                await atkBarcodeScanner.start(
-                    {
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    config,
-                    async (decodedText) => {
-                        const productSearchInput = document.getElementById('productSearch');
-                        if (productSearchInput) {
-                            productSearchInput.value = String(decodedText || '').trim();
-                            productSearchInput.dispatchEvent(new Event('input'));
-                        }
-                        setAtkScanStatus('Barcode berhasil dibaca.', 'success');
-                        await stopAtkBarcodeScanner();
-                        const modalEl = document.getElementById('atkBarcodeScanModal');
-                        if (modalEl && window.bootstrap) {
-                            const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-                            modalInstance.hide();
-                        }
-                    }
-                );
-            } catch (fallbackError) {
-                setAtkScanStatus('Gagal membuka kamera scanner.', 'error');
-                return;
-            }
         }
 
         isAtkBarcodeScannerRunning = true;
@@ -540,9 +549,13 @@
         const scanModalEl = document.getElementById('atkBarcodeScanModal');
 
         if (openScanBtn && scanModalEl && window.bootstrap) {
-            openScanBtn.addEventListener('click', async function () {
+            openScanBtn.addEventListener('click', function () {
                 const modalInstance = window.bootstrap.Modal.getOrCreateInstance(scanModalEl);
                 modalInstance.show();
+            });
+        }
+        if (scanModalEl) {
+            scanModalEl.addEventListener('shown.bs.modal', async function () {
                 await startAtkBarcodeScanner();
             });
         }
@@ -592,8 +605,8 @@
             return;
         }
         document.querySelectorAll(activeList).forEach(item => {
-            const name = item.dataset.name;
-            const code = item.dataset.code;
+            const name = String(item.dataset.name || '').toLowerCase();
+            const code = String(item.dataset.code || '').toLowerCase();
             item.style.display = (name.includes(search) || code.includes(search)) ? 'block' : 'none';
         });
     });

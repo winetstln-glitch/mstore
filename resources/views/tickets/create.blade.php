@@ -499,25 +499,44 @@
 
         const startScanner = async (scannerRef, readerId, onDecode) => {
             const config = buildScannerConfig();
+            const onDecodeError = () => {};
+
+            const startByConstraints = async (constraints) => {
+                await scannerRef.start(constraints, config, onDecode, onDecodeError);
+            };
+
             try {
-                await scannerRef.start(
-                    {
-                        facingMode: { exact: 'environment' },
+                const cameras = (typeof Html5Qrcode.getCameras === 'function')
+                    ? await Html5Qrcode.getCameras()
+                    : [];
+                const sortedCameras = Array.isArray(cameras) ? [...cameras].sort((a, b) => {
+                    const backRegex = /(back|rear|environment|belakang|traseira|trasera)/i;
+                    const aBack = backRegex.test(String(a?.label || '')) ? 1 : 0;
+                    const bBack = backRegex.test(String(b?.label || '')) ? 1 : 0;
+                    return bBack - aBack;
+                }) : [];
+                let started = false;
+                for (const camera of sortedCameras) {
+                    try {
+                        await startByConstraints(camera.id);
+                        started = true;
+                        break;
+                    } catch (cameraError) {}
+                }
+                if (!started) {
+                    await startByConstraints({
+                        facingMode: { ideal: 'environment' },
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
-                    },
-                    config,
-                    onDecode
-                );
+                    });
+                }
             } catch (primaryError) {
-                await scannerRef.start(
+                await startByConstraints(
                     {
-                        facingMode: 'environment',
+                        facingMode: { ideal: 'environment' },
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
-                    },
-                    config,
-                    onDecode
+                    }
                 );
             }
             setTimeout(() => {

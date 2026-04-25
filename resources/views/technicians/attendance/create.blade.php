@@ -222,28 +222,43 @@
     }
 
     async function buildDeviceFingerprint() {
-        const payload = [
+        const storageKey = 'mstore_attendance_device_id_v1';
+        const profileKey = [
             navigator.userAgent || '',
             navigator.platform || '',
             navigator.language || '',
-            String(new Date().getTimezoneOffset()),
-            window.screen ? `${screen.width}x${screen.height}x${screen.colorDepth}` : '',
-            navigator.hardwareConcurrency || '',
-            navigator.deviceMemory || '',
+            String(new Date().getTimezoneOffset())
         ].join('|');
+
+        try {
+            const existing = (localStorage.getItem(storageKey) || '').trim();
+            if (existing.length >= 24) {
+                return existing;
+            }
+        } catch (error) {}
+
+        const randomSeed = `${Date.now()}-${Math.random()}-${Math.random()}`;
+        const payload = `${profileKey}|${randomSeed}`;
+        let generatedId = '';
 
         if (window.crypto?.subtle && window.TextEncoder) {
             const buffer = new TextEncoder().encode(payload);
             const digest = await window.crypto.subtle.digest('SHA-256', buffer);
-            return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+            generatedId = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+        } else {
+            let hash = 0;
+            for (let i = 0; i < payload.length; i++) {
+                hash = ((hash << 5) - hash) + payload.charCodeAt(i);
+                hash |= 0;
+            }
+            generatedId = `legacy-${Math.abs(hash)}-${Date.now()}`;
         }
 
-        let hash = 0;
-        for (let i = 0; i < payload.length; i++) {
-            hash = ((hash << 5) - hash) + payload.charCodeAt(i);
-            hash |= 0;
-        }
-        return 'legacy-' + Math.abs(hash);
+        try {
+            localStorage.setItem(storageKey, generatedId);
+        } catch (error) {}
+
+        return generatedId;
     }
 
     if (attendanceForm && submitBtn) {

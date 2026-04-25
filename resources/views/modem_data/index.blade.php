@@ -273,34 +273,69 @@
         }
 
         html5QrCode = new Html5Qrcode('reader');
+        const scannerFormats = [];
+        if (window.Html5QrcodeSupportedFormats) {
+            scannerFormats.push(
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E
+            );
+        }
         const config = {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.333334,
             disableFlip: true
         };
+        if (scannerFormats.length > 0) {
+            config.formatsToSupport = scannerFormats;
+        }
+        const onDecoded = async (decodedText) => {
+            const finalValue = activeTargetInput === 'macAddress' ? normalizeMac(decodedText) : decodedText;
+            document.getElementById(activeTargetInput).value = finalValue;
+            await closeScanner();
+        };
+        const onDecodeError = () => {};
+        const startByConstraints = async (constraints) => {
+            await html5QrCode.start(constraints, config, onDecoded, onDecodeError);
+        };
 
         try {
-            await html5QrCode.start({
-                facingMode: { exact: 'environment' },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }, config, async (decodedText) => {
-                const finalValue = activeTargetInput === 'macAddress' ? normalizeMac(decodedText) : decodedText;
-                document.getElementById(activeTargetInput).value = finalValue;
-                await closeScanner();
-            });
+            const cameras = (typeof Html5Qrcode.getCameras === 'function')
+                ? await Html5Qrcode.getCameras()
+                : [];
+            const sortedCameras = Array.isArray(cameras) ? [...cameras].sort((a, b) => {
+                const backRegex = /(back|rear|environment|belakang|traseira|trasera)/i;
+                const aBack = backRegex.test(String(a?.label || '')) ? 1 : 0;
+                const bBack = backRegex.test(String(b?.label || '')) ? 1 : 0;
+                return bBack - aBack;
+            }) : [];
+            let started = false;
+            for (const camera of sortedCameras) {
+                try {
+                    await startByConstraints(camera.id);
+                    started = true;
+                    break;
+                } catch (cameraError) {}
+            }
+            if (!started) {
+                await startByConstraints({
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                });
+            }
             await setupScannerTrack();
         } catch (err) {
             try {
-                await html5QrCode.start({
-                    facingMode: 'environment',
+                await startByConstraints({
+                    facingMode: { ideal: 'environment' },
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
-                }, config, async (decodedText) => {
-                    const finalValue = activeTargetInput === 'macAddress' ? normalizeMac(decodedText) : decodedText;
-                    document.getElementById(activeTargetInput).value = finalValue;
-                    await closeScanner();
                 });
                 await setupScannerTrack();
             } catch (fallbackErr) {
