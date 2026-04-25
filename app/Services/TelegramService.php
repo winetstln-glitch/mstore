@@ -479,19 +479,45 @@ class TelegramService
         }
 
         try {
-            $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->apiUrl, [
+            $payload = [
                 'chat_id' => $chatId,
                 'text' => $message,
                 'parse_mode' => 'Markdown',
-            ]);
+            ];
+            $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->apiUrl, $payload);
 
             if ($response->successful()) {
                 return true;
-            } else {
-                Log::error('Telegram API Error: '.$response->body());
-
-                return false;
             }
+
+            $responseBody = (string) $response->body();
+            Log::error('Telegram API Error: '.$responseBody, [
+                'chat_id' => $chatId,
+                'parse_mode' => 'Markdown',
+            ]);
+
+            // Root cause umum di production: data dinamis merusak format Markdown Telegram
+            // (contoh underscore/backtick tidak berpasangan). Fallback ke plain text agar notifikasi tetap terkirim.
+            if (str_contains(strtolower($responseBody), "can't parse entities")) {
+                $fallbackPayload = [
+                    'chat_id' => $chatId,
+                    'text' => $message,
+                ];
+                $fallbackResponse = Http::timeout(8)->connectTimeout(3)->retry(1, 200)->post($this->apiUrl, $fallbackPayload);
+                if ($fallbackResponse->successful()) {
+                    Log::warning('Telegram sent using plain text fallback after Markdown parse failure.', [
+                        'chat_id' => $chatId,
+                    ]);
+
+                    return true;
+                }
+
+                Log::error('Telegram plain text fallback failed: '.$fallbackResponse->body(), [
+                    'chat_id' => $chatId,
+                ]);
+            }
+
+            return false;
         } catch (\Exception $e) {
             Log::error('Telegram Service Error: '.$e->getMessage());
 

@@ -41,6 +41,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public function daily(Request $request)
     {
         $date = $request->query('date', date('Y-m-d'));
+        $status = (string) $request->query('status', '');
 
         // Get all users who should have attendance (technicians and admins)
         $users = User::whereHas('role', function ($q) {
@@ -53,7 +54,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ->get()
             ->keyBy('user_id');
 
-        return view('technicians.attendance.daily', compact('users', 'attendances', 'date'));
+        if ($status !== '') {
+            $users = $users->filter(function ($user) use ($attendances, $status) {
+                $attendance = $attendances->get($user->id);
+                if ($status === 'belum_absen') {
+                    return ! $attendance;
+                }
+
+                return $attendance && $attendance->status === $status;
+            })->values();
+        }
+
+        return view('technicians.attendance.daily', compact('users', 'attendances', 'date', 'status'));
     }
 
     /**
@@ -70,6 +82,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
                 ->whereYear('clock_in', date('Y', strtotime($request->month)));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
@@ -119,6 +134,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
                 ->whereYear('clock_in', date('Y', strtotime($request->month)));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
@@ -193,6 +211,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
                 ->whereYear('clock_in', date('Y', strtotime($request->month)));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {

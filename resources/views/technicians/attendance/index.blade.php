@@ -11,13 +11,24 @@
                     <form action="{{ route('attendance.index') }}" method="GET" class="w-100">
                         <div class="row g-2">
                             <div class="col-12 col-md-auto">
-                                <select name="user_id" class="form-select" data-bs-toggle="tooltip" title="{{ __('Semua Staf (Teknisi & Admin)') }}">
+                                <select name="user_id" class="form-select js-search-select" data-bs-toggle="tooltip" title="{{ __('Semua Staf (Teknisi & Admin)') }}">
                                     <option value="">{{ __('Semua Staf (Teknisi & Admin)') }}</option>
                                     @foreach($technicians as $tech)
                                         <option value="{{ $tech->id }}" {{ request('user_id') == $tech->id ? 'selected' : '' }}>
                                             {{ $tech->name }} ({{ $tech->role->name ?? __('Pengguna') }})
                                         </option>
                                     @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <select name="status" class="form-select" data-bs-toggle="tooltip" title="{{ __('Status') }}">
+                                    <option value="">{{ __('Semua Status') }}</option>
+                                    <option value="present" {{ request('status') === 'present' ? 'selected' : '' }}>{{ __('Hadir') }}</option>
+                                    <option value="late" {{ request('status') === 'late' ? 'selected' : '' }}>{{ __('Terlambat') }}</option>
+                                    <option value="leave" {{ request('status') === 'leave' ? 'selected' : '' }}>{{ __('Cuti') }}</option>
+                                    <option value="permit" {{ request('status') === 'permit' ? 'selected' : '' }}>{{ __('Izin') }}</option>
+                                    <option value="sick" {{ request('status') === 'sick' ? 'selected' : '' }}>{{ __('Sakit') }}</option>
+                                    <option value="alpha" {{ request('status') === 'alpha' ? 'selected' : '' }}>{{ __('Alpha') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -156,7 +167,16 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        @php
+                                            $statusClass = match($attendance->status) {
+                                                'present' => 'bg-success-subtle text-success border border-success-subtle',
+                                                'late' => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+                                                'leave', 'permit', 'sick' => 'bg-info-subtle text-info-emphasis border border-info-subtle',
+                                                'alpha' => 'bg-danger-subtle text-danger border border-danger-subtle',
+                                                default => 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $statusClass }}">
                                             {{ __(ucfirst($attendance->status)) }}
                                         </span>
                                     </td>
@@ -164,12 +184,12 @@
                                         <div class="d-flex gap-2">
                                             @if($attendance->photo_clock_in)
                                                 <a href="{{ Storage::url($attendance->photo_clock_in) }}" target="_blank">
-                                                    <img src="{{ Storage::url($attendance->photo_clock_in) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="In">
+                                                    <img src="{{ Storage::url($attendance->photo_clock_in) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="In" loading="lazy" decoding="async">
                                                 </a>
                                             @endif
                                             @if($attendance->photo_clock_out)
                                                 <a href="{{ Storage::url($attendance->photo_clock_out) }}" target="_blank">
-                                                    <img src="{{ Storage::url($attendance->photo_clock_out) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="Out">
+                                                    <img src="{{ Storage::url($attendance->photo_clock_out) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="Out" loading="lazy" decoding="async">
                                                 </a>
                                             @endif
                                         </div>
@@ -224,7 +244,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
-                        <select name="user_id" class="form-select" required>
+                        <select name="user_id" class="form-select js-search-select" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
                                 <option value="{{ $tech->id }}">{{ $tech->name }}</option>
@@ -233,7 +253,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Tanggal') }}</label>
-                        <input type="date" name="date" class="form-control" required value="{{ date('Y-m-d') }}">
+                        <input type="date" name="date" class="form-control" required value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Status') }}</label>
@@ -273,7 +293,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
-                        <select name="user_id" class="form-select" required>
+                        <select name="user_id" class="form-select js-search-select" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
                                 <option value="{{ $tech->id }}">{{ $tech->name }}</option>
@@ -293,7 +313,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Tanggal') }}</label>
-                        <input type="date" name="date" class="form-control" required value="{{ date('Y-m-d') }}">
+                        <input type="date" name="date" class="form-control" required value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Deskripsi') }}</label>
@@ -310,6 +330,8 @@
 </div>
 
 @if(Auth::user()->hasRole('admin'))
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <form id="form-recap-finance" action="{{ route('attendance.recap_finance') }}" method="POST" style="display: none;">
     @csrf
     <input type="hidden" name="user_id" value="{{ request('user_id') }}">
@@ -378,6 +400,19 @@ function submitBulkDelete() {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.TomSelect) {
+        document.querySelectorAll('.js-search-select').forEach(function (el) {
+            if (! el.tomselect) {
+                new TomSelect(el, {
+                    create: false,
+                    sortField: { field: 'text', direction: 'asc' },
+                });
+            }
+        });
+    }
+});
 </script>
 @endif
 

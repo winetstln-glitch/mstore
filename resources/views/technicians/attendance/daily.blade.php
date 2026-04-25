@@ -20,9 +20,32 @@
                                 <input type="date" name="date" value="{{ $date }}" class="form-control" onchange="this.form.submit()">
                             </div>
                             <div class="col-12 col-md-auto">
+                                <label class="form-label small fw-bold">{{ __('Status') }}</label>
+                                <select name="status" class="form-select">
+                                    <option value="">{{ __('Semua Status') }}</option>
+                                    <option value="present" {{ ($status ?? '') === 'present' ? 'selected' : '' }}>{{ __('Hadir') }}</option>
+                                    <option value="late" {{ ($status ?? '') === 'late' ? 'selected' : '' }}>{{ __('Terlambat') }}</option>
+                                    <option value="leave" {{ ($status ?? '') === 'leave' ? 'selected' : '' }}>{{ __('Cuti') }}</option>
+                                    <option value="permit" {{ ($status ?? '') === 'permit' ? 'selected' : '' }}>{{ __('Izin') }}</option>
+                                    <option value="sick" {{ ($status ?? '') === 'sick' ? 'selected' : '' }}>{{ __('Sakit') }}</option>
+                                    <option value="alpha" {{ ($status ?? '') === 'alpha' ? 'selected' : '' }}>{{ __('Alpha') }}</option>
+                                    <option value="belum_absen" {{ ($status ?? '') === 'belum_absen' ? 'selected' : '' }}>{{ __('Belum Absen') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-auto">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-filter me-1"></i> {{ __('Terapkan') }}
                                 </button>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <a href="{{ route('attendance.pdf', array_merge(request()->query(), ['scope' => 'daily'])) }}" target="_blank" class="btn btn-danger">
+                                    <i class="fa-solid fa-file-pdf me-1"></i> {{ __('PDF') }}
+                                </a>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <a href="{{ route('attendance.excel', array_merge(request()->query(), ['scope' => 'daily'])) }}" target="_blank" class="btn btn-success">
+                                    <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
+                                </a>
                             </div>
                         </div>
                     </form>

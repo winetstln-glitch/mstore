@@ -15,6 +15,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class TicketWebController extends Controller implements HasMiddleware
@@ -150,22 +151,25 @@ class TicketWebController extends Controller implements HasMiddleware
             $customerId = $customer->id;
         }
 
-        $ticket = Ticket::create([
+        $ticketData = [
             'ticket_number' => Ticket::generateNumber(),
             'customer_id' => $customerId,
             'subject' => $request->subject,
             'description' => $request->description,
             'priority' => $request->priority,
-            'estimated_duration_minutes' => $request->filled('estimated_duration_minutes')
-                ? (int) $request->estimated_duration_minutes
-                : null,
             'status' => $request->has('technicians') && count($request->technicians) > 0 ? 'assigned' : 'open',
             'location' => $request->location ?? ($request->type === 'pasang_baru' && $request->new_customer_lat && $request->new_customer_lng ? "{$request->new_customer_lat}, {$request->new_customer_lng}" : null),
             'address' => $request->address ?? ($request->type === 'pasang_baru' ? $request->new_customer_address : null),
             'odp_id' => $request->odp_id,
             'coordinator_id' => $request->coordinator_id,
             'type' => $request->type,
-        ]);
+        ];
+        if (Schema::hasColumn('tickets', 'estimated_duration_minutes')) {
+            $ticketData['estimated_duration_minutes'] = $request->filled('estimated_duration_minutes')
+                ? (int) $request->estimated_duration_minutes
+                : null;
+        }
+        $ticket = Ticket::create($ticketData);
 
         if ($request->has('technicians')) {
             $ticket->technicians()->sync($request->technicians);
@@ -321,7 +325,11 @@ class TicketWebController extends Controller implements HasMiddleware
         $oldTechnicianIds = $ticket->technicians->pluck('id')->toArray();
 
         // Update ticket fields (excluding technicians which is pivot)
-        $ticket->update(collect($validated)->except('technicians')->toArray());
+        $ticketUpdateData = collect($validated)->except('technicians')->toArray();
+        if (! Schema::hasColumn('tickets', 'estimated_duration_minutes')) {
+            unset($ticketUpdateData['estimated_duration_minutes']);
+        }
+        $ticket->update($ticketUpdateData);
 
         // Log status change
         if ($ticket->wasChanged('status')) {
