@@ -817,19 +817,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
         $currentUser = Auth::user();
-        $clockInFingerprint = (string) ($attendance->device_fingerprint_clock_in ?? '');
-        $isSameFingerprint = $clockInFingerprint !== '' && hash_equals($clockInFingerprint, $deviceFingerprint);
-        $clockInUserAgent = (string) ($attendance->user_agent_clock_in ?? '');
         $currentUserAgent = mb_substr((string) $request->userAgent(), 0, 255);
-        $isSameBrowserAgent = $clockInUserAgent !== '' && hash_equals($clockInUserAgent, $currentUserAgent);
-        $clockInAgentSignature = $this->buildUserAgentSignature($clockInUserAgent);
-        $currentAgentSignature = $this->buildUserAgentSignature($currentUserAgent);
-        $isSameAgentSignature = $clockInAgentSignature !== '' && hash_equals($clockInAgentSignature, $currentAgentSignature);
-        if ($clockInFingerprint !== '' && ! $isSameFingerprint && ! $isSameBrowserAgent && ! $isSameAgentSignature) {
-            return back()->withErrors([
-                'message' => __('Absen pulang harus dari perangkat yang sama dengan absen masuk.'),
-            ]);
-        }
         if (! $currentUser->attendance_device_hash || (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
             $currentUser->forceFill([
                 'attendance_device_hash' => $deviceFingerprint,
@@ -963,28 +951,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         ]);
 
         return hash('sha256', $fallbackPayload);
-    }
-
-    private function buildUserAgentSignature(string $userAgent): string
-    {
-        $ua = strtolower(trim($userAgent));
-        if ($ua === '') {
-            return '';
-        }
-
-        $platform = str_contains($ua, 'android') ? 'android'
-            : (str_contains($ua, 'iphone') || str_contains($ua, 'ipad') || str_contains($ua, 'ios') ? 'ios'
-            : (str_contains($ua, 'windows') ? 'windows'
-            : (str_contains($ua, 'macintosh') || str_contains($ua, 'mac os') ? 'macos'
-            : (str_contains($ua, 'linux') ? 'linux' : 'other'))));
-
-        $browser = str_contains($ua, 'edg/') ? 'edge'
-            : (str_contains($ua, 'opr/') || str_contains($ua, 'opera') ? 'opera'
-            : (str_contains($ua, 'chrome/') && ! str_contains($ua, 'edg/') ? 'chrome'
-            : (str_contains($ua, 'firefox/') ? 'firefox'
-            : (str_contains($ua, 'safari/') && ! str_contains($ua, 'chrome/') ? 'safari' : 'other'))));
-
-        return $platform.'|'.$browser;
     }
 
     private function resolveAttendanceUser(string $cardCode): ?User
