@@ -27,8 +27,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:attendance.view', only: ['index', 'daily', 'exportPdf', 'exportExcel']),
-            new Middleware('permission:attendance.create', only: ['store', 'clockIn', 'clockOut', 'kiosk', 'kioskScan']),
-            new Middleware('permission:attendance.create|attendance.edit', only: ['update']),
+            // Absensi mandiri (store/update) dikontrol oleh validasi role di method,
+            // agar akun admin/staf yang eligible tidak gagal karena mapping permission server.
+            new Middleware('permission:attendance.create', only: ['kiosk', 'kioskScan']),
             new Middleware('permission:attendance.edit', only: ['edit']),
             new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
         ];
