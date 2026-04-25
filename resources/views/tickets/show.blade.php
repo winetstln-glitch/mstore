@@ -807,14 +807,6 @@
             for (const constraint of optimizations) {
                 await applyTrackConstraints(runningTrack, constraint);
             }
-
-            let capabilities = {};
-            if (typeof runningTrack.getCapabilities === 'function') {
-                capabilities = runningTrack.getCapabilities() || {};
-            }
-            if (capabilities.torch) {
-                await applyTrackConstraints(runningTrack, { advanced: [{ torch: true }] });
-            }
         };
 
         const startScannerWithBestCamera = async (scanner, readerElementId, onDecodeSuccess, onDecodeError) => {

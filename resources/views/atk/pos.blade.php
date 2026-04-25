@@ -244,9 +244,6 @@
             </div>
             <div class="modal-body">
                 <div id="atk-barcode-reader" class="atk-scan-reader" style="width:100%;"></div>
-                <button id="atkToggleTorchBtn" type="button" class="btn btn-sm btn-warning w-100 mt-3" disabled>
-                    Nyalakan Flash
-                </button>
                 <div id="atkScanStatus" class="small text-muted mt-2">
                     Arahkan kamera ke barcode pada produk.
                 </div>
@@ -274,9 +271,6 @@
     let cart = [];
     let atkBarcodeScanner = null;
     let isAtkBarcodeScannerRunning = false;
-    let atkScannerTrack = null;
-    let atkTorchSupported = false;
-    let atkTorchEnabled = false;
 
     function setAtkScanStatus(message, type = 'muted') {
         const statusEl = document.getElementById('atkScanStatus');
@@ -292,15 +286,6 @@
         statusEl.textContent = message;
     }
 
-    function updateAtkTorchButton() {
-        const btn = document.getElementById('atkToggleTorchBtn');
-        if (!btn) return;
-        btn.disabled = !atkTorchSupported;
-        btn.textContent = atkTorchSupported
-            ? (atkTorchEnabled ? 'Matikan Flash' : 'Nyalakan Flash')
-            : 'Flash tidak didukung di perangkat ini';
-    }
-
     async function applyAtkTrackConstraints(track, constraints) {
         if (!track || typeof track.applyConstraints !== 'function') {
             return false;
@@ -314,10 +299,7 @@
     }
 
     async function optimizeAtkScannerTrack() {
-        atkScannerTrack = atkBarcodeScanner?.getRunningTrack?.() || null;
-        atkTorchSupported = false;
-        atkTorchEnabled = false;
-        updateAtkTorchButton();
+        const atkScannerTrack = atkBarcodeScanner?.getRunningTrack?.() || null;
         if (!atkScannerTrack) {
             return;
         }
@@ -332,16 +314,6 @@
         for (const constraint of optimizations) {
             await applyAtkTrackConstraints(atkScannerTrack, constraint);
         }
-
-        let capabilities = {};
-        if (typeof atkScannerTrack.getCapabilities === 'function') {
-            capabilities = atkScannerTrack.getCapabilities() || {};
-        }
-        atkTorchSupported = !!capabilities.torch;
-        if (atkTorchSupported) {
-            atkTorchEnabled = await applyAtkTrackConstraints(atkScannerTrack, { advanced: [{ torch: true }] });
-        }
-        updateAtkTorchButton();
     }
 
     async function stopAtkBarcodeScanner() {
@@ -353,10 +325,6 @@
             console.warn('Stop ATK barcode scanner error:', error);
         } finally {
             isAtkBarcodeScannerRunning = false;
-            atkScannerTrack = null;
-            atkTorchSupported = false;
-            atkTorchEnabled = false;
-            updateAtkTorchButton();
         }
     }
 
@@ -370,12 +338,27 @@
             return;
         }
         atkBarcodeScanner = atkBarcodeScanner || new Html5Qrcode('atk-barcode-reader');
+        const scannerFormats = [];
+        if (window.Html5QrcodeSupportedFormats) {
+            scannerFormats.push(
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.QR_CODE
+            );
+        }
         const config = {
             fps: 12,
             qrbox: { width: 260, height: 260 },
             aspectRatio: 1.333334,
             disableFlip: true
         };
+        if (scannerFormats.length > 0) {
+            config.formatsToSupport = scannerFormats;
+        }
         try {
             await atkBarcodeScanner.start(
                 {
@@ -434,18 +417,6 @@
         setTimeout(() => {
             optimizeAtkScannerTrack();
         }, 280);
-    }
-
-    async function toggleAtkTorch() {
-        if (!atkScannerTrack || !atkTorchSupported) {
-            return;
-        }
-        const nextState = !atkTorchEnabled;
-        const success = await applyAtkTrackConstraints(atkScannerTrack, { advanced: [{ torch: nextState }] });
-        if (success) {
-            atkTorchEnabled = nextState;
-            updateAtkTorchButton();
-        }
     }
 
     function isMobileDevice() {
@@ -566,7 +537,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         const openScanBtn = document.getElementById('openAtkBarcodeScan');
         const stopScanBtn = document.getElementById('stopAtkBarcodeScan');
-        const torchBtn = document.getElementById('atkToggleTorchBtn');
         const scanModalEl = document.getElementById('atkBarcodeScanModal');
 
         if (openScanBtn && scanModalEl && window.bootstrap) {
@@ -580,11 +550,6 @@
             stopScanBtn.addEventListener('click', async function () {
                 await stopAtkBarcodeScanner();
                 setAtkScanStatus('Scan dihentikan.');
-            });
-        }
-        if (torchBtn) {
-            torchBtn.addEventListener('click', async function () {
-                await toggleAtkTorch();
             });
         }
         if (scanModalEl) {

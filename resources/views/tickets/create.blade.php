@@ -495,14 +495,6 @@
             for (const constraint of baseOptimizations) {
                 await applyTrackConstraints(runningTrack, constraint);
             }
-
-            let capabilities = {};
-            if (typeof runningTrack.getCapabilities === 'function') {
-                capabilities = runningTrack.getCapabilities() || {};
-            }
-            if (capabilities.torch) {
-                await applyTrackConstraints(runningTrack, { advanced: [{ torch: true }] });
-            }
         };
 
         const startScanner = async (scannerRef, readerId, onDecode) => {

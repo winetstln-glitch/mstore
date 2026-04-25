@@ -817,7 +817,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
         $currentUser = Auth::user();
-        if ($attendance->device_fingerprint_clock_in && (string) $attendance->device_fingerprint_clock_in !== $deviceFingerprint) {
+        $clockInFingerprint = (string) ($attendance->device_fingerprint_clock_in ?? '');
+        $isSameFingerprint = $clockInFingerprint !== '' && hash_equals($clockInFingerprint, $deviceFingerprint);
+        $clockInUserAgent = (string) ($attendance->user_agent_clock_in ?? '');
+        $currentUserAgent = mb_substr((string) $request->userAgent(), 0, 255);
+        $isSameBrowserAgent = $clockInUserAgent !== '' && hash_equals($clockInUserAgent, $currentUserAgent);
+        if ($clockInFingerprint !== '' && ! $isSameFingerprint && ! $isSameBrowserAgent) {
             return back()->withErrors([
                 'message' => __('Absen pulang harus dari perangkat yang sama dengan absen masuk.'),
             ]);
@@ -850,7 +855,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'lng_clock_out' => $request->longitude,
             'device_fingerprint_clock_out' => $deviceFingerprint,
             'ip_clock_out' => (string) ($request->ip() ?? ''),
-            'user_agent_clock_out' => mb_substr((string) $request->userAgent(), 0, 255),
+            'user_agent_clock_out' => $currentUserAgent,
             'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
 
@@ -952,7 +957,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $fallbackPayload = implode('|', [
             (string) Auth::id(),
             mb_substr((string) $request->userAgent(), 0, 255),
-            (string) ($request->ip() ?? ''),
         ]);
 
         return hash('sha256', $fallbackPayload);

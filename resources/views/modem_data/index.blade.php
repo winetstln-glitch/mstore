@@ -142,11 +142,6 @@
                 </button>
             </div>
             <div id="reader"></div>
-            <div class="mt-3">
-                <button id="toggleTorchBtn" type="button" onclick="toggleTorch()" class="w-full bg-amber-50 text-amber-700 px-3 py-2 rounded-lg border border-amber-200 text-sm font-semibold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Nyalakan Flash
-                </button>
-            </div>
             <p class="text-center text-sm text-gray-500 mt-4">Arahkan kamera ke barcode/QR pada modem</p>
         </div>
     </div>
@@ -161,8 +156,6 @@
     let activeTargetInput = '';
     let html5QrCode = null;
     let currentVideoTrack = null;
-    let torchSupported = false;
-    let torchEnabled = false;
     let map = null;
     let marker = null;
     let mapPickerWindow = null;
@@ -238,17 +231,6 @@
         return clean.match(/.{1,2}/g).join(':');
     }
 
-    function updateTorchButton() {
-        const torchButton = document.getElementById('toggleTorchBtn');
-        if (!torchButton) {
-            return;
-        }
-        torchButton.disabled = !torchSupported;
-        torchButton.textContent = torchSupported
-            ? (torchEnabled ? 'Matikan Flash' : 'Nyalakan Flash')
-            : 'Flash tidak didukung di perangkat ini';
-    }
-
     async function applyTrackConstraints(track, constraints) {
         if (!track || typeof track.applyConstraints !== 'function') {
             return false;
@@ -263,9 +245,6 @@
 
     async function setupScannerTrack() {
         currentVideoTrack = html5QrCode?.getRunningTrack?.() || null;
-        torchSupported = false;
-        torchEnabled = false;
-        updateTorchButton();
 
         if (!currentVideoTrack) {
             return;
@@ -282,29 +261,6 @@
 
         for (const constraint of baseOptimizations) {
             await applyTrackConstraints(currentVideoTrack, constraint);
-        }
-
-        let capabilities = {};
-        if (typeof currentVideoTrack.getCapabilities === 'function') {
-            capabilities = currentVideoTrack.getCapabilities() || {};
-        }
-
-        torchSupported = !!capabilities.torch;
-        if (torchSupported) {
-            torchEnabled = await applyTrackConstraints(currentVideoTrack, { advanced: [{ torch: true }] });
-        }
-        updateTorchButton();
-    }
-
-    async function toggleTorch() {
-        if (!currentVideoTrack || !torchSupported) {
-            return;
-        }
-        const nextTorchState = !torchEnabled;
-        const success = await applyTrackConstraints(currentVideoTrack, { advanced: [{ torch: nextTorchState }] });
-        if (success) {
-            torchEnabled = nextTorchState;
-            updateTorchButton();
         }
     }
 
@@ -364,9 +320,6 @@
             console.warn('Scanner stop error:', err);
         } finally {
             currentVideoTrack = null;
-            torchSupported = false;
-            torchEnabled = false;
-            updateTorchButton();
             document.getElementById('scannerModal').style.display = 'none';
         }
     }
