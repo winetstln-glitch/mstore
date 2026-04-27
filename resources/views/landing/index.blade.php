@@ -930,15 +930,58 @@
             }
         });
 
+        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported'));
+                return;
+            }
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) resolve(bestPosition);
+                else reject(lastError || new Error('Location unavailable'));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) finalize();
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            timerId = setTimeout(finalize, 9000);
+        });
+
         if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition((position) => {
+            getMostAccuratePosition().then((position) => {
                 document.querySelectorAll('.landing-latitude').forEach((input) => {
                     input.value = position.coords.latitude;
                 });
                 document.querySelectorAll('.landing-longitude').forEach((input) => {
                     input.value = position.coords.longitude;
                 });
-            });
+            }).catch(() => {});
         }
     </script>
 </body>

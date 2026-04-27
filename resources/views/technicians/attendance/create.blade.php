@@ -467,14 +467,60 @@
         document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID', { hour12: false });
     }, 1000);
 
+    const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolokasi tidak didukung'));
+            return;
+        }
+        let bestPosition = null;
+        let lastError = null;
+        let settled = false;
+        let watchId = null;
+        let timerId = null;
+        const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+        const finalize = () => {
+            if (settled) return;
+            settled = true;
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (timerId) clearTimeout(timerId);
+            if (bestPosition) resolve(bestPosition);
+            else reject(lastError || new Error('Lokasi gagal dideteksi'));
+        };
+
+        const considerPosition = (position) => {
+            const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+            const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+            if (!bestPosition || accuracy < bestAccuracy) {
+                bestPosition = position;
+            }
+            if (accuracy <= 20) finalize();
+        };
+
+        watchId = navigator.geolocation.watchPosition(
+            (position) => considerPosition(position),
+            (error) => { lastError = error; },
+            options
+        );
+        navigator.geolocation.getCurrentPosition(
+            (position) => considerPosition(position),
+            (error) => { lastError = error; },
+            options
+        );
+        timerId = setTimeout(finalize, 9000);
+    });
+
     if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(p => {
+        getMostAccuratePosition().then((p) => {
             document.getElementById('latitude').value = p.coords.latitude;
             document.getElementById('longitude').value = p.coords.longitude;
-            document.getElementById('location-status').textContent = 'Lokasi Terdeteksi';
+            const acc = Number(p.coords.accuracy || 0);
+            document.getElementById('location-status').textContent = acc > 0
+                ? `Lokasi Terdeteksi (±${Math.round(acc)}m)`
+                : 'Lokasi Terdeteksi';
             document.getElementById('location-status').className = 'clock-location-status is-detected';
             refreshSubmitState();
-        }, () => {
+        }).catch(() => {
             document.getElementById('location-status').textContent = 'Lokasi gagal dideteksi';
             refreshSubmitState();
         });

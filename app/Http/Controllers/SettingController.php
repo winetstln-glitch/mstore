@@ -840,6 +840,34 @@ class SettingController extends Controller implements HasMiddleware
     {
         $defaults = [
             [
+                'key' => 'attendance_clock_in_start',
+                'value' => '07:00',
+                'group' => 'attendance',
+                'type' => 'time',
+                'label' => 'Jam Mulai Absen Masuk',
+            ],
+            [
+                'key' => 'attendance_clock_in_end',
+                'value' => '13:00',
+                'group' => 'attendance',
+                'type' => 'time',
+                'label' => 'Batas Akhir Absen Masuk',
+            ],
+            [
+                'key' => 'attendance_clock_out_start',
+                'value' => '20:00',
+                'group' => 'attendance',
+                'type' => 'time',
+                'label' => 'Jam Mulai Absen Pulang',
+            ],
+            [
+                'key' => 'attendance_clock_out_end',
+                'value' => '01:00',
+                'group' => 'attendance',
+                'type' => 'time',
+                'label' => 'Batas Akhir Absen Pulang',
+            ],
+            [
                 'key' => 'attendance_clock_in_early_minutes',
                 'value' => '60',
                 'group' => 'attendance',

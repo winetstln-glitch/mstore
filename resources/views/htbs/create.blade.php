@@ -208,6 +208,48 @@
         });
 
         var marker;
+        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported'));
+                return;
+            }
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) resolve(bestPosition);
+                else reject(lastError || new Error('Location unavailable'));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) finalize();
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            timerId = setTimeout(finalize, 9000);
+        });
         
         // Check for existing values
         var latInput = document.getElementById('latitude');
@@ -219,11 +261,11 @@
             marker = L.marker([lat, lng]).addTo(map);
             map.setView([lat, lng], 15);
         } else if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
+            getMostAccuratePosition().then(function(position) {
                 var lat = position.coords.latitude;
                 var lng = position.coords.longitude;
                 map.setView([lat, lng], 15);
-            });
+            }).catch(function() {});
         }
 
         map.on('click', function(e) {

@@ -304,6 +304,57 @@
             'other': 120
         };
 
+        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("{{ __('Browser tidak mendukung geolocation.') }}"));
+                return;
+            }
+
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) {
+                    resolve(bestPosition);
+                    return;
+                }
+                reject(lastError || new Error("{{ __('Gagal mengambil lokasi.') }}"));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) {
+                    finalize();
+                }
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            timerId = setTimeout(finalize, 9000);
+        });
+
         function toggleCustomerForm() {
             if (typeSelect.val() === 'pasang_baru') {
                 existingCustomerSection.hide();
@@ -394,33 +445,31 @@
         });
 
         // Ambil lokasi dari GPS browser untuk pelanggan baru
-        $('#getNewCustomerLocation').on('click', function() {
-            if (! navigator.geolocation) {
-                newCustomerLocationStatus.text("{{ __('Browser tidak mendukung geolocation.') }}");
-                return;
-            }
-            newCustomerLocationStatus.text("{{ __('Mengambil lokasi...') }}");
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const lat = position.coords.latitude.toFixed(7);
-                const lng = position.coords.longitude.toFixed(7);
+        $('#getNewCustomerLocation').on('click', async function() {
+            newCustomerLocationStatus.text("{{ __('Mengambil lokasi paling akurat...') }}");
+            try {
+                const position = await getMostAccuratePosition();
+                const lat = Number(position.coords.latitude).toFixed(7);
+                const lng = Number(position.coords.longitude).toFixed(7);
+                const accuracy = Number(position.coords.accuracy || 0);
                 newCustomerLatInput.val(lat);
                 newCustomerLngInput.val(lng);
                 if (locationInput) {
                     locationInput.value = `${lat}, ${lng}`;
                     updateMapLink();
                 }
-                newCustomerLocationStatus.text("{{ __('Lokasi berhasil diambil.') }}");
-            }, function(error) {
+                if (accuracy > 0) {
+                    newCustomerLocationStatus.text(`{{ __('Lokasi berhasil diambil') }} (±${Math.round(accuracy)}m)`);
+                } else {
+                    newCustomerLocationStatus.text("{{ __('Lokasi berhasil diambil.') }}");
+                }
+            } catch (error) {
                 let msg = "{{ __('Gagal mengambil lokasi.') }}";
                 if (error && error.message) {
                     msg += ' ' + error.message;
                 }
                 newCustomerLocationStatus.text(msg);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            });
+            }
         });
 
         // QR/Barcode scanner untuk SN dan MAC

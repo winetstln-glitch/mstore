@@ -303,10 +303,51 @@
         const lngInput = document.getElementById('longitude');
         const statusDiv = document.getElementById('location-status');
         const statusText = statusDiv.querySelector('div');
+        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported'));
+                return;
+            }
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) resolve(bestPosition);
+                else reject(lastError || new Error('Location unavailable'));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) finalize();
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+            timerId = setTimeout(finalize, 9000);
+        });
 
         if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
+            getMostAccuratePosition().then(function(position) {
                     latInput.value = position.coords.latitude;
                     lngInput.value = position.coords.longitude;
                     
@@ -319,10 +360,11 @@
                         statusDiv.style.color = '#ecfdf5';
                         statusDiv.style.borderColor = '#065f46';
                     }
-                    
-                    statusText.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> <strong>{{ __("Lokasi Terkunci:") }}</strong> ' + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6);
-                },
-                function(error) {
+                    const accuracy = Number(position.coords.accuracy || 0);
+                    const accuracyText = accuracy > 0 ? ` (±${Math.round(accuracy)}m)` : '';
+                    statusText.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> <strong>{{ __("Lokasi Terkunci:") }}</strong> '
+                        + position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6) + accuracyText;
+                }).catch(function(error) {
                     let errorMsg = '';
                     switch(error.code) {
                         case error.PERMISSION_DENIED: errorMsg = "{{ __('Izin lokasi ditolak. Mohon aktifkan izin lokasi.') }}"; break;
@@ -332,9 +374,7 @@
                     }
                     statusDiv.className = 'alert d-flex align-items-center shadow-sm mb-4 alert-danger';
                     statusText.textContent = errorMsg;
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
+                });
         }
 
         // --- 2. Add / Remove Item Rows ---

@@ -560,11 +560,12 @@
                             <button class="btn btn-outline-secondary" type="button" id="getCurrentLocation">
                                 <i class="fa-solid fa-crosshairs"></i>
                             </button>
-                            <button class="btn btn-outline-primary" type="button" id="startQrScan">
-                                <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan QR') }}
+                            <button class="btn btn-outline-info" type="button" id="openNetworkMapPicker">
+                                <i class="fa-solid fa-map-location-dot me-1"></i>{{ __('Pilih di Peta') }}
                             </button>
                         </div>
                         <div class="form-text">{{ __('Klik ikon bidik untuk mengambil lokasi saat ini atau gunakan Scan QR.') }}</div>
+                        <div id="locationAccuracyStatus" class="small text-muted mt-1"></div>
                         <div id="qrScanStatus" class="small text-muted mt-2"></div>
                     </div>
                     <div id="qrScannerWrapper" class="mt-2 d-none">
@@ -662,6 +663,7 @@
 
 
 @push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
     .ticket-qr-reader video {
         width: 100% !important;
@@ -671,15 +673,23 @@
         /* Sedikit tingkatkan kontras agar pola QR/barcode lebih mudah dikenali kamera */
         filter: brightness(1.18) contrast(1.15) saturate(1.08);
     }
+    #ticket-map-picker {
+        min-height: 300px;
+        border-radius: 8px;
+    }
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
+        const openNetworkMapPickerBtn = document.getElementById('openNetworkMapPicker');
         const locationInput = document.getElementById('location');
+        const locationAccuracyStatus = document.getElementById('locationAccuracyStatus');
+        const editLocationModal = document.getElementById('editLocationModal');
         const startQrScanBtn = document.getElementById('startQrScan');
         const stopQrScanBtn = document.getElementById('stopQrScan');
         const qrScannerWrapper = document.getElementById('qrScannerWrapper');
@@ -719,6 +729,11 @@
         let isCompletionOnuQrScannerRunning = false;
         let completionMacQrScanner = null;
         let isCompletionMacQrScannerRunning = false;
+        let ticketLocationMap = null;
+        let ticketLocationMarker = null;
+        let mapPickerWindow = null;
+        const ticketCustomerLat = {{ $ticket->customer && $ticket->customer->latitude !== null ? (float) $ticket->customer->latitude : 'null' }};
+        const ticketCustomerLng = {{ $ticket->customer && $ticket->customer->longitude !== null ? (float) $ticket->customer->longitude : 'null' }};
         const scannerFormats = (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
             Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.CODE_128,
@@ -1063,6 +1078,152 @@
             completionMacQrScanStatus.textContent = message;
         };
 
+        const parseCoordinatePair = (value) => {
+            const text = String(value || '').trim();
+            const match = text.match(/(-?\d{1,3}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
+            if (!match) return null;
+            const lat = Number(match[1]);
+            const lng = Number(match[2]);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+            return { lat, lng };
+        };
+
+        const setLocationValue = (lat, lng) => {
+            if (!locationInput) return;
+            locationInput.value = `${lat.toFixed(7)}, ${lng.toFixed(7)}`;
+        };
+
+        const setAccuracyStatus = (text, type = 'muted') => {
+            if (!locationAccuracyStatus) return;
+            locationAccuracyStatus.classList.remove('text-muted', 'text-success', 'text-warning', 'text-danger');
+            if (type === 'success') locationAccuracyStatus.classList.add('text-success');
+            else if (type === 'warning') locationAccuracyStatus.classList.add('text-warning');
+            else if (type === 'danger') locationAccuracyStatus.classList.add('text-danger');
+            else locationAccuracyStatus.classList.add('text-muted');
+            locationAccuracyStatus.textContent = text || '';
+        };
+
+        const updateLocationFromCoords = (lat, lng, zoom = 17) => {
+            setLocationValue(lat, lng);
+            if (ticketLocationMarker) {
+                ticketLocationMarker.setLatLng([lat, lng]);
+            }
+            if (ticketLocationMap) {
+                ticketLocationMap.setView([lat, lng], zoom);
+            }
+        };
+
+        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('{{ __('Geolocation tidak didukung.') }}'));
+                return;
+            }
+
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) {
+                    resolve(bestPosition);
+                    return;
+                }
+                reject(lastError || new Error('{{ __('Gagal mendapatkan lokasi.') }}'));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) {
+                    finalize();
+                }
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            timerId = setTimeout(finalize, 9000);
+        });
+
+        const initTicketLocationMap = () => {
+            const container = document.getElementById('ticket-map-picker');
+            if (!container || typeof L === 'undefined') return;
+            if (ticketLocationMap) {
+                setTimeout(() => ticketLocationMap.invalidateSize(), 120);
+                return;
+            }
+
+            const inputCoords = parseCoordinatePair(locationInput ? locationInput.value : '');
+            const startLat = inputCoords?.lat ?? (Number.isFinite(ticketCustomerLat) ? ticketCustomerLat : -6.2088);
+            const startLng = inputCoords?.lng ?? (Number.isFinite(ticketCustomerLng) ? ticketCustomerLng : 106.8456);
+
+            ticketLocationMap = L.map(container).setView([startLat, startLng], inputCoords ? 17 : 13);
+            const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            });
+            const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 22,
+                attribution: '&copy; Google Maps'
+            });
+            const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            });
+
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            if (currentTheme === 'dark') darkLayer.addTo(ticketLocationMap);
+            else osm.addTo(ticketLocationMap);
+
+            L.control.layers({
+                "Dark Mode": darkLayer,
+                "Satellite (Google)": googleHybrid,
+                "Street (OSM)": osm
+            }).addTo(ticketLocationMap);
+
+            ticketLocationMarker = L.marker([startLat, startLng], { draggable: true }).addTo(ticketLocationMap);
+            ticketLocationMarker.on('dragend', function() {
+                const pos = ticketLocationMarker.getLatLng();
+                setLocationValue(pos.lat, pos.lng);
+            });
+            ticketLocationMap.on('click', function(e) {
+                ticketLocationMarker.setLatLng(e.latlng);
+                setLocationValue(e.latlng.lat, e.latlng.lng);
+            });
+
+            window.addEventListener('themeChanged', function(e) {
+                if (!ticketLocationMap) return;
+                if (e.detail.theme === 'dark') {
+                    if (ticketLocationMap.hasLayer(osm)) ticketLocationMap.removeLayer(osm);
+                    if (ticketLocationMap.hasLayer(googleHybrid)) ticketLocationMap.removeLayer(googleHybrid);
+                    if (!ticketLocationMap.hasLayer(darkLayer)) darkLayer.addTo(ticketLocationMap);
+                } else {
+                    if (ticketLocationMap.hasLayer(darkLayer)) ticketLocationMap.removeLayer(darkLayer);
+                    if (!ticketLocationMap.hasLayer(osm) && !ticketLocationMap.hasLayer(googleHybrid)) osm.addTo(ticketLocationMap);
+                }
+            });
+        };
+
         const stopCompletionOnuQrScanner = async () => {
             if (!completionOnuQrScanner || !isCompletionOnuQrScannerRunning) return;
             try {
@@ -1092,21 +1253,36 @@
         };
 
         if (getCurrentLocationBtn && locationInput) {
-            getCurrentLocationBtn.addEventListener('click', function() {
-                if (navigator.geolocation) {
-                    getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                    navigator.geolocation.getCurrentPosition(function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        locationInput.value = `${lat}, ${lng}`;
-                        getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
-                        // Perbarui nilai input agar peta bisa ikut menggunakan koordinat terbaru.
-                    }, function(error) {
-                        alert('{{ __('Kesalahan') }}: ' + error.message);
-                        getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
-                    });
-                } else {
-                    alert('{{ __('Geolocation tidak didukung.') }}');
+            getCurrentLocationBtn.addEventListener('click', async function() {
+                getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                setAccuracyStatus('{{ __('Mengambil lokasi paling akurat...') }}', 'muted');
+                try {
+                    const position = await getMostAccuratePosition();
+                    const lat = Number(position.coords.latitude);
+                    const lng = Number(position.coords.longitude);
+                    const acc = Number(position.coords.accuracy || 0);
+                    updateLocationFromCoords(lat, lng);
+                    if (acc > 0) {
+                        const accType = acc <= 25 ? 'success' : (acc <= 60 ? 'warning' : 'danger');
+                        setAccuracyStatus(`{{ __('Akurasi GPS') }}: ±${Math.round(acc)}m`, accType);
+                    } else {
+                        setAccuracyStatus('{{ __('Lokasi berhasil diambil.') }}', 'success');
+                    }
+                } catch (error) {
+                    alert('{{ __('Kesalahan') }}: ' + (error?.message || '{{ __('Gagal mengambil lokasi.') }}'));
+                    setAccuracyStatus('{{ __('Gagal mengambil lokasi GPS.') }}', 'danger');
+                } finally {
+                    getCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
+                }
+            });
+        }
+
+        if (openNetworkMapPickerBtn) {
+            openNetworkMapPickerBtn.addEventListener('click', function() {
+                const pickerUrl = '{{ route('map.index') }}?picker=1';
+                mapPickerWindow = window.open(pickerUrl, 'mstoreMapPickerTicket', 'width=1280,height=800');
+                if (!mapPickerWindow) {
+                    alert('{{ __('Popup diblokir browser. Izinkan popup untuk memilih lokasi dari peta.') }}');
                 }
             });
         }
@@ -1418,12 +1594,47 @@
             });
         }
 
-        const editLocationModal = document.getElementById('editLocationModal');
         if (editLocationModal) {
+            editLocationModal.addEventListener('shown.bs.modal', function() {
+                initTicketLocationMap();
+                const coords = parseCoordinatePair(locationInput ? locationInput.value : '');
+                if (coords) {
+                    updateLocationFromCoords(coords.lat, coords.lng, 17);
+                } else if (Number.isFinite(ticketCustomerLat) && Number.isFinite(ticketCustomerLng)) {
+                    updateLocationFromCoords(ticketCustomerLat, ticketCustomerLng, 16);
+                }
+                setTimeout(() => {
+                    if (ticketLocationMap) ticketLocationMap.invalidateSize();
+                }, 150);
+            });
             editLocationModal.addEventListener('hidden.bs.modal', function() {
                 stopQrScanner();
             });
         }
+
+        if (locationInput) {
+            locationInput.addEventListener('input', function() {
+                const coords = parseCoordinatePair(locationInput.value);
+                if (!coords) return;
+                if (ticketLocationMarker) {
+                    ticketLocationMarker.setLatLng([coords.lat, coords.lng]);
+                }
+                if (ticketLocationMap) {
+                    ticketLocationMap.setView([coords.lat, coords.lng], 17);
+                }
+            });
+        }
+
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) return;
+            const payload = event.data || {};
+            if (payload.type !== 'mstore-map-picked') return;
+            const lat = Number(payload.lat);
+            const lng = Number(payload.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            updateLocationFromCoords(lat, lng, 17);
+            setAccuracyStatus('{{ __('Koordinat dipilih dari peta jaringan.') }}', 'success');
+        });
 
         const editCustomerModal = document.getElementById('editCustomerModal');
         if (editCustomerModal) {

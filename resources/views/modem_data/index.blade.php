@@ -119,7 +119,11 @@
                     <button type="button" onclick="getCurrentLocation()" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-200 text-sm font-medium flex items-center gap-1 hover:bg-blue-100">
                         <i data-lucide="map-pin" class="w-4 h-4"></i> Get GPS
                     </button>
+                    <button type="button" onclick="openNetworkMapPicker()" class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-200 text-sm font-medium flex items-center gap-1 hover:bg-indigo-100">
+                        <i data-lucide="map" class="w-4 h-4"></i> Pilih di Peta
+                    </button>
                 </div>
+                <p id="locationAccuracyHint" class="text-xs text-gray-500 mt-1"></p>
                 <p class="text-xs text-gray-500 mt-1">Gunakan tombol "Pilih di Peta" untuk mengambil koordinat dari fitur peta jaringan.</p>
             </div>
 
@@ -233,19 +237,81 @@
     }
 
     function getCurrentLocation() {
+        const hintEl = document.getElementById('locationAccuracyHint');
         if (!navigator.geolocation) {
-            alert('Geolocation tidak didukung browser ini.');
+            if (hintEl) hintEl.textContent = 'Geolocation tidak didukung browser ini.';
             return;
         }
 
-        navigator.geolocation.getCurrentPosition((position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+        if (hintEl) hintEl.textContent = 'Mengambil lokasi paling akurat...';
+
+        getMostAccuratePosition().then((position) => {
+            const lat = Number(position.coords.latitude);
+            const lng = Number(position.coords.longitude);
+            const accuracy = Number(position.coords.accuracy || 0);
             map.setView([lat, lng], 17);
             marker.setLatLng([lat, lng]);
             updateLocationInput(lat, lng);
-        }, (err) => {
-            alert('Gagal mendapatkan lokasi: ' + err.message);
+            if (hintEl) {
+                hintEl.textContent = accuracy > 0
+                    ? `Lokasi akurat didapatkan (±${Math.round(accuracy)}m).`
+                    : 'Lokasi berhasil diambil.';
+            }
+        }).catch((err) => {
+            if (hintEl) hintEl.textContent = 'Gagal mendapatkan lokasi: ' + (err?.message || 'Unknown error');
+        });
+    }
+
+    function getMostAccuratePosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation tidak didukung browser ini.'));
+                return;
+            }
+
+            let bestPosition = null;
+            let lastError = null;
+            let settled = false;
+            let watchId = null;
+            let timerId = null;
+            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+
+            const finalize = () => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timerId) clearTimeout(timerId);
+                if (bestPosition) {
+                    resolve(bestPosition);
+                    return;
+                }
+                reject(lastError || new Error('Tidak ada sinyal GPS yang cukup.'));
+            };
+
+            const considerPosition = (position) => {
+                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+                if (!bestPosition || accuracy < bestAccuracy) {
+                    bestPosition = position;
+                }
+                if (accuracy <= 20) {
+                    finalize();
+                }
+            };
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => considerPosition(position),
+                (error) => { lastError = error; },
+                options
+            );
+
+            timerId = setTimeout(finalize, 9000);
         });
     }
 
