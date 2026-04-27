@@ -17,28 +17,37 @@ class UserSeeder extends Seeder
         $nocRole = Role::where('name', 'noc')->first();
         $techRole = Role::where('name', 'technician')->first();
 
-        User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@mstore.local',
-            'password' => 'password',
-            'role_id' => $adminRole->id,
-            'is_active' => true,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@mstore.local'],
+            [
+                'name' => 'Super Admin',
+                'username' => 'admin',
+                'password' => 'password',
+                'role_id' => $adminRole->id,
+                'is_active' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'NOC Officer',
-            'email' => 'noc@mstore.local',
-            'password' => 'password',
-            'role_id' => $nocRole->id,
-            'is_active' => true,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'noc@mstore.local'],
+            [
+                'name' => 'NOC Officer',
+                'username' => 'noc',
+                'password' => 'password',
+                'role_id' => $nocRole->id,
+                'is_active' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'Technician One',
-            'email' => 'tech1@mstore.local',
-            'password' => 'password',
-            'role_id' => $techRole->id,
-            'is_active' => true,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'tech1@mstore.local'],
+            [
+                'name' => 'Technician One',
+                'username' => 'tech1',
+                'password' => 'password',
+                'role_id' => $techRole->id,
+                'is_active' => true,
+            ]
+        );
     }
 }

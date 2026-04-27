@@ -295,54 +295,17 @@ class DashboardController extends Controller
             'wash_employee_not_present_today' => max($washEmployeeIds->count() - $washEmployeePresentToday, 0),
         ];
 
-        $presenceThresholdSeconds = 90;
-        $presenceCutoff = now()->subSeconds($presenceThresholdSeconds);
-        $presenceUsers = User::query()
-            ->with('role')
+        $presenceCutoff = now()->subSeconds(90);
+        $onlineTechnicians = User::query()
             ->where('is_active', true)
-            ->whereHas('role', function ($query) {
-                $query->whereIn('name', [
-                    'admin', 'finance', 'technician', 'karyawan-wash', 'kasir-atk', 'kasir-wash',
-                    'coordinator', 'reseller', 'noc', 'network-operations-center', 'hrd-manager',
-                ]);
-            })
-            ->orderBy('name')
-            ->get(['id', 'name', 'role_id', 'last_seen_at']);
-
-        $onlineUserIds = $presenceUsers
-            ->filter(fn (User $presenceUser) => $presenceUser->last_seen_at && $presenceUser->last_seen_at->gte($presenceCutoff))
-            ->pluck('id')
-            ->all();
-
-        $onlineTechnicians = $presenceUsers
-            ->filter(fn (User $presenceUser) => optional($presenceUser->role)->name === 'technician' && in_array($presenceUser->id, $onlineUserIds, true))
+            ->where('last_seen_at', '>=', $presenceCutoff)
+            ->whereHas('role', fn ($query) => $query->where('name', 'technician'))
             ->count();
-        $onlineWashEmployees = $presenceUsers
-            ->filter(fn (User $presenceUser) => optional($presenceUser->role)->name === 'karyawan-wash' && in_array($presenceUser->id, $onlineUserIds, true))
+        $onlineWashEmployees = User::query()
+            ->where('is_active', true)
+            ->where('last_seen_at', '>=', $presenceCutoff)
+            ->whereHas('role', fn ($query) => $query->where('name', 'karyawan-wash'))
             ->count();
-
-        $presenceRows = $presenceUsers
-            ->map(function (User $presenceUser) use ($onlineUserIds, $attendanceByUser) {
-                $attendance = $attendanceByUser->get($presenceUser->id);
-                $attendanceState = $attendance
-                    ? (in_array((string) $attendance->status, ['present', 'late'], true) ? 'present' : (string) $attendance->status)
-                    : 'not_present';
-
-                return [
-                    'id' => $presenceUser->id,
-                    'name' => $presenceUser->name,
-                    'role' => optional($presenceUser->role)->label ?? '-',
-                    'role_name' => optional($presenceUser->role)->name,
-                    'online' => in_array($presenceUser->id, $onlineUserIds, true),
-                    'last_seen' => $presenceUser->last_seen_at,
-                    'attendance_state' => $attendanceState,
-                ];
-            })
-            ->sortBy([
-                fn (array $row) => $row['online'] ? 0 : 1,
-                fn (array $row) => $row['name'],
-            ])
-            ->values();
 
         // Traffic Data (Orders & Tickets per Month)
         $trafficData = [
@@ -491,8 +454,6 @@ class DashboardController extends Controller
                 'errors' => $dailyLatest[$date]['errors'] ?? 0,
             ];
         }
-        $monitorLogs = $this->monitorLogsData();
-
         return view('dashboard', compact(
             'stats',
             'recentTickets',
@@ -509,7 +470,6 @@ class DashboardController extends Controller
             'mixRadiusOk',
             'monitorSummary',
             'monitorTrend',
-            'monitorLogs',
             'attendanceRole',
             'attendanceState',
             'attendanceDate',
@@ -517,8 +477,6 @@ class DashboardController extends Controller
             'attendanceEmployees',
             'attendanceByUser',
             'technicianTaskSummary',
-            'presenceRows',
-            'presenceThresholdSeconds',
             'onlineTechnicians',
             'onlineWashEmployees'
         ));

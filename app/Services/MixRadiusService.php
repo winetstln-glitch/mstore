@@ -25,14 +25,14 @@ class MixRadiusService
 
     public function __construct()
     {
-        $base = Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
-        $this->baseUrl = rtrim((string) $base, '/');
-        $this->token = Setting::getValue('mixradius_api_token', env('MIXRADIUS_API_TOKEN'));
-        $this->secret = Setting::getValue('mixradius_api_secret', env('MIXRADIUS_API_SECRET'));
-        $this->authEndpoint = Setting::getValue('mixradius_auth_endpoint', env('MIXRADIUS_AUTH_ENDPOINT'));
-        $this->userInfoEndpoint = Setting::getValue('mixradius_user_info_endpoint', env('MIXRADIUS_USER_INFO_ENDPOINT'));
-        $this->billingEndpoint = Setting::getValue('mixradius_billing_endpoint', env('MIXRADIUS_BILLING_ENDPOINT', '/api/invoices'));
-        $this->invoiceHtmlUrl = Setting::getValue('mixradius_invoice_html_url', env('MIXRADIUS_INVOICE_HTML_URL'));
+        $base = Setting::getValue('mixradius_base_url', (string) config('services.mixradius.base_url', ''));
+        $this->baseUrl = rtrim(trim((string) $base), '/');
+        $this->token = Setting::getValue('mixradius_api_token', config('services.mixradius.api_token'));
+        $this->secret = Setting::getValue('mixradius_api_secret', config('services.mixradius.api_secret'));
+        $this->authEndpoint = Setting::getValue('mixradius_auth_endpoint', config('services.mixradius.auth_endpoint'));
+        $this->userInfoEndpoint = Setting::getValue('mixradius_user_info_endpoint', config('services.mixradius.user_info_endpoint'));
+        $this->billingEndpoint = Setting::getValue('mixradius_billing_endpoint', config('services.mixradius.billing_endpoint', '/api/invoices'));
+        $this->invoiceHtmlUrl = Setting::getValue('mixradius_invoice_html_url', config('services.mixradius.invoice_html_url'));
     }
 
     // Alur: Setelah pembayaran sukses, sistem memanggil endpoint MixRADIUS

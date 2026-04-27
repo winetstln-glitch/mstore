@@ -66,63 +66,99 @@
             </button>
         </div>
         <div class="list-group list-group-flush pb-2">
-            
+            @php
+                $authUser = Auth::user();
+                if ($authUser) {
+                    $authUser->loadMissing('role.permissions');
+                }
+                $isAdmin = $authUser ? $authUser->hasRole('admin') : false;
+                $permissionMap = $isAdmin || ! $authUser
+                    ? []
+                    : (($authUser->role?->permissions?->pluck('name')->flip()->all()) ?? []);
+                $hasPermission = static function (string $permission) use ($authUser, $isAdmin, $permissionMap): bool {
+                    if (! $authUser) {
+                        return false;
+                    }
+
+                    if ($isAdmin) {
+                        return true;
+                    }
+
+                    return isset($permissionMap[$permission]);
+                };
+                $hasAnyPermission = static function (array $permissions) use ($hasPermission): bool {
+                    foreach ($permissions as $permission) {
+                        if ($hasPermission($permission)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                };
+                $hasRole = static fn (string $role): bool => $authUser ? $authUser->hasRole($role) : false;
+                $routeIs = static fn (...$patterns): bool => request()->routeIs(...$patterns);
+                $unreadNotificationCount = $authUser ? $authUser->unreadNotifications()->count() : 0;
+                $unreadNotifications = $authUser
+                    ? $authUser->unreadNotifications()->latest()->limit(10)->get()
+                    : collect();
+            @endphp
+
             {{-- User Panel (Simplified) --}}
            
             <div class="sidebar-header mt-2">{{ __('Menu Utama') }}</div>
 
             {{-- Dashboard --}}
-            @if(Auth::user()->hasPermission('dashboard.view'))
-            <a href="{{ route('dashboard') }}" class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            @if($hasPermission('dashboard.view'))
+            <a href="{{ route('dashboard') }}" class="sidebar-item {{ $routeIs('dashboard') ? 'active' : '' }}">
                 <i class="fa fa-tachometer-alt"></i> {{ __('Dasbor') }}
             </a>
             @endif
 
             {{-- AI Center --}}
-            @if(Auth::user()->hasPermission('ai.view'))
-            <a href="{{ route('ai.index') }}" class="sidebar-item {{ request()->routeIs('ai.*') ? 'active' : '' }}">
+            @if($hasPermission('ai.view'))
+            <a href="{{ route('ai.index') }}" class="sidebar-item {{ $routeIs('ai.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-robot"></i> {{ __('Pusat AI') }} <span class="badge bg-primary ms-auto" style="font-size: 0.6rem;">BETA</span>
             </a>
             @endif
 
-            @if(Auth::user()->hasPermission('chat.view'))
-            <a href="{{ route('chat.index') }}" class="sidebar-item {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+            @if($hasPermission('chat.view'))
+            <a href="{{ route('chat.index') }}" class="sidebar-item {{ $routeIs('chat.*') ? 'active' : '' }}">
                 <i class="fa-regular fa-comments"></i> {{ __('Messenger Internal') }}
             </a>
             @endif
 
             {{-- Client Portal (Grouped) --}}
-            @if(Auth::user()->hasRole('customer'))
+            @if($hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Portal Pelanggan') }}</div>
             @php
-                $clientRoutesActive = request()->routeIs('client.*') || request()->routeIs('profile.edit') || request()->routeIs('profile.id_card');
+                $clientRoutesActive = $routeIs('client.*') || $routeIs('profile.edit') || $routeIs('profile.id_card');
             @endphp
             <a class="sidebar-item {{ $clientRoutesActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#clientPortalCollapse" role="button" aria-expanded="{{ $clientRoutesActive ? 'true' : 'false' }}" aria-controls="clientPortalCollapse">
                 <i class="fa-solid fa-user-circle"></i> {{ __('Portal Pelanggan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ $clientRoutesActive ? 'show' : '' }}" id="clientPortalCollapse">
                 <div class="ps-2">
-                    <a href="{{ route('client.portal') }}" class="sidebar-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">
+                    <a href="{{ route('client.portal') }}" class="sidebar-item {{ $routeIs('client.portal') ? 'active' : '' }}">
                         <i class="fa-solid fa-house-user"></i> {{ __('Beranda Portal') }}
                     </a>
-                    <a href="{{ route('client.connection') }}" class="sidebar-item {{ request()->routeIs('client.connection') ? 'active' : '' }}">
+                    <a href="{{ route('client.connection') }}" class="sidebar-item {{ $routeIs('client.connection') ? 'active' : '' }}">
                         <i class="fa fa-random"></i> {{ __('Info Koneksi') }}
                     </a>
-                    <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
+                    <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ $routeIs('client.invoices.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
                     </a>
-                    <a href="{{ route('client.credentials.show') }}" class="sidebar-item {{ request()->routeIs('client.credentials.*') ? 'active' : '' }}">
+                    <a href="{{ route('client.credentials.show') }}" class="sidebar-item {{ $routeIs('client.credentials.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-key"></i> {{ __('Kredensial Internet') }}
                     </a>
-                    <a href="{{ route('profile.edit') }}" class="sidebar-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                    <a href="{{ route('profile.edit') }}" class="sidebar-item {{ $routeIs('profile.edit') ? 'active' : '' }}">
                         <i class="fa-regular fa-user"></i> {{ __('Profil Saya') }}
                     </a>
-                    <a href="{{ route('profile.id_card') }}" class="sidebar-item {{ request()->routeIs('profile.id_card') ? 'active' : '' }}">
+                    <a href="{{ route('profile.id_card') }}" class="sidebar-item {{ $routeIs('profile.id_card') ? 'active' : '' }}">
                         <i class="fa-regular fa-id-card"></i> {{ __('Kartu Identitas') }}
                     </a>
                     @php $mixUrl = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', '')); @endphp
                     @if(!empty($mixUrl))
-                    <a href="{{ route('client.mixradius') }}" class="sidebar-item {{ request()->routeIs('client.mixradius') ? 'active' : '' }}">
+                    <a href="{{ route('client.mixradius') }}" class="sidebar-item {{ $routeIs('client.mixradius') ? 'active' : '' }}">
                         <i class="fa-solid fa-up-right-from-square"></i> {{ __('Portal MixRADIUS') }}
                     </a>
                     @endif
@@ -132,17 +168,17 @@
 
             {{-- Pelanggan & Layanan Group --}}
             @if(
-                Auth::user()->hasPermission('customer.view') ||
-                Auth::user()->hasPermission('installation.view') ||
-                Auth::user()->hasPermission('hotspot.view') ||
-                Auth::user()->hasPermission('router.view') ||
-                Auth::user()->hasPermission('pppoe.view') ||
-                Auth::user()->hasPermission('package.view')
+                $hasPermission('customer.view') ||
+                $hasPermission('installation.view') ||
+                $hasPermission('hotspot.view') ||
+                $hasPermission('router.view') ||
+                $hasPermission('pppoe.view') ||
+                $hasPermission('package.view')
             )
             <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
             @php
-                $customerDataActive = request()->routeIs('customers.*') || request()->routeIs('installations.*');
-                $customerServiceActive = request()->routeIs('hotspot.index') || request()->routeIs('pppoe.index') || request()->routeIs('packages.*');
+                $customerDataActive = $routeIs('customers.*') || $routeIs('installations.*');
+                $customerServiceActive = $routeIs('hotspot.index') || $routeIs('pppoe.index') || $routeIs('packages.*');
                 $customerAnyActive = $customerDataActive || $customerServiceActive;
             @endphp
 
@@ -151,19 +187,19 @@
             </a>
             <div class="collapse {{ $customerAnyActive ? 'show' : '' }}" id="customerCenterCollapse">
                 <div class="ps-3">
-                    @if(Auth::user()->hasPermission('customer.view') || Auth::user()->hasPermission('installation.view'))
+                    @if($hasPermission('customer.view') || $hasPermission('installation.view'))
                     <a class="sidebar-item {{ $customerDataActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#customerDataCollapse" role="button" aria-expanded="{{ $customerDataActive ? 'true' : 'false' }}" aria-controls="customerDataCollapse">
                         <i class="fa-solid fa-address-book"></i> {{ __('Data Master') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $customerDataActive ? 'show' : '' }}" id="customerDataCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('customer.view'))
-                            <a href="{{ route('customers.index') }}" class="sidebar-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
+                            @if($hasPermission('customer.view'))
+                            <a href="{{ route('customers.index') }}" class="sidebar-item {{ $routeIs('customers.*') ? 'active' : '' }}">
                                 <i class="fa fa-users"></i> {{ __('Data Pelanggan') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('installation.view'))
-                            <a href="{{ route('installations.index') }}" class="sidebar-item {{ request()->routeIs('installations.*') ? 'active' : '' }}">
+                            @if($hasPermission('installation.view'))
+                            <a href="{{ route('installations.index') }}" class="sidebar-item {{ $routeIs('installations.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-screwdriver-wrench"></i> {{ __('Pemasangan Baru') }}
                             </a>
                             @endif
@@ -171,29 +207,29 @@
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('hotspot.view') || Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view') || Auth::user()->hasPermission('package.view'))
+                    @if($hasPermission('hotspot.view') || $hasPermission('router.view') || $hasPermission('pppoe.view') || $hasPermission('package.view'))
                     <a class="sidebar-item {{ $customerServiceActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#customerServiceCollapse" role="button" aria-expanded="{{ $customerServiceActive ? 'true' : 'false' }}" aria-controls="customerServiceCollapse">
                         <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $customerServiceActive ? 'show' : '' }}" id="customerServiceCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('hotspot.view'))
-                            <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ request()->routeIs('hotspot.index') ? 'active' : '' }}">
+                            @if($hasPermission('hotspot.view'))
+                            <a href="{{ route('hotspot.index') }}" class="sidebar-item {{ $routeIs('hotspot.index') ? 'active' : '' }}">
                                 <i class="fa-solid fa-wifi"></i> {{ __('Hotspot Aktif') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('router.view') || Auth::user()->hasPermission('pppoe.view'))
-                            <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ request()->routeIs('pppoe.index') ? 'active' : '' }}">
+                            @if($hasPermission('router.view') || $hasPermission('pppoe.view'))
+                            <a href="{{ route('pppoe.index') }}" class="sidebar-item {{ $routeIs('pppoe.index') ? 'active' : '' }}">
                                 <i class="fa-solid fa-globe"></i> {{ __('PPPoE Aktif') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('package.view'))
-                            <a href="{{ route('packages.index') }}" class="sidebar-item {{ request()->routeIs('packages.*') ? 'active' : '' }}">
+                            @if($hasPermission('package.view'))
+                            <a href="{{ route('packages.index') }}" class="sidebar-item {{ $routeIs('packages.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('hotspot.view'))
-                            <a href="{{ route('vouchers.index') }}" class="sidebar-item {{ request()->routeIs('vouchers.*') ? 'active' : '' }}">
+                            @if($hasPermission('hotspot.view'))
+                            <a href="{{ route('vouchers.index') }}" class="sidebar-item {{ $routeIs('vouchers.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-ticket"></i> {{ __('Voucher Hotspot') }}
                             </a>
                             @endif
@@ -206,23 +242,23 @@
 
             {{-- Jaringan Group --}}
             @if(
-                Auth::user()->hasPermission('map.view') ||
-                Auth::user()->hasPermission('genieacs.view') ||
-                Auth::user()->hasPermission('genieacs_server.view') ||
-                Auth::user()->hasPermission('calculator.view') ||
-                Auth::user()->hasPermission('router.view') ||
-                Auth::user()->hasPermission('olt.view') ||
-                Auth::user()->hasPermission('odc.view') ||
-                Auth::user()->hasPermission('odp.view') ||
-                Auth::user()->hasPermission('closure.view') ||
-                Auth::user()->hasPermission('htb.view')
+                $hasPermission('map.view') ||
+                $hasPermission('genieacs.view') ||
+                $hasPermission('genieacs_server.view') ||
+                $hasPermission('calculator.view') ||
+                $hasPermission('router.view') ||
+                $hasPermission('olt.view') ||
+                $hasPermission('odc.view') ||
+                $hasPermission('odp.view') ||
+                $hasPermission('closure.view') ||
+                $hasPermission('htb.view')
             )
             <div class="sidebar-header mt-2">{{ __('Jaringan') }}</div>
 
             @php
-                $networkMonitoringActive = request()->routeIs('map.*') || request()->routeIs('genieacs.*') || request()->routeIs('calculator.*') || request()->routeIs('network.analyzer');
-                $networkAccessActive = request()->routeIs('routers.*') || request()->routeIs('vpn.*');
-                $networkInfraActive = request()->routeIs('olt.*') || request()->routeIs('odcs.*') || request()->routeIs('odps.*') || request()->routeIs('closures.*') || request()->routeIs('htbs.*');
+                $networkMonitoringActive = $routeIs('map.*') || $routeIs('genieacs.*') || $routeIs('calculator.*') || $routeIs('network.analyzer');
+                $networkAccessActive = $routeIs('routers.*') || $routeIs('vpn.*');
+                $networkInfraActive = $routeIs('olt.*') || $routeIs('odcs.*') || $routeIs('odps.*') || $routeIs('closures.*') || $routeIs('htbs.*');
                 $networkAnyActive = $networkMonitoringActive || $networkAccessActive || $networkInfraActive;
             @endphp
 
@@ -231,34 +267,34 @@
             </a>
             <div class="collapse {{ $networkAnyActive ? 'show' : '' }}" id="networkCenterCollapse">
                 <div class="ps-3">
-                    @if(Auth::user()->hasPermission('map.view') || Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view') || Auth::user()->hasPermission('calculator.view') || Auth::user()->hasPermission('router.view'))
+                    @if($hasPermission('map.view') || $hasPermission('genieacs.view') || $hasPermission('genieacs_server.view') || $hasPermission('calculator.view') || $hasPermission('router.view'))
                     <a class="sidebar-item {{ $networkMonitoringActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkMonitoringCollapse" role="button" aria-expanded="{{ $networkMonitoringActive ? 'true' : 'false' }}" aria-controls="networkMonitoringCollapse">
                         <i class="fa-solid fa-satellite-dish"></i> {{ __('Monitoring & Tools') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $networkMonitoringActive ? 'show' : '' }}" id="networkMonitoringCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('map.view'))
-                            <a href="{{ route('map.index') }}" class="sidebar-item {{ request()->routeIs('map.*') ? 'active' : '' }}">
+                            @if($hasPermission('map.view'))
+                            <a href="{{ route('map.index') }}" class="sidebar-item {{ $routeIs('map.*') ? 'active' : '' }}">
                                 <i class="fa fa-map-marked-alt"></i> {{ __('Peta Jaringan') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('genieacs.view') || Auth::user()->hasPermission('genieacs_server.view'))
-                            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.index') ? 'active' : '' }}">
+                            @if($hasPermission('genieacs.view') || $hasPermission('genieacs_server.view'))
+                            <a href="{{ route('genieacs.index') }}" class="sidebar-item {{ $routeIs('genieacs.index') ? 'active' : '' }}">
                                 <i class="fa-solid fa-network-wired"></i> {{ __('Monitor Jaringan') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('genieacs_server.view'))
-                            <a href="{{ route('genieacs.servers.index') }}" class="sidebar-item {{ request()->routeIs('genieacs.servers.*') ? 'active' : '' }}">
+                            @if($hasPermission('genieacs_server.view'))
+                            <a href="{{ route('genieacs.servers.index') }}" class="sidebar-item {{ $routeIs('genieacs.servers.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-database"></i> {{ __('Server GenieACS') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('calculator.view'))
-                            <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ request()->routeIs('calculator.*') ? 'active' : '' }}">
+                            @if($hasPermission('calculator.view'))
+                            <a href="{{ route('calculator.pon') }}" class="sidebar-item {{ $routeIs('calculator.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-calculator"></i> {{ __('Kalkulator PON') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('router.view'))
-                            <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ request()->routeIs('network.analyzer') ? 'active' : '' }}">
+                            @if($hasPermission('router.view'))
+                            <a href="{{ route('network.analyzer') }}" class="sidebar-item {{ $routeIs('network.analyzer') ? 'active' : '' }}">
                                 <i class="fa-solid fa-gauge-high"></i> {{ __('Analisis Jaringan') }}
                             </a>
                             @endif
@@ -266,53 +302,53 @@
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('router.view'))
+                    @if($hasPermission('router.view'))
                     <a class="sidebar-item {{ $networkAccessActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkAccessCollapse" role="button" aria-expanded="{{ $networkAccessActive ? 'true' : 'false' }}" aria-controls="networkAccessCollapse">
                         <i class="fa-solid fa-server"></i> {{ __('Perangkat & Akses') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $networkAccessActive ? 'show' : '' }}" id="networkAccessCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('routers.index') }}" class="sidebar-item {{ (request()->routeIs('routers.*') && !request()->routeIs('routers.sessions')) ? 'active' : '' }}">
+                            <a href="{{ route('routers.index') }}" class="sidebar-item {{ ($routeIs('routers.*') && !$routeIs('routers.sessions')) ? 'active' : '' }}">
                                 <i class="fa fa-server"></i> {{ __('Router / NAS') }}
                             </a>
-                            <a href="{{ route('vpn.servers.index') }}" class="sidebar-item {{ request()->routeIs('vpn.servers.*') ? 'active' : '' }}">
+                            <a href="{{ route('vpn.servers.index') }}" class="sidebar-item {{ $routeIs('vpn.servers.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-shield-halved"></i> {{ __('VPN Bridge') }}
                             </a>
-                            <a href="{{ route('vpn.guide') }}" class="sidebar-item {{ request()->routeIs('vpn.guide') ? 'active' : '' }}">
+                            <a href="{{ route('vpn.guide') }}" class="sidebar-item {{ $routeIs('vpn.guide') ? 'active' : '' }}">
                                 <i class="fa-regular fa-circle-question"></i> {{ __('Panduan VPN') }}
                             </a>
                         </div>
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('olt.view') || Auth::user()->hasPermission('odc.view') || Auth::user()->hasPermission('odp.view') || Auth::user()->hasPermission('closure.view') || Auth::user()->hasPermission('htb.view'))
+                    @if($hasPermission('olt.view') || $hasPermission('odc.view') || $hasPermission('odp.view') || $hasPermission('closure.view') || $hasPermission('htb.view'))
                     <a class="sidebar-item {{ $networkInfraActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkInfraCollapse" role="button" aria-expanded="{{ $networkInfraActive ? 'true' : 'false' }}" aria-controls="networkInfraCollapse">
                         <i class="fa fa-sitemap"></i> {{ __('Infrastruktur') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $networkInfraActive ? 'show' : '' }}" id="networkInfraCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('olt.view'))
-                            <a href="{{ route('olt.index') }}" class="sidebar-item {{ request()->routeIs('olt.*') ? 'active' : '' }}">
+                            @if($hasPermission('olt.view'))
+                            <a href="{{ route('olt.index') }}" class="sidebar-item {{ $routeIs('olt.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-server"></i> {{ __('OLT') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('odc.view'))
-                            <a href="{{ route('odcs.index') }}" class="sidebar-item {{ request()->routeIs('odcs.*') ? 'active' : '' }}">
+                            @if($hasPermission('odc.view'))
+                            <a href="{{ route('odcs.index') }}" class="sidebar-item {{ $routeIs('odcs.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-box-archive"></i> {{ __('ODC') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('odp.view'))
-                            <a href="{{ route('odps.index') }}" class="sidebar-item {{ request()->routeIs('odps.*') ? 'active' : '' }}">
+                            @if($hasPermission('odp.view'))
+                            <a href="{{ route('odps.index') }}" class="sidebar-item {{ $routeIs('odps.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-box"></i> {{ __('ODP') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('closure.view'))
-                            <a href="{{ route('closures.index') }}" class="sidebar-item {{ request()->routeIs('closures.*') ? 'active' : '' }}">
+                            @if($hasPermission('closure.view'))
+                            <a href="{{ route('closures.index') }}" class="sidebar-item {{ $routeIs('closures.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-box-open"></i> {{ __('Closure') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('htb.view'))
-                            <a href="{{ route('htbs.index') }}" class="sidebar-item {{ request()->routeIs('htbs.*') ? 'active' : '' }}">
+                            @if($hasPermission('htb.view'))
+                            <a href="{{ route('htbs.index') }}" class="sidebar-item {{ $routeIs('htbs.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-network-wired"></i> {{ __('HTB') }}
                             </a>
                             @endif
@@ -325,12 +361,12 @@
             @endif
 
             {{-- Keuangan Group --}}
-            @if(Auth::user()->hasPermission('finance.view') || Auth::user()->hasPermission('investor.view'))
+            @if($hasPermission('finance.view') || $hasPermission('investor.view'))
             <div class="sidebar-header mt-2">{{ __('Keuangan') }}</div>
             @php
-                $financeSummaryActive = request()->routeIs('finance.index') || request()->routeIs('finance.profit_loss*') || request()->routeIs('finance.material_report') || request()->routeIs('finance.manager_report*');
-                $financeAccountingActive = request()->routeIs('accounting.*');
-                $financeInvestorActive = request()->routeIs('finance.investor_report*') || request()->routeIs('investors.*');
+                $financeSummaryActive = $routeIs('finance.index') || $routeIs('finance.profit_loss*') || $routeIs('finance.material_report') || $routeIs('finance.manager_report*');
+                $financeAccountingActive = $routeIs('accounting.*');
+                $financeInvestorActive = $routeIs('finance.investor_report*') || $routeIs('investors.*');
                 $financeAnyActive = $financeSummaryActive || $financeAccountingActive || $financeInvestorActive;
             @endphp
 
@@ -339,22 +375,22 @@
             </a>
             <div class="collapse {{ $financeAnyActive ? 'show' : '' }}" id="financeCollapse">
                 <div class="ps-3">
-                    @if(Auth::user()->hasPermission('finance.view'))
+                    @if($hasPermission('finance.view'))
                     <a class="sidebar-item {{ $financeSummaryActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#financeSummaryCollapse" role="button" aria-expanded="{{ $financeSummaryActive ? 'true' : 'false' }}" aria-controls="financeSummaryCollapse">
                         <i class="fa-solid fa-chart-line"></i> {{ __('Ringkasan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $financeSummaryActive ? 'show' : '' }}" id="financeSummaryCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('finance.index') }}" class="sidebar-item {{ request()->routeIs('finance.index') ? 'active' : '' }}">
+                            <a href="{{ route('finance.index') }}" class="sidebar-item {{ $routeIs('finance.index') ? 'active' : '' }}">
                                 <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor Keuangan') }}
                             </a>
-                            <a href="{{ route('finance.profit_loss') }}" class="sidebar-item {{ request()->routeIs('finance.profit_loss*') ? 'active' : '' }}">
+                            <a href="{{ route('finance.profit_loss') }}" class="sidebar-item {{ $routeIs('finance.profit_loss*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-chart-line"></i> {{ __('Laba Rugi') }}
                             </a>
-                            <a href="{{ route('finance.material_report') }}" class="sidebar-item {{ request()->routeIs('finance.material_report') ? 'active' : '' }}">
+                            <a href="{{ route('finance.material_report') }}" class="sidebar-item {{ $routeIs('finance.material_report') ? 'active' : '' }}">
                                 <i class="fa-solid fa-boxes-stacked"></i> {{ __('Laporan Material') }}
                             </a>
-                            <a href="{{ route('finance.manager_report') }}" class="sidebar-item {{ request()->routeIs('finance.manager_report*') ? 'active' : '' }}">
+                            <a href="{{ route('finance.manager_report') }}" class="sidebar-item {{ $routeIs('finance.manager_report*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-user-tie"></i> {{ __('Laporan Manajer') }}
                             </a>
                         </div>
@@ -365,38 +401,38 @@
                     </a>
                     <div class="collapse {{ $financeAccountingActive ? 'show' : '' }}" id="financeAccountingCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('accounting.trial_balance') }}" class="sidebar-item {{ request()->routeIs('accounting.trial_balance') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.trial_balance') }}" class="sidebar-item {{ $routeIs('accounting.trial_balance') ? 'active' : '' }}">
                                 <i class="fa-regular fa-file-lines"></i> {{ __('Neraca Saldo') }}
                             </a>
-                            <a href="{{ route('accounting.income_statement') }}" class="sidebar-item {{ request()->routeIs('accounting.income_statement') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.income_statement') }}" class="sidebar-item {{ $routeIs('accounting.income_statement') ? 'active' : '' }}">
                                 <i class="fa-regular fa-file-lines"></i> {{ __('Laba Rugi') }}
                             </a>
-                            <a href="{{ route('accounting.balance_sheet') }}" class="sidebar-item {{ request()->routeIs('accounting.balance_sheet') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.balance_sheet') }}" class="sidebar-item {{ $routeIs('accounting.balance_sheet') ? 'active' : '' }}">
                                 <i class="fa-regular fa-file-lines"></i> {{ __('Neraca') }}
                             </a>
-                            <a href="{{ route('accounting.ledger') }}" class="sidebar-item {{ request()->routeIs('accounting.ledger') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.ledger') }}" class="sidebar-item {{ $routeIs('accounting.ledger') ? 'active' : '' }}">
                                 <i class="fa-regular fa-file-lines"></i> {{ __('Buku Besar') }}
                             </a>
-                            <a href="{{ route('accounting.cash_flow') }}" class="sidebar-item {{ request()->routeIs('accounting.cash_flow') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.cash_flow') }}" class="sidebar-item {{ $routeIs('accounting.cash_flow') ? 'active' : '' }}">
                                 <i class="fa-regular fa-file-lines"></i> {{ __('Arus Kas') }}
                             </a>
-                            <a href="{{ route('accounting.periods.index') }}" class="sidebar-item {{ request()->routeIs('accounting.periods.*') ? 'active' : '' }}">
+                            <a href="{{ route('accounting.periods.index') }}" class="sidebar-item {{ $routeIs('accounting.periods.*') ? 'active' : '' }}">
                                 <i class="fa-regular fa-calendar-check"></i> {{ __('Periode Akuntansi') }}
                             </a>
                         </div>
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('investor.view'))
+                    @if($hasPermission('investor.view'))
                     <a class="sidebar-item {{ $financeInvestorActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#financeInvestorCollapse" role="button" aria-expanded="{{ $financeInvestorActive ? 'true' : 'false' }}" aria-controls="financeInvestorCollapse">
                         <i class="fa-solid fa-hand-holding-dollar"></i> {{ __('Investor') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $financeInvestorActive ? 'show' : '' }}" id="financeInvestorCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('finance.investor_report') }}" class="sidebar-item {{ request()->routeIs('finance.investor_report*') ? 'active' : '' }}">
+                            <a href="{{ route('finance.investor_report') }}" class="sidebar-item {{ $routeIs('finance.investor_report*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-file-invoice-dollar"></i> {{ __('Laporan Investor') }}
                             </a>
-                            <a href="{{ route('investors.index') }}" class="sidebar-item {{ request()->routeIs('investors.*') ? 'active' : '' }}">
+                            <a href="{{ route('investors.index') }}" class="sidebar-item {{ $routeIs('investors.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-hand-holding-dollar"></i> {{ __('Data Investor') }}
                             </a>
                         </div>
@@ -407,14 +443,14 @@
             @endif
 
             {{-- Toko ATK Group --}}
-            @if(Auth::user()->hasPermission('atk.view') || Auth::user()->hasPermission('atk.pos'))
+            @if($hasPermission('atk.view') || $hasPermission('atk.pos'))
             <div class="sidebar-header mt-2">{{ __('Toko ATK') }}</div>
 
             @php
-                $atkDashboardActive = request()->routeIs('atk.dashboard');
-                $atkMasterActive = request()->routeIs('atk.products.*');
-                $atkTransactionActive = request()->routeIs('atk.pos') || request()->routeIs('atk.transactions.*');
-                $atkFinanceActive = request()->routeIs('atk.expenses.*') || request()->routeIs('atk.reports.*');
+                $atkDashboardActive = $routeIs('atk.dashboard');
+                $atkMasterActive = $routeIs('atk.products.*');
+                $atkTransactionActive = $routeIs('atk.pos') || $routeIs('atk.transactions.*');
+                $atkFinanceActive = $routeIs('atk.expenses.*') || $routeIs('atk.reports.*');
                 $atkAnyActive = $atkDashboardActive || $atkMasterActive || $atkTransactionActive || $atkFinanceActive;
             @endphp
 
@@ -423,38 +459,38 @@
             </a>
             <div class="collapse {{ $atkAnyActive ? 'show' : '' }}" id="atkCollapse">
                 <div class="ps-3">
-                    @if(Auth::user()->hasPermission('atk.view'))
+                    @if($hasPermission('atk.view'))
                     <a href="{{ route('atk.dashboard') }}" class="sidebar-item {{ $atkDashboardActive ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor') }}
                     </a>
                     @endif
 
-                    @if(Auth::user()->hasPermission('atk.manage'))
+                    @if($hasPermission('atk.manage'))
                     <a class="sidebar-item {{ $atkMasterActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#atkMasterCollapse" role="button" aria-expanded="{{ $atkMasterActive ? 'true' : 'false' }}" aria-controls="atkMasterCollapse">
                         <i class="fa-solid fa-boxes-stacked"></i> {{ __('Data Master') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $atkMasterActive ? 'show' : '' }}" id="atkMasterCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('atk.products.index') }}" class="sidebar-item {{ request()->routeIs('atk.products.*') ? 'active' : '' }}">
+                            <a href="{{ route('atk.products.index') }}" class="sidebar-item {{ $routeIs('atk.products.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-boxes-stacked"></i> {{ __('Produk & Stok') }}
                             </a>
                         </div>
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('atk.pos') || Auth::user()->hasPermission('atk.report'))
+                    @if($hasPermission('atk.pos') || $hasPermission('atk.report'))
                     <a class="sidebar-item {{ $atkTransactionActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#atkTransactionCollapse" role="button" aria-expanded="{{ $atkTransactionActive ? 'true' : 'false' }}" aria-controls="atkTransactionCollapse">
                         <i class="fa-solid fa-cash-register"></i> {{ __('Transaksi') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $atkTransactionActive ? 'show' : '' }}" id="atkTransactionCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('atk.pos'))
-                            <a href="{{ route('atk.pos') }}" class="sidebar-item {{ request()->routeIs('atk.pos') ? 'active' : '' }}">
+                            @if($hasPermission('atk.pos'))
+                            <a href="{{ route('atk.pos') }}" class="sidebar-item {{ $routeIs('atk.pos') ? 'active' : '' }}">
                                 <i class="fa-solid fa-cash-register"></i> {{ __('Kasir (POS)') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('atk.report'))
-                            <a href="{{ route('atk.transactions.index') }}" class="sidebar-item {{ request()->routeIs('atk.transactions.*') ? 'active' : '' }}">
+                            @if($hasPermission('atk.report'))
+                            <a href="{{ route('atk.transactions.index') }}" class="sidebar-item {{ $routeIs('atk.transactions.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
                             </a>
                             @endif
@@ -462,19 +498,19 @@
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('atk.manage') || Auth::user()->hasPermission('atk.report'))
+                    @if($hasPermission('atk.manage') || $hasPermission('atk.report'))
                     <a class="sidebar-item {{ $atkFinanceActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#atkFinanceCollapse" role="button" aria-expanded="{{ $atkFinanceActive ? 'true' : 'false' }}" aria-controls="atkFinanceCollapse">
                         <i class="fa-solid fa-chart-line"></i> {{ __('Laporan & Biaya') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $atkFinanceActive ? 'show' : '' }}" id="atkFinanceCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('atk.manage'))
-                            <a href="{{ route('atk.expenses.index') }}" class="sidebar-item {{ request()->routeIs('atk.expenses.*') ? 'active' : '' }}">
+                            @if($hasPermission('atk.manage'))
+                            <a href="{{ route('atk.expenses.index') }}" class="sidebar-item {{ $routeIs('atk.expenses.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('atk.report'))
-                            <a href="{{ route('atk.reports.index') }}" class="sidebar-item {{ request()->routeIs('atk.reports.*') ? 'active' : '' }}">
+                            @if($hasPermission('atk.report'))
+                            <a href="{{ route('atk.reports.index') }}" class="sidebar-item {{ $routeIs('atk.reports.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-chart-line"></i> {{ __('Laporan') }}
                             </a>
                             @endif
@@ -486,14 +522,14 @@
             @endif
 
             {{-- Car Wash Group --}}
-            @if(Auth::user()->hasPermission('wash.view') || Auth::user()->hasPermission('wash.pos') || Auth::user()->hasPermission('wash.manage') || Auth::user()->hasPermission('wash.report'))
+            @if($hasPermission('wash.view') || $hasPermission('wash.pos') || $hasPermission('wash.manage') || $hasPermission('wash.report'))
             <div class="sidebar-header mt-2">{{ __('Cuci Kendaraan') }}</div>
 
             @php
-                $washDashboardActive = request()->routeIs('wash.dashboard');
-                $washMasterActive = request()->routeIs('wash.services.*');
-                $washTransactionActive = request()->routeIs('wash.pos') || request()->routeIs('wash.transactions.*');
-                $washFinanceActive = request()->routeIs('wash.expenses.*') || request()->routeIs('wash.reports.*');
+                $washDashboardActive = $routeIs('wash.dashboard');
+                $washMasterActive = $routeIs('wash.services.*');
+                $washTransactionActive = $routeIs('wash.pos') || $routeIs('wash.transactions.*');
+                $washFinanceActive = $routeIs('wash.expenses.*') || $routeIs('wash.reports.*');
                 $washAnyActive = $washDashboardActive || $washMasterActive || $washTransactionActive || $washFinanceActive;
             @endphp
 
@@ -502,38 +538,38 @@
             </a>
             <div class="collapse {{ $washAnyActive ? 'show' : '' }}" id="washCollapse">
                 <div class="ps-3">
-                    @if(Auth::user()->hasPermission('wash.view'))
+                    @if($hasPermission('wash.view'))
                     <a href="{{ route('wash.dashboard') }}" class="sidebar-item {{ $washDashboardActive ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor') }}
                     </a>
                     @endif
 
-                    @if(Auth::user()->hasPermission('wash.manage'))
+                    @if($hasPermission('wash.manage'))
                     <a class="sidebar-item {{ $washMasterActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washMasterCollapse" role="button" aria-expanded="{{ $washMasterActive ? 'true' : 'false' }}" aria-controls="washMasterCollapse">
                         <i class="fa-solid fa-tags"></i> {{ __('Data Master') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $washMasterActive ? 'show' : '' }}" id="washMasterCollapse">
                         <div class="ps-3">
-                            <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ request()->routeIs('wash.services.*') ? 'active' : '' }}">
+                            <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ $routeIs('wash.services.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-tags"></i> {{ __('Layanan & Harga') }}
                             </a>
                         </div>
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('wash.pos') || Auth::user()->hasPermission('wash.report'))
+                    @if($hasPermission('wash.pos') || $hasPermission('wash.report'))
                     <a class="sidebar-item {{ $washTransactionActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washTransactionCollapse" role="button" aria-expanded="{{ $washTransactionActive ? 'true' : 'false' }}" aria-controls="washTransactionCollapse">
                         <i class="fa-solid fa-cash-register"></i> {{ __('Transaksi') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $washTransactionActive ? 'show' : '' }}" id="washTransactionCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('wash.pos'))
-                            <a href="{{ route('wash.pos') }}" class="sidebar-item {{ request()->routeIs('wash.pos') ? 'active' : '' }}">
+                            @if($hasPermission('wash.pos'))
+                            <a href="{{ route('wash.pos') }}" class="sidebar-item {{ $routeIs('wash.pos') ? 'active' : '' }}">
                                 <i class="fa-solid fa-cash-register"></i> {{ __('Kasir (POS)') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('wash.report'))
-                            <a href="{{ route('wash.transactions.index') }}" class="sidebar-item {{ request()->routeIs('wash.transactions.*') ? 'active' : '' }}">
+                            @if($hasPermission('wash.report'))
+                            <a href="{{ route('wash.transactions.index') }}" class="sidebar-item {{ $routeIs('wash.transactions.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-history"></i> {{ __('Riwayat Transaksi') }}
                             </a>
                             @endif
@@ -541,19 +577,19 @@
                     </div>
                     @endif
 
-                    @if(Auth::user()->hasPermission('wash.manage') || Auth::user()->hasPermission('wash.report'))
+                    @if($hasPermission('wash.manage') || $hasPermission('wash.report'))
                     <a class="sidebar-item {{ $washFinanceActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washFinanceCollapse" role="button" aria-expanded="{{ $washFinanceActive ? 'true' : 'false' }}" aria-controls="washFinanceCollapse">
                         <i class="fa-solid fa-chart-line"></i> {{ __('Laporan & Biaya') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
                     <div class="collapse {{ $washFinanceActive ? 'show' : '' }}" id="washFinanceCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('wash.manage'))
-                            <a href="{{ route('wash.expenses.index') }}" class="sidebar-item {{ request()->routeIs('wash.expenses.*') ? 'active' : '' }}">
+                            @if($hasPermission('wash.manage'))
+                            <a href="{{ route('wash.expenses.index') }}" class="sidebar-item {{ $routeIs('wash.expenses.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('wash.report'))
-                            <a href="{{ route('wash.reports.index') }}" class="sidebar-item {{ request()->routeIs('wash.reports.*') ? 'active' : '' }}">
+                            @if($hasPermission('wash.report'))
+                            <a href="{{ route('wash.reports.index') }}" class="sidebar-item {{ $routeIs('wash.reports.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-chart-line"></i> {{ __('Laporan') }}
                             </a>
                             @endif
@@ -566,76 +602,76 @@
 
             {{-- Operasional Group (guarded by permissions) --}}
             @if(
-                Auth::user()->hasPermission('ticket.view') ||
-                Auth::user()->hasPermission('inventory.view') ||
-                Auth::user()->hasPermission('employee.view') ||
-                Auth::user()->hasPermission('attendance.view') ||
-                Auth::user()->hasPermission('attendance.report') ||
-                Auth::user()->hasPermission('schedule.view') ||
-                Auth::user()->hasPermission('leave.view')
+                $hasPermission('ticket.view') ||
+                $hasPermission('inventory.view') ||
+                $hasPermission('employee.view') ||
+                $hasPermission('attendance.view') ||
+                $hasPermission('attendance.report') ||
+                $hasPermission('schedule.view') ||
+                $hasPermission('leave.view')
             )
                 <div class="sidebar-header mt-2">{{ __('Operasional') }}</div>
 
-                @if(Auth::user()->hasPermission('ticket.view'))
-                <a href="{{ route('tickets.index') }}" class="sidebar-item {{ request()->routeIs('tickets.*') ? 'active' : '' }}">
+                @if($hasPermission('ticket.view'))
+                <a href="{{ route('tickets.index') }}" class="sidebar-item {{ $routeIs('tickets.*') ? 'active' : '' }}">
                     <i class="fa fa-ticket-alt"></i> {{ __('Tiket & Gangguan') }}
                 </a>
-                <a href="{{ route('modem-data.index') }}" class="sidebar-item {{ request()->routeIs('modem-data.*') ? 'active' : '' }}">
+                <a href="{{ route('modem-data.index') }}" class="sidebar-item {{ $routeIs('modem-data.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-wifi"></i> {{ __('Pendataan Modem') }}
                 </a>
                 @endif
 
-                <a class="sidebar-item {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
+                <a class="sidebar-item {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ (request()->routeIs('employees.*') || request()->routeIs('attendance.*') || request()->routeIs('schedules.*') || request()->routeIs('leave-requests.*') || request()->routeIs('settings.attendance.*')) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'show' : '' }}" id="opsSdmCollapse">
                     <div class="ps-3">
-                        @if(Auth::user()->hasPermission('employee.view'))
-                        <a href="{{ route('employees.index') }}" class="sidebar-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
+                        @if($hasPermission('employee.view'))
+                        <a href="{{ route('employees.index') }}" class="sidebar-item {{ $routeIs('employees.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('attendance.view'))
-                        <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ request()->routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
+                        @if($hasPermission('attendance.view'))
+                        <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ $routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
                             <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('attendance.report'))
-                        <a href="{{ route('attendance.index') }}" class="sidebar-item {{ request()->routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
+                        @if($hasPermission('attendance.report'))
+                        <a href="{{ route('attendance.index') }}" class="sidebar-item {{ $routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
                             <i class="fa-solid fa-clipboard-user"></i> {{ __('Rekap Absensi') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('schedule.view'))
-                        <a href="{{ route('schedules.index') }}" class="sidebar-item {{ request()->routeIs('schedules.*') ? 'active' : '' }}">
+                        @if($hasPermission('schedule.view'))
+                        <a href="{{ route('schedules.index') }}" class="sidebar-item {{ $routeIs('schedules.*') ? 'active' : '' }}">
                             <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('setting.view'))
-                        <a href="{{ route('settings.attendance.index') }}" class="sidebar-item {{ request()->routeIs('settings.attendance.*') ? 'active' : '' }}">
+                        @if($hasPermission('setting.view'))
+                        <a href="{{ route('settings.attendance.index') }}" class="sidebar-item {{ $routeIs('settings.attendance.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Absensi') }}
                         </a>
                         @endif
-                        @if(Auth::user()->hasPermission('leave.view'))
-                        <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ request()->routeIs('leave-requests.*') ? 'active' : '' }}">
+                        @if($hasPermission('leave.view'))
+                        <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ $routeIs('leave-requests.*') ? 'active' : '' }}">
                             <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
                         </a>
                         @endif
                     </div>
                 </div>
 
-                @if(Auth::user()->hasPermission('inventory.view'))
-                <a class="sidebar-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsAssetCollapse" role="button" aria-expanded="{{ request()->routeIs('inventory.*') ? 'true' : 'false' }}" aria-controls="opsAssetCollapse">
+                @if($hasPermission('inventory.view'))
+                <a class="sidebar-item {{ $routeIs('inventory.*') ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsAssetCollapse" role="button" aria-expanded="{{ $routeIs('inventory.*') ? 'true' : 'false' }}" aria-controls="opsAssetCollapse">
                     <i class="fa fa-tools"></i> {{ __('Aset & Peralatan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ request()->routeIs('inventory.*') ? 'show' : '' }}" id="opsAssetCollapse">
+                <div class="collapse {{ $routeIs('inventory.*') ? 'show' : '' }}" id="opsAssetCollapse">
                     <div class="ps-3">
-                        <a href="{{ route('inventory.index') }}" class="sidebar-item {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
+                        <a href="{{ route('inventory.index') }}" class="sidebar-item {{ $routeIs('inventory.index') ? 'active' : '' }}">
                             <i class="fa-solid fa-toolbox"></i> {{ __('Inventaris / Peralatan') }}
                         </a>
-                        <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ request()->routeIs('inventory.my_assets') ? 'active' : '' }}">
+                        <a href="{{ route('inventory.my_assets') }}" class="sidebar-item {{ $routeIs('inventory.my_assets') ? 'active' : '' }}">
                             <i class="fa-solid fa-box-open"></i> {{ __('Aset Saya') }}
                         </a>
-                        <a href="{{ route('inventory.pickup') }}" class="sidebar-item {{ request()->routeIs('inventory.pickup*') ? 'active' : '' }}">
+                        <a href="{{ route('inventory.pickup') }}" class="sidebar-item {{ $routeIs('inventory.pickup*') ? 'active' : '' }}">
                             <i class="fa-solid fa-hand-holding"></i> {{ __('Pengambilan Barang') }}
                         </a>
                     </div>
@@ -644,15 +680,15 @@
             @endif
 
             {{-- Sistem Group --}}
-            @if(Auth::user()->hasPermission('setting.view') || Auth::user()->hasPermission('user.view'))
+            @if($hasPermission('setting.view') || $hasPermission('user.view'))
             <div class="sidebar-header mt-2">{{ __('Sistem') }}</div>
 
             @php
-                $attendanceSettingsRoute = request()->routeIs('settings.attendance.*');
-                $systemActive = (request()->routeIs('settings.*') && ! $attendanceSettingsRoute) || request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('regions.*') || request()->routeIs('coordinators.*') || request()->routeIs('whatsapp.*') || request()->routeIs('telegram.*') || request()->routeIs('apikeys.*');
-                $settingsAreaActive = ((request()->routeIs('settings.*') && ! $attendanceSettingsRoute) || request()->routeIs('regions.*') || request()->routeIs('coordinators.*'));
-                $userAreaActive = request()->routeIs('users.*') || request()->routeIs('roles.*');
-                $integrationAreaActive = request()->routeIs('whatsapp.*') || request()->routeIs('telegram.*') || request()->routeIs('apikeys.*');
+                $attendanceSettingsRoute = $routeIs('settings.attendance.*');
+                $systemActive = ($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('users.*') || $routeIs('roles.*') || $routeIs('regions.*') || $routeIs('coordinators.*') || $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
+                $settingsAreaActive = (($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('regions.*') || $routeIs('coordinators.*'));
+                $userAreaActive = $routeIs('users.*') || $routeIs('roles.*');
+                $integrationAreaActive = $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
             @endphp
 
             <a class="sidebar-item {{ $systemActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemCollapse" role="button" aria-expanded="{{ $systemActive ? 'true' : 'false' }}" aria-controls="systemCollapse">
@@ -665,24 +701,24 @@
                     </a>
                     <div class="collapse {{ $settingsAreaActive ? 'show' : '' }}" id="systemSettingsCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('setting.view'))
-                            <a href="{{ route('settings.index') }}" class="sidebar-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
+                            @if($hasPermission('setting.view'))
+                            <a href="{{ route('settings.index') }}" class="sidebar-item {{ $routeIs('settings.index') ? 'active' : '' }}">
                                 <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan Umum') }}
                             </a>
-                            <a href="{{ route('settings.atk.index') }}" class="sidebar-item {{ request()->routeIs('settings.atk.*') ? 'active' : '' }}">
+                            <a href="{{ route('settings.atk.index') }}" class="sidebar-item {{ $routeIs('settings.atk.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-receipt"></i> {{ __('Pengaturan ATK') }}
                             </a>
-                            <a href="{{ route('settings.wash.index') }}" class="sidebar-item {{ request()->routeIs('settings.wash.*') ? 'active' : '' }}">
+                            <a href="{{ route('settings.wash.index') }}" class="sidebar-item {{ $routeIs('settings.wash.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-soap"></i> {{ __('Pengaturan Wash') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('region.view'))
-                            <a href="{{ route('regions.index') }}" class="sidebar-item {{ request()->routeIs('regions.*') ? 'active' : '' }}">
+                            @if($hasPermission('region.view'))
+                            <a href="{{ route('regions.index') }}" class="sidebar-item {{ $routeIs('regions.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-map-location-dot"></i> {{ __('Wilayah') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('coordinator.view'))
-                            <a href="{{ route('coordinators.index') }}" class="sidebar-item {{ request()->routeIs('coordinators.*') ? 'active' : '' }}">
+                            @if($hasPermission('coordinator.view'))
+                            <a href="{{ route('coordinators.index') }}" class="sidebar-item {{ $routeIs('coordinators.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-user-tie"></i> {{ __('Data Pengurus') }}
                             </a>
                             @endif
@@ -694,13 +730,13 @@
                     </a>
                     <div class="collapse {{ $userAreaActive ? 'show' : '' }}" id="systemUserCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('user.view'))
-                            <a href="{{ route('users.index') }}" class="sidebar-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                            @if($hasPermission('user.view'))
+                            <a href="{{ route('users.index') }}" class="sidebar-item {{ $routeIs('users.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-users-gear"></i> {{ __('Manajemen User') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('role.view'))
-                            <a href="{{ route('roles.index') }}" class="sidebar-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                            @if($hasPermission('role.view'))
+                            <a href="{{ route('roles.index') }}" class="sidebar-item {{ $routeIs('roles.*') ? 'active' : '' }}">
                                 <i class="fa-regular fa-id-card"></i> {{ __('Manajemen Peran') }}
                             </a>
                             @endif
@@ -712,18 +748,18 @@
                     </a>
                     <div class="collapse {{ $integrationAreaActive ? 'show' : '' }}" id="systemIntegrationCollapse">
                         <div class="ps-3">
-                            @if(Auth::user()->hasPermission('chat.view'))
-                            <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}">
+                            @if($hasPermission('chat.view'))
+                            <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ $routeIs('whatsapp.*') ? 'active' : '' }}">
                                 <i class="fa-brands fa-whatsapp"></i> {{ __('API WhatsApp') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('telegram.view'))
-                            <a href="{{ route('telegram.index') }}" class="sidebar-item {{ request()->routeIs('telegram.*') ? 'active' : '' }}">
+                            @if($hasPermission('telegram.view'))
+                            <a href="{{ route('telegram.index') }}" class="sidebar-item {{ $routeIs('telegram.*') ? 'active' : '' }}">
                                 <i class="fa-brands fa-telegram"></i> {{ __('Telegram') }}
                             </a>
                             @endif
-                            @if(Auth::user()->hasPermission('apikey.view'))
-                            <a href="{{ route('apikeys.index') }}" class="sidebar-item {{ request()->routeIs('apikeys.*') ? 'active' : '' }}">
+                            @if($hasPermission('apikey.view'))
+                            <a href="{{ route('apikeys.index') }}" class="sidebar-item {{ $routeIs('apikeys.*') ? 'active' : '' }}">
                                 <i class="fa-regular fa-circle"></i> {{ __('API Google Maps') }}
                             </a>
                             @endif
@@ -765,16 +801,16 @@
                 <div class="dropdown">
                     <button class="btn btn-link text-body border-0 position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa-regular fa-bell"></i>
-                        @if(Auth::user()->unreadNotifications->count() > 0)
+                        @if($unreadNotificationCount > 0)
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                {{ Auth::user()->unreadNotifications->count() }}
+                                {{ $unreadNotificationCount }}
                                 <span class="visually-hidden">{{ __('pesan belum dibaca') }}</span>
                             </span>
                         @endif
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-0" style="width: 300px; max-height: 400px; overflow-y: auto;">
                         <li><span class="dropdown-header border-bottom py-2 bg-body-tertiary">{{ __('Notifikasi') }}</span></li>
-                        @forelse(Auth::user()->unreadNotifications as $notification)
+                        @forelse($unreadNotifications as $notification)
                             <li>
                                 <a class="dropdown-item py-2 border-bottom" href="{{ route('notifications.redirect', $notification->id) }}">
                                     <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notifikasi' }}</div>
@@ -785,7 +821,7 @@
                         @empty
                             <li class="text-center py-3 text-muted small">{{ __('Tidak ada notifikasi baru') }}</li>
                         @endforelse
-                        @if(Auth::user()->unreadNotifications->count() > 0)
+                        @if($unreadNotificationCount > 0)
                             <li>
                                 <form method="POST" action="{{ route('notifications.markAllAsRead') }}">
                                     @csrf
@@ -812,7 +848,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
                         <li><span class="dropdown-header text-uppercase small">{{ __('Akun') }}</span></li>
                         <li><a class="dropdown-item" href="{{ route('landing') }}"><i class="fa-solid fa-globe me-2"></i> {{ __('Halaman Landing') }}</a></li>
-                        @if(Auth::user()->hasPermission('profile.view'))
+                        @if($hasPermission('profile.view'))
                         <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fa-regular fa-user me-2"></i> {{ __('Profil') }}</a></li>
                         @endif
                         <li><hr class="dropdown-divider"></li>
@@ -1269,6 +1305,28 @@
     });
 </script>
 
+<script>
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if ((form.enctype || '').toLowerCase() !== 'multipart/form-data') return;
+
+        const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (!submitButton || submitButton.dataset.uploadLocked === '1') return;
+
+        submitButton.dataset.uploadLocked = '1';
+        submitButton.disabled = true;
+
+        if (submitButton.tagName === 'BUTTON') {
+            submitButton.dataset.originalText = submitButton.textContent || '';
+            submitButton.textContent = 'Mengunggah...';
+        } else if (submitButton.tagName === 'INPUT') {
+            submitButton.dataset.originalValue = submitButton.value || '';
+            submitButton.value = 'Mengunggah...';
+        }
+    });
+</script>
+
 @auth
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1299,3 +1357,4 @@
 
 </body>
 </html>
+

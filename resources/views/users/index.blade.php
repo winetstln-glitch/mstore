@@ -11,11 +11,6 @@
         </div>
         <div class="d-flex flex-column flex-xl-row gap-2 w-100 justify-content-xl-end align-items-stretch align-items-xl-center">
             <form action="{{ route('users.index') }}" method="GET" class="row g-2 w-100 w-xl-auto align-items-stretch">
-                <input type="hidden" name="wa_status" value="{{ request('wa_status') }}">
-                <input type="hidden" name="wa_sender" value="{{ request('wa_sender') }}">
-                <input type="hidden" name="wa_date_from" value="{{ request('wa_date_from') }}">
-                <input type="hidden" name="wa_date_to" value="{{ request('wa_date_to') }}">
-                <input type="hidden" name="wa_q" value="{{ request('wa_q') }}">
                 <div class="col-12 col-lg">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Cari pengguna...') }}" value="{{ request('search') }}">
                 </div>
@@ -54,110 +49,6 @@
 </div>
 
 <div class="row">
-    <div class="col-12 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="fw-bold text-success mb-3">
-                    <i class="fa-brands fa-whatsapp me-1"></i>{{ __('Riwayat Pengiriman Akun WhatsApp') }}
-                </h6>
-                <form action="{{ route('users.index') }}" method="GET" class="row g-2 mb-3 align-items-end">
-                    <input type="hidden" name="search" value="{{ request('search') }}">
-                    <input type="hidden" name="role_id" value="{{ request('role_id') }}">
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">{{ __('Status') }}</label>
-                        <select name="wa_status" class="form-select form-select-sm">
-                            <option value="">{{ __('Semua Status') }}</option>
-                            <option value="sent" @selected(request('wa_status') === 'sent')>{{ __('Terkirim') }}</option>
-                            <option value="failed" @selected(request('wa_status') === 'failed')>{{ __('Gagal') }}</option>
-                            <option value="pending" @selected(request('wa_status') === 'pending')>{{ __('Pending') }}</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small text-muted mb-1">{{ __('Pengirim') }}</label>
-                        <select name="wa_sender" class="form-select form-select-sm">
-                            <option value="">{{ __('Semua Pengirim') }}</option>
-                            @foreach(($waSenders ?? collect()) as $sender)
-                                <option value="{{ $sender->id }}" @selected((string) request('wa_sender') === (string) $sender->id)>{{ $sender->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <label class="form-label small text-muted mb-1">{{ __('Dari Tanggal') }}</label>
-                        <input type="date" name="wa_date_from" class="form-control form-control-sm" value="{{ request('wa_date_from') }}">
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <label class="form-label small text-muted mb-1">{{ __('Sampai Tanggal') }}</label>
-                        <input type="date" name="wa_date_to" class="form-control form-control-sm" value="{{ request('wa_date_to') }}">
-                    </div>
-                    <div class="col-12 col-md-2">
-                        <label class="form-label small text-muted mb-1">{{ __('Cari') }}</label>
-                        <input type="text" name="wa_q" class="form-control form-control-sm" placeholder="{{ __('Nama/nomor') }}" value="{{ request('wa_q') }}">
-                    </div>
-                    <div class="col-6 col-md-auto d-grid">
-                        <button type="submit" class="btn btn-sm btn-success text-nowrap">
-                            <i class="fa-solid fa-filter me-1"></i>{{ __('Filter Log') }}
-                        </button>
-                    </div>
-                    @if(request()->filled('wa_status') || request()->filled('wa_sender') || request()->filled('wa_date_from') || request()->filled('wa_date_to') || request()->filled('wa_q'))
-                        <div class="col-6 col-md-auto d-grid">
-                            <a href="{{ route('users.index', ['search' => request('search'), 'role_id' => request('role_id')]) }}" class="btn btn-sm btn-outline-secondary text-nowrap">
-                                <i class="fa-solid fa-rotate-left me-1"></i>{{ __('Reset Log') }}
-                            </a>
-                        </div>
-                    @endif
-                </form>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>{{ __('Waktu') }}</th>
-                                <th>{{ __('Pengirim') }}</th>
-                                <th>{{ __('Penerima') }}</th>
-                                <th>{{ __('Nomor Tujuan') }}</th>
-                                <th>{{ __('Status') }}</th>
-                                <th>{{ __('Ringkasan') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse(($whatsAppAccountLogs ?? collect()) as $log)
-                                <tr>
-                                    <td class="small text-muted">{{ \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i') }}</td>
-                                    <td>{{ $log->sender_name ?: '-' }}</td>
-                                    <td>{{ $log->target_name ?: '-' }}</td>
-                                    <td>{{ $log->target_phone ?: '-' }}</td>
-                                    <td>
-                                        @if($log->status === 'sent')
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('Diterima Gateway') }}</span>
-                                        @elseif($log->status === 'failed')
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ __('Gagal') }}</span>
-                                        @else
-                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">{{ __('Pending') }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="small">
-                                        {{ $log->message_excerpt ?: '-' }}
-                                        @if(!empty($log->error_message))
-                                            <div class="text-danger">{{ \Illuminate\Support\Str::limit($log->error_message, 120) }}</div>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">{{ __('Belum ada riwayat pengiriman akun WhatsApp.') }}</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @if($whatsAppAccountLogs instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                    <div class="mt-3">
-                        {{ $whatsAppAccountLogs->links() }}
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">

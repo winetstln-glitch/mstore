@@ -28,6 +28,7 @@ class SettingController extends Controller implements HasMiddleware
     public function index()
     {
         $this->ensureReceiptIdentitySettings();
+        $this->ensureAttendanceSettings();
 
         $settings = Setting::query()
             ->whereNotIn('group', ['telegram', 'whatsapp'])
@@ -53,7 +54,6 @@ class SettingController extends Controller implements HasMiddleware
             'attendance_shift_1_end',
             'attendance_shift_2_start',
             'attendance_shift_2_end',
-            'work_schedule',
         ];
 
         $settings = Setting::query()

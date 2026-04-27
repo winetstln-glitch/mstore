@@ -48,4 +48,14 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
     ],
 
+    'mixradius' => [
+        'base_url' => env('MIXRADIUS_BASE_URL', ''),
+        'api_token' => env('MIXRADIUS_API_TOKEN'),
+        'api_secret' => env('MIXRADIUS_API_SECRET'),
+        'auth_endpoint' => env('MIXRADIUS_AUTH_ENDPOINT'),
+        'user_info_endpoint' => env('MIXRADIUS_USER_INFO_ENDPOINT'),
+        'billing_endpoint' => env('MIXRADIUS_BILLING_ENDPOINT', '/api/invoices'),
+        'invoice_html_url' => env('MIXRADIUS_INVOICE_HTML_URL'),
+    ],
+
 ];

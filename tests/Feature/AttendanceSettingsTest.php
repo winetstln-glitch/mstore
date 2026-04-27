@@ -47,10 +47,10 @@ class AttendanceSettingsTest extends TestCase
 
     public function test_admin_can_view_attendance_settings()
     {
-        $response = $this->actingAs($this->admin)->get(route('settings.index'));
+        $response = $this->actingAs($this->admin)->get(route('settings.attendance.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('Weekly Work Schedule');
+        $response->assertSee(__('Jadwal Kerja Mingguan'));
         $response->assertSee('Monday');
         $response->assertSee('Sunday');
     }

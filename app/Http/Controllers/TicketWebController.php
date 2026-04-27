@@ -15,6 +15,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,7 +36,11 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Ticket::with(['customer', 'technicians']);
+        $query = Ticket::query()
+            ->with([
+                'customer:id,name,address',
+                'technicians:id,name',
+            ]);
 
         if ($request->has('status') && $request->input('status') != '') {
             $query->where('status', $request->input('status'));
@@ -74,17 +79,7 @@ class TicketWebController extends Controller implements HasMiddleware
     public function create()
     {
         $customers = Customer::where('status', 'active')->orderBy('name')->get();
-        $technicians = User::whereHas('role', function ($q) {
-            $q->where('name', 'technician');
-        })->whereExists(function ($q) {
-            $q->selectRaw(1)
-                ->from('technician_attendances as ta')
-                ->whereColumn('ta.user_id', 'users.id')
-                ->whereDate('ta.clock_in', today())
-                ->whereIn('ta.status', ['present', 'late']);
-        })->whereDoesntHave('tickets', function ($q) {
-            $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
-        })->get();
+        $technicians = $this->availableTechnicians();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
 
@@ -118,17 +113,7 @@ class TicketWebController extends Controller implements HasMiddleware
         ]);
 
         if ($request->filled('technicians')) {
-            $allowedIds = User::whereHas('role', function ($q) {
-                $q->where('name', 'technician');
-            })->whereExists(function ($q) {
-                $q->selectRaw(1)
-                    ->from('technician_attendances as ta')
-                    ->whereColumn('ta.user_id', 'users.id')
-                    ->whereDate('ta.clock_in', today())
-                    ->whereIn('ta.status', ['present', 'late']);
-            })->whereDoesntHave('tickets', function ($q) {
-                $q->whereIn('status', ['assigned', 'in_progress', 'pending']);
-            })->pluck('id')->toArray();
+            $allowedIds = $this->availableTechnicianIds();
 
             $invalid = array_diff($request->technicians, $allowedIds);
             if (! empty($invalid) && ! Auth::user()->hasRole('admin')) {
@@ -257,15 +242,10 @@ class TicketWebController extends Controller implements HasMiddleware
     public function show(Ticket $ticket)
     {
         $ticket->load(['customer', 'technicians', 'logs.user', 'odp', 'coordinator.region']);
-        $technicians = User::whereHas('role', function ($q) {
-            $q->where('name', 'technician');
-        })->whereExists(function ($q) {
-            $q->selectRaw(1)
-                ->from('technician_attendances as ta')
-                ->whereColumn('ta.user_id', 'users.id')
-                ->whereDate('ta.clock_in', today())
-                ->whereIn('ta.status', ['present', 'late']);
-        })->get();
+        $technicians = User::query()
+            ->whereIn('id', $this->presentTechnicianIds())
+            ->orderBy('name')
+            ->get();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
 
@@ -279,22 +259,12 @@ class TicketWebController extends Controller implements HasMiddleware
     {
         $customers = Customer::all();
         $currentTechIds = $ticket->technicians->pluck('id')->toArray();
-        $technicians = User::whereHas('role', function ($q) {
-            $q->where('name', 'technician');
-        })->where(function ($query) use ($currentTechIds, $ticket) {
-            $query->where(function ($q) use ($ticket) {
-                $q->whereExists(function ($sub) {
-                    $sub->selectRaw(1)
-                        ->from('technician_attendances as ta')
-                        ->whereColumn('ta.user_id', 'users.id')
-                        ->whereDate('ta.clock_in', today())
-                        ->whereIn('ta.status', ['present', 'late']);
-                })->whereDoesntHave('tickets', function ($sub) use ($ticket) {
-                    $sub->whereIn('status', ['assigned', 'in_progress', 'pending'])
-                        ->where('tickets.id', '<>', $ticket->id);
-                });
-            })->orWhereIn('users.id', $currentTechIds);
-        })->get();
+        $availableIds = $this->availableTechnicianIds($ticket->id);
+        $editableTechIds = array_values(array_unique(array_merge($availableIds, $currentTechIds)));
+        $technicians = User::query()
+            ->whereIn('id', $editableTechIds)
+            ->orderBy('name')
+            ->get();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
 
@@ -355,18 +325,7 @@ class TicketWebController extends Controller implements HasMiddleware
         if ($canEdit && $request->has('technicians')) {
             if (! empty($request->technicians)) {
                 $currentTechIds = $ticket->technicians->pluck('id')->toArray();
-                $presentAndFreeIds = User::whereHas('role', function ($q) {
-                    $q->where('name', 'technician');
-                })->whereExists(function ($q) {
-                    $q->selectRaw(1)
-                        ->from('technician_attendances as ta')
-                        ->whereColumn('ta.user_id', 'users.id')
-                        ->whereDate('ta.clock_in', today())
-                        ->whereIn('ta.status', ['present', 'late']);
-                })->whereDoesntHave('tickets', function ($q) use ($ticket) {
-                    $q->whereIn('status', ['assigned', 'in_progress', 'pending'])
-                        ->where('tickets.id', '<>', $ticket->id);
-                })->pluck('id')->toArray();
+                $presentAndFreeIds = $this->availableTechnicianIds($ticket->id);
 
                 $allowedIds = array_unique(array_merge($presentAndFreeIds, $currentTechIds));
                 $invalid = array_diff($request->technicians, $allowedIds);
@@ -412,6 +371,70 @@ class TicketWebController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket updated successfully.'));
+    }
+
+    /**
+     * Technician IDs that clocked in today and are marked present/late.
+     *
+     * @return array<int, int>
+     */
+    protected function presentTechnicianIds(): array
+    {
+        return User::query()
+            ->whereHas('role', static function ($q) {
+                $q->where('name', 'technician');
+            })
+            ->whereIn('id', function ($q) {
+                $q->select('ta.user_id')
+                    ->from('technician_attendances as ta')
+                    ->whereDate('ta.clock_in', today())
+                    ->whereIn('ta.status', ['present', 'late'])
+                    ->distinct();
+            })
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * Available technician IDs (present today and without active assignment).
+     *
+     * @return array<int, int>
+     */
+    protected function availableTechnicianIds(?int $excludeTicketId = null): array
+    {
+        $presentIds = $this->presentTechnicianIds();
+        if (empty($presentIds)) {
+            return [];
+        }
+
+        $busyQuery = DB::table('ticket_technician as tt')
+            ->join('tickets as t', 't.id', '=', 'tt.ticket_id')
+            ->whereIn('tt.user_id', $presentIds)
+            ->whereIn('t.status', ['assigned', 'in_progress', 'pending']);
+
+        if ($excludeTicketId) {
+            $busyQuery->where('t.id', '<>', $excludeTicketId);
+        }
+
+        $busyIds = $busyQuery
+            ->distinct()
+            ->pluck('tt.user_id')
+            ->all();
+
+        return array_values(array_diff($presentIds, $busyIds));
+    }
+
+    protected function availableTechnicians(?int $excludeTicketId = null)
+    {
+        $availableIds = $this->availableTechnicianIds($excludeTicketId);
+        if (empty($availableIds)) {
+            return collect();
+        }
+
+        return User::query()
+            ->whereIn('id', $availableIds)
+            ->orderBy('name')
+            ->get();
     }
 
     /**

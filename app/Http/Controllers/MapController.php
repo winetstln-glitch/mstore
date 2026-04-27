@@ -29,8 +29,8 @@ class MapController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:map.view', only: ['index']),
-            new Middleware('permission:map.manage', except: ['index']),
+            new Middleware('permission:map.view', only: ['index', 'onlinePaths', 'show', 'getCustomerWlanStatus', 'ping', 'updateLocation']),
+            new Middleware('permission:map.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'updatePath', 'updateCustomerWlan']),
         ];
     }
 
@@ -41,6 +41,8 @@ class MapController extends Controller implements HasMiddleware
     {
         $user = auth()->user();
         $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $canManageMap = $user->can('map.manage');
+        $canEditCustomer = $user->can('customer.edit');
 
         $coordinators = [];
         $regionId = null;
@@ -166,7 +168,7 @@ class MapController extends Controller implements HasMiddleware
             ->limit(500)
             ->get();
 
-        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'modemDataRecords', 'coordinators', 'isAdmin', 'closures'));
+        return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'modemDataRecords', 'coordinators', 'isAdmin', 'closures', 'canManageMap', 'canEditCustomer'));
     }
 
     public function onlinePaths(Request $request)
@@ -307,6 +309,13 @@ class MapController extends Controller implements HasMiddleware
             'latitude' => 'nullable',
             'longitude' => 'nullable',
         ]);
+
+        $user = auth()->user();
+        $canManageMap = $user && $user->can('map.manage');
+        $canEditCustomerLocation = $type === 'customer' && $user && $user->can('customer.edit');
+        if (! $canManageMap && ! $canEditCustomerLocation) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
 
         $model = null;
         switch ($type) {

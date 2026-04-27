@@ -119,9 +119,6 @@
                     <button type="button" onclick="getCurrentLocation()" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-200 text-sm font-medium flex items-center gap-1 hover:bg-blue-100">
                         <i data-lucide="map-pin" class="w-4 h-4"></i> Get GPS
                     </button>
-                    <button type="button" onclick="openNetworkMapPicker()" class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-200 text-sm font-medium flex items-center gap-1 hover:bg-indigo-100">
-                        <i data-lucide="map" class="w-4 h-4"></i> Pilih di Peta
-                    </button>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Gunakan tombol "Pilih di Peta" untuk mengambil koordinat dari fitur peta jaringan.</p>
             </div>
@@ -178,9 +175,46 @@
         const defaultLat = Number.isFinite(oldLatitude) ? oldLatitude : -6.2088;
         const defaultLng = Number.isFinite(oldLongitude) ? oldLongitude : 106.8456;
         map = L.map('map').setView([defaultLat, defaultLng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
             attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
+        });
+
+        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            attribution: '&copy; Google Maps'
+        });
+
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        });
+
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        if (currentTheme === 'dark') {
+            darkLayer.addTo(map);
+        } else {
+            osm.addTo(map);
+        }
+
+        const baseMaps = {
+            "Dark Mode": darkLayer,
+            "Satellite (Google)": googleHybrid,
+            "Street (OSM)": osm
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        window.addEventListener('themeChanged', function (e) {
+            if (e.detail.theme === 'dark') {
+                if (map.hasLayer(osm)) map.removeLayer(osm);
+                if (map.hasLayer(googleHybrid)) map.removeLayer(googleHybrid);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            } else {
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(osm) && !map.hasLayer(googleHybrid)) osm.addTo(map);
+            }
+        });
 
         marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
         if (Number.isFinite(oldLatitude) && Number.isFinite(oldLongitude)) {

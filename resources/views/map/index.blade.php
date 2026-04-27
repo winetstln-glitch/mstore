@@ -730,6 +730,12 @@
     .modern-map-popup .btn-red { background: #dc2626; }
     .modern-map-popup .btn-blue { background: #2563eb; }
     .modern-map-popup .btn-slate { background: #334155; }
+    .custom-icon.icon-modem {
+        background: #7c3aed !important;
+        border-color: #6d28d9 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.45);
+    }
 </style>
 @endpush
 @push('scripts')
@@ -752,6 +758,8 @@
         var assets = @json($assets) || [];
         var modemDataRecords = @json($modemDataRecords ?? []) || [];
         var coordinatorRegionId = @json($coordinatorRegionId ?? null);
+        var canManageMap = @json($canManageMap ?? false);
+        var canEditCustomer = @json($canEditCustomer ?? false);
 
         // Initialize map
         // Server Location: -6.800278, 105.939159
@@ -907,7 +915,7 @@
             if (selectedRegionId === "") return true;
             
             // Infrastructure always visible
-            if (['olt', 'odc', 'asset', 'closure'].includes(type)) return true;
+            if (['olt', 'odc', 'asset', 'closure', 'modem'].includes(type)) return true;
 
             if (type === 'odp') return item.region_id == selectedRegionId;
             if (type === 'htb') {
@@ -1648,6 +1656,7 @@
             else if (type === 'htb') { iconClass = 'fa-sitemap'; colorClass = 'icon-htb'; size = 30; }
             else if (type === 'closure') { iconClass = 'fa-archive'; colorClass = 'icon-closure'; size = 30; }
             else if (type === 'asset') { iconClass = 'fa-tools'; colorClass = 'icon-asset'; size = 28; }
+            else if (type === 'modem') { iconClass = 'fa-wifi'; colorClass = 'icon-modem'; size = 30; }
             else if (type === 'online') { iconClass = 'fa-wifi'; colorClass = 'icon-customer-online'; size = 26; }
             else { iconClass = 'fa-user-slash'; colorClass = 'icon-customer-offline'; size = 26; }
 
@@ -1691,7 +1700,7 @@
 
                 var marker = L.marker([olt.latitude, olt.longitude], {
                     icon: createIcon('olt'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'olt', data: olt });
@@ -1766,7 +1775,7 @@
 
                 var marker = L.marker([odc.latitude, odc.longitude], {
                     icon: createIcon('odc'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'odc', data: odc });
@@ -1840,7 +1849,7 @@
 
                 var marker = L.marker([odp.latitude, odp.longitude], {
                     icon: createIcon('odp'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'odp', data: odp });
@@ -1902,7 +1911,7 @@
 
                 var marker = L.marker([htb.latitude, htb.longitude], {
                     icon: createIcon('htb'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'htb', data: htb });
@@ -1962,7 +1971,7 @@
 
                 var marker = L.marker([closure.latitude, closure.longitude], {
                     icon: createIcon('closure'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'closure', data: closure });
@@ -2021,7 +2030,7 @@
 
                 var marker = L.marker([asset.latitude, asset.longitude], {
                     icon: createIcon('asset'),
-                    draggable: true
+                    draggable: !!canManageMap
                 }).bindPopup(popupContent).addTo(markers);
 
                 allMarkerObjs.push({ marker: marker, type: 'asset', data: asset });
@@ -2092,7 +2101,7 @@
             
             var marker = L.marker([customer.latitude, customer.longitude], {
                 icon: createIcon(iconType),
-                draggable: true
+                draggable: !!canManageMap || !!canEditCustomer
             })
             .addTo(markers)
             .bindPopup(function() {
@@ -2307,7 +2316,8 @@
             if (!record.latitude || !record.longitude) return;
             var linkedCustomer = record.customer_id ? customers.find(c => c.id == record.customer_id) : null;
             var marker = L.marker([record.latitude, record.longitude], {
-                icon: createIcon('asset'),
+                icon: createIcon('modem'),
+                zIndexOffset: 1200,
                 draggable: false
             }).addTo(markers);
 
@@ -2331,7 +2341,7 @@
                 </div>
             `);
 
-            allMarkerObjs.push({ marker: marker, type: 'asset', data: record });
+            allMarkerObjs.push({ marker: marker, type: 'modem', data: record });
         });
 
         // Filter Listener

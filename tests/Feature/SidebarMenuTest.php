@@ -24,7 +24,7 @@ class SidebarMenuTest extends TestCase
         $response->assertStatus(200);
 
         // Check for "Main Menu" header
-        $response->assertSee(__('Main Menu'));
+        $response->assertSee(__('Menu Utama'));
 
         $response->assertSeeInOrder([
             __('Dashboard'),
@@ -34,7 +34,7 @@ class SidebarMenuTest extends TestCase
             __('Sistem'),
         ]);
 
-        $response->assertSee(__('Network Monitor'));
+        $response->assertSee(__('Monitor Jaringan'));
         $response->assertSee(__('Router / NAS'));
         $response->assertSee(__('OLT'));
         $response->assertSee(__('Tiket & Gangguan'));
