@@ -267,9 +267,9 @@ Route::middleware('auth')->group(function () {
         if (! $customer) {
             $customer = \App\Models\Customer::create([
                 'name' => $customerName,
-                'address' => 'Auto dibuat dari Pendataan Modem',
+                // Keep schema aligned with customer created from customer management.
+                'address' => null,
                 'status' => 'active',
-                'user_id' => auth()->id(),
                 'wan_mac' => $macAddress,
                 'onu_serial' => $serialNumber,
                 'device_model' => $modemType,
@@ -282,6 +282,7 @@ Route::middleware('auth')->group(function () {
                 'wan_mac' => $macAddress,
                 'onu_serial' => $serialNumber,
                 'device_model' => $modemType ?: $customer->device_model,
+                'address' => $customer->address === 'Auto dibuat dari Pendataan Modem' ? null : $customer->address,
                 'latitude' => $latitude ?? $customer->latitude,
                 'longitude' => $longitude ?? $customer->longitude,
             ]);
@@ -304,17 +305,23 @@ Route::middleware('auth')->group(function () {
             'SN: '.$serialNumber,
         ])));
 
-        $newInstallation = \App\Models\Installation::create([
-            'customer_id' => $customer->id,
-            'technician_id' => auth()->id(),
-            'status' => 'registered',
-            'plan_date' => now()->toDateString(),
-            'notes' => $installationNotes,
-            'coordinates' => $validated['coordinates'] ?? null,
-            'serial_number' => $serialNumber,
-            'mac_address' => $macAddress,
-        ]);
-        $installationMessage = ' Installation baru dibuat (ID '.$newInstallation->id.').';
+        $installation = \App\Models\Installation::firstOrCreate(
+            [
+                'customer_id' => $customer->id,
+                'serial_number' => $serialNumber,
+                'mac_address' => $macAddress,
+            ],
+            [
+                'technician_id' => auth()->id(),
+                'status' => 'registered',
+                'plan_date' => now()->toDateString(),
+                'notes' => $installationNotes,
+                'coordinates' => $validated['coordinates'] ?? null,
+            ]
+        );
+        $installationMessage = $installation->wasRecentlyCreated
+            ? ' Installation baru dibuat (ID '.$installation->id.').'
+            : ' Data instalasi sudah ada (ID '.$installation->id.').';
 
         $syncMessage = ' Data pelanggan berhasil disinkronkan ke customer ID '.$customer->id.' (match: '.($matchedBy ?? 'manual').').';
 

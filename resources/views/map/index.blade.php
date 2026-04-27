@@ -736,6 +736,88 @@
         color: #ffffff !important;
         box-shadow: 0 4px 12px rgba(124, 58, 237, 0.45);
     }
+
+    /* Theme-aware popup + marker styles (sync with map dark/light mode) */
+    [data-bs-theme="light"] .modern-map-popup {
+        --mp-bg: #ffffff;
+        --mp-border: #dbe2ea;
+        --mp-text: #1f2937;
+        --mp-muted: #64748b;
+        --mp-title: #0f172a;
+        --mp-panel: #f8fafc;
+        --mp-panel-border: #dbe2ea;
+        --mp-chip: #e2e8f0;
+        --mp-distance: #0891b2;
+    }
+    [data-bs-theme="dark"] .modern-map-popup {
+        --mp-bg: #0f172a;
+        --mp-border: #1e293b;
+        --mp-text: #cbd5e1;
+        --mp-muted: #94a3b8;
+        --mp-title: #f1f5f9;
+        --mp-panel: rgba(30, 41, 59, 0.45);
+        --mp-panel-border: rgba(71, 85, 105, 0.45);
+        --mp-chip: #2563ebcc;
+        --mp-distance: #22d3ee;
+    }
+
+    .modern-map-popup .leaflet-popup-content-wrapper {
+        background: var(--mp-bg) !important;
+        border-color: var(--mp-border) !important;
+    }
+    .modern-map-popup .leaflet-popup-tip { background: var(--mp-bg) !important; }
+    .modern-map-popup .leaflet-popup-close-button { color: var(--mp-muted) !important; }
+    .modern-map-popup .customer-card { color: var(--mp-text); }
+    .modern-map-popup .customer-header { border-bottom-color: var(--mp-border); }
+    .modern-map-popup .customer-header-title { color: var(--mp-title); }
+    .modern-map-popup .status-label,
+    .modern-map-popup .acs-up,
+    .modern-map-popup .traffic-foot,
+    .modern-map-popup .acs-label { color: var(--mp-muted); }
+    .modern-map-popup .ip-box,
+    .modern-map-popup .card-panel,
+    .modern-map-popup .acs-item,
+    .modern-map-popup .traffic-chart {
+        background: var(--mp-panel);
+        border-color: var(--mp-panel-border);
+    }
+    .modern-map-popup .ip-text,
+    .modern-map-popup .traffic-title,
+    .modern-map-popup .traffic-legend { color: var(--mp-text); }
+    .modern-map-popup .distance-row {
+        border-top-color: var(--mp-border);
+        color: var(--mp-distance);
+    }
+    .modern-map-popup .customer-badge {
+        background: var(--mp-chip);
+        color: var(--mp-title);
+    }
+
+    /* Basic marker visual consistency for all icon types */
+    .custom-icon {
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        backdrop-filter: blur(1px);
+    }
+    .custom-icon.icon-olt { background: #2563eb; border-color: #1d4ed8; box-shadow: 0 4px 12px rgba(37, 99, 235, .38); }
+    .custom-icon.icon-odc { background: #f59e0b; border-color: #d97706; box-shadow: 0 4px 12px rgba(245, 158, 11, .38); }
+    .custom-icon.icon-odp { background: #10b981; border-color: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, .38); }
+    .custom-icon.icon-htb { background: #6366f1; border-color: #4f46e5; box-shadow: 0 4px 12px rgba(99, 102, 241, .38); }
+    .custom-icon.icon-closure { background: #0f172a; border-color: #334155; box-shadow: 0 4px 12px rgba(15, 23, 42, .38); }
+    .custom-icon.icon-asset { background: #0ea5e9; border-color: #0284c7; box-shadow: 0 4px 12px rgba(14, 165, 233, .38); }
+    .custom-icon.icon-customer-online { background: #06b6d4; border-color: #0891b2; box-shadow: 0 4px 12px rgba(6, 182, 212, .42); }
+    .custom-icon.icon-customer-offline { background: #facc15; border-color: #ca8a04; color: #334155; box-shadow: 0 4px 12px rgba(250, 204, 21, .42); }
+
+    [data-bs-theme="light"] .custom-icon {
+        border-width: 1.5px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    }
 </style>
 @endpush
 @push('scripts')
@@ -2315,31 +2397,34 @@
         modemDataRecords.forEach(function(record) {
             if (!record.latitude || !record.longitude) return;
             var linkedCustomer = record.customer_id ? customers.find(c => c.id == record.customer_id) : null;
+            // If modem record is already linked to an existing customer marker,
+            // rely on customer marker so icon + popup model stay consistent.
+            if (linkedCustomer) return;
+
             var marker = L.marker([record.latitude, record.longitude], {
-                icon: createIcon('modem'),
+                icon: createIcon('offline'),
                 zIndexOffset: 1200,
                 draggable: false
             }).addTo(markers);
 
-            var customerLink = linkedCustomer
-                ? `<a href="/customers/${linkedCustomer.id}/edit" class="btn btn-sm btn-outline-primary map-popup-btn">Lihat Customer</a>`
-                : '';
-            var customerLabel = linkedCustomer ? `${linkedCustomer.id} - ${linkedCustomer.name}` : (record.customer_name || '-');
-
             marker.bindPopup(`
-                <div class="map-popup">
-                    <h6 class="map-popup-title">Data Modem</h6>
-                    <table class="table table-sm table-borderless map-popup-table">
-                        <tr><td class="map-popup-label">Pelanggan:</td><td class="map-popup-value">${customerLabel}</td></tr>
-                        <tr><td class="map-popup-label">Type:</td><td class="map-popup-value">${record.modem_type || '-'}</td></tr>
-                        <tr><td class="map-popup-label">MAC:</td><td class="map-popup-value">${record.mac_address || '-'}</td></tr>
-                        <tr><td class="map-popup-label">SN:</td><td class="map-popup-value">${record.serial_number || '-'}</td></tr>
-                    </table>
-                    <div class="map-popup-actions">
-                        ${customerLink}
+                <div class="customer-card">
+                    <div class="customer-header">
+                        <div class="customer-header-left">
+                            <span class="status-dot status-offline">✕</span>
+                            <span class="customer-header-title">Unlinked - ${record.customer_name || 'Data Modem'}</span>
+                        </div>
+                        <span class="customer-badge">ONU</span>
+                    </div>
+                    <div class="customer-content">
+                        <div class="card-panel p-2.5 space-y-1.5">
+                            <div class="kv-row"><span class="status-label">Type</span><span class="text-yellow-400 font-bold">${record.modem_type || '-'}</span></div>
+                            <div class="kv-row"><span class="status-label">MAC</span><span class="text-yellow-400 font-bold">${record.mac_address || '-'}</span></div>
+                            <div class="kv-row"><span class="status-label">SN</span><span class="text-yellow-400 font-bold">${record.serial_number || '-'}</span></div>
+                        </div>
                     </div>
                 </div>
-            `);
+            `, { className: 'modern-map-popup' });
 
             allMarkerObjs.push({ marker: marker, type: 'modem', data: record });
         });

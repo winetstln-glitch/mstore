@@ -13,10 +13,12 @@ echo "=== Deploying $BRANCH ==="
 
 # Load DB credentials from .env if present (fallback to DB_* env)
 if [ -f ".env" ]; then
+  DB_CONNECTION=$(grep -E '^DB_CONNECTION=' .env | head -n1 | cut -d '=' -f2- | sed 's/^"//; s/"$//')
   DB_DATABASE=$(grep -E '^DB_DATABASE=' .env | head -n1 | cut -d '=' -f2- | sed 's/^"//; s/"$//')
   DB_USERNAME=$(grep -E '^DB_USERNAME=' .env | head -n1 | cut -d '=' -f2- | sed 's/^"//; s/"$//')
   DB_PASSWORD=$(grep -E '^DB_PASSWORD=' .env | head -n1 | cut -d '=' -f2- | sed 's/^"//; s/"$//')
 fi
+DB_CONNECTION=${DB_CONNECTION:-mysql}
 DB_NAME=${DB_NAME:-$DB_DATABASE}
 DB_USER=${DB_USER:-$DB_USERNAME}
 DB_PASS=${DB_PASS:-$DB_PASSWORD}
@@ -32,11 +34,21 @@ git config --global --add safe.directory "$DEPLOY_PATH" || true
 
 mkdir -p "$BACKUP_DIR/build"
 mkdir -p "$BACKUP_DIR/db"
+mkdir -p "$BACKUP_DIR/env"
 
 echo "=== Backup build & DB ($TIMESTAMP) ==="
 [ -d public/build ] && cp -r public/build "$BACKUP_DIR/build/build_$TIMESTAMP"
+[ -f .env ] && cp .env "$BACKUP_DIR/env/.env_$TIMESTAMP"
 
-if [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASS" ]; then
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+  SQLITE_FILE="$DEPLOY_PATH/database/database.sqlite"
+  if [ -f "$SQLITE_FILE" ]; then
+    cp "$SQLITE_FILE" "$BACKUP_DIR/db/database_$TIMESTAMP.sqlite"
+    echo "✅ SQLite backup: $BACKUP_DIR/db/database_$TIMESTAMP.sqlite"
+  else
+    echo "⚠️  Skip SQLite backup: $SQLITE_FILE tidak ditemukan"
+  fi
+elif [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASS" ]; then
   mysqldump --no-tablespaces -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
     > "$BACKUP_DIR/db/db_$TIMESTAMP.sql" || true
 else

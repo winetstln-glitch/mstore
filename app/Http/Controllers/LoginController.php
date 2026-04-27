@@ -143,7 +143,7 @@ class LoginController extends Controller
                     if (! $cust && ! empty($resolvedUsername)) {
                         $cust = \App\Models\Customer::where('pppoe_user', $resolvedUsername)->first();
                     }
-                    if ($cust && empty($cust->user_id)) {
+                    if ($cust && empty($cust->user_id) && $user->hasRole('customer')) {
                         $cust->user_id = $user->id;
                         $cust->save();
                     }

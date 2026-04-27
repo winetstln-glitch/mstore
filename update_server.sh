@@ -8,6 +8,17 @@ echo "Starting MStore Update Process..."
 echo "Date: $(date)"
 echo "=================================================="
 
+# 0. Backup env + sqlite DB (if exists)
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+mkdir -p backups/db backups/env
+if [ -f ".env" ]; then
+    cp .env "backups/env/.env_${TIMESTAMP}"
+fi
+if [ -f "database/database.sqlite" ]; then
+    cp database/database.sqlite "backups/db/database_${TIMESTAMP}.sqlite"
+    echo "      SQLite backup created: backups/db/database_${TIMESTAMP}.sqlite"
+fi
+
 # 1. Pull latest code
 echo "[1/6] Pulling latest changes from git..."
 git pull origin main

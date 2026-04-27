@@ -954,7 +954,6 @@ class CustomerWebController extends Controller implements HasMiddleware
                     'name' => $validated['name'] ?? $customer->name,
                     'username' => $validated['username'] ?? ($customer->user?->username),
                     'email' => $validated['email'] ?? ($customer->user?->email),
-                    'role_id' => $customerRoleId,
                     'phone' => $validated['phone'] ?? $customer->phone,
                     'is_active' => true,
                 ];
@@ -964,8 +963,13 @@ class CustomerWebController extends Controller implements HasMiddleware
                 }
 
                 if ($customer->user_id) {
-                    $customer->user->update($userData);
+                    // Only sync account data for real customer-role users.
+                    if ((int) ($customer->user?->role_id ?? 0) === (int) $customerRoleId) {
+                        $userData['role_id'] = $customerRoleId;
+                        $customer->user->update($userData);
+                    }
                 } elseif ($request->boolean('create_user') && ! empty($validated['username']) && ! empty($validated['password'])) {
+                    $userData['role_id'] = $customerRoleId;
                     $user = User::create($userData);
                     $validated['user_id'] = $user->id;
                 }

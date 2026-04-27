@@ -25,3 +25,4 @@ Thumbs.db
 /backups/
 /actions-runner/
 /public/.well-known/
+/database/*.sqlite
