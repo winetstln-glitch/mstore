@@ -4,101 +4,318 @@
 
 @section('content')
 <div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header py-3">
-                <h5 class="mb-0 fw-bold">{{ __('Pengaturan Absensi') }}</h5>
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm border-top-4 border-primary">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-sliders me-2"></i>{{ __('Pengaturan Absensi') }}</h5>
             </div>
             <div class="card-body">
                 <form action="{{ route('settings.update') }}" method="POST">
                     @csrf
 
-                    @forelse($settings as $group => $groupSettings)
-                        <div class="mb-4 pb-3 border-bottom last:border-0">
-                            <h6 class="fw-bold text-primary text-uppercase mb-3">
-                                <i class="fa-solid fa-layer-group me-1"></i> {{ __(str_replace('_', ' ', (string) $group)) }} {{ __('Pengaturan') }}
-                            </h6>
-                            <div class="row g-3">
-                                @foreach($groupSettings as $setting)
-                                    <div class="{{ $setting->type === 'schedule_weekly' ? 'col-12' : 'col-md-6' }}">
-                                        <label for="{{ $setting->key }}" class="form-label fw-medium">
-                                            {{ $setting->label ?? ucwords(str_replace('_', ' ', (string) $setting->key)) }}
-                                            @if($setting->type === 'schedule_weekly')
-                                                <span class="text-muted small">({{ __('Jadwal Kerja Mingguan') }})</span>
-                                            @endif
-                                        </label>
-
-                                        @if($setting->type === 'time')
-                                            <input type="time" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
-                                        @elseif($setting->type === 'number')
-                                            <input type="number" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
-                                            @if($setting->key === 'attendance_clock_in_early_minutes')
-                                                <div class="form-text">{{ __('Contoh: isi 60 agar absen masuk boleh 1 jam sebelum jam shift.') }}</div>
-                                            @elseif($setting->key === 'attendance_photo_max_kb')
-                                                <div class="form-text">{{ __('Ukuran lebih kecil mempercepat upload. Rekomendasi 1024 - 3072 KB.') }}</div>
-                                            @elseif($setting->key === 'attendance_photo_max_width')
-                                                <div class="form-text">{{ __('Lebar foto akan dikecilkan otomatis di browser sebelum upload.') }}</div>
-                                            @elseif($setting->key === 'attendance_photo_compress_quality')
-                                                <div class="form-text">{{ __('Rentang 45 - 95. Semakin kecil, upload semakin cepat.') }}</div>
-                                            @endif
-                                        @elseif($setting->type === 'boolean')
-                                            <select name="{{ $setting->key }}" id="{{ $setting->key }}" class="form-select">
-                                                <option value="1" {{ (string) $setting->value === '1' ? 'selected' : '' }}>{{ __('Ya') }}</option>
-                                                <option value="0" {{ (string) $setting->value === '0' ? 'selected' : '' }}>{{ __('Tidak') }}</option>
-                                            </select>
-                                        @elseif($setting->type === 'schedule_weekly')
-                                            @php
-                                                $schedule = json_decode((string) $setting->value, true) ?? [];
-                                                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                                            @endphp
-                                            <div class="table-responsive">
-                                                <table class="table table-bordered table-sm align-middle">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>{{ __('Hari') }}</th>
-                                                            <th class="text-center" style="width: 100px">{{ __('Hari Kerja') }}</th>
-                                                            <th>{{ __('Jam Mulai') }}</th>
-                                                            <th>{{ __('Jam Selesai') }}</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($days as $day)
-                                                            @php
-                                                                $daySettings = $schedule[$day] ?? ['enabled' => false, 'start' => '08:00', 'end' => '17:00'];
-                                                            @endphp
-                                                            <tr>
-                                                                <td class="fw-medium">{{ $day }}</td>
-                                                                <td class="text-center">
-                                                                    <input type="hidden" name="{{ $setting->key }}[{{ $day }}][enabled]" value="0">
-                                                                    <input class="form-check-input" type="checkbox" name="{{ $setting->key }}[{{ $day }}][enabled]" value="1" {{ !empty($daySettings['enabled']) ? 'checked' : '' }}>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="time" class="form-control form-control-sm" name="{{ $setting->key }}[{{ $day }}][start]" value="{{ $daySettings['start'] ?? '08:00' }}">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="time" class="form-control form-control-sm" name="{{ $setting->key }}[{{ $day }}][end]" value="{{ $daySettings['end'] ?? '17:00' }}">
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        @else
-                                            <input type="text" name="{{ $setting->key }}" id="{{ $setting->key }}" value="{{ $setting->value }}" class="form-control">
-                                        @endif
-                                    </div>
-                                @endforeach
+                    <!-- ==================== PENGATURAN UMUM ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-gear me-1"></i> Pengaturan Umum
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Absen Masuk Lebih Awal (menit)</label>
+                                <input type="number" name="attendance_clock_in_early_minutes" 
+                                    value="{{ old('attendance_clock_in_early_minutes', $settings['attendance_clock_in_early_minutes'] ?? 60) }}" 
+                                    class="form-control" min="0">
+                                <div class="form-text">Contoh: 60 = boleh absen 1 jam sebelum jam shift</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Wajib Foto Selfie</label>
+                                <select name="attendance_photo_required" class="form-select">
+                                    <option value="1" {{ ($settings['attendance_photo_required'] ?? 1) == 1 ? 'selected' : '' }}>Ya</option>
+                                    <option value="0" {{ ($settings['attendance_photo_required'] ?? 1) == 0 ? 'selected' : '' }}>Tidak</option>
+                                </select>
                             </div>
                         </div>
-                    @empty
-                        <div class="alert alert-info mb-0">
-                            {{ __('Belum ada data pengaturan absensi.') }}
-                        </div>
-                    @endforelse
+                    </div>
 
-                    <div class="d-flex justify-content-end pt-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengaturan') }}
+                    @php
+                        $days = [
+                            'Monday' => 'Senin',
+                            'Tuesday' => 'Selasa',
+                            'Wednesday' => 'Rabu',
+                            'Thursday' => 'Kamis',
+                            'Friday' => 'Jumat',
+                            'Saturday' => 'Sabtu',
+                            'Sunday' => 'Minggu',
+                        ];
+                        $scheduleTeknisi = json_decode($settings['weekly_schedule_teknisi'] ?? '{}', true);
+                        $scheduleWash = json_decode($settings['weekly_schedule_wash'] ?? '{}', true);
+                    @endphp
+
+                    <!-- ==================== SHIFT TEKNISI ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-user-gear me-1"></i> Shift Teknisi
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th class="align-middle" style="width:35%">Nama Shift</th>
+                                        <th class="align-middle" style="width:30%">Jam Mulai</th>
+                                        <th class="align-middle" style="width:30%">Jam Selesai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-primary me-2">S1</span> Shift 1 (Pagi)
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_1_start"
+                                                value="{{ old('schedule_teknisi_shift_1_start', $settings['schedule_teknisi_shift_1_start'] ?? '08:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_1_end"
+                                                value="{{ old('schedule_teknisi_shift_1_end', $settings['schedule_teknisi_shift_1_end'] ?? '17:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-info text-dark me-2">S2</span> Shift 2 (Siang)
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_2_start"
+                                                value="{{ old('schedule_teknisi_shift_2_start', $settings['schedule_teknisi_shift_2_start'] ?? '15:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_2_end"
+                                                value="{{ old('schedule_teknisi_shift_2_end', $settings['schedule_teknisi_shift_2_end'] ?? '00:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-warning text-dark me-2">12 Jam</span> Longshift
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_longshift_start"
+                                                value="{{ old('schedule_teknisi_longshift_start', $settings['schedule_teknisi_longshift_start'] ?? '08:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_longshift_end"
+                                                value="{{ old('schedule_teknisi_longshift_end', $settings['schedule_teknisi_longshift_end'] ?? '20:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ==================== SHIFT OPERATOR WASH ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-soap me-1"></i> Shift Operator Wash
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th class="align-middle" style="width:35%">Nama Shift</th>
+                                        <th class="align-middle" style="width:30%">Jam Mulai</th>
+                                        <th class="align-middle" style="width:30%">Jam Selesai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-primary me-2">S1</span> Shift 1 (Pagi)
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_1_start"
+                                                value="{{ old('schedule_wash_shift_1_start', $settings['schedule_wash_shift_1_start'] ?? '08:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_1_end"
+                                                value="{{ old('schedule_wash_shift_1_end', $settings['schedule_wash_shift_1_end'] ?? '17:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-info text-dark me-2">S2</span> Shift 2 (Siang)
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_2_start"
+                                                value="{{ old('schedule_wash_shift_2_start', $settings['schedule_wash_shift_2_start'] ?? '13:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_2_end"
+                                                value="{{ old('schedule_wash_shift_2_end', $settings['schedule_wash_shift_2_end'] ?? '22:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium align-middle ps-3">
+                                            <span class="badge bg-warning text-dark me-2">12 Jam</span> Longshift
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_longshift_start"
+                                                value="{{ old('schedule_wash_longshift_start', $settings['schedule_wash_longshift_start'] ?? '08:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_longshift_end"
+                                                value="{{ old('schedule_wash_longshift_end', $settings['schedule_wash_longshift_end'] ?? '20:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted d-block mt-2">* Jadwal mingguan per grup akan merujuk ke Shift 1 / Shift 2 / Longshift masing-masing grup</small>
+                    </div>
+
+                    <div class="alert alert-info border mb-4">
+                        <div class="fw-semibold mb-2">
+                            <i class="fa-solid fa-circle-info me-1"></i>Cara Pengaturan Jadwal Mingguan
+                        </div>
+                        <ol class="mb-0 ps-3 small">
+                            <li class="mb-1">Atur dulu jam Shift 1, Shift 2, dan Longshift di bagian atas (Teknisi/Wash).</li>
+                            <li class="mb-1">Di tabel mingguan, centang kolom <strong>Aktif</strong> untuk hari kerja.</li>
+                            <li class="mb-1">Pilih jenis shift hari itu: <strong>Shift 1</strong>, <strong>Shift 2</strong>, atau <strong>Longshift</strong>.</li>
+                            <li class="mb-1">Hari yang tidak dicentang akan dianggap <strong>OFF</strong> saat dipakai sebagai referensi.</li>
+                            <li>Simpan pengaturan, lalu buka menu <strong>Schedules</strong> untuk atur jadwal per orang (S1/S2/LS/OFF).</li>
+                        </ol>
+                    </div>
+
+                    <!-- ==================== JADWAL MINGGUAN TEKNISI ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-calendar-week me-1"></i> Jadwal Mingguan Teknisi
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th class="align-middle">Hari</th>
+                                        <th class="align-middle" style="width:90px">Aktif</th>
+                                        <th class="align-middle" style="width:200px">Pilih Shift</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($days as $key => $label)
+                                        @php
+                                            $dayData = $scheduleTeknisi[$key] ?? ['enabled' => false, 'shift' => 'shift1'];
+                                            $oldDay = old("weekly_schedule_teknisi.{$key}");
+                                            $isEnabled = $oldDay ? ($oldDay['enabled'] ?? false) : !empty($dayData['enabled']);
+                                            $selectedShift = $oldDay ? ($oldDay['shift'] ?? 'shift1') : ($dayData['shift'] ?? 'shift1');
+                                        @endphp
+                                        <tr>
+                                            <td class="fw-medium align-middle ps-3">{{ $label }}</td>
+                                            <td class="text-center align-middle">
+                                                <input type="hidden" name="weekly_schedule_teknisi[{{ $key }}][enabled]" value="0">
+                                                <input class="form-check-input" type="checkbox"
+                                                    name="weekly_schedule_teknisi[{{ $key }}][enabled]" value="1"
+                                                    {{ $isEnabled ? 'checked' : '' }}>
+                                            </td>
+                                            <td class="align-middle">
+                                                <select name="weekly_schedule_teknisi[{{ $key }}][shift]" class="form-select form-select-sm schedule-shift">
+                                                    <option value="shift1" {{ $selectedShift === 'shift1' ? 'selected' : '' }}>Shift 1</option>
+                                                    <option value="shift2" {{ $selectedShift === 'shift2' ? 'selected' : '' }}>Shift 2</option>
+                                                    <option value="longshift" {{ $selectedShift === 'longshift' ? 'selected' : '' }}>Longshift</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ==================== JADWAL MINGGUAN OPERATOR WASH ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Mingguan Operator Wash
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th class="align-middle">Hari</th>
+                                        <th class="align-middle" style="width:90px">Aktif</th>
+                                        <th class="align-middle" style="width:200px">Pilih Shift</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($days as $key => $label)
+                                        @php
+                                            $dayData = $scheduleWash[$key] ?? ['enabled' => false, 'shift' => 'shift1'];
+                                            $oldDay = old("weekly_schedule_wash.{$key}");
+                                            $isEnabled = $oldDay ? ($oldDay['enabled'] ?? false) : !empty($dayData['enabled']);
+                                            $selectedShift = $oldDay ? ($oldDay['shift'] ?? 'shift1') : ($dayData['shift'] ?? 'shift1');
+                                        @endphp
+                                        <tr>
+                                            <td class="fw-medium align-middle ps-3">{{ $label }}</td>
+                                            <td class="text-center align-middle">
+                                                <input type="hidden" name="weekly_schedule_wash[{{ $key }}][enabled]" value="0">
+                                                <input class="form-check-input" type="checkbox"
+                                                    name="weekly_schedule_wash[{{ $key }}][enabled]" value="1"
+                                                    {{ $isEnabled ? 'checked' : '' }}>
+                                            </td>
+                                            <td class="align-middle">
+                                                <select name="weekly_schedule_wash[{{ $key }}][shift]" class="form-select form-select-sm schedule-shift">
+                                                    <option value="shift1" {{ $selectedShift === 'shift1' ? 'selected' : '' }}>Shift 1</option>
+                                                    <option value="shift2" {{ $selectedShift === 'shift2' ? 'selected' : '' }}>Shift 2</option>
+                                                    <option value="longshift" {{ $selectedShift === 'longshift' ? 'selected' : '' }}>Longshift</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ==================== PENGATURAN FOTO ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-camera me-1"></i> Pengaturan Foto
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Maks. Ukuran (KB)</label>
+                                <input type="number" name="attendance_photo_max_kb" 
+                                    value="{{ old('attendance_photo_max_kb', $settings['attendance_photo_max_kb'] ?? 2048) }}" 
+                                    class="form-control" min="100" max="5120">
+                                <div class="form-text">Rekomendasi: 1024-3072 KB</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Maks. Lebar (px)</label>
+                                <input type="number" name="attendance_photo_max_width" 
+                                    value="{{ old('attendance_photo_max_width', $settings['attendance_photo_max_width'] ?? 1280) }}" 
+                                    class="form-control" min="320" max="2560">
+                                <div class="form-text">Foto di-resize otomatis</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Kualitas Kompresi</label>
+                                <input type="number" name="attendance_photo_compress_quality" 
+                                    value="{{ old('attendance_photo_compress_quality', $settings['attendance_photo_compress_quality'] ?? 70) }}" 
+                                    class="form-control" min="45" max="95">
+                                <div class="form-text">Rentang 45-95, kecil = cepat</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== TOMBOL SIMPAN ==================== -->
+                    <div class="d-flex justify-content-end pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa-solid fa-save me-1"></i> Simpan Pengaturan
                         </button>
                     </div>
                 </form>
@@ -106,4 +323,25 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Disable select shift jika hari tidak aktif
+    document.querySelectorAll('input[type="checkbox"][name*="[enabled]"]').forEach(cb => {
+        const select = cb.closest('tr').querySelector('.schedule-shift');
+        toggleShiftSelect(cb, select);
+        
+        cb.addEventListener('change', function() {
+            toggleShiftSelect(this, select);
+        });
+    });
+    
+    function toggleShiftSelect(checkbox, select) {
+        select.disabled = !checkbox.checked;
+        select.style.opacity = checkbox.checked ? '1' : '0.5';
+    }
+});
+</script>
+@endpush
 @endsection

@@ -25,6 +25,7 @@
         .cell-off { background-color: #f8fafc !important; color: #64748b !important; font-weight: 700; }
         .cell-s1 { background-color: #16a34a !important; color: #ffffff !important; font-weight: 800; }
         .cell-s2 { background-color: #f59e0b !important; color: #111827 !important; font-weight: 800; }
+        .cell-ls { background-color: #3b82f6 !important; color: #ffffff !important; font-weight: 800; }
         
         .page-break { page-break-before: always; }
         
@@ -61,10 +62,10 @@
             $pdfWashShift = $shiftConfig['wash'] ?? null;
         @endphp
         @if($pdfTeknisiShift)
-            Teknisi: S1 {{ $pdfTeknisiShift['shift_1_start'] }} - {{ $pdfTeknisiShift['shift_1_end'] }}, S2 {{ $pdfTeknisiShift['shift_2_start'] }} - {{ $pdfTeknisiShift['shift_2_end'] }}<br>
+            Teknisi: S1 {{ $pdfTeknisiShift['shift_1_start'] }} - {{ $pdfTeknisiShift['shift_1_end'] }}, S2 {{ $pdfTeknisiShift['shift_2_start'] }} - {{ $pdfTeknisiShift['shift_2_end'] }}, Longshift {{ $pdfTeknisiShift['longshift_start'] ?? '08:00' }} - {{ $pdfTeknisiShift['longshift_end'] ?? '20:00' }}<br>
         @endif
         @if($pdfWashShift)
-            Operator Wash: S1 {{ $pdfWashShift['shift_1_start'] }} - {{ $pdfWashShift['shift_1_end'] }}, S2 {{ $pdfWashShift['shift_2_start'] }} - {{ $pdfWashShift['shift_2_end'] }}
+            Operator Wash: S1 {{ $pdfWashShift['shift_1_start'] }} - {{ $pdfWashShift['shift_1_end'] }}, S2 {{ $pdfWashShift['shift_2_start'] }} - {{ $pdfWashShift['shift_2_end'] }}, Longshift {{ $pdfWashShift['longshift_start'] ?? '08:00' }} - {{ $pdfWashShift['longshift_end'] ?? '20:00' }}
         @endif
     </div>
 
@@ -72,13 +73,16 @@
         <strong>Keterangan:</strong>
         <div class="legend-item"><span class="legend-box cell-s1"></span> S1: Shift 1 (Piket)</div>
         <div class="legend-item"><span class="legend-box cell-s2"></span> S2: Shift 2 (Backup)</div>
+        <div class="legend-item"><span class="legend-box cell-ls"></span> LS: Longshift</div>
         <div class="legend-item"><span class="legend-box cell-off"></span> OFF: Libur</div>
+        <div class="legend-item">Longshift: mengikuti pengaturan Jadwal Mingguan Absensi per grup.</div>
     </div>
 
     @php
         $statusMap = [
             'piket' => ['class' => 'cell-s1', 'label' => 'S1'],
             'backup' => ['class' => 'cell-s2', 'label' => 'S2'],
+            'longshift' => ['class' => 'cell-ls', 'label' => 'LS'],
             'off' => ['class' => 'cell-off', 'label' => 'OFF'],
         ];
     @endphp

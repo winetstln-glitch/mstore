@@ -109,6 +109,7 @@
                                         $cellClass = match($status) {
                                             \App\Models\TechnicianDailySchedule::STATUS_PIKET  => 'shift-cell piket',
                                             \App\Models\TechnicianDailySchedule::STATUS_BACKUP => 'shift-cell backup',
+                                            \App\Models\TechnicianDailySchedule::STATUS_LONGSHIFT => 'shift-cell longshift',
                                             default  => 'shift-cell off'
                                         };
                                     @endphp
@@ -118,10 +119,11 @@
                                                 <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_OFF }}" {{ $status === \App\Models\TechnicianDailySchedule::STATUS_OFF ? 'selected' : '' }}>OFF</option>
                                                 <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_PIKET }}" {{ $status === \App\Models\TechnicianDailySchedule::STATUS_PIKET ? 'selected' : '' }}>S1</option>
                                                 <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_BACKUP }}" {{ $status === \App\Models\TechnicianDailySchedule::STATUS_BACKUP ? 'selected' : '' }}>S2</option>
+                                                <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_LONGSHIFT }}" {{ $status === \App\Models\TechnicianDailySchedule::STATUS_LONGSHIFT ? 'selected' : '' }}>LS</option>
                                             </select>
                                         @else
-                                            <span class="shift-badge {{ str_contains($cellClass, 'piket') ? 'piket' : (str_contains($cellClass, 'backup') ? 'backup' : 'off') }}">
-                                                {{ $status === \App\Models\TechnicianDailySchedule::STATUS_PIKET ? 'S1' : ($status === \App\Models\TechnicianDailySchedule::STATUS_BACKUP ? 'S2' : 'Off') }}
+                                            <span class="shift-badge {{ str_contains($cellClass, 'piket') ? 'piket' : (str_contains($cellClass, 'backup') ? 'backup' : (str_contains($cellClass, 'longshift') ? 'longshift' : 'off')) }}">
+                                                {{ $status === \App\Models\TechnicianDailySchedule::STATUS_PIKET ? 'S1' : ($status === \App\Models\TechnicianDailySchedule::STATUS_BACKUP ? 'S2' : ($status === \App\Models\TechnicianDailySchedule::STATUS_LONGSHIFT ? 'LS' : 'Off')) }}
                                             </span>
                                         @endif
                                     </td>

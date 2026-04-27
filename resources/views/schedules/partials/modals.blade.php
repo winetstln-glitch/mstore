@@ -2,6 +2,10 @@
      MODALS 
      ============================================ --}}
 @php $canManage = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage'); @endphp
+@php
+    $modalTeknisiShift = $shiftConfig['teknisi'] ?? null;
+    $modalWashShift = $shiftConfig['wash'] ?? null;
+@endphp
 
 @if($canManage)
     {{-- Import Schedule Modal --}}
@@ -23,7 +27,7 @@
                     <div class="modal-body pt-0">
                         <div class="alert alert-info small mb-3">
                             <i class="fa-solid fa-circle-info me-1"></i>
-                            Gunakan file hasil export Excel, lalu edit nilai menjadi: <strong>S1</strong>, <strong>S2</strong>, atau <strong>OFF</strong>.
+                            Gunakan file hasil export Excel, lalu edit nilai menjadi: <strong>S1</strong>, <strong>S2</strong>, <strong>LS</strong>, atau <strong>OFF</strong>.
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">File Excel (.xlsx)</label>
@@ -58,16 +62,30 @@
                     </div>
                     <div class="modal-body">
                         <p class="text-muted small mb-4">
-                            Tentukan jumlah slot per minggu untuk masing-masing shift. Sisa karyawan akan otomatis mendapat status Off.
+                            Tentukan jumlah slot per minggu untuk masing-masing shift (S1/S2/LS). Sisa karyawan akan otomatis mendapat status Off.
                         </p>
                         <div class="alert alert-light border small mb-4">
                             <div class="fw-semibold mb-1">Referensi Jam Shift</div>
-                            <div>Teknisi: S1 08:00-17:00, S2 15:00-00:00</div>
-                            <div>Operator Wash: S1 08:00-17:00, S2 13:00-22:00</div>
+                            @if($modalTeknisiShift)
+                                <div>
+                                    Teknisi:
+                                    S1 {{ $modalTeknisiShift['shift_1_start'] }}-{{ $modalTeknisiShift['shift_1_end'] }},
+                                    S2 {{ $modalTeknisiShift['shift_2_start'] }}-{{ $modalTeknisiShift['shift_2_end'] }},
+                                    Longshift {{ $modalTeknisiShift['longshift_start'] ?? '08:00' }}-{{ $modalTeknisiShift['longshift_end'] ?? '20:00' }}
+                                </div>
+                            @endif
+                            @if($modalWashShift)
+                                <div>
+                                    Operator Wash:
+                                    S1 {{ $modalWashShift['shift_1_start'] }}-{{ $modalWashShift['shift_1_end'] }},
+                                    S2 {{ $modalWashShift['shift_2_start'] }}-{{ $modalWashShift['shift_2_end'] }},
+                                    Longshift {{ $modalWashShift['longshift_start'] ?? '08:00' }}-{{ $modalWashShift['longshift_end'] ?? '20:00' }}
+                                </div>
+                            @endif
                         </div>
                         
                         <div class="row g-4 mb-4">
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <div class="slot-config">
                                     <div class="slot-icon bg-success">
                                         <span>S1</span>
@@ -79,7 +97,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <div class="slot-config">
                                     <div class="slot-icon bg-warning">
                                         <span>S2</span>
@@ -88,6 +106,18 @@
                                         <label class="form-label fw-semibold mb-1 small">Slot Shift 2 / Minggu</label>
                                         <input type="number" name="shift2_slots" class="form-control form-control-lg text-center" 
                                                min="1" max="50" value="{{ $autoShift2Slots ?? 1 }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="slot-config">
+                                    <div class="slot-icon bg-primary">
+                                        <span>LS</span>
+                                    </div>
+                                    <div>
+                                        <label class="form-label fw-semibold mb-1 small">Slot Longshift / Minggu</label>
+                                        <input type="number" name="longshift_slots" class="form-control form-control-lg text-center" 
+                                               min="0" max="50" value="{{ $autoLongshiftSlots ?? 0 }}" required>
                                     </div>
                                 </div>
                             </div>
@@ -149,8 +179,22 @@
                         </p>
                         <div class="alert alert-light border small mb-4">
                             <div class="fw-semibold mb-1">Referensi Jam Shift</div>
-                            <div>Teknisi: S1 08:00-17:00, S2 15:00-00:00</div>
-                            <div>Operator Wash: S1 08:00-17:00, S2 13:00-22:00</div>
+                            @if($modalTeknisiShift)
+                                <div>
+                                    Teknisi:
+                                    S1 {{ $modalTeknisiShift['shift_1_start'] }}-{{ $modalTeknisiShift['shift_1_end'] }},
+                                    S2 {{ $modalTeknisiShift['shift_2_start'] }}-{{ $modalTeknisiShift['shift_2_end'] }},
+                                    Longshift {{ $modalTeknisiShift['longshift_start'] ?? '08:00' }}-{{ $modalTeknisiShift['longshift_end'] ?? '20:00' }}
+                                </div>
+                            @endif
+                            @if($modalWashShift)
+                                <div>
+                                    Operator Wash:
+                                    S1 {{ $modalWashShift['shift_1_start'] }}-{{ $modalWashShift['shift_1_end'] }},
+                                    S2 {{ $modalWashShift['shift_2_start'] }}-{{ $modalWashShift['shift_2_end'] }},
+                                    Longshift {{ $modalWashShift['longshift_start'] ?? '08:00' }}-{{ $modalWashShift['longshift_end'] ?? '20:00' }}
+                                </div>
+                            @endif
                         </div>
                         
                         <div class="d-flex justify-content-center mb-4">

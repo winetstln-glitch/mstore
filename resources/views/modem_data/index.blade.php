@@ -116,11 +116,23 @@
                     <input type="text" id="locationCoords" name="coordinates" value="{{ old('coordinates') }}" readonly class="flex-1 text-xs bg-gray-50 p-2 border border-gray-300 rounded-lg outline-none" placeholder="Koordinat belum ditentukan">
                     <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
                     <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
-                    <button type="button" onclick="getCurrentLocation()" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-200 text-sm font-medium flex items-center gap-1 hover:bg-blue-100">
-                        <i data-lucide="map-pin" class="w-4 h-4"></i> Get GPS
+                    <button
+                        type="button"
+                        onclick="getCurrentLocation()"
+                        class="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-200 inline-flex items-center justify-center hover:bg-blue-100"
+                        title="Ambil GPS"
+                        aria-label="Ambil GPS"
+                    >
+                        <i data-lucide="map-pin" class="w-4 h-4"></i>
                     </button>
-                    <button type="button" onclick="openNetworkMapPicker()" class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-200 text-sm font-medium flex items-center gap-1 hover:bg-indigo-100">
-                        <i data-lucide="map" class="w-4 h-4"></i> Pilih di Peta
+                    <button
+                        type="button"
+                        onclick="openNetworkMapPicker()"
+                        class="bg-indigo-50 text-indigo-600 p-2 rounded-lg border border-indigo-200 inline-flex items-center justify-center hover:bg-indigo-100"
+                        title="Pilih di Peta"
+                        aria-label="Pilih di Peta"
+                    >
+                        <i data-lucide="map" class="w-4 h-4"></i>
                     </button>
                 </div>
                 <p id="locationAccuracyHint" class="text-xs text-gray-500 mt-1"></p>

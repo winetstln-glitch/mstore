@@ -20,6 +20,11 @@
                 <span class="legend-label">Shift 2</span>
                 <code class="legend-code">{{ $teknisiShift['shift_2_start'] }} - {{ $teknisiShift['shift_2_end'] }}</code>
             </div>
+            <div class="legend-item">
+                <span class="legend-dot bg-info"></span>
+                <span class="legend-label">Longshift</span>
+                <code class="legend-code">{{ $teknisiShift['longshift_start'] ?? '08:00' }} - {{ $teknisiShift['longshift_end'] ?? '20:00' }}</code>
+            </div>
         </div>
         @endif
         @if($washShift)
@@ -34,6 +39,11 @@
                 <span class="legend-dot bg-warning"></span>
                 <span class="legend-label">Shift 2</span>
                 <code class="legend-code">{{ $washShift['shift_2_start'] }} - {{ $washShift['shift_2_end'] }}</code>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot bg-info"></span>
+                <span class="legend-label">Longshift</span>
+                <code class="legend-code">{{ $washShift['longshift_start'] ?? '08:00' }} - {{ $washShift['longshift_end'] ?? '20:00' }}</code>
             </div>
         </div>
         @endif

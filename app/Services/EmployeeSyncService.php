@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WashEmployee;
 
@@ -139,27 +140,19 @@ class EmployeeSyncService
     public function shouldSyncUser(User $user): bool
     {
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        if ($roleName === '') {
-            return false;
-        }
-
-        return in_array($roleName, $this->allowedRoles(), true);
+        return $roleName !== '' && $roleName !== 'customer';
     }
 
     public function allowedRoles(): array
     {
-        return [
-            'admin',
-            'noc',
-            'network-operations-center',
-            'technician',
-            'finance',
-            'kasir-atk',
-            'kasir-wash',
-            'karyawan-wash',
-            'coordinator',
-            'owner-pendiri',
-        ];
+        return Role::query()
+            ->where('name', '!=', 'customer')
+            ->pluck('name')
+            ->map(fn ($name) => strtolower((string) $name))
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     public function departmentFromRole(?string $roleName): string
@@ -171,6 +164,8 @@ class EmployeeSyncService
             'kasir-wash', 'karyawan-wash' => 'Wash',
             'kasir-atk' => 'ATK',
             'coordinator' => 'Operasional',
+            'leader' => 'Operasional',
+            'reseller' => 'Operasional',
             default => 'Operasional',
         };
     }

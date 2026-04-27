@@ -58,6 +58,16 @@ class RoleController extends Controller implements HasMiddleware
             'finance.view',
         ];
 
+        $leaderNames = [
+            'dashboard.view',
+            'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.delete',
+            'attendance.view', 'attendance.report',
+            'schedule.view',
+            'map.view',
+            'profile.view', 'profile.update',
+            'notification.view', 'notification.manage',
+        ];
+
         $resellerNames = [
             'dashboard.view', 'customer.view', 'customer.create', 'customer.edit',
             'ticket.view', 'ticket.create', 'ticket.edit', 'installation.view',
@@ -82,6 +92,7 @@ class RoleController extends Controller implements HasMiddleware
             'Administrator' => $allPermissions->pluck('id')->values()->toArray(),
             'Network Operations Center' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
             'Technician' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
+            'Leader' => $allPermissions->whereIn('name', $leaderNames)->pluck('id')->values()->toArray(),
             'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
             'Reseller' => $allPermissions->whereIn('name', $resellerNames)->pluck('id')->values()->toArray(),
             'Finance Staff' => $allPermissions->whereIn('name', $financeStaffNames)->pluck('id')->values()->toArray(),
@@ -115,8 +126,18 @@ class RoleController extends Controller implements HasMiddleware
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        $roleName = Str::slug($validated['label']);
+        $existingRole = Role::where('name', $roleName)->first();
+        if ($existingRole) {
+            return back()
+                ->withErrors([
+                    'label' => __('Role ":role" sudah ada. Gunakan menu edit untuk mengubah izin.', ['role' => $existingRole->label]),
+                ])
+                ->withInput();
+        }
+
         $role = Role::create([
-            'name' => Str::slug($validated['label']),
+            'name' => $roleName,
             'label' => $validated['label'],
         ]);
 

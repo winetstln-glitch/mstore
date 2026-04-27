@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\Storage;
 
 class TicketWebController extends Controller implements HasMiddleware
 {
+    protected function canManageAllTickets(): bool
+    {
+        $user = Auth::user();
+
+        return $user && ($user->hasRole('admin') || $user->hasRole('leader'));
+    }
+
     public static function middleware(): array
     {
         return [
@@ -58,7 +65,7 @@ class TicketWebController extends Controller implements HasMiddleware
             });
         }
 
-        if (! Auth::user()->hasRole('admin')) {
+        if (! $this->canManageAllTickets()) {
             $query->whereHas('technicians', function ($q) {
                 $q->where('users.id', Auth::id());
             });
@@ -116,7 +123,7 @@ class TicketWebController extends Controller implements HasMiddleware
             $allowedIds = $this->availableTechnicianIds();
 
             $invalid = array_diff($request->technicians, $allowedIds);
-            if (! empty($invalid) && ! Auth::user()->hasRole('admin')) {
+            if (! empty($invalid) && ! $this->canManageAllTickets()) {
                 return back()
                     ->withErrors(['technicians' => __('Only available and present technicians can be assigned today.')])
                     ->withInput();
@@ -329,7 +336,7 @@ class TicketWebController extends Controller implements HasMiddleware
 
                 $allowedIds = array_unique(array_merge($presentAndFreeIds, $currentTechIds));
                 $invalid = array_diff($request->technicians, $allowedIds);
-                if (! empty($invalid) && ! Auth::user()->hasRole('admin')) {
+                if (! empty($invalid) && ! $this->canManageAllTickets()) {
                     return back()
                         ->withErrors(['technicians' => __('Only available and present technicians can be assigned today.')])
                         ->withInput();

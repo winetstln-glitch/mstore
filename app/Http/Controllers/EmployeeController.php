@@ -94,18 +94,10 @@ class EmployeeController extends Controller implements HasMiddleware
             unset($validated['id_card_expires_at']);
         }
 
-        // Handle User Account Creation
+        // Handle User Account Creation / Linking (single source of truth in users table)
         if ($request->boolean('create_user_account')) {
-            $user = User::create([
-                'name' => $validated['full_name'],
-                'email' => $validated['email'],
-                'username' => $validated['username'] ?? \Illuminate\Support\Str::slug($validated['full_name'], ''),
-                'password' => bcrypt($validated['password'] ?? 'password'),
-                'role_id' => $validated['role_id'],
-                'phone' => $validated['phone'],
-                'avatar' => $validated['id_card_photo_path'] ?? null,
-                'is_active' => true,
-            ]);
+            $user = $this->resolveUserForEmployeeData($validated);
+            $this->syncUserFromEmployeeData($user, $validated, true);
             $validated['user_id'] = $user->id;
         }
 
@@ -164,39 +156,14 @@ class EmployeeController extends Controller implements HasMiddleware
             }
         }
 
-        // Handle User Account Creation/Update
+        // Handle User Account Creation/Update/Linking consistently
         if ($request->boolean('create_user_account')) {
-            if ($employee->user_id) {
-                // Update existing user
-                $user = User::find($employee->user_id);
-                $userData = [
-                    'name' => $validated['full_name'],
-                    'email' => $validated['email'],
-                    'username' => $validated['username'] ?? $user->username,
-                    'role_id' => $validated['role_id'] ?? $user->role_id,
-                    'phone' => $validated['phone'],
-                ];
-                if (! empty($validated['id_card_photo_path'])) {
-                    $userData['avatar'] = $validated['id_card_photo_path'];
-                }
-                if (! empty($validated['password'])) {
-                    $userData['password'] = bcrypt($validated['password']);
-                }
-                $user->update($userData);
-            } else {
-                // Create new user
-                $user = User::create([
-                    'name' => $validated['full_name'],
-                    'email' => $validated['email'],
-                    'username' => $validated['username'] ?? \Illuminate\Support\Str::slug($validated['full_name'], ''),
-                    'password' => bcrypt($validated['password'] ?? 'password'),
-                    'role_id' => $validated['role_id'],
-                    'phone' => $validated['phone'],
-                    'avatar' => $validated['id_card_photo_path'] ?? null,
-                    'is_active' => true,
-                ]);
-                $validated['user_id'] = $user->id;
+            if (empty($validated['user_id']) && $employee->user_id) {
+                $validated['user_id'] = $employee->user_id;
             }
+            $user = $this->resolveUserForEmployeeData($validated);
+            $this->syncUserFromEmployeeData($user, $validated, false);
+            $validated['user_id'] = $user->id;
         }
 
         $validated = $this->applyLinkedEmployee($validated);
@@ -464,7 +431,7 @@ class EmployeeController extends Controller implements HasMiddleware
 
         $rules = [
             'full_name' => ['required', 'string', 'max:255'],
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id' => ['nullable', 'exists:users,id', Rule::unique('employees', 'user_id')->ignore($id)],
             'wash_employee_id' => ['nullable', 'exists:wash_employees,id'],
             'date_of_birth' => ['required', 'date'],
             'gender' => ['required', Rule::in(['Laki-laki', 'Perempuan'])],
@@ -573,6 +540,64 @@ class EmployeeController extends Controller implements HasMiddleware
         }
 
         return $validated;
+    }
+
+    private function resolveUserForEmployeeData(array $validated): User
+    {
+        if (! empty($validated['user_id'])) {
+            return User::query()->findOrFail((int) $validated['user_id']);
+        }
+
+        $email = trim((string) ($validated['email'] ?? ''));
+        $username = trim((string) ($validated['username'] ?? ''));
+
+        if ($email !== '') {
+            $existingByEmail = User::query()->where('email', $email)->first();
+            if ($existingByEmail) {
+                return $existingByEmail;
+            }
+        }
+
+        if ($username !== '') {
+            $existingByUsername = User::query()->where('username', $username)->first();
+            if ($existingByUsername) {
+                return $existingByUsername;
+            }
+        }
+
+        return new User;
+    }
+
+    private function syncUserFromEmployeeData(User $user, array $validated, bool $isNew): void
+    {
+        $username = trim((string) ($validated['username'] ?? ''));
+        if ($username === '') {
+            $username = $isNew
+                ? User::generateUniqueUsername((string) ($validated['full_name'] ?? ''), (string) ($validated['email'] ?? ''))
+                : (string) ($user->username ?: User::generateUniqueUsername((string) ($validated['full_name'] ?? ''), (string) ($validated['email'] ?? '')));
+        }
+
+        $data = [
+            'name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'username' => $username,
+            'phone' => $validated['phone'],
+            'is_active' => true,
+        ];
+
+        if (! empty($validated['role_id'])) {
+            $data['role_id'] = $validated['role_id'];
+        }
+        if (! empty($validated['id_card_photo_path'])) {
+            $data['avatar'] = $validated['id_card_photo_path'];
+        }
+        if (! empty($validated['password'])) {
+            $data['password'] = bcrypt((string) $validated['password']);
+        } elseif ($isNew) {
+            $data['password'] = bcrypt('password');
+        }
+
+        $user->fill($data)->save();
     }
 
     private function filteredEmployees(Request $request)

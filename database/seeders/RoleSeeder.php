@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
 
         $roles = [
             ['name' => 'admin', 'label' => 'Administrator'],
+            ['name' => 'leader', 'label' => 'Leader'],
             ['name' => 'noc', 'label' => 'Network Operations Center'],
             ['name' => 'network-operations-center', 'label' => 'Network Operations Center'], // Legacy/Existing role support
             ['name' => 'technician', 'label' => 'Technician'],
@@ -40,6 +41,24 @@ class RoleSeeder extends Seeder
             if ($role->name === 'admin') {
                 // Admin gets all permissions
                 $role->permissions()->sync(Permission::all());
+            } elseif ($role->name === 'leader') {
+                // Leader permissions: ticket management + attendance monitoring
+                $permissions = Permission::whereIn('name', [
+                    'dashboard.view',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'ticket.delete',
+                    'attendance.view',
+                    'attendance.report',
+                    'schedule.view',
+                    'map.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'notification.manage',
+                ])->get();
+                $role->permissions()->sync($permissions);
             } elseif (in_array($role->name, ['noc', 'network-operations-center'])) {
                 // NOC permissions (align with existing groups in PermissionSeeder)
                 $permissions = Permission::whereIn('group', [

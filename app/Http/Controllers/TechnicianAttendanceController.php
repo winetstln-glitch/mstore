@@ -23,6 +23,13 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class TechnicianAttendanceController extends Controller implements HasMiddleware
 {
+    protected function canViewAllAttendanceData(): bool
+    {
+        $user = Auth::user();
+
+        return $user && ($user->hasRole('admin') || $user->hasRole('finance') || $user->hasRole('leader'));
+    }
+
     public static function middleware(): array
     {
         return [
@@ -87,7 +94,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $query->where('status', $request->status);
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -114,7 +121,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $q->whereIn('name', ['technician', 'admin']);
         });
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -139,7 +146,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $query->where('status', $request->status);
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -156,7 +163,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
                 ->whereYear('date', date('Y', strtotime($request->month)));
         }
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $adjustmentsQuery->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $adjustmentsQuery->where('user_id', $request->user_id);
@@ -216,7 +223,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $query->where('status', $request->status);
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
@@ -233,7 +240,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
                 ->whereYear('date', date('Y', strtotime($request->month)));
         }
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! $this->canViewAllAttendanceData()) {
             $adjustmentsQuery->where('user_id', Auth::id());
         } elseif ($request->filled('user_id')) {
             $adjustmentsQuery->where('user_id', $request->user_id);
@@ -1033,7 +1040,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $shiftInfo = $this->resolveTodayShiftInfo($user);
 
         $fromSchedule = in_array($shiftInfo['source'] ?? 'default', ['daily', 'weekly'], true);
-        $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP], true);
+        $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT], true);
 
         if ($fromSchedule && $isWorkShift) {
             $officialStart = (string) ($shiftInfo['shift_start'] ?? $globalStart);
@@ -1141,7 +1148,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
         }
 
-        if (! in_array($status, [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_OFF], true)) {
+        if (! in_array($status, [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT, TechnicianSchedule::STATUS_OFF], true)) {
             $status = TechnicianSchedule::STATUS_OFF;
             $source = 'default';
         }
@@ -1151,10 +1158,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $shiftStart = '-';
         $shiftEnd = '-';
 
-        if ($status === TechnicianSchedule::STATUS_PIKET) {
-            $shiftLabel = 'Shift 1';
-            $shiftStart = (string) $shiftConfig['shift_1_start'];
-            $shiftEnd = (string) $shiftConfig['shift_1_end'];
+        if ($status === TechnicianSchedule::STATUS_LONGSHIFT) {
+            $shiftLabel = 'Longshift';
+            $shiftStart = (string) $shiftConfig['longshift_start'];
+            $shiftEnd = (string) $shiftConfig['longshift_end'];
+        } elseif ($status === TechnicianSchedule::STATUS_PIKET) {
+            $useLongshift = $this->isTodayLongshift($group);
+            $shiftLabel = $useLongshift ? 'Longshift' : 'Shift 1';
+            $shiftStart = (string) ($useLongshift ? $shiftConfig['longshift_start'] : $shiftConfig['shift_1_start']);
+            $shiftEnd = (string) ($useLongshift ? $shiftConfig['longshift_end'] : $shiftConfig['shift_1_end']);
         } elseif ($status === TechnicianSchedule::STATUS_BACKUP) {
             $shiftLabel = 'Shift 2';
             $shiftStart = (string) $shiftConfig['shift_2_start'];
@@ -1167,6 +1179,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'status_label' => match ($status) {
                 TechnicianSchedule::STATUS_PIKET => 'Piket',
                 TechnicianSchedule::STATUS_BACKUP => 'Backup',
+                TechnicianSchedule::STATUS_LONGSHIFT => 'Longshift',
                 default => 'Off',
             },
             'shift_label' => $shiftLabel,
@@ -1184,6 +1197,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
                 'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
                 'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
+                'longshift_start' => Setting::getValue('schedule_wash_longshift_start', '08:00'),
+                'longshift_end' => Setting::getValue('schedule_wash_longshift_end', '20:00'),
             ];
         }
 
@@ -1192,7 +1207,30 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
             'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
             'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
+            'longshift_start' => Setting::getValue('schedule_teknisi_longshift_start', '08:00'),
+            'longshift_end' => Setting::getValue('schedule_teknisi_longshift_end', '20:00'),
         ];
+    }
+
+    private function isTodayLongshift(string $group): bool
+    {
+        $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
+        $scheduleRaw = (string) Setting::getValue($settingKey, '{}');
+        $schedule = json_decode($scheduleRaw, true);
+        if (! is_array($schedule)) {
+            return false;
+        }
+
+        $todayKey = now()->englishDayOfWeek;
+        $todaySchedule = $schedule[$todayKey] ?? null;
+        if (! is_array($todaySchedule)) {
+            return false;
+        }
+
+        $isEnabled = ! empty($todaySchedule['enabled']);
+        $shift = (string) ($todaySchedule['shift'] ?? 'shift1');
+
+        return $isEnabled && $shift === 'longshift';
     }
 
     private function resolveScheduleGroup(User $user): string

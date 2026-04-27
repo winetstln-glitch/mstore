@@ -462,7 +462,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Penjualan ATK') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Pendapatan ATK') }}</h6>
                     <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
                         <i class="fa-solid fa-cash-register"></i>
                     </div>
@@ -484,7 +484,7 @@
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Penjualan Car Wash') }}</h6>
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('Pendapatan GT Wash') }}</h6>
                     <div class="bg-info bg-opacity-10 text-info rounded p-2">
                         <i class="fa-solid fa-car"></i>
                     </div>

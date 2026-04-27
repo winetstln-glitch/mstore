@@ -76,6 +76,7 @@
                                 $weekCellClass = match($status) {
                                     \App\Models\TechnicianSchedule::STATUS_PIKET  => 'shift-cell piket',
                                     \App\Models\TechnicianSchedule::STATUS_BACKUP => 'shift-cell backup',
+                                    \App\Models\TechnicianSchedule::STATUS_LONGSHIFT => 'shift-cell longshift',
                                     default  => 'shift-cell off'
                                 };
                             @endphp
@@ -86,10 +87,11 @@
                                         <option value="{{ \App\Models\TechnicianSchedule::STATUS_OFF }}" {{ $status === \App\Models\TechnicianSchedule::STATUS_OFF ? 'selected' : '' }}>OFF</option>
                                         <option value="{{ \App\Models\TechnicianSchedule::STATUS_PIKET }}" {{ $status === \App\Models\TechnicianSchedule::STATUS_PIKET ? 'selected' : '' }}>S1</option>
                                         <option value="{{ \App\Models\TechnicianSchedule::STATUS_BACKUP }}" {{ $status === \App\Models\TechnicianSchedule::STATUS_BACKUP ? 'selected' : '' }}>S2</option>
+                                        <option value="{{ \App\Models\TechnicianSchedule::STATUS_LONGSHIFT }}" {{ $status === \App\Models\TechnicianSchedule::STATUS_LONGSHIFT ? 'selected' : '' }}>LS</option>
                                     </select>
                                 @else
                                     <span class="shift-badge {{ $weekCellClass }}">
-                                        {{ $status === \App\Models\TechnicianSchedule::STATUS_PIKET ? 'S1' : ($status === \App\Models\TechnicianSchedule::STATUS_BACKUP ? 'S2' : 'Off') }}
+                                        {{ $status === \App\Models\TechnicianSchedule::STATUS_PIKET ? 'S1' : ($status === \App\Models\TechnicianSchedule::STATUS_BACKUP ? 'S2' : ($status === \App\Models\TechnicianSchedule::STATUS_LONGSHIFT ? 'LS' : 'Off')) }}
                                     </span>
                                 @endif
                             </td>

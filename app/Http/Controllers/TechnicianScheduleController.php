@@ -49,7 +49,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $startDateParam = $request->input('start_date');
         $endDateParam = $request->input('end_date');
         $selectedGroup = (string) $request->input('group', 'all');
-        $selectedShift = (string) $request->input('shift', 'all'); // piket|backup|off|all
+        $selectedShift = (string) $request->input('shift', 'all'); // piket|backup|longshift|off|all
 
         if ($mode === 'daily' && ! Schema::hasTable('technician_daily_schedules')) {
             return redirect()
@@ -109,6 +109,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
         $autoShift1Slots = (int) Setting::getValue('schedule_auto_shift1_slots', '1');
         $autoShift2Slots = (int) Setting::getValue('schedule_auto_shift2_slots', '1');
+        $autoLongshiftSlots = (int) Setting::getValue('schedule_auto_longshift_slots', '0');
         $dailyOffDays = (int) Setting::getValue('schedule_daily_off_days_per_month', '2');
 
         $calendarWeeks = [];
@@ -175,7 +176,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         }
 
         // Apply shift filter
-        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+        if (in_array($selectedShift, ['piket', 'backup', 'longshift', 'off'], true)) {
             $allowedIds = collect();
             if ($mode === 'daily') {
                 $allowedIds = $dailySchedules
@@ -220,6 +221,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'shiftConfig',
             'autoShift1Slots',
             'autoShift2Slots',
+            'autoLongshiftSlots',
             'dailyOffDays'
         ));
     }
@@ -233,6 +235,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'month' => ['required', 'integer', 'min:1', 'max:12'],
             'shift1_slots' => ['nullable', 'integer', 'min:1', 'max:50'],
             'shift2_slots' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'longshift_slots' => ['nullable', 'integer', 'min:0', 'max:50'],
             'user_ids' => ['nullable', 'array'],
             'user_ids.*' => ['exists:users,id'],
         ]);
@@ -243,11 +246,15 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
         $shift1Slots = (int) ($request->input('shift1_slots') ?? Setting::getValue('schedule_auto_shift1_slots', '1'));
         $shift2Slots = (int) ($request->input('shift2_slots') ?? Setting::getValue('schedule_auto_shift2_slots', '1'));
+        $longshiftSlots = (int) ($request->input('longshift_slots') ?? Setting::getValue('schedule_auto_longshift_slots', '0'));
         if ($shift1Slots < 1) {
             $shift1Slots = 1;
         }
         if ($shift2Slots < 1) {
             $shift2Slots = 1;
+        }
+        if ($longshiftSlots < 0) {
+            $longshiftSlots = 0;
         }
 
         Setting::updateOrCreate(
@@ -257,6 +264,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         Setting::updateOrCreate(
             ['key' => 'schedule_auto_shift2_slots'],
             ['value' => (string) $shift2Slots, 'group' => 'schedule', 'type' => 'number', 'label' => 'Auto Schedule Slot Shift 2 per Minggu']
+        );
+        Setting::updateOrCreate(
+            ['key' => 'schedule_auto_longshift_slots'],
+            ['value' => (string) $longshiftSlots, 'group' => 'schedule', 'type' => 'number', 'label' => 'Auto Schedule Slot Longshift per Minggu']
         );
 
         $techniciansQuery = $this->scheduleUsersQuery();
@@ -278,7 +289,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $technicians->filter(fn ($u) => ! in_array(($u->schedule_group ?? ''), ['teknisi', 'wash'], true))->values(),
         ];
 
-        DB::transaction(function () use ($groups, $year, $weekNumbers, $shift1Slots, $shift2Slots) {
+        DB::transaction(function () use ($groups, $year, $weekNumbers, $shift1Slots, $shift2Slots, $longshiftSlots) {
             foreach ($groups as $users) {
                 if ($users->isEmpty()) {
                     continue;
@@ -287,7 +298,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 $userIds = $users->pluck('id')->values();
                 $counts = [];
                 foreach ($userIds as $id) {
-                    $counts[$id] = ['s1' => 0, 's2' => 0, 'assign' => 0];
+                    $counts[$id] = ['s1' => 0, 's2' => 0, 'ls' => 0, 'assign' => 0];
                 }
 
                 $rotation = $userIds->values();
@@ -300,11 +311,13 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 foreach ($weekNumbers as $wIndex => $weekNumber) {
                     $selectedS1 = collect();
                     $selectedS2 = collect();
+                    $selectedLS = collect();
 
                     $desiredShiftForWeek = function (int $userId, int $weekIndex) use ($userIndex): string {
                         $idx = $userIndex[$userId] ?? 0;
+                        $desired = ['piket', 'backup', 'longshift'];
 
-                        return ((($idx + $weekIndex) % 2) === 0) ? 'piket' : 'backup';
+                        return $desired[($idx + $weekIndex) % 3];
                     };
 
                     $pickCandidates = function (string $preferredShift) use (&$counts, $rotation, &$lastShift, $desiredShiftForWeek, $wIndex) {
@@ -316,7 +329,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                                 + ($desiredPenalty * 1000)
                                 + ($repeatPenalty * 100)
                                 + $counts[$id]['s1']
-                                + $counts[$id]['s2'];
+                                + $counts[$id]['s2']
+                                + $counts[$id]['ls'];
                         })->values();
                     };
 
@@ -341,12 +355,26 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                         $counts[$id]['assign']++;
                     }
 
+                    foreach ($pickCandidates('longshift') as $id) {
+                        if ($selectedLS->count() >= $longshiftSlots) {
+                            break;
+                        }
+                        if ($selectedS1->contains($id) || $selectedS2->contains($id)) {
+                            continue;
+                        }
+                        $selectedLS->push($id);
+                        $counts[$id]['ls']++;
+                        $counts[$id]['assign']++;
+                    }
+
                     foreach ($userIds as $id) {
                         $status = TechnicianDailySchedule::STATUS_OFF;
                         if ($selectedS1->contains($id)) {
                             $status = TechnicianDailySchedule::STATUS_PIKET;
                         } elseif ($selectedS2->contains($id)) {
                             $status = TechnicianDailySchedule::STATUS_BACKUP;
+                        } elseif ($selectedLS->contains($id)) {
+                            $status = TechnicianDailySchedule::STATUS_LONGSHIFT;
                         }
 
                         if ($status !== TechnicianDailySchedule::STATUS_OFF) {
@@ -565,7 +593,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 }
                 unset($grp);
             }
-            if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+            if (in_array($selectedShift, ['piket', 'backup', 'longshift', 'off'], true)) {
                 $allowedIds = $dailySchedules
                     ->flatMap(fn ($rows) => $rows)
                     ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
@@ -609,7 +637,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             }
             unset($grp);
         }
-        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+        if (in_array($selectedShift, ['piket', 'backup', 'longshift', 'off'], true)) {
             $allowedIds = $schedules
                 ->flatMap(fn ($rows) => $rows)
                 ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
@@ -706,7 +734,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             }
 
             // Apply Shift Filter
-            if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+            if (in_array($selectedShift, ['piket', 'backup', 'longshift', 'off'], true)) {
                 $allowedIds = $dailySchedules
                     ->flatMap(fn ($rows) => $rows)
                     ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
@@ -743,6 +771,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                         $row[] = match ($status) {
                             TechnicianDailySchedule::STATUS_PIKET => 'S1',
                             TechnicianDailySchedule::STATUS_BACKUP => 'S2',
+                            TechnicianDailySchedule::STATUS_LONGSHIFT => 'LS',
                             default => 'OFF',
                         };
                     }
@@ -769,7 +798,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         }
 
         // Apply Shift Filter
-        if (in_array($selectedShift, ['piket', 'backup', 'off'], true)) {
+        if (in_array($selectedShift, ['piket', 'backup', 'longshift', 'off'], true)) {
             $allowedIds = $schedules
                 ->flatMap(fn ($rows) => $rows)
                 ->filter(fn ($row) => ($row->status ?? 'off') === $selectedShift)
@@ -807,6 +836,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     $row[] = match ($status) {
                         TechnicianSchedule::STATUS_PIKET => 'S1 ('.$groupShift['shift_1_start'].'-'.$groupShift['shift_1_end'].')',
                         TechnicianSchedule::STATUS_BACKUP => 'S2 ('.$groupShift['shift_2_start'].'-'.$groupShift['shift_2_end'].')',
+                        TechnicianSchedule::STATUS_LONGSHIFT => 'LS ('.($groupShift['longshift_start'] ?? '08:00').'-'.($groupShift['longshift_end'] ?? '20:00').')',
                         default => 'OFF',
                     };
                 }
@@ -855,11 +885,17 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             if (in_array($v, ['S2', 'SHIFT2', 'SHIFT 2', '2', 'BACKUP'], true)) {
                 return TechnicianSchedule::STATUS_BACKUP;
             }
+            if (in_array($v, ['LS', 'LONGSHIFT', 'LONG SHIFT', 'L', '3'], true)) {
+                return TechnicianSchedule::STATUS_LONGSHIFT;
+            }
             if (str_contains($v, 'S1')) {
                 return TechnicianSchedule::STATUS_PIKET;
             }
             if (str_contains($v, 'S2')) {
                 return TechnicianSchedule::STATUS_BACKUP;
+            }
+            if (str_contains($v, 'LS') || str_contains($v, 'LONG')) {
+                return TechnicianSchedule::STATUS_LONGSHIFT;
             }
 
             return TechnicianSchedule::STATUS_OFF;
@@ -963,7 +999,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'user_id' => 'required|exists:users,id',
             'week_number' => 'required|integer|min:1|max:53',
             'year' => 'required|integer',
-            'status' => 'required|in:piket,off,backup',
+            'status' => 'required|in:piket,off,backup,longshift',
             'notes' => 'nullable|string',
         ]);
 
@@ -993,7 +1029,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $request->validate([
             'user_id' => ['required', 'exists:users,id'],
             'date' => ['required', 'date'],
-            'status' => ['required', 'in:piket,off,backup'],
+            'status' => ['required', 'in:piket,off,backup,longshift'],
         ]);
 
         TechnicianDailySchedule::updateOrCreate(
@@ -1018,7 +1054,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'year' => ['required', 'integer'],
             'schedules' => ['required', 'array'],
             'schedules.*' => ['array'],
-            'schedules.*.*' => ['required', 'in:piket,off,backup'],
+            'schedules.*.*' => ['required', 'in:piket,off,backup,longshift'],
         ]);
 
         $year = (int) $request->input('year');
@@ -1045,7 +1081,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $request->validate([
             'schedules' => ['required', 'array'],
             'schedules.*' => ['array'],
-            'schedules.*.*' => ['required', 'in:piket,off,backup'],
+            'schedules.*.*' => ['required', 'in:piket,off,backup,longshift'],
         ]);
 
         $schedules = $request->input('schedules');
@@ -1082,10 +1118,14 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             ['key' => 'schedule_teknisi_shift_1_end', 'value' => '17:00', 'label' => 'Jadwal Teknisi Shift 1 Selesai'],
             ['key' => 'schedule_teknisi_shift_2_start', 'value' => '15:00', 'label' => 'Jadwal Teknisi Shift 2 Mulai'],
             ['key' => 'schedule_teknisi_shift_2_end', 'value' => '00:00', 'label' => 'Jadwal Teknisi Shift 2 Selesai'],
+            ['key' => 'schedule_teknisi_longshift_start', 'value' => '08:00', 'label' => 'Jadwal Teknisi Longshift Mulai'],
+            ['key' => 'schedule_teknisi_longshift_end', 'value' => '20:00', 'label' => 'Jadwal Teknisi Longshift Selesai'],
             ['key' => 'schedule_wash_shift_1_start', 'value' => '08:00', 'label' => 'Jadwal Operator Wash Shift 1 Mulai'],
             ['key' => 'schedule_wash_shift_1_end', 'value' => '17:00', 'label' => 'Jadwal Operator Wash Shift 1 Selesai'],
             ['key' => 'schedule_wash_shift_2_start', 'value' => '13:00', 'label' => 'Jadwal Operator Wash Shift 2 Mulai'],
             ['key' => 'schedule_wash_shift_2_end', 'value' => '22:00', 'label' => 'Jadwal Operator Wash Shift 2 Selesai'],
+            ['key' => 'schedule_wash_longshift_start', 'value' => '08:00', 'label' => 'Jadwal Operator Wash Longshift Mulai'],
+            ['key' => 'schedule_wash_longshift_end', 'value' => '20:00', 'label' => 'Jadwal Operator Wash Longshift Selesai'],
         ];
 
         foreach ($defaults as $item) {
@@ -1110,6 +1150,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
                 'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
                 'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
+                'longshift_start' => Setting::getValue('schedule_teknisi_longshift_start', '08:00'),
+                'longshift_end' => Setting::getValue('schedule_teknisi_longshift_end', '20:00'),
             ],
             'wash' => [
                 'label' => 'Operator Wash',
@@ -1117,6 +1159,8 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
                 'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
                 'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
+                'longshift_start' => Setting::getValue('schedule_wash_longshift_start', '08:00'),
+                'longshift_end' => Setting::getValue('schedule_wash_longshift_end', '20:00'),
             ],
         ];
     }
@@ -1126,6 +1170,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $defaults = [
             ['key' => 'schedule_auto_shift1_slots', 'value' => '1', 'label' => 'Auto Schedule Slot Shift 1 per Minggu'],
             ['key' => 'schedule_auto_shift2_slots', 'value' => '1', 'label' => 'Auto Schedule Slot Shift 2 per Minggu'],
+            ['key' => 'schedule_auto_longshift_slots', 'value' => '0', 'label' => 'Auto Schedule Slot Longshift per Minggu'],
         ];
 
         foreach ($defaults as $item) {
@@ -1712,6 +1757,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 if (! in_array($fallbackStatus, [
                     TechnicianSchedule::STATUS_PIKET,
                     TechnicianSchedule::STATUS_BACKUP,
+                    TechnicianSchedule::STATUS_LONGSHIFT,
                     TechnicianSchedule::STATUS_OFF,
                 ], true)) {
                     continue;

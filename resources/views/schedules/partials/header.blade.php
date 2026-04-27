@@ -77,6 +77,16 @@
                                         <option value="lainnya" {{ $currentGroup === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
                                     </select>
                                 </div>
+                                <div class="col-12 col-md-3 col-xl-2">
+                                    <label class="form-label small text-muted mb-1">Shift</label>
+                                    <select name="shift" class="form-select form-select-sm shadow-sm">
+                                        <option value="all" {{ $currentShift === 'all' ? 'selected' : '' }}>Semua Shift</option>
+                                        <option value="piket" {{ $currentShift === 'piket' ? 'selected' : '' }}>S1</option>
+                                        <option value="backup" {{ $currentShift === 'backup' ? 'selected' : '' }}>S2</option>
+                                        <option value="longshift" {{ $currentShift === 'longshift' ? 'selected' : '' }}>LS</option>
+                                        <option value="off" {{ $currentShift === 'off' ? 'selected' : '' }}>OFF</option>
+                                    </select>
+                                </div>
                                 <div class="col-12 col-xl-auto d-grid">
                                     <button type="submit" class="btn btn-primary btn-sm">
                                         <i class="fa-solid fa-filter me-1"></i>Terapkan
