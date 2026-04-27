@@ -266,6 +266,10 @@ class UserController extends Controller implements HasMiddleware
 
     public function destroy(User $user)
     {
+        if (! auth()->user()?->hasRole('admin')) {
+            return back()->with('error', __('Penghapusan akun hanya dapat dilakukan oleh admin.'));
+        }
+
         if ($user->id === auth()->id()) {
             return back()->with('error', __('You cannot delete yourself.'));
         }

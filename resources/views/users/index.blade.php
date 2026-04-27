@@ -120,7 +120,7 @@
                                             <i class="fa-brands fa-whatsapp"></i>
                                         </button>
                                         
-                                        @if($user->id !== auth()->id())
+                                        @if(auth()->user()?->hasRole('admin') && $user->id !== auth()->id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus pengguna ini?') }}');">
                                                 @csrf
                                                 @method('DELETE')

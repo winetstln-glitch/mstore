@@ -22,6 +22,14 @@
                         <i class="fa-solid fa-location-dot text-danger me-2"></i>
                         <span id="location-status" class="clock-location-status">{{ __('Mencari lokasi...') }}</span>
                     </div>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <button type="button" id="retryLocationBtn" class="btn btn-sm btn-outline-secondary rounded-pill">
+                            <i class="fa-solid fa-rotate-right me-1"></i>{{ __('Coba Lagi') }}
+                        </button>
+                        <button type="button" id="openAttendanceMapPickerBtn" class="btn btn-sm btn-outline-primary rounded-pill">
+                            <i class="fa-solid fa-map-location-dot me-1"></i>{{ __('Pilih di Peta') }}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -216,12 +224,36 @@
     const photoUploadNote = document.getElementById('photo-upload-note');
     const latitudeInput = document.getElementById('latitude');
     const longitudeInput = document.getElementById('longitude');
+    const locationStatusElement = document.getElementById('location-status');
+    const retryLocationBtn = document.getElementById('retryLocationBtn');
+    const openAttendanceMapPickerBtn = document.getElementById('openAttendanceMapPickerBtn');
 
     function hasValidLocation() {
         if (!latitudeInput || !longitudeInput) return false;
         const lat = String(latitudeInput.value || '').trim();
         const lng = String(longitudeInput.value || '').trim();
         return lat !== '' && lng !== '';
+    }
+
+    function setLocationStatus(text, mode) {
+        if (!locationStatusElement) return;
+        locationStatusElement.textContent = text;
+        locationStatusElement.className = 'clock-location-status';
+        if (mode === 'detected') {
+            locationStatusElement.classList.add('is-detected');
+        } else if (mode === 'error') {
+            locationStatusElement.classList.add('is-error');
+        } else if (mode === 'loading') {
+            locationStatusElement.classList.add('is-loading');
+        }
+    }
+
+    function setDetectedLocation(lat, lng, metaText) {
+        if (!latitudeInput || !longitudeInput) return;
+        latitudeInput.value = lat;
+        longitudeInput.value = lng;
+        setLocationStatus(metaText || 'Lokasi terdeteksi', 'detected');
+        refreshSubmitState();
     }
 
     function refreshSubmitState() {
@@ -467,17 +499,23 @@
         document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID', { hour12: false });
     }, 1000);
 
-    const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+    const getMostAccuratePosition = (config = {}) => new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
             reject(new Error('Geolokasi tidak didukung'));
             return;
         }
+        const targetAccuracy = Number(config.targetAccuracy || 35);
+        const finalizeMs = Number(config.finalizeMs || 12000);
         let bestPosition = null;
         let lastError = null;
         let settled = false;
         let watchId = null;
         let timerId = null;
-        const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+        const options = {
+            enableHighAccuracy: config.enableHighAccuracy !== false,
+            timeout: Number(config.timeout || 18000),
+            maximumAge: Number(config.maximumAge || 0),
+        };
 
         const finalize = () => {
             if (settled) return;
@@ -494,7 +532,7 @@
             if (!bestPosition || accuracy < bestAccuracy) {
                 bestPosition = position;
             }
-            if (accuracy <= 20) finalize();
+            if (accuracy <= targetAccuracy) finalize();
         };
 
         watchId = navigator.geolocation.watchPosition(
@@ -507,26 +545,77 @@
             (error) => { lastError = error; },
             options
         );
-        timerId = setTimeout(finalize, 9000);
+        timerId = setTimeout(finalize, finalizeMs);
     });
 
-    if ("geolocation" in navigator) {
-        getMostAccuratePosition().then((p) => {
-            document.getElementById('latitude').value = p.coords.latitude;
-            document.getElementById('longitude').value = p.coords.longitude;
-            const acc = Number(p.coords.accuracy || 0);
-            document.getElementById('location-status').textContent = acc > 0
+    async function requestAttendanceLocation() {
+        if (!('geolocation' in navigator)) {
+            setLocationStatus('Geolokasi tidak didukung', 'error');
+            refreshSubmitState();
+            return;
+        }
+
+        setLocationStatus('Mencari lokasi akurat...', 'loading');
+        try {
+            const accuratePosition = await getMostAccuratePosition({
+                enableHighAccuracy: true,
+                timeout: 18000,
+                maximumAge: 0,
+                finalizeMs: 12000,
+                targetAccuracy: 35,
+            });
+            const acc = Number(accuratePosition.coords.accuracy || 0);
+            const statusText = acc > 0
                 ? `Lokasi Terdeteksi (±${Math.round(acc)}m)`
                 : 'Lokasi Terdeteksi';
-            document.getElementById('location-status').className = 'clock-location-status is-detected';
+            setDetectedLocation(accuratePosition.coords.latitude, accuratePosition.coords.longitude, statusText);
+            return;
+        } catch (error) {}
+
+        setLocationStatus('GPS lambat, mencoba mode kompatibel...', 'loading');
+        try {
+            const fallbackPosition = await getMostAccuratePosition({
+                enableHighAccuracy: false,
+                timeout: 14000,
+                maximumAge: 60000,
+                finalizeMs: 10000,
+                targetAccuracy: 200,
+            });
+            const acc = Number(fallbackPosition.coords.accuracy || 0);
+            const statusText = acc > 0
+                ? `Lokasi Terdeteksi Mode Kompatibel (±${Math.round(acc)}m)`
+                : 'Lokasi Terdeteksi Mode Kompatibel';
+            setDetectedLocation(fallbackPosition.coords.latitude, fallbackPosition.coords.longitude, statusText);
+        } catch (error) {
+            setLocationStatus('Lokasi belum terdeteksi. Tekan "Coba Lagi" atau "Pilih di Peta".', 'error');
             refreshSubmitState();
-        }).catch(() => {
-            document.getElementById('location-status').textContent = 'Lokasi gagal dideteksi';
-            refreshSubmitState();
+        }
+    }
+
+    if (retryLocationBtn) {
+        retryLocationBtn.addEventListener('click', requestAttendanceLocation);
+    }
+
+    if (openAttendanceMapPickerBtn) {
+        openAttendanceMapPickerBtn.addEventListener('click', function () {
+            const pickerUrl = `${window.location.origin}/map?picker=1`;
+            window.open(pickerUrl, 'mstoreMapPicker', 'width=1100,height=750');
         });
-    } else {
-        document.getElementById('location-status').textContent = 'Geolokasi tidak didukung';
-        refreshSubmitState();
+    }
+
+    window.addEventListener('message', function (event) {
+        if (event.origin !== window.location.origin) return;
+        const payload = event.data || {};
+        if (payload.type !== 'mstore-map-picked') return;
+        const lat = Number(payload.lat);
+        const lng = Number(payload.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            setDetectedLocation(lat, lng, 'Lokasi Dipilih dari Peta');
+        }
+    });
+
+    if (attendanceForm) {
+        requestAttendanceLocation();
     }
 </script>
 @endsection
