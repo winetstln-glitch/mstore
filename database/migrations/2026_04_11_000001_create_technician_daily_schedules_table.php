@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->date('date');
-            $table->enum('status', ['piket', 'backup', 'off', 'longshift'])->default('off');
+            $table->string('status')->default('off'); // changed from enum to string to prevent truncation issues on some MySQL versions
             $table->text('notes')->nullable();
             $table->timestamps();
 

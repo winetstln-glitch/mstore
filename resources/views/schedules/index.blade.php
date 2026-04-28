@@ -38,13 +38,13 @@
     {{-- Main Content Card --}}
     <div class="card border-0 shadow-sm schedule-main-card">
         <div class="card-body p-0">
-            <div class="table-responsive schedule-table-wrapper">
-                @if($mode === 'daily')
-                    @include('schedules.partials.table-daily')
-                @else
+            @if($mode === 'daily')
+                @include('schedules.partials.table-daily')
+            @else
+                <div class="table-responsive schedule-table-wrapper">
                     @include('schedules.partials.table-weekly')
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -86,22 +86,24 @@
     /* Existing Styles */
     .schedule-main-card { border-radius: 12px; overflow: hidden; }
     .schedule-table-wrapper { max-height: 75vh; overflow-y: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .schedule-daily-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .schedule-daily-table { min-width: max-content; width: auto; }
+    .schedule-daily-scroll { max-height: 600px; overflow-y: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; border-bottom: 1px solid #dee2e6; }
+    .schedule-daily-table { min-width: 100%; width: auto; border-collapse: separate; border-spacing: 0; }
     
     .table thead th { 
         position: sticky; top: 0; z-index: 10; 
         background: #f8f9fa; border-bottom: 2px solid #dee2e6;
         padding: 12px 8px; vertical-align: middle;
+        box-shadow: inset 0 -1px 0 #dee2e6;
     }
     
     .schedule-name-col { 
         position: sticky; left: 0; z-index: 11; 
-        background: #fff; width: 220px; min-width: 220px;
+        background: #fff !important; width: 180px; min-width: 180px;
         border-right: 1px solid #dee2e6;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
     }
     
-    .table thead th.schedule-name-col { z-index: 12; background: #f8f9fa; }
+    .table thead th.schedule-name-col { z-index: 12; background: #f8f9fa !important; }
     
     .employee-name { font-weight: 700; color: #333; font-size: 13px; line-height: 1.2; }
     .employee-info { font-size: 10px; color: #6c757d; margin-top: 2px; }
