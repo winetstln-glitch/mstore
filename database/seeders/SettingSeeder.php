@@ -128,6 +128,35 @@ class SettingSeeder extends Seeder
                 'type' => 'account',
                 'label' => 'Akun Laba Berjalan (Equity)',
             ],
+            // Telegram Settings
+            [
+                'key' => 'telegram_bot_token',
+                'value' => env('TELEGRAM_BOT_TOKEN', ''),
+                'group' => 'telegram',
+                'type' => 'text',
+                'label' => 'Telegram Bot Token',
+            ],
+            [
+                'key' => 'telegram_technician_group_chat_id',
+                'value' => env('TELEGRAM_TECHNICIAN_GROUP_CHAT_ID', ''),
+                'group' => 'telegram',
+                'type' => 'text',
+                'label' => 'Telegram Technician Group Chat ID',
+            ],
+            [
+                'key' => 'telegram_ticket_template',
+                'value' => null,
+                'group' => 'telegram',
+                'type' => 'textarea',
+                'label' => 'Template Notifikasi Tiket Baru',
+            ],
+            [
+                'key' => 'telegram_ticket_solved_template',
+                'value' => null,
+                'group' => 'telegram',
+                'type' => 'textarea',
+                'label' => 'Template Notifikasi Tiket Selesai',
+            ],
         ];
 
         foreach ($settings as $setting) {

@@ -559,4 +559,73 @@ class TelegramService
 
         return $this->sendMessage($chatId, $message);
     }
+
+    /**
+     * Send Telegram notification for ticket events.
+     */
+    public function sendTicketNotification(\App\Models\Ticket $ticket, string $type = 'created', ?string $customDescription = null): void
+    {
+        try {
+            $customerName = $ticket->customer ? $ticket->customer->name : 'N/A';
+            $locationLink = $ticket->location ? 'https://maps.google.com/?q='.urlencode($ticket->location) : '#';
+
+            $settingKey = $type === 'solved' ? 'telegram_ticket_solved_template' : 'telegram_ticket_template';
+            $templateSetting = Setting::where('key', $settingKey)->first();
+            $template = $templateSetting ? $templateSetting->value : null;
+
+            $technicianNames = $ticket->technicians->pluck('name')->join(', ');
+            if (empty($technicianNames)) {
+                $technicianNames = '-';
+            }
+
+            $coordinatorName = $ticket->coordinator ? $ticket->coordinator->name : '-';
+
+            if (empty($template)) {
+                if ($type === 'solved') {
+                    $template = "✅ *TIKET SELESAI (TICKET SOLVED)*\n\n".
+                               "🆔 *No:* `{ticket_number}`\n".
+                               "📝 *Subject:* `{subject}`\n".
+                               "👤 *Customer:* `{customer_name}`\n".
+                               "👷 *Teknisi:* `{technicians}`\n".
+                               "👔 *Koordinator:* `{coordinator}`\n".
+                               "📍 *Lokasi:* `{location}`\n".
+                               "⚠️ *Prioritas:* `{priority}`\n".
+                               "📄 *Keterangan Selesai:* `{description}`\n\n".
+                               "Tiket telah diselesaikan oleh teknisi.\n".
+                               '[Lihat Lokasi]({location_link})';
+                } else {
+                    $template = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
+                               "🆔 *No:* `{ticket_number}`\n".
+                               "📝 *Subject:* `{subject}`\n".
+                               "👤 *Customer:* `{customer_name}`\n".
+                               "👷 *Teknisi:* `{technicians}`\n".
+                               "👔 *Koordinator:* `{coordinator}`\n".
+                               "📍 *Lokasi:* `{location}`\n".
+                               "⚠️ *Prioritas:* `{priority}`\n".
+                               "📄 *Deskripsi:* `{description}`\n\n".
+                               "Silakan cek aplikasi untuk detail lebih lanjut.\n".
+                               '[Lihat Lokasi]({location_link})';
+                }
+            }
+
+            $description = $customDescription ?? $ticket->description;
+
+            $replacements = [
+                '{ticket_number}' => "`".self::escape($ticket->ticket_number)."`",
+                '{subject}' => self::escape($ticket->subject),
+                '{customer_name}' => self::escape($customerName),
+                '{technicians}' => self::escape($technicianNames),
+                '{coordinator}' => self::escape($coordinatorName),
+                '{location}' => self::escape($ticket->location ?? '-'),
+                '{priority}' => self::escape(ucfirst($ticket->priority)),
+                '{description}' => self::escape($description ?? '-'),
+                '{location_link}' => $locationLink,
+            ];
+
+            $message = str_replace(array_keys($replacements), array_values($replacements), $template);
+            $this->sendToTechnicianGroup($message);
+        } catch (\Exception $e) {
+            Log::error("Failed to send Telegram {$type} notification: ".$e->getMessage());
+        }
+    }
 }

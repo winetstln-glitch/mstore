@@ -94,7 +94,7 @@ class CustomerPublicRegisterController extends Controller
                 'coordinates' => $coordinates,
             ]);
 
-            Ticket::create([
+            $ticket = Ticket::create([
                 'ticket_number' => Ticket::generateNumber(),
                 'subject' => 'Pemasangan Baru - '.$customer->name,
                 'customer_id' => $customer->id,
@@ -105,6 +105,13 @@ class CustomerPublicRegisterController extends Controller
                 'location' => $coordinates,
                 'coordinator_id' => $validated['coordinator_id'] ?? null,
             ]);
+
+            // Notify Technician Group via Telegram
+            try {
+                app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'created');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send Telegram creation notification from public register: ' . $e->getMessage());
+            }
         });
 
         return back()->with('success', 'Registrasi berhasil, data masuk ke pemasangan baru dan menunggu proses teknisi/admin.');

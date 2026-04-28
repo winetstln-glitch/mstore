@@ -17,6 +17,30 @@ return new class extends Migration
             'type' => 'text',
             'label' => 'Telegram Bot Token',
         ]);
+
+        Setting::create([
+            'key' => 'telegram_technician_group_chat_id',
+            'value' => env('TELEGRAM_TECHNICIAN_GROUP_CHAT_ID', ''),
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Technician Group Chat ID',
+        ]);
+
+        Setting::create([
+            'key' => 'telegram_ticket_template',
+            'value' => null,
+            'group' => 'telegram',
+            'type' => 'textarea',
+            'label' => 'Template Notifikasi Tiket Baru',
+        ]);
+
+        Setting::create([
+            'key' => 'telegram_ticket_solved_template',
+            'value' => null,
+            'group' => 'telegram',
+            'type' => 'textarea',
+            'label' => 'Template Notifikasi Tiket Selesai',
+        ]);
     }
 
     /**
@@ -24,6 +48,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Setting::where('key', 'telegram_bot_token')->delete();
+        Setting::whereIn('key', [
+            'telegram_bot_token',
+            'telegram_technician_group_chat_id',
+            'telegram_ticket_template',
+            'telegram_ticket_solved_template'
+        ])->delete();
     }
 };
