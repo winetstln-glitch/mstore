@@ -15,7 +15,7 @@
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-light rounded-circle" data-bs-toggle="modal" data-bs-target="#attendanceHelpModal" title="{{ __('Bantuan') }}">
                         <i class="fa-solid fa-circle-question"></i>
-                    </div>
+                    </button>
                 </div>
 
                 <div class="clock-panel p-4 rounded-4 shadow-sm text-center position-relative" style="z-index: 10; margin-bottom: -60px;">
