@@ -13,6 +13,13 @@ class AtkProductController extends Controller
     public function barcodes(Request $request)
     {
         $query = AtkProduct::query();
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
         if ($request->filled('category')) {
             $query->where('category', $request->get('category'));
         }
@@ -24,6 +31,14 @@ class AtkProductController extends Controller
     public function barcodesPdf(Request $request)
     {
         $query = AtkProduct::query();
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
 
         if ($request->filled('category')) {
             $query->where('category', $request->get('category'));
@@ -213,6 +228,15 @@ class AtkProductController extends Controller
     {
         $categories = ['ATK', 'JASA POTOCOPY', 'JASA TRANSFER BANK'];
         $query = AtkProduct::query();
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->filled('category')) {
             $query->where('category', $request->get('category'));
         }

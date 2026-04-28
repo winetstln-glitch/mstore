@@ -80,6 +80,15 @@
         <div class="card-body">
             <form method="GET" action="{{ route('atk.products.index') }}" class="row g-2 mb-3">
                 <div class="col-sm-12 col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" name="search" id="productSearch" class="form-control" placeholder="{{ __('Cari Nama atau Barcode...') }}" value="{{ request('search') }}" autofocus>
+                        <button type="button" class="btn btn-outline-primary" id="openAtkBarcodeScan" title="Scan barcode via kamera">
+                            <i class="fa-solid fa-barcode"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-3">
                     <select name="category" class="form-select">
                         <option value="">{{ __('Semua Kategori') }}</option>
                         @php($opts = isset($categories) ? $categories : ['ATK','JASA POTOCOPY','JASA TRANSFER BANK'])
@@ -174,9 +183,40 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="atkBarcodeScanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scan Barcode Produk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="atk-barcode-reader" class="atk-scan-reader" style="width:100%;"></div>
+                <div id="atkScanStatus" class="small text-muted mt-2">
+                    Arahkan kamera ke barcode pada produk.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" id="stopAtkBarcodeScan">Hentikan Scan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+    .atk-scan-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover;
+        border-radius: 0.5rem;
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Existing selection logic
     const checkAll = document.getElementById('checkAll');
     const rowChecks = Array.from(document.querySelectorAll('.row-check'));
     const bulkForm = document.getElementById('bulkDeleteForm');
@@ -213,6 +253,109 @@ document.addEventListener('DOMContentLoaded', function() {
             const allChecked = rowChecks.every(cb => cb.checked);
             rowChecks.forEach(cb => cb.checked = !allChecked);
             updateBulkState();
+        });
+    }
+
+    // Barcode Scanner Logic
+    let atkBarcodeScanner = null;
+    let isAtkBarcodeScannerRunning = false;
+
+    function setAtkScanStatus(message, type = 'muted') {
+        const statusEl = document.getElementById('atkScanStatus');
+        if (!statusEl) return;
+        statusEl.classList.remove('text-muted', 'text-danger', 'text-success');
+        if (type === 'error') {
+            statusEl.classList.add('text-danger');
+        } else if (type === 'success') {
+            statusEl.classList.add('text-success');
+        } else {
+            statusEl.classList.add('text-muted');
+        }
+        statusEl.textContent = message;
+    }
+
+    async function stopAtkBarcodeScanner() {
+        if (!atkBarcodeScanner || !isAtkBarcodeScannerRunning) return;
+        try {
+            await atkBarcodeScanner.stop();
+            await atkBarcodeScanner.clear();
+        } catch (error) {
+            console.warn('Stop ATK barcode scanner error:', error);
+        } finally {
+            isAtkBarcodeScannerRunning = false;
+        }
+    }
+
+    async function startAtkBarcodeScanner() {
+        if (typeof Html5Qrcode === 'undefined') {
+            setAtkScanStatus('Library scanner belum tersedia.', 'error');
+            return;
+        }
+        if (isAtkBarcodeScannerRunning) {
+            setAtkScanStatus('Scanner sudah aktif.');
+            return;
+        }
+        atkBarcodeScanner = atkBarcodeScanner || new Html5Qrcode('atk-barcode-reader');
+        
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            disableFlip: true
+        };
+
+        const onDecoded = async (decodedText) => {
+            const productSearchInput = document.getElementById('productSearch');
+            if (productSearchInput) {
+                productSearchInput.value = String(decodedText || '').trim();
+                productSearchInput.form.submit(); // Auto submit on scan
+            }
+            setAtkScanStatus('Barcode berhasil dibaca.', 'success');
+            await stopAtkBarcodeScanner();
+            const modalEl = document.getElementById('atkBarcodeScanModal');
+            if (modalEl && window.bootstrap) {
+                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modalInstance.hide();
+            }
+        };
+
+        const onDecodeError = () => {};
+
+        try {
+            await atkBarcodeScanner.start({ facingMode: "environment" }, config, onDecoded, onDecodeError);
+            isAtkBarcodeScannerRunning = true;
+            setAtkScanStatus('Arahkan kamera ke barcode.');
+        } catch (err) {
+            console.error(err);
+            setAtkScanStatus('Gagal mengakses kamera.', 'error');
+        }
+    }
+
+    const openScanBtn = document.getElementById('openAtkBarcodeScan');
+    const stopScanBtn = document.getElementById('stopAtkBarcodeScan');
+    const scanModalEl = document.getElementById('atkBarcodeScanModal');
+
+    if (openScanBtn) {
+        openScanBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(scanModalEl);
+            modal.show();
+        });
+    }
+
+    if (scanModalEl) {
+        scanModalEl.addEventListener('shown.bs.modal', function() {
+            startAtkBarcodeScanner();
+        });
+        scanModalEl.addEventListener('hidden.bs.modal', function() {
+            stopAtkBarcodeScanner();
+        });
+    }
+
+    if (stopScanBtn) {
+        stopScanBtn.addEventListener('click', function() {
+            stopAtkBarcodeScanner();
+            const modalInstance = bootstrap.Modal.getInstance(scanModalEl);
+            if (modalInstance) modalInstance.hide();
         });
     }
 });

@@ -414,7 +414,7 @@ class TicketWebController extends Controller implements HasMiddleware
             return [];
         }
 
-        $busyQuery = DB::table('ticket_technician as tt')
+        $busyQuery = DB::table('ticket_user as tt')
             ->join('tickets as t', 't.id', '=', 'tt.ticket_id')
             ->whereIn('tt.user_id', $presentIds)
             ->whereIn('t.status', ['assigned', 'in_progress', 'pending']);

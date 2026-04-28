@@ -5,28 +5,28 @@
 @section('content')
 <div class="container-fluid">
 
-   <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-    <h1 class="h4 mb-0">{{ __('Product Barcodes') }}</h1>
-<div class="d-flex gap-2 mb-3">
-
-    <a href="{{ route('atk.products.barcodes.pdf', ['paper'=>'a4','mode'=>'preview']) }}"
-       target="_blank"
-       class="btn btn-primary">
-        Preview A4
-    </a>
-    <a href="{{ route('atk.products.barcodes.pdf', ['paper'=>'a4','mode'=>'print']) }}"
-       target="_blank"
-       class="btn btn-warning">
-        Print A4
-    </a>  
-    <a href="{{ route('atk.products.index') }}" class="btn btn-secondary" title="{{ __('Back') }}">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span class="d-none d-md-inline ms-2">{{ __('Back') }}</span>
-     </a>
-
- </div>
-    
-</div>
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <h1 class="h4 mb-0">{{ __('Product Barcodes') }}</h1>
+        <div class="d-flex gap-2 mb-3">
+            <form action="{{ route('atk.products.barcodes') }}" method="GET" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari..." value="{{ request('search') }}" autofocus>
+                <button type="submit" class="btn btn-dark btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </form>
+            <a href="{{ route('atk.products.barcodes.pdf', ['paper'=>'a4','mode'=>'preview', 'search' => request('search')]) }}"
+               target="_blank"
+               class="btn btn-primary btn-sm">
+                Preview A4
+            </a>
+            <a href="{{ route('atk.products.barcodes.pdf', ['paper'=>'a4','mode'=>'print', 'search' => request('search')]) }}"
+               target="_blank"
+               class="btn btn-warning btn-sm">
+                Print A4
+            </a>
+            <a href="{{ route('atk.products.index') }}" class="btn btn-secondary btn-sm" title="{{ __('Back') }}">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+        </div>
+    </div>
 
     {{-- Quantity Form --}}
     <!-- <form method="GET" class="mb-3 no-print">
