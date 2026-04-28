@@ -186,41 +186,62 @@ class TicketWebController extends Controller implements HasMiddleware
         ]);
 
         // Notify Technician Group via Telegram
+        $this->sendTelegramTicketNotification($ticket, 'created');
+
+        return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
+    }
+
+    /**
+     * Send Telegram notification for ticket events.
+     */
+    protected function sendTelegramTicketNotification(Ticket $ticket, string $type = 'created', ?string $customDescription = null): void
+    {
         try {
             $telegramService = new \App\Services\TelegramService;
             $customerName = $ticket->customer ? $ticket->customer->name : 'N/A';
-            // Clean location string for link
             $locationLink = $ticket->location ? 'https://maps.google.com/?q='.urlencode($ticket->location) : '#';
 
-            // Get Template from Settings
-            $templateSetting = \App\Models\Setting::where('key', 'telegram_ticket_template')->first();
+            $settingKey = $type === 'solved' ? 'telegram_ticket_solved_template' : 'telegram_ticket_template';
+            $templateSetting = \App\Models\Setting::where('key', $settingKey)->first();
             $template = $templateSetting ? $templateSetting->value : null;
 
-            // Get Assigned Technicians
             $technicianNames = $ticket->technicians->pluck('name')->join(', ');
             if (empty($technicianNames)) {
                 $technicianNames = '-';
             }
 
-            // Get Coordinator Name
             $coordinatorName = $ticket->coordinator ? $ticket->coordinator->name : '-';
 
             if (empty($template)) {
-                // Fallback if template is missing
-                $template = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
-                           "🆔 *No:* `{ticket_number}`\n".
-                           "📝 *Subject:* `{subject}`\n".
-                           "👤 *Customer:* `{customer_name}`\n".
-                           "👷 *Teknisi:* `{technicians}`\n".
-                           "👔 *Koordinator:* `{coordinator}`\n".
-                           "📍 *Lokasi:* `{location}`\n".
-                           "⚠️ *Prioritas:* `{priority}`\n".
-                           "📄 *Deskripsi:* `{description}`\n\n".
-                           "Silakan cek aplikasi untuk detail lebih lanjut.\n".
-                           '[Lihat Lokasi]({location_link})';
+                if ($type === 'solved') {
+                    $template = "✅ *TIKET SELESAI (TICKET SOLVED)*\n\n".
+                               "🆔 *No:* `{ticket_number}`\n".
+                               "📝 *Subject:* `{subject}`\n".
+                               "👤 *Customer:* `{customer_name}`\n".
+                               "👷 *Teknisi:* `{technicians}`\n".
+                               "👔 *Koordinator:* `{coordinator}`\n".
+                               "📍 *Lokasi:* `{location}`\n".
+                               "⚠️ *Prioritas:* `{priority}`\n".
+                               "📄 *Keterangan Selesai:* `{description}`\n\n".
+                               "Tiket telah diselesaikan oleh teknisi.\n".
+                               '[Lihat Lokasi]({location_link})';
+                } else {
+                    $template = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
+                               "🆔 *No:* `{ticket_number}`\n".
+                               "📝 *Subject:* `{subject}`\n".
+                               "👤 *Customer:* `{customer_name}`\n".
+                               "👷 *Teknisi:* `{technicians}`\n".
+                               "👔 *Koordinator:* `{coordinator}`\n".
+                               "📍 *Lokasi:* `{location}`\n".
+                               "⚠️ *Prioritas:* `{priority}`\n".
+                               "📄 *Deskripsi:* `{description}`\n\n".
+                               "Silakan cek aplikasi untuk detail lebih lanjut.\n".
+                               '[Lihat Lokasi]({location_link})';
+                }
             }
 
-            // Replace Placeholders
+            $description = $customDescription ?? $ticket->description;
+
             $replacements = [
                 '{ticket_number}' => "`".\App\Services\TelegramService::escape($ticket->ticket_number)."`",
                 '{subject}' => \App\Services\TelegramService::escape($ticket->subject),
@@ -229,18 +250,15 @@ class TicketWebController extends Controller implements HasMiddleware
                 '{coordinator}' => \App\Services\TelegramService::escape($coordinatorName),
                 '{location}' => \App\Services\TelegramService::escape($ticket->location ?? '-'),
                 '{priority}' => \App\Services\TelegramService::escape(ucfirst($ticket->priority)),
-                '{description}' => \App\Services\TelegramService::escape($ticket->description ?? '-'),
+                '{description}' => \App\Services\TelegramService::escape($description ?? '-'),
                 '{location_link}' => $locationLink,
             ];
 
             $message = str_replace(array_keys($replacements), array_values($replacements), $template);
-
             $telegramService->sendToTechnicianGroup($message);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send Telegram notification: '.$e->getMessage());
+            \Illuminate\Support\Facades\Log::error("Failed to send Telegram {$type} notification: ".$e->getMessage());
         }
-
-        return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
     }
 
     /**
@@ -325,6 +343,11 @@ class TicketWebController extends Controller implements HasMiddleware
 
             if ($ticket->status === 'closed' && ! $ticket->closed_at) {
                 $ticket->update(['closed_at' => now()]);
+            }
+
+            // Notify Technician Group via Telegram if solved or closed
+            if (in_array($ticket->status, ['solved', 'closed'])) {
+                $this->sendTelegramTicketNotification($ticket, 'solved', "Status changed to " . ucfirst($ticket->status));
             }
         }
 
@@ -542,6 +565,9 @@ class TicketWebController extends Controller implements HasMiddleware
             'action' => 'completed',
             'description' => 'Ticket marked as solved with photos.'.$completionNote,
         ]);
+
+        // Notify Technician Group via Telegram for Solved Ticket
+        $this->sendTelegramTicketNotification($ticket, 'solved', $request->description);
 
         DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
 
