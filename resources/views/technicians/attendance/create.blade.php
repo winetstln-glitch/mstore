@@ -13,6 +13,9 @@
                     <div class="user-avatar-badge rounded-circle p-2 border border-white border-opacity-25">
                         <i class="fa-solid fa-user-circle fs-3"></i>
                     </div>
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-circle" data-bs-toggle="modal" data-bs-target="#attendanceHelpModal" title="{{ __('Bantuan') }}">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
                 </div>
 
                 <div class="clock-panel p-4 rounded-4 shadow-sm text-center position-relative" style="z-index: 10; margin-bottom: -60px;">
@@ -228,11 +231,17 @@
     const retryLocationBtn = document.getElementById('retryLocationBtn');
     const openAttendanceMapPickerBtn = document.getElementById('openAttendanceMapPickerBtn');
 
+    const photoInput = document.getElementById('photo');
+
     function hasValidLocation() {
         if (!latitudeInput || !longitudeInput) return false;
         const lat = String(latitudeInput.value || '').trim();
         const lng = String(longitudeInput.value || '').trim();
         return lat !== '' && lng !== '';
+    }
+
+    function hasValidPhoto() {
+        return photoInput && photoInput.files && photoInput.files.length > 0;
     }
 
     function setLocationStatus(text, mode) {
@@ -257,7 +266,22 @@
     }
 
     function refreshSubmitState() {
-        setSubmitEnabled(hasValidLocation());
+        const locationValid = hasValidLocation();
+        const photoValid = hasValidPhoto();
+        
+        setSubmitEnabled(locationValid || photoValid);
+        
+        if (!locationValid && photoValid) {
+            if (instructionText) {
+                instructionText.textContent = "GPS tidak terdeteksi, bukti foto digunakan sebagai pengganti.";
+                instructionText.className = "text-warning small px-5";
+            }
+        } else if (locationValid) {
+            if (instructionText) {
+                instructionText.textContent = "Lokasi terdeteksi. Silakan lanjutkan absensi.";
+                instructionText.className = "text-success small px-5";
+            }
+        }
     }
 
     function setSubmitEnabled(enabled) {
@@ -587,7 +611,11 @@
                 : 'Lokasi Terdeteksi Mode Kompatibel';
             setDetectedLocation(fallbackPosition.coords.latitude, fallbackPosition.coords.longitude, statusText);
         } catch (error) {
-            setLocationStatus('Lokasi belum terdeteksi. Tekan "Coba Lagi" atau "Pilih di Peta".', 'error');
+            setLocationStatus('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.', 'error');
+            if (instructionText && !hasValidPhoto()) {
+                instructionText.textContent = "GPS gagal. Silakan upload/ambil foto agar tombol aktif.";
+                instructionText.className = "text-danger small px-5";
+            }
             refreshSubmitState();
         }
     }
@@ -618,4 +646,162 @@
         requestAttendanceLocation();
     }
 </script>
+
+<div class="modal fade" id="attendanceHelpModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-circle-question me-2 text-primary"></i>{{ __('Panduan Absensi') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-primary rounded-4 border-0 mb-4">
+                    <div class="fw-bold mb-2">
+                        <i class="fa-solid fa-info-circle me-1"></i>{{ __('Cara Menggunakan Absensi') }}
+                    </div>
+                    <p class="mb-0 small">{{ __('Ikuti langkah-langkah berikut untuk melakukan absensi masuk atau pulang.') }}</p>
+                </div>
+
+                <div class="accordion" id="attendanceHelpAccordion">
+                    <div class="accordion-item border-0 mb-2 rounded-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep1">
+                                <span class="badge bg-primary rounded-circle me-2">1</span>
+                                {{ __('Deteksi Lokasi GPS') }}
+                            </button>
+                        </h2>
+                        <div id="helpStep1" class="accordion-collapse collapse show" data-bs-parent="#attendanceHelpAccordion">
+                            <div class="accordion-body">
+                                <ul class="mb-0 small">
+                                    <li>{{ __('Sistem akan otomatis mendeteksi lokasi GPS Anda.') }}</li>
+                                    <li>{{ __('Tunggu hingga status berubah menjadi "Lokasi Terdeteksi (±Xm)".') }}</li>
+                                    <li>{{ __('Jika GPS berhasil terdeteksi, tombol absen akan aktif.') }}</li>
+                                </ul>
+                                <div class="alert alert-warning rounded-3 border-0 py-2 mt-2 mb-0 small">
+                                    <i class="fa-solid fa-lightbulb me-1"></i>
+                                    <strong>{{ __('Tips:') }}</strong> {{ __('Jika GPS tidak terdeteksi, Anda tetap bisa absen dengan mengambil foto bukti.') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item border-0 mb-2 rounded-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep2">
+                                <span class="badge bg-primary rounded-circle me-2">2</span>
+                                {{ __('Ambil Foto Bukti (Jika GPS Gagal)') }}
+                            </button>
+                        </h2>
+                        <div id="helpStep2" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
+                            <div class="accordion-body">
+                                <ul class="mb-0 small">
+                                    <li>{{ __('Klik area "Ambil Foto Selfie" atau "Upload Foto".') }}</li>
+                                    <li>{{ __('Izinkan akses kamera jika diminta browser.') }}</li>
+                                    <li>{{ __('Ambil foto selfie atau foto bukti kehadiran.') }}</li>
+                                    <li>{{ __('Foto akan otomatis dioptimasi ukurannya.') }}</li>
+                                </ul>
+                                <div class="alert alert-danger rounded-3 border-0 py-2 mt-2 mb-0 small">
+                                    <i class="fa-solid fa-exclamation-triangle me-1"></i>
+                                    <strong>{{ __('Penting:') }}</strong> {{ __('Jika GPS tidak terdeteksi, foto WAJIB diambil sebagai bukti kehadiran.') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item border-0 mb-2 rounded-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep3">
+                                <span class="badge bg-primary rounded-circle me-2">3</span>
+                                {{ __('Kirim Absensi') }}
+                            </button>
+                        </h2>
+                        <div id="helpStep3" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
+                            <div class="accordion-body">
+                                <ul class="mb-0 small">
+                                    <li>{{ __('Pastikan tombol fingerprint sudah aktif (tidak abu-abu).') }}</li>
+                                    <li>{{ __('Klik tombol fingerprint untuk mengirim absensi.') }}</li>
+                                    <li>{{ __('Tunggu konfirmasi "Berhasil" dari sistem.') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item border-0 mb-2 rounded-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep4">
+                                <span class="badge bg-primary rounded-circle me-2">4</span>
+                                {{ __('Solusi Jika GPS Tidak Terdeteksi') }}
+                            </button>
+                        </h2>
+                        <div id="helpStep4" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
+                            <div class="accordion-body">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="p-2 rounded-3 border small">
+                                            <strong><i class="fa-solid fa-camera me-1"></i> {{ __('Pakai Foto') }}</strong>
+                                            <p class="mb-0 text-muted small">{{ __('Ambil foto sebagai pengganti GPS.') }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 rounded-3 border small">
+                                            <strong><i class="fa-solid fa-rotate-right me-1"></i> {{ __('Coba Lagi') }}</strong>
+                                            <p class="mb-0 text-muted small">{{ __('Klik tombol "Coba Lagi" untuk deteksi ulang.') }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 rounded-3 border small">
+                                            <strong><i class="fa-solid fa-map me-1"></i> {{ __('Pilih di Peta') }}</strong>
+                                            <p class="mb-0 text-muted small">{{ __('Pilih lokasi manual pada denah.') }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 rounded-3 border small">
+                                            <strong><i class="fa-solid fa-wifi me-1"></i> {{ __('Mode Kompatibel') }}</strong>
+                                            <p class="mb-0 text-muted small">{{ __('Sistem otomatis coba mode alternatif.') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item border-0 rounded-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep5">
+                                <span class="badge bg-primary rounded-circle me-2">5</span>
+                                {{ __('Request Leave / Izin') }}
+                            </button>
+                        </h2>
+                        <div id="helpStep5" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
+                            <div class="accordion-body">
+                                <ul class="mb-0 small">
+                                    <li>{{ __('Klik tombol "Request Leave" di halaman absensi.') }}</li>
+                                    <li>{{ __('Pilih jenis izin (Cuti, Sakit, Keluarga, dll).') }}</li>
+                                    <li>{{ __('Tentukan tanggal mulai dan akhir izin.') }}</li>
+                                    <li>{{ __('Berikan alasan izin.') }}</li>
+                                    <li>{{ __('Tunggu persetujuan dari Admin.') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary rounded-4 border-0 mt-4 mb-0">
+                    <div class="small">
+                        <strong><i class="fa-solid fa-clock me-1"></i>{{ __('Waktu Absensi:') }}</strong>
+                        <div class="mt-2">
+                            <div><strong>{{ __('Clock In:') }}</strong> {{ $attendanceSettings['clock_in_start'] ?? '07:00' }} - {{ $attendanceSettings['clock_in_end'] ?? '09:00' }} WIB</div>
+                            <div><strong>{{ __('Clock Out:') }}</strong> {{ $attendanceSettings['clock_out_start'] ?? '20:00' }} - {{ $attendanceSettings['clock_out_end'] ?? '01:00' }} WIB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-primary rounded-4" data-bs-dismiss="modal">{{ __('Mengerti') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

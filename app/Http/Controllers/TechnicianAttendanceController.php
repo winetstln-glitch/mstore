@@ -713,10 +713,17 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
             $request->validate([
                 'photo' => 'nullable|image|max:'.$photoMaxKb,
-                'latitude' => 'required',
-                'longitude' => 'required',
+                'latitude' => 'nullable',
+                'longitude' => 'nullable',
                 'device_fingerprint' => 'nullable|string|min:8|max:128',
             ]);
+
+            // If GPS is missing, photo MUST be present as a fallback
+            if (! $request->latitude || ! $request->longitude) {
+                if (! $request->hasFile('photo')) {
+                    return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
+                }
+            }
 
             $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
             $currentUser = Auth::user();
@@ -819,10 +826,17 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
         $request->validate([
             'photo' => 'nullable|image|max:'.$photoMaxKb,
-            'latitude' => 'required',
-            'longitude' => 'required',
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
             'device_fingerprint' => 'nullable|string|min:8|max:128',
         ]);
+
+        // If GPS is missing, photo MUST be present as a fallback
+        if (! $request->latitude || ! $request->longitude) {
+            if (! $request->hasFile('photo')) {
+                return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
+            }
+        }
 
         $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
         $currentUser = Auth::user();
