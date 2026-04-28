@@ -555,6 +555,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     }
                     $rangeStart = $s;
                     $rangeEnd = $e;
+                    
+                    // Update year and month based on rangeStart for display consistency
+                    $year = (int) $rangeStart->year;
+                    $month = (int) $rangeStart->month;
                 } catch (\Throwable $e) {
                 }
             }
@@ -585,6 +589,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 $rangeEnd
             );
 
+            // Filter technicians by group to sync with selectedGroup
+            if ($selectedGroup !== 'all') {
+                $technicians = $technicians->filter(fn ($u) => ($u->schedule_group ?? '') === $selectedGroup)->values();
+            }
+
             if (in_array($selectedGroup, ['teknisi', 'wash', 'lainnya'], true)) {
                 foreach ($groups as &$grp) {
                     if (($grp['key'] ?? '') !== $selectedGroup) {
@@ -600,6 +609,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     ->pluck('user_id')
                     ->unique()
                     ->values();
+                
+                // Also filter the main technicians list by shift
+                $technicians = $technicians->filter(fn ($u) => $allowedIds->contains($u->id))->values();
+                
                 foreach ($groups as &$grp) {
                     $grp['users'] = ($grp['users'] ?? collect())->filter(fn ($u) => $allowedIds->contains($u->id))->values();
                 }
@@ -614,10 +627,16 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 'dailySchedules',
                 'year',
                 'month',
+                'rangeStart',
+                'rangeEnd',
                 'shiftConfig'
             ))->setPaper('a4', 'landscape');
 
-            return $pdf->download('jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.pdf');
+            $filename = 'jadwal-harian-' . $rangeStart->format('Y-m-d');
+            if ($rangeStart->format('Y-m-d') !== $rangeEnd->format('Y-m-d')) {
+                $filename .= '-ke-' . $rangeEnd->format('Y-m-d');
+            }
+            return $pdf->download($filename . '.pdf');
         }
 
         // Weekly Mode
@@ -706,6 +725,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     }
                     $start = $s;
                     $end = $e;
+
+                    // Update year and month based on start for display consistency
+                    $year = (int) $start->year;
+                    $month = (int) $start->month;
                 } catch (\Throwable $e) {
                 }
             }
@@ -780,7 +803,13 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                 }
 
                 $writer->close();
-            }, 'jadwal-harian-'.sprintf('%04d-%02d', $year, $month).'.xlsx');
+            }, (function() use ($start, $end) {
+                $filename = 'jadwal-harian-' . $start->format('Y-m-d');
+                if ($start->format('Y-m-d') !== $end->format('Y-m-d')) {
+                    $filename .= '-ke-' . $end->format('Y-m-d');
+                }
+                return $filename . '.xlsx';
+            })());
         }
 
         // Weekly Excel

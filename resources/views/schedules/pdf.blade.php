@@ -56,7 +56,13 @@
 
     <h2>{{ ($mode ?? 'weekly') === 'daily' ? 'Jadwal Harian Karyawan' : 'Jadwal Shift Karyawan' }}</h2>
     <div class="meta">
-        Periode: {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}<br>
+        Periode: 
+        @if(($mode ?? 'weekly') === 'daily' && isset($rangeStart) && isset($rangeEnd))
+            {{ $rangeStart->translatedFormat('d F Y') }} - {{ $rangeEnd->translatedFormat('d F Y') }}
+        @else
+            {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}
+        @endif
+        <br>
         @php
             $pdfTeknisiShift = $shiftConfig['teknisi'] ?? null;
             $pdfWashShift = $shiftConfig['wash'] ?? null;
@@ -120,14 +126,20 @@
                                         </td>
                                         @foreach($week['days'] as $day)
                                             @php
-                                                $inMonth = ((int) $day->month) === (int) $month;
+                                                $isInRange = true;
+                                                if (isset($rangeStart) && isset($rangeEnd)) {
+                                                    $isInRange = $day->between($rangeStart, $rangeEnd);
+                                                } else {
+                                                    $isInRange = ((int) $day->month) === (int) $month;
+                                                }
+                                                
                                                 $key = $day->format('Y-m-d');
                                                 $row = $dailySchedules->get($key)?->get($tech->id);
                                                 $status = $row ? $row->status : 'off';
                                                 $cfg = $statusMap[$status] ?? $statusMap['off'];
                                             @endphp
-                                            <td class="center {{ $inMonth ? $cfg['class'] : '' }}">
-                                                {{ $inMonth ? $cfg['label'] : '-' }}
+                                            <td class="center {{ $isInRange ? $cfg['class'] : '' }}">
+                                                {{ $isInRange ? $cfg['label'] : '-' }}
                                             </td>
                                         @endforeach
                                     </tr>
