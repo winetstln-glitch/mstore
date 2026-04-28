@@ -5,7 +5,7 @@
     <div class="col-lg-6 col-md-8 px-0 px-md-3">
         <div class="card shadow-lg border-0 rounded-5 overflow-hidden attendance-shell mb-2 pb-2">
             <div class="leave-header-card p-4 pb-2 rounded-bottom-5 shadow position-relative attendance-header">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <div>
                         <p class="leave-header-greeting small mb-0">{{ __('Selamat Datang,') }}</p>
                         <h4 class="leave-header-name fw-bold mb-0">{{ Auth::user()->name }}</h4>
@@ -13,8 +13,8 @@
                     <div class="user-avatar-badge rounded-circle p-2 border border-white border-opacity-25">
                         <i class="fa-solid fa-user-circle fs-3"></i>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-light rounded-circle" data-bs-toggle="modal" data-bs-target="#attendanceHelpModal" title="{{ __('Bantuan') }}">
-                        <i class="fa-solid fa-circle-question"></i>
+                    <button type="button" class="btn btn-sm btn-warning rounded-circle shadow" data-bs-toggle="modal" data-bs-target="#attendanceHelpModal" title="{{ __('Bantuan') }}">
+                        <i class="fa-solid fa-circle-question text-dark"></i>
                     </button>
                 </div>
 
@@ -29,20 +29,17 @@
                         <button type="button" id="retryLocationBtn" class="btn btn-sm btn-outline-secondary rounded-pill">
                             <i class="fa-solid fa-rotate-right me-1"></i>{{ __('Coba Lagi') }}
                         </button>
-                        <button type="button" id="openAttendanceMapPickerBtn" class="btn btn-sm btn-outline-primary rounded-pill">
-                            <i class="fa-solid fa-map-location-dot me-1"></i>{{ __('Pilih di Peta') }}
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="card-body p-4 pt-5 mt-5">
-                <div id="face-model-status" class="alert alert-info rounded-4 text-center mb-4 border-0 shadow-sm" style="display: none;">
+            <div class="card-body p-4 pt-3 mt-5">
+                <div id="face-model-status" class="alert alert-info rounded-4 text-center mb-2 border-0 shadow-sm" style="display: none;">
                     <i class="fa-solid fa-spinner fa-spin me-2"></i> {{ __('Memuat Model Deteksi Wajah...') }}
                 </div>
 
                 @if($errors->any())
-                    <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-4" role="alert">
+                    <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-2" role="alert">
                         <ul class="mb-0 ps-3 small">
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -51,7 +48,7 @@
                     </div>
                 @endif
 
-                <div class="row g-3 mb-4 px-1">
+                <div class="row g-3 mb-2 px-1">
                     <div class="col-4">
                         <div class="status-info-card status-info-masuk rounded-4 p-3 text-center h-100">
                             <div class="status-info-label">{{ __('Masuk') }}</div>
@@ -72,7 +69,7 @@
                     </div>
                 </div>
 
-                <div class="alert alert-primary rounded-4 border-0 shadow-sm mb-4 small">
+                <div class="alert alert-primary rounded-4 border-0 shadow-sm mb-2 small">
                     <div class="fw-bold mb-1">
                         <i class="fa-solid fa-business-time me-1"></i>{{ __('Informasi Shift Hari Ini') }}
                     </div>
@@ -83,7 +80,7 @@
                 </div>
 
                 @if(Auth::user()->hasPermission('leave.create') || Auth::user()->hasPermission('leave.view'))
-                <div class="d-grid mb-4 px-1">
+                <div class="d-grid mb-2 px-1">
                     <button type="button" class="btn btn-outline-primary rounded-4 fw-semibold py-2" data-bs-toggle="modal" data-bs-target="#attendanceLeaveModal">
                         <i class="fa-solid fa-plane-departure me-1"></i>{{ __('Request Leave') }}
                     </button>
@@ -92,7 +89,7 @@
 
                 @if($todayAttendance && $todayAttendance->clock_out)
                     <div class="text-center p-5 rounded-5 shadow-sm border my-4 done-state-card">
-                        <div class="display-1 text-success mb-4 text-gradient">
+                        <div class="display-1 text-success mb-2 text-gradient">
                             <i class="fa-solid fa-circle-check"></i>
                         </div>
                         <h4 class="fw-bold text-dark">{{ __('Selesai Hari Ini') }}</h4>
@@ -116,7 +113,7 @@
                         <input type="hidden" name="device_fingerprint" id="deviceFingerprint">
 
                         @if($isOut)
-                        <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-3 text-center mb-4 small">
+                        <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-3 text-center mb-2 small">
                             <i class="fa-solid fa-clock-rotate-left me-1"></i> {!! __('Jam Masuk: :time', ['time' => '<b>' . $todayAttendance->clock_in->format('H:i') . '</b>']) !!}
                         </div>
                         @endif
@@ -657,7 +654,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-primary rounded-4 border-0 mb-4">
+                <div class="alert alert-primary rounded-4 border-0 mb-2">
                     <div class="fw-bold mb-2">
                         <i class="fa-solid fa-info-circle me-1"></i>{{ __('Cara Menggunakan Absensi') }}
                     </div>
