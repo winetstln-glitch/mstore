@@ -1035,7 +1035,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         TechnicianDailySchedule::updateOrCreate(
             [
                 'user_id' => $request->user_id,
-                'date' => $request->date,
+                'date' => \Carbon\Carbon::parse($request->date)->toDateString(),
             ],
             [
                 'status' => $request->status,
@@ -1089,8 +1089,11 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         DB::transaction(function () use ($schedules) {
             foreach ($schedules as $userId => $dates) {
                 foreach ($dates as $date => $status) {
+                    // Gunakan toDateString() untuk memastikan format YYYY-MM-DD yang konsisten dengan SQLite
+                    $formattedDate = \Carbon\Carbon::parse($date)->toDateString();
+                    
                     TechnicianDailySchedule::updateOrCreate(
-                        ['user_id' => $userId, 'date' => $date],
+                        ['user_id' => $userId, 'date' => $formattedDate],
                         ['status' => $status, 'notes' => null]
                     );
                 }

@@ -51,6 +51,57 @@
     </form>
 </div>
 
+{{-- Bulk Selection / Multi-Set Bar --}}
+@if($canManage)
+<div class="bulk-set-bar bg-light border-bottom p-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+            <span class="fw-bold small">Set Masal:</span>
+        </div>
+        
+        <div style="min-width: 200px;">
+            <select id="bulkTechSelect" class="form-select form-select-sm select2-tech">
+                <option value="">-- Pilih Teknisi --</option>
+                <option value="all">-- Semua Teknisi --</option>
+                @foreach($groups as $group)
+                    @if(($group['users'] ?? collect())->count() > 0)
+                        <optgroup label="{{ $group['label'] }}">
+                            @foreach($group['users'] as $tech)
+                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+                @endforeach
+            </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <input type="date" id="bulkDateStart" class="form-control form-control-sm" value="{{ $rangeStart->format('Y-m-d') }}">
+            <span class="text-muted small">s/d</span>
+            <input type="date" id="bulkDateEnd" class="form-control form-control-sm" value="{{ $rangeEnd->format('Y-m-d') }}">
+        </div>
+
+        <div style="width: 120px;">
+            <select id="bulkShiftSelect" class="form-select form-select-sm">
+                <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_OFF }}">OFF</option>
+                <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_PIKET }}">S1 (Piket)</option>
+                <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_BACKUP }}">S2 (Backup)</option>
+                <option value="{{ \App\Models\TechnicianDailySchedule::STATUS_LONGSHIFT }}">LS (Long)</option>
+            </select>
+        </div>
+
+        <button type="button" id="btnApplyBulkSet" class="btn btn-primary btn-sm px-3">
+            <i class="fa-solid fa-bolt me-1"></i>Terapkan Ke Tabel
+        </button>
+        
+        <div class="text-muted small ms-2">
+            <i class="fa-solid fa-info-circle me-1"></i>Klik "Simpan Grup" di bawah setelah selesai mengatur.
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Daily Schedule Tables by Group --}}
 @if($canManage)
     <form action="{{ route('schedules.daily.bulkStore') }}" method="POST" id="bulkDailyScheduleForm">

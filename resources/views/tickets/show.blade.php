@@ -72,7 +72,7 @@
                     </div>
                     <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Dibuat') }}</small>
-                        <span class="d-block mt-1 fw-medium small">{{ $ticket->created_at->format('d M Y') }}</span>
+                        <span class="d-block mt-1 fw-medium small">{{ $ticket->created_at->format('d M Y, H:i') }}</span>
                     </div>
                     <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Estimasi') }}</small>

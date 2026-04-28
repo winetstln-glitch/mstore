@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->date('date');
-            $table->enum('status', ['piket', 'backup', 'off'])->default('off');
+            $table->enum('status', ['piket', 'backup', 'off', 'longshift'])->default('off');
             $table->text('notes')->nullable();
             $table->timestamps();
 

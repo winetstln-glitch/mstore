@@ -65,7 +65,11 @@
                                     <td class="ps-3">
                                         <div class="fw-bold">#{{ $ticket->ticket_number }}</div>
                                         <div class="fw-medium">{{ $ticket->subject }}</div>
-                                        <div class="small text-body-secondary">{{ $ticket->created_at->diffForHumans() }}</div>
+                                        <div class="small text-body-secondary">
+                                            <i class="fa-regular fa-calendar me-1"></i>{{ $ticket->created_at->format('d M Y, H:i') }}
+                                            <span class="opacity-50 mx-1">•</span>
+                                            {{ $ticket->created_at->diffForHumans() }}
+                                        </div>
                                     </td>
                                     <td>
                                         <div>{{ $ticket->customer->name ?? __('Tidak Diketahui') }}</div>

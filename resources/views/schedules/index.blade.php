@@ -135,12 +135,14 @@
     .shift-badge.off { background: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
 
     .date-range-filter { background: #fff; padding: 12px 20px; border-bottom: 1px solid #dee2e6; }
+    .bulk-set-bar { background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid #dee2e6; }
     .slot-config { display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
     .slot-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; flex-shrink: 0; }
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Show loading overlay on form submit
@@ -165,6 +167,95 @@
                 document.getElementById('loadingOverlay').classList.remove('d-none');
             });
         });
+
+        // Update shift select classes on change
+        const updateShiftClass = (select) => {
+            const val = select.value;
+            select.classList.remove('piket', 'backup', 'longshift', 'off');
+            
+            if (val === 'piket') select.classList.add('piket');
+            else if (val === 'backup') select.classList.add('backup');
+            else if (val === 'longshift') select.classList.add('longshift');
+            else select.classList.add('off');
+        };
+
+        document.querySelectorAll('.shift-select').forEach(select => {
+            select.addEventListener('change', function() {
+                updateShiftClass(this);
+            });
+        });
+
+        // Bulk Set Logic
+        const btnApplyBulk = document.getElementById('btnApplyBulkSet');
+        if (btnApplyBulk) {
+            btnApplyBulk.addEventListener('click', function() {
+                const techId = document.getElementById('bulkTechSelect').value;
+                const startDate = document.getElementById('bulkDateStart').value;
+                const endDate = document.getElementById('bulkDateEnd').value;
+                const shiftValue = document.getElementById('bulkShiftSelect').value;
+
+                if (!techId) {
+                    alert('Silakan pilih teknisi terlebih dahulu.');
+                    return;
+                }
+
+                if (!startDate || !endDate) {
+                    alert('Silakan pilih rentang tanggal.');
+                    return;
+                }
+
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+
+                if (start > end) {
+                    alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai.');
+                    return;
+                }
+
+                // Helper to format date as YYYY-MM-DD in local time
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                let count = 0;
+                const techIds = techId === 'all' ? Array.from(document.querySelectorAll('#bulkTechSelect option')).map(o => o.value).filter(v => v && v !== 'all') : [techId];
+
+                techIds.forEach(id => {
+                    let currentDate = new Date(start);
+                    while (currentDate <= end) {
+                        const dateStr = formatDate(currentDate);
+                        const selectName = `schedules[${id}][${dateStr}]`;
+                        const select = document.querySelector(`select[name="${selectName}"]`);
+                        
+                        if (select) {
+                            select.value = shiftValue;
+                            updateShiftClass(select);
+                            count++;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                });
+
+                if (count > 0) {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: `${count} jadwal berhasil diperbarui di tabel.`
+                    });
+                } else {
+                    alert('Tidak ada jadwal yang cocok dengan kriteria tersebut di tabel saat ini.');
+                }
+            });
+        }
     });
 
     function editPeriod(year, week, start, end) {
