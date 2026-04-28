@@ -222,14 +222,14 @@ class TicketWebController extends Controller implements HasMiddleware
 
             // Replace Placeholders
             $replacements = [
-                '{ticket_number}' => "`{$ticket->ticket_number}`",
-                '{subject}' => $ticket->subject,
-                '{customer_name}' => $customerName,
-                '{technicians}' => $technicianNames,
-                '{coordinator}' => $coordinatorName,
-                '{location}' => $ticket->location ?? '-',
-                '{priority}' => ucfirst($ticket->priority),
-                '{description}' => $ticket->description ?? '-',
+                '{ticket_number}' => "`".\App\Services\TelegramService::escape($ticket->ticket_number)."`",
+                '{subject}' => \App\Services\TelegramService::escape($ticket->subject),
+                '{customer_name}' => \App\Services\TelegramService::escape($customerName),
+                '{technicians}' => \App\Services\TelegramService::escape($technicianNames),
+                '{coordinator}' => \App\Services\TelegramService::escape($coordinatorName),
+                '{location}' => \App\Services\TelegramService::escape($ticket->location ?? '-'),
+                '{priority}' => \App\Services\TelegramService::escape(ucfirst($ticket->priority)),
+                '{description}' => \App\Services\TelegramService::escape($ticket->description ?? '-'),
                 '{location_link}' => $locationLink,
             ];
 

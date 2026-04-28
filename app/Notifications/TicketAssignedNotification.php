@@ -45,7 +45,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
 
     public function toTelegram(object $notifiable)
     {
-        return $this->toWhatsApp($notifiable);
+        return self::buildMessage($this->ticket, $notifiable, null, true);
     }
 
     /**
@@ -80,27 +80,43 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
             "Segera proses tiket ini melalui link berikut:\n{url}";
     }
 
-    public static function buildMessage(Ticket $ticket, object $notifiable, ?string $customTemplate = null): string
+    public static function buildMessage(Ticket $ticket, object $notifiable, ?string $customTemplate = null, bool $escapeForTelegram = false): string
     {
         $template = trim((string) ($customTemplate ?? ''));
         if ($template === '') {
             $template = (string) Setting::getValue('whatsapp_ticket_template', self::defaultTemplate());
         }
 
+        $technicianName = $notifiable->name ?? 'Teknisi';
+        $ticketNumber = $ticket->ticket_number;
+        $subject = $ticket->subject;
         $customerName = $ticket->customer->name ?? 'Unknown';
         $location = $ticket->location ?? '-';
+        $priority = ucfirst((string) $ticket->priority);
         $description = $ticket->description ?: '-';
         $url = route('tickets.show', $ticket->id);
+
+        if ($escapeForTelegram) {
+            $technicianName = \App\Services\TelegramService::escape($technicianName);
+            $ticketNumber = \App\Services\TelegramService::escape($ticketNumber);
+            $subject = \App\Services\TelegramService::escape($subject);
+            $customerName = \App\Services\TelegramService::escape($customerName);
+            $location = \App\Services\TelegramService::escape($location);
+            $priority = \App\Services\TelegramService::escape($priority);
+            $description = \App\Services\TelegramService::escape($description);
+            // URL doesn't usually need escaping for Markdown unless it has special chars in brackets, 
+            // but Telegram usually handles raw URLs fine.
+        }
 
         return str_replace(
             ['{technician_name}', '{ticket_number}', '{subject}', '{customer_name}', '{location}', '{priority}', '{description}', '{url}'],
             [
-                $notifiable->name ?? 'Teknisi',
-                $ticket->ticket_number,
-                $ticket->subject,
+                $technicianName,
+                $ticketNumber,
+                $subject,
                 $customerName,
                 $location,
-                ucfirst((string) $ticket->priority),
+                $priority,
                 $description,
                 $url,
             ],

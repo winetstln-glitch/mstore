@@ -264,12 +264,12 @@ class TelegramService
         };
 
         $message = "🎫 *Status Tiket*\n\n";
-        $message .= "*Nomor:* `{$ticket->ticket_number}`\n";
-        $message .= "*Subjek:* {$ticket->subject}\n";
-        $message .= '*Pelanggan:* '.($ticket->customer->name ?? '-')."\n";
-        $message .= "*Status:* {$statusEmoji} ".ucfirst($ticket->status)."\n";
-        $message .= '*Teknisi:* '.($ticket->technicians->pluck('name')->join(', ') ?: '-')."\n";
-        $message .= '*Koordinator:* '.($ticket->coordinator->name ?? '-')."\n";
+        $message .= "*Nomor:* `".self::escape($ticket->ticket_number)."`\n";
+        $message .= "*Subjek:* ".self::escape($ticket->subject)."\n";
+        $message .= '*Pelanggan:* '.self::escape($ticket->customer->name ?? '-')."\n";
+        $message .= "*Status:* {$statusEmoji} ".ucfirst(self::escape($ticket->status))."\n";
+        $message .= '*Teknisi:* '.self::escape($ticket->technicians->pluck('name')->join(', ') ?: '-')."\n";
+        $message .= '*Koordinator:* '.self::escape($ticket->coordinator->name ?? '-')."\n";
         $message .= '*Update Terakhir:* '.$ticket->updated_at->format('d M Y H:i');
 
         $this->sendMessage($chatId, $message);
@@ -324,10 +324,10 @@ class TelegramService
             $statusText = $isOnline ? 'ONLINE' : 'OFFLINE';
 
             $response = "📡 *Status Modem*\n\n";
-            $response .= "*Pelanggan:* {$customer->name}\n";
-            $response .= "*SN:* `{$customer->onu_serial}`\n";
+            $response .= "*Pelanggan:* ".self::escape($customer->name)."\n";
+            $response .= "*SN:* `".self::escape($customer->onu_serial)."`\n";
             $response .= "*Status:* {$emoji} *{$statusText}*\n";
-            $response .= "*Terakhir Terlihat:* {$lastInform}";
+            $response .= "*Terakhir Terlihat:* ".self::escape($lastInform);
 
             $this->sendMessage($chatId, $response);
 
@@ -375,8 +375,10 @@ class TelegramService
 
         foreach ($activeTickets as $t) {
             $emoji = $mapEmoji($t->status);
-            $cust = $t->customer->name ?? '-';
-            $msg .= "- {$emoji} `{$t->ticket_number}` | {$t->subject} | {$cust}\n";
+            $cust = self::escape($t->customer->name ?? '-');
+            $ticketNum = self::escape($t->ticket_number);
+            $subject = self::escape($t->subject);
+            $msg .= "- {$emoji} `{$ticketNum}` | {$subject} | {$cust}\n";
         }
 
         $this->sendMessage($chatId, $msg);
@@ -447,9 +449,9 @@ class TelegramService
             $msg .= "- Tidak ada data online.\n";
         } else {
             foreach ($onlineStatuses as $status) {
-                $customerName = $status->customer?->name ?? '-';
-                $pppoe = $status->customer?->pppoe_user ?: '-';
-                $ip = $status->tr069_ip ?: '-';
+                $customerName = self::escape($status->customer?->name ?? '-');
+                $pppoe = self::escape($status->customer?->pppoe_user ?: '-');
+                $ip = self::escape($status->tr069_ip ?: '-');
                 $msg .= "- 🟢 {$customerName} | `{$pppoe}` | IP: `{$ip}`\n";
             }
         }
@@ -459,10 +461,10 @@ class TelegramService
             $msg .= "- Tidak ada data offline.\n";
         } else {
             foreach ($offlineStatuses as $status) {
-                $customerName = $status->customer?->name ?? '-';
-                $pppoe = $status->customer?->pppoe_user ?: '-';
-                $ip = $status->tr069_ip ?: '-';
-                $reason = $status->last_reason ?: '-';
+                $customerName = self::escape($status->customer?->name ?? '-');
+                $pppoe = self::escape($status->customer?->pppoe_user ?: '-');
+                $ip = self::escape($status->tr069_ip ?: '-');
+                $reason = self::escape($status->last_reason ?: '-');
                 $msg .= "- 🔴 {$customerName} | `{$pppoe}` | IP: `{$ip}` | {$reason}\n";
             }
         }
@@ -491,29 +493,32 @@ class TelegramService
             }
 
             $responseBody = (string) $response->body();
-            Log::error('Telegram API Error: '.$responseBody, [
-                'chat_id' => $chatId,
-                'parse_mode' => 'Markdown',
-            ]);
+            $isParseError = str_contains(strtolower($responseBody), "can't parse entities");
 
-            // Root cause umum di production: data dinamis merusak format Markdown Telegram
-            // (contoh underscore/backtick tidak berpasangan). Fallback ke plain text agar notifikasi tetap terkirim.
-            if (str_contains(strtolower($responseBody), "can't parse entities")) {
+            // Jika error karena format Markdown, coba kirim sebagai plain text tanpa log error yang menakutkan
+            if ($isParseError) {
+                Log::warning('Telegram Markdown parse failure, attempting plain text fallback.', [
+                    'chat_id' => $chatId,
+                    'error' => $responseBody,
+                ]);
+
                 $fallbackPayload = [
                     'chat_id' => $chatId,
                     'text' => $message,
                 ];
                 $fallbackResponse = Http::timeout(8)->connectTimeout(3)->retry(1, 200)->post($this->apiUrl, $fallbackPayload);
+                
                 if ($fallbackResponse->successful()) {
-                    Log::warning('Telegram sent using plain text fallback after Markdown parse failure.', [
-                        'chat_id' => $chatId,
-                    ]);
-
                     return true;
                 }
 
                 Log::error('Telegram plain text fallback failed: '.$fallbackResponse->body(), [
                     'chat_id' => $chatId,
+                ]);
+            } else {
+                Log::error('Telegram API Error: '.$responseBody, [
+                    'chat_id' => $chatId,
+                    'parse_mode' => 'Markdown',
                 ]);
             }
 
@@ -523,6 +528,22 @@ class TelegramService
 
             return false;
         }
+    }
+
+    /**
+     * Escape special characters for Telegram Markdown (legacy).
+     *
+     * @param string|null $text
+     * @return string
+     */
+    public static function escape($text)
+    {
+        if ($text === null) {
+            return '';
+        }
+
+        // Characters to escape in legacy Markdown: _, *, `, [
+        return str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $text);
     }
 
     public function sendToTechnicianGroup($message)

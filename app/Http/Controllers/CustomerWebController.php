@@ -823,7 +823,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'reason' => $reason,
         ];
 
-        $message = $this->renderTemplateText(trim($template) !== '' ? $template : ($isOnline ? $defaultUpTemplate : $defaultDownTemplate), $payload);
+        $message = $this->renderTemplateText(trim($template) !== '' ? $template : ($isOnline ? $defaultUpTemplate : $defaultDownTemplate), $payload, true);
         $sent = $telegramService->sendToTechnicianGroup($message);
 
         if ($sent) {
@@ -1156,11 +1156,15 @@ class CustomerWebController extends Controller implements HasMiddleware
         return null;
     }
 
-    protected function renderTemplateText(string $template, array $data): string
+    protected function renderTemplateText(string $template, array $data, bool $escape = false): string
     {
         $result = $template;
         foreach ($data as $key => $value) {
-            $result = str_replace('{'.$key.'}', (string) $value, $result);
+            $val = (string) $value;
+            if ($escape) {
+                $val = \App\Services\TelegramService::escape($val);
+            }
+            $result = str_replace('{'.$key.'}', $val, $result);
         }
 
         return $result;

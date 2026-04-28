@@ -357,7 +357,7 @@ class TelegramController extends Controller implements HasMiddleware
             'connection_request_url' => 'http://10.10.10.2:7547/',
             'last_inform' => now()->format('d M Y H:i:s'),
             'reason' => 'Simulasi ONU Offline',
-        ]);
+        ], true);
 
         if ($telegramService->sendToTechnicianGroup($message)) {
             return back()->with('success', 'Test notifikasi IP DOWN berhasil dikirim.');
@@ -392,7 +392,7 @@ class TelegramController extends Controller implements HasMiddleware
             'connection_request_url' => 'http://10.10.10.3:7547/',
             'last_inform' => now()->format('d M Y H:i:s'),
             'reason' => 'Simulasi ONU Recovery',
-        ]);
+        ], true);
 
         if ($telegramService->sendToTechnicianGroup($message)) {
             return back()->with('success', 'Test notifikasi IP UP berhasil dikirim.');
@@ -426,7 +426,7 @@ class TelegramController extends Controller implements HasMiddleware
             'connection_request_url' => 'http://10.10.10.22:7547/',
             'last_inform' => now()->format('d M Y H:i:s'),
             'reason' => 'Preview ONU Offline',
-        ]);
+        ], true);
 
         return back()->with('preview_ip_down', $preview);
     }
@@ -456,16 +456,20 @@ class TelegramController extends Controller implements HasMiddleware
             'connection_request_url' => 'http://10.10.10.33:7547/',
             'last_inform' => now()->format('d M Y H:i:s'),
             'reason' => 'Preview ONU Recovery',
-        ]);
+        ], true);
 
         return back()->with('preview_ip_up', $preview);
     }
 
-    protected function renderTemplate(string $template, array $data): string
+    protected function renderTemplate(string $template, array $data, bool $escape = false): string
     {
         $rendered = $template;
         foreach ($data as $key => $value) {
-            $rendered = str_replace('{'.$key.'}', (string) $value, $rendered);
+            $val = (string) $value;
+            if ($escape) {
+                $val = \App\Services\TelegramService::escape($val);
+            }
+            $rendered = str_replace('{'.$key.'}', $val, $rendered);
         }
 
         return $rendered;

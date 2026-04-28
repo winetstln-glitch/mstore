@@ -454,8 +454,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         $user = $attendance->user;
-        if (! $user || ! $user->phone) {
-            return back()->with('error', __('User does not have a phone number.'));
+        if (! $user) {
+            return back()->with('error', __('User not found.'));
         }
 
         $clockIn = $attendance->clock_in->format('H:i');
@@ -465,10 +465,41 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $message = "Halo {$user->name},\n\nBerikut detail absensi Anda:\n📅 Tanggal: {$date}\n⏰ Masuk: {$clockIn}\n⏰ Pulang: {$clockOut}\n📊 Status: {$status}\n\nTerima kasih.";
 
-        $wa = new WhatsAppService;
-        $wa->sendMessage($user->phone, $message, 'attendance_notification');
+        $sentCount = 0;
+        $channels = [];
 
-        return back()->with('success', __('Notification sent via WhatsApp.'));
+        // WhatsApp
+        if ($user->phone) {
+            $wa = new \App\Services\WhatsAppService;
+            $wa->sendMessage($user->phone, $message, 'attendance_notification');
+            $sentCount++;
+            $channels[] = 'WhatsApp';
+        }
+
+        // Telegram
+        if ($user->telegram_chat_id) {
+            $telegram = new \App\Services\TelegramService;
+            // Use Markdown for Telegram with escaping
+            $tgMessage = "🔔 *DETAIL ABSENSI*\n\n".
+                "Halo *".\App\Services\TelegramService::escape($user->name)."*,\n\n".
+                "Berikut detail absensi Anda:\n".
+                "📅 *Tanggal:* ".\App\Services\TelegramService::escape($date)."\n".
+                "⏰ *Masuk:* ".\App\Services\TelegramService::escape($clockIn)."\n".
+                "⏰ *Pulang:* ".\App\Services\TelegramService::escape($clockOut)."\n".
+                "📊 *Status:* *".\App\Services\TelegramService::escape($status)."*\n\n".
+                "Terima kasih.";
+
+            $telegram->sendMessage($user->telegram_chat_id, $tgMessage);
+            $sentCount++;
+            $channels[] = 'Telegram';
+        }
+
+        if ($sentCount === 0) {
+            return back()->with('error', __('User does not have a phone number or Telegram Chat ID.'));
+        }
+
+        $channelList = implode(' & ', $channels);
+        return back()->with('success', __('Notification sent via :channels.', ['channels' => $channelList]));
     }
 
     public function storeManual(Request $request)

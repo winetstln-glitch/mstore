@@ -127,7 +127,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 ];
                 $message = $this->renderTemplate($this->notifyConfig['down_template'], [
                     ...$payload,
-                ]);
+                ], true);
                 $sent = $telegramService->sendToTechnicianGroup($message);
                 if ($sent) {
                     $statusRecord->last_notified_down_at = now();
@@ -171,7 +171,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 ];
                 $message = $this->renderTemplate($this->notifyConfig['up_template'], [
                     ...$payload,
-                ]);
+                ], true);
                 $sent = $telegramService->sendToTechnicianGroup($message);
                 if ($sent) {
                     $statusRecord->last_notified_up_at = now();
@@ -277,11 +277,15 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         ];
     }
 
-    protected function renderTemplate(string $template, array $data): string
+    protected function renderTemplate(string $template, array $data, bool $escape = false): string
     {
         $rendered = $template;
         foreach ($data as $key => $value) {
-            $rendered = str_replace('{'.$key.'}', (string) $value, $rendered);
+            $val = (string) $value;
+            if ($escape) {
+                $val = \App\Services\TelegramService::escape($val);
+            }
+            $rendered = str_replace('{'.$key.'}', $val, $rendered);
         }
 
         return $rendered;
@@ -401,9 +405,9 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             $message .= "- Tidak ada data online.\n";
         } else {
             foreach ($onlineStatuses as $status) {
-                $name = $status->customer?->name ?? '-';
-                $pppoe = $status->customer?->pppoe_user ?: '-';
-                $ip = $status->tr069_ip ?: '-';
+                $name = \App\Services\TelegramService::escape($status->customer?->name ?? '-');
+                $pppoe = \App\Services\TelegramService::escape($status->customer?->pppoe_user ?: '-');
+                $ip = \App\Services\TelegramService::escape($status->tr069_ip ?: '-');
                 $message .= "- 🟢 {$name} | `{$pppoe}` | IP: `{$ip}`\n";
             }
         }
@@ -413,10 +417,10 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             $message .= "- Tidak ada data offline.\n";
         } else {
             foreach ($offlineStatuses as $status) {
-                $name = $status->customer?->name ?? '-';
-                $pppoe = $status->customer?->pppoe_user ?: '-';
-                $ip = $status->tr069_ip ?: '-';
-                $reason = $status->last_reason ?: '-';
+                $name = \App\Services\TelegramService::escape($status->customer?->name ?? '-');
+                $pppoe = \App\Services\TelegramService::escape($status->customer?->pppoe_user ?: '-');
+                $ip = \App\Services\TelegramService::escape($status->tr069_ip ?: '-');
+                $reason = \App\Services\TelegramService::escape($status->last_reason ?: '-');
                 $message .= "- 🔴 {$name} | `{$pppoe}` | IP: `{$ip}` | {$reason}\n";
             }
         }
