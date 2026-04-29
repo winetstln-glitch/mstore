@@ -173,7 +173,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Event Listeners ---
     // Input manual & RFID Scanner (HID)
     el.input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submitScan(el.input.value.trim());
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitScan(el.input.value.trim());
+        }
+    });
+
+    // Auto-submit setelah input terisi
+    let inputTimer;
+    el.input.addEventListener('input', () => {
+        clearTimeout(inputTimer);
+        const val = el.input.value.trim();
+        if (val.length >= 3) {
+            inputTimer = setTimeout(() => {
+                submitScan(val);
+            }, 1000); // Tunggu 1 detik diam baru submit
+        }
     });
 
     // Auto-focus tetap terjaga
@@ -192,10 +207,31 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const start = (id) => {
-                html5QrCode.start(id, { fps: 10, qrbox: 200 }, (txt) => submitScan(txt));
+                if (html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.start(id, { fps: 10, qrbox: 200 }, (txt) => submitScan(txt));
+                    });
+                } else {
+                    html5QrCode.start(id, { fps: 10, qrbox: 200 }, (txt) => submitScan(txt));
+                }
             };
 
-            start(devices[0].id);
+            // Cari kamera belakang/rear
+            let backCam = devices.find(d => 
+                d.label.toLowerCase().includes('back') || 
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('environment')
+            );
+            
+            let initialId = backCam ? backCam.id : devices[0].id;
+            
+            // Set index select camera sesuai initialId
+            if (backCam) {
+                const idx = devices.findIndex(d => d.id === backCam.id);
+                el.camSelect.selectedIndex = idx;
+            }
+
+            start(initialId);
             el.camSelect.onchange = (e) => start(e.target.value);
             document.getElementById('switchCameraBtn').onclick = () => {
                 const next = (el.camSelect.selectedIndex + 1) % devices.length;

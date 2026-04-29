@@ -1427,6 +1427,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     {
         return [
             'admin',
+            'direktur',
             'coordinator',
             'owner',
             'owner-pendiri',

@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
 
         $roles = [
             ['name' => 'admin', 'label' => 'Administrator'],
+            ['name' => 'direktur', 'label' => 'Direktur'],
             ['name' => 'leader', 'label' => 'Leader'],
             ['name' => 'noc', 'label' => 'Network Operations Center'],
             ['name' => 'network-operations-center', 'label' => 'Network Operations Center'], // Legacy/Existing role support
@@ -38,8 +39,8 @@ class RoleSeeder extends Seeder
             );
 
             // Assign Permissions
-            if ($role->name === 'admin') {
-                // Admin gets all permissions
+            if (in_array($role->name, ['admin', 'direktur'])) {
+                // Admin and Direktur get all permissions
                 $role->permissions()->sync(Permission::all());
             } elseif ($role->name === 'leader') {
                 // Leader permissions: ticket management + attendance monitoring

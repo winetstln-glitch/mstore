@@ -22,8 +22,8 @@ class CheckPermission
 
         $user = Auth::user();
 
-        // Admin has all permissions (optional, but good practice)
-        if ($user->hasRole('admin')) {
+        // Admin and Direktur have all permissions
+        if ($user->hasRole('admin') || $user->hasRole('direktur')) {
             return $next($request);
         }
 

@@ -1169,27 +1169,32 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $source = 'default';
         $today = now();
 
-        if (Schema::hasTable('technician_daily_schedules')) {
-            $daily = TechnicianDailySchedule::query()
-                ->where('user_id', $user->id)
-                ->whereDate('date', $today->toDateString())
-                ->first();
-            if ($daily) {
-                $status = (string) $daily->status;
-                $source = 'daily';
-            }
-        }
+        $roleName = strtolower((string) ($user->role?->name ?? ''));
+        $isExcludedFromSchedule = in_array($roleName, ['admin', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
 
-        if ($status === null && Schema::hasTable('technician_schedules')) {
-            $weekYear = (int) $today->copy()->weekYear;
-            $weekly = TechnicianSchedule::query()
-                ->where('user_id', $user->id)
-                ->where('year', $weekYear)
-                ->where('week_number', $today->weekOfYear)
-                ->first();
-            if ($weekly) {
-                $status = (string) $weekly->status;
-                $source = 'weekly';
+        if (! $isExcludedFromSchedule) {
+            if (Schema::hasTable('technician_daily_schedules')) {
+                $daily = TechnicianDailySchedule::query()
+                    ->where('user_id', $user->id)
+                    ->whereDate('date', $today->toDateString())
+                    ->first();
+                if ($daily) {
+                    $status = (string) $daily->status;
+                    $source = 'daily';
+                }
+            }
+
+            if ($status === null && Schema::hasTable('technician_schedules')) {
+                $weekYear = (int) $today->copy()->weekYear;
+                $weekly = TechnicianSchedule::query()
+                    ->where('user_id', $user->id)
+                    ->where('year', $weekYear)
+                    ->where('week_number', $today->weekOfYear)
+                    ->first();
+                if ($weekly) {
+                    $status = (string) $weekly->status;
+                    $source = 'weekly';
+                }
             }
         }
 
