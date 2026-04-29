@@ -103,6 +103,9 @@
                             <td>
                                 <div class="fw-semibold">{{ $employee->full_name }}</div>
                                 <div class="small text-muted">{{ $employee->email }}</div>
+                                @if($employee->user)
+                                    <div class="small text-primary"><i class="fa-solid fa-user me-1"></i>{{ $employee->user->username }}</div>
+                                @endif
                             </td>
                             <td>{{ $employee->nik }}</td>
                             <td>{{ $employee->position }}</td>

@@ -186,6 +186,9 @@ class UserController extends Controller implements HasMiddleware
         }
         $createdUser = User::create($createData);
 
+        // Sync to employee
+        app(\App\Services\EmployeeSyncService::class)->syncFromUser($createdUser);
+
         if ($this->hasAttendanceCardColumn() && trim((string) $createdUser->attendance_card_code) === '') {
             $createdUser->update([
                 'attendance_card_code' => User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $createdUser->id), (int) $createdUser->id),
@@ -253,6 +256,8 @@ class UserController extends Controller implements HasMiddleware
                 'full_name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'position' => $user->role?->label ?? 'Karyawan',
+                'department' => app(\App\Services\EmployeeSyncService::class)->departmentFromRole($user->role?->name),
             ]);
 
         if ($request->boolean('reset_default_password')) {
