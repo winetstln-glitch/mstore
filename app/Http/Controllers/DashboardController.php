@@ -260,7 +260,14 @@ class DashboardController extends Controller
                 ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
                 ->groupBy('technician_id')
                 ->pluck('total', 'technician_id');
-            $technicianTaskSummary = $attendanceEmployees->mapWithKeys(function ($employee) use ($activeTicketCounts, $activeInstallationCounts, $activeTicketIdsByUser) {
+            $activeInstallationIdsByUser = Installation::query()
+                ->whereIn('technician_id', $technicianIdsForTable)
+                ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
+                ->orderByDesc('updated_at')
+                ->get(['id', 'technician_id'])
+                ->groupBy('technician_id')
+                ->map(fn ($rows) => (int) optional($rows->first())->id);
+            $technicianTaskSummary = $attendanceEmployees->mapWithKeys(function ($employee) use ($activeTicketCounts, $activeInstallationCounts, $activeTicketIdsByUser, $activeInstallationIdsByUser) {
                 $ticketCount = (int) ($activeTicketCounts[$employee->id] ?? 0);
                 $installationCount = (int) ($activeInstallationCounts[$employee->id] ?? 0);
                 $totalTask = $ticketCount + $installationCount;
@@ -268,6 +275,7 @@ class DashboardController extends Controller
                 return [
                     $employee->id => [
                         'active_ticket_id' => (int) ($activeTicketIdsByUser[$employee->id] ?? 0),
+                        'active_installation_id' => (int) ($activeInstallationIdsByUser[$employee->id] ?? 0),
                         'ticket_active' => $ticketCount,
                         'installation_active' => $installationCount,
                         'total_active' => $totalTask,

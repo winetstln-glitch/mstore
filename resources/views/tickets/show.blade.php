@@ -240,7 +240,7 @@
                                         <div class="col-md-6">
                                             <label for="completion_wan_mac" class="form-label small fw-bold">{{ __('WAN MAC') }} <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" required value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}">
+                                                <input type="text" class="form-control @error('completion_wan_mac') is-invalid @enderror" id="completion_wan_mac" name="completion_wan_mac" required value="{{ old('completion_wan_mac', $ticket->customer->wan_mac ?? '') }}" placeholder="{{ __('Contoh: AA:BB:CC:DD:EE:FF') }}" maxlength="17">
                                                 <button class="btn btn-outline-primary" type="button" id="startCompleteMacQrScan">
                                                     <i class="fa-solid fa-qrcode me-1"></i>{{ __('Scan MAC') }}
                                                 </button>
@@ -707,6 +707,7 @@
         const custMacQrScannerWrapper = document.getElementById('custMacQrScannerWrapper');
         const custMacQrScanStatus = document.getElementById('custMacQrScanStatus');
         const custMacQrReaderElementId = 'ticket-cust-mac-qr-reader';
+        const custWanMacInput = document.getElementById('cust_wan_mac');
         const completionOnuInput = document.getElementById('completion_onu_serial');
         const completionWanMacInput = document.getElementById('completion_wan_mac');
         const startCompleteOnuQrScanBtn = document.getElementById('startCompleteOnuQrScan');
@@ -993,7 +994,13 @@
 
         const normalizeMacAsTyping = (value) => {
             if (!value) return '';
-            const hexOnly = String(value).replace(/[^0-9A-Fa-f]/g, '').toUpperCase().slice(0, 12);
+            let hexOnly = String(value).replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+            
+            // Jika lebih dari 12, kemungkinan ada prefix/suffix SN, ambil 12 karakter terakhir
+            if (hexOnly.length > 12) {
+                hexOnly = hexOnly.slice(-12);
+            }
+            
             return hexOnly.match(/.{1,2}/g)?.join(':') ?? hexOnly;
         };
 

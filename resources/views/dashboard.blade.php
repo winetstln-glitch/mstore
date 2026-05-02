@@ -202,19 +202,40 @@
                                 <td>{{ $attendanceRow?->clock_out ? \Carbon\Carbon::parse($attendanceRow->clock_out)->format('H:i') : '-' }}</td>
                                 @if($attendanceRole === 'technician')
                                     <td>
-                                        <span class="badge {{ $taskSummary['total_active'] > 0 ? 'bg-info-subtle text-info' : 'bg-secondary-subtle text-secondary' }}">
-                                            {{ $taskSummary['label'] }}
-                                        </span>
+                                        @if(($taskSummary['active_ticket_id'] ?? 0) > 0)
+                                            <a href="{{ route('tickets.show', $taskSummary['active_ticket_id']) }}" class="text-decoration-none">
+                                                <span class="badge bg-info-subtle text-info">
+                                                    {{ $taskSummary['label'] }}
+                                                </span>
+                                            </a>
+                                        @elseif(($taskSummary['active_installation_id'] ?? 0) > 0)
+                                            <a href="{{ route('installations.show', $taskSummary['active_installation_id']) }}" class="text-decoration-none">
+                                                <span class="badge bg-info-subtle text-info">
+                                                    {{ $taskSummary['label'] }}
+                                                </span>
+                                            </a>
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary">
+                                                {{ $taskSummary['label'] }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="small">
                                         @if(($taskSummary['active_ticket_id'] ?? 0) > 0)
                                             <a href="{{ route('tickets.show', $taskSummary['active_ticket_id']) }}" class="text-decoration-none fw-semibold">
-                                                {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}
+                                                <i class="fa-solid fa-ticket-alt me-1"></i>{{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}
                                             </a>
                                         @else
-                                            {{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}
+                                            <span class="text-muted"><i class="fa-solid fa-ticket-alt me-1"></i>{{ __('Tiket') }}: {{ $taskSummary['ticket_active'] }}</span>
                                         @endif
-                                        | {{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}
+                                        <span class="mx-1">|</span>
+                                        @if(($taskSummary['active_installation_id'] ?? 0) > 0)
+                                            <a href="{{ route('installations.show', $taskSummary['active_installation_id']) }}" class="text-decoration-none fw-semibold text-info">
+                                                <i class="fa-solid fa-tools me-1"></i>{{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}
+                                            </a>
+                                        @else
+                                            <span class="text-muted"><i class="fa-solid fa-tools me-1"></i>{{ __('Instalasi') }}: {{ $taskSummary['installation_active'] }}</span>
+                                        @endif
                                     </td>
                                 @endif
                             </tr>

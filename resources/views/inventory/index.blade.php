@@ -278,6 +278,7 @@
                                     <th class="d-none d-md-table-cell py-3">{{ __('Kategori') }}</th>
                                     <th class="d-none d-lg-table-cell py-3">{{ __('Merek/Model') }}</th>
                                     <th class="py-3 text-center">{{ __('Stok') }}</th>
+                                    <th class="py-3 text-end">{{ __('Harga Modal') }}</th>
                                     <th class="d-none d-md-table-cell py-3">{{ __('Satuan') }}</th>
                                     <th class="pe-4 py-3 text-end" style="width: 140px;">{{ __('Aksi') }}</th>
                                 </tr>
@@ -312,6 +313,9 @@
                                         <span class="badge bg-{{ $item->stock > 10 ? 'success' : 'danger' }} rounded-pill px-3">
                                             {{ $item->stock }}
                                         </span>
+                                    </td>
+                                    <td class="text-end fw-bold">
+                                        Rp {{ number_format($item->price, 0, ',', '.') }}
                                     </td>
                                     <td class="d-none d-md-table-cell small">{{ $item->unit }}</td>
                                     <td class="pe-4 text-end">

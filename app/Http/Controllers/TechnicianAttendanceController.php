@@ -1036,8 +1036,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         return [
             'admin', // administrasi
+            'leader', // team leader
             'finance', // administrasi/keuangan
-                'hrd-manager',
+            'hrd-manager',
             'noc',
             'network-operations-center',
             'technician',
@@ -1170,7 +1171,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $today = now();
 
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['admin', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
 
         if (! $isExcludedFromSchedule) {
             if (Schema::hasTable('technician_daily_schedules')) {

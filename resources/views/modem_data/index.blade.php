@@ -336,7 +336,14 @@
     }
 
     function normalizeMac(value) {
-        const clean = String(value || '').replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        let clean = String(value || '').replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        
+        // Jika lebih dari 12, kemungkinan ada prefix/suffix SN, ambil 12 karakter terakhir 
+        // karena biasanya MAC ada di bagian akhir atau berdiri sendiri.
+        if (clean.length > 12) {
+            clean = clean.slice(-12);
+        }
+
         if (clean.length !== 12) {
             return String(value || '').trim();
         }
@@ -476,6 +483,19 @@
         initMap();
         const macInput = document.getElementById('macAddress');
         if (macInput) {
+            macInput.addEventListener('input', function (e) {
+                // Jangan format saat sedang menghapus (backspace) agar tidak mengganggu user
+                if (e.inputType === 'deleteContentBackward') return;
+                
+                let val = macInput.value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+                if (val.length > 12) val = val.slice(-12);
+                
+                if (val.length >= 2) {
+                    let formatted = val.match(/.{1,2}/g).join(':');
+                    macInput.value = formatted;
+                }
+            });
+
             macInput.addEventListener('blur', function () {
                 macInput.value = normalizeMac(macInput.value);
             });

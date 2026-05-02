@@ -387,5 +387,36 @@ function openEditModal(id, sn, status, condition, mac, code) {
     var modal = new bootstrap.Modal(document.getElementById('editAssetModal'));
     modal.show();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    function normalizeMac(value) {
+        let clean = String(value || '').replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        if (clean.length > 12) clean = clean.slice(-12);
+        if (clean.length !== 12) return String(value || '').trim();
+        return clean.match(/.{1,2}/g).join(':');
+    }
+
+    function applyMacFormatting(input) {
+        if (!input) return;
+        input.addEventListener('input', function(e) {
+            if (e.inputType === 'deleteContentBackward') return;
+            let val = input.value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+            if (val.length > 12) val = val.slice(-12);
+            if (val.length >= 2) {
+                input.value = val.match(/.{1,2}/g).join(':');
+            }
+        });
+        input.addEventListener('blur', function() {
+            input.value = normalizeMac(input.value);
+        });
+    }
+
+    // Apply to both add and edit modals
+    const addMacInput = document.querySelector('#addAssetModal input[name="mac_address"]');
+    const editMacInput = document.getElementById('editMAC');
+    
+    applyMacFormatting(addMacInput);
+    applyMacFormatting(editMacInput);
+});
 </script>
 @endsection
