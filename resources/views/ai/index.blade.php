@@ -18,15 +18,15 @@
 
     {{-- Business Insights Row (New) --}}
     <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden position-relative">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden position-relative">
                 <div class="card-body position-relative z-1">
                     <div class="d-flex align-items-center mb-2">
                         <i class="fa-solid fa-lightbulb text-warning me-2"></i>
                         <h5 class="card-title mb-0">{{ __('Wawasan Bisnis') }}</h5>
                     </div>
                     <div class="row align-items-center">
-                        <div class="col-md-8">
+                        <div class="col-md-10">
                             <p class="mb-1 opacity-75">{{ $businessInsights['insight_text'] }}</p>
                             <div class="d-flex gap-4 mt-3">
                                 <div>
@@ -50,13 +50,27 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4 text-end d-none d-md-block">
-                            <i class="fa-solid fa-chart-pie fa-6x opacity-25"></i>
-                        </div>
                     </div>
                 </div>
                 {{-- Decorative background --}}
                 <div class="position-absolute top-0 end-0 h-100 w-50 bg-primary opacity-10" style="transform: skewX(-20deg);"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="fa-solid fa-magnifying-glass-chart text-primary me-2"></i>{{ __('Analisis Cepat') }}</h5>
+                    <ul class="list-group list-group-flush small">
+                        @foreach($systemOverview['items'] as $item)
+                            <li class="list-group-item bg-transparent px-0 py-2 d-flex justify-content-between">
+                                {!! $item !!}
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="mt-3 small text-body-secondary">
+                        {!! $systemOverview['footer'] !!}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -243,7 +257,11 @@
                     <div class="bg-body p-3 rounded shadow-sm text-body" style="max-width: 85%; border-bottom-left-radius: 0;">
                         Halo! 👋 Saya Asisten AI Anda. Tanyakan tentang:
                         <ul class="mb-0 ps-3 small mt-1">
+                            <li>"Ringkasan sistem"</li>
                             <li>"Bagaimana penjualan?"</li>
+                            <li>"Diagnosa jaringan"</li>
+                            <li>"Tiket gangguan"</li>
+                            <li>"Pemasangan baru"</li>
                             <li>"Perlu restock?"</li>
                             <li>"Status jaringan"</li>
                         </ul>

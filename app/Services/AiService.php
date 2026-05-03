@@ -6,11 +6,14 @@ use App\Models\AtkProduct;
 use App\Models\AtkTransaction;
 use App\Models\AtkTransactionItem;
 use App\Models\Customer;
+use App\Models\Installation;
 use App\Models\Invoice;
 use App\Models\Package;
 use App\Models\Router;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WashService;
+use App\Models\WashTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -34,7 +37,7 @@ class AiService
         $message = strtolower($message);
 
         // Intent Detection
-        if (str_contains($message, 'help') || str_contains($message, 'bantuan') || str_contains($message, 'cara') || str_contains($message, 'fitur') || str_contains($message, 'apa itu')) {
+        if (str_contains($message, 'help') || str_contains($message, 'bantuan') || str_contains($message, 'cara') || str_contains($message, 'fitur') || str_contains($message, 'apa itu') || str_contains($message, 'kamu bisa apa')) {
             return $this->getHelp($message);
         }
 
@@ -81,6 +84,30 @@ class AiService
 
         if (str_contains($message, 'offline') || str_contains($message, 'modem') || str_contains($message, 'mati') || str_contains($message, 'down')) {
             return $this->getOfflineModems();
+        }
+
+        if (str_contains($message, 'diagnostic') || str_contains($message, 'diagnosa') || str_contains($message, 'periksa modem') || str_contains($message, 'troubleshoot')) {
+            return $this->getDiagnosticAdvice($message);
+        }
+
+        if (str_contains($message, 'untung') || str_contains($message, 'profit') || str_contains($message, 'kesehatan bisnis') || str_contains($message, 'laba')) {
+            return $this->getBusinessHealth();
+        }
+
+        if (str_contains($message, 'summary') || str_contains($message, 'ringkasan') || str_contains($message, 'kondisi') || str_contains($message, 'semua menu')) {
+            return $this->getSystemOverview();
+        }
+
+        if (str_contains($message, 'tiket') || str_contains($message, 'gangguan') || str_contains($message, 'keluhan')) {
+            return $this->getTicketInsights();
+        }
+
+        if (str_contains($message, 'pemasangan') || str_contains($message, 'pasang') || str_contains($message, 'instalasi')) {
+            return $this->getInstallationInsights();
+        }
+
+        if (str_contains($message, 'pelanggan') || str_contains($message, 'customer') || str_contains($message, 'user')) {
+            return $this->getCustomerInsights();
         }
 
         if (str_contains($message, 'sales') || str_contains($message, 'penjualan')) {
@@ -195,6 +222,7 @@ class AiService
                     <li>**Monitor**: Cek status real-time perangkat CPE (online/offline).</li>
                     <li>**Diagnostik**: Lihat kekuatan sinyal (RSSI), uptime, dan klien terhubung.</li>
                     <li>**Aksi**: Reboot perangkat atau reset ke pengaturan pabrik dari jarak jauh.</li>
+                    <li>**Troubleshooting**: Tanyakan "Diagnosa jaringan" untuk analisis otomatis masalah perangkat.</li>
                 </ul>',
             'invoice' => "Untuk mengelola **Tagihan**:
                 <ul>
@@ -872,4 +900,194 @@ class AiService
             return 'Maaf, info layanan cuci tidak tersedia.';
         }
     }
-}
+
+    /**
+     * Get System Overview (Holistic Analysis)
+     */
+    public function getSystemOverview()
+    {
+        $today = Carbon::today();
+        
+        $stats = [
+            'Pelanggan' => Customer::count(),
+            'Tiket Terbuka' => Ticket::whereIn('status', ['open', 'assigned', 'in_progress'])->count(),
+            'Pemasangan Pending' => Installation::whereIn('status', ['registered', 'survey', 'approved', 'installation'])->count(),
+            'Tagihan Tertunggak' => Invoice::where('status', 'pending')->count(),
+            'Transaksi ATK Hari Ini' => AtkTransaction::whereDate('created_at', $today)->count(),
+            'Transaksi Wash Hari Ini' => WashTransaction::whereDate('created_at', $today)->count(),
+        ];
+
+        $list = [];
+        foreach ($stats as $label => $value) {
+            $list[] = "<b>{$label}</b>: {$value}";
+        }
+
+        // Add some "intelligence" analysis
+        $analysis = "Secara keseluruhan, sistem memiliki **{$stats['Pelanggan']}** pelanggan terdaftar. ";
+        if ($stats['Tiket Terbuka'] > 5) {
+            $analysis .= "Ada beban tiket gangguan yang cukup tinggi (**{$stats['Tiket Terbuka']}** tiket). Perlu perhatian tim operasional.";
+        } else {
+            $analysis .= "Beban gangguan rendah, operasional berjalan lancar.";
+        }
+
+        return [
+            'type' => 'list',
+            'title' => 'Ringkasan Kondisi Sistem MStore:',
+            'items' => $list,
+            'footer' => "<br><i>Analisis AI: {$analysis}</i>"
+        ];
+    }
+
+    /**
+     * Get Ticket Insights
+     */
+    public function getTicketInsights()
+    {
+        $tickets = Ticket::whereIn('status', ['open', 'assigned', 'in_progress'])
+            ->with(['customer', 'assignedUser'])
+            ->orderBy('priority', 'desc')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        if ($tickets->isEmpty()) {
+            return "Semua tiket gangguan telah teratasi. Kerja bagus!";
+        }
+
+        $list = [];
+        foreach ($tickets as $ticket) {
+            $customer = $ticket->customer ? $ticket->customer->name : 'Umum';
+            $priority = strtoupper($ticket->priority);
+            $color = $ticket->priority === 'urgent' ? 'danger' : ($ticket->priority === 'high' ? 'warning' : 'primary');
+            $list[] = "<b>[{$priority}]</b> {$ticket->subject} <br><small class='text-muted'>Pelanggan: {$customer} | Status: {$ticket->status}</small>";
+        }
+
+        return [
+            'type' => 'list',
+            'title' => 'Tiket Gangguan Terkini:',
+            'items' => $list,
+        ];
+    }
+
+    /**
+     * Get Installation Insights
+     */
+    public function getInstallationInsights()
+    {
+        $installations = Installation::whereIn('status', ['registered', 'survey', 'approved', 'installation'])
+            ->with('customer')
+            ->orderBy('plan_date', 'asc')
+            ->take(5)
+            ->get();
+
+        if ($installations->isEmpty()) {
+            return "Tidak ada antrian pemasangan baru saat ini.";
+        }
+
+        $list = [];
+        foreach ($installations as $ins) {
+            $date = $ins->plan_date ? $ins->plan_date->format('d M') : 'Belum dijadwalkan';
+            $list[] = "<b>{$ins->customer->name}</b> <br><small class='text-muted'>Rencana: {$date} | Tahap: {$ins->status}</small>";
+        }
+
+        return [
+            'type' => 'list',
+            'title' => 'Antrian Pemasangan Baru:',
+            'items' => $list,
+        ];
+    }
+
+    /**
+     * Get Customer Insights
+     */
+    public function getCustomerInsights()
+    {
+        $total = Customer::count();
+        $active = Customer::where('status', 'active')->count();
+        $newThisMonth = Customer::where('created_at', '>=', Carbon::now()->startOfMonth())->count();
+
+        $list = [
+            "Total Pelanggan: <b>{$total}</b>",
+            "Pelanggan Aktif: <b>{$active}</b>",
+            "Pelanggan Baru (Bulan Ini): <b>{$newThisMonth}</b>",
+        ];
+
+        return [
+             'type' => 'list',
+             'title' => 'Statistik Pelanggan:',
+             'items' => $list,
+         ];
+     }
+
+     /**
+      * Get Business Health (Revenue from all sources)
+      */
+     public function getBusinessHealth()
+     {
+         $thisMonth = Carbon::now()->startOfMonth();
+         
+         $atkRevenue = AtkTransaction::where('created_at', '>=', $thisMonth)->sum('total_amount');
+         $washRevenue = WashTransaction::where('created_at', '>=', $thisMonth)->sum('total_amount');
+         $ispRevenue = Invoice::where('status', 'paid')->where('created_at', '>=', $thisMonth)->sum('amount');
+         
+         $total = $atkRevenue + $washRevenue + $ispRevenue;
+         
+         $list = [
+             "Pendapatan ISP (Lunas): <b>Rp ".number_format($ispRevenue, 0, ',', '.')."</b>",
+             "Pendapatan Toko ATK: <b>Rp ".number_format($atkRevenue, 0, ',', '.')."</b>",
+             "Pendapatan Cuci Kendaraan: <b>Rp ".number_format($washRevenue, 0, ',', '.')."</b>",
+             "Total Estimasi (Bulan Ini): <b>Rp ".number_format($total, 0, ',', '.')."</b>",
+         ];
+
+         $analysis = "Kontribusi terbesar bulan ini berasal dari **" . 
+                    ($ispRevenue > $atkRevenue && $ispRevenue > $washRevenue ? "Layanan ISP" : 
+                    ($atkRevenue > $washRevenue ? "Toko ATK" : "Cuci Kendaraan")) . "**. ";
+
+         return [
+             'type' => 'list',
+             'title' => 'Kesehatan Bisnis (Bulan Ini):',
+             'items' => $list,
+             'footer' => "<br><i>Analisis AI: {$analysis}</i>"
+         ];
+     }
+
+     /**
+      * Get Diagnostic Advice for GenieACS Devices
+      */
+     public function getDiagnosticAdvice($message)
+     {
+         $devices = $this->genieService->getDevices(200, 0);
+         $issues = [];
+         $now = Carbon::now();
+
+         foreach ($devices as $device) {
+             $sn = $device['_deviceId']['_SerialNumber'] ?? 'Unknown';
+             $rxPower = data_get($device, 'VirtualParameters.RXPower._value');
+             $lastInform = isset($device['_lastInform']) ? Carbon::parse($device['_lastInform']) : null;
+             
+             // 1. Check for Critical RX Power (Signal)
+             if ($rxPower !== null && (float)$rxPower < -27) {
+                 $issues[] = "<b>Device {$sn}</b>: Sinyal sangat lemah ({$rxPower} dBm). <br><i>Saran: Periksa sambungan FO atau bersihkan konektor.</i>";
+             }
+
+             // 2. Check for Frequent Disconnects (Mock logic based on inform patterns if available)
+             // In a real scenario, you'd track event history
+             
+             // 3. Check for Long Offline
+             if ($lastInform && $lastInform->diffInHours($now) > 24) {
+                 $issues[] = "<b>Device {$sn}</b>: Offline lebih dari 24 jam. <br><i>Saran: Periksa catu daya atau kemungkinan kabel putus.</i>";
+             }
+         }
+
+         if (empty($issues)) {
+             return "<b>Hasil Diagnosa:</b> Semua perangkat yang dipantau beroperasi dalam batas normal. Tidak ada masalah fisik yang terdeteksi.";
+         }
+
+         return [
+             'type' => 'list',
+             'title' => 'Temuan Diagnosa GenieACS:',
+             'items' => array_slice($issues, 0, 10),
+             'footer' => count($issues) > 10 ? "<br><i>...dan " . (count($issues) - 10) . " masalah lainnya terdeteksi.</i>" : ""
+         ];
+     }
+ }

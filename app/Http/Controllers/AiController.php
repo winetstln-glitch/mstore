@@ -23,6 +23,7 @@ class AiController extends Controller
             'salesForecast' => Cache::remember('ai_forecast', 60, fn () => $this->aiService->getSalesForecast()),
             'networkInsights' => Cache::remember('ai_network', 5, fn () => $this->aiService->getNetworkInsights()),
             'businessInsights' => Cache::remember('ai_business', 30, fn () => $this->aiService->getBusinessInsights()),
+            'systemOverview' => Cache::remember('ai_system_overview', 15, fn () => $this->aiService->getSystemOverview()),
         ];
 
         return view('ai.index', $data);

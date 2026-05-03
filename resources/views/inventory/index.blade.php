@@ -164,13 +164,19 @@
                             'color' => 'success',
                         ],
                         [
-                            'label' => __('Pembelian'),
-                            'value' => 'Rp ' . number_format($totalPurchases, 0, ',', '.'),
-                            'icon'  => 'fa-cart-shopping',
+                            'label' => __('Beli Alat'),
+                            'value' => 'Rp ' . number_format($totalToolPurchases, 0, ',', '.'),
+                            'icon'  => 'fa-toolbox',
                             'color' => 'info',
                         ],
                         [
-                            'label' => __('Pemakaian/Keluar'),
+                            'label' => __('Beli Material'),
+                            'value' => 'Rp ' . number_format($totalMaterialPurchases, 0, ',', '.'),
+                            'icon'  => 'fa-microchip',
+                            'color' => 'primary',
+                        ],
+                        [
+                            'label' => __('Pemakaian'),
                             'value' => 'Rp ' . number_format($totalSales, 0, ',', '.'),
                             'icon'  => 'fa-money-bill-transfer',
                             'color' => 'warning',
@@ -178,7 +184,7 @@
                     ];
                 @endphp
                 @foreach($stats as $stat)
-                <div class="col-6 col-xl-3 mb-3">
+                <div class="col-6 col-md-4 col-xl mb-3">
                     <div class="card border-start-{{ $stat['color'] }} border-start-3 shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">

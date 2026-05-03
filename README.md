@@ -14,6 +14,11 @@ Sistem manajemen komprehensif untuk operasional ISP, termasuk manajemen pelangga
 -   **Manajemen Stok**: Inventaris perangkat (ONT, Kabel, dll).
 -   **Peta Jaringan**: Visualisasi lokasi pelanggan dan infrastruktur (ODP/ODC).
 
+## Panduan Penggunaan
+
+Untuk panduan lengkap cara menggunakan setiap fitur, silakan baca:
+👉 **[Panduan Penggunaan Fitur MStore](GUIDE_PENGGUNAAN.md)**
+
 ## Persyaratan Sistem
 
 -   **PHP**: Versi 8.1 atau lebih tinggi

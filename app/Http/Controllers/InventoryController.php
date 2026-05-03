@@ -76,10 +76,18 @@ class InventoryController extends Controller implements HasMiddleware
             ->value('total_stock_value') ?? 0;
         $totalItems = (clone $query)->count();
 
-        // Total Pembelian (Purchases) - Expense 'Pembelian Alat'
-        $totalPurchases = Cache::remember('inventory.total_purchases', now()->addMinutes(5), function () {
-            return Transaction::where('category', 'Pembelian Alat')->sum('amount');
+        // Total Pembelian (Purchases) separated by type_group
+        $purchaseStats = Cache::remember('inventory.purchase_stats', now()->addMinutes(5), function () {
+            return InventoryTransaction::where('inventory_transactions.type', 'in')
+                ->join('inventory_items', 'inventory_transactions.inventory_item_id', '=', 'inventory_items.id')
+                ->select('inventory_items.type_group', DB::raw('SUM(total_cost) as total'))
+                ->groupBy('inventory_items.type_group')
+                ->pluck('total', 'type_group');
         });
+
+        $totalToolPurchases = $purchaseStats['tool'] ?? 0;
+        $totalMaterialPurchases = $purchaseStats['material'] ?? 0;
+        $totalPurchases = $totalToolPurchases + $totalMaterialPurchases;
 
         // Total Penjualan/Pemakaian (Sales) - Expense 'Pengeluaran Pengurus' linked to Inventory
         $totalSales = Cache::remember('inventory.total_sales', now()->addMinutes(5), function () {
@@ -115,7 +123,7 @@ class InventoryController extends Controller implements HasMiddleware
 
         $myAssets = $myAssetsQuery->get();
 
-        return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalSales', 'categories', 'myAssets'));
+        return view('inventory.index', compact('items', 'transactions', 'totalStockValue', 'totalItems', 'totalPurchases', 'totalToolPurchases', 'totalMaterialPurchases', 'totalSales', 'categories', 'myAssets'));
     }
 
     private function buildMovementQuery(Request $request)
