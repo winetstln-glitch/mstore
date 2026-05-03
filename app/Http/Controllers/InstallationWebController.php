@@ -28,7 +28,7 @@ class InstallationWebController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Installation::query()->with(['customer', 'technician']);
+        $query = Installation::query()->with(['customer', 'technician', 'modemRecord.user']);
 
         if ($request->has('search') && $request->input('search') != '') {
             $search = $request->input('search');
@@ -111,7 +111,7 @@ class InstallationWebController extends Controller implements HasMiddleware
      */
     public function show(Installation $installation)
     {
-        $installation->load(['customer', 'technician']);
+        $installation->load(['customer', 'technician', 'modemRecord.user']);
         $selectedCoordinator = $this->latestInstallationTicketCoordinator((int) $installation->customer_id);
 
         return view('installations.show', compact('installation', 'selectedCoordinator'));
@@ -122,6 +122,7 @@ class InstallationWebController extends Controller implements HasMiddleware
      */
     public function edit(Installation $installation)
     {
+        $installation->load(['customer', 'technician', 'modemRecord.user']);
         $customers = Customer::all();
         $technicians = User::where('role_id', 3)->get();
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);

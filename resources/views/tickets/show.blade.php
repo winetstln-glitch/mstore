@@ -50,7 +50,16 @@
                             };
                         @endphp
                         <div class="mt-1">
-                            <span class="badge {{ $statusClass }} w-100">{{ __(ucfirst(str_replace('_', ' ', $ticket->status))) }}</span>
+                            <span class="badge {{ $statusClass }} w-100">
+                                @if($ticket->status == 'open') {{ __('Terbuka') }}
+                                @elseif($ticket->status == 'assigned') {{ __('Ditugaskan') }}
+                                @elseif($ticket->status == 'in_progress') {{ __('Proses') }}
+                                @elseif($ticket->status == 'solved') {{ __('Selesai') }}
+                                @elseif($ticket->status == 'closed') {{ __('Ditutup') }}
+                                @elseif($ticket->status == 'pending') {{ __('Tertunda') }}
+                                @else {{ __(ucfirst(str_replace('_', ' ', $ticket->status))) }}
+                                @endif
+                            </span>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
@@ -63,12 +72,28 @@
                             };
                         @endphp
                         <div class="mt-1">
-                            <span class="badge {{ $priorityClass }} w-100">{{ __(ucfirst($ticket->priority)) }}</span>
+                            <span class="badge {{ $priorityClass }} w-100">
+                                @if($ticket->priority == 'high') {{ __('Tinggi') }}
+                                @elseif($ticket->priority == 'medium') {{ __('Sedang') }}
+                                @elseif($ticket->priority == 'low') {{ __('Rendah') }}
+                                @else {{ __(ucfirst($ticket->priority)) }}
+                                @endif
+                            </span>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Jenis') }}</small>
-                        <span class="d-block mt-1 fw-medium small text-truncate">{{ __(ucfirst(str_replace('_', ' ', $ticket->type))) }}</span>
+                        <span class="d-block mt-1 fw-medium small text-truncate">
+                            @if($ticket->type == 'gangguan') {{ __('Gangguan') }}
+                            @elseif($ticket->type == 'pasang_baru') {{ __('Pasang Baru') }}
+                            @elseif($ticket->type == 'pasang_odc') {{ __('Instalasi') }}
+                            @elseif($ticket->type == 'tarik_jalur') {{ __('Tarik Jalur') }}
+                            @elseif($ticket->type == 'perbaikan') {{ __('Perbaikan') }}
+                            @elseif($ticket->type == 'maintenance') {{ __('Pemeliharaan') }}
+                            @elseif($ticket->type == 'other') {{ __('Lainnya') }}
+                            @else {{ __(ucfirst(str_replace('_', ' ', $ticket->type))) }}
+                            @endif
+                        </span>
                     </div>
                     <div class="col-6 col-md-3">
                         <small class="text-body-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">{{ __('Dibuat') }}</small>
@@ -290,7 +315,18 @@
                             <div class="position-absolute top-0 start-0 translate-middle-x mt-4 bg-body border border-2 border-primary rounded-circle" style="width: 12px; height: 12px; left: -1.5px;"></div>
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="w-100">
-                                    <h6 class="mb-1 fw-bold text-body-emphasis text-break">{{ ucfirst(str_replace('_', ' ', $log->action)) }}</h6>
+                                    <h6 class="mb-1 fw-bold text-body-emphasis text-break">
+                                        @if($log->action == 'created') {{ __('Tiket Dibuat') }}
+                                        @elseif($log->action == 'updated') {{ __('Tiket Diperbarui') }}
+                                        @elseif($log->action == 'assigned') {{ __('Teknisi Ditugaskan') }}
+                                        @elseif($log->action == 'solved') {{ __('Tiket Diselesaikan') }}
+                                        @elseif($log->action == 'closed') {{ __('Tiket Ditutup') }}
+                                        @elseif($log->action == 'notified') {{ __('Notifikasi Terkirim') }}
+                                        @elseif($log->action == 'commented') {{ __('Komentar Ditambahkan') }}
+                                        @elseif($log->action == 'location_updated') {{ __('Lokasi Diperbarui') }}
+                                        @else {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                                        @endif
+                                    </h6>
                                     <p class="mb-1 text-body-secondary small text-break">{{ $log->description }}</p>
                                     <small class="text-body-secondary fst-italic">{{ __('oleh') }} {{ $log->user->name ?? __('Sistem') }}</small>
                                 </div>

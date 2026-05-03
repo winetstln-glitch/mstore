@@ -113,10 +113,21 @@
                                                 };
                                             @endphp
                                             <span class="badge border {{ $statusClass }} w-auto align-self-start">
-                                                {{ __(ucfirst(str_replace('_', ' ', $ticket->status))) }}
+                                                @if($ticket->status == 'open') {{ __('Terbuka') }}
+                                                @elseif($ticket->status == 'assigned') {{ __('Ditugaskan') }}
+                                                @elseif($ticket->status == 'in_progress') {{ __('Proses') }}
+                                                @elseif($ticket->status == 'solved') {{ __('Selesai') }}
+                                                @elseif($ticket->status == 'closed') {{ __('Ditutup') }}
+                                                @elseif($ticket->status == 'pending') {{ __('Tertunda') }}
+                                                @else {{ __(ucfirst(str_replace('_', ' ', $ticket->status))) }}
+                                                @endif
                                             </span>
                                             <span class="badge border {{ $priorityClass }} w-auto align-self-start">
-                                                {{ __(ucfirst($ticket->priority)) }}
+                                                @if($ticket->priority == 'high') {{ __('Tinggi') }}
+                                                @elseif($ticket->priority == 'medium') {{ __('Sedang') }}
+                                                @elseif($ticket->priority == 'low') {{ __('Rendah') }}
+                                                @else {{ __(ucfirst($ticket->priority)) }}
+                                                @endif
                                             </span>
                                         </div>
                                     </td>

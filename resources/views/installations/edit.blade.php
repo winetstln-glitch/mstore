@@ -86,6 +86,11 @@
                                 @error('technician_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                @if($installation->modemRecord && $installation->modemRecord->user)
+                                    <div class="form-text text-success">
+                                        <i class="fa-solid fa-microchip me-1"></i>{{ __('Pendata Modem:') }} {{ $installation->modemRecord->user->name }}
+                                    </div>
+                                @endif
                             </div>
 
                             <div class="col-md-6">

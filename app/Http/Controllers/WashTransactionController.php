@@ -55,25 +55,42 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->first();
         $isWashOnly = $user->hasRole('karyawan-wash');
         $attendanceRole = $isWashOnly ? 'karyawan-wash' : 'kasir-wash';
-        $roleUserIds = \App\Models\User::query()
+        
+        // Fetch wash employees (karyawan-wash) specifically as requested
+        $washRoleUserIds = \App\Models\User::query()
             ->where('is_active', true)
-            ->whereHas('role', function ($query) use ($attendanceRole) {
-                $query->where('name', $attendanceRole);
+            ->whereHas('role', function ($query) {
+                $query->where('name', 'karyawan-wash');
             })
             ->pluck('id');
-        $presentCount = $roleUserIds->isEmpty()
-            ? 0
-            : TechnicianAttendance::query()
-                ->whereDate('clock_in', today())
-                ->whereIn('status', ['present', 'late'])
-                ->whereIn('user_id', $roleUserIds)
-                ->distinct('user_id')
-                ->count('user_id');
+
+        $presentEmployees = TechnicianAttendance::query()
+            ->with(['user.washEmployee'])
+            ->whereDate('clock_in', today())
+            ->whereIn('status', ['present', 'late'])
+            ->whereIn('user_id', $washRoleUserIds)
+            ->get();
+
+        // Get job counts for these employees today
+        $washEmployeeIds = $presentEmployees->map(fn($a) => $a->user->washEmployee?->id)->filter()->toArray();
+        $jobCounts = WashTransactionItem::whereIn('employee_id', $washEmployeeIds)
+            ->whereDate('created_at', today())
+            ->groupBy('employee_id')
+            ->select('employee_id', DB::raw('count(*) as total_jobs'))
+            ->pluck('total_jobs', 'employee_id');
+
+        // Attach job count to attendance record
+        foreach ($presentEmployees as $attendance) {
+            $employeeId = $attendance->user->washEmployee?->id;
+            $attendance->total_jobs = $jobCounts[$employeeId] ?? 0;
+        }
+
+        $presentCount = $presentEmployees->unique('user_id')->count();
         $attendanceOverview = [
-            'role' => $attendanceRole,
-            'total' => $roleUserIds->count(),
+            'role' => 'Karyawan Wash',
+            'total' => $washRoleUserIds->count(),
             'present' => $presentCount,
-            'not_present' => max($roleUserIds->count() - $presentCount, 0),
+            'not_present' => max($washRoleUserIds->count() - $presentCount, 0),
         ];
         $shiftSchedule = TechnicianDailySchedule::query()
             ->where('user_id', $user->id)
@@ -122,7 +139,8 @@ class WashTransactionController extends Controller implements HasMiddleware
             'topServices',
             'todayAttendance',
             'attendanceOverview',
-            'shiftSchedule'
+            'shiftSchedule',
+            'presentEmployees'
         ));
     }
 

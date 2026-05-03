@@ -155,6 +155,54 @@
     </div>
 
     <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow mb-4 wash-panel">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Daftar Karyawan Hadir') }} ({{ $attendanceOverview['role'] ?? 'Wash' }})</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Nama') }}</th>
+                                    <th>{{ __('Jam Masuk') }}</th>
+                                    <th>{{ __('Pekerjaan') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th>{{ __('Jam Pulang') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($presentEmployees as $attendance)
+                                    <tr>
+                                        <td>{{ $attendance->user->name }}</td>
+                                        <td>{{ $attendance->clock_in->format('H:i') }}</td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">
+                                                {{ $attendance->total_jobs ?? 0 }} {{ __('Jobs') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'late' ? 'warning' : 'secondary') }}">
+                                                {{ __(ucfirst($attendance->status)) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center">{{ __('Belum ada karyawan yang hadir.') }}</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4 wash-panel">
                 <div class="card-header py-3">

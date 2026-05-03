@@ -194,13 +194,32 @@
                     <div class="d-flex align-items-center gap-2">
                         <h6 class="m-0 font-weight-bold text-primary">{{ __('Rekonsiliasi Kas Pengurus (Cash Only)') }}</h6>
                         <span class="badge bg-warning text-dark">{{ __('Tidak Termasuk Ambil Barang') }}</span>
-                        @php $monthText = \Carbon\Carbon::createFromFormat('Y-m', request('month', now()->format('Y-m')))->translatedFormat('F Y'); @endphp
-                        <span class="badge bg-light text-dark border">{{ __('Periode') }}: {{ $monthText }}</span>
+                        @php 
+                            if (request('start_date') && request('end_date')) {
+                                $rangeText = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y');
+                            } else {
+                                $rangeText = \Carbon\Carbon::createFromFormat('Y-m', request('month', now()->format('Y-m')))->translatedFormat('F Y');
+                            }
+                        @endphp
+                        <span class="badge bg-light text-dark border">{{ __('Periode') }}: {{ $rangeText }}</span>
                     </div>
                     <form action="{{ route('finance.index') }}" method="GET" class="w-100 w-lg-auto">
                         <div class="row g-2 align-items-stretch align-items-lg-center">
-                            <div class="col">
-                                <input type="month" name="month" class="form-control form-control-sm" value="{{ request('month', now()->format('Y-m')) }}" onchange="this.form.submit()">
+                            <div class="col-auto">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-days"></i></span>
+                                    <input type="month" name="month" class="form-control" value="{{ request('month', (!request('start_date') ? now()->format('Y-m') : '')) }}" onchange="this.form.submit()">
+                                </div>
+                            </div>
+                            <div class="col-auto d-none d-lg-block">
+                                <span class="text-muted small">Atau</span>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group input-group-sm">
+                                    <input type="date" name="start_date" class="form-control" value="{{ request('start_date', $startDate) }}" onchange="this.form.submit()">
+                                    <span class="input-group-text bg-light">-</span>
+                                    <input type="date" name="end_date" class="form-control" value="{{ request('end_date', $endDate) }}" onchange="this.form.submit()">
+                                </div>
                             </div>
                             @if(request()->has('coordinator_id') && request('coordinator_id')!=='')
                                 <input type="hidden" name="coordinator_id" value="{{ request('coordinator_id') }}">

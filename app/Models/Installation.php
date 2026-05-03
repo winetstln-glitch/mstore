@@ -33,4 +33,9 @@ class Installation extends Model
     {
         return $this->belongsTo(User::class, 'technician_id');
     }
+
+    public function modemRecord(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ModemDataRecord::class, 'serial_number', 'serial_number');
+    }
 }

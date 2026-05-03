@@ -24,7 +24,7 @@
                                 'pasang_odc' => __('Instalasi'),
                                 'tarik_jalur' => __('Tarik Jalur'),
                                 'perbaikan' => __('Perbaikan'),
-                                'maintenance' => __('Maintenance'),
+                                'maintenance' => __('Pemeliharaan'),
                                 'pergantian_onu' => __('Pergantian ONU'),
                                 'ganti_onu' => __('Ganti ONU'),
                                 'other' => __('Lainnya'),

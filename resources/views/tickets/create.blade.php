@@ -25,7 +25,7 @@
                                 <option value="pasang_odc" {{ old('type') == 'pasang_odc' ? 'selected' : '' }}>{{ __('Instalasi') }}</option>
                                 <option value="tarik_jalur" {{ old('type') == 'tarik_jalur' ? 'selected' : '' }}>{{ __('Tarik Jalur') }}</option>
                                 <option value="perbaikan" {{ old('type') == 'perbaikan' ? 'selected' : '' }}>{{ __('Perbaikan') }}</option>
-                                <option value="maintenance" {{ old('type') == 'maintenance' ? 'selected' : '' }}>{{ __('Maintenance') }}</option>
+                                <option value="maintenance" {{ old('type') == 'maintenance' ? 'selected' : '' }}>{{ __('Pemeliharaan') }}</option>
                                 <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>{{ __('Lainnya') }}</option>
                             </select>
                             @error('type')

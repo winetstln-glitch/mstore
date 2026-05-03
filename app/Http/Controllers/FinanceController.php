@@ -1179,6 +1179,21 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $month = $request->input('month');
+
+        // Default to current month if no filter is provided
+        if (!$startDate && !$endDate && !$month) {
+            $month = now()->format('Y-m');
+        }
+
+        if ($month && (!$startDate || !$endDate)) {
+            $date = \Carbon\Carbon::parse($month);
+            $startDate = $date->startOfMonth()->toDateString();
+            $endDate = $date->endOfMonth()->toDateString();
+        }
+
         $query = Transaction::with(['user', 'coordinator'])->latest('transaction_date');
 
         $userCoordinator = null;
@@ -1204,10 +1219,7 @@ class FinanceController extends Controller implements HasMiddleware
             $query->where('coordinator_id', $request->coordinator_id);
         }
 
-        if ($request->filled('month')) {
-            $query->whereMonth('transaction_date', date('m', strtotime($request->month)))
-                ->whereYear('transaction_date', date('Y', strtotime($request->month)));
-        }
+        $query->whereBetween('transaction_date', [$startDate, $endDate]);
 
         $transactions = $query->paginate(15);
 
@@ -1221,10 +1233,7 @@ class FinanceController extends Controller implements HasMiddleware
             }
         }
 
-        if ($request->filled('month')) {
-            $totalsQuery->whereMonth('transaction_date', date('m', strtotime($request->month)))
-                ->whereYear('transaction_date', date('Y', strtotime($request->month)));
-        }
+        $totalsQuery->whereBetween('transaction_date', [$startDate, $endDate]);
 
         $totalIncome = (clone $totalsQuery)->where('type', 'income')
             ->where('category', '!=', 'Deposit to Company')
@@ -1288,13 +1297,11 @@ class FinanceController extends Controller implements HasMiddleware
         }
 
         // --- HITUNG SUMMARY PER KOORDINATOR ---
-        $selectedReconMonth = $request->input('month', now()->format('Y-m'));
         $coordinatorSummaries = [];
         foreach ($coordinators as $coordinator) {
             $baseCoordinatorQuery = Transaction::query()
                 ->where('coordinator_id', $coordinator->id)
-                ->whereMonth('transaction_date', date('m', strtotime($selectedReconMonth)))
-                ->whereYear('transaction_date', date('Y', strtotime($selectedReconMonth)));
+                ->whereBetween('transaction_date', [$startDate, $endDate]);
 
             $grossRevenue = (clone $baseCoordinatorQuery)
                 ->where('type', 'income')
@@ -1397,14 +1404,8 @@ class FinanceController extends Controller implements HasMiddleware
                     DB::raw('SUM(CASE WHEN transactions.category = "Investor Cash Fund" THEN transactions.amount ELSE 0 END) as cash_fund')
                 )
                 ->whereNotNull('transactions.coordinator_id')
-                ->whereNotNull('transactions.investor_id');
-
-            if ($request->filled('month')) {
-                $investorRows->whereMonth('transactions.transaction_date', date('m', strtotime($request->month)))
-                    ->whereYear('transactions.transaction_date', date('Y', strtotime($request->month)));
-            }
-
-            $investorRows = $investorRows
+                ->whereNotNull('transactions.investor_id')
+                ->whereBetween('transactions.transaction_date', [$startDate, $endDate])
                 ->groupBy('transactions.coordinator_id', 'transactions.investor_id', 'investors.name')
                 ->get();
 
@@ -1423,6 +1424,7 @@ class FinanceController extends Controller implements HasMiddleware
         if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
             $recentIncomes = Transaction::where('type', 'income')
                 ->whereIn('category', ['Member Income', 'Voucher Income'])
+                ->whereBetween('transaction_date', [$startDate, $endDate])
                 ->with('coordinator')
                 ->latest('transaction_date')
                 ->take(10)
@@ -1508,7 +1510,9 @@ class FinanceController extends Controller implements HasMiddleware
             'investorCashRate',
             'investorDetailsByCoordinator',
             'monthlyIncome',
-            'incomeBreakdowns'
+            'incomeBreakdowns',
+            'startDate',
+            'endDate'
         ));
     }
 

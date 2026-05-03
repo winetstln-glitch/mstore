@@ -72,6 +72,12 @@
                                     <span class="fw-bold">{{ __('Teknisi:') }}</span> 
                                     {{ $installation->technician ? $installation->technician->name : __('Belum Ditugaskan') }}
                                 </p>
+                                @if($installation->modemRecord && $installation->modemRecord->user)
+                                <p class="mb-2 text-success">
+                                    <span class="fw-bold">{{ __('Pendata Modem:') }}</span> 
+                                    <i class="fa-solid fa-microchip me-1"></i>{{ $installation->modemRecord->user->name }}
+                                </p>
+                                @endif
                                 <p class="mb-2">
                                     <span class="fw-bold">Pengurus:</span>
                                     {{ $selectedCoordinator?->name ?: '-' }}

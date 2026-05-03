@@ -102,6 +102,11 @@
                                     </td>
                                     <td>
                                         <div>{{ $installation->technician ? $installation->technician->name : __('Belum Ditugaskan') }}</div>
+                                        @if($installation->modemRecord && $installation->modemRecord->user)
+                                            <div class="small text-success mt-1" title="{{ __('Teknisi Pendata Modem') }}">
+                                                <i class="fa-solid fa-microchip me-1"></i>{{ $installation->modemRecord->user->name }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         <div>{{ optional($ticketCoordinatorsByCustomer->get($installation->customer_id))->name ?: '-' }}</div>
@@ -122,7 +127,7 @@
                                         </span>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <div class="btn-group">
+                                        <div class="d-flex justify-content-end gap-1">
                                             <a href="{{ route('installations.show', $installation) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat') }}">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
