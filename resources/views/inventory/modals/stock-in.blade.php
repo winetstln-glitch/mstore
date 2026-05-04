@@ -1,12 +1,12 @@
 {{-- Modal Stock In --}}
-<div class="modal fade" id="stockInModal" tabindex="-1" aria-hidden="true">
+<div class="modal" id="stockInModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="{{ route('inventory.stock-in.store') }}" method="POST">
-            @csrf
-            <div class="modal-content">
+        <div class="modal-content">
+            <form action="{{ route('inventory.stock-in.store') }}" method="POST">
+                @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">{{ __('Barang Masuk (Pembelian Stok)') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light border small">
@@ -18,7 +18,9 @@
                         <select name="inventory_item_id" id="stockInItemId" class="form-select" required>
                             <option value="">{{ __('Pilih barang') }}</option>
                             @foreach($items as $item)
-                            <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
+                            <option value="{{ $item->id }}" 
+                                    data-unit="{{ $item->unit }}"
+                                    data-type_group="{{ $item->type_group }}">
                                 {{ $item->name }} (Stok: {{ $item->stock }} {{ $item->unit }})
                             </option>
                             @endforeach
@@ -33,9 +35,22 @@
                                 <span class="input-group-text" id="stockInUnit">pcs</span>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Harga Modal/Unit') }}</label>
-                            <input type="number" name="unit_cost" class="form-control" min="0" step="0.01" required>
+                            <label class="form-label fw-bold small text-muted text-uppercase">{{ __('Harga Modal/Unit') }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">Rp</span>
+                                <input type="number" name="unit_cost" class="form-control" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3" id="stockInSellingPriceContainer">
+                            <label class="form-label fw-bold small text-success text-uppercase">{{ __('Harga Jual Baru') }}</label>
+                            <div class="input-group border-success-subtle">
+                                <span class="input-group-text bg-success-subtle text-success">Rp</span>
+                                <input type="number" name="selling_price" class="form-control border-success-subtle" min="0" step="0.01">
+                            </div>
                         </div>
                     </div>
                     
@@ -64,7 +79,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
                     <button type="submit" class="btn btn-success">{{ __('Simpan') }}</button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>

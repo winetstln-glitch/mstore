@@ -57,6 +57,7 @@ class InventoryController extends Controller implements HasMiddleware
                 'unit',
                 'stock',
                 'price',
+                'selling_price',
                 'description',
                 'created_at',
             ])
@@ -74,6 +75,9 @@ class InventoryController extends Controller implements HasMiddleware
         $totalStockValue = (clone $query)
             ->selectRaw('COALESCE(SUM(stock * price), 0) as total_stock_value')
             ->value('total_stock_value') ?? 0;
+        $totalSellingValue = (clone $query)
+            ->selectRaw('COALESCE(SUM(stock * selling_price), 0) as total_selling_value')
+            ->value('total_selling_value') ?? 0;
         $totalItems = (clone $query)->count();
 
         // Total Pembelian (Purchases) separated by type_group
@@ -367,6 +371,7 @@ class InventoryController extends Controller implements HasMiddleware
             'supplier_name' => 'nullable|string|max:150',
             'reference_no' => 'nullable|string|max:100',
             'description' => 'nullable|string',
+            'selling_price' => 'nullable|numeric|min:0',
         ]);
 
         $purchaseDate = $validated['purchase_date'] ?? now()->toDateString();
@@ -387,6 +392,7 @@ class InventoryController extends Controller implements HasMiddleware
             $item->update([
                 'stock' => $newStock,
                 'price' => $newAveragePrice,
+                'selling_price' => $validated['selling_price'] ?? $item->selling_price,
             ]);
 
             $inventoryIn = InventoryTransaction::create([
@@ -432,6 +438,7 @@ class InventoryController extends Controller implements HasMiddleware
             'unit' => 'required|string|max:50',
             'stock' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
         ]);
 
         $item = InventoryItem::create($validated);
@@ -478,6 +485,7 @@ class InventoryController extends Controller implements HasMiddleware
             'stock' => 'nullable|integer|min:0',
             'stock_adjustment' => 'nullable|integer',
             'price' => 'required|numeric|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
         ]);
 
         $oldStock = $item->stock;

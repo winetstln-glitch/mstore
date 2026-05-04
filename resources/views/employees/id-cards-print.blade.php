@@ -3,65 +3,68 @@
 @section('title', 'Print ID Cards Karyawan')
 
 @section('content')
-<div class="container py-3 employee-cards-print-page">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 employee-cards-toolbar">
-        <div>
-            <h5 class="mb-0 fw-bold">Print ID Cards Karyawan</h5>
-            <small class="text-muted">Tiap pasangan menampilkan sisi depan dan belakang dengan ukuran kartu PVC 54mm x 85.6mm.</small>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary">
-                <i class="fa-solid fa-arrow-left me-1"></i>Kembali
-            </a>
-            <button type="button" class="btn btn-primary" onclick="window.print()">
-                <i class="fa-solid fa-print me-1"></i>Print Sekarang
-            </button>
-            <button type="button" class="btn btn-dark" id="downloadAllBtn" onclick="downloadAllImages()">
-                <i class="fa-solid fa-download me-1"></i>Download Semua (Image)
-            </button>
-                <button type="button" class="btn btn-success" id="downloadZipBtn" onclick="downloadAllZip()">
-                    <i class="fa-solid fa-file-zipper me-1"></i>Download ZIP
+<div class="card shadow-sm border-0 mb-4 overflow-hidden no-print">
+    <div class="card-body p-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-print text-primary fa-lg"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">Print Massal ID Card</h5>
+                    <div class="text-muted x-small">Cetak kartu identitas untuk banyak karyawan sekaligus.</div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('employees.index') }}" class="btn btn-sm btn-outline-secondary px-3">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Kembali
+                </a>
+                <button type="button" class="btn btn-sm btn-primary shadow-sm px-3" onclick="window.print()">
+                    <i class="fa-solid fa-print me-1"></i> Cetak Sekarang
                 </button>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-dark dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+                        <i class="fa-solid fa-download me-1"></i> Unduh Massal
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><button class="dropdown-item py-2" type="button" onclick="downloadAllImages()"><i class="fa-regular fa-images me-2 text-primary"></i> Semua Gambar (JPG)</button></li>
+                        <li><button class="dropdown-item py-2 fw-bold" type="button" onclick="downloadAllZip()"><i class="fa-solid fa-file-zipper me-2 text-success"></i> Download ZIP</button></li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="card border-0 shadow-sm mb-3 no-print">
-        <div class="card-body py-2">
-            <form action="{{ route('employees.print.cards') }}" method="GET" class="row g-2 align-items-end">
-                @foreach((array) request()->query('selected_ids', []) as $selectedId)
-                    <input type="hidden" name="selected_ids[]" value="{{ (int) $selectedId }}">
-                @endforeach
+<div class="card border-0 shadow-sm mb-4 no-print bg-light-subtle">
+    <div class="card-body py-2">
+        <form action="{{ route('employees.print.cards') }}" method="GET" class="row g-2 align-items-center">
+            @foreach((array) request()->query('selected_ids', []) as $selectedId)
+                <input type="hidden" name="selected_ids[]" value="{{ (int) $selectedId }}">
+            @endforeach
 
-                <div class="col-12 col-md-5 col-lg-4">
-                    <label class="form-label mb-1 small text-muted fw-semibold">Filter Jabatan</label>
-                    <select name="position" class="form-select form-select-sm" onchange="this.form.submit()">
+            <div class="col-12 col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white text-muted">Filter Jabatan</span>
+                    <select name="position" class="form-select" onchange="this.form.submit()">
                         <option value="">Semua Jabatan</option>
                         @foreach(($positions ?? collect()) as $pos)
                             <option value="{{ $pos }}" {{ ($selectedPosition ?? '') === $pos ? 'selected' : '' }}>{{ $pos }}</option>
                         @endforeach
                     </select>
                 </div>
+            </div>
 
-                <div class="col-12 col-md-auto d-grid">
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-filter me-1"></i>Terapkan
-                    </button>
-                </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-dark px-3 text-nowrap">Terapkan</button>
+                <a href="{{ route('employees.print.cards', array_filter(['selected_ids' => request()->query('selected_ids')])) }}" class="btn btn-sm btn-link text-decoration-none text-muted">Reset</a>
+            </div>
 
-                <div class="col-12 col-md-auto d-grid">
-                    <a href="{{ route('employees.print.cards', array_filter([
-                            'selected_ids' => request()->query('selected_ids'),
-                        ])) }}" class="btn btn-light btn-sm">
-                        Reset
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-auto ms-md-auto">
-                    <span class="badge bg-secondary">{{ count($cards ?? []) }} kartu</span>
-                </div>
-            </form>
-        </div>
+            <div class="col-auto ms-auto">
+                <span class="badge bg-white border text-dark fw-medium shadow-xs">{{ count($cards ?? []) }} Kartu Siap Cetak</span>
+            </div>
+        </form>
     </div>
+</div>
 
     <div class="id-card-sheet">
         @forelse($cards as $row)

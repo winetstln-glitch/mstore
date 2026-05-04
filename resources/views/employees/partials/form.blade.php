@@ -1,40 +1,42 @@
 <div class="row g-3">
     <!-- PERSONAL INFO -->
     <div class="col-md-7">
-        <div class="card h-100 border-0 shadow-sm bg-light-subtle">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-user me-2"></i>Data Personal & Kontak</h6>
-                <div class="row g-2">
+        <div class="card h-100 border-0 shadow-sm overflow-hidden">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-user me-2"></i>Data Personal & Kontak</h6>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row g-3">
                     <div class="col-12">
-                        <label class="form-label small fw-bold">Nama Lengkap *</label>
-                        <input type="text" name="full_name" id="full_name" class="form-control form-control-sm @error('full_name') is-invalid @enderror" value="{{ old('full_name', $employee->full_name ?? '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Nama Lengkap *</label>
+                        <input type="text" name="full_name" id="full_name" class="form-control @error('full_name') is-invalid @enderror" value="{{ old('full_name', $employee->full_name ?? '') }}" placeholder="Contoh: Budi Santoso" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">Email *</label>
-                        <input type="email" name="email" class="form-control form-control-sm @error('email') is-invalid @enderror" value="{{ old('email', $employee->email ?? '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Email *</label>
+                        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $employee->email ?? '') }}" placeholder="email@perusahaan.com" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">No HP *</label>
-                        <input type="text" name="phone" class="form-control form-control-sm @error('phone') is-invalid @enderror" value="{{ old('phone', $employee->phone ?? '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">No HP *</label>
+                        <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $employee->phone ?? '') }}" placeholder="0812..." required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">NIK *</label>
-                        <input type="text" name="nik" class="form-control form-control-sm @error('nik') is-invalid @enderror" value="{{ old('nik', $employee->nik ?? '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">NIK *</label>
+                        <input type="text" name="nik" class="form-control @error('nik') is-invalid @enderror" value="{{ old('nik', $employee->nik ?? '') }}" placeholder="Nomor Induk Karyawan" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Tgl Lahir *</label>
-                        <input type="date" name="date_of_birth" class="form-control form-control-sm" value="{{ old('date_of_birth', isset($employee?->date_of_birth) ? $employee?->date_of_birth->format('Y-m-d') : '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Tgl Lahir *</label>
+                        <input type="date" name="date_of_birth" class="form-control" value="{{ old('date_of_birth', isset($employee?->date_of_birth) ? $employee?->date_of_birth->format('Y-m-d') : '') }}" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Gender *</label>
-                        <select name="gender" class="form-select form-select-sm" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Gender *</label>
+                        <select name="gender" class="form-select" required>
                             <option value="Laki-laki" {{ old('gender', $employee->gender ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
                             <option value="Perempuan" {{ old('gender', $employee->gender ?? '') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label small fw-bold">Alamat *</label>
-                        <textarea name="address" rows="2" class="form-control form-control-sm" required>{{ old('address', $employee->address ?? '') }}</textarea>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Alamat *</label>
+                        <textarea name="address" rows="3" class="form-control" placeholder="Alamat lengkap domisili saat ini" required>{{ old('address', $employee->address ?? '') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -43,33 +45,36 @@
 
     <!-- ACCOUNT MANAGEMENT -->
     <div class="col-md-5">
-        <div class="card h-100 border-0 shadow-sm bg-primary-subtle border-start border-primary border-3">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-key me-2"></i>Akun Login (User)</h6>
-                
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="create_user_account" id="create_user_account" value="1" {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'checked' : '' }}>
-                    <label class="form-check-label fw-bold small" for="create_user_account">
-                        {{ $employee?->user_id ? 'Update / Aktifkan Akun' : 'Buat Akun Login Baru' }}
-                    </label>
+        <div class="card h-100 border-0 shadow-sm overflow-hidden border-start border-primary border-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-key me-2"></i>Akses Login</h6>
+            </div>
+            <div class="card-body pt-0">
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox" name="create_user_account" id="create_user_account" value="1" {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'checked' : '' }}>
+                        <label class="form-check-label fw-bold small text-dark" for="create_user_account">
+                            {{ $employee?->user_id ? 'Update / Aktifkan Akun' : 'Aktifkan Akses Login' }}
+                        </label>
+                    </div>
                 </div>
 
                 <div id="user_account_fields" style="display: {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'block' : 'none' }};">
-                    <div class="row g-2">
+                    <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Username *</label>
-                            <input type="text" name="username" id="username" class="form-control form-control-sm @error('username') is-invalid @enderror" value="{{ old('username', $employee->user?->username ?? '') }}">
+                            <label class="form-label x-small fw-bold text-uppercase text-muted">Username *</label>
+                            <input type="text" name="username" id="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $employee->user?->username ?? '') }}" placeholder="username_karyawan">
                             @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Password {{ $employee?->user_id ? '(kosongkan jika tidak ganti)' : '*' }}</label>
-                            <input type="password" name="password" class="form-control form-control-sm @error('password') is-invalid @enderror">
+                            <label class="form-label x-small fw-bold text-uppercase text-muted">Password {{ $employee?->user_id ? '(Kosongkan jika tetap)' : '*' }}</label>
+                            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" placeholder="Min 8 karakter">
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Role / Akses *</label>
-                            <select name="role_id" id="role_id" class="form-select form-select-sm">
-                                <option value="">-- Pilih Role --</option>
+                            <label class="form-label x-small fw-bold text-uppercase text-muted">Role / Hak Akses *</label>
+                            <select name="role_id" id="role_id" class="form-select">
+                                <option value="">-- Pilih Hak Akses --</option>
                                 @foreach($roles as $role)
                                     <option value="{{ $role->id }}" data-label="{{ $role->label }}" data-name="{{ $role->name }}" {{ (string) old('role_id', $employee->user?->role_id ?? '') === (string) $role->id ? 'selected' : '' }}>
                                         {{ $role->label }}
@@ -77,10 +82,11 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-12 mt-3 pt-2 border-top">
-                            <label class="form-label x-small fw-bold text-muted text-uppercase">Atau Hubungkan Akun Eksisting</label>
-                            <select name="user_id" id="user_id" class="form-select form-select-sm">
-                                <option value="">-- Cari Akun User --</option>
+                        
+                        <div class="col-12 mt-4 pt-3 border-top">
+                            <label class="form-label x-small fw-bold text-muted text-uppercase d-block mb-2 text-center">-- Atau Hubungkan User --</label>
+                            <select name="user_id" id="user_id" class="form-select form-select-sm bg-light">
+                                <option value="">Cari User Eksisting...</option>
                                 @foreach(($users ?? []) as $u)
                                     <option value="{{ $u->id }}" data-role-label="{{ $u->role?->label ?? $u->role?->name }}" data-role-name="{{ $u->role?->name }}" {{ (string) old('user_id', $employee?->user_id ?? '') === (string) $u->id ? 'selected' : '' }}>
                                         {{ $u->name }} ({{ $u->username }})
@@ -90,22 +96,25 @@
                         </div>
                     </div>
                 </div>
-                <div id="no_account_msg" class="text-muted small italic" style="display: {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'none' : 'block' }};">
-                    Karyawan ini tidak memiliki akses login ke sistem.
+                <div id="no_account_msg" class="text-center py-4 text-muted small italic" style="display: {{ old('create_user_account', $employee?->user_id ? '1' : '') ? 'none' : 'block' }};">
+                    <i class="fa-solid fa-user-lock fa-2x mb-2 d-block opacity-25"></i>
+                    Akses login dinonaktifkan.
                 </div>
             </div>
         </div>
     </div>
 
     <!-- JOB INFO -->
-    <div class="col-12 mt-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-briefcase me-2"></i>Pekerjaan</h6>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-briefcase me-2"></i>Informasi Pekerjaan</h6>
+            </div>
+            <div class="card-body pt-0">
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Jabatan *</label>
-                        <select name="position" id="position" class="form-select form-select-sm" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Jabatan *</label>
+                        <select name="position" id="position" class="form-select" required>
                             @php $pos = old('position', $employee->position ?? ''); @endphp
                             @foreach(['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan'] as $p)
                                 <option value="{{ $p }}" {{ $pos === $p ? 'selected' : '' }}>{{ $p }}</option>
@@ -116,30 +125,30 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Departemen *</label>
-                        <select name="department" id="department" class="form-select form-select-sm" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Departemen *</label>
+                        <select name="department" id="department" class="form-select" required>
                             @php $dep = old('department', $employee->department ?? ''); @endphp
                             @foreach(['Administrasi', 'Keuangan', 'Teknis', 'Wash', 'ATK', 'Operasional'] as $d)
-                                <option value="{{ $d }}" {{ $dep === $d ? 'selected' : '' }}>{{ $d }}</option>
+                                <option value="{{ $d }}" {{ $dep === $d ? 'selected' : '' }}>{{ $dep }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold">Tgl Masuk *</label>
-                        <input type="date" name="join_date" class="form-control form-control-sm" value="{{ old('join_date', isset($employee?->join_date) ? $employee?->join_date->format('Y-m-d') : '') }}" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Tgl Masuk *</label>
+                        <input type="date" name="join_date" class="form-control" value="{{ old('join_date', isset($employee?->join_date) ? $employee?->join_date->format('Y-m-d') : '') }}" required>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold">Status *</label>
-                        <select name="employment_status" class="form-select form-select-sm" required>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Status Kerja *</label>
+                        <select name="employment_status" class="form-select" required>
                             @foreach(['Tetap','Training'] as $s)
                                 <option value="{{ $s }}" {{ old('employment_status', $employee->employment_status ?? '') === $s ? 'selected' : '' }}>{{ $s }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold">Link Karyawan Wash</label>
-                        <select name="wash_employee_id" class="form-select form-select-sm">
-                            <option value="">-- Kosong --</option>
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Link Data Wash</label>
+                        <select name="wash_employee_id" class="form-select">
+                            <option value="">-- Tidak Ada --</option>
                             @foreach(($washEmployees ?? []) as $we)
                                 <option value="{{ $we->id }}" {{ (string) old('wash_employee_id', $employee->wash_employee_id ?? '') === (string) $we->id ? 'selected' : '' }}>
                                     {{ $we->name }}
@@ -153,43 +162,57 @@
     </div>
 
     <!-- FILES -->
-    <div class="col-12 mt-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-file-invoice me-2"></i>Berkas & ID Card</h6>
-                <div class="row g-3">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-file-invoice me-2"></i>Berkas & Media</h6>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row g-4">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Foto ID Card (Pas Foto)</label>
-                        <input type="file" name="id_card_photo" id="employee_id_card_photo" class="form-control form-control-sm" accept="image/*">
-                        <input type="hidden" name="id_card_photo_base64" id="employee_id_card_photo_base64">
-                        @if(!empty($employee?->id_card_photo_path))
-                            <div class="mt-2">
-                                <img id="employeePhotoPreview" src="{{ asset('storage/'.$employee?->id_card_photo_path) }}" class="img-thumbnail" style="height: 70px;">
+                        <label class="form-label x-small fw-bold text-uppercase text-muted d-block mb-3">Foto ID Card (Pas Foto)</label>
+                        <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light-subtle">
+                            <div id="photoPreviewContainer" class="{{ !empty($employee?->id_card_photo_path) ? '' : 'd-none' }}">
+                                <img id="employeePhotoPreview" src="{{ !empty($employee?->id_card_photo_path) ? asset('storage/'.$employee?->id_card_photo_path) : '' }}" class="rounded shadow-sm border" style="width: 80px; height: 80px; object-fit: cover;">
                             </div>
-                        @else
-                            <div class="mt-2 d-none">
-                                <img id="employeePhotoPreview" src="" class="img-thumbnail" style="height: 70px;">
+                            <div class="flex-grow-1">
+                                <input type="file" name="id_card_photo" id="employee_id_card_photo" class="form-control form-control-sm" accept="image/*">
+                                <input type="hidden" name="id_card_photo_base64" id="employee_id_card_photo_base64">
+                                <div class="x-small text-muted mt-1">Rekomendasi: Rasio 1:1 (Persegi)</div>
                             </div>
-                        @endif
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Expired ID Card</label>
-                        <input type="date" name="id_card_expires_at" class="form-control form-control-sm" value="{{ old('id_card_expires_at', isset($employee?->id_card_expires_at) ? $employee?->id_card_expires_at->format('Y-m-d') : '') }}">
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Masa Berlaku ID Card</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-calendar-day x-small text-muted"></i></span>
+                            <input type="date" name="id_card_expires_at" class="form-control" value="{{ old('id_card_expires_at', isset($employee?->id_card_expires_at) ? $employee?->id_card_expires_at->format('Y-m-d') : '') }}">
+                        </div>
+                        <div class="form-text x-small">Kosongkan jika tidak ada masa berlaku.</div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Dokumen (PDF/DOC)</label>
-                        <input type="file" name="document" class="form-control form-control-sm" accept=".pdf,.doc,.docx">
+                        <label class="form-label x-small fw-bold text-uppercase text-muted">Upload Dokumen Kontrak</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-file-pdf x-small text-muted"></i></span>
+                            <input type="file" name="document" class="form-control" accept=".pdf,.doc,.docx">
+                        </div>
+                        <div class="form-text x-small">Format: PDF, DOC, DOCX. Max: 5MB.</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 mt-4 d-flex justify-content-end gap-2">
-        <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light border px-3">Batal</a>
-        <button type="submit" class="btn btn-sm btn-primary px-4 shadow-sm">
-            <i class="fa-solid fa-save me-1"></i> Simpan Karyawan
-        </button>
+    <div class="col-12 mt-4">
+        <div class="d-flex justify-content-between align-items-center p-3 bg-white shadow-sm rounded-3 border">
+            <span class="text-muted small italic">* Menunjukkan kolom yang wajib diisi.</span>
+            <div class="d-flex gap-2">
+                <a href="{{ route('employees.index') }}" class="btn btn-light px-4 border fw-semibold">Batal</a>
+                <button type="submit" class="btn btn-primary px-5 shadow fw-bold">
+                    <i class="fa-solid fa-save me-2"></i> Simpan Data Karyawan
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -436,9 +459,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cropper) {
                 if (previewEl && idPhotoInput.files && idPhotoInput.files[0]) {
                     previewEl.src = URL.createObjectURL(idPhotoInput.files[0]);
-                    if (previewEl.parentElement) {
-                        previewEl.parentElement.classList.remove('d-none');
-                    }
+                    const container = document.getElementById('photoPreviewContainer');
+                    if (container) container.classList.remove('d-none');
                 }
                 hideCropModal();
                 return;
@@ -460,9 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (previewEl) {
                         previewEl.src = URL.createObjectURL(file);
-                        if (previewEl.parentElement) {
-                            previewEl.parentElement.classList.remove('d-none');
-                        }
+                        const container = document.getElementById('photoPreviewContainer');
+                        if (container) container.classList.remove('d-none');
                     }
                 } catch (e) {
                     // Fallback: server will use base64Hidden

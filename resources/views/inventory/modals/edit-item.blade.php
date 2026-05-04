@@ -1,12 +1,12 @@
 {{-- Modal Edit Item --}}
-<div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
+<div class="modal" id="editItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
-        <form id="editItemForm" action="" method="POST">
-            @csrf @method('PUT')
-            <div class="modal-content">
+        <div class="modal-content">
+            <form id="editItemForm" action="" method="POST">
+                @csrf @method('PUT')
                 <div class="modal-header">
                     <h5 class="modal-title">{{ __('Ubah Barang') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light border small">
@@ -37,13 +37,23 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Satuan') }}</label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">{{ __('Satuan') }}</label>
                             <input type="text" name="unit" id="editUnit" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Harga Modal/Unit') }}</label>
-                            <input type="number" name="price" id="editPrice" class="form-control" min="0" step="0.01" required>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">{{ __('Harga Modal') }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">Rp</span>
+                                <input type="number" name="price" id="editPrice" class="form-control" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3" id="editSellingPriceContainer">
+                            <label class="form-label fw-bold small text-success text-uppercase">{{ __('Harga Jual') }}</label>
+                            <div class="input-group border-success-subtle">
+                                <span class="input-group-text bg-success-subtle text-success">Rp</span>
+                                <input type="number" name="selling_price" id="editSellingPrice" class="form-control border-success-subtle" min="0" step="0.01">
+                            </div>
                         </div>
                     </div>
                     
@@ -90,7 +100,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
                     <button type="submit" class="btn btn-primary">{{ __('Simpan Perubahan') }}</button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>

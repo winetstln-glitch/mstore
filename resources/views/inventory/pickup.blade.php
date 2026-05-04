@@ -139,157 +139,79 @@
 
 @push('styles')
 <style>
+    /* Compact Design for Pickup Page */
     .inventory-pickup-page .inventory-pickup-shell {
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-        border-color: rgba(59, 130, 246, 0.2) !important;
-        border-radius: 1.5rem;
-        overflow: hidden;
+        border-radius: 1rem;
+        border-top-width: 3px !important;
+        background: #fff;
     }
 
-    .inventory-pickup-page .inventory-pickup-shell .card-header {
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.03) 100%);
-        border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    /* Form Layout Optimization */
+    .inventory-pickup-page .form-label {
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.025em;
     }
 
-    .inventory-pickup-page .form-select,
-    .inventory-pickup-page .form-control,
-    .inventory-pickup-page .input-group-text {
-        background-color: var(--bs-body-bg);
-        border-color: var(--bs-border-color);
-        color: var(--bs-body-color);
+    .inventory-pickup-page .form-select-lg, 
+    .inventory-pickup-page .form-control-lg {
+        font-size: 1rem;
+        padding: 0.6rem 1rem;
+        border-radius: 0.5rem;
     }
 
-    .inventory-pickup-page .form-select:focus,
-    .inventory-pickup-page .form-control:focus {
-        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2);
-        border-color: #3b82f6;
-    }
-
-    .inventory-pickup-page #location-status {
-        background-color: rgba(245, 158, 11, 0.08) !important;
-        border-color: rgba(245, 158, 11, 0.26) !important;
-    }
-
+    /* Table Item Styling */
     .inventory-pickup-page .table-responsive {
-        border: 1px solid var(--bs-border-color) !important;
-        border-radius: 0.9rem;
+        border-color: #e2e8f0 !important;
     }
 
     .inventory-pickup-page .table thead th {
-        background: rgba(148, 163, 184, 0.12) !important;
-        color: var(--bs-body-color) !important;
+        background: #f8fafc !important;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b !important;
+        padding: 0.75rem;
     }
 
-    .inventory-pickup-page .remove-item-row {
-        min-width: 42px;
-    }
-
+    /* Custom File Upload Styling */
     .custom-file-upload {
-        border: 2px dashed var(--bs-border-color) !important;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        background-color: var(--bs-body-bg) !important;
-        position: relative;
-        overflow: hidden;
-        min-height: 150px;
-        color: var(--bs-secondary-color);
+        border: 2px dashed #cbd5e1 !important;
+        border-radius: 0.75rem;
+        padding: 1.5rem !important;
+        min-height: 120px !important;
+        background: #f8fafc !important;
     }
 
     .custom-file-upload:hover {
         border-color: #3b82f6 !important;
-        background-color: rgba(59, 130, 246, 0.05) !important;
+        background: #eff6ff !important;
     }
 
-    .custom-file-upload input[type="file"] { display: none; }
-
-    .upload-placeholder i { font-size: 2.5rem; color: var(--bs-secondary-color) !important; margin-bottom: 0.5rem; }
-    .upload-label-text { color: var(--bs-secondary-color) !important; font-weight: 500; z-index: 2; }
-
-    .upload-preview {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: none;
-        border-radius: 10px;
-        z-index: 1;
+    .upload-placeholder i {
+        font-size: 2rem !important;
+        margin-bottom: 0.25rem !important;
     }
 
-    .upload-preview.active { display: block; }
-
+    /* Dark Mode Support */
     [data-bs-theme="dark"] .inventory-pickup-page .inventory-pickup-shell {
-        background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
-        border-color: rgba(96, 165, 250, 0.28) !important;
+        background: #1e293b;
     }
-
-    [data-bs-theme="dark"] .inventory-pickup-page .inventory-pickup-shell .card-header {
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0.3) 100%);
-        border-bottom-color: rgba(96, 165, 250, 0.28);
-    }
-
+    
     [data-bs-theme="dark"] .inventory-pickup-page .table thead th {
-        background: rgba(51, 65, 85, 0.5) !important;
-        color: #e2e8f0 !important;
+        background: #334155 !important;
+        color: #94a3b8 !important;
     }
 
-    [data-bs-theme="dark"] .inventory-pickup-page .table tbody td {
-        border-color: #334155;
+    [data-bs-theme="dark"] .custom-file-upload {
+        background: #0f172a !important;
+        border-color: #334155 !important;
     }
 
+    /* Mobile Adjustments */
     @media (max-width: 767.98px) {
-        .inventory-pickup-page {
-            padding-left: 0.35rem;
-            padding-right: 0.35rem;
-        }
-
-        .inventory-pickup-page .inventory-pickup-shell {
-            border-radius: 1rem;
-        }
-
-        .inventory-pickup-page .card-header {
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .inventory-pickup-page .card-header .btn {
-            width: 100%;
-        }
-
-        .inventory-pickup-page .table thead {
-            display: none;
-        }
-
         .inventory-pickup-page #items-body tr {
-            display: block;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.9rem;
-            padding: 0.9rem;
-            margin-bottom: 0.85rem;
-            background: var(--bs-body-bg);
-        }
-
-        .inventory-pickup-page #items-body td {
-            display: block;
-            width: 100%;
-            border: 0;
-            padding: 0 0 0.7rem 0;
-        }
-
-        .inventory-pickup-page #items-body td:last-child {
-            padding-bottom: 0;
-        }
-
-        .inventory-pickup-page .remove-item-row {
-            width: 100%;
-            height: 42px;
+            border-width: 1px;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
     }
 </style>

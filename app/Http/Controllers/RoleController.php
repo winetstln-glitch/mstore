@@ -85,8 +85,12 @@ class RoleController extends Controller implements HasMiddleware
         $washNames = ['wash.view', 'wash.pos', 'wash.manage', 'wash.report'];
         $cashierWashNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
         $washEmployeeNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
-        $financeStaffNames = $technicianNames;
-        $hrdManagerNames = $technicianNames;
+        $financeStaffNames = array_values(array_unique(array_merge($technicianNames, ['inventory.view'])));
+        $hrdManagerNames = array_values(array_unique(array_merge($technicianNames, [
+            'inventory.view', 'inventory.manage', 'inventory.pickup',
+            'role.view', 'role.create', 'role.edit', 'role.delete',
+            'user.view', 'user.create', 'user.edit', 'user.delete',
+        ])));
 
         return [
             'Administrator' => $allPermissions->pluck('id')->values()->toArray(),

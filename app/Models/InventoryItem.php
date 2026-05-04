@@ -21,6 +21,7 @@ class InventoryItem extends Model
         'unit',
         'stock',
         'price',
+        'selling_price',
     ];
 
     public function transactions(): HasMany

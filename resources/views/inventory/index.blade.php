@@ -1,11 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-{{-- ============================================
-    INVENTORY MANAGEMENT PAGE
-    ============================================ --}}
-
-{{-- Pre-set variables untuk filter movements --}}
 @php
     $isAdminOrFinance = Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance');
     $movementPeriod = request('movement_period', 'day');
@@ -13,7 +8,6 @@
     $movementDay = request('movement_day', now()->toDateString());
     $movementMonth = request('movement_month', now()->format('Y-m'));
     
-    // Category options (bisa dipindah ke config/controller)
     $categoryOptions = [
         'device'  => 'Device (Perangkat Aktif)',
         'fiber'   => 'Fiber (Material Pasif)',
@@ -23,183 +17,102 @@
     ];
 @endphp
 
-<div class="container-fluid inventory-page py-2 py-md-3">
+<div class="container-fluid py-3">
     <div class="row justify-content-center">
-        <div class="col-12">
+        <div class="col-12 col-xl-11">
 
             {{-- ==========================================
-                HEADER: Judul & Toolbar
+                HEADER: Compact & Professional Toolbar
                 ========================================== --}}
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-                
-                {{-- Judul Halaman --}}
-                <h1 class="h3 mb-0 text-body text-truncate" style="max-width: 100%;">
-                    @switch(request('type_group'))
-                        @case('tool') {{ __('Peralatan & Aset') }} @break
-                        @case('material') {{ __('Material & Perangkat') }} @break
-                        @default {{ __('Manajemen Inventaris') }}
-                    @endswitch
-                </h1>
-                
-                {{-- Toolbar Buttons --}}
-                <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end inventory-toolbar">
-                    
-                    {{-- Filter Group (All/Tools/Materials) --}}
-                    <div class="btn-group" role="group">
-                        @php
-                            $filterLinks = [
-                                '' => ['label' => __('Semua'), 'param' => []],
-                                'tool' => ['label' => __('Peralatan'), 'param' => ['type_group' => 'tool']],
-                                'material' => ['label' => __('Material'), 'param' => ['type_group' => 'material']],
-                            ];
-                        @endphp
-                        @foreach($filterLinks as $key => $link)
-                            <a href="{{ route('inventory.index', $link['param']) }}" 
-                               class="btn btn-outline-secondary {{ request('type_group') == $key ? 'active' : '' }}">
-                                {{ $link['label'] }}
-                            </a>
-                        @endforeach
+            <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+                <div class="card-body p-3">
+                    {{-- Baris 1: Judul & Filter Utama --}}
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-warehouse text-primary fa-lg"></i>
+                            <h5 class="mb-0 fw-bold">
+                                @switch(request('type_group'))
+                                    @case('tool') {{ __('Peralatan & Aset') }} @break
+                                    @case('material') {{ __('Material & Perangkat') }} @break
+                                    @default {{ __('Manajemen Inventaris') }}
+                                @endswitch
+                            </h5>
+                        </div>
+                        
+                        <div class="btn-group btn-group-sm shadow-sm" role="group">
+                            @foreach(['' => __('Semua'), 'tool' => __('Peralatan'), 'material' => __('Material')] as $key => $label)
+                                <a href="{{ route('inventory.index', $key ? ['type_group' => $key] : []) }}" 
+                                   class="btn {{ request('type_group') == $key ? 'btn-primary' : 'btn-outline-primary' }} px-3">
+                                    {{ $label }}
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
 
-                    @if($isAdminOrFinance)
-                        {{-- Dropdown Kategori --}}
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fa-solid fa-filter d-md-none"></i>
-                                <span class="d-none d-md-inline">
-                                    {{ request('category') ? ucfirst(request('category')) : __('Kategori') }}
-                                </span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}">
-                                        {{ __('Semua Kategori') }}
-                                    </a>
-                                </li>
-                                @foreach($categories as $cat)
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('inventory.index', ['category' => $cat, 'type_group' => request('type_group')]) }}">
-                                            {{ ucfirst($cat) }}
-                                        </a>
-                                    </li>
-                                @endforeach
-                            </ul>
+                    <hr class="my-3 opacity-10">
+
+                    {{-- Baris 2: Toolbar Aksi --}}
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        {{-- Group Kiri: Operasional --}}
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('inventory.my_assets') }}" class="btn btn-sm btn-warning text-white">
+                                <i class="fa-solid fa-rotate-left me-1"></i>{{ __('Kembali Alat') }}
+                            </a>
+                            @if($hasPermission('inventory.pickup'))
+                            <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" class="btn btn-sm btn-primary">
+                                <i class="fa-solid fa-box-open me-1"></i>{{ __('Ambil Barang') }}
+                            </a>
+                            @endif
                         </div>
 
-                        {{-- Dropdown Aksi (Export/Import) --}}
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="fa-solid fa-ellipsis-vertical d-md-none"></i>
-                                <span class="d-none d-md-inline">
-                                    <i class="fa-solid fa-file-export me-1"></i> {{ __('Aksi') }}
-                                </span>
+                        {{-- Group Kanan: Admin Actions --}}
+                        @if($hasPermission('inventory.manage'))
+                        <div class="d-flex flex-wrap gap-2">
+                            {{-- Dropdown Aksi --}}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fa-solid fa-file-export me-1"></i>{{ __('Ekspor') }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                    <li><a class="dropdown-item py-2" href="{{ route('inventory.export.excel') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i>{{ __('Excel') }}</a></li>
+                                    <li><a class="dropdown-item py-2" href="{{ route('inventory.export.pdf') }}" target="_blank"><i class="fa-solid fa-file-pdf me-2 text-danger"></i>{{ __('PDF') }}</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal"><i class="fa-solid fa-file-import me-2 text-primary"></i>{{ __('Impor Excel') }}</a></li>
+                                </ul>
+                            </div>
+
+                            <div class="vr mx-1 d-none d-sm-block"></div>
+
+                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                <i class="fa-solid fa-plus me-1"></i>{{ __('Barang Baru') }}
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('inventory.export.excel') }}">
-                                        <i class="fa-solid fa-file-excel me-2 text-success"></i> {{ __('Ekspor Excel') }}
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('inventory.export.pdf') }}" target="_blank">
-                                        <i class="fa-solid fa-file-pdf me-2 text-danger"></i> {{ __('Ekspor PDF') }}
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importItemModal">
-                                        <i class="fa-solid fa-file-import me-2 text-primary"></i> {{ __('Impor Excel') }}
-                                    </a>
-                                </li>
-                            </ul>
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#stockInModal">
+                                <i class="fa-solid fa-arrow-down me-1"></i>{{ __('Stok Masuk') }}
+                            </button>
                         </div>
-                        
-                        {{-- Tombol Tambah Item --}}
-                        <button type="button" class="btn btn-success flex-grow-1 flex-md-grow-0" 
-                                data-bs-toggle="modal" data-bs-target="#addItemModal">
-                            <i class="fa-solid fa-plus me-1"></i> 
-                            <span class="d-none d-sm-inline">{{ __('Tambah Barang') }}</span>
-                        </button>
-                        
-                        {{-- Tombol Stock Masuk --}}
-                        <button type="button" class="btn btn-outline-success flex-grow-1 flex-md-grow-0" 
-                                data-bs-toggle="modal" data-bs-target="#stockInModal">
-                            <i class="fa-solid fa-arrow-down-wide-short me-1"></i> 
-                            <span class="d-none d-sm-inline">{{ __('Stok Masuk') }}</span>
-                        </button>
-                    @endif
-                    
-                    {{-- Tombol Return --}}
-                    <a href="{{ route('inventory.my_assets') }}" class="btn btn-outline-warning" title="{{ __('Kembalikan Alat') }}">
-                        <i class="fa-solid fa-rotate-left"></i> 
-                        <span class="d-none d-sm-inline ms-1">{{ __('Kembali') }}</span>
-                    </a>
-                    
-                    {{-- Tombol Pickup --}}
-                    <a href="{{ route('inventory.pickup', ['type_group' => request('type_group')]) }}" 
-                       class="btn btn-primary flex-grow-1 flex-md-grow-0" title="{{ __('Ambil Barang') }}">
-                        <i class="fa-solid fa-box-open me-1"></i> 
-                        <span class="d-none d-sm-inline">{{ __('Ambil') }}</span>
-                    </a>
+                        @endif
+                    </div>
                 </div>
             </div>
 
-            {{-- ==========================================
-                DASHBOARD STATS (Admin/Finance Only)
-                ========================================== --}}
-            @if($isAdminOrFinance)
-            <div class="row mb-4">
-                @php
-                    $stats = [
-                        [
-                            'label' => __('Nilai Stok'),
-                            'value' => 'Rp ' . number_format($totalStockValue, 0, ',', '.'),
-                            'icon'  => 'fa-warehouse',
-                            'color' => 'primary',
-                        ],
-                        [
-                            'label' => __('Total Barang'),
-                            'value' => $totalItems,
-                            'icon'  => 'fa-boxes-stacked',
-                            'color' => 'success',
-                        ],
-                        [
-                            'label' => __('Beli Alat'),
-                            'value' => 'Rp ' . number_format($totalToolPurchases, 0, ',', '.'),
-                            'icon'  => 'fa-toolbox',
-                            'color' => 'info',
-                        ],
-                        [
-                            'label' => __('Beli Material'),
-                            'value' => 'Rp ' . number_format($totalMaterialPurchases, 0, ',', '.'),
-                            'icon'  => 'fa-microchip',
-                            'color' => 'primary',
-                        ],
-                        [
-                            'label' => __('Pemakaian'),
-                            'value' => 'Rp ' . number_format($totalSales, 0, ',', '.'),
-                            'icon'  => 'fa-money-bill-transfer',
-                            'color' => 'warning',
-                        ],
-                    ];
-                @endphp
-                @foreach($stats as $stat)
-                <div class="col-6 col-md-4 col-xl mb-3">
-                    <div class="card border-start-{{ $stat['color'] }} border-start-3 shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col me-2">
-                                    <div class="text-xs fw-bold text-{{ $stat['color'] }} text-uppercase mb-1">
-                                        {{ $stat['label'] }}
-                                    </div>
-                                    <div class="h5 mb-0 fw-bold text-gray-800 {{ isset($stat['small']) ? 'small' : '' }}">
-                                        {{ $stat['value'] }}
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fa-solid {{ $stat['icon'] }} fa-2x text-gray-300"></i>
-                                </div>
+            {{-- Stats Cards --}}
+            @if($hasPermission('inventory.manage') || $isAdminOrFinance)
+            <div class="row g-2 g-md-3 mb-4">
+                @foreach([
+                    ['Nilai Stok', 'Rp ' . number_format($totalStockValue, 0, ',', '.'), 'fa-warehouse', 'primary'],
+                    ['Total Barang', $totalItems, 'fa-boxes-stacked', 'success'],
+                    ['Beli Alat', 'Rp ' . number_format($totalToolPurchases, 0, ',', '.'), 'fa-toolbox', 'info'],
+                    ['Beli Material', 'Rp ' . number_format($totalMaterialPurchases, 0, ',', '.'), 'fa-microchip', 'secondary'],
+                    ['Pemakaian', 'Rp ' . number_format($totalSales, 0, ',', '.'), 'fa-money-bill-transfer', 'warning'],
+                ] as $stat)
+                <div class="col-6 col-lg">
+                    <div class="card card-body py-2 border-start border-3 border-{{ $stat[3] }} h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-uppercase fw-semibold text-{{ $stat[3] }}">{{ $stat[0] }}</small>
+                                <div class="fw-bold mt-1">{{ $stat[1] }}</div>
                             </div>
+                            <i class="fa-solid {{ $stat[2] }} text-{{ $stat[3] }} opacity-25 fa-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -207,167 +120,146 @@
             </div>
             @endif
 
-            {{-- ==========================================
-                MY ASSETS TABLE (Teknisi/Koordinator)
-                ========================================== --}}
+            {{-- My Assets Table --}}
             @if(isset($myAssets) && $myAssets->isNotEmpty())
-            <div class="card shadow-sm border-0 mb-4 border-start-info inventory-panel">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-info">
-                        <i class="fa-solid fa-toolbox me-2"></i>{{ __('Aset Saya') }}
-                    </h6>
+            <div class="card mb-4">
+                <div class="card-header bg-transparent py-2">
+                    <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-toolbox me-2 text-info"></i>{{ __('Aset Saya') }}</h6>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4 py-3">{{ __('Nama Aset') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Nomor Seri') }}</th>
-                                    <th class="py-3">{{ __('Status') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Kondisi') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Catatan') }}</th>
-                                    <th class="text-end pe-4 py-3" style="width: 100px;">{{ __('Aksi') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($myAssets as $asset)
-                                <tr>
-                                    <td class="ps-4 fw-bold">
-                                        {{ $asset->item->name }}
-                                        <div class="small text-muted d-none d-md-block">{{ $asset->asset_code }}</div>
-                                    </td>
-                                    <td class="d-none d-md-table-cell font-monospace small">{{ $asset->serial_number }}</td>
-                                    <td><span class="badge bg-primary small">{{ __('Dipakai') }}</span></td>
-                                    <td class="d-none d-md-table-cell">
-                                        <span class="badge bg-{{ $asset->condition == 'good' ? 'success' : 'danger' }} small">
-                                            {{ $asset->condition == 'good' ? __('Baik') : __('Rusak') }}
-                                        </span>
-                                    </td>
-                                    <td class="d-none d-md-table-cell small text-muted text-truncate" style="max-width: 150px;">
-                                        {{ $asset->meta_data['assignment_note'] ?? '-' }}
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <form action="{{ route('inventory.assets.return', $asset->id) }}" 
-                                              method="POST" class="d-inline"
-                                              onsubmit="return confirm('{{ __('Kembalikan aset ini?') }}')">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Kembali') }}">
-                                                <i class="fa-solid fa-rotate-left"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ __('Nama Aset') }}</th>
+                                <th class="d-none d-md-table-cell">{{ __('Nomor Seri') }}</th>
+                                <th>{{ __('Kondisi') }}</th>
+                                <th class="d-none d-lg-table-cell">{{ __('Catatan') }}</th>
+                                <th class="text-end">{{ __('Aksi') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($myAssets as $asset)
+                            <tr>
+                                <td>
+                                    <div class="fw-medium">{{ $asset->item->name }}</div>
+                                    <small class="text-muted">{{ $asset->asset_code }}</small>
+                                </td>
+                                <td class="d-none d-md-table-cell"><code>{{ $asset->serial_number }}</code></td>
+                                <td>
+                                    <span class="badge bg-{{ $asset->condition == 'good' ? 'success' : 'danger' }}">
+                                        {{ $asset->condition == 'good' ? __('Baik') : __('Rusak') }}
+                                    </span>
+                                </td>
+                                <td class="d-none d-lg-table-cell text-muted small text-truncate" style="max-width:200px">
+                                    {{ $asset->meta_data['assignment_note'] ?? '-' }}
+                                </td>
+                                <td class="text-end">
+                                    <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kembalikan aset ini?') }}')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Kembali') }}">
+                                            <i class="fa-solid fa-rotate-left"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
             @endif
 
-            {{-- ==========================================
-                INVENTORY ITEMS TABLE (Admin/Finance Only)
-                ========================================== --}}
-            @if($isAdminOrFinance)
-            <div class="card shadow-sm border-0 mb-4 inventory-panel">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">{{ __('Daftar Inventaris') }}</h6>
+            {{-- Inventory Items Table --}}
+            @if($hasPermission('inventory.view') || $isAdminOrFinance)
+            <div class="card mb-4">
+                <div class="card-header bg-transparent py-2">
+                    <h6 class="mb-0 fw-semibold">{{ __('Daftar Inventaris') }}</h6>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4 py-3">{{ __('Tipe') }}</th>
-                                    <th class="py-3">{{ __('Nama') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Kategori') }}</th>
-                                    <th class="d-none d-lg-table-cell py-3">{{ __('Merek/Model') }}</th>
-                                    <th class="py-3 text-center">{{ __('Stok') }}</th>
-                                    <th class="py-3 text-end">{{ __('Harga Modal') }}</th>
-                                    <th class="d-none d-md-table-cell py-3">{{ __('Satuan') }}</th>
-                                    <th class="pe-4 py-3 text-end" style="width: 140px;">{{ __('Aksi') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($items as $item)
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="badge bg-{{ $item->type_group == 'tool' ? 'primary' : 'secondary' }}">
-                                            <i class="fa-solid fa-{{ $item->type_group == 'tool' ? 'toolbox' : 'cube' }} d-none d-md-inline me-1"></i>
-                                            {{ $item->type_group == 'tool' ? __('Alat') : __('Material') }}
-                                        </span>
-                                    </td>
-                                    <td class="fw-medium">
-                                        {{ $item->name }}
-                                        <div class="small text-muted d-none d-md-block text-truncate" style="max-width: 200px;">
-                                            {{ Str::limit($item->description, 30) ?: '-' }}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3" style="width:100px">{{ __('Tipe') }}</th>
+                                <th>{{ __('Nama Barang') }}</th>
+                                <th class="d-none d-md-table-cell">{{ __('Kategori') }}</th>
+                                <th class="text-center" style="width:80px">{{ __('Stok') }}</th>
+                                <th class="text-end pe-3" style="width:180px">{{ __('Informasi Harga') }}</th>
+                                @if($hasPermission('inventory.manage'))
+                                <th class="text-end pe-3" style="width:120px">{{ __('Aksi') }}</th>
+                                @endif
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($items as $item)
+                            <tr>
+                                <td class="ps-3">
+                                    <span class="badge bg-{{ $item->type_group == 'tool' ? 'primary' : 'secondary' }} w-100">
+                                        {{ $item->type_group == 'tool' ? __('Alat') : __('Material') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ $item->name }}</div>
+                                    <div class="small text-muted d-none d-md-block">{{ Str::limit($item->brand . ' ' . $item->model, 30) }}</div>
+                                </td>
+                                <td class="d-none d-md-table-cell">
+                                    <span class="text-secondary small">{{ ucfirst($item->category) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill bg-{{ $item->stock > 10 ? 'success' : 'danger' }} px-3">
+                                        {{ $item->stock }}
+                                    </span>
+                                    <div class="x-small text-muted mt-1">{{ $item->unit }}</div>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="d-flex flex-column align-items-end">
+                                        <div class="small text-muted">
+                                            <span class="x-small fw-normal">Modal:</span> Rp {{ number_format($item->price, 0, ',', '.') }}
                                         </div>
-                                    </td>
-                                    <td class="d-none d-md-table-cell">
-                                        <span class="badge text-dark border small">{{ ucfirst($item->category) }}</span>
-                                    </td>
-                                    <td class="d-none d-lg-table-cell">
-                                        {{ $item->brand ?: '-' }}
-                                        @if($item->model)
-                                            <div class="small text-muted text-truncate" style="max-width: 120px;">
-                                                {{ $item->model }}
-                                            </div>
+                                        @if($item->type_group !== 'tool')
+                                        <div class="text-success fw-bold">
+                                            <span class="x-small fw-normal text-muted">Jual:</span> Rp {{ number_format($item->selling_price ?? 0, 0, ',', '.') }}
+                                        </div>
                                         @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-{{ $item->stock > 10 ? 'success' : 'danger' }} rounded-pill px-3">
-                                            {{ $item->stock }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end fw-bold">
-                                        Rp {{ number_format($item->price, 0, ',', '.') }}
-                                    </td>
-                                    <td class="d-none d-md-table-cell small">{{ $item->unit }}</td>
-                                    <td class="pe-4 text-end">
-                                        <div class="d-inline-flex gap-1">
-                                            <a href="{{ route('inventory.assets.index', $item->id) }}" 
-                                               class="btn btn-sm btn-outline-info" title="{{ __('Assets') }}">
-                                                <i class="fa-solid fa-barcode"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    data-bs-toggle="modal" data-bs-target="#editItemModal"
-                                                    @foreach($item->only(['id','name','category','type_group','type','brand','model','unit','stock','price','description']) as $attr => $val)
-                                                    data-{{ $attr }}="{{ $val }}"
-                                                    @endforeach
-                                                    data-action="{{ route('inventory.update', $item->id) }}">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>
-                                            <form action="{{ route('inventory.destroy', $item->id) }}" 
-                                                  method="POST" class="d-inline"
-                                                  onsubmit="return confirm('{{ __('Delete this item?') }}')">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted">
-                                        <i class="fa-solid fa-boxes-stacked fa-2x mb-3 opacity-25"></i>
-                                        <p class="mb-0">{{ __('No items found.') }}</p>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                                    </div>
+                                </td>
+                                @if($hasPermission('inventory.manage'))
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-outline-info" title="Assets">
+                                            <i class="fa-solid fa-barcode"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editItemModal"
+                                            @foreach($item->only(['id','name','category','type_group','type','brand','model','unit','stock','price','selling_price','description']) as $attr => $val)
+                                            data-{{ $attr }}="{{ $val }}"
+                                            @endforeach
+                                            data-action="{{ route('inventory.update', $item->id) }}">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Hapus barang ini?') }}')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                                @endif
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-boxes-open fa-2x mb-2 opacity-25"></i>
+                                    <div>{{ __('Belum ada data barang.') }}</div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
             @endif
 
-            {{-- ==========================================
-                STOCK MOVEMENTS TABLE
-                ========================================== --}}
-            <div class="card shadow-sm border-0 inventory-panel">
+            {{-- Stock Movements Table --}}
+            @if($hasPermission('inventory.view') || $isAdminOrFinance)
+            <div class="card shadow-sm border-0 inventory-panel mb-4">
                 {{-- Header dengan Filter --}}
                 <div class="card-header bg-white py-3">
                     <div class="d-flex flex-column flex-lg-row gap-2 justify-content-between align-items-lg-center">
@@ -375,34 +267,31 @@
                         
                         <form method="GET" action="{{ route('inventory.index') }}" class="d-flex flex-wrap gap-2 align-items-center">
                             {{-- Hidden fields untuk mempertahankan filter lain --}}
-                            @if(request('type_group'))
-                                <input type="hidden" name="type_group" value="{{ request('type_group') }}">
-                            @endif
-                            @if(request('category'))
-                                <input type="hidden" name="category" value="{{ request('category') }}">
-                            @endif
+                            @php $typeGroup = request('type_group'); @endphp
+                            @if($typeGroup)<input type="hidden" name="type_group" value="{{ $typeGroup }}">@endif
+                            @if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif
 
                             {{-- Filter Tipe --}}
                             <select name="movement_type" class="form-select form-select-sm" style="min-width: 130px;">
                                 <option value="">{{ __('Semua') }}</option>
-                                <option value="in" {{ $movementType === 'in' ? 'selected' : '' }}>{{ __('Barang Masuk') }}</option>
-                                <option value="out" {{ $movementType === 'out' ? 'selected' : '' }}>{{ __('Barang Keluar') }}</option>
+                                <option value="in" {{ request('movement_type') === 'in' ? 'selected' : '' }}>{{ __('Barang Masuk') }}</option>
+                                <option value="out" {{ request('movement_type') === 'out' ? 'selected' : '' }}>{{ __('Barang Keluar') }}</option>
                             </select>
 
                             {{-- Filter Periode --}}
                             <select name="movement_period" id="movementPeriod" class="form-select form-select-sm" style="min-width: 120px;">
-                                <option value="day" {{ $movementPeriod === 'day' ? 'selected' : '' }}>{{ __('Per Hari') }}</option>
-                                <option value="month" {{ $movementPeriod === 'month' ? 'selected' : '' }}>{{ __('Per Bulan') }}</option>
+                                <option value="day" {{ request('movement_period', 'day') === 'day' ? 'selected' : '' }}>{{ __('Per Hari') }}</option>
+                                <option value="month" {{ request('movement_period') === 'month' ? 'selected' : '' }}>{{ __('Per Bulan') }}</option>
                             </select>
 
                             {{-- Input Tanggal --}}
                             <input type="date" name="movement_day" id="movementDayFilter"
-                                   class="form-control form-control-sm {{ $movementPeriod === 'day' ? '' : 'd-none' }}"
-                                   value="{{ $movementDay }}">
+                                   class="form-control form-control-sm {{ request('movement_period', 'day') === 'day' ? '' : 'd-none' }}"
+                                   value="{{ request('movement_day', now()->toDateString()) }}">
 
                             <input type="month" name="movement_month" id="movementMonthFilter"
-                                   class="form-control form-control-sm {{ $movementPeriod === 'month' ? '' : 'd-none' }}"
-                                   value="{{ $movementMonth }}">
+                                   class="form-control form-control-sm {{ request('movement_period') === 'month' ? '' : 'd-none' }}"
+                                   value="{{ request('movement_month', now()->format('Y-m')) }}">
 
                             {{-- Action Buttons --}}
                             <button type="submit" class="btn btn-sm btn-primary">
@@ -433,9 +322,13 @@
                                     <th class="py-3">{{ __('Item') }}</th>
                                     <th class="py-3 text-end">{{ __('Qty') }}</th>
                                     <th class="d-none d-lg-table-cell py-3">{{ __('Desc') }}</th>
+                                    @if($hasPermission('inventory.manage'))
                                     <th class="d-none d-md-table-cell py-3 text-end">{{ __('Cost') }}</th>
+                                    @endif
                                     <th class="d-none d-sm-table-cell pe-4 py-3 text-end">{{ __('Proof') }}</th>
+                                    @if($hasPermission('inventory.manage'))
                                     <th class="pe-4 py-3 text-end" style="width: 100px;">{{ __('Actions') }}</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -464,9 +357,11 @@
                                     <td class="d-none d-lg-table-cell small text-muted text-truncate" style="max-width: 150px;">
                                         {{ $trx->description ?: '-' }}
                                     </td>
+                                    @if($hasPermission('inventory.manage'))
                                     <td class="d-none d-md-table-cell text-end small">
                                         {{ $trx->total_cost ? 'Rp ' . number_format((float) $trx->total_cost, 0, ',', '.') : '-' }}
                                     </td>
+                                    @endif
                                     <td class="d-none d-sm-table-cell pe-4 text-end">
                                         @if($trx->proof_image)
                                             <a href="{{ Storage::url($trx->proof_image) }}" target="_blank" 
@@ -477,6 +372,7 @@
                                             <span class="text-muted small">-</span>
                                         @endif
                                     </td>
+                                    @if($hasPermission('inventory.manage'))
                                     <td class="pe-4 text-end">
                                         @if($trx->type === 'out' && (Auth::id() === $trx->user_id || $isAdminOrFinance))
                                         <div class="d-inline-flex gap-1">
@@ -503,6 +399,7 @@
                                             <span class="text-muted small">-</span>
                                         @endif
                                     </td>
+                                    @endif
                                 </tr>
                                 @empty
                                 <tr>
@@ -524,90 +421,114 @@
                 </div>
                 @endif
             </div>
+            @endif
 
         </div>
     </div>
 </div>
-
-{{-- ==========================================
-    MODALS - Dipisah untuk kemudahan maintenance
-    ========================================== --}}
 
 @include('inventory.modals.stock-in', ['items' => $items, 'categoryOptions' => $categoryOptions])
 @include('inventory.modals.add-item', ['categoryOptions' => $categoryOptions])
 @include('inventory.modals.edit-item', ['categoryOptions' => $categoryOptions])
 @include('inventory.modals.edit-pickup')
 @include('inventory.modals.import')
-
 @endsection
 
-{{-- ==========================================
-    JAVASCRIPT - Dipisah ke section tersendiri
-    ========================================== --}}
+@push('styles')
+<style>
+    /* Ensure modal visibility */
+    .modal.show {
+        display: block !important;
+        background: rgba(0,0,0,0.5);
+    }
+    .modal-dialog {
+        z-index: 1060;
+    }
+    .x-small {
+        font-size: 0.7rem;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
     // ========================================
-    // HELPER: Set default category & unit berdasarkan type_group
+    // HELPERS
     // ========================================
-    function applyDefaultsByTypeGroup(typeGroup, categoryEl, unitEl) {
-        if (!categoryEl || !unitEl) return;
-        
-        const toolCategories = ['tool', 'vehicle', 'general'];
-        const materialCategories = ['device', 'fiber', 'general'];
-        
-        if (typeGroup === 'tool') {
-            if (!toolCategories.includes(categoryEl.value)) categoryEl.value = 'tool';
-            if (!unitEl.value) unitEl.value = 'unit';
-        } else {
-            if (!materialCategories.includes(categoryEl.value)) categoryEl.value = 'device';
-            if (!unitEl.value) unitEl.value = 'pcs';
+    const InventoryHelper = {
+        applyDefaults: function(typeGroup, categoryEl, unitEl) {
+            if (!categoryEl || !unitEl) return;
+            const toolCategories = ['tool', 'vehicle', 'general'];
+            const materialCategories = ['device', 'fiber', 'general'];
+            
+            if (typeGroup === 'tool') {
+                if (!toolCategories.includes(categoryEl.value)) categoryEl.value = 'tool';
+                if (!unitEl.value) unitEl.value = 'unit';
+            } else {
+                if (!materialCategories.includes(categoryEl.value)) categoryEl.value = 'device';
+                if (!unitEl.value) unitEl.value = 'pcs';
+            }
+        },
+        toggleSellingPrice: function(typeGroup, container) {
+            if (!container) return;
+            if (typeGroup === 'tool') {
+                container.classList.add('d-none');
+            } else {
+                container.classList.remove('d-none');
+            }
         }
-    }
+    };
 
     // ========================================
-    // ADD ITEM MODAL: Auto-fill category & unit
+    // ADD ITEM MODAL
     // ========================================
     const addTypeGroup = document.getElementById('addTypeGroup');
     const addCategory = document.getElementById('addCategory');
     const addUnit = document.getElementById('addUnit');
+    const addSellingPriceContainer = document.getElementById('addSellingPriceContainer');
     
     if (addTypeGroup) {
         addTypeGroup.addEventListener('change', function() {
-            applyDefaultsByTypeGroup(this.value, addCategory, addUnit);
+            InventoryHelper.applyDefaults(this.value, addCategory, addUnit);
+            InventoryHelper.toggleSellingPrice(this.value, addSellingPriceContainer);
         });
-        // Init on load
-        applyDefaultsByTypeGroup(addTypeGroup.value, addCategory, addUnit);
+        InventoryHelper.applyDefaults(addTypeGroup.value, addCategory, addUnit);
+        InventoryHelper.toggleSellingPrice(addTypeGroup.value, addSellingPriceContainer);
     }
 
     // ========================================
-    // STOCK IN MODAL: Update unit label saat pilih item
+    // STOCK IN MODAL
     // ========================================
     const stockInSelect = document.getElementById('stockInItemId');
     const stockInUnit = document.getElementById('stockInUnit');
+    const stockInSellingPriceContainer = document.getElementById('stockInSellingPriceContainer');
     
-    if (stockInSelect && stockInUnit) {
+    if (stockInSelect) {
         stockInSelect.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
-            stockInUnit.textContent = selected?.getAttribute('data-unit') || 'pcs';
+            if (stockInUnit) stockInUnit.textContent = selected?.getAttribute('data-unit') || 'pcs';
+            
+            const typeGroup = selected?.getAttribute('data-type_group');
+            InventoryHelper.toggleSellingPrice(typeGroup, stockInSellingPriceContainer);
         });
     }
 
     // ========================================
-    // EDIT ITEM MODAL: Populate form dari data attribute
+    // EDIT ITEM MODAL
     // ========================================
     const editItemModal = document.getElementById('editItemModal');
+    const editSellingPriceContainer = document.getElementById('editSellingPriceContainer');
     
     if (editItemModal) {
         editItemModal.addEventListener('show.bs.modal', function(event) {
             const btn = event.relatedTarget;
             const form = this.querySelector('#editItemForm');
+            if (!form) return;
             
-            // Set form action
             form.action = btn.getAttribute('data-action');
             
-            // Map data attributes ke form fields
             const fieldMap = {
                 'editName': 'data-name',
                 'editCategory': 'data-category',
@@ -617,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'editModel': 'data-model',
                 'editUnit': 'data-unit',
                 'editPrice': 'data-price',
+                'editSellingPrice': 'data-selling_price',
                 'editDescription': 'data-description',
             };
             
@@ -625,79 +547,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (el) el.value = btn.getAttribute(dataAttr) || '';
             });
             
-            // Stock fields
             const stock = btn.getAttribute('data-stock') || 0;
-            this.querySelector('#editCurrentStock').value = stock;
-            this.querySelector('#editStock').value = stock;
-            this.querySelector('#editStockAdjustment').value = 0;
+            const currentStockEl = this.querySelector('#editCurrentStock');
+            const stockEl = this.querySelector('#editStock');
+            const adjustmentEl = this.querySelector('#editStockAdjustment');
             
-            // Apply defaults
-            applyDefaultsByTypeGroup(
-                btn.getAttribute('data-type_group'),
-                this.querySelector('#editCategory'),
-                this.querySelector('#editUnit')
-            );
+            if (currentStockEl) currentStockEl.value = stock;
+            if (stockEl) stockEl.value = stock;
+            if (adjustmentEl) adjustmentEl.value = 0;
+            
+            const typeGroup = btn.getAttribute('data-type_group');
+            InventoryHelper.applyDefaults(typeGroup, this.querySelector('#editCategory'), this.querySelector('#editUnit'));
+            InventoryHelper.toggleSellingPrice(typeGroup, editSellingPriceContainer);
         });
 
-        // Type group change handler
-        const editTypeGroup = document.getElementById('editTypeGroup');
-        if (editTypeGroup) {
-            editTypeGroup.addEventListener('change', function() {
-                applyDefaultsByTypeGroup(this.value, document.getElementById('editCategory'), document.getElementById('editUnit'));
-            });
-        }
+        document.getElementById('editTypeGroup')?.addEventListener('change', function() {
+            InventoryHelper.applyDefaults(this.value, document.getElementById('editCategory'), document.getElementById('editUnit'));
+            InventoryHelper.toggleSellingPrice(this.value, editSellingPriceContainer);
+        });
 
-        // Submit handler: validate stock tidak minus
-        const editItemForm = document.getElementById('editItemForm');
-        if (editItemForm) {
-            editItemForm.addEventListener('submit', function(e) {
-                const current = parseInt(document.getElementById('editCurrentStock').value) || 0;
-                const adjustment = parseInt(document.getElementById('editStockAdjustment').value) || 0;
-                const finalStock = current + adjustment;
-                
-                if (finalStock < 0) {
-                    e.preventDefault();
-                    alert('{{ __("Stok akhir tidak boleh minus!") }}');
-                    return;
-                }
-                document.getElementById('editStock').value = finalStock;
-            });
-        }
+        document.getElementById('editItemForm')?.addEventListener('submit', function(e) {
+            const current = parseInt(document.getElementById('editCurrentStock')?.value || 0);
+            const adjustment = parseInt(document.getElementById('editStockAdjustment')?.value || 0);
+            const finalStock = current + adjustment;
+            
+            if (finalStock < 0) {
+                e.preventDefault();
+                alert('{{ __("Stok akhir tidak boleh minus!") }}');
+            } else {
+                const stockEl = document.getElementById('editStock');
+                if (stockEl) stockEl.value = finalStock;
+            }
+        });
     }
 
     // ========================================
-    // EDIT PICKUP MODAL: Populate form
+    // EDIT PICKUP MODAL
     // ========================================
     const editPickupModal = document.getElementById('editPickupModal');
-    
     if (editPickupModal) {
         editPickupModal.addEventListener('show.bs.modal', function(event) {
             const btn = event.relatedTarget;
             const form = this.querySelector('#editPickupForm');
+            if (!form) return;
             
             form.action = btn.getAttribute('data-action');
-            this.querySelector('#editPickupItemName').value = btn.getAttribute('data-item');
-            this.querySelector('#editPickupQuantity').value = btn.getAttribute('data-quantity');
-            this.querySelector('#editPickupUnit').textContent = btn.getAttribute('data-unit');
-            this.querySelector('#editPickupDescription').value = btn.getAttribute('data-description') || '';
+            const fields = {
+                'editPickupItemName': 'data-item',
+                'editPickupQuantity': 'data-quantity',
+                'editPickupDescription': 'data-description'
+            };
+            
+            Object.entries(fields).forEach(([id, attr]) => {
+                const el = this.querySelector('#' + id);
+                if (el) el.value = btn.getAttribute(attr) || '';
+            });
+            
+            const unitEl = this.querySelector('#editPickupUnit');
+            if (unitEl) unitEl.textContent = btn.getAttribute('data-unit') || 'pcs';
         });
     }
 
     // ========================================
-    // MOVEMENT FILTER: Toggle date/month input
+    // MOVEMENT FILTER
     // ========================================
     const movementPeriod = document.getElementById('movementPeriod');
-    const movementDayFilter = document.getElementById('movementDayFilter');
-    const movementMonthFilter = document.getElementById('movementMonthFilter');
+    const dayFilter = document.getElementById('movementDayFilter');
+    const monthFilter = document.getElementById('movementMonthFilter');
     
     if (movementPeriod) {
-        const toggleDateInput = function() {
-            movementDayFilter.classList.toggle('d-none', movementPeriod.value !== 'day');
-            movementMonthFilter.classList.toggle('d-none', movementPeriod.value !== 'month');
+        const toggle = () => {
+            if (dayFilter) dayFilter.classList.toggle('d-none', movementPeriod.value !== 'day');
+            if (monthFilter) monthFilter.classList.toggle('d-none', movementPeriod.value !== 'month');
         };
-        
-        movementPeriod.addEventListener('change', toggleDateInput);
-        toggleDateInput(); // Init
+        movementPeriod.addEventListener('change', toggle);
+        toggle();
     }
 });
 </script>
