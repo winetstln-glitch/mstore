@@ -483,56 +483,15 @@ class InventoryController extends Controller implements HasMiddleware
             'description' => 'nullable|string',
             'unit' => 'required|string|max:50',
             'stock' => 'nullable|integer|min:0',
-            'stock_adjustment' => 'nullable|integer',
             'price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
         ]);
 
-        $oldStock = $item->stock;
-        $stockAdjustment = (int) ($validated['stock_adjustment'] ?? 0);
-        unset($validated['stock_adjustment']);
-
-        if ($stockAdjustment !== 0) {
-            $newStock = $oldStock + $stockAdjustment;
-            if ($newStock < 0) {
-                return back()->withInput()->withErrors([
-                    'stock_adjustment' => __('Stock adjustment causes negative stock.'),
-                ]);
-            }
-            $validated['stock'] = $newStock;
-        } elseif (! array_key_exists('stock', $validated) || $validated['stock'] === null) {
-            $validated['stock'] = $oldStock;
+        if (! array_key_exists('stock', $validated) || $validated['stock'] === null) {
+            $validated['stock'] = $item->stock;
         }
 
         $item->update($validated);
-        $stockDiff = $item->stock - $oldStock;
-
-        if ($stockDiff !== 0) {
-            InventoryTransaction::create([
-                'user_id' => Auth::id(),
-                'inventory_item_id' => $item->id,
-                'type' => $stockDiff > 0 ? 'in' : 'out',
-                'quantity' => abs($stockDiff),
-                'unit_cost' => $item->price,
-                'total_cost' => abs($stockDiff) * $item->price,
-                'source_type' => 'adjustment',
-                'description' => $stockDiff > 0
-                    ? 'Penyesuaian stok masuk via edit item'
-                    : 'Penyesuaian stok keluar via edit item',
-            ]);
-        }
-
-        if ($stockDiff > 0 && $validated['price'] > 0) {
-            Transaction::create([
-                'user_id' => Auth::id(),
-                'type' => 'expense',
-                'category' => 'Pembelian Alat',
-                'amount' => $stockDiff * $validated['price'],
-                'transaction_date' => now()->toDateString(),
-                'description' => 'Penambahan stok '.$item->name,
-                'reference_number' => 'INV-IN-ADJ-'.$item->id.'-'.time(),
-            ]);
-        }
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item updated successfully.'));
     }

@@ -2,7 +2,10 @@
 
 @section('content')
 @php
-    $isAdminOrFinance = Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance');
+    $authUser = Auth::user();
+    $isAdminOrFinance = $authUser->hasRole('admin') || $authUser->hasRole('finance');
+    $hasPermission = fn($p) => $authUser->hasPermission($p);
+    
     $movementPeriod = request('movement_period', 'day');
     $movementType = request('movement_type', '');
     $movementDay = request('movement_day', now()->toDateString());
@@ -261,50 +264,59 @@
             @if($hasPermission('inventory.view') || $isAdminOrFinance)
             <div class="card shadow-sm border-0 inventory-panel mb-4">
                 {{-- Header dengan Filter --}}
-                <div class="card-header bg-white py-3">
-                    <div class="d-flex flex-column flex-lg-row gap-2 justify-content-between align-items-lg-center">
-                        <h6 class="m-0 fw-bold text-primary">{{ __('Recent Stock Movements') }}</h6>
+                <div class="card-header bg-white py-3 border-0">
+                    <div class="d-flex flex-column flex-xl-row gap-3 justify-content-between align-items-xl-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                            <h6 class="m-0 fw-bold text-dark">{{ __('Recent Stock Movements') }}</h6>
+                        </div>
                         
-                        <form method="GET" action="{{ route('inventory.index') }}" class="d-flex flex-wrap gap-2 align-items-center">
-                            {{-- Hidden fields untuk mempertahankan filter lain --}}
+                        <form method="GET" action="{{ route('inventory.index') }}" class="d-flex flex-wrap gap-2 align-items-center m-0">
+                            {{-- Hidden fields --}}
                             @php $typeGroup = request('type_group'); @endphp
                             @if($typeGroup)<input type="hidden" name="type_group" value="{{ $typeGroup }}">@endif
                             @if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif
 
-                            {{-- Filter Tipe --}}
-                            <select name="movement_type" class="form-select form-select-sm" style="min-width: 130px;">
-                                <option value="">{{ __('Semua') }}</option>
-                                <option value="in" {{ request('movement_type') === 'in' ? 'selected' : '' }}>{{ __('Barang Masuk') }}</option>
-                                <option value="out" {{ request('movement_type') === 'out' ? 'selected' : '' }}>{{ __('Barang Keluar') }}</option>
-                            </select>
+                            <div class="d-flex flex-wrap gap-2">
+                                {{-- Filter Tipe --}}
+                                <div class="input-group input-group-sm" style="width: auto;">
+                                    <span class="input-group-text bg-light x-small fw-bold text-muted text-uppercase">Tipe</span>
+                                    <select name="movement_type" class="form-select" style="min-width: 100px;">
+                                        <option value="">{{ __('Semua') }}</option>
+                                        <option value="in" {{ request('movement_type') === 'in' ? 'selected' : '' }}>{{ __('Masuk') }}</option>
+                                        <option value="out" {{ request('movement_type') === 'out' ? 'selected' : '' }}>{{ __('Keluar') }}</option>
+                                    </select>
+                                </div>
 
-                            {{-- Filter Periode --}}
-                            <select name="movement_period" id="movementPeriod" class="form-select form-select-sm" style="min-width: 120px;">
-                                <option value="day" {{ request('movement_period', 'day') === 'day' ? 'selected' : '' }}>{{ __('Per Hari') }}</option>
-                                <option value="month" {{ request('movement_period') === 'month' ? 'selected' : '' }}>{{ __('Per Bulan') }}</option>
-                            </select>
+                                {{-- Filter Periode & Tanggal --}}
+                                <div class="input-group input-group-sm" style="width: auto;">
+                                    <select name="movement_period" id="movementPeriod" class="form-select" style="min-width: 100px;">
+                                        <option value="day" {{ request('movement_period', 'day') === 'day' ? 'selected' : '' }}>{{ __('Harian') }}</option>
+                                        <option value="month" {{ request('movement_period') === 'month' ? 'selected' : '' }}>{{ __('Bulanan') }}</option>
+                                    </select>
+                                    <input type="date" name="movement_day" id="movementDayFilter"
+                                           class="form-control {{ request('movement_period', 'day') === 'day' ? '' : 'd-none' }}"
+                                           value="{{ request('movement_day', now()->toDateString()) }}">
+                                    <input type="month" name="movement_month" id="movementMonthFilter"
+                                           class="form-control {{ request('movement_period') === 'month' ? '' : 'd-none' }}"
+                                           value="{{ request('movement_month', now()->format('Y-m')) }}">
+                                </div>
+                            </div>
 
-                            {{-- Input Tanggal --}}
-                            <input type="date" name="movement_day" id="movementDayFilter"
-                                   class="form-control form-control-sm {{ request('movement_period', 'day') === 'day' ? '' : 'd-none' }}"
-                                   value="{{ request('movement_day', now()->toDateString()) }}">
-
-                            <input type="month" name="movement_month" id="movementMonthFilter"
-                                   class="form-control form-control-sm {{ request('movement_period') === 'month' ? '' : 'd-none' }}"
-                                   value="{{ request('movement_month', now()->format('Y-m')) }}">
-
-                            {{-- Action Buttons --}}
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
-                            </button>
-                            <a href="{{ route('inventory.index', array_filter(['type_group' => request('type_group'), 'category' => request('category')])) }}" 
-                               class="btn btn-sm btn-outline-secondary">
-                                {{ __('Reset') }}
-                            </a>
-                            <a href="{{ route('inventory.movements.export.excel', request()->except('page')) }}" 
-                               class="btn btn-sm btn-success">
-                                <i class="fa-solid fa-file-excel me-1"></i>{{ __('Download') }}
-                            </a>
+                            <div class="d-flex gap-1">
+                                <button type="submit" class="btn btn-sm btn-dark px-3 shadow-xs">
+                                    <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
+                                </button>
+                                <a href="{{ route('inventory.index', array_filter(['type_group' => request('type_group'), 'category' => request('category')])) }}" 
+                                   class="btn btn-sm btn-outline-secondary px-2 shadow-xs" title="Reset Filter">
+                                    <i class="fa-solid fa-undo"></i>
+                                </a>
+                                <div class="vr mx-1"></div>
+                                <a href="{{ route('inventory.movements.export.excel', request()->except('page')) }}" 
+                                   class="btn btn-sm btn-success px-3 shadow-xs">
+                                    <i class="fa-solid fa-file-excel me-1"></i>{{ __('Export') }}
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -548,13 +560,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             const stock = btn.getAttribute('data-stock') || 0;
-            const currentStockEl = this.querySelector('#editCurrentStock');
             const stockEl = this.querySelector('#editStock');
-            const adjustmentEl = this.querySelector('#editStockAdjustment');
+            const unitLabel = this.querySelector('.edit-unit-label');
             
-            if (currentStockEl) currentStockEl.value = stock;
             if (stockEl) stockEl.value = stock;
-            if (adjustmentEl) adjustmentEl.value = 0;
+            if (unitLabel) unitLabel.textContent = btn.getAttribute('data-unit') || 'pcs';
             
             const typeGroup = btn.getAttribute('data-type_group');
             InventoryHelper.applyDefaults(typeGroup, this.querySelector('#editCategory'), this.querySelector('#editUnit'));
@@ -564,20 +574,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('editTypeGroup')?.addEventListener('change', function() {
             InventoryHelper.applyDefaults(this.value, document.getElementById('editCategory'), document.getElementById('editUnit'));
             InventoryHelper.toggleSellingPrice(this.value, editSellingPriceContainer);
-        });
-
-        document.getElementById('editItemForm')?.addEventListener('submit', function(e) {
-            const current = parseInt(document.getElementById('editCurrentStock')?.value || 0);
-            const adjustment = parseInt(document.getElementById('editStockAdjustment')?.value || 0);
-            const finalStock = current + adjustment;
-            
-            if (finalStock < 0) {
-                e.preventDefault();
-                alert('{{ __("Stok akhir tidak boleh minus!") }}');
-            } else {
-                const stockEl = document.getElementById('editStock');
-                if (stockEl) stockEl.value = finalStock;
-            }
         });
     }
 

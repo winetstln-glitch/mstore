@@ -10,7 +10,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light border small">
-                        <strong>{{ __('Edit Utama') }}:</strong> Ubah data dan gunakan penyesuaian stok (+/-).
+                        <strong>{{ __('Edit Utama') }}:</strong> Perbarui data barang dan jumlah stok yang benar.
                     </div>
                     
                     <div class="mb-3">
@@ -58,17 +58,15 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Stok Saat Ini') }}</label>
-                            <input type="number" id="editCurrentStock" class="form-control bg-light" readonly>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ __('Penyesuaian Stok (+/-)') }}</label>
-                            <input type="number" name="stock_adjustment" id="editStockAdjustment" class="form-control" value="0">
-                            <div class="form-text">{{ __('Contoh: +10 stok masuk, -2 koreksi keluar') }}</div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">{{ __('Total Stok Saat Ini') }}</label>
+                            <div class="input-group">
+                                <input type="number" name="stock" id="editStock" class="form-control fw-bold text-primary" min="0" required>
+                                <span class="input-group-text bg-light edit-unit-label">pcs</span>
+                            </div>
+                            <div class="form-text small">{{ __('Ganti nominal di atas jika ingin mengoreksi jumlah stok (tidak akan tercatat di riwayat).') }}</div>
                         </div>
                     </div>
-                    <input type="hidden" name="stock" id="editStock">
 
                     {{-- Advanced Fields --}}
                     <button type="button" class="btn btn-link px-0 text-decoration-none" 
