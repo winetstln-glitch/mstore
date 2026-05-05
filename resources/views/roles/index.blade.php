@@ -50,7 +50,7 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group">
+                                    <div class="d-flex justify-content-end gap-1">
                                         <a href="{{ route('roles.edit', $role) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>

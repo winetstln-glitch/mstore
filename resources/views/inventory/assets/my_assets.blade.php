@@ -62,12 +62,14 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
-                                            <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
-                                                @csrf
-                                                <button type="submit" class="btn btn-outline-warning">
-                                                    <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
-                                                </button>
-                                            </form>
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to return this asset?') }}')">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('Return') }}
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty

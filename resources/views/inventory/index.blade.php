@@ -157,12 +157,14 @@
                                     {{ $asset->meta_data['assignment_note'] ?? '-' }}
                                 </td>
                                 <td class="text-end">
-                                    <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kembalikan aset ini?') }}')">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Kembali') }}">
-                                            <i class="fa-solid fa-rotate-left"></i>
-                                        </button>
-                                    </form>
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kembalikan aset ini?') }}')">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ __('Kembali') }}">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach
@@ -227,11 +229,11 @@
                                 </td>
                                 @if($hasPermission('inventory.manage'))
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-outline-info" title="Assets">
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <a href="{{ route('inventory.assets.index', $item->id) }}" class="btn btn-sm btn-outline-info" title="Assets">
                                             <i class="fa-solid fa-barcode"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editItemModal"
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editItemModal"
                                             @foreach($item->only(['id','name','category','type_group','type','brand','model','unit','stock','price','selling_price','description']) as $attr => $val)
                                             data-{{ $attr }}="{{ $val }}"
                                             @endforeach
@@ -240,7 +242,7 @@
                                         </button>
                                         <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Hapus barang ini?') }}')">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
                                         </form>
                                     </div>
                                 </td>
@@ -387,7 +389,7 @@
                                     @if($hasPermission('inventory.manage'))
                                     <td class="pe-4 text-end">
                                         @if($trx->type === 'out' && (Auth::id() === $trx->user_id || $isAdminOrFinance))
-                                        <div class="d-inline-flex gap-1">
+                                        <div class="d-flex justify-content-end gap-1">
                                             <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editPickupModal"
                                                     data-id="{{ $trx->id }}"

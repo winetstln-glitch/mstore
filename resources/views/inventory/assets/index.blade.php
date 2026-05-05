@@ -113,40 +113,45 @@
                                                 <i class="fa-solid fa-warehouse me-1"></i> {{ __('Gudang') }}
                                             @endif
                                         </td>
-                                        <td>
-                                            <div class="btn-group">
-                                                @if($asset->status == 'in_stock')
-                                                    <button class="btn btn-sm btn-outline-primary" 
-                                                        onclick="openAssignModal({{ $asset->id }}, '{{ $asset->serial_number }}')">
-                                                        <i class="fa-solid fa-hand-holding-hand"></i> {{ __('Serahkan') }}
-                                                    </button>
-                                                @elseif($asset->status == 'deployed')
-                                                    <form action="{{ route('inventory.assets.return', $asset->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Kembalikan aset ini ke gudang?') }}')">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning">
-                                                            <i class="fa-solid fa-rotate-left"></i> {{ __('Kembalikan') }}
-                                                        </button>
-                                                    </form>
-                                                @endif
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        data-bs-toggle="modal" data-bs-target="#editAssetModal"
+                                                        data-id="{{ $asset->id }}"
+                                                        data-asset_code="{{ $asset->asset_code }}"
+                                                        data-serial_number="{{ $asset->serial_number }}"
+                                                        data-condition="{{ $asset->condition }}"
+                                                        data-status="{{ $asset->status }}"
+                                                        data-action="{{ route('inventory.assets.update', $asset->id) }}">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
                                                 
-                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
-                                                <ul class="dropdown-menu">
-                                                    <li>
-                                                        <a class="dropdown-item" href="#" onclick="openEditModal({{ $asset->id }}, '{{ $asset->serial_number }}', '{{ $asset->status }}', '{{ $asset->condition }}', '{{ $asset->mac_address }}', '{{ $asset->asset_code }}')">
-                                                            <i class="fa-solid fa-edit me-2"></i> {{ __('Ubah Detail') }}
-                                                        </a>
-                                                    </li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form action="{{ route('inventory.assets.destroy', $asset->id) }}" method="POST" onsubmit="return confirm('{{ __('Hapus data aset ini?') }}')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="fa-solid fa-trash me-2"></i> {{ __('Hapus') }}
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
+                                                <div class="dropdown d-inline-block">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" onclick="openAssignModal({{ $asset->id }}, '{{ $asset->serial_number }}')">
+                                                                <i class="fa-solid fa-hand-holding-hand me-2"></i> {{ __('Serahkan') }}
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="{{ route('inventory.assets.print-label', $asset->id) }}" target="_blank">
+                                                                <i class="fa-solid fa-print me-2"></i> {{ __('Cetak Label') }}
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <form action="{{ route('inventory.assets.destroy', $asset->id) }}" method="POST" onsubmit="return confirm('{{ __('Hapus aset ini?') }}')">
+                                                                @csrf @method('DELETE')
+                                                                <button type="submit" class="dropdown-item text-danger">
+                                                                    <i class="fa-solid fa-trash me-2"></i> {{ __('Hapus Aset') }}
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
