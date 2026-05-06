@@ -82,6 +82,38 @@
     --neon-glow: 0 0 18px rgba(0, 229, 255, 0.35);
 }
 
+/* Generic Modal Dark Mode */
+[data-bs-theme="dark"] .modal-content {
+    background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-footer {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme="dark"] .modal-title,
+[data-bs-theme="dark"] .form-label {
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-bs-theme="dark"] .input-group-text,
+[data-bs-theme="dark"] textarea {
+    background-color: #0b1228;
+    border-color: #1f3b6d;
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: #0b1228;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(0, 229, 255, 0.15);
+}
+[data-bs-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
 body {
     font-family: 'Instrument Sans', 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--body-bg);

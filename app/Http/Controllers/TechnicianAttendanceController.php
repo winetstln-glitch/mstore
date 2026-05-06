@@ -9,13 +9,17 @@ use App\Models\TechnicianAttendance;
 use App\Models\TechnicianSchedule;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Models\WashEmployee;
+use App\Traits\HasAttendanceFilters;
+use App\Traits\SendsNotifications;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use OpenSpout\Common\Entity\Row;
@@ -23,6 +27,8 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class TechnicianAttendanceController extends Controller implements HasMiddleware
 {
+    use SendsNotifications, HasAttendanceFilters;
+
     protected function canViewAllAttendanceData(): bool
     {
         $user = Auth::user();
@@ -80,32 +86,14 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = TechnicianAttendance::with('user');
-
-        if ($request->filled('date')) {
-            $query->whereDate('clock_in', $request->date);
-        }
-
-        if ($request->filled('month')) {
-            $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                ->whereYear('clock_in', date('Y', strtotime($request->month)));
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if (! $this->canViewAllAttendanceData()) {
-            $query->where('user_id', Auth::id());
-        } elseif ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
+        $query = $this->getFilteredAttendanceQuery($request);
 
         // Calculate stats for the current filter
         $statsQuery = clone $query;
         $allAttendances = $statsQuery->get();
 
         $stats = [
-            'present' => $allAttendances->where('status', 'present')->count(),
+            'present' => $allAttendances->whereIn('status', ['present', 'late'])->count(),
             'late' => $allAttendances->where('status', 'late')->count(),
             'leave' => $allAttendances->where('status', 'leave')->count(),
             'permit' => $allAttendances->where('status', 'permit')->count(),
@@ -114,7 +102,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'total_days' => $allAttendances->count(),
         ];
 
-        $attendances = $query->latest()->paginate(15);
+        $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
         // List technicians and admins for filter
         $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
@@ -125,206 +113,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $techniciansQuery->where('id', Auth::id());
         }
 
-        $technicians = $techniciansQuery->get();
+        $technicians = $techniciansQuery->orderBy('name')->get();
 
         return view('technicians.attendance.index', compact('attendances', 'technicians', 'stats'));
     }
 
     public function payslip(Request $request)
     {
-        $query = TechnicianAttendance::with('user');
-
-        if ($request->filled('date')) {
-            $query->whereDate('clock_in', $request->date);
-        }
-
-        if ($request->filled('month')) {
-            $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                ->whereYear('clock_in', date('Y', strtotime($request->month)));
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if (! $this->canViewAllAttendanceData()) {
-            $query->where('user_id', Auth::id());
-        } elseif ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        $attendances = $query->oldest('clock_in')->get();
-
-        // Fetch Adjustments
-        $adjustmentsQuery = SalaryAdjustment::query();
-        if ($request->filled('date')) {
-            $adjustmentsQuery->whereDate('date', $request->date);
-        }
-        if ($request->filled('month')) {
-            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                ->whereYear('date', date('Y', strtotime($request->month)));
-        }
-        if (! $this->canViewAllAttendanceData()) {
-            $adjustmentsQuery->where('user_id', Auth::id());
-        } elseif ($request->filled('user_id')) {
-            $adjustmentsQuery->where('user_id', $request->user_id);
-        }
-        $allAdjustments = $adjustmentsQuery->get()->groupBy('user_id');
+        $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
+        $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         // Summary by Technician
-        $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
-            $user = $items->first()->user;
-
-            // Calculate status counts
-            $presentCount = $items->whereIn('status', ['present', 'late'])->count();
-            $leaveCount = $items->where('status', 'leave')->count();
-            $permitCount = $items->where('status', 'permit')->count();
-            $sickCount = $items->where('status', 'sick')->count();
-            $alphaCount = $items->where('status', 'alpha')->count();
-
-            // Calculate salary (Present + Leave/Permit/Sick considered paid)
-            $paidDays = $presentCount + $leaveCount + $permitCount + $sickCount;
-            $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
-
-            // Adjustments
-            $userAdjustments = $allAdjustments->get($user->id, collect());
-            
-            // Filter bonus by categories in description
-            $bonusDisiplin = $userAdjustments->where('type', 'bonus')
-                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'disiplin'))
-                ->sum('amount');
-            
-            $bonusTanggungJawab = $userAdjustments->where('type', 'bonus')
-                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'tanggung jawab') || str_contains(strtolower($adj->description), 'tanggungjawab'))
-                ->sum('amount');
-            
-            $bonusAbsensi = $userAdjustments->where('type', 'bonus')
-                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'absensi'))
-                ->sum('amount');
-            
-            // Other bonuses that don't match specific categories
-            $bonusLainnya = $userAdjustments->where('type', 'bonus')
-                ->filter(fn($adj) => 
-                    !str_contains(strtolower($adj->description), 'disiplin') && 
-                    !str_contains(strtolower($adj->description), 'tanggung jawab') && 
-                    !str_contains(strtolower($adj->description), 'tanggungjawab') && 
-                    !str_contains(strtolower($adj->description), 'absensi')
-                )
-                ->sum('amount');
-
-            // Filter kasbon by categories in description
-            $kasbonKantor = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'bon kantor'))
-                ->sum('amount');
-            
-            $kasbonWarung = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'bon warung'))
-                ->sum('amount');
-            
-            $kasbonLainnya = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($adj) => 
-                    !str_contains(strtolower($adj->description), 'bon kantor') && 
-                    !str_contains(strtolower($adj->description), 'bon warung')
-                )
-                ->sum('amount');
-
-            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
-            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
-
-            return [
-                'user' => $user,
-                'present_count' => $presentCount,
-                'leave_count' => $leaveCount,
-                'permit_count' => $permitCount,
-                'sick_count' => $sickCount,
-                'alpha_count' => $alphaCount,
-                'paid_days' => $paidDays,
-                'daily_salary' => $dailySalary,
-                'bonus_disiplin' => $bonusDisiplin,
-                'bonus_tanggung_jawab' => $bonusTanggungJawab,
-                'bonus_absensi' => $bonusAbsensi,
-                'bonus_lainnya' => $bonusLainnya,
-                'kasbon_kantor' => $kasbonKantor,
-                'kasbon_warung' => $kasbonWarung,
-                'kasbon_lainnya' => $kasbonLainnya,
-                'total_bonus' => $totalBonus,
-                'total_kasbon' => $totalKasbon,
-                'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
-                'dates' => $items,
-                'adjustments' => $userAdjustments,
-            ];
-        });
+        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments);
 
         return view('technicians.attendance.payslip', compact('summary', 'request'));
     }
 
     public function exportExcel(Request $request)
     {
-        $query = TechnicianAttendance::with('user');
-
-        if ($request->filled('date')) {
-            $query->whereDate('clock_in', $request->date);
-        }
-
-        if ($request->filled('month')) {
-            $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                ->whereYear('clock_in', date('Y', strtotime($request->month)));
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if (! $this->canViewAllAttendanceData()) {
-            $query->where('user_id', Auth::id());
-        } elseif ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        $attendances = $query->oldest('clock_in')->get();
-
-        // Fetch Adjustments
-        $adjustmentsQuery = SalaryAdjustment::query();
-        if ($request->filled('date')) {
-            $adjustmentsQuery->whereDate('date', $request->date);
-        }
-        if ($request->filled('month')) {
-            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                ->whereYear('date', date('Y', strtotime($request->month)));
-        }
-        if (! $this->canViewAllAttendanceData()) {
-            $adjustmentsQuery->where('user_id', Auth::id());
-        } elseif ($request->filled('user_id')) {
-            $adjustmentsQuery->where('user_id', $request->user_id);
-        }
-        $allAdjustments = $adjustmentsQuery->get()->groupBy('user_id');
+        $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
+        $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         // Summary by Technician
-        $summary = $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
-            $user = $items->first()->user;
-
-            // Calculate status counts
-            $presentCount = $items->whereIn('status', ['present', 'late'])->count();
-            $leaveCount = $items->whereIn('status', ['leave', 'permit', 'sick'])->count(); // Cuti/Izin/Sakit
-
-            $paidDays = $presentCount + $leaveCount;
-            $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
-
-            // Adjustments
-            $userAdjustments = $allAdjustments->get($user->id, collect());
-            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
-            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
-
-            return [
-                'user' => $user,
-                'present_count' => $presentCount,
-                'leave_count' => $leaveCount,
-                'paid_days' => $paidDays,
-                'daily_salary' => $dailySalary,
-                'total_bonus' => $totalBonus,
-                'total_kasbon' => $totalKasbon,
-                'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
-                'dates' => $items,
-            ];
-        });
+        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustances);
 
         return response()->streamDownload(function () use ($summary) {
             $writer = new Writer;
@@ -393,36 +204,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             abort(403, 'Unauthorized');
         }
 
-        $query = TechnicianAttendance::with('user');
-
-        if ($request->filled('date')) {
-            $query->whereDate('clock_in', $request->date);
-        }
-
-        if ($request->filled('month')) {
-            $query->whereMonth('clock_in', date('m', strtotime($request->month)))
-                ->whereYear('clock_in', date('Y', strtotime($request->month)));
-        }
-
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        $attendances = $query->oldest('clock_in')->get();
-
-        // Fetch Pending Adjustments
-        $adjustmentsQuery = SalaryAdjustment::where('status', 'pending');
-        if ($request->filled('date')) {
-            $adjustmentsQuery->whereDate('date', $request->date);
-        }
-        if ($request->filled('month')) {
-            $adjustmentsQuery->whereMonth('date', date('m', strtotime($request->month)))
-                ->whereYear('date', date('Y', strtotime($request->month)));
-        }
-        if ($request->filled('user_id')) {
-            $adjustmentsQuery->where('user_id', $request->user_id);
-        }
-        $pendingAdjustments = $adjustmentsQuery->get();
+        $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
+        $pendingAdjustments = $this->getFilteredAdjustmentsQuery($request, 'pending')->get();
         $adjustmentsByUser = $pendingAdjustments->groupBy('user_id');
 
         if ($attendances->isEmpty() && $pendingAdjustments->isEmpty()) {
@@ -430,10 +213,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         // Summary by Technician
-        // We need to handle users who have adjustments but NO attendance.
-        // So we merge user IDs from both.
         $userIds = $attendances->pluck('user_id')->merge($pendingAdjustments->pluck('user_id'))->unique();
-
         $totalAmount = 0;
 
         foreach ($userIds as $userId) {
@@ -463,18 +243,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         // Create Description
-        $period = '';
-        if ($request->filled('month')) {
-            $period = \Carbon\Carbon::parse($request->month)->translatedFormat('F Y');
-        } elseif ($request->filled('date')) {
-            $period = \Carbon\Carbon::parse($request->date)->translatedFormat('d F Y');
-        } else {
-            $period = __('All Time');
-        }
+        $period = $request->filled('month') 
+            ? Carbon::parse($request->month)->translatedFormat('F Y')
+            : ($request->filled('date') ? Carbon::parse($request->date)->translatedFormat('d F Y') : __('All Time'));
 
         $description = "Pembayaran Gaji Teknisi Periode $period";
         if ($request->filled('user_id')) {
-            $user = \App\Models\User::find($request->user_id);
+            $user = User::find($request->user_id);
             if ($user) {
                 $description .= ' - '.$user->name;
             }

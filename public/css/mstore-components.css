@@ -146,21 +146,6 @@ body { background-color: var(--bs-body-bg); }
 [data-bs-theme="dark"] .clock-time { color: #93c5fd; }
 [data-bs-theme="dark"] .clock-location-status.is-detected { color: #86efac; }
 [data-bs-theme="dark"] .leave-modal-body-surface { background: #0f172a; }
-[data-bs-theme="dark"] #attendanceLeaveModal .modal-content {
-  background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
-  border: 1px solid rgba(96, 165, 250, 0.28) !important;
-  color: #e2e8f0;
-}
-[data-bs-theme="dark"] #attendanceLeaveModal .modal-header,
-[data-bs-theme="dark"] #attendanceLeaveModal .modal-footer { border-color: #334155 !important; }
-[data-bs-theme="dark"] #attendanceLeaveModal .modal-title,
-[data-bs-theme="dark"] #attendanceLeaveModal .form-label { color: #e2e8f0; }
-[data-bs-theme="dark"] #attendanceLeaveModal .form-control,
-[data-bs-theme="dark"] #attendanceLeaveModal .form-select,
-[data-bs-theme="dark"] #attendanceLeaveModal textarea { background: #0f172a; border-color: #334155; color: #e2e8f0; }
-[data-bs-theme="dark"] #attendanceLeaveModal .form-control::placeholder,
-[data-bs-theme="dark"] #attendanceLeaveModal textarea::placeholder { color: #94a3b8; }
-[data-bs-theme="dark"] #attendanceLeaveModal .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 .text-gradient { background: linear-gradient(45deg, #10b981, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* Attendance Kiosk Dark */
@@ -178,34 +163,6 @@ body { background-color: var(--bs-body-bg); }
 [data-bs-theme="dark"] #todayLogTable thead.table-light th { background: #1e293b; color: #cbd5e1; border-color: #334155; }
 [data-bs-theme="dark"] #todayLogTable tbody td { border-color: #334155; }
 [data-bs-theme="dark"] #todayLogTable .text-muted { color: #94a3b8 !important; }
-
-/* Attendance Index Modals Dark */
-[data-bs-theme="dark"] #manualAttendanceModal .modal-content,
-[data-bs-theme="dark"] #salaryAdjustmentModal .modal-content {
-  background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  color: #e2e8f0;
-}
-[data-bs-theme="dark"] #manualAttendanceModal .modal-header,
-[data-bs-theme="dark"] #manualAttendanceModal .modal-footer,
-[data-bs-theme="dark"] #salaryAdjustmentModal .modal-header,
-[data-bs-theme="dark"] #salaryAdjustmentModal .modal-footer { border-color: #334155; }
-[data-bs-theme="dark"] #manualAttendanceModal .form-label,
-[data-bs-theme="dark"] #salaryAdjustmentModal .form-label,
-[data-bs-theme="dark"] #manualAttendanceModal .modal-title,
-[data-bs-theme="dark"] #salaryAdjustmentModal .modal-title { color: #e2e8f0; }
-[data-bs-theme="dark"] #manualAttendanceModal .form-control,
-[data-bs-theme="dark"] #manualAttendanceModal .form-select,
-[data-bs-theme="dark"] #manualAttendanceModal textarea,
-[data-bs-theme="dark"] #salaryAdjustmentModal .form-control,
-[data-bs-theme="dark"] #salaryAdjustmentModal .form-select,
-[data-bs-theme="dark"] #salaryAdjustmentModal textarea { background: #0f172a; border-color: #334155; color: #e2e8f0; }
-[data-bs-theme="dark"] #manualAttendanceModal .form-control::placeholder,
-[data-bs-theme="dark"] #manualAttendanceModal textarea::placeholder,
-[data-bs-theme="dark"] #salaryAdjustmentModal .form-control::placeholder,
-[data-bs-theme="dark"] #salaryAdjustmentModal textarea::placeholder { color: #94a3b8; }
-[data-bs-theme="dark"] #manualAttendanceModal .btn-close,
-[data-bs-theme="dark"] #salaryAdjustmentModal .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
 /* Inventory Page */
 .inventory-page .inventory-panel {
@@ -229,18 +186,6 @@ body { background-color: var(--bs-body-bg); }
 }
 [data-bs-theme="dark"] .inventory-page .table thead th { background: rgba(51, 65, 85, 0.5); color: #e2e8f0; }
 [data-bs-theme="dark"] .inventory-page .table tbody td { border-color: #334155; }
-[data-bs-theme="dark"] #addItemModal .modal-content {
-  background: linear-gradient(180deg, #0f172a 0%, #0b1228 100%);
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  color: #e2e8f0;
-}
-[data-bs-theme="dark"] #addItemModal .modal-header,
-[data-bs-theme="dark"] #addItemModal .modal-footer { border-color: #334155; }
-[data-bs-theme="dark"] #addItemModal .form-control,
-[data-bs-theme="dark"] #addItemModal .form-select,
-[data-bs-theme="dark"] #addItemModal textarea { background-color: #0f172a; border-color: #334155; color: #e2e8f0; }
-[data-bs-theme="dark"] #addItemModal .form-control::placeholder,
-[data-bs-theme="dark"] #addItemModal textarea::placeholder { color: #94a3b8; }
 @media (max-width: 767.98px) {
   .inventory-page { padding-left: 0.35rem; padding-right: 0.35rem; }
   .inventory-page .inventory-toolbar { display: grid !important; grid-template-columns: 1fr 1fr; }
