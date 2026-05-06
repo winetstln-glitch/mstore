@@ -62,7 +62,11 @@
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
-                            @if(Auth::user()->hasRole('admin'))
+                            @php
+                                $user = Auth::user();
+                                $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+                            @endphp
+                            @if($isAdmin)
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal">
                                     <i class="fa-solid fa-plus me-1"></i>{{ __('Tambah Manual') }}
                                 </button>
@@ -74,10 +78,10 @@
                             <a href="{{ route('attendance.payslip', request()->all()) }}" class="btn btn-outline-primary btn-sm" target="_blank">
                                 <i class="fa-solid fa-receipt me-1"></i>{{ __('Slip Gaji') }}
                             </a>
-                            <a href="{{ route('attendance.excel', request()->all()) }}" class="btn btn-outline-success btn-sm" target="_blank">
-                                <i class="fa-solid fa-file-excel me-1"></i>{{ __('Export Excel') }}
+                            <a href="{{ route('attendance.excel', array_merge(request()->all(), ['download' => 'details'])) }}" class="btn btn-outline-success btn-sm" target="_blank">
+                                <i class="fa-solid fa-file-excel me-1"></i>{{ __('Download Rincian') }}
                             </a>
-                            @if(Auth::user()->hasRole('admin'))
+                            @if($isAdmin)
                                 <div class="ms-auto d-flex gap-2">
                                     <button type="button" class="btn btn-warning text-dark btn-sm fw-bold" onclick="confirmRecapFinance()">
                                         <i class="fa-solid fa-money-bill-wave me-1"></i>{{ __('Catat Gaji') }}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LeaveRequest;
 use App\Models\SalaryAdjustment;
 use App\Models\Setting;
 use App\Models\TechnicianDailySchedule;
@@ -9,6 +10,7 @@ use App\Models\TechnicianAttendance;
 use App\Models\TechnicianSchedule;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WashEmployee;
 use App\Traits\HasAttendanceFilters;
 use App\Traits\SendsNotifications;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -32,8 +34,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     protected function canViewAllAttendanceData(): bool
     {
         $user = Auth::user();
+        if (!$user || !$user->role) {
+            return false;
+        }
 
-        return $user && ($user->hasRole('admin') || $user->hasRole('finance') || $user->hasRole('leader'));
+        $role = strtolower($user->role->name);
+
+        return in_array($role, ['admin', 'finance', 'direktur', 'hrd manager', 'owner', 'owner-pendiri', 'leader'], true);
     }
 
     public static function middleware(): array
@@ -105,7 +112,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
         // List technicians and admins for filter
-        $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
+        $techniciansQuery = User::whereHas('role', function ($q) {
             $q->whereIn('name', ['technician', 'admin']);
         });
 
@@ -132,6 +139,40 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public function exportExcel(Request $request)
     {
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
+        
+        // If specific download detail requested
+        if ($request->query('download') === 'details') {
+            return response()->streamDownload(function () use ($attendances) {
+                $writer = new Writer;
+                $writer->openToFile('php://output');
+
+                $writer->addRow(Row::fromValues(['RINCIAN KEHADIRAN KARYAWAN']));
+                $writer->addRow(Row::fromValues(['Tanggal Cetak: ' . now()->translatedFormat('d F Y H:i')]));
+                $writer->addRow(Row::fromValues([]));
+                $writer->addRow(Row::fromValues([
+                    'Nama Karyawan',
+                    'Tanggal',
+                    'Jam Masuk',
+                    'Jam Pulang',
+                    'Status',
+                    'Catatan',
+                ]));
+
+                foreach ($attendances as $attendance) {
+                    $writer->addRow(Row::fromValues([
+                        $attendance->user->name,
+                        $attendance->clock_in->translatedFormat('d F Y'),
+                        $attendance->clock_in->format('H:i'),
+                        $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
+                        __(ucfirst($attendance->status)),
+                        $attendance->notes,
+                    ]));
+                }
+
+                $writer->close();
+            }, 'rincian_kehadiran_'.now()->format('Y-m-d_His').'.xlsx');
+        }
+
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         // Summary by Technician
@@ -200,7 +241,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function recapToFinance(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        
+        if (!$isAdmin) {
             abort(403, 'Unauthorized');
         }
 
@@ -274,7 +318,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function sendNotification(TechnicianAttendance $attendance)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        
+        if (!$isAdmin) {
             abort(403, 'Unauthorized');
         }
 
@@ -329,7 +376,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function storeManual(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        
+        if (!$isAdmin) {
             abort(403, 'Unauthorized');
         }
 
@@ -458,7 +508,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         if (! $todayAttendance) {
             // Check if user is currently on leave/sick
-            $hasLeaveRequest = \App\Models\LeaveRequest::where('user_id', $user->id)
+            $hasLeaveRequest = LeaveRequest::where('user_id', $user->id)
                 ->where('status', 'approved')
                 ->whereDate('start_date', '<=', today())
                 ->whereDate('end_date', '>=', today())
@@ -624,7 +674,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             // Also check for pending leave/sick for today
-            $hasLeaveRequest = \App\Models\LeaveRequest::where('user_id', Auth::id())
+            $hasLeaveRequest = LeaveRequest::where('user_id', Auth::id())
                 ->where('status', 'approved')
                 ->whereDate('start_date', '<=', today())
                 ->whereDate('end_date', '>=', today())
@@ -684,8 +734,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'user_id' => Auth::id(),
                 'clock_in' => now(),
                 'photo_clock_in' => $path,
-                'lat_clock_in' => $request->latitude,
-                'lng_clock_in' => $request->longitude,
+                'lat_clock_in' => $request->latitude ?: null,
+                'lng_clock_in' => $request->longitude ?: null,
                 'device_fingerprint_clock_in' => $deviceFingerprint,
                 'ip_clock_in' => (string) ($request->ip() ?? ''),
                 'user_agent_clock_in' => mb_substr((string) $request->userAgent(), 0, 255),
@@ -712,11 +762,17 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 
                 app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
                 app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-            } catch (\Exception $e) {
-                Log::error('Attendance WA Notification Error: ' . $e->getMessage());
+            } catch (\Throwable $e) {
+                Log::error('Attendance WA/TG Notification Error: ' . $e->getMessage());
             }
 
             return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
+        } catch (\Throwable $e) {
+            Log::error('Attendance Store Fatal Error: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['message' => __('Terjadi kesalahan saat memproses absensi: ') . $e->getMessage()]);
         } finally {
             optional($lock)->release();
         }
@@ -733,9 +789,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ]);
         }
 
-        // Validation: Clock Out Allowed based on Settings
-        $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
-        $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
+        try {
+            // Validation: Clock Out Allowed based on Settings
+            $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
+            $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
 
         $now = now();
         $currentTime = $now->format('H:i');
@@ -814,8 +871,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendance->update([
             'clock_out' => now(),
             'photo_clock_out' => $path,
-            'lat_clock_out' => $request->latitude,
-            'lng_clock_out' => $request->longitude,
+            'lat_clock_out' => $request->latitude ?: null,
+            'lng_clock_out' => $request->longitude ?: null,
             'device_fingerprint_clock_out' => $deviceFingerprint,
             'ip_clock_out' => (string) ($request->ip() ?? ''),
             'user_agent_clock_out' => $currentUserAgent,
@@ -836,11 +893,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
             app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
         }
 
         return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
+    } catch (\Throwable $e) {
+        Log::error('Attendance Update Fatal Error: ' . $e->getMessage(), [
+            'user_id' => Auth::id(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return back()->withErrors(['message' => __('Terjadi kesalahan saat memproses absensi pulang: ') . $e->getMessage()]);
+    }
     }
 
     public function destroy(TechnicianAttendance $attendance)
@@ -892,10 +956,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         $earthRadius = 6371000; // meters
 
-        $lat1 = deg2rad($lat1);
-        $lon1 = deg2rad($lon1);
-        $lat2 = deg2rad($lat2);
-        $lon2 = deg2rad($lon2);
+        $lat1 = deg2rad((float)$lat1);
+        $lon1 = deg2rad((float)$lon1);
+        $lat2 = deg2rad((float)$lat2);
+        $lon2 = deg2rad((float)$lon2);
 
         $dLat = $lat2 - $lat1;
         $dLon = $lon2 - $lon1;
@@ -972,7 +1036,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'admin', // administrasi
             'leader', // team leader
             'finance', // administrasi/keuangan
-            'hrd-manager',
+            'hrd manager',
+            'direktur',
             'noc',
             'network-operations-center',
             'technician',
