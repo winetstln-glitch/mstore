@@ -170,17 +170,23 @@
                                     $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
 
                                     $hotspot = $get('VirtualParameters.activedevices');
+                                    if ($hotspot === '-') $hotspot = $get('VirtualParameters.getactivedevices');
+                                    
                                     $rx = $get('VirtualParameters.RXPower');
+                                    if ($rx === '-') $rx = $get('VirtualParameters.redaman');
+                                    
                                     $temp = $get('VirtualParameters.gettemp');
+                                    
                                     $uptime = $get('VirtualParameters.getdeviceuptime');
+                                    $pppUptime = $get('VirtualParameters.getpppuptime');
+                                    
                                     $ipPppoe = $get('VirtualParameters.AddressWanPPP');
-                                    if ($ipPppoe === '-') {
-                                        $ipPppoe = $get('VirtualParameters.pppoeIP');
-                                    }
+                                    if ($ipPppoe === '-') $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                    if ($ipPppoe === '-') $ipPppoe = $get('VirtualParameters.pppIP');
+                                    
                                     $ipWan = $get('VirtualParameters.AddressWanIP');
-                                    if ($ipWan === '-') {
-                                        $ipWan = $get('VirtualParameters.IPTR069');
-                                    }
+                                    if ($ipWan === '-') $ipWan = $get('VirtualParameters.WanIP');
+                                    if ($ipWan === '-') $ipWan = $get('VirtualParameters.IPTR069');
                                     $displayIpAddress = $ipWan;
                                     $ponMode = $get('VirtualParameters.getponmode');
                                     $ponMac = $get('VirtualParameters.PonMac'); // Or pppoeMac as per list? User listed both.

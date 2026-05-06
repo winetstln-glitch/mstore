@@ -121,8 +121,29 @@
                             </div>
                             <div class="col-md-6 col-lg-3">
                                 <div class="p-3  rounded border">
-                                    <small class="text-body-secondary d-block mb-1">{{ __('Last Inform') }}</small>
-                                    <span class="fw-bold fs-5">{{ $device['_lastInform'] ?? __('Never') }}</span>
+                                    <small class="text-body-secondary d-block mb-1">{{ __('Device Uptime') }}</small>
+                                    <span class="fw-bold fs-5">{{ $device['VirtualParameters']['getdeviceuptime']['_value'] ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="p-3  rounded border">
+                                    <small class="text-body-secondary d-block mb-1">{{ __('PPP Uptime') }}</small>
+                                    <span class="fw-bold fs-5">{{ $device['VirtualParameters']['getpppuptime']['_value'] ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="p-3  rounded border">
+                                    <small class="text-body-secondary d-block mb-1">{{ __('RX Power (Signal)') }}</small>
+                                    @php
+                                        $rx = $device['VirtualParameters']['RXPower']['_value'] ?? $device['VirtualParameters']['redaman']['_value'] ?? '-';
+                                    @endphp
+                                    <span class="fw-bold fs-5 {{ floatval($rx) < -27 ? 'text-danger' : 'text-success' }}">{{ $rx }} dBm</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="p-3  rounded border">
+                                    <small class="text-body-secondary d-block mb-1">{{ __('Temperature') }}</small>
+                                    <span class="fw-bold fs-5">{{ $device['VirtualParameters']['gettemp']['_value'] ?? '-' }} °C</span>
                                 </div>
                             </div>
                         </div>

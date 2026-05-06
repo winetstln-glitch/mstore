@@ -5,12 +5,18 @@ namespace App\Services\Olt;
 use App\Models\Olt;
 use App\Services\Olt\Drivers\CDataDriver;
 use App\Services\Olt\Drivers\HsgqDriver;
+use App\Services\Olt\Drivers\SnmpDriver;
 use Exception;
 
 class OltService
 {
     public function getDriver(Olt $olt): OltDriverInterface
     {
+        // Prefer SNMP if community is set
+        if (!empty($olt->snmp_community)) {
+            return new SnmpDriver;
+        }
+
         $brand = strtolower($olt->brand);
 
         switch ($brand) {
