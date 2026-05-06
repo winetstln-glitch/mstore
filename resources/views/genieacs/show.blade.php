@@ -441,17 +441,22 @@
                     <div class="tab-pane fade" id="odp" role="tabpanel" aria-labelledby="odp-tab">
                         <h5 class="fw-bold mb-4">ODP Connection & Mapping</h5>
                         
-                        @if(!$customer)
-                            <div class="alert alert-warning">
-                                <i class="fa-solid fa-exclamation-triangle me-2"></i>
-                                No Customer linked to this device (Serial: {{ $device['_deviceId']['_SerialNumber'] ?? 'Unknown' }}).
-                                <br>
-                                Please link this device to a customer in the Customer Management section first.
-                            </div>
-                        @else
-                            <div class="row g-4">
-                                <!-- Customer Info -->
-                                <div class="col-md-4">
+                        <div class="row g-4">
+                            <!-- Customer Info -->
+                            <div class="col-md-4">
+                                @if(!$customer)
+                                    <div class="card h-100 border-warning-subtle">
+                                        <div class="card-header bg-warning-subtle fw-bold text-warning-emphasis">
+                                            <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ __('Unregistered Device') }}
+                                        </div>
+                                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                                            <p class="text-muted small mb-3">{{ __('This device is not linked to any customer in MStore.') }}</p>
+                                            <a href="{{ route('customers.create', ['sn' => $device['_deviceId']['_SerialNumber'] ?? '']) }}" class="btn btn-primary btn-sm">
+                                                <i class="fa-solid fa-user-plus me-1"></i> {{ __('Register as Customer') }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                @else
                                     <div class="card h-100 border-info-subtle">
                                         <div class="card-header bg-info-subtle fw-bold text-info-emphasis">
                                             <i class="fa-solid fa-user me-2"></i> Customer Details
@@ -471,79 +476,80 @@
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                @endif
+                            </div>
 
-                                <!-- ODP Connection -->
-                                <div class="col-md-8">
-                                    <div class="card h-100 border-success-subtle">
-                                        <div class="card-header bg-success-subtle fw-bold text-success-emphasis d-flex justify-content-between align-items-center">
-                                            <span><i class="fa-solid fa-server me-2"></i> Connected ODP</span>
-                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createOdpModal">
-                                                <i class="fa-solid fa-plus me-1"></i> New ODP
-                                            </button>
-                                        </div>
-                                        <div class="card-body">
-                                            <form id="updateCustomerOdpForm" class="row g-3 align-items-end">
-                                                <div class="col-md-8">
-                                                    <label class="form-label">Assigned ODP</label>
-                                                    <select class="form-select" id="customer_odp_id" name="odp_id">
-                                                        <option value="">-- Select ODP --</option>
-                                                        @foreach($odps as $odp)
-                                                            <option value="{{ $odp->id }}" {{ $customer->odp_id == $odp->id ? 'selected' : '' }}>
-                                                                {{ $odp->name }} ({{ $odp->region->name ?? 'No Region' }})
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="button" class="btn btn-success w-100" onclick="saveCustomerOdp()">
-                                                        <i class="fa-solid fa-save me-1"></i> Save Connection
-                                                    </button>
-                                                </div>
-                                            </form>
+                            <!-- ODP Connection -->
+                            <div class="col-md-8">
+                                <div class="card h-100 border-success-subtle">
+                                    <div class="card-header bg-success-subtle fw-bold text-success-emphasis d-flex justify-content-between align-items-center">
+                                        <span><i class="fa-solid fa-server me-2"></i> Connected ODP</span>
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createOdpModal">
+                                            <i class="fa-solid fa-plus me-1"></i> New ODP
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        @php
+                                            $assignedOdpId = $deviceSetting->odp_id ?? ($customer->odp_id ?? null);
+                                        @endphp
+                                        <form action="{{ route('genieacs.assign_odp') }}" method="POST" class="row g-3 align-items-end">
+                                            @csrf
+                                            <input type="hidden" name="device_id" value="{{ $id }}">
+                                            <input type="hidden" name="sn" value="{{ $device['_deviceId']['_SerialNumber'] ?? '' }}">
+                                            <input type="hidden" name="pppoe" value="{{ $device['VirtualParameters']['pppoeUsername']['_value'] ?? '' }}">
+                                            
+                                            <div class="col-md-8">
+                                                <label class="form-label">Assigned ODP</label>
+                                                <select class="form-select" name="odp_id" required>
+                                                    <option value="">-- Select ODP --</option>
+                                                    @foreach($odps as $odp)
+                                                        <option value="{{ $odp->id }}" {{ $assignedOdpId == $odp->id ? 'selected' : '' }}>
+                                                            {{ $odp->name }} ({{ $odp->region->name ?? 'No Region' }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="submit" class="btn btn-success w-100">
+                                                    <i class="fa-solid fa-save me-1"></i> Save Connection
+                                                </button>
+                                            </div>
+                                        </form>
 
-                                            <hr>
+                                        <hr>
 
-                                            <div id="odpDetails" class="{{ $customer->odp_id ? '' : 'd-none' }}">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div>
-                                                        <h6 class="fw-bold text-primary mb-1" id="displayOdpName">
-                                                            {{ $customer->odp ? $customer->odp : 'Unknown ODP' }}
-                                                        </h6>
-                                                        <small class="text-muted" id="displayOdpRegion">
-                                                            @if($customer->odp_id && $odps->find($customer->odp_id))
-                                                                {{ $odps->find($customer->odp_id)->region->name ?? '' }}
-                                                            @endif
-                                                        </small>
-                                                    </div>
-                                                    <div class="d-flex justify-content-end gap-1 genieacs-mobile-mini-actions">
-                                                        <button class="btn btn-sm btn-outline-secondary" onclick="editSelectedOdp()">
-                                                            <i class="fa-solid fa-pen me-0 me-md-1"></i><span class="d-none d-md-inline">Edit</span>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSelectedOdp()">
-                                                            <i class="fa-solid fa-trash me-0 me-md-1"></i><span class="d-none d-md-inline">Delete</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="mt-3 p-3  rounded border">
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <i class="fa-solid fa-route me-2 text-primary"></i>
-                                                        <span class="fw-bold">Cable Status:</span>
-                                                        <span class="ms-2 badge {{ (isset($device['_lastInform']) && (time() - strtotime($device['_lastInform'])) < 300) ? 'bg-success' : 'bg-danger' }}">
-                                                            {{ (isset($device['_lastInform']) && (time() - strtotime($device['_lastInform'])) < 300) ? 'Connected' : 'Disconnected' }}
-                                                        </span>
-                                                    </div>
-                                                    <small class="text-muted d-block">
-                                                        Map visualization available in <a href="{{ route('map.index') }}">Network Map</a>.
+                                        <div id="odpDetails" class="{{ $assignedOdpId ? '' : 'd-none' }}">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    @php
+                                                        $currentOdp = $assignedOdpId ? $odps->find($assignedOdpId) : null;
+                                                    @endphp
+                                                    <h6 class="fw-bold text-primary mb-1" id="displayOdpName">
+                                                        {{ $currentOdp ? $currentOdp->name : 'Unknown ODP' }}
+                                                    </h6>
+                                                    <small class="text-muted" id="displayOdpRegion">
+                                                        {{ $currentOdp->region->name ?? '' }}
                                                     </small>
                                                 </div>
+                                            </div>
+                                            
+                                            <div class="mt-3 p-3  rounded border">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="fa-solid fa-route me-2 text-primary"></i>
+                                                    <span class="fw-bold">Connection Status:</span>
+                                                    <span class="ms-2 badge {{ (isset($device['_lastInform']) && (time() - strtotime($device['_lastInform'])) < 300) ? 'bg-success' : 'bg-danger' }}">
+                                                        {{ (isset($device['_lastInform']) && (time() - strtotime($device['_lastInform'])) < 300) ? 'Connected' : 'Disconnected' }}
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted d-block">
+                                                    Map visualization available in <a href="{{ route('map.index') }}">Network Map</a>.
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        </div>
                     </div>
 
                     <!-- All Parameters Tab -->
@@ -847,7 +853,7 @@
         }
     }); // Perbaikan: Hapus satu kurung kurawal di sini
 
-    // Fungsi Toggle Password (Tambahkan ini)
+    // Fungsi Toggle Password
     function togglePassword(inputId) {
         const input = document.getElementById(inputId);
         if (input.type === "password") {
@@ -856,39 +862,5 @@
             input.type = "password";
         }
     }
-
-    // Kode Logic ODP dan Fetch lainnya...
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-    function saveCustomerOdp() {
-        const odpId = document.getElementById('customer_odp_id').value;
-        const customerId = {{ $customer->id ?? 'null' }};
-        
-        if (!customerId) return;
-        
-        fetch(`/customers/${customerId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ odp_id: odpId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Gunakan toast/alert yang lebih bagus jika ada, ini native alert
-                alert('Connection saved!');
-                location.reload(); 
-            } else {
-                alert('Failed to save connection.');
-            }
-        });
-    }
-
-    // ... (fungsi saveNewOdp, editSelectedOdp, updateOdp, deleteSelectedOdp tetap sama seperti kode Anda) ...
-    
-    // Pastikan copy sisa fungsi fetch Anda di sini
 </script>
 @endsection

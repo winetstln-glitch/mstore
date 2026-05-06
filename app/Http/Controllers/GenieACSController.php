@@ -160,23 +160,45 @@ class GenieACSController extends Controller implements HasMiddleware
             \Illuminate\Support\Facades\Log::error('GenieACS ODP Logic Error: '.$e->getMessage());
         }
 
+        // Map device settings for ODP display (independent of customer)
+        $deviceSettingsMap = [];
+        try {
+            $settings = GenieAcsDeviceSetting::whereNotNull('odp_id')->with('odp')->get();
+            foreach ($settings as $setting) {
+                $deviceSettingsMap[$setting->device_id] = [
+                    'id' => $setting->odp_id,
+                    'name' => $setting->odp->name,
+                ];
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('GenieACS Device Settings ODP Error: '.$e->getMessage());
+        }
+
         if ($devices) {
-            $devices->getCollection()->transform(function ($device) use ($customerMap) {
+            $devices->getCollection()->transform(function ($device) use ($customerMap, $deviceSettingsMap) {
                 $odpName = '-';
                 $odpId = null;
+                $deviceId = $device['_id'];
 
-                // Try matching by PPPoE Username
-                $pppoe = data_get($device, 'VirtualParameters.pppoeUsername._value');
-                if ($pppoe && is_string($pppoe) && isset($customerMap['pppoe'][strtolower($pppoe)])) {
-                    $odpName = $customerMap['pppoe'][strtolower($pppoe)]['name'];
-                    $odpId = $customerMap['pppoe'][strtolower($pppoe)]['id'];
+                // 1. Try matching by Device Settings (Directly assigned in GenieACS monitor)
+                if (isset($deviceSettingsMap[$deviceId])) {
+                    $odpName = $deviceSettingsMap[$deviceId]['name'];
+                    $odpId = $deviceSettingsMap[$deviceId]['id'];
                 }
-                // Try matching by Serial Number
+                // 2. Try matching by Customer PPPoE Username
                 else {
-                    $sn = data_get($device, '_deviceId._SerialNumber');
-                    if ($sn && is_string($sn) && isset($customerMap['sn'][$sn])) {
-                        $odpName = $customerMap['sn'][$sn]['name'];
-                        $odpId = $customerMap['sn'][$sn]['id'];
+                    $pppoe = data_get($device, 'VirtualParameters.pppoeUsername._value');
+                    if ($pppoe && is_string($pppoe) && isset($customerMap['pppoe'][strtolower($pppoe)])) {
+                        $odpName = $customerMap['pppoe'][strtolower($pppoe)]['name'];
+                        $odpId = $customerMap['pppoe'][strtolower($pppoe)]['id'];
+                    }
+                    // 3. Try matching by Customer Serial Number
+                    else {
+                        $sn = data_get($device, '_deviceId._SerialNumber');
+                        if ($sn && is_string($sn) && isset($customerMap['sn'][$sn])) {
+                            $odpName = $customerMap['sn'][$sn]['name'];
+                            $odpId = $customerMap['sn'][$sn]['id'];
+                        }
                     }
                 }
 
@@ -197,31 +219,28 @@ class GenieACSController extends Controller implements HasMiddleware
         $request->validate([
             'sn' => 'required|string',
             'odp_id' => 'required|exists:odps,id',
+            'device_id' => 'required|string',
         ]);
 
-        // Try matching by SN
+        // 1. Save to Device Settings (Always works, even without customer)
+        GenieAcsDeviceSetting::updateOrCreate(
+            ['device_id' => $request->device_id],
+            ['odp_id' => $request->odp_id]
+        );
+
+        // 2. Try to update Customer if exists
         $customer = Customer::where('ont_sn', $request->sn)->first();
 
-        if (! $customer) {
-            // Try matching by PPPoE (Case Insensitive)
-            if ($request->pppoe) {
-                $customer = Customer::where('pppoe_user', $request->pppoe)->first();
-
-                if (! $customer) {
-                    // Try case insensitive search for PPPoE
-                    $customer = Customer::whereRaw('LOWER(pppoe_user) = ?', [strtolower($request->pppoe)])->first();
-                }
-            }
+        if (! $customer && $request->pppoe) {
+            $customer = Customer::whereRaw('LOWER(pppoe_user) = ?', [strtolower($request->pppoe)])->first();
         }
 
         if ($customer) {
             $customer->odp_id = $request->odp_id;
             $customer->save();
-
-            return back()->with('success', __('ODP assigned successfully to customer.'));
         }
 
-        return back()->with('error', __('Customer with this SN/PPPoE not found. Please register the customer first.'));
+        return back()->with('success', __('ODP assigned successfully.'));
     }
 
     /**
@@ -270,8 +289,11 @@ class GenieACSController extends Controller implements HasMiddleware
         $serialNumber = data_get($device, '_deviceId._SerialNumber');
         $customer = null;
         if ($serialNumber) {
-            $customer = Customer::where('onu_serial', $serialNumber)->first();
+            $customer = Customer::where('ont_sn', $serialNumber)->first();
         }
+
+        // Get custom device setting (Alias/ODP)
+        $deviceSetting = GenieAcsDeviceSetting::where('device_id', $id)->first();
 
         // Get all ODPs and Regions for the dropdowns
         $odps = Odp::with('region')->orderBy('name')->get();
@@ -292,7 +314,7 @@ class GenieACSController extends Controller implements HasMiddleware
         return view('genieacs.show', compact(
             'device', 'id', 'config', 'parameters', 'deviceIp', 'customer', 'odps', 'regions', 'serverId',
             'wanSettings', 'wanConnections', 'selectedWanPath', 'wlanSettings1', 'wlanSettings2', 'wlanSettings3', 'wlanSettings4',
-            'wifiClients'
+            'wifiClients', 'deviceSetting'
         ));
     }
 

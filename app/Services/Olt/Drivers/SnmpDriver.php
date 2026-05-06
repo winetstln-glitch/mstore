@@ -43,10 +43,17 @@ class SnmpDriver implements OltDriverInterface
         ],
         'zte' => [
             [
-                'name' => 'ZTE_C300',
+                'name' => 'ZTE_C300_NEW',
                 'status_table' => '1.3.6.1.4.1.3902.1012.3.28.1.1.2',
                 'name_table'   => '1.3.6.1.4.1.3902.1012.3.28.1.1.3',
+                'sn_table'     => '1.3.6.1.4.1.3902.1012.3.28.1.1.5',
+                'rx_power_table' => '1.3.6.1.4.1.3902.1012.3.28.2.1.4',
             ],
+            [
+                'name' => 'ZTE_C220',
+                'status_table' => '1.3.6.1.4.1.3902.1015.1010.5.1.1.2',
+                'name_table'   => '1.3.6.1.4.1.3902.1015.1010.5.1.1.3',
+            ]
         ],
         'vsol' => [
             [
@@ -64,6 +71,11 @@ class SnmpDriver implements OltDriverInterface
                 'name_table'   => '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3',
                 'sn_table'     => '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.1',
                 'rx_power_table' => '1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4',
+            ],
+            [
+                'name' => 'HUAWEI_EPON',
+                'status_table' => '1.3.6.1.4.1.2011.6.128.1.1.2.45.1.4',
+                'name_table'   => '1.3.6.1.4.1.2011.6.128.1.1.2.45.1.3',
             ]
         ],
         'cdata' => [
@@ -127,9 +139,16 @@ class SnmpDriver implements OltDriverInterface
         $onus = [];
         $host = $this->olt->host . ':' . $this->port;
 
+        Log::info("SNMP Sync: Fetching ONUs for profile {$profile['name']} on {$host}");
+
         // 1. Walk status table to get indices and status
         $statusRaw = @snmprealwalk($host, $this->community, $profile['status_table'], $this->timeout, $this->retries);
-        if ($statusRaw === false) return [];
+        if ($statusRaw === false) {
+            Log::warning("SNMP Sync: Status table walk failed for {$profile['name']}");
+            return [];
+        }
+
+        Log::info("SNMP Sync: Found " . count($statusRaw) . " entries in status table");
 
         // 2. Walk name table
         $namesRaw = [];
@@ -174,22 +193,41 @@ class SnmpDriver implements OltDriverInterface
     {
         $oid = ltrim($oid, '.');
         $baseOid = ltrim($baseOid, '.');
+        
+        // Remove the base OID from the start of the OID to get the index
         if (strpos($oid, $baseOid) === 0) {
             return ltrim(substr($oid, strlen($baseOid)), '.');
         }
+
+        // Fallback: If baseOid is not at the start, try to find where it is
+        $pos = strpos($oid, $baseOid);
+        if ($pos !== false) {
+            return ltrim(substr($oid, $pos + strlen($baseOid)), '.');
+        }
+
+        // Last resort: return the last part of the OID
         $parts = explode('.', $oid);
         return end($parts);
     }
 
     protected function getByIndex($rawMap, $idx, $baseOid)
     {
+        if (empty($rawMap)) return null;
+
+        $idx = ltrim($idx, '.');
+        $baseOid = ltrim($baseOid, '.');
+
+        // Try exact match with base OID
         $targetOid = $baseOid . '.' . $idx;
         if (isset($rawMap[$targetOid])) return $rawMap[$targetOid];
         if (isset($rawMap['.' . $targetOid])) return $rawMap['.' . $targetOid];
 
-        // Fallback: search by suffix
+        // Try searching by suffix (most reliable if base OID varies slightly)
         foreach ($rawMap as $oid => $val) {
-            if (str_ends_with($oid, '.' . $idx)) return $val;
+            $cleanOid = ltrim($oid, '.');
+            if (str_ends_with($cleanOid, '.' . $idx)) {
+                return $val;
+            }
         }
         return null;
     }

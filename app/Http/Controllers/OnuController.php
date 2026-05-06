@@ -66,9 +66,8 @@ class OnuController extends Controller implements HasMiddleware
             }
 
             // If empty, it might be due to parsing error or actually empty
-            // Fallback to simulation if simulated data is requested or just show warning
-            // For now, we return warning
-            return redirect()->route('olt.onus.index', $olt->id)->with('warning', __('Connection successful but no ONUs found. If using Web Mode, check laravel.log for parsing details/errors.'));
+            $method = ($driver instanceof \App\Services\Olt\Drivers\SnmpDriver) ? 'SNMP' : 'Telnet/Web';
+            return redirect()->route('olt.onus.index', $olt->id)->with('warning', __("Connection successful (:method) but no ONUs found. If using SNMP, check Community/Port. If using Telnet, check parsing logic.", ['method' => $method]));
 
         } catch (\Exception $e) {
             return redirect()->route('olt.onus.index', $olt->id)->with('error', __('Sync failed: :message', ['message' => $e->getMessage()]));

@@ -276,6 +276,7 @@
                                             <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-assign-odp" 
                                                     data-sn="{{ $sn }}"
                                                     data-pppoe="{{ $pppoeUser }}"
+                                                    data-device-id="{{ $id }}"
                                                     data-odp-id="{{ $device['odp_id'] ?? '' }}"
                                                     title="{{ __('Assign/Change ODP') }}">
                                                 <i class="fa-solid fa-pencil text-warning"></i>
@@ -489,6 +490,7 @@
                                                     <button type="button" class="btn btn-link btn-sm p-0 btn-assign-odp" 
                                                             data-sn="{{ $sn }}"
                                                             data-pppoe="{{ $pppoeUser }}"
+                                                            data-device-id="{{ $id }}"
                                                             data-odp-id="{{ $device['odp_id'] ?? '' }}">
                                                         <i class="fa-solid fa-pencil text-warning fa-xs"></i>
                                                     </button>
@@ -567,6 +569,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <input type="hidden" name="device_id" id="modalOdpDeviceId">
                         <div class="mb-3">
                             <label class="form-label">{{ __('Device SN') }}</label>
                             <input type="text" class="form-control" name="sn" id="modalOdpSn" readonly>
@@ -583,10 +586,6 @@
                                     <option value="{{ $odp->id }}">{{ $odp->name }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="alert alert-info small">
-                            <i class="fa-solid fa-info-circle me-1"></i>
-                            {{ __('This will update the Customer record in MStore linked to this SN/PPPoE.') }}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -709,10 +708,12 @@
             $(document).on('click', '.btn-assign-odp', function() {
                 var sn = $(this).data('sn');
                 var pppoe = $(this).data('pppoe');
+                var deviceId = $(this).data('device-id');
                 var odpId = $(this).data('odp-id');
                 
                 $('#modalOdpSn').val(sn);
                 $('#modalOdpPppoe').val(pppoe);
+                $('#modalOdpDeviceId').val(deviceId);
                 
                 // Set ODP Select
                 var odpSelect = $('#modalOdpSelect');
