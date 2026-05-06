@@ -134,6 +134,15 @@
                         </div>
 
                         <div class="d-flex flex-column align-items-center justify-content-center my-2 py-2">
+                            <div class="text-center mb-4 pb-2">
+                                <h5 class="fw-bold mb-1 status-label">
+                                    {{ $isOut ? __('PRESENSI PULANG') : __('PRESENSI MASUK') }}
+                                </h5>
+                                <p class="text-muted small px-5" id="instruction-text">
+                                    {{ __('Izinkan lokasi untuk mengaktifkan tombol absen. Foto selfie bersifat opsional.') }}
+                                </p>
+                            </div>
+
                             <div class="fingerprint-container" id="fingerprintContainer">
                                 <div class="outer-ring-large"></div>
                                 <div class="outer-ring-small"></div>
@@ -142,15 +151,6 @@
                                     <div class="inner-glow"></div>
                                     <i class="fa-solid fa-fingerprint"></i>
                                 </button>
-                            </div>
-
-                            <div class="text-center mt-4 pt-2">
-                                <h5 class="fw-bold mb-1 status-label">
-                                    {{ $isOut ? __('PRESENSI PULANG') : __('PRESENSI MASUK') }}
-                                </h5>
-                                <p class="text-muted small px-5" id="instruction-text">
-                                    {{ __('Izinkan lokasi untuk mengaktifkan tombol absen. Foto selfie bersifat opsional.') }}
-                                </p>
                             </div>
                         </div>
                     </form>
