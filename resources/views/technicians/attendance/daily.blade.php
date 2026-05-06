@@ -38,11 +38,6 @@
                                 </button>
                             </div>
                             <div class="col-12 col-md-auto">
-                                <a href="{{ route('attendance.pdf', array_merge(request()->query(), ['scope' => 'daily'])) }}" target="_blank" class="btn btn-danger">
-                                    <i class="fa-solid fa-file-pdf me-1"></i> {{ __('PDF') }}
-                                </a>
-                            </div>
-                            <div class="col-12 col-md-auto">
                                 <a href="{{ route('attendance.excel', array_merge(request()->query(), ['scope' => 'daily'])) }}" target="_blank" class="btn btn-success">
                                     <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
                                 </a>

@@ -33,7 +33,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:attendance.view', only: ['index', 'daily', 'exportPdf', 'exportExcel']),
+            new Middleware('permission:attendance.view', only: ['index', 'daily', 'exportExcel', 'payslip']),
             // Absensi mandiri (store/update) dikontrol oleh validasi role di method,
             // agar akun admin/staf yang eligible tidak gagal karena mapping permission server.
             new Middleware('permission:attendance.create', only: ['kiosk', 'kioskScan']),
@@ -130,7 +130,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return view('technicians.attendance.index', compact('attendances', 'technicians', 'stats'));
     }
 
-    public function exportPdf(Request $request)
+    public function payslip(Request $request)
     {
         $query = TechnicianAttendance::with('user');
 
@@ -176,15 +176,57 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
             // Calculate status counts
             $presentCount = $items->whereIn('status', ['present', 'late'])->count();
-            $leaveCount = $items->whereIn('status', ['leave', 'permit', 'sick'])->count(); // Cuti/Izin/Sakit
+            $leaveCount = $items->where('status', 'leave')->count();
+            $permitCount = $items->where('status', 'permit')->count();
+            $sickCount = $items->where('status', 'sick')->count();
+            $alphaCount = $items->where('status', 'alpha')->count();
 
             // Calculate salary (Present + Leave/Permit/Sick considered paid)
-            // You can adjust which statuses are paid
-            $paidDays = $presentCount + $leaveCount;
+            $paidDays = $presentCount + $leaveCount + $permitCount + $sickCount;
             $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
 
             // Adjustments
             $userAdjustments = $allAdjustments->get($user->id, collect());
+            
+            // Filter bonus by categories in description
+            $bonusDisiplin = $userAdjustments->where('type', 'bonus')
+                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'disiplin'))
+                ->sum('amount');
+            
+            $bonusTanggungJawab = $userAdjustments->where('type', 'bonus')
+                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'tanggung jawab') || str_contains(strtolower($adj->description), 'tanggungjawab'))
+                ->sum('amount');
+            
+            $bonusAbsensi = $userAdjustments->where('type', 'bonus')
+                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'absensi'))
+                ->sum('amount');
+            
+            // Other bonuses that don't match specific categories
+            $bonusLainnya = $userAdjustments->where('type', 'bonus')
+                ->filter(fn($adj) => 
+                    !str_contains(strtolower($adj->description), 'disiplin') && 
+                    !str_contains(strtolower($adj->description), 'tanggung jawab') && 
+                    !str_contains(strtolower($adj->description), 'tanggungjawab') && 
+                    !str_contains(strtolower($adj->description), 'absensi')
+                )
+                ->sum('amount');
+
+            // Filter kasbon by categories in description
+            $kasbonKantor = $userAdjustments->where('type', 'kasbon')
+                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'bon kantor'))
+                ->sum('amount');
+            
+            $kasbonWarung = $userAdjustments->where('type', 'kasbon')
+                ->filter(fn($adj) => str_contains(strtolower($adj->description), 'bon warung'))
+                ->sum('amount');
+            
+            $kasbonLainnya = $userAdjustments->where('type', 'kasbon')
+                ->filter(fn($adj) => 
+                    !str_contains(strtolower($adj->description), 'bon kantor') && 
+                    !str_contains(strtolower($adj->description), 'bon warung')
+                )
+                ->sum('amount');
+
             $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
             $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
 
@@ -192,8 +234,18 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'user' => $user,
                 'present_count' => $presentCount,
                 'leave_count' => $leaveCount,
+                'permit_count' => $permitCount,
+                'sick_count' => $sickCount,
+                'alpha_count' => $alphaCount,
                 'paid_days' => $paidDays,
                 'daily_salary' => $dailySalary,
+                'bonus_disiplin' => $bonusDisiplin,
+                'bonus_tanggung_jawab' => $bonusTanggungJawab,
+                'bonus_absensi' => $bonusAbsensi,
+                'bonus_lainnya' => $bonusLainnya,
+                'kasbon_kantor' => $kasbonKantor,
+                'kasbon_warung' => $kasbonWarung,
+                'kasbon_lainnya' => $kasbonLainnya,
                 'total_bonus' => $totalBonus,
                 'total_kasbon' => $totalKasbon,
                 'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
@@ -202,9 +254,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ];
         });
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('technicians.attendance.pdf', compact('summary', 'request'));
-
-        return $pdf->stream('rekap_teknisi_'.now()->format('Y-m-d_His').'.pdf', ['Attachment' => false]);
+        return view('technicians.attendance.payslip', compact('summary', 'request'));
     }
 
     public function exportExcel(Request $request)
@@ -524,13 +574,40 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return back()->with('error', __('Attendance record for this user on this date already exists.'));
         }
 
-        TechnicianAttendance::create([
+        $attendance = TechnicianAttendance::create([
             'user_id' => $request->user_id,
             'clock_in' => $request->date.' 08:00:00', // Default time
             'clock_out' => $request->date.' 17:00:00',
             'status' => $request->status,
             'notes' => $request->notes,
         ]);
+
+        // Notify Group via WhatsApp
+        try {
+            $user = $attendance->user;
+            $statusLabel = match($attendance->status) {
+                'present' => 'HADIR ✅',
+                'late' => 'TERLAMBAT ⚠️',
+                'leave' => 'CUTI 🌴',
+                'permit' => 'IZIN 📝',
+                'sick' => 'SAKIT 🤒',
+                'alpha' => 'ALPHA ❌',
+                default => strtoupper($attendance->status)
+            };
+            $date = $attendance->clock_in->translatedFormat('d M Y');
+            $waMessage = "🔔 *NOTIFIKASI ABSENSI MANUAL*\n\n" .
+                         "👤 *Nama:* {$user->name}\n" .
+                         "📅 *Tanggal:* {$date}\n" .
+                         "📊 *Status:* {$statusLabel}\n" .
+                         "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n" .
+                         "👮 *Admin:* " . Auth::user()->name . "\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Manual Attendance WA Notification Error: ' . $e->getMessage());
+        }
 
         return back()->with('success', __('Manual attendance added successfully.'));
     }
@@ -639,6 +716,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'notes' => 'Kiosk scan ID Card otomatis. Admin: '.Auth::user()->name,
             ]);
 
+            // Notify Group via WhatsApp
+            try {
+                $statusLabel = match($attendance->status) {
+                    'present' => 'HADIR ✅',
+                    'late' => 'TERLAMBAT ⚠️',
+                    default => strtoupper($attendance->status)
+                };
+                $time = $attendance->clock_in->format('H:i');
+                $date = $attendance->clock_in->translatedFormat('d M Y');
+                $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK (KIOSK)*\n\n" .
+                             "👤 *Nama:* {$user->name}\n" .
+                             "⏰ *Jam:* {$time} WIB\n" .
+                             "📅 *Tanggal:* {$date}\n" .
+                             "📊 *Status:* {$statusLabel}\n" .
+                             "📝 *Metode:* Kiosk Scan\n\n" .
+                             "🚀 _Sistem M-Store_";
+                
+                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Kiosk Attendance WA Notification Error: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'action' => 'clock_in',
@@ -677,6 +777,24 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'clock_out' => now(),
             'notes' => trim(($todayAttendance->notes ?? '')."\nClock Out Kiosk otomatis oleh ".Auth::user()->name),
         ]);
+
+        // Notify Group via WhatsApp
+        try {
+            $time = $todayAttendance->clock_out->format('H:i');
+            $date = $todayAttendance->clock_out->translatedFormat('d M Y');
+            $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG (KIOSK)*\n\n" .
+                             "👤 *Nama:* {$user->name}\n" .
+                             "⏰ *Jam:* {$time} WIB\n" .
+                             "📅 *Tanggal:* {$date}\n" .
+                             "🏁 *Status:* SELESAI TUGAS 👋\n" .
+                             "📝 *Metode:* Kiosk Scan\n\n" .
+                             "🚀 _Sistem M-Store_";
+                
+                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Kiosk Clock Out WA Notification Error: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -787,7 +905,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ? $request->file('photo')->store('attendance-photos', 'public')
                 : null;
 
-            TechnicianAttendance::create([
+            $attendance = TechnicianAttendance::create([
                 'user_id' => Auth::id(),
                 'clock_in' => now(),
                 'photo_clock_in' => $path,
@@ -799,6 +917,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'status' => $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), $now),
                 'notes' => $request->notes,
             ]);
+
+            // Notify Group via WhatsApp
+            try {
+                $statusLabel = match($attendance->status) {
+                    'present' => 'HADIR ✅',
+                    'late' => 'TERLAMBAT ⚠️',
+                    default => strtoupper($attendance->status)
+                };
+                $time = $attendance->clock_in->format('H:i');
+                $date = $attendance->clock_in->translatedFormat('d M Y');
+                $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK*\n\n" .
+                             "👤 *Nama:* {$currentUser->name}\n" .
+                             "⏰ *Jam:* {$time} WIB\n" .
+                             "📅 *Tanggal:* {$date}\n" .
+                             "📊 *Status:* {$statusLabel}\n" .
+                             "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
+                             "🚀 _Sistem M-Store_";
+                
+                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            } catch (\Exception $e) {
+                Log::error('Attendance WA Notification Error: ' . $e->getMessage());
+            }
 
             return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
         } finally {
@@ -905,6 +1046,24 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'user_agent_clock_out' => $currentUserAgent,
             'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
+
+        // Notify Group via WhatsApp
+        try {
+            $time = $attendance->clock_out->format('H:i');
+            $date = $attendance->clock_out->translatedFormat('d M Y');
+            $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
+                         "👤 *Nama:* {$currentUser->name}\n" .
+                         "⏰ *Jam:* {$time} WIB\n" .
+                         "📅 *Tanggal:* {$date}\n" .
+                         "🏁 *Status:* SELESAI TUGAS 👋\n" .
+                         "📝 *Catatan:* " . ($request->notes ?? '-') . "\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+        } catch (\Exception $e) {
+            Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
+        }
 
         return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
     }

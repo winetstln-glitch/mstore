@@ -65,6 +65,29 @@ class TicketController extends Controller
             \Illuminate\Support\Facades\Log::error('Failed to send Telegram creation notification from API: ' . $e->getMessage());
         }
 
+        // Notify Group via WhatsApp
+        try {
+            $customerName = $ticket->customer?->name ?? '-';
+            $priorityLabel = match($ticket->priority) {
+                'high' => '🔴 TINGGI',
+                'medium' => '🟡 SEDANG',
+                'low' => '🟢 RENDAH',
+                default => strtoupper($ticket->priority)
+            };
+            
+            $waMessage = "🎫 *TIKET BARU (API): {$ticket->ticket_number}*\n\n" .
+                         "👤 *Pelanggan:* {$customerName}\n" .
+                         "📝 *Subjek:* {$ticket->subject}\n" .
+                         "⚡ *Prioritas:* {$priorityLabel}\n" .
+                         "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
+                         "🚀 _Sistem M-Store_";
+             
+             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'ticket');
+             app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'ticket');
+         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('API Ticket Create WA Notification Error: ' . $e->getMessage());
+        }
+
         return response()->json($ticket, 201);
     }
 
@@ -118,6 +141,31 @@ class TicketController extends Controller
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Failed to send Telegram solved notification from API: ' . $e->getMessage());
                 }
+            }
+
+            // Notify Group via WhatsApp
+            try {
+                $statusLabel = match($ticket->status) {
+                    'open' => 'BUKA 🔓',
+                    'assigned' => 'DITUGASKAN 👤',
+                    'in_progress' => 'PROSES 🛠️',
+                    'pending' => 'PENDING ⏳',
+                    'solved' => 'SELESAI ✅',
+                    'closed' => 'DITUTUP 🔒',
+                    default => strtoupper($ticket->status)
+                };
+                
+                $waMessage = "🎫 *UPDATE STATUS TIKET (API): {$ticket->ticket_number}*\n\n" .
+                             "📝 *Subjek:* {$ticket->subject}\n" .
+                             "📊 *Status:* {$statusLabel}\n" .
+                             "👤 *Oleh:* " . ($request->user()->name ?? 'System') . "\n" .
+                             "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
+                              "🚀 _Sistem M-Store_";
+                 
+                 app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'ticket');
+                 app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'ticket');
+             } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('API Ticket Status WA Notification Error: ' . $e->getMessage());
             }
         }
 

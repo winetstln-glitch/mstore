@@ -6,23 +6,35 @@
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header py-3">
                 <div class="d-flex flex-column gap-3">
-                    <h5 class="mb-0 fw-bold">{{ __('Rekap Absensi Teknisi') }}</h5>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clipboard-user me-2 text-primary"></i>{{ __('Rekap Absensi Teknisi') }}</h5>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('attendance.daily') }}" class="btn btn-info text-white btn-sm">
+                                <i class="fa-solid fa-calendar-day me-1"></i>{{ __('Absensi Harian') }}
+                            </a>
+                            <a href="{{ route('attendance.kiosk') }}" class="btn btn-dark btn-sm">
+                                <i class="fa-solid fa-barcode me-1"></i>Kiosk Barcode
+                            </a>
+                        </div>
+                    </div>
                     
-                    <form action="{{ route('attendance.index') }}" method="GET" class="w-100">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-auto">
-                                <select name="user_id" class="form-select js-search-select" data-bs-toggle="tooltip" title="{{ __('Semua Staf (Teknisi & Admin)') }}">
-                                    <option value="">{{ __('Semua Staf (Teknisi & Admin)') }}</option>
+                    <form action="{{ route('attendance.index') }}" method="GET" class="w-100 border-top pt-3">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Filter Pengguna') }}</label>
+                                <select name="user_id" class="form-select form-select-sm js-search-select">
+                                    <option value="">{{ __('Semua Staf') }}</option>
                                     @foreach($technicians as $tech)
                                         <option value="{{ $tech->id }}" {{ request('user_id') == $tech->id ? 'selected' : '' }}>
-                                            {{ $tech->name }} ({{ $tech->role->name ?? __('Pengguna') }})
+                                            {{ $tech->name }} ({{ $tech->role->name ?? __('User') }})
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-12 col-md-auto">
-                                <select name="status" class="form-select" data-bs-toggle="tooltip" title="{{ __('Status') }}">
-                                    <option value="">{{ __('Semua Status') }}</option>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Status') }}</label>
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="">{{ __('Semua') }}</option>
                                     <option value="present" {{ request('status') === 'present' ? 'selected' : '' }}>{{ __('Hadir') }}</option>
                                     <option value="late" {{ request('status') === 'late' ? 'selected' : '' }}>{{ __('Terlambat') }}</option>
                                     <option value="leave" {{ request('status') === 'leave' ? 'selected' : '' }}>{{ __('Cuti') }}</option>
@@ -31,47 +43,50 @@
                                     <option value="alpha" {{ request('status') === 'alpha' ? 'selected' : '' }}>{{ __('Alpha') }}</option>
                                 </select>
                             </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Bulan') }}</label>
+                                <input type="month" name="month" value="{{ request('month') }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Tanggal') }}</label>
+                                <input type="date" name="date" value="{{ request('date') }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-md-auto d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm px-3">
+                                    <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
+                                </button>
+                                <a href="{{ route('attendance.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </a>
+                            </div>
                         </div>
-                        <div class="row g-2 mt-1">
-                            <div class="col-6 col-md-auto">
-                                <input type="month" name="month" value="{{ request('month') }}" class="form-control" placeholder="{{ __('Bulan') }}" data-bs-toggle="tooltip" title="{{ __('Bulan') }}">
-                            </div>
-                            <div class="col-6 col-md-auto">
-                                <input type="date" name="date" value="{{ request('date') }}" class="form-control" placeholder="{{ __('Tanggal') }}" data-bs-toggle="tooltip" title="{{ __('Tanggal') }}">
-                            </div>
-                        </div>
-                        <div class="row g-2 mt-2">
-                            <div class="col-12 d-flex flex-wrap gap-2">
-                                <a href="{{ route('attendance.daily') }}" class="btn btn-info text-white" data-bs-toggle="tooltip" title="{{ __('Absensi Harian') }}">
-                                    <i class="fa-solid fa-calendar-day"></i> <span class="d-none d-sm-inline ms-1">{{ __('Absensi Harian') }}</span>
-                                </a>
-                                <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="{{ __('Terapkan') }}"><i class="fa-solid fa-filter"></i> <span class="d-none d-sm-inline ms-1">{{ __('Terapkan') }}</span></button>
-                                <a href="{{ route('attendance.kiosk') }}" class="btn btn-dark" data-bs-toggle="tooltip" title="Kiosk Barcode">
-                                    <i class="fa-solid fa-barcode"></i> <span class="d-none d-sm-inline ms-1">Kiosk Barcode</span>
-                                </a>
-                                @if(Auth::user()->hasRole('admin'))
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal" data-bs-toggle="tooltip" title="{{ __('Tambah') }}">
-                                    <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Tambah') }}</span>
+
+                        <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+                            @if(Auth::user()->hasRole('admin'))
+                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal">
+                                    <i class="fa-solid fa-plus me-1"></i>{{ __('Tambah Manual') }}
                                 </button>
-                                <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#salaryAdjustmentModal" data-bs-toggle="tooltip" title="{{ __('Bonus/Kasbon') }}">
-                                    <i class="fa-solid fa-money-bill-transfer"></i> <span class="d-none d-sm-inline ms-1">{{ __('Bonus/Kasbon') }}</span>
+                                <button type="button" class="btn btn-info text-white btn-sm" data-bs-toggle="modal" data-bs-target="#salaryAdjustmentModal">
+                                    <i class="fa-solid fa-money-bill-transfer me-1"></i>{{ __('Bonus/Kasbon') }}
                                 </button>
-                                @endif
-                                <a href="{{ route('attendance.pdf', request()->all()) }}" class="btn btn-danger" target="_blank" data-bs-toggle="tooltip" title="{{ __('PDF') }}">
-                                    <i class="fa-solid fa-file-pdf"></i> <span class="d-none d-sm-inline ms-1">{{ __('PDF') }}</span>
-                                </a>
-                                <a href="{{ route('attendance.excel', request()->all()) }}" class="btn btn-success" target="_blank" data-bs-toggle="tooltip" title="{{ __('Excel') }}">
-                                    <i class="fa-solid fa-file-excel"></i> <span class="d-none d-sm-inline ms-1">{{ __('Excel') }}</span>
-                                </a>
-                                @if(Auth::user()->hasRole('admin'))
-                                <button type="button" class="btn btn-warning text-dark" onclick="confirmRecapFinance()" data-bs-toggle="tooltip" title="{{ __('Catat Gaji') }}">
-                                    <i class="fa-solid fa-money-bill-wave"></i> <span class="d-none d-sm-inline ms-1">{{ __('Catat Gaji') }}</span>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger" onclick="submitBulkDelete()" data-bs-toggle="tooltip" title="{{ __('Hapus Terpilih') }}">
-                                    <i class="fa-regular fa-trash-can"></i> <span class="d-none d-sm-inline ms-1">{{ __('Hapus Terpilih') }}</span>
-                                </button>
-                                @endif
-                            </div>
+                            @endif
+                            <div class="vr mx-1 d-none d-md-block"></div>
+                            <a href="{{ route('attendance.payslip', request()->all()) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                <i class="fa-solid fa-receipt me-1"></i>{{ __('Slip Gaji') }}
+                            </a>
+                            <a href="{{ route('attendance.excel', request()->all()) }}" class="btn btn-outline-success btn-sm" target="_blank">
+                                <i class="fa-solid fa-file-excel me-1"></i>{{ __('Export Excel') }}
+                            </a>
+                            @if(Auth::user()->hasRole('admin'))
+                                <div class="ms-auto d-flex gap-2">
+                                    <button type="button" class="btn btn-warning text-dark btn-sm fw-bold" onclick="confirmRecapFinance()">
+                                        <i class="fa-solid fa-money-bill-wave me-1"></i>{{ __('Catat Gaji') }}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="submitBulkDelete()">
+                                        <i class="fa-regular fa-trash-can me-1"></i>{{ __('Hapus Terpilih') }}
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                     </form>
                 </div>
@@ -302,9 +317,18 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Tipe') }}</label>
-                        <select name="type" class="form-select" required>
+                        <select name="type" id="adjustment_type" class="form-select" required onchange="updateAdjustmentCategories()">
                             <option value="bonus">{{ __('Bonus') }}</option>
                             <option value="kasbon">{{ __('Kasbon') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ __('Kategori') }}</label>
+                        <select name="category" id="adjustment_category" class="form-select" required onchange="updateAdjustmentDescription()">
+                            <!-- Bonus Categories (Default) -->
+                            <option value="disiplin">Bonus Disiplin</option>
+                            <option value="tanggung jawab">Bonus Tanggung Jawab</option>
+                            <option value="absensi">Bonus Absensi</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -317,7 +341,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Deskripsi') }}</label>
-                        <textarea name="description" class="form-control" rows="2"></textarea>
+                        <textarea name="description" id="adjustment_description" class="form-control" rows="2" readonly>Bonus Disiplin</textarea>
+                        <small class="text-muted italic">Keterangan otomatis terisi berdasarkan kategori untuk rincian slip gaji.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -413,6 +438,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+function updateAdjustmentCategories() {
+    const type = document.getElementById('adjustment_type').value;
+    const categorySelect = document.getElementById('adjustment_category');
+    
+    // Clear current options
+    categorySelect.innerHTML = '';
+    
+    if (type === 'bonus') {
+        const options = [
+            { value: 'disiplin', text: 'Bonus Disiplin' },
+            { value: 'tanggung jawab', text: 'Bonus Tanggung Jawab' },
+            { value: 'absensi', text: 'Bonus Absensi' }
+        ];
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.textContent = opt.text;
+            categorySelect.appendChild(el);
+        });
+    } else if (type === 'kasbon') {
+        const options = [
+            { value: 'bon kantor', text: 'Bon Kantor' },
+            { value: 'bon warung', text: 'Bon Warung' }
+        ];
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.textContent = opt.text;
+            categorySelect.appendChild(el);
+        });
+    }
+    
+    updateAdjustmentDescription();
+}
+
+function updateAdjustmentDescription() {
+    const categorySelect = document.getElementById('adjustment_category');
+    const descriptionTextarea = document.getElementById('adjustment_description');
+    const selectedText = categorySelect.options[categorySelect.selectedIndex].text;
+    descriptionTextarea.value = selectedText;
+}
 </script>
 @endif
 

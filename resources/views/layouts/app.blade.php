@@ -631,13 +631,8 @@
                             <i class="fa-solid fa-users"></i> {{ __('Data Karyawan') }}
                         </a>
                         @endif
-                        @if($hasPermission('attendance.view'))
-                        <a href="{{ route('attendance.index', ['view_my' => 1]) }}" class="sidebar-item {{ $routeIs('attendance.*') && request('view_my') ? 'active' : '' }}">
-                            <i class="fa-solid fa-user-clock"></i> {{ __('Absensi Saya') }}
-                        </a>
-                        @endif
                         @if($hasPermission('attendance.report'))
-                        <a href="{{ route('attendance.index') }}" class="sidebar-item {{ $routeIs('attendance.*') && !request('view_my') ? 'active' : '' }}">
+                        <a href="{{ route('attendance.index') }}" class="sidebar-item {{ $routeIs('attendance.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-clipboard-user"></i> {{ __('Rekap Absensi') }}
                         </a>
                         @endif

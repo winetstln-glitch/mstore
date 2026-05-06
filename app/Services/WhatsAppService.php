@@ -424,4 +424,32 @@ class WhatsAppService
 
         return $error;
     }
+
+    /**
+     * Send System Notification to Group (Attendance/Ticket)
+     */
+    public function sendGroupNotification(string $message, string $category = 'ticket')
+    {
+        $enabledKey = "whatsapp_{$category}_notification_enabled";
+        $groupIdKey = "whatsapp_{$category}_group_id";
+
+        $isEnabled = Setting::getValue($enabledKey, '1') == '1';
+        $target = Setting::getValue($groupIdKey, Setting::getValue('whatsapp_group_notification_id', config('services.whatsapp.group_id')));
+
+        if (! $isEnabled) {
+            return false;
+        }
+
+        if (empty($target)) {
+            Log::warning("WhatsApp Group Notification ID for {$category} not set.");
+            return false;
+        }
+
+        try {
+            return $this->sendMessage($target, $message, "system_{$category}_notification");
+        } catch (\Exception $e) {
+            Log::error("Failed to send {$category} group notification: " . $e->getMessage());
+            return false;
+        }
+    }
 }

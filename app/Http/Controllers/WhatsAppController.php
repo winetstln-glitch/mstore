@@ -145,6 +145,12 @@ class WhatsAppController extends Controller implements HasMiddleware
             ]
         );
 
+        // New Group Notification Settings
+        Setting::firstOrCreate(['key' => 'whatsapp_ticket_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Ticket Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_attendance_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Attendance Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_ticket_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Ticket Group ID']);
+        Setting::firstOrCreate(['key' => 'whatsapp_attendance_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Attendance Group ID']);
+
         return view('whatsapp.index', compact('template', 'atkReceiptTemplate', 'washReceiptTemplate', 'atkInvoicePdfTemplate', 'washReadyTemplate', 'ispBillTemplate', 'ispReminderTemplate', 'ispPaidTemplate', 'ispSuspendTemplate', 'waApiUrl', 'waApiKey'));
     }
 
@@ -165,7 +171,25 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_isp_suspend_template' => 'nullable|string',
             'whatsapp_api_url' => 'nullable|string',
             'whatsapp_api_key' => 'nullable|string',
+            'whatsapp_ticket_group_id' => 'nullable|string',
+            'whatsapp_attendance_group_id' => 'nullable|string',
+            'whatsapp_ticket_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_attendance_notification_enabled' => 'nullable|in:0,1',
         ]);
+
+        $groupSettings = [
+            'whatsapp_ticket_group_id' => 'WhatsApp Ticket Group ID',
+            'whatsapp_attendance_group_id' => 'WhatsApp Attendance Group ID',
+            'whatsapp_ticket_notification_enabled' => 'WhatsApp Ticket Notification Enabled',
+            'whatsapp_attendance_notification_enabled' => 'WhatsApp Attendance Notification Enabled',
+        ];
+
+        foreach ($groupSettings as $key => $label) {
+            if ($request->has($key)) {
+                $type = str_contains($key, 'enabled') ? 'boolean' : 'text';
+                $this->upsertWhatsappSetting($key, $request->input($key), $type, $label);
+            }
+        }
 
         if ($request->has('whatsapp_ticket_template')) {
             $this->upsertWhatsappSetting('whatsapp_ticket_template', $request->whatsapp_ticket_template, 'textarea', 'Ticket Notification Template');

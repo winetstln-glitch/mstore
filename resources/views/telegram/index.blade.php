@@ -78,12 +78,42 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="telegram_technician_group_chat_id" class="form-label fw-bold">{{ __('Technician Group Chat ID') }}</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
-                            <input type="text" name="telegram_technician_group_chat_id" id="telegram_technician_group_chat_id" value="{{ $groupChatId->value }}" class="form-control" placeholder="-100xxxxxxxxx">
+                        <label class="form-label fw-bold">{{ __('Group Notification Settings') }}</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 mb-3">
+                                    <div class="card-body">
+                                        <label for="telegram_ticket_group_id" class="form-label fw-bold">{{ __('Tiket Notification') }}</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_ticket_notification_enabled" name="telegram_ticket_notification_enabled" value="1" {{ \App\Models\Setting::getValue('telegram_ticket_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_ticket_notification_enabled">{{ __('Aktifkan Notifikasi Tiket') }}</label>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
+                                            <input type="text" name="telegram_ticket_group_id" id="telegram_ticket_group_id" value="{{ \App\Models\Setting::getValue('telegram_ticket_group_id') }}" class="form-control" placeholder="-100xxxxxxxxx">
+                                        </div>
+                                        <div class="form-text small">{{ __('ID Grup Telegram untuk notifikasi tiket baru & update status.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 mb-3">
+                                    <div class="card-body">
+                                        <label for="telegram_attendance_group_id" class="form-label fw-bold">{{ __('Absensi Notification') }}</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_attendance_notification_enabled" name="telegram_attendance_notification_enabled" value="1" {{ \App\Models\Setting::getValue('telegram_attendance_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_attendance_notification_enabled">{{ __('Aktifkan Notifikasi Absensi') }}</label>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
+                                            <input type="text" name="telegram_attendance_group_id" id="telegram_attendance_group_id" value="{{ \App\Models\Setting::getValue('telegram_attendance_group_id') }}" class="form-control" placeholder="-100xxxxxxxxx">
+                                        </div>
+                                        <div class="form-text small">{{ __('ID Grup Telegram untuk notifikasi absensi teknisi.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-text">{{ __('ID Grup Telegram teknisi (diawali dengan tanda minus). Bot akan mengirim notifikasi tiket baru ke grup ini.') }}</div>
+                        <input type="hidden" name="telegram_technician_group_chat_id" value="{{ $groupChatId->value }}">
                     </div>
 
                     <div class="mb-4">

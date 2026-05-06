@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\WashEmployee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -91,9 +92,20 @@ class WashEmployeeController extends Controller
 
     public function destroy(WashEmployee $employee)
     {
-        $employee->delete();
+        DB::transaction(function () use ($employee) {
+            $linkedUser = $employee->user;
 
-        return redirect()->route('wash.employees.index')->with('success', 'Employee deleted successfully.');
+            // Unlink from main Employee if exists
+            \App\Models\Employee::where('wash_employee_id', $employee->id)->update(['wash_employee_id' => null]);
+
+            $employee->delete();
+
+            if ($linkedUser && $linkedUser->id !== Auth::id()) {
+                $linkedUser->delete();
+            }
+        });
+
+        return redirect()->route('wash.employees.index')->with('success', 'Employee and associated user account deleted successfully.');
     }
 
     private function resolveUserId(array $validated): ?int

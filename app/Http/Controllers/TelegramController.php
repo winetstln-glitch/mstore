@@ -45,6 +45,12 @@ class TelegramController extends Controller implements HasMiddleware
             ]
         );
 
+        // New Group Notification Settings
+        Setting::firstOrCreate(['key' => 'telegram_ticket_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Ticket Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_attendance_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Attendance Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_ticket_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Ticket Group ID']);
+        Setting::firstOrCreate(['key' => 'telegram_attendance_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Attendance Group ID']);
+
         $defaultTemplate = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
                            "🆔 *No:* `{ticket_number}`\n".
                            "📝 *Subject:* `{subject}`\n".
@@ -237,6 +243,34 @@ class TelegramController extends Controller implements HasMiddleware
             'group' => 'telegram',
             'type' => 'text',
             'label' => 'Technician Group Chat ID',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_ticket_group_id'], [
+            'value' => $request->telegram_ticket_group_id,
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Ticket Group ID',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_attendance_group_id'], [
+            'value' => $request->telegram_attendance_group_id,
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Attendance Group ID',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_ticket_notification_enabled'], [
+            'value' => $request->boolean('telegram_ticket_notification_enabled') ? '1' : '0',
+            'group' => 'telegram',
+            'type' => 'boolean',
+            'label' => 'Telegram Ticket Notification Enabled',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_attendance_notification_enabled'], [
+            'value' => $request->boolean('telegram_attendance_notification_enabled') ? '1' : '0',
+            'group' => 'telegram',
+            'type' => 'boolean',
+            'label' => 'Telegram Attendance Notification Enabled',
         ]);
 
         Setting::updateOrCreate(['key' => 'telegram_ticket_template'], [

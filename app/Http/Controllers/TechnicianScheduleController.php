@@ -381,6 +381,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                             $lastShift[$id] = $status;
                         }
 
+                        // Update weekly schedule
                         TechnicianSchedule::updateOrCreate(
                             [
                                 'user_id' => $id,
@@ -392,6 +393,24 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                                 'notes' => null,
                             ]
                         );
+
+                        // Sync to daily schedules
+                        $period = $periods->get($weekNumber);
+                        if ($period) {
+                            $start = Carbon::parse($period->start_date)->startOfDay();
+                            $end = Carbon::parse($period->end_date)->startOfDay();
+                        } else {
+                            // Fallback to standard week
+                            $start = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek()->startOfDay();
+                            $end = $start->copy()->endOfWeek()->startOfDay();
+                        }
+
+                        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                            TechnicianDailySchedule::updateOrCreate(
+                                ['user_id' => $id, 'date' => $date->toDateString()],
+                                ['status' => $status, 'notes' => null]
+                            );
+                        }
                     }
                 }
             }
@@ -971,16 +990,40 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                                 $imported++;
                             }
                         } else {
+                            // Weekly Import
+                            $periods = SchedulePeriod::where('year', $year)->get()->keyBy('week_number');
+
                             foreach ($rowMap as $key => $val) {
                                 $k = strtoupper(trim((string) $key));
                                 if (! preg_match('/^W(\d{1,2})$/', $k, $m)) {
                                     continue;
                                 }
                                 $weekNumber = (int) $m[1];
+                                $status = $statusFromCell($val);
+
+                                // Update weekly schedule
                                 TechnicianSchedule::updateOrCreate(
                                     ['user_id' => $userId, 'week_number' => $weekNumber, 'year' => $year],
-                                    ['status' => $statusFromCell($val), 'notes' => null]
+                                    ['status' => $status, 'notes' => null]
                                 );
+
+                                // Sync to daily
+                                $period = $periods->get($weekNumber);
+                                if ($period) {
+                                    $start = Carbon::parse($period->start_date)->startOfDay();
+                                    $end = Carbon::parse($period->end_date)->startOfDay();
+                                } else {
+                                    $start = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek()->startOfDay();
+                                    $end = $start->copy()->endOfWeek()->startOfDay();
+                                }
+
+                                for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                                    TechnicianDailySchedule::updateOrCreate(
+                                        ['user_id' => $userId, 'date' => $date->toDateString()],
+                                        ['status' => $status, 'notes' => null]
+                                    );
+                                }
+
                                 $imported++;
                             }
                         }
@@ -1006,18 +1049,46 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        SchedulePeriod::updateOrCreate(
-            [
-                'year' => $request->year,
-                'week_number' => $request->week_number,
-            ],
-            [
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-            ]
-        );
+        $year = (int) $request->year;
+        $weekNumber = (int) $request->week_number;
+        $startDate = Carbon::parse($request->start_date)->startOfDay();
+        $endDate = Carbon::parse($request->end_date)->startOfDay();
 
-        return redirect()->back()->with('success', __('Schedule period updated successfully.'));
+        DB::transaction(function () use ($year, $weekNumber, $startDate, $endDate) {
+            // 1. Update or create period
+            SchedulePeriod::updateOrCreate(
+                [
+                    'year' => $year,
+                    'week_number' => $weekNumber,
+                ],
+                [
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                ]
+            );
+
+            // 2. Sync existing weekly schedules to daily schedules for the new range
+            $weeklySchedules = TechnicianSchedule::where('year', $year)
+                ->where('week_number', $weekNumber)
+                ->get();
+
+            foreach ($weeklySchedules as $schedule) {
+                for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+                    TechnicianDailySchedule::updateOrCreate(
+                        [
+                            'user_id' => $schedule->user_id,
+                            'date' => $date->toDateString(),
+                        ],
+                        [
+                            'status' => $schedule->status,
+                            'notes' => $schedule->notes,
+                        ]
+                    );
+                }
+            }
+        });
+
+        return redirect()->back()->with('success', __('Rentang minggu berhasil diperbarui dan disinkronkan ke harian.'));
     }
 
     public function store(Request $request)
@@ -1032,19 +1103,48 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'notes' => 'nullable|string',
         ]);
 
-        TechnicianSchedule::updateOrCreate(
-            [
-                'user_id' => $request->user_id,
-                'week_number' => $request->week_number,
-                'year' => $request->year,
-            ],
-            [
-                'status' => $request->status,
-                'notes' => $request->notes,
-            ]
-        );
+        $userId = $request->user_id;
+        $weekNumber = $request->week_number;
+        $year = $request->year;
+        $status = $request->status;
+        $notes = $request->notes;
 
-        return redirect()->back()->with('success', __('Schedule updated successfully.'));
+        DB::transaction(function () use ($userId, $weekNumber, $year, $status, $notes) {
+            TechnicianSchedule::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'week_number' => $weekNumber,
+                    'year' => $year,
+                ],
+                [
+                    'status' => $status,
+                    'notes' => $notes,
+                ]
+            );
+
+            // Sync to daily schedules
+            $period = SchedulePeriod::where('year', $year)
+                ->where('week_number', $weekNumber)
+                ->first();
+
+            if ($period) {
+                $start = Carbon::parse($period->start_date)->startOfDay();
+                $end = Carbon::parse($period->end_date)->startOfDay();
+            } else {
+                // Fallback to standard week
+                $start = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek()->startOfDay();
+                $end = $start->copy()->endOfWeek()->startOfDay();
+            }
+
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                TechnicianDailySchedule::updateOrCreate(
+                    ['user_id' => $userId, 'date' => $date->toDateString()],
+                    ['status' => $status, 'notes' => $notes]
+                );
+            }
+        });
+
+        return redirect()->back()->with('success', __('Schedule updated and synced to daily successfully.'));
     }
 
     public function dailyStore(Request $request)
@@ -1088,19 +1188,44 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
         $year = (int) $request->input('year');
         $schedules = $request->input('schedules');
+        $weekNumbers = collect($schedules)->flatMap(fn($weeks) => array_keys($weeks))->unique()->values();
 
-        DB::transaction(function () use ($year, $schedules) {
+        $periods = SchedulePeriod::where('year', $year)
+            ->whereIn('week_number', $weekNumbers)
+            ->get()
+            ->keyBy('week_number');
+
+        DB::transaction(function () use ($year, $schedules, $periods) {
             foreach ($schedules as $userId => $weeks) {
                 foreach ($weeks as $weekNumber => $status) {
+                    // Update weekly schedule
                     TechnicianSchedule::updateOrCreate(
                         ['user_id' => $userId, 'week_number' => $weekNumber, 'year' => $year],
                         ['status' => $status, 'notes' => null]
                     );
+
+                    // Sync to daily schedules
+                    $period = $periods->get($weekNumber);
+                    if ($period) {
+                        $start = Carbon::parse($period->start_date)->startOfDay();
+                        $end = Carbon::parse($period->end_date)->startOfDay();
+                    } else {
+                        // Fallback to standard week
+                        $start = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek()->startOfDay();
+                        $end = $start->copy()->endOfWeek()->startOfDay();
+                    }
+
+                    for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                        TechnicianDailySchedule::updateOrCreate(
+                            ['user_id' => $userId, 'date' => $date->toDateString()],
+                            ['status' => $status, 'notes' => null]
+                        );
+                    }
                 }
             }
         });
 
-        return redirect()->back()->with('success', 'Perubahan jadwal mingguan berhasil disimpan.');
+        return redirect()->back()->with('success', 'Perubahan jadwal mingguan berhasil disimpan dan disinkronkan ke harian.');
     }
 
     public function dailyBulkStore(Request $request)

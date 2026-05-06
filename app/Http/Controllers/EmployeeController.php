@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -188,26 +189,38 @@ class EmployeeController extends Controller implements HasMiddleware
     public function destroy(Employee $employee)
     {
         DB::transaction(function () use ($employee) {
-            $employee->loadMissing('user');
+            $employee->loadMissing(['user', 'washEmployee']);
 
+            // Delete documents/photos
             if ($employee->document_path) {
                 Storage::disk('public')->delete($employee->document_path);
             }
-            if ($this->hasIdCardColumns() && $employee->id_card_photo_path) {
+            if ($this->hasIdCardPhotoColumn() && $employee->id_card_photo_path) {
                 Storage::disk('public')->delete($employee->id_card_photo_path);
             }
 
             $linkedUser = $employee->user;
+            $linkedWashEmployee = $employee->washEmployee;
+
+            // Delete Employee record first (force delete because SoftDeletes is used and we want it gone)
             $employee->forceDelete();
 
-            if ($linkedUser && Schema::hasColumn('users', 'attendance_card_code')) {
-                $linkedUser->forceFill([
-                    'attendance_card_code' => null,
-                ])->save();
+            // If there's a linked Wash Employee, we might want to delete it too or at least unlink
+            if ($linkedWashEmployee) {
+                // Check if wash employee is linked to this specific employee record
+                // (Usually 1:1 in this context)
+                $linkedWashEmployee->delete();
+            }
+
+            // If there's a linked User, delete the user account as well
+            if ($linkedUser && $linkedUser->id !== Auth::id()) {
+                // Optional: Check if user has other critical links before deleting
+                // For now, following user expectation that deleting employee deletes the user account
+                $linkedUser->delete();
             }
         });
 
-        return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil dihapus.');
+        return redirect()->route('employees.index')->with('success', 'Data karyawan dan akun pengguna terkait berhasil dihapus.');
     }
 
     public function idCard(Employee $employee, Request $request)

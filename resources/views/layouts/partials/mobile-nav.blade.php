@@ -1,4 +1,4 @@
-<div class="mobile-bottom-nav d-lg-none">
+<div class="mobile-bottom-nav d-lg-none d-print-none">
     {{-- Dashboard / Home --}}
     @if(Auth::user()->hasRole('customer'))
         <a href="{{ route('client.portal') }}" class="mbn-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">

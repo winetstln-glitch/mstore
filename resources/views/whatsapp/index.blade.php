@@ -89,6 +89,39 @@
                         <input type="password" class="form-control" name="whatsapp_api_key" placeholder="Isi hanya jika ingin mengganti API key">
                         <div class="form-text">Kosongkan jika tidak ingin mengubah API key yang sudah tersimpan.</div>
                     </div>
+
+                    <div class="card bg-light border-0 mb-3">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="fw-bold mb-0">Group Notification Settings</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Tiket Notification</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_ticket_notification_enabled" name="whatsapp_ticket_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_ticket_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="whatsapp_ticket_notification_enabled">Aktifkan Notifikasi Tiket</label>
+                                        </div>
+                                        <input type="text" class="form-control" name="whatsapp_ticket_group_id" value="{{ \App\Models\Setting::getValue('whatsapp_ticket_group_id') }}" placeholder="Group ID Tiket">
+                                        <div class="form-text">ID grup WhatsApp untuk notifikasi tiket baru & update status.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Absensi Notification</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_attendance_notification_enabled" name="whatsapp_attendance_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_attendance_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="whatsapp_attendance_notification_enabled">Aktifkan Notifikasi Absensi</label>
+                                        </div>
+                                        <input type="text" class="form-control" name="whatsapp_attendance_group_id" value="{{ \App\Models\Setting::getValue('whatsapp_attendance_group_id') }}" placeholder="Group ID Absensi">
+                                        <div class="form-text">ID grup WhatsApp untuk notifikasi absensi teknisi.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success">
                             <i class="fa-solid fa-save"></i> Simpan Konfigurasi

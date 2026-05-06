@@ -282,6 +282,48 @@
                         </div>
                     </div>
 
+                    <!-- ==================== PENGATURAN NOTIFIKASI (WHATSAPP & TELEGRAM) ==================== -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-success border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-bell me-1"></i> Notifikasi Grup Absensi
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body py-2">
+                                        <label class="form-label fw-bold mb-1"><i class="fa-brands fa-whatsapp me-1 text-success"></i> WhatsApp (Fonnte)</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_attendance_notification_enabled" name="whatsapp_attendance_notification_enabled" value="1" {{ ($settings['whatsapp_attendance_notification_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="whatsapp_attendance_notification_enabled">Aktifkan Notifikasi WhatsApp</label>
+                                        </div>
+                                        <input type="text" name="whatsapp_attendance_group_id" 
+                                            value="{{ old('whatsapp_attendance_group_id', $settings['whatsapp_attendance_group_id'] ?? $settings['whatsapp_group_notification_id'] ?? '') }}" 
+                                            class="form-control form-control-sm" placeholder="ID Grup WhatsApp (628xxx@g.us)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body py-2">
+                                        <label class="form-label fw-bold mb-1"><i class="fa-brands fa-telegram me-1 text-info"></i> Telegram</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_attendance_notification_enabled" name="telegram_attendance_notification_enabled" value="1" {{ ($settings['telegram_attendance_notification_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_attendance_notification_enabled">Aktifkan Notifikasi Telegram</label>
+                                        </div>
+                                        <input type="text" name="telegram_attendance_group_id" 
+                                            value="{{ old('telegram_attendance_group_id', $settings['telegram_attendance_group_id'] ?? $settings['telegram_technician_group_chat_id'] ?? '') }}" 
+                                            class="form-control form-control-sm" placeholder="ID Grup Telegram (-100xxx)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text small text-muted mt-2">
+                            <i class="fa-solid fa-circle-info me-1"></i> Pengaturan lebih lanjut dapat diakses di menu 
+                            <a href="{{ route('whatsapp.index') }}" class="text-success fw-bold">WhatsApp Settings</a> atau 
+                            <a href="{{ route('telegram.index') }}" class="text-info fw-bold">Telegram Settings</a>.
+                        </div>
+                    </div>
+
                     <!-- ==================== PENGATURAN FOTO ==================== -->
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">

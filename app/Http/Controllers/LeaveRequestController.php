@@ -127,6 +127,27 @@ class LeaveRequestController extends Controller implements HasMiddleware
             'status' => 'pending',
         ]);
 
+        // Notify Group via WhatsApp
+        try {
+            $user = Auth::user();
+            $startDate = $leave->start_date->translatedFormat('d M Y');
+            $endDate = $leave->end_date->translatedFormat('d M Y');
+            $days = $start->diffInDays($end) + 1;
+            
+            $waMessage = "📝 *PENGAJUAN IZIN/CUTI BARU*\n\n" .
+                         "👤 *Nama:* {$user->name}\n" .
+                         "📅 *Dari:* {$startDate}\n" .
+                         "📅 *Sampai:* {$endDate} ({$days} hari)\n" .
+                         "📝 *Alasan:* {$leave->reason}\n" .
+                         "📊 *Status:* MENUNGGU PERSETUJUAN ⏳\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Leave Request WA Notification Error: ' . $e->getMessage());
+        }
+
         $reasonLower = strtolower($request->reason);
         if (str_contains($reasonLower, 'mendadak')) {
             $admins = \App\Models\User::whereHas('role', function ($q) {
@@ -158,6 +179,26 @@ class LeaveRequestController extends Controller implements HasMiddleware
             'approved_by' => Auth::id(),
             'rejection_reason' => $request->rejection_reason,
         ]);
+
+        // Notify Group via WhatsApp
+        try {
+            $user = $leaveRequest->user;
+            $statusLabel = $leaveRequest->status === 'approved' ? 'DISETUJUI ✅' : 'DITOLAK ❌';
+            $dateRange = $leaveRequest->start_date->translatedFormat('d M Y') . ' s/d ' . $leaveRequest->end_date->translatedFormat('d M Y');
+            
+            $waMessage = "📢 *UPDATE STATUS IZIN/CUTI*\n\n" .
+                         "👤 *Nama:* {$user->name}\n" .
+                         "📅 *Periode:* {$dateRange}\n" .
+                         "📊 *Status:* {$statusLabel}\n" .
+                         ($leaveRequest->status === 'rejected' ? "📝 *Alasan Penolakan:* {$leaveRequest->rejection_reason}\n" : "") .
+                         "👮 *Oleh:* " . Auth::user()->name . "\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Leave Update WA Notification Error: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', __('Leave request updated successfully.'));
     }

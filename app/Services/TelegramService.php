@@ -548,16 +548,30 @@ class TelegramService
 
     public function sendToTechnicianGroup($message)
     {
-        $setting = Setting::where('key', 'telegram_technician_group_chat_id')->first();
-        $chatId = $setting ? $setting->value : null;
+        return $this->sendGroupNotification($message, 'ticket');
+    }
 
-        if (empty($chatId)) {
-            Log::warning('Telegram Technician Group Chat ID is not set.');
+    /**
+     * Send System Notification to Group (Attendance/Ticket)
+     */
+    public function sendGroupNotification(string $message, string $category = 'ticket')
+    {
+        $enabledKey = "telegram_{$category}_notification_enabled";
+        $groupIdKey = "telegram_{$category}_group_id";
 
+        $isEnabled = Setting::getValue($enabledKey, '1') == '1';
+        $target = Setting::getValue($groupIdKey, Setting::getValue('telegram_technician_group_chat_id'));
+
+        if (! $isEnabled) {
             return false;
         }
 
-        return $this->sendMessage($chatId, $message);
+        if (empty($target)) {
+            Log::warning("Telegram Group Notification ID for {$category} not set.");
+            return false;
+        }
+
+        return $this->sendMessage($target, $message);
     }
 
     /**

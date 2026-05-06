@@ -161,6 +161,10 @@ class SettingController extends Controller implements HasMiddleware
             'brand_gtwash_slogan' => 'nullable|string|max:160',
             'brand_mstore_slogan' => 'nullable|string|max:160',
             'brand_mstorenet_slogan' => 'nullable|string|max:160',
+            'whatsapp_attendance_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_attendance_group_id' => 'nullable|string|max:255',
+            'telegram_attendance_notification_enabled' => 'nullable|in:0,1',
+            'telegram_attendance_group_id' => 'nullable|string|max:255',
         ]);
 
         $existingSettings = Setting::query()
