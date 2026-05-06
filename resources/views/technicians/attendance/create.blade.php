@@ -25,6 +25,19 @@
                         <i class="fa-solid fa-location-dot text-danger me-2"></i>
                         <span id="location-status" class="clock-location-status">{{ __('Mencari lokasi...') }}</span>
                     </div>
+                    
+                    <div class="d-flex flex-column align-items-center justify-content-center my-3">
+                        <div class="fingerprint-container" id="fingerprintContainer">
+                            <div class="outer-ring-large"></div>
+                            <div class="outer-ring-small"></div>
+
+                            <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
+                                <div class="inner-glow"></div>
+                                <i class="fa-solid fa-fingerprint"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-center gap-2 mt-2">
                         <button type="button" id="retryLocationBtn" class="btn btn-sm btn-outline-secondary rounded-pill">
                             <i class="fa-solid fa-rotate-right me-1"></i>{{ __('Coba Lagi') }}
@@ -141,16 +154,6 @@
                                 <p class="text-muted small px-5" id="instruction-text">
                                     {{ __('Izinkan lokasi untuk mengaktifkan tombol absen. Foto selfie bersifat opsional.') }}
                                 </p>
-                            </div>
-
-                            <div class="fingerprint-container" id="fingerprintContainer">
-                                <div class="outer-ring-large"></div>
-                                <div class="outer-ring-small"></div>
-
-                                <button type="submit" id="submitBtn" class="fingerprint-main-btn" disabled>
-                                    <div class="inner-glow"></div>
-                                    <i class="fa-solid fa-fingerprint"></i>
-                                </button>
                             </div>
                         </div>
                     </form>
