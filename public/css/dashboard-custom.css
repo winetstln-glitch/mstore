@@ -501,6 +501,32 @@ body.sb-sidenav-toggled #page-content-wrapper {
     padding: 0.5rem 1rem;
     color: var(--text-main);
     font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+/* Utils */
+.x-small { font-size: 0.75rem; }
+.xx-small { font-size: 0.65rem; }
+
+/* Global Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-bs-theme="dark"] .loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
 }
 
 .dropdown-item:hover, .dropdown-item:focus {

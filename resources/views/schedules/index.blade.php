@@ -2,26 +2,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    {{-- Feedback Messages --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-                <div>{{ session('success') }}</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fa-solid fa-circle-exclamation fs-5 me-2"></i>
-                <div>{{ session('error') }}</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-    @endif
+    @include('layouts.partials.alerts')
 
     {{-- Loading Overlay --}}
     <div id="loadingOverlay" class="loading-overlay d-none">
@@ -55,21 +36,6 @@
 
 @push('styles')
 <style>
-    /* Loading Overlay */
-    .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.8);
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
     /* Today Highlight */
     .today-col {
         background-color: rgba(13, 110, 253, 0.05) !important;

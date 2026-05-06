@@ -63,16 +63,7 @@
             {{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y') }}
         @endif
         <br>
-        @php
-            $pdfTeknisiShift = $shiftConfig['teknisi'] ?? null;
-            $pdfWashShift = $shiftConfig['wash'] ?? null;
-        @endphp
-        @if($pdfTeknisiShift)
-            Teknisi: S1 {{ $pdfTeknisiShift['shift_1_start'] }} - {{ $pdfTeknisiShift['shift_1_end'] }}, S2 {{ $pdfTeknisiShift['shift_2_start'] }} - {{ $pdfTeknisiShift['shift_2_end'] }}, Longshift {{ $pdfTeknisiShift['longshift_start'] ?? '08:00' }} - {{ $pdfTeknisiShift['longshift_end'] ?? '20:00' }}<br>
-        @endif
-        @if($pdfWashShift)
-            Operator Wash: S1 {{ $pdfWashShift['shift_1_start'] }} - {{ $pdfWashShift['shift_1_end'] }}, S2 {{ $pdfWashShift['shift_2_start'] }} - {{ $pdfWashShift['shift_2_end'] }}, Longshift {{ $pdfWashShift['longshift_start'] ?? '08:00' }} - {{ $pdfWashShift['longshift_end'] ?? '20:00' }}
-        @endif
+        @include('schedules.partials.shift-info')
     </div>
 
     <div class="legend">

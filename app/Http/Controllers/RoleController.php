@@ -113,7 +113,7 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        $permissions = Permission::all()->groupBy('group');
+        $permissions = Permission::getGroupedPermissions();
         $standardPermissions = $this->getStandardPermissions();
 
         return view('roles.create', compact('permissions', 'standardPermissions'));
@@ -157,7 +157,7 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function edit(Role $role)
     {
-        $permissions = Permission::all()->groupBy('group');
+        $permissions = Permission::getGroupedPermissions();
         $rolePermissions = $role->permissions->pluck('id')->toArray();
         $standardPermissions = $this->getStandardPermissions();
 

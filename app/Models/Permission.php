@@ -13,4 +13,46 @@ class Permission extends Model
     {
         return $this->belongsToMany(Role::class);
     }
+
+    /**
+     * Group permissions by their logical tabs for UI display.
+     */
+    public static function getGroupedPermissions()
+    {
+        $allPermissions = self::orderBy('group')->get()->groupBy('group');
+        
+        $tabMap = [
+            'Pelanggan & Layanan' => ['Customer Management', 'Ticket Management', 'Installation Management', 'Service Management'],
+            'Jaringan' => ['ODC Management', 'ODP Management', 'HTB Management', 'OLT Management', 'Router Management', 'Map', 'Network Monitor'],
+            'Keuangan' => ['Finance', 'Investor Management'],
+            'Operasional' => ['Technician Management', 'Attendance', 'Leave Management', 'Schedule Management', 'Inventory (Alat & Material)'],
+            'Toko ATK' => ['ATK Store'],
+            'Cuci Kendaraan' => ['Car Wash'],
+            'Sistem' => ['User Management', 'Role Management', 'Settings', 'Coordinator Management', 'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification'],
+            'Umum' => ['Dashboard', 'Utilities', 'Profile'],
+        ];
+
+        $grouped = [];
+        $tabsOrder = ['Pelanggan & Layanan', 'Jaringan', 'Keuangan', 'Operasional', 'Toko ATK', 'Cuci Kendaraan', 'Sistem', 'Umum', 'Lainnya'];
+
+        foreach ($allPermissions as $group => $perms) {
+            $foundTab = 'Lainnya';
+            foreach ($tabMap as $tabName => $groups) {
+                if (in_array($group, $groups)) {
+                    $foundTab = $tabName;
+                    break;
+                }
+            }
+            $grouped[$foundTab][$group] = $perms;
+        }
+
+        // Sort by predefined tab order
+        uksort($grouped, function($a, $b) use ($tabsOrder) {
+            $posA = array_search($a, $tabsOrder);
+            $posB = array_search($b, $tabsOrder);
+            return ($posA === false ? 999 : $posA) <=> ($posB === false ? 999 : $posB);
+        });
+
+        return $grouped;
+    }
 }

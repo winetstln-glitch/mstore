@@ -2,10 +2,6 @@
      MODALS 
      ============================================ --}}
 @php $canManage = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage'); @endphp
-@php
-    $modalTeknisiShift = $shiftConfig['teknisi'] ?? null;
-    $modalWashShift = $shiftConfig['wash'] ?? null;
-@endphp
 
 @if($canManage)
     {{-- Import Schedule Modal --}}
@@ -66,22 +62,7 @@
                         </p>
                         <div class="alert alert-light border small mb-4">
                             <div class="fw-semibold mb-1">Referensi Jam Shift</div>
-                            @if($modalTeknisiShift)
-                                <div>
-                                    Teknisi:
-                                    S1 {{ $modalTeknisiShift['shift_1_start'] }}-{{ $modalTeknisiShift['shift_1_end'] }},
-                                    S2 {{ $modalTeknisiShift['shift_2_start'] }}-{{ $modalTeknisiShift['shift_2_end'] }},
-                                    Longshift {{ $modalTeknisiShift['longshift_start'] ?? '08:00' }}-{{ $modalTeknisiShift['longshift_end'] ?? '20:00' }}
-                                </div>
-                            @endif
-                            @if($modalWashShift)
-                                <div>
-                                    Operator Wash:
-                                    S1 {{ $modalWashShift['shift_1_start'] }}-{{ $modalWashShift['shift_1_end'] }},
-                                    S2 {{ $modalWashShift['shift_2_start'] }}-{{ $modalWashShift['shift_2_end'] }},
-                                    Longshift {{ $modalWashShift['longshift_start'] ?? '08:00' }}-{{ $modalWashShift['longshift_end'] ?? '20:00' }}
-                                </div>
-                            @endif
+                            @include('schedules.partials.shift-info')
                         </div>
                         
                         <div class="row g-4 mb-4">
