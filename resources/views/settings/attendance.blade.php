@@ -33,6 +33,24 @@
                                     <option value="0" {{ ($settings['attendance_photo_required'] ?? 1) == 0 ? 'selected' : '' }}>Tidak</option>
                                 </select>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Office Latitude</label>
+                                <input type="text" name="attendance_office_lat" 
+                                    value="{{ old('attendance_office_lat', $settings['attendance_office_lat'] ?? '') }}" 
+                                    class="form-control" placeholder="-6.xxxx">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Office Longitude</label>
+                                <input type="text" name="attendance_office_lng" 
+                                    value="{{ old('attendance_office_lng', $settings['attendance_office_lng'] ?? '') }}" 
+                                    class="form-control" placeholder="106.xxxx">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Radius Absen (Meter)</label>
+                                <input type="number" name="attendance_radius" 
+                                    value="{{ old('attendance_radius', $settings['attendance_radius'] ?? 100) }}" 
+                                    class="form-control" min="0">
+                            </div>
                         </div>
                     </div>
 

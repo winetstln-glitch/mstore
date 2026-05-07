@@ -48,8 +48,15 @@ class TelegramController extends Controller implements HasMiddleware
         // New Group Notification Settings
         Setting::firstOrCreate(['key' => 'telegram_ticket_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Ticket Notification Enabled']);
         Setting::firstOrCreate(['key' => 'telegram_attendance_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Attendance Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_up_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem UP Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_down_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem DOWN Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_recap_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem RECAP Notification Enabled']);
+        
         Setting::firstOrCreate(['key' => 'telegram_ticket_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Ticket Group ID']);
         Setting::firstOrCreate(['key' => 'telegram_attendance_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Attendance Group ID']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_up_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem UP Group ID']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_down_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem DOWN Group ID']);
+        Setting::firstOrCreate(['key' => 'telegram_modem_recap_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem RECAP Group ID']);
 
         $defaultTemplate = "🔔 *TIKET BARU (NEW TICKET)*\n\n".
                            "🆔 *No:* `{ticket_number}`\n".
@@ -259,6 +266,27 @@ class TelegramController extends Controller implements HasMiddleware
             'label' => 'Telegram Attendance Group ID',
         ]);
 
+        Setting::updateOrCreate(['key' => 'telegram_modem_up_group_id'], [
+            'value' => $request->telegram_modem_up_group_id,
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Modem UP Group ID',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_modem_down_group_id'], [
+            'value' => $request->telegram_modem_down_group_id,
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Modem DOWN Group ID',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_modem_recap_group_id'], [
+            'value' => $request->telegram_modem_recap_group_id,
+            'group' => 'telegram',
+            'type' => 'text',
+            'label' => 'Telegram Modem RECAP Group ID',
+        ]);
+
         Setting::updateOrCreate(['key' => 'telegram_ticket_notification_enabled'], [
             'value' => $request->boolean('telegram_ticket_notification_enabled') ? '1' : '0',
             'group' => 'telegram',
@@ -271,6 +299,27 @@ class TelegramController extends Controller implements HasMiddleware
             'group' => 'telegram',
             'type' => 'boolean',
             'label' => 'Telegram Attendance Notification Enabled',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_modem_up_notification_enabled'], [
+            'value' => $request->boolean('telegram_modem_up_notification_enabled') ? '1' : '0',
+            'group' => 'telegram',
+            'type' => 'boolean',
+            'label' => 'Telegram Modem UP Notification Enabled',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_modem_down_notification_enabled'], [
+            'value' => $request->boolean('telegram_modem_down_notification_enabled') ? '1' : '0',
+            'group' => 'telegram',
+            'type' => 'boolean',
+            'label' => 'Telegram Modem DOWN Notification Enabled',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'telegram_modem_recap_notification_enabled'], [
+            'value' => $request->boolean('telegram_modem_recap_notification_enabled') ? '1' : '0',
+            'group' => 'telegram',
+            'type' => 'boolean',
+            'label' => 'Telegram Modem RECAP Notification Enabled',
         ]);
 
         Setting::updateOrCreate(['key' => 'telegram_ticket_template'], [

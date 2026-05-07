@@ -162,8 +162,20 @@
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between x-small mt-2 px-1">
-                                <span class="text-muted fw-bold">METODE PEMBAYARAN:</span>
-                                <span class="fw-bold text-dark text-uppercase">CASH / TRANSFER</span>
+                                <div class="text-start">
+                                    <span class="text-muted fw-bold d-block">METODE PEMBAYARAN:</span>
+                                    <span class="fw-bold text-dark text-uppercase small">{{ $data['user']->bank_name ?: 'CASH' }}</span>
+                                </div>
+                                <div class="text-end">
+                                    @if($data['user']->bank_account_number)
+                                        <span class="text-muted fw-bold d-block">NO. REKENING:</span>
+                                        <span class="fw-bold text-dark small">{{ $data['user']->bank_account_number }}</span>
+                                        <span class="text-muted x-small d-block">a/n {{ $data['user']->bank_account_name ?: $data['user']->name }}</span>
+                                    @else
+                                        <span class="text-muted fw-bold d-block">STATUS:</span>
+                                        <span class="fw-bold text-success small text-uppercase">PAID</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>

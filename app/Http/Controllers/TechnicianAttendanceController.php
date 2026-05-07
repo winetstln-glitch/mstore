@@ -455,6 +455,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $monthAttendances = TechnicianAttendance::where('user_id', Auth::id())
             ->whereMonth('clock_in', now()->month)
             ->whereYear('clock_in', now()->year)
+            ->latest('clock_in')
             ->get();
 
         $attendanceSummary = [
@@ -472,7 +473,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $faceVerificationEnabled = (string) Setting::getValue('attendance_face_verification_enabled', '0');
         $shiftInfo = $this->resolveTodayShiftInfo(Auth::user());
 
-        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo'));
+        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo', 'monthAttendances'));
     }
 
     public function kiosk()

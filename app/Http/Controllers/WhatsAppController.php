@@ -148,8 +148,15 @@ class WhatsAppController extends Controller implements HasMiddleware
         // New Group Notification Settings
         Setting::firstOrCreate(['key' => 'whatsapp_ticket_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Ticket Notification Enabled']);
         Setting::firstOrCreate(['key' => 'whatsapp_attendance_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Attendance Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_up_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem UP Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_down_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem DOWN Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_recap_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem RECAP Notification Enabled']);
+        
         Setting::firstOrCreate(['key' => 'whatsapp_ticket_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Ticket Group ID']);
         Setting::firstOrCreate(['key' => 'whatsapp_attendance_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Attendance Group ID']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_up_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem UP Group ID']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_down_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem DOWN Group ID']);
+        Setting::firstOrCreate(['key' => 'whatsapp_modem_recap_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem RECAP Group ID']);
 
         return view('whatsapp.index', compact('template', 'atkReceiptTemplate', 'washReceiptTemplate', 'atkInvoicePdfTemplate', 'washReadyTemplate', 'ispBillTemplate', 'ispReminderTemplate', 'ispPaidTemplate', 'ispSuspendTemplate', 'waApiUrl', 'waApiKey'));
     }
@@ -173,15 +180,27 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_api_key' => 'nullable|string',
             'whatsapp_ticket_group_id' => 'nullable|string',
             'whatsapp_attendance_group_id' => 'nullable|string',
+            'whatsapp_modem_up_group_id' => 'nullable|string',
+            'whatsapp_modem_down_group_id' => 'nullable|string',
+            'whatsapp_modem_recap_group_id' => 'nullable|string',
             'whatsapp_ticket_notification_enabled' => 'nullable|in:0,1',
             'whatsapp_attendance_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_modem_up_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_modem_down_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_modem_recap_notification_enabled' => 'nullable|in:0,1',
         ]);
 
         $groupSettings = [
             'whatsapp_ticket_group_id' => 'WhatsApp Ticket Group ID',
             'whatsapp_attendance_group_id' => 'WhatsApp Attendance Group ID',
+            'whatsapp_modem_up_group_id' => 'WhatsApp Modem UP Group ID',
+            'whatsapp_modem_down_group_id' => 'WhatsApp Modem DOWN Group ID',
+            'whatsapp_modem_recap_group_id' => 'WhatsApp Modem RECAP Group ID',
             'whatsapp_ticket_notification_enabled' => 'WhatsApp Ticket Notification Enabled',
             'whatsapp_attendance_notification_enabled' => 'WhatsApp Attendance Notification Enabled',
+            'whatsapp_modem_up_notification_enabled' => 'WhatsApp Modem UP Notification Enabled',
+            'whatsapp_modem_down_notification_enabled' => 'WhatsApp Modem DOWN Notification Enabled',
+            'whatsapp_modem_recap_notification_enabled' => 'WhatsApp Modem RECAP Notification Enabled',
         ];
 
         foreach ($groupSettings as $key => $label) {

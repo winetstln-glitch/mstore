@@ -284,6 +284,34 @@
                                     </div>
                                 </div>
 
+                                <div class="bg-light p-3 rounded-4 mb-4">
+                                    <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-building-columns me-2"></i>{{ __('Informasi Rekening Bank') }}</h6>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="bank_name" class="form-label fw-semibold small">{{ __('Nama Bank') }}</label>
+                                            <input id="bank_name" name="bank_name" type="text" class="form-control form-control-sm rounded-3 @error('bank_name') is-invalid @enderror" value="{{ old('bank_name', $user->bank_name) }}" placeholder="Contoh: BCA, BRI, Mandiri">
+                                            @error('bank_name')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="bank_account_number" class="form-label fw-semibold small">{{ __('Nomor Rekening') }}</label>
+                                            <input id="bank_account_number" name="bank_account_number" type="text" class="form-control form-control-sm rounded-3 @error('bank_account_number') is-invalid @enderror" value="{{ old('bank_account_number', $user->bank_account_number) }}" placeholder="1234567890">
+                                            @error('bank_account_number')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="bank_account_name" class="form-label fw-semibold small">{{ __('Nama Pemilik Rekening') }}</label>
+                                            <input id="bank_account_name" name="bank_account_name" type="text" class="form-control form-control-sm rounded-3 @error('bank_account_name') is-invalid @enderror" value="{{ old('bank_account_name', $user->bank_account_name) }}" placeholder="Sesuai Buku Tabungan">
+                                            @error('bank_account_name')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="form-text x-small"><i class="fa-solid fa-circle-info me-1"></i>{{ __('Informasi ini akan digunakan untuk keperluan pembayaran gaji/transfer.') }}</div>
+                                </div>
+
                                 <div class="d-grid gap-2 mt-2">
                                     <button type="submit" class="btn btn-primary rounded-3 py-2 fw-bold">
                                         <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Perubahan') }}

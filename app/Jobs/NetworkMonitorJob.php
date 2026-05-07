@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Ticket;
 use App\Services\GenieACSService;
 use App\Services\TelegramService;
+use App\Traits\SendsNotifications;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -20,7 +21,7 @@ use Throwable;
 
 class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, SendsNotifications;
 
     protected array $notifyConfig = [];
 
@@ -128,17 +129,19 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 $message = $this->renderTemplate($this->notifyConfig['down_template'], [
                     ...$payload,
                 ], true);
-                $sent = $telegramService->sendToTechnicianGroup($message);
+                $sent = $this->sendGroupNotification($message, 'modem_down');
                 if ($sent) {
                     $statusRecord->last_notified_down_at = now();
-                    Log::info('Notifikasi Telegram DOWN berhasil dikirim', [
+                    Log::info('Notifikasi UP/DOWN berhasil dikirim', [
                         'customer_id' => $customer->id,
                         'onu_serial' => $customer->onu_serial,
+                        'category' => 'modem_down'
                     ]);
                 } else {
-                    Log::warning('Notifikasi Telegram DOWN gagal dikirim', [
+                    Log::warning('Notifikasi UP/DOWN gagal dikirim', [
                         'customer_id' => $customer->id,
                         'onu_serial' => $customer->onu_serial,
+                        'category' => 'modem_down'
                     ]);
                 }
             }
@@ -172,17 +175,19 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                 $message = $this->renderTemplate($this->notifyConfig['up_template'], [
                     ...$payload,
                 ], true);
-                $sent = $telegramService->sendToTechnicianGroup($message);
+                $sent = $this->sendGroupNotification($message, 'modem_up');
                 if ($sent) {
                     $statusRecord->last_notified_up_at = now();
-                    Log::info('Notifikasi Telegram UP berhasil dikirim', [
+                    Log::info('Notifikasi UP/DOWN berhasil dikirim', [
                         'customer_id' => $customer->id,
                         'onu_serial' => $customer->onu_serial,
+                        'category' => 'modem_up'
                     ]);
                 } else {
-                    Log::warning('Notifikasi Telegram UP gagal dikirim', [
+                    Log::warning('Notifikasi UP/DOWN gagal dikirim', [
                         'customer_id' => $customer->id,
                         'onu_serial' => $customer->onu_serial,
+                        'category' => 'modem_up'
                     ]);
                 }
             }
@@ -425,7 +430,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        $sent = $telegramService->sendToTechnicianGroup($message);
+        $sent = $this->sendGroupNotification($message, 'modem_recap');
         if ($sent) {
             Setting::updateOrCreate(
                 ['key' => 'telegram_monitor_recap_last_sent_at'],

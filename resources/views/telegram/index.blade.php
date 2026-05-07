@@ -112,6 +112,57 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 mb-3">
+                                    <div class="card-body">
+                                        <label for="telegram_modem_up_group_id" class="form-label fw-bold">{{ __('Modem UP Notification') }}</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_modem_up_notification_enabled" name="telegram_modem_up_notification_enabled" value="1" {{ \App\Models\Setting::getValue('telegram_modem_up_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_modem_up_notification_enabled">{{ __('Aktifkan Notifikasi Modem UP') }}</label>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
+                                            <input type="text" name="telegram_modem_up_group_id" id="telegram_modem_up_group_id" value="{{ \App\Models\Setting::getValue('telegram_modem_up_group_id') }}" class="form-control" placeholder="-100xxxxxxxxx">
+                                        </div>
+                                        <div class="form-text small">{{ __('ID Grup Telegram untuk notifikasi modem UP (Recovery).') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 mb-3">
+                                    <div class="card-body">
+                                        <label for="telegram_modem_down_group_id" class="form-label fw-bold">{{ __('Modem DOWN Notification') }}</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_modem_down_notification_enabled" name="telegram_modem_down_notification_enabled" value="1" {{ \App\Models\Setting::getValue('telegram_modem_down_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_modem_down_notification_enabled">{{ __('Aktifkan Notifikasi Modem DOWN') }}</label>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
+                                            <input type="text" name="telegram_modem_down_group_id" id="telegram_modem_down_group_id" value="{{ \App\Models\Setting::getValue('telegram_modem_down_group_id') }}" class="form-control" placeholder="-100xxxxxxxxx">
+                                        </div>
+                                        <div class="form-text small">{{ __('ID Grup Telegram untuk notifikasi modem DOWN.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0 mb-3">
+                                    <div class="card-body">
+                                        <label for="telegram_modem_recap_group_id" class="form-label fw-bold">{{ __('Modem RECAP Notification') }}</label>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="telegram_modem_recap_notification_enabled" name="telegram_modem_recap_notification_enabled" value="1" {{ \App\Models\Setting::getValue('telegram_modem_recap_notification_enabled', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="telegram_modem_recap_notification_enabled">{{ __('Aktifkan Notifikasi Modem RECAP') }}</label>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text"><i class="fa-solid fa-users"></i></span>
+                                            <input type="text" name="telegram_modem_recap_group_id" id="telegram_modem_recap_group_id" value="{{ \App\Models\Setting::getValue('telegram_modem_recap_group_id') }}" class="form-control" placeholder="-100xxxxxxxxx">
+                                        </div>
+                                        <div class="form-text small">{{ __('ID Grup Telegram untuk notifikasi rekap berkala GenieACS.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <input type="hidden" name="telegram_technician_group_chat_id" value="{{ $groupChatId->value }}">
                     </div>

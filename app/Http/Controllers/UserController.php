@@ -148,6 +148,9 @@ class UserController extends Controller implements HasMiddleware
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
         ];
         if ($this->hasAttendanceCardColumn()) {
@@ -179,6 +182,9 @@ class UserController extends Controller implements HasMiddleware
             'role_id' => $validated['role_id'],
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
+            'bank_name' => $validated['bank_name'] ?? null,
+            'bank_account_number' => $validated['bank_account_number'] ?? null,
+            'bank_account_name' => $validated['bank_account_name'] ?? null,
             'is_active' => $request->boolean('is_active'),
         ];
         if ($this->hasAttendanceCardColumn()) {
@@ -215,6 +221,9 @@ class UserController extends Controller implements HasMiddleware
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
         ];
         if ($this->hasAttendanceCardColumn()) {
@@ -243,6 +252,9 @@ class UserController extends Controller implements HasMiddleware
             'role_id' => $validated['role_id'],
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
+            'bank_name' => $validated['bank_name'] ?? null,
+            'bank_account_number' => $validated['bank_account_number'] ?? null,
+            'bank_account_name' => $validated['bank_account_name'] ?? null,
             'is_active' => $request->boolean('is_active'),
         ];
         if ($this->hasAttendanceCardColumn()) {

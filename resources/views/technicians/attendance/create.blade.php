@@ -1,807 +1,447 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $isOut = ($todayAttendance && !$todayAttendance->clock_out);
+    $formRoute = $isOut ? route('attendance.update', $todayAttendance->id) : route('attendance.store');
+@endphp
+<style>
+    /* Custom Styling for Modern UI */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        /* Default Light Colors */
+        --att-bg: #f8f9fa;
+        --att-card: #ffffff;
+        --att-text: #2d3436;
+        --att-muted: #636e72;
+        --att-border: rgba(0,0,0,0.05);
+    }
+
+    [data-bs-theme="dark"] {
+        --att-bg: #050816;
+        --att-card: #0f172a;
+        --att-text: #e6f1ff;
+        --att-muted: #86a4c7;
+        --att-border: rgba(0, 229, 255, 0.15);
+    }
+
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .attendance-shell { background: var(--att-bg); min-height: 100vh; }
+    
+    .main-attendance-card {
+        background: var(--att-card);
+        border: none;
+        border-radius: 30px !important;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+    }
+
+    .attendance-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 30px 25px 80px 25px !important;
+        position: relative;
+    }
+    
+    .clock-panel {
+        background: var(--att-card);
+        color: var(--att-text);
+        border: 1px solid var(--att-border);
+        border-radius: 24px !important;
+        padding: 25px !important;
+        margin-top: -65px;
+        position: relative;
+        z-index: 10;
+        box-shadow: var(--card-shadow);
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
+    .clock-time { color: #4e73df; letter-spacing: -1px; font-weight: 800; }
+    
+    /* Fingerprint Animation */
+    .fingerprint-container {
+        position: relative;
+        width: 130px;
+        height: 130px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .fingerprint-ring {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid #4e73df;
+        opacity: 0;
+        transition: all 0.4s ease;
+    }
+
+    .fingerprint-ready .ring-1 {
+        width: 105px;
+        height: 105px;
+        opacity: 0.3;
+        animation: pulse-ring 2s infinite;
+    }
+    .fingerprint-ready .ring-2 {
+        width: 125px;
+        height: 125px;
+        opacity: 0.15;
+        animation: pulse-ring 2s infinite 0.5s;
+    }
+
+    @keyframes pulse-ring {
+        0% { transform: scale(0.95); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.2; }
+        100% { transform: scale(0.95); opacity: 0.5; }
+    }
+
+    .fingerprint-main-btn {
+        position: relative;
+        z-index: 2;
+        width: 85px;
+        height: 85px;
+        border-radius: 50%;
+        border: 4px solid #dee2e6;
+        background: #f1f1f1;
+        color: #adb5bd;
+        font-size: 2.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .fingerprint-ready .fingerprint-main-btn {
+        background: var(--primary-gradient);
+        border-color: #ffffff;
+        color: white;
+        box-shadow: 0 0 25px rgba(78, 115, 223, 0.5);
+        cursor: pointer;
+    }
+
+    .fingerprint-main-btn::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 10px #fff;
+        display: none;
+        animation: scan-move 2s linear infinite;
+    }
+
+    .fingerprint-ready .fingerprint-main-btn::after { display: block; }
+
+    @keyframes scan-move {
+        0% { top: 20%; opacity: 0; }
+        50% { top: 50%; opacity: 1; }
+        100% { top: 80%; opacity: 0; }
+    }
+    
+    .modern-camera-box {
+        width: 100%;
+        max-width: 260px;
+        height: 150px;
+        border: 2px dashed #dee2e6;
+        border-radius: 20px;
+        overflow: hidden;
+        background: var(--att-bg);
+        display: inline-block;
+        position: relative;
+    }
+    .modern-camera-box.has-image { border-style: solid; border-color: #4e73df; }
+    .modern-preview-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .has-image .modern-preview-img { display: block; }
+    
+    .status-info-card { 
+        border-radius: 18px !important;
+        padding: 12px !important;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    .status-info-masuk { background: #f0fdf4; color: #166534; }
+    .status-info-izin { background: #fffbeb; color: #92400e; }
+    .status-info-sakit { background: #fef2f2; color: #991b1b; }
+    
+    [data-bs-theme="dark"] .status-info-masuk { background: rgba(22, 101, 52, 0.2); color: #4ade80; }
+    [data-bs-theme="dark"] .status-info-izin { background: rgba(146, 64, 14, 0.2); color: #fbbf24; }
+    [data-bs-theme="dark"] .status-info-sakit { background: rgba(153, 27, 27, 0.2); color: #f87171; }
+
+    .history-card {
+        background: var(--att-card);
+        border-radius: 20px !important;
+        border: 1px solid var(--att-border);
+    }
+    .history-item { border-bottom: 1px solid var(--att-border); padding: 12px 0; }
+    .history-item:last-child { border-bottom: none; }
+
+    .clock-location-status.is-detected { color: #059669; font-weight: 700; }
+</style>
+
 <div class="row justify-content-center">
     <div class="col-lg-6 col-md-8 px-0 px-md-3">
-        <div class="card shadow-lg border-0 rounded-5 overflow-hidden attendance-shell mb-2 pb-2">
-            <div class="leave-header-card p-4 pb-2 rounded-bottom-5 shadow position-relative attendance-header">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="card main-attendance-card mb-4">
+            <!-- Header Section -->
+            <div class="attendance-header">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="leave-header-greeting small mb-0">{{ __('Selamat Datang,') }}</p>
-                        <h4 class="leave-header-name fw-bold mb-0">{{ Auth::user()->name }}</h4>
+                        <p class="small mb-1 opacity-75">{{ __('Selamat Datang,') }}</p>
+                        <h4 class="fw-bold mb-0 text-white">{{ Auth::user()->name }}</h4>
                     </div>
-                    <div class="user-avatar-badge rounded-circle p-2 border border-white border-opacity-25">
-                        <i class="fa-solid fa-user-circle fs-3"></i>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-warning rounded-circle shadow" data-bs-toggle="modal" data-bs-target="#attendanceHelpModal" title="{{ __('Bantuan') }}">
-                        <i class="fa-solid fa-circle-question text-dark"></i>
-                    </button>
-                </div>
-
-                <div class="clock-panel p-4 rounded-4 shadow-sm text-center position-relative" style="z-index: 10; margin-bottom: -60px;">
-                    <p class="clock-date text-uppercase tracking-wider small fw-bold mb-1">{{ now()->format('l, d F Y') }}</p>
-                    <h2 class="display-4 fw-bold mb-2 font-monospace clock-time" id="clock">00:00:00</h2>
-                    <div class="d-flex align-items-center justify-content-center small clock-location">
-                        <i class="fa-solid fa-location-dot text-danger me-2"></i>
-                        <span id="location-status" class="clock-location-status">{{ __('Mencari lokasi...') }}</span>
-                    </div>
-                    
-                    <div class="d-flex flex-column align-items-center justify-content-center my-3">
-                        <div class="fingerprint-container" id="fingerprintContainer">
-                            <div class="outer-ring-large"></div>
-                            <div class="outer-ring-small"></div>
-
-                            <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
-                                <div class="inner-glow"></div>
-                                <i class="fa-solid fa-fingerprint"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-center gap-2 mt-2">
-                        <button type="button" id="retryLocationBtn" class="btn btn-sm btn-outline-secondary rounded-pill">
-                            <i class="fa-solid fa-rotate-right me-1"></i>{{ __('Coba Lagi') }}
-                        </button>
+                    <div class="bg-white bg-opacity-20 rounded-circle p-2">
+                        <i class="fa-solid fa-user-check text-white"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="card-body p-4 pt-3 mt-5">
-                <div id="face-model-status" class="alert alert-info rounded-4 text-center mb-2 border-0 shadow-sm" style="display: none;">
-                    <i class="fa-solid fa-spinner fa-spin me-2"></i> {{ __('Memuat Model Deteksi Wajah...') }}
+            <!-- Clock Panel -->
+            <div class="clock-panel text-center">
+                <p class="text-uppercase small fw-bold mb-1 text-muted">{{ now()->translatedFormat('l, d F Y') }}</p>
+                <h1 class="display-5 mb-2 clock-time" id="clock">00:00:00</h1>
+                
+                <div class="d-flex align-items-center justify-content-center small mb-3">
+                    <i class="fa-solid fa-location-dot text-danger me-2"></i>
+                    <span id="location-status" class="clock-location-status is-loading text-muted">{{ __('Mencari lokasi...') }}</span>
                 </div>
 
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                    <div class="fingerprint-container" id="fingerprintContainer">
+                        <div class="fingerprint-ring ring-1"></div>
+                        <div class="fingerprint-ring ring-2"></div>
+                        <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
+                            <i class="fa-solid fa-fingerprint"></i>
+                        </button>
+                    </div>
+                    
+                    <button type="button" id="retryLocationBtn" class="btn btn-sm btn-light rounded-pill px-3 mt-2 text-muted border">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i>{{ __('Refresh Lokasi') }}
+                    </button>
+
+                    <div class="mt-3">
+                        <h6 class="fw-bold mb-1 text-uppercase text-dark">{{ $isOut ? __('Absen Pulang') : __('Absen Masuk') }}</h6>
+                        <p class="text-muted small mb-0 px-2" id="instruction-text">
+                            {{ __('Tombol akan aktif otomatis saat lokasi Anda ditemukan.') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body Content -->
+            <div class="card-body p-4">
                 @if($errors->any())
-                    <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-2" role="alert">
-                        <ul class="mb-0 ps-3 small">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
+                    <div class="alert alert-danger rounded-4 border-0 small mb-4">
+                        <ul class="mb-0 ps-3 fw-bold">
+                            @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
                         </ul>
                     </div>
                 @endif
 
-                <div class="row g-3 mb-2 px-1">
+                <!-- Stats -->
+                <div class="row g-2 mb-4">
                     <div class="col-4">
-                        <div class="status-info-card status-info-masuk rounded-4 p-3 text-center h-100">
-                            <div class="status-info-label">{{ __('Masuk') }}</div>
-                            <div class="status-info-value">{{ $attendanceSummary['masuk'] ?? 0 }}</div>
+                        <div class="status-info-card status-info-masuk text-center">
+                            <div class="small fw-bold opacity-75">{{ __('Masuk') }}</div>
+                            <div class="h5 mb-0 fw-bold">{{ $attendanceSummary['masuk'] ?? 0 }}</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="status-info-card status-info-izin rounded-4 p-3 text-center h-100">
-                            <div class="status-info-label">{{ __('Izin') }}</div>
-                            <div class="status-info-value">{{ $attendanceSummary['izin'] ?? 0 }}</div>
+                        <div class="status-info-card status-info-izin text-center">
+                            <div class="small fw-bold opacity-75">{{ __('Izin') }}</div>
+                            <div class="h5 mb-0 fw-bold">{{ $attendanceSummary['izin'] ?? 0 }}</div>
                         </div>
                     </div>
                     <div class="col-4">
-                        <div class="status-info-card status-info-sakit rounded-4 p-3 text-center h-100">
-                            <div class="status-info-label">{{ __('Sakit') }}</div>
-                            <div class="status-info-value">{{ $attendanceSummary['sakit'] ?? 0 }}</div>
+                        <div class="status-info-card status-info-sakit text-center">
+                            <div class="small fw-bold opacity-75">{{ __('Sakit') }}</div>
+                            <div class="h5 mb-0 fw-bold">{{ $attendanceSummary['sakit'] ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="alert alert-primary rounded-4 border-0 shadow-sm mb-2 small">
-                    <div class="fw-bold mb-1">
-                        <i class="fa-solid fa-business-time me-1"></i>{{ __('Informasi Shift Hari Ini') }}
+                <!-- Shift -->
+                <div class="alert alert-primary rounded-4 border-0 py-3 px-3 d-flex justify-content-between align-items-center mb-4">
+                    <div class="small">
+                        <div class="opacity-75 fw-bold">{{ __('Shift Hari Ini') }}</div>
+                        <b>{{ $shiftInfo['shift_label'] ?? 'Reguler' }}</b>
                     </div>
-                    <div>{{ __('Grup: :group', ['group' => $shiftInfo['group_label'] ?? '-']) }}</div>
-                    <div>{{ __('Status Jadwal: :status', ['status' => $shiftInfo['status_label'] ?? '-']) }}</div>
-                    <div>{{ __('Shift: :shift', ['shift' => $shiftInfo['shift_label'] ?? '-']) }}</div>
-                    <div>{{ __('Jam Shift: :start - :end WIB', ['start' => $shiftInfo['shift_start'] ?? '-', 'end' => $shiftInfo['shift_end'] ?? '-']) }}</div>
+                    <div class="h6 mb-0 fw-bold text-primary">{{ $shiftInfo['shift_start'] ?? '--:--' }} - {{ $shiftInfo['shift_end'] ?? '--:--' }}</div>
                 </div>
-
-                @if(Auth::user()->hasPermission('leave.create') || Auth::user()->hasPermission('leave.view'))
-                <div class="d-grid mb-2 px-1">
-                    <button type="button" class="btn btn-outline-primary rounded-4 fw-semibold py-2" data-bs-toggle="modal" data-bs-target="#attendanceLeaveModal">
-                        <i class="fa-solid fa-plane-departure me-1"></i>{{ __('Request Leave') }}
-                    </button>
-                </div>
-                @endif
 
                 @if($todayAttendance && $todayAttendance->clock_out)
-                    <div class="text-center p-5 rounded-5 shadow-sm border my-4 done-state-card">
-                        <div class="display-1 text-success mb-2 text-gradient">
-                            <i class="fa-solid fa-circle-check"></i>
-                        </div>
-                        <h4 class="fw-bold text-dark">{{ __('Selesai Hari Ini') }}</h4>
-                        <p class="text-muted small">Anda telah melakukan absen pulang pada pukul <b>{{ $todayAttendance->clock_out->format('H:i') }}</b></p>
-                        <div class="badge bg-success-subtle text-success px-3 py-2 rounded-pill mt-2">{{ __('Sampai Jumpa Besok!') }}</div>
+                    <div class="text-center p-4 rounded-4 border bg-white shadow-sm mb-4">
+                        <div class="h1 text-success mb-2"><i class="fa-solid fa-circle-check"></i></div>
+                        <h6 class="fw-bold text-dark">{{ __('Presensi Selesai') }}</h6>
+                        <p class="text-muted small mb-0">{{ __('Sampai jumpa besok!') }}</p>
                     </div>
-
                 @else
-                    @php
-                        $isOut = ($todayAttendance && !$todayAttendance->clock_out);
-                        $formRoute = $isOut ? route('attendance.update', $todayAttendance->id) : route('attendance.store');
-                        $themeColorClass = $isOut ? 'theme-out' : 'theme-in';
-                    @endphp
-
-                    <form action="{{ $formRoute }}" method="POST" enctype="multipart/form-data" id="attendanceForm" class="{{ $themeColorClass }}">
+                    <form action="{{ $formRoute }}" method="POST" enctype="multipart/form-data" id="attendanceForm">
                         @csrf
                         @if($isOut) @method('PUT') @endif
-                        
                         <input type="hidden" name="latitude" id="latitude">
                         <input type="hidden" name="longitude" id="longitude">
                         <input type="hidden" name="device_fingerprint" id="deviceFingerprint">
 
                         @if($isOut)
-                        <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-3 text-center mb-2 small">
-                            <i class="fa-solid fa-clock-rotate-left me-1"></i> {!! __('Jam Masuk: :time', ['time' => '<b>' . $todayAttendance->clock_in->format('H:i') . '</b>']) !!}
+                        <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-2 text-center mb-4 small border border-warning border-opacity-25">
+                            Jam Masuk: <b>{{ $todayAttendance->clock_in->format('H:i') }}</b>
                         </div>
                         @endif
 
-                        <div class="camera-card p-3 rounded-5 shadow-sm mb-2 text-center border position-relative">
-                            <h6 class="text-muted text-center small fw-bold mb-3 text-uppercase text-start ps-2">{{ __('FOTO SELFIE (OPSIONAL)') }}</h6>
-                            <label class="modern-camera-box" id="upload-area">
+                        <div class="text-center mb-4">
+                            <label class="modern-camera-box shadow-sm" id="upload-area">
                                 <div id="upload-placeholder" class="d-flex flex-column align-items-center justify-content-center h-100">
-                                    <div class="icon-camera-bg mb-2">
-                                        <i class="fa-solid fa-camera"></i>
-                                    </div>
-                                    <span class="text-muted small fw-bold">{{ __('Ambil Foto Selfie (Opsional)') }}</span>
+                                    <i class="fa-solid fa-camera fs-2 text-muted mb-1"></i>
+                                    <span class="text-muted x-small fw-bold">{{ __('Selfie (Opsional)') }}</span>
                                 </div>
-                                <img id="image-preview" class="modern-preview-img" src="#" alt="Preview">
-                                <input type="file" name="photo" id="photo" accept="image/*" capture="user" onchange="previewImage(event)">
-                                <div id="photo-upload-note" class="small text-muted mt-2 px-3 text-center"></div>
+                                <img id="image-preview" class="modern-preview-img" src="#">
+                                <input type="file" name="photo" id="photo" accept="image/*" capture="user" class="d-none">
                             </label>
-                        </div>
-
-                        <div class="d-flex flex-column align-items-center justify-content-center my-2 py-2">
-                            <div class="text-center mb-4 pb-2">
-                                <h5 class="fw-bold mb-1 status-label">
-                                    {{ $isOut ? __('PRESENSI PULANG') : __('PRESENSI MASUK') }}
-                                </h5>
-                                <p class="text-muted small px-5" id="instruction-text">
-                                    {{ __('Izinkan lokasi untuk mengaktifkan tombol absen. Foto selfie bersifat opsional.') }}
-                                </p>
-                            </div>
                         </div>
                     </form>
                 @endif
+
+                <!-- History -->
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                        <h6 class="fw-bold mb-0 text-dark text-uppercase small">{{ __('Riwayat') }}</h6>
+                        <span class="badge bg-primary rounded-pill">{{ $monthAttendances->count() }}</span>
+                    </div>
+                    <div class="card history-card p-3">
+                        @forelse($monthAttendances->take(5) as $history)
+                            <div class="history-item d-flex justify-content-between align-items-center">
+                                <div class="small">
+                                    <div class="fw-bold text-dark">{{ $history->clock_in->translatedFormat('d M Y') }}</div>
+                                    <div class="text-muted x-small">{{ $history->clock_in->format('H:i') }} @if($history->clock_out) - {{ $history->clock_out->format('H:i') }} @endif</div>
+                                </div>
+                                <span class="badge badge-status small {{ match($history->status) {'present'=>'bg-success-subtle text-success','late'=>'bg-warning-subtle text-warning','permit','leave'=>'bg-info-subtle text-info','sick'=>'bg-danger-subtle text-danger',default=>'bg-secondary-subtle text-secondary'} }}">
+                                    {{ __($history->status) }}
+                                </span>
+                            </div>
+                        @empty
+                            <div class="text-center py-3 text-muted small">Belum ada riwayat</div>
+                        @endforelse
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-@if(Auth::user()->hasPermission('leave.create'))
-<div class="modal fade" id="attendanceLeaveModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form action="{{ route('leave-requests.store') }}" method="POST">
-            @csrf
-            <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title">{{ __('Request Leave') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body leave-modal-body-surface">
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Type') }}</label>
-                        <select name="category" class="form-select" required>
-                            <option value="cuti">Cuti</option>
-                            <option value="sakit">Izin Sakit</option>
-                            <option value="keluarga">Izin Keperluan Keluarga</option>
-                            <option value="mendadak">Izin Keperluan Mendadak</option>
-                            <option value="lainnya">Izin Lainnya</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Start Date') }}</label>
-                        <input type="date" name="start_date" class="form-control" required min="{{ date('Y-m-d') }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('End Date') }}</label>
-                        <input type="date" name="end_date" class="form-control" required min="{{ date('Y-m-d') }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Reason') }}</label>
-                        <textarea name="reason" class="form-control" rows="3" required></textarea>
-                    </div>
-                    <div class="alert alert-info rounded-4 border-0 mb-0">
-                        {{ __('Maximum :count days allowed per month.', ['count' => $leaveQuota]) }}
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Submit Request') }}</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-@endif
-
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights';
     const faceVerificationEnabled = {{ $faceVerificationEnabled == '1' ? 'true' : 'false' }};
-    const attendancePhotoMaxKb = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_max_kb', 2048)));
-    const attendancePhotoMaxWidth = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_max_width', 1280)));
-    const attendancePhotoCompressQuality = Number(@json((int) \App\Models\Setting::getValue('attendance_photo_compress_quality', 78)));
+    
     const submitBtn = document.getElementById('submitBtn');
     const instructionText = document.getElementById('instruction-text');
     const fingerprintContainer = document.getElementById('fingerprintContainer');
-    const uploadArea = document.getElementById('upload-area');
-    const attendanceForm = document.getElementById('attendanceForm');
-    const deviceFingerprintInput = document.getElementById('deviceFingerprint');
-    const photoUploadNote = document.getElementById('photo-upload-note');
+    const photoInput = document.getElementById('photo');
     const latitudeInput = document.getElementById('latitude');
     const longitudeInput = document.getElementById('longitude');
-    const locationStatusElement = document.getElementById('location-status');
-    const retryLocationBtn = document.getElementById('retryLocationBtn');
-    const openAttendanceMapPickerBtn = document.getElementById('openAttendanceMapPickerBtn');
+    const locationStatus = document.getElementById('location-status');
 
-    const photoInput = document.getElementById('photo');
-
-    function hasValidLocation() {
-        if (!latitudeInput || !longitudeInput) return false;
-        const lat = String(latitudeInput.value || '').trim();
-        const lng = String(longitudeInput.value || '').trim();
-        return lat !== '' && lng !== '';
-    }
-
-    function hasValidPhoto() {
-        return photoInput && photoInput.files && photoInput.files.length > 0;
-    }
-
-    function setLocationStatus(text, mode) {
-        if (!locationStatusElement) return;
-        locationStatusElement.textContent = text;
-        locationStatusElement.className = 'clock-location-status';
-        if (mode === 'detected') {
-            locationStatusElement.classList.add('is-detected');
-        } else if (mode === 'error') {
-            locationStatusElement.classList.add('is-error');
-        } else if (mode === 'loading') {
-            locationStatusElement.classList.add('is-loading');
-        }
-    }
-
-    function setDetectedLocation(lat, lng, metaText) {
-        if (!latitudeInput || !longitudeInput) return;
-        latitudeInput.value = lat;
-        longitudeInput.value = lng;
-        setLocationStatus(metaText || 'Lokasi terdeteksi', 'detected');
-        refreshSubmitState();
-    }
-
-    function refreshSubmitState() {
-        const locationValid = hasValidLocation();
-        const photoValid = hasValidPhoto();
-        
-        setSubmitEnabled(locationValid || photoValid);
-        
-        if (!locationValid && photoValid) {
-            if (instructionText) {
-                instructionText.textContent = "GPS tidak terdeteksi, bukti foto digunakan sebagai pengganti.";
-                instructionText.className = "text-warning small px-5";
-            }
-        } else if (locationValid) {
-            if (instructionText) {
-                instructionText.textContent = "Lokasi terdeteksi. Silakan lanjutkan absensi.";
-                instructionText.className = "text-success small px-5";
-            }
-        }
-    }
-
-    function setSubmitEnabled(enabled) {
-        if (!submitBtn || !fingerprintContainer) return;
-        submitBtn.disabled = !enabled;
-        fingerprintContainer.classList.toggle('fingerprint-ready', enabled);
-    }
-
-    async function buildDeviceFingerprint() {
-        const storageKey = 'mstore_attendance_device_id_v1';
-        const profileKey = [
-            navigator.userAgent || '',
-            navigator.platform || '',
-            navigator.language || '',
-            String(new Date().getTimezoneOffset())
-        ].join('|');
-
-        try {
-            const existing = (localStorage.getItem(storageKey) || '').trim();
-            if (existing.length >= 24) {
-                return existing;
-            }
-        } catch (error) {}
-
-        const randomSeed = `${Date.now()}-${Math.random()}-${Math.random()}`;
-        const payload = `${profileKey}|${randomSeed}`;
-        let generatedId = '';
-
-        if (window.crypto?.subtle && window.TextEncoder) {
-            const buffer = new TextEncoder().encode(payload);
-            const digest = await window.crypto.subtle.digest('SHA-256', buffer);
-            generatedId = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-        } else {
-            let hash = 0;
-            for (let i = 0; i < payload.length; i++) {
-                hash = ((hash << 5) - hash) + payload.charCodeAt(i);
-                hash |= 0;
-            }
-            generatedId = `legacy-${Math.abs(hash)}-${Date.now()}`;
-        }
-
-        try {
-            localStorage.setItem(storageKey, generatedId);
-        } catch (error) {}
-
-        return generatedId;
-    }
-
-    if (attendanceForm && submitBtn) {
-        refreshSubmitState();
-        buildDeviceFingerprint()
-            .then((fingerprint) => {
-                if (deviceFingerprintInput) {
-                    deviceFingerprintInput.value = fingerprint;
-                }
-            })
-            .catch(() => {
-                if (deviceFingerprintInput) {
-                    deviceFingerprintInput.value = '';
-                }
-            });
-
-        attendanceForm.addEventListener('submit', () => {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        });
-    }
-
-    async function loadModels() {
-        if (!faceVerificationEnabled) return;
-        const status = document.getElementById('face-model-status');
-        status.style.display = 'block';
-        try {
-            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-            status.style.display = 'none';
-        } catch (e) { 
-            status.innerHTML = "Gagal memuat sistem deteksi wajah.";
-            status.className = "alert alert-danger";
-        }
-    }
-
-    if (faceVerificationEnabled) loadModels();
-
-    function formatFileSize(bytes) {
-        const size = Number(bytes || 0);
-        if (!Number.isFinite(size) || size <= 0) return '0 KB';
-        if (size < 1024 * 1024) return (size / 1024).toFixed(0) + ' KB';
-        return (size / (1024 * 1024)).toFixed(2) + ' MB';
-    }
-
-    async function replaceInputFile(inputEl, file) {
-        if (!inputEl || !file) return;
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        inputEl.files = dataTransfer.files;
-    }
-
-    async function optimizePhotoFile(file) {
-        if (!file || !String(file.type || '').startsWith('image/')) {
-            return file;
-        }
-
-        const maxKb = Number.isFinite(attendancePhotoMaxKb) && attendancePhotoMaxKb > 0 ? attendancePhotoMaxKb : 2048;
-        const maxWidth = Number.isFinite(attendancePhotoMaxWidth) && attendancePhotoMaxWidth > 0 ? attendancePhotoMaxWidth : 1280;
-        const qualityPercent = Number.isFinite(attendancePhotoCompressQuality) ? attendancePhotoCompressQuality : 78;
-        const quality = Math.min(0.95, Math.max(0.45, qualityPercent / 100));
-
-        const imageUrl = URL.createObjectURL(file);
-        try {
-            const img = new Image();
-            img.src = imageUrl;
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-            });
-
-            let targetWidth = img.naturalWidth || img.width;
-            let targetHeight = img.naturalHeight || img.height;
-            if (targetWidth > maxWidth) {
-                const ratio = maxWidth / targetWidth;
-                targetWidth = Math.round(targetWidth * ratio);
-                targetHeight = Math.round(targetHeight * ratio);
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            const ctx = canvas.getContext('2d', { alpha: false });
-            if (!ctx) {
-                return file;
-            }
-
-            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-            const maxBytes = maxKb * 1024;
-            const blobCandidates = await Promise.all([
-                new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/webp', quality)),
-                new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)),
-            ]);
-
-            const candidates = blobCandidates
-                .filter((blob) => blob && blob.size > 0)
-                .filter((blob) => blob.size <= maxBytes)
-                .sort((a, b) => a.size - b.size);
-
-            if (candidates.length === 0) {
-                return file;
-            }
-
-            const bestBlob = candidates[0];
-            if (bestBlob.size >= file.size) {
-                return file;
-            }
-
-            const mime = String(bestBlob.type || 'image/jpeg').toLowerCase();
-            const extension = mime.includes('webp') ? 'webp' : 'jpg';
-            const originalName = String(file.name || 'attendance-photo');
-            const normalizedName = originalName.replace(/\.[a-zA-Z0-9]+$/, '');
-            return new File([bestBlob], normalizedName + '.' + extension, {
-                type: mime,
-                lastModified: Date.now(),
-            });
-        } catch (error) {
-            return file;
-        } finally {
-            URL.revokeObjectURL(imageUrl);
-        }
-    }
-
-    async function previewImage(event) {
-        const inputEl = event.target;
-        const file = inputEl.files[0];
-        if (!file) {
-            refreshSubmitState();
-            return;
-        }
-
-        setSubmitEnabled(false);
-        if (photoUploadNote) {
-            photoUploadNote.textContent = 'Mengoptimalkan foto...';
-        }
-
-        const optimizedFile = await optimizePhotoFile(file);
-        if (optimizedFile !== file) {
-            await replaceInputFile(inputEl, optimizedFile);
-        }
-
-        const preview = document.getElementById('image-preview');
-        preview.src = URL.createObjectURL(optimizedFile);
-        uploadArea.classList.add('has-image');
-        if (photoUploadNote) {
-            photoUploadNote.textContent = 'Ukuran upload: '
-                + formatFileSize(optimizedFile.size)
-                + ' (asli: ' + formatFileSize(file.size) + ')'
-                + ' | format: ' + (String(optimizedFile.type || file.type || '').replace('image/', '').toUpperCase() || 'IMAGE');
-        }
-
-        if (!faceVerificationEnabled) {
-            refreshSubmitState();
-            return;
-        }
-
-        Swal.fire({ 
-            title: 'Memverifikasi Wajah...', 
-            html: 'Mohon tunggu sebentar',
-            allowOutsideClick: false, 
-            didOpen: () => Swal.showLoading() 
-        });
-
-        try {
-            const img = await faceapi.bufferToImage(optimizedFile);
-            const detection = await faceapi.detectSingleFace(img);
-            
-            if (!detection) {
-                Swal.fire('Gagal', 'Wajah tidak terdeteksi jelas. Pastikan pencahayaan cukup.', 'error');
-                resetCamera();
-            } else {
-                Swal.close();
-                refreshSubmitState();
-                instructionText.textContent = "Lokasi terdeteksi. Selfie berhasil diverifikasi (opsional).";
-                instructionText.className = "text-success small px-5";
-            }
-        } catch (err) {
-            Swal.fire('Error', 'Gagal memproses gambar.', 'error');
-            resetCamera();
-        }
-    }
-
-    function resetCamera() {
-        document.getElementById('photo').value = '';
-        document.getElementById('image-preview').style.display = 'none';
-        uploadArea.classList.remove('has-image');
-        if (photoUploadNote) {
-            photoUploadNote.textContent = '';
-        }
-        refreshSubmitState();
-    }
-
+    // Realtime Clock
     setInterval(() => {
         document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID', { hour12: false });
     }, 1000);
 
-    const getMostAccuratePosition = (config = {}) => new Promise((resolve, reject) => {
+    // Refresh Tombol & Efek Ring
+    function refreshSubmitState() {
+        const hasLat = latitudeInput.value !== '';
+        
+        // Aktifkan tombol jika lokasi sudah terisi
+        if (hasLat) {
+            submitBtn.disabled = false;
+            fingerprintContainer.classList.add('fingerprint-ready');
+            instructionText.innerHTML = '<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Lokasi Siap. Silakan tekan tombol.</span>';
+        } else {
+            submitBtn.disabled = true;
+            fingerprintContainer.classList.remove('fingerprint-ready');
+        }
+    }
+
+    // Geolocation
+    async function getPosition() {
         if (!navigator.geolocation) {
-            reject(new Error('Geolokasi tidak didukung'));
+            locationStatus.textContent = "GPS tidak didukung";
+            locationStatus.className = "clock-location-status is-error";
             return;
         }
-        const targetAccuracy = Number(config.targetAccuracy || 35);
-        const finalizeMs = Number(config.finalizeMs || 12000);
-        let bestPosition = null;
-        let lastError = null;
-        let settled = false;
-        let watchId = null;
-        let timerId = null;
-        const options = {
-            enableHighAccuracy: config.enableHighAccuracy !== false,
-            timeout: Number(config.timeout || 18000),
-            maximumAge: Number(config.maximumAge || 0),
-        };
 
-        const finalize = () => {
-            if (settled) return;
-            settled = true;
-            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-            if (timerId) clearTimeout(timerId);
-            if (bestPosition) resolve(bestPosition);
-            else reject(lastError || new Error('Lokasi gagal dideteksi'));
-        };
+        locationStatus.textContent = "Mencari lokasi...";
+        locationStatus.className = "clock-location-status is-loading";
 
-        const considerPosition = (position) => {
-            const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-            const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-            if (!bestPosition || accuracy < bestAccuracy) {
-                bestPosition = position;
-            }
-            if (accuracy <= targetAccuracy) finalize();
-        };
-
-        watchId = navigator.geolocation.watchPosition(
-            (position) => considerPosition(position),
-            (error) => { lastError = error; },
-            options
-        );
         navigator.geolocation.getCurrentPosition(
-            (position) => considerPosition(position),
-            (error) => { lastError = error; },
-            options
+            (pos) => {
+                latitudeInput.value = pos.coords.latitude;
+                longitudeInput.value = pos.coords.longitude;
+                locationStatus.textContent = `Terdeteksi (±${Math.round(pos.coords.accuracy)}m)`;
+                locationStatus.className = "clock-location-status is-detected";
+                refreshSubmitState();
+            },
+            (err) => {
+                locationStatus.textContent = "Gagal memuat lokasi";
+                locationStatus.className = "clock-location-status is-error";
+                instructionText.textContent = "Harap izinkan akses lokasi di browser Anda.";
+            },
+            { enableHighAccuracy: true, timeout: 15000 }
         );
-        timerId = setTimeout(finalize, finalizeMs);
-    });
+    }
 
-    async function requestAttendanceLocation() {
-        if (!('geolocation' in navigator)) {
-            setLocationStatus('Geolokasi tidak didukung', 'error');
-            refreshSubmitState();
-            return;
-        }
+    // Handle Photo Change
+    photoInput?.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        setLocationStatus('Mencari lokasi akurat...', 'loading');
-        try {
-            const accuratePosition = await getMostAccuratePosition({
-                enableHighAccuracy: true,
-                timeout: 18000,
-                maximumAge: 0,
-                finalizeMs: 12000,
-                targetAccuracy: 35,
-            });
-            const acc = Number(accuratePosition.coords.accuracy || 0);
-            const statusText = acc > 0
-                ? `Lokasi Terdeteksi (±${Math.round(acc)}m)`
-                : 'Lokasi Terdeteksi';
-            setDetectedLocation(accuratePosition.coords.latitude, accuratePosition.coords.longitude, statusText);
-            return;
-        } catch (error) {}
+        // Preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const preview = document.getElementById('image-preview');
+            preview.src = event.target.result;
+            document.getElementById('upload-area').classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
 
-        setLocationStatus('GPS lambat, mencoba mode kompatibel...', 'loading');
-        try {
-            const fallbackPosition = await getMostAccuratePosition({
-                enableHighAccuracy: false,
-                timeout: 14000,
-                maximumAge: 60000,
-                finalizeMs: 10000,
-                targetAccuracy: 200,
-            });
-            const acc = Number(fallbackPosition.coords.accuracy || 0);
-            const statusText = acc > 0
-                ? `Lokasi Terdeteksi Mode Kompatibel (±${Math.round(acc)}m)`
-                : 'Lokasi Terdeteksi Mode Kompatibel';
-            setDetectedLocation(fallbackPosition.coords.latitude, fallbackPosition.coords.longitude, statusText);
-        } catch (error) {
-            setLocationStatus('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.', 'error');
-            if (instructionText && !hasValidPhoto()) {
-                instructionText.textContent = "GPS gagal. Silakan upload/ambil foto agar tombol aktif.";
-                instructionText.className = "text-danger small px-5";
+        // Face Verification
+        if (faceVerificationEnabled) {
+            Swal.fire({ title: 'Memeriksa Wajah...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const img = await faceapi.bufferToImage(file);
+                const detection = await faceapi.detectSingleFace(img);
+                Swal.close();
+                if (!detection) {
+                    Swal.fire('Wajah Tidak Jelas', 'Pastikan wajah terlihat jelas tanpa penghalang.', 'error');
+                    photoInput.value = '';
+                    document.getElementById('upload-area').classList.remove('has-image');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Gagal memuat sistem deteksi wajah.', 'error');
             }
-            refreshSubmitState();
-        }
-    }
-
-    if (retryLocationBtn) {
-        retryLocationBtn.addEventListener('click', requestAttendanceLocation);
-    }
-
-    if (openAttendanceMapPickerBtn) {
-        openAttendanceMapPickerBtn.addEventListener('click', function () {
-            const pickerUrl = `${window.location.origin}/map?picker=1`;
-            window.open(pickerUrl, 'mstoreMapPicker', 'width=1100,height=750');
-        });
-    }
-
-    window.addEventListener('message', function (event) {
-        if (event.origin !== window.location.origin) return;
-        const payload = event.data || {};
-        if (payload.type !== 'mstore-map-picked') return;
-        const lat = Number(payload.lat);
-        const lng = Number(payload.lng);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            setDetectedLocation(lat, lng, 'Lokasi Dipilih dari Peta');
         }
     });
 
-    if (attendanceForm) {
-        requestAttendanceLocation();
-    }
+    // Device ID
+    document.getElementById('deviceFingerprint').value = btoa(navigator.userAgent).substring(0, 24);
+
+    // Initial Load
+    window.onload = () => {
+        getPosition();
+        if (faceVerificationEnabled) {
+            faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        }
+    };
+
+    document.getElementById('retryLocationBtn').addEventListener('click', getPosition);
+    
+    document.getElementById('attendanceForm')?.addEventListener('submit', () => {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    });
 </script>
-
-<div class="modal fade" id="attendanceHelpModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title">
-                    <i class="fa-solid fa-circle-question me-2 text-primary"></i>{{ __('Panduan Absensi') }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-primary rounded-4 border-0 mb-2">
-                    <div class="fw-bold mb-2">
-                        <i class="fa-solid fa-info-circle me-1"></i>{{ __('Cara Menggunakan Absensi') }}
-                    </div>
-                    <p class="mb-0 small">{{ __('Ikuti langkah-langkah berikut untuk melakukan absensi masuk atau pulang.') }}</p>
-                </div>
-
-                <div class="accordion" id="attendanceHelpAccordion">
-                    <div class="accordion-item border-0 mb-2 rounded-4">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep1">
-                                <span class="badge bg-primary rounded-circle me-2">1</span>
-                                {{ __('Deteksi Lokasi GPS') }}
-                            </button>
-                        </h2>
-                        <div id="helpStep1" class="accordion-collapse collapse show" data-bs-parent="#attendanceHelpAccordion">
-                            <div class="accordion-body">
-                                <ul class="mb-0 small">
-                                    <li>{{ __('Sistem akan otomatis mendeteksi lokasi GPS Anda.') }}</li>
-                                    <li>{{ __('Tunggu hingga status berubah menjadi "Lokasi Terdeteksi (±Xm)".') }}</li>
-                                    <li>{{ __('Jika GPS berhasil terdeteksi, tombol absen akan aktif.') }}</li>
-                                </ul>
-                                <div class="alert alert-warning rounded-3 border-0 py-2 mt-2 mb-0 small">
-                                    <i class="fa-solid fa-lightbulb me-1"></i>
-                                    <strong>{{ __('Tips:') }}</strong> {{ __('Jika GPS tidak terdeteksi, Anda tetap bisa absen dengan mengambil foto bukti.') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item border-0 mb-2 rounded-4">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep2">
-                                <span class="badge bg-primary rounded-circle me-2">2</span>
-                                {{ __('Ambil Foto Bukti (Jika GPS Gagal)') }}
-                            </button>
-                        </h2>
-                        <div id="helpStep2" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
-                            <div class="accordion-body">
-                                <ul class="mb-0 small">
-                                    <li>{{ __('Klik area "Ambil Foto Selfie" atau "Upload Foto".') }}</li>
-                                    <li>{{ __('Izinkan akses kamera jika diminta browser.') }}</li>
-                                    <li>{{ __('Ambil foto selfie atau foto bukti kehadiran.') }}</li>
-                                    <li>{{ __('Foto akan otomatis dioptimasi ukurannya.') }}</li>
-                                </ul>
-                                <div class="alert alert-danger rounded-3 border-0 py-2 mt-2 mb-0 small">
-                                    <i class="fa-solid fa-exclamation-triangle me-1"></i>
-                                    <strong>{{ __('Penting:') }}</strong> {{ __('Jika GPS tidak terdeteksi, foto WAJIB diambil sebagai bukti kehadiran.') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item border-0 mb-2 rounded-4">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep3">
-                                <span class="badge bg-primary rounded-circle me-2">3</span>
-                                {{ __('Kirim Absensi') }}
-                            </button>
-                        </h2>
-                        <div id="helpStep3" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
-                            <div class="accordion-body">
-                                <ul class="mb-0 small">
-                                    <li>{{ __('Pastikan tombol fingerprint sudah aktif (tidak abu-abu).') }}</li>
-                                    <li>{{ __('Klik tombol fingerprint untuk mengirim absensi.') }}</li>
-                                    <li>{{ __('Tunggu konfirmasi "Berhasil" dari sistem.') }}</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item border-0 mb-2 rounded-4">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep4">
-                                <span class="badge bg-primary rounded-circle me-2">4</span>
-                                {{ __('Solusi Jika GPS Tidak Terdeteksi') }}
-                            </button>
-                        </h2>
-                        <div id="helpStep4" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
-                            <div class="accordion-body">
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <div class="p-2 rounded-3 border small">
-                                            <strong><i class="fa-solid fa-camera me-1"></i> {{ __('Pakai Foto') }}</strong>
-                                            <p class="mb-0 text-muted small">{{ __('Ambil foto sebagai pengganti GPS.') }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="p-2 rounded-3 border small">
-                                            <strong><i class="fa-solid fa-rotate-right me-1"></i> {{ __('Coba Lagi') }}</strong>
-                                            <p class="mb-0 text-muted small">{{ __('Klik tombol "Coba Lagi" untuk deteksi ulang.') }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="p-2 rounded-3 border small">
-                                            <strong><i class="fa-solid fa-map me-1"></i> {{ __('Pilih di Peta') }}</strong>
-                                            <p class="mb-0 text-muted small">{{ __('Pilih lokasi manual pada denah.') }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="p-2 rounded-3 border small">
-                                            <strong><i class="fa-solid fa-wifi me-1"></i> {{ __('Mode Kompatibel') }}</strong>
-                                            <p class="mb-0 text-muted small">{{ __('Sistem otomatis coba mode alternatif.') }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item border-0 rounded-4">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed rounded-4" type="button" data-bs-toggle="collapse" data-bs-target="#helpStep5">
-                                <span class="badge bg-primary rounded-circle me-2">5</span>
-                                {{ __('Request Leave / Izin') }}
-                            </button>
-                        </h2>
-                        <div id="helpStep5" class="accordion-collapse collapse" data-bs-parent="#attendanceHelpAccordion">
-                            <div class="accordion-body">
-                                <ul class="mb-0 small">
-                                    <li>{{ __('Klik tombol "Request Leave" di halaman absensi.') }}</li>
-                                    <li>{{ __('Pilih jenis izin (Cuti, Sakit, Keluarga, dll).') }}</li>
-                                    <li>{{ __('Tentukan tanggal mulai dan akhir izin.') }}</li>
-                                    <li>{{ __('Berikan alasan izin.') }}</li>
-                                    <li>{{ __('Tunggu persetujuan dari Admin.') }}</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="alert alert-secondary rounded-4 border-0 mt-4 mb-0">
-                    <div class="small">
-                        <strong><i class="fa-solid fa-clock me-1"></i>{{ __('Waktu Absensi:') }}</strong>
-                        <div class="mt-2">
-                            <div><strong>{{ __('Clock In:') }}</strong> {{ $attendanceSettings['clock_in_start'] ?? '07:00' }} - {{ $attendanceSettings['clock_in_end'] ?? '09:00' }} WIB</div>
-                            <div><strong>{{ __('Clock Out:') }}</strong> {{ $attendanceSettings['clock_out_start'] ?? '20:00' }} - {{ $attendanceSettings['clock_out_end'] ?? '01:00' }} WIB</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-primary rounded-4" data-bs-dismiss="modal">{{ __('Mengerti') }}</button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection

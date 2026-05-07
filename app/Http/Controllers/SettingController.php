@@ -899,6 +899,27 @@ class SettingController extends Controller implements HasMiddleware
                 'type' => 'number',
                 'label' => 'Kualitas Kompresi Foto Absensi (%)',
             ],
+            [
+                'key' => 'attendance_office_lat',
+                'value' => '',
+                'group' => 'attendance',
+                'type' => 'text',
+                'label' => 'Office Latitude',
+            ],
+            [
+                'key' => 'attendance_office_lng',
+                'value' => '',
+                'group' => 'attendance',
+                'type' => 'text',
+                'label' => 'Office Longitude',
+            ],
+            [
+                'key' => 'attendance_radius',
+                'value' => '100',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Attendance Radius (meters)',
+            ],
         ];
 
         foreach ($defaults as $setting) {

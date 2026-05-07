@@ -82,6 +82,9 @@ class ProfileController extends Controller implements HasMiddleware
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'avatar_base64' => ['nullable', 'string'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
         ];
 
         // Only apply image validation if NO base64 provided AND a file IS uploaded

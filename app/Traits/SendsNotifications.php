@@ -13,20 +13,27 @@ trait SendsNotifications
      *
      * @param string $message
      * @param string $category 'ticket' or 'attendance'
-     * @return void
+     * @return bool True if at least one notification was sent successfully
      */
     protected function sendGroupNotification(string $message, string $category = 'ticket')
     {
+        $sent = false;
         try {
-            app(WhatsAppService::class)->sendGroupNotification($message, $category);
+            if (app(WhatsAppService::class)->sendGroupNotification($message, $category)) {
+                $sent = true;
+            }
         } catch (\Exception $e) {
             Log::error("WhatsApp {$category} notification error: " . $e->getMessage());
         }
 
         try {
-            app(TelegramService::class)->sendGroupNotification($message, $category);
+            if (app(TelegramService::class)->sendGroupNotification($message, $category)) {
+                $sent = true;
+            }
         } catch (\Exception $e) {
             Log::error("Telegram {$category} notification error: " . $e->getMessage());
         }
+
+        return $sent;
     }
 }

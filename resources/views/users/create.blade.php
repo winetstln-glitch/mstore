@@ -95,6 +95,29 @@
                                 @enderror
                             </div>
 
+                            <!-- Bank Info -->
+                            <div class="col-md-4">
+                                <label for="bank_name" class="form-label">{{ __('Nama Bank') }}</label>
+                                <input type="text" name="bank_name" id="bank_name" value="{{ old('bank_name') }}" class="form-control @error('bank_name') is-invalid @enderror" placeholder="BCA/Mandiri/BRI">
+                                @error('bank_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label for="bank_account_number" class="form-label">{{ __('Nomor Rekening') }}</label>
+                                <input type="text" name="bank_account_number" id="bank_account_number" value="{{ old('bank_account_number') }}" class="form-control @error('bank_account_number') is-invalid @enderror">
+                                @error('bank_account_number')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label for="bank_account_name" class="form-label">{{ __('Atas Nama') }}</label>
+                                <input type="text" name="bank_account_name" id="bank_account_name" value="{{ old('bank_account_name') }}" class="form-control @error('bank_account_name') is-invalid @enderror">
+                                @error('bank_account_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Status aktif -->
                             <div class="col-12">
                                 <div class="form-check">
