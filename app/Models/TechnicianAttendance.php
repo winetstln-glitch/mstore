@@ -26,25 +26,18 @@ class TechnicianAttendance extends Model
      */
     public function getShiftInfoAttribute()
     {
-        $controller = new \App\Http\Controllers\TechnicianAttendanceController();
-        // We need a way to call the private method or replicate logic.
-        // For simplicity and to match the existing codebase pattern,
-        // we'll use the controller's logic but we need to make it accessible.
-        
-        // Re-implementing a simplified version of resolveTodayShiftInfo for a specific date
         $user = $this->user;
         $date = $this->clock_in;
         
-        $group = 'technician';
-        if ($user->role) {
-            $roleName = strtolower($user->role->name);
-            if (str_contains($roleName, 'wash')) {
-                $group = 'wash';
-            }
+        $group = 'teknisi';
+        $roleName = strtolower((string) ($user->role?->name ?? ''));
+        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+            $group = 'wash';
+        } elseif (\Schema::hasTable('wash_employees') && \App\Models\WashEmployee::where('user_id', $user->id)->exists()) {
+            $group = 'wash';
         }
 
         $status = null;
-        $roleName = strtolower((string) ($user->role?->name ?? ''));
         $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
 
         if (! $isExcludedFromSchedule) {
@@ -66,31 +59,63 @@ class TechnicianAttendance extends Model
             }
         }
 
-        $shift1Start = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_start' : 'schedule_teknisi_shift_1_start', '08:00');
-        $shift1End = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_end' : 'schedule_teknisi_shift_1_end', '17:00');
-        $shift2Start = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_start' : 'schedule_teknisi_shift_2_start', '15:00');
-        $shift2End = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_end' : 'schedule_teknisi_shift_2_end', '00:00');
-        $longStart = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_start' : 'schedule_teknisi_longshift_start', '08:00');
-        $longEnd = \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_end' : 'schedule_teknisi_longshift_end', '20:00');
+        // If no schedule found, or excluded (admin/leader), default to 'piket' (Shift 1)
+        if (! in_array($status, ['piket', 'backup', 'longshift', 'off'], true)) {
+            $status = 'piket';
+        }
 
-        $start = \App\Models\Setting::getValue('attendance_clock_in_start', '07:00');
-        $end = \App\Models\Setting::getValue('attendance_clock_in_end', '13:00');
+        $shiftConfig = [
+            'shift_1_start' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_start' : 'schedule_teknisi_shift_1_start', '08:00'),
+            'shift_1_end' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_end' : 'schedule_teknisi_shift_1_end', '17:00'),
+            'shift_2_start' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_start' : 'schedule_teknisi_shift_2_start', '15:00'),
+            'shift_2_end' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_end' : 'schedule_teknisi_shift_2_end', '00:00'),
+            'longshift_start' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_start' : 'schedule_teknisi_longshift_start', '08:00'),
+            'longshift_end' => \App\Models\Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_end' : 'schedule_teknisi_longshift_end', '20:00'),
+        ];
+
+        $shiftLabel = '-';
+        $shiftStart = '-';
+        $shiftEnd = '-';
 
         if ($status === 'longshift') {
-            $start = $longStart;
-            $end = $longEnd;
+            $shiftLabel = 'Longshift';
+            $shiftStart = $shiftConfig['longshift_start'];
+            $shiftEnd = $shiftConfig['longshift_end'];
         } elseif ($status === 'piket') {
-            $start = $shift1Start;
-            $end = $shift1End;
+            // Check if this day is configured as shift1/shift2/longshift in weekly settings
+            $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
+            $scheduleRaw = (string) \App\Models\Setting::getValue($settingKey, '{}');
+            $schedule = json_decode($scheduleRaw, true);
+            $dayName = $date->englishDayOfWeek;
+            
+            $dayConfig = $schedule[$dayName] ?? null;
+            $isShiftEnabled = !empty($dayConfig['enabled']);
+            $mappedShift = $isShiftEnabled ? ($dayConfig['shift'] ?? 'shift1') : 'shift1';
+
+            if ($mappedShift === 'longshift') {
+                $shiftLabel = 'Longshift';
+                $shiftStart = $shiftConfig['longshift_start'];
+                $shiftEnd = $shiftConfig['longshift_end'];
+            } elseif ($mappedShift === 'shift2') {
+                $shiftLabel = 'Shift 2';
+                $shiftStart = $shiftConfig['shift_2_start'];
+                $shiftEnd = $shiftConfig['shift_2_end'];
+            } else {
+                $shiftLabel = 'Shift 1';
+                $shiftStart = $shiftConfig['shift_1_start'];
+                $shiftEnd = $shiftConfig['shift_1_end'];
+            }
         } elseif ($status === 'backup') {
-            $start = $shift2Start;
-            $end = $shift2End;
+            $shiftLabel = 'Shift 2';
+            $shiftStart = $shiftConfig['shift_2_start'];
+            $shiftEnd = $shiftConfig['shift_2_end'];
         }
 
         return [
-            'start' => $start,
-            'end' => $end,
-            'status' => $status ?? 'default',
+            'start' => $shiftStart,
+            'end' => $shiftEnd,
+            'label' => $shiftLabel,
+            'status' => $status,
         ];
     }
 }
