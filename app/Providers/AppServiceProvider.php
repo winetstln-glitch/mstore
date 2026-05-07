@@ -10,6 +10,7 @@ use App\Observers\CustomerObserver;
 use App\Observers\UserObserver;
 use App\Observers\WashEmployeeObserver;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
