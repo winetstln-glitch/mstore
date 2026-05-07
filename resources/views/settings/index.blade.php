@@ -11,6 +11,18 @@
             </div>
 
             <div class="card-body">
+                <div class="mb-4 pb-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-primary text-uppercase mb-1">
+                            <i class="fa-solid fa-database me-1"></i> Pemeliharaan Sistem
+                        </h6>
+                        <p class="text-muted small mb-0">Cadangkan database Anda secara berkala untuk keamanan data.</p>
+                    </div>
+                    <a href="{{ route('settings.backup') }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-download me-1"></i> Backup Database
+                    </a>
+                </div>
+
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @php

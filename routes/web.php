@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::get('/settings/attendance', [SettingController::class, 'attendance'])->name('settings.attendance.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('/settings/backup', [SettingController::class, 'backupDatabase'])->name('settings.backup');
     Route::get('/settings/atk', [SettingController::class, 'atk'])->name('settings.atk.index');
     Route::post('/settings/atk', [SettingController::class, 'update'])->name('settings.atk.update');
     Route::get('/settings/wash', [SettingController::class, 'wash'])->name('settings.wash.index');

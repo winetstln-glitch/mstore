@@ -272,6 +272,25 @@ class SettingController extends Controller implements HasMiddleware
         return redirect()->back()->with('success', __('Settings updated successfully.'));
     }
 
+    public function backupDatabase()
+    {
+        $connection = config('database.default');
+        $database = config("database.connections.{$connection}.database");
+
+        if ($connection === 'sqlite') {
+            if (! file_exists($database)) {
+                return redirect()->back()->with('error', 'Database file not found.');
+            }
+
+            $filename = 'backup-'.date('Y-m-d-His').'.sqlite';
+
+            return response()->download($database, $filename);
+        }
+
+        // For MySQL, we could try a simple export if needed, but for now let's focus on SQLite
+        return redirect()->back()->with('error', 'Backup for ' . $connection . ' is not supported yet.');
+    }
+
     private function ensureReceiptIdentitySettings(): void
     {
         // Cache this check for 1 hour to prevent constant DB hits
