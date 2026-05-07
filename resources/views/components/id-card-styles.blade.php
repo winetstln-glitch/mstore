@@ -69,6 +69,33 @@
 .brand-mstorenet .side-curve { border-color: #93c5fd; }
 .brand-mstorenet .job-title, .brand-mstorenet .back-contact-label { color: #2563eb; }
 
+.brand-mstore .header-bg, .brand-mstore .back-header-bg { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+.brand-mstore .wave-accent-top { background: #fdba74; }
+.brand-mstore .side-curve { border-color: #fdba74; }
+.brand-mstore .job-title, .brand-mstore .back-contact-label { color: #ea580c; }
+
+/* Watermark Styles (Pro Centered) */
+.id-card-front::before, .id-card-back::before {
+    content: attr(data-watermark);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 10mm;
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.04);
+    white-space: nowrap;
+    z-index: 1;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    width: 200%;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Front Design Elements (Old Design Restore) */
 .header-bg {
     position: absolute;

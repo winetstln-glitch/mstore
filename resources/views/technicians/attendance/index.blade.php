@@ -151,6 +151,7 @@
                                 <th>{{ __('Tanggal') }}</th>
                                 <th>{{ __('Jam Masuk') }}</th>
                                 <th>{{ __('Jam Pulang') }}</th>
+                                <th>{{ __('Lokasi') }}</th>
                                 <th>{{ __('Status') }}</th>
                                 <th class="pe-3">{{ __('Foto') }}</th>
                                 @if(Auth::user()->hasRole('admin'))
@@ -168,22 +169,47 @@
                                     @endif
                                     <td>
                                         <div class="fw-medium">{{ $attendance->user->name }}</div>
-                                        <div class="small text-muted">{{ $attendance->user->email }}</div>
+                                        <div class="mt-1">
+                                            @php
+                                                $shift = $attendance->shift_info;
+                                            @endphp
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle x-small py-1" title="{{ __('Jadwal Shift') }}">
+                                                <i class="fa-solid fa-clock me-1"></i>{{ $shift['start'] }} - {{ $shift['end'] }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="small text-muted">
                                         {{ $attendance->clock_in->translatedFormat('d M Y') }}
                                     </td>
                                     <td class="small">
-                                        <div class="fw-bold">{{ $attendance->clock_in->format('H:i') }}</div>
-                                        <a href="https://maps.google.com/?q={{ $attendance->lat_clock_in }},{{ $attendance->lng_clock_in }}" target="_blank" class="text-decoration-none small">{{ __('Loc') }}</a>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
+                                                <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>{{ $attendance->clock_in->format('H:i') }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="small">
                                         @if($attendance->clock_out)
-                                            <div class="fw-bold">{{ $attendance->clock_out->format('H:i') }}</div>
-                                            <a href="https://maps.google.com/?q={{ $attendance->lat_clock_out }},{{ $attendance->lng_clock_out }}" target="_blank" class="text-decoration-none small">{{ __('Loc') }}</a>
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
+                                                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>{{ $attendance->clock_out->format('H:i') }}
+                                                </span>
+                                            </div>
                                         @else
-                                            <span class="text-warning italic">--:--</span>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-3">--:--</span>
                                         @endif
+                                    </td>
+                                    <td class="small">
+                                        <div class="vstack gap-1">
+                                            <a href="https://maps.google.com/?q={{ $attendance->lat_clock_in }},{{ $attendance->lng_clock_in }}" target="_blank" class="btn btn-outline-primary btn-xs py-0 px-2" style="font-size: 0.7rem;" title="{{ __('Lokasi Masuk') }}">
+                                                <i class="fa-solid fa-location-dot me-1"></i>{{ __('Masuk') }}
+                                            </a>
+                                            @if($attendance->clock_out)
+                                                <a href="https://maps.google.com/?q={{ $attendance->lat_clock_out }},{{ $attendance->lng_clock_out }}" target="_blank" class="btn btn-outline-info btn-xs py-0 px-2" style="font-size: 0.7rem;" title="{{ __('Lokasi Pulang') }}">
+                                                    <i class="fa-solid fa-location-dot me-1"></i>{{ __('Pulang') }}
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>
                                         @php

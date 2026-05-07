@@ -1157,7 +1157,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function timeToMinutes(string $time, int $default): int
     {
-        if (! preg_match('/^\s*(\d{1,2}):(\d{2})\s*$/', $time, $matches)) {
+        // Remove everything except digits and colon
+        $time = preg_replace('/[^0-9:]/', '', $time);
+        
+        if (! preg_match('/^(\d{1,2}):(\d{2})$/', $time, $matches)) {
             return $default;
         }
 

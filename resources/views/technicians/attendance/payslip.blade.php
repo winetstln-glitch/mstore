@@ -8,7 +8,6 @@
         <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mb-4 print-none">
             <div>
                 <h5 class="fw-bold text-dark mb-0">Manajemen Slip Gaji</h5>
-                <p class="text-muted x-small mb-0">Mode Optimasi: 4-6 Slip per Halaman (A4)</p>
             </div>
             <div class="d-flex gap-2">
                 <a href="{{ route('attendance.index') }}" class="btn btn-sm btn-light border">
@@ -26,21 +25,44 @@
             @php
                 $period = request('month') ? \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y') : now()->translatedFormat('F Y');
                 $waLink = "https://wa.me/" . preg_replace('/[^0-9]/', '', $data['user']->phone);
+                
+                // Brand Resolution (similar to ID Card logic)
+                $roleLabel = strtolower(trim((string) ($data['user']->role?->label ?: $data['user']->role?->name ?: '')));
+                $defaultLogo = (string) (\App\Models\Setting::getValue('store_logo') ?: '');
+                
+                if (str_contains($roleLabel, 'wash')) {
+                    $brandName = (string) (\App\Models\Setting::getValue('brand_gtwash_name') ?: 'GTWASH');
+                    $logo = (string) (\App\Models\Setting::getValue('brand_gtwash_logo') ?: $defaultLogo);
+                    $brandKey = 'gtwash';
+                    $accentColor = '#16a34a'; // Green
+                } elseif (str_contains($roleLabel, 'net') || str_contains($roleLabel, 'network') || str_contains($roleLabel, 'internet')) {
+                    $brandName = (string) (\App\Models\Setting::getValue('brand_mstorenet_name') ?: 'MSTORE.NET');
+                    $logo = (string) (\App\Models\Setting::getValue('brand_mstorenet_logo') ?: $defaultLogo);
+                    $brandKey = 'mstorenet';
+                    $accentColor = '#2563eb'; // Blue
+                } else {
+                    $brandName = (string) (\App\Models\Setting::getValue('brand_mstore_name') ?: \App\Models\Setting::getValue('store_name') ?: 'MSTORE');
+                    $logo = (string) (\App\Models\Setting::getValue('brand_mstore_logo') ?: $defaultLogo);
+                    $brandKey = 'mstore';
+                    $accentColor = '#ea580c'; // Orange
+                }
+                
+                $logoUrl = $logo ? (str_starts_with($logo, 'http') ? $logo : asset($logo)) : asset('img/logo.png');
             @endphp
             
             <div class="col-md-6 print-col">
-                <div id="payslip-{{ $data['user']->id }}" class="payslip-card bg-white position-relative">
+                <div id="payslip-{{ $data['user']->id }}" class="payslip-card bg-white position-relative brand-{{ $brandKey }}" data-watermark="{{ $brandName }}">
                     
                     <!-- Watermark -->
-                    <div class="watermark">{{ config('app.name') }}</div>
+                    <div class="watermark-centered">{{ $brandName }}</div>
 
                     <!-- Header -->
-                    <div class="p-3 border-bottom border-3 border-primary bg-light-subtle position-relative overflow-hidden">
+                    <div class="p-3 border-bottom border-3 bg-light-subtle position-relative overflow-hidden" style="border-color: {{ $accentColor }} !important;">
                         <div class="d-flex justify-content-between align-items-center position-relative z-1">
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="img-fluid" style="height: 40px; width: auto;">
+                                <img src="{{ $logoUrl }}" alt="Logo" class="img-fluid" style="height: 40px; width: auto;">
                                 <div>
-                                    <h5 class="fw-bold text-dark mb-0 tracking-tight" style="font-size: 1.1rem; line-height: 1;">{{ config('app.name', 'MSTORE') }}</h5>
+                                    <h5 class="fw-bold text-dark mb-0 tracking-tight" style="font-size: 1.1rem; line-height: 1;">{{ $brandName }}</h5>
                                     <p class="text-muted x-small fw-bold mb-0 mt-1" style="text-transform: uppercase; letter-spacing: 0.5px;">Slip Gaji Digital</p>
                                 </div>
                             </div>
@@ -304,11 +326,35 @@
     .payslip-container { background-color: #f8fafc; min-height: 100vh; }
     
     .payslip-card {
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        border: 1px solid #dee2e6;
+        border-radius: 1.25rem;
+        border: 1px solid #e2e8f0;
         overflow: hidden;
-        background-color: white !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .watermark-centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: rgba(0, 0, 0, 0.04);
+        white-space: nowrap;
+        z-index: 0;
+        pointer-events: none;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        width: 150%;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .watermark {
+        display: none; /* Hide old watermark */
     }
 
     @media print {

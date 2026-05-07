@@ -35,7 +35,7 @@
 @endphp
 
 <!-- FRONT SIDE (Old Design Restore) -->
-<div class="id-card-item brand-{{ $brandKey }} id-card-front" id="id-card-front">
+<div class="id-card-item brand-{{ $brandKey }} id-card-front" id="id-card-front" data-watermark="{{ $brandName }}">
     <div class="wave-accent-top"></div>
     <div class="header-bg"></div>
     <div class="wave-accent-bottom"></div>
@@ -82,7 +82,7 @@
 </div>
 
 <!-- BACK SIDE (Old Design Restore) -->
-<div class="id-card-item id-card-back brand-{{ $brandKey }} id-card-back" id="id-card-back">
+<div class="id-card-item id-card-back brand-{{ $brandKey }} id-card-back" id="id-card-back" data-watermark="{{ $brandName }}">
     <div class="back-header-bg"></div>
     <div class="back-accent-circle"></div>
     <div class="back-accent-line"></div>

@@ -41,12 +41,11 @@ class LoginController extends Controller
 
         if ($isEmailInput) {
             $legacyEmailUser = User::query()
-                ->whereNull('username')
                 ->whereRaw('LOWER(email) = ?', [Str::lower($login)])
                 ->first();
 
             if (! $legacyEmailUser) {
-                throw ValidationException::withMessages(['login' => 'Login gunakan username. Email hanya alternatif untuk akun lama yang belum punya username.']);
+                throw ValidationException::withMessages(['login' => 'Email tidak ditemukan.']);
             }
         }
 
