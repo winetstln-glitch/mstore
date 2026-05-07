@@ -9,6 +9,7 @@
     /* Custom Styling for Modern UI */
     :root {
         --primary-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        --danger-gradient: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
         --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
         /* Default Light Colors */
         --att-bg: #f8f9fa;
@@ -121,6 +122,15 @@
         cursor: pointer;
     }
 
+    .fingerprint-ready.is-out .fingerprint-main-btn {
+        background: var(--danger-gradient);
+        box-shadow: 0 0 25px rgba(231, 74, 59, 0.5);
+    }
+    
+    .is-out .fingerprint-ring {
+        border-color: #e74a3b;
+    }
+
     .fingerprint-main-btn::after {
         content: '';
         position: absolute;
@@ -228,7 +238,7 @@
 
                 <div class="d-flex flex-column align-items-center justify-content-center">
                     @if(!($todayAttendance && $todayAttendance->clock_out))
-                        <div class="fingerprint-container" id="fingerprintContainer">
+                        <div class="fingerprint-container {{ $isOut ? 'is-out' : '' }}" id="fingerprintContainer">
                             <div class="fingerprint-ring ring-1"></div>
                             <div class="fingerprint-ring ring-2"></div>
                             <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
@@ -291,10 +301,13 @@
                 <!-- Shift -->
                 <div class="alert alert-primary rounded-4 border-0 py-3 px-3 d-flex justify-content-between align-items-center mb-4">
                     <div class="small">
-                        <div class="opacity-75 fw-bold">{{ __('Shift Hari Ini') }}</div>
-                        <b>{{ $shiftInfo['shift_label'] ?? 'Reguler' }}</b>
+                        <div class="opacity-75 fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">{{ __('Jadwal Shift Hari Ini') }}</div>
+                        <b class="fs-6">{{ $shiftInfo['shift_label'] ?? 'Reguler' }}</b>
                     </div>
-                    <div class="h6 mb-0 fw-bold text-primary">{{ $shiftInfo['shift_start'] ?? '--:--' }} - {{ $shiftInfo['shift_end'] ?? '--:--' }}</div>
+                    <div class="text-end">
+                        <div class="h5 mb-0 fw-bold text-primary">{{ $shiftInfo['shift_start'] ?? '--:--' }} - {{ $shiftInfo['shift_end'] ?? '--:--' }}</div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle xx-small px-2" style="font-size: 0.6rem;">WIB</span>
+                    </div>
                 </div>
 
                 @if(!($todayAttendance && $todayAttendance->clock_out))
@@ -329,7 +342,7 @@
                             <div class="history-item d-flex justify-content-between align-items-center">
                                 <div class="small">
                                     <div class="fw-bold text-dark">{{ $history->clock_in->translatedFormat('d M Y') }}</div>
-                                    <div class="text-muted x-small">{{ $history->clock_in->format('H:i') }} @if($history->clock_out) - {{ $history->clock_out->format('H:i') }} @endif</div>
+                                    <div class="text-muted x-small">Hadir: {{ $history->clock_in->format('H:i') }} @if($history->clock_out) - {{ $history->clock_out->format('H:i') }} @endif</div>
                                 </div>
                                 <span class="badge badge-status small {{ match($history->status) {'present'=>'bg-success-subtle text-success','late'=>'bg-warning-subtle text-warning','permit','leave'=>'bg-info-subtle text-info','sick'=>'bg-danger-subtle text-danger',default=>'bg-secondary-subtle text-secondary'} }}">
                                     {{ __($history->status) }}

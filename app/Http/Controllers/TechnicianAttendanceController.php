@@ -1211,7 +1211,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         if (! in_array($status, [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT, TechnicianSchedule::STATUS_OFF], true)) {
-            $status = TechnicianSchedule::STATUS_OFF;
+            $status = TechnicianSchedule::STATUS_PIKET; // Default to Piket for admin/excluded
             $source = 'default';
         }
 
@@ -1225,10 +1225,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $shiftStart = (string) $shiftConfig['longshift_start'];
             $shiftEnd = (string) $shiftConfig['longshift_end'];
         } elseif ($status === TechnicianSchedule::STATUS_PIKET) {
-            $useLongshift = $this->isTodayLongshift($group);
-            $shiftLabel = $useLongshift ? 'Longshift' : 'Shift 1';
-            $shiftStart = (string) ($useLongshift ? $shiftConfig['longshift_start'] : $shiftConfig['shift_1_start']);
-            $shiftEnd = (string) ($useLongshift ? $shiftConfig['longshift_end'] : $shiftConfig['shift_1_end']);
+            // Perbaikan: Mapping shift1/shift2/longshift dari pengaturan mingguan
+            $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
+            $scheduleRaw = (string) Setting::getValue($settingKey, '{}');
+            $schedule = json_decode($scheduleRaw, true);
+            $dayName = $today->englishDayOfWeek;
+            
+            $dayConfig = $schedule[$dayName] ?? null;
+            $isShiftEnabled = !empty($dayConfig['enabled']);
+            $mappedShift = $isShiftEnabled ? ($dayConfig['shift'] ?? 'shift1') : 'shift1';
+
+            if ($mappedShift === 'longshift') {
+                $shiftLabel = 'Longshift';
+                $shiftStart = (string) $shiftConfig['longshift_start'];
+                $shiftEnd = (string) $shiftConfig['longshift_end'];
+            } elseif ($mappedShift === 'shift2') {
+                $shiftLabel = 'Shift 2';
+                $shiftStart = (string) $shiftConfig['shift_2_start'];
+                $shiftEnd = (string) $shiftConfig['shift_2_end'];
+            } else {
+                $shiftLabel = 'Shift 1';
+                $shiftStart = (string) $shiftConfig['shift_1_start'];
+                $shiftEnd = (string) $shiftConfig['shift_1_end'];
+            }
         } elseif ($status === TechnicianSchedule::STATUS_BACKUP) {
             $shiftLabel = 'Shift 2';
             $shiftStart = (string) $shiftConfig['shift_2_start'];
