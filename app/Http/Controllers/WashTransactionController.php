@@ -334,8 +334,11 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             // Generate Queue Number (Reset daily)
-            $today = now()->format('Y-m-d');
-            $lastQueue = WashTransaction::whereDate('created_at', $today)->max('queue_number');
+            $today = today();
+            $tomorrow = today()->addDay();
+            $lastQueue = WashTransaction::where('created_at', '>=', $today)
+                ->where('created_at', '<', $tomorrow)
+                ->max('queue_number');
             $queueNumber = ($lastQueue ?? 0) + 1;
 
             $transaction = WashTransaction::create([

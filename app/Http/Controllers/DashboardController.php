@@ -174,12 +174,17 @@ class DashboardController extends Controller
                 $q->where('name', 'karyawan-wash');
             })
             ->pluck('id');
-        $technicianPresentToday = TechnicianAttendance::whereDate('clock_in', today())
+        $today = today();
+        $tomorrow = today()->addDay();
+
+        $technicianPresentToday = TechnicianAttendance::where('clock_in', '>=', $today)
+            ->where('clock_in', '<', $tomorrow)
             ->whereIn('status', ['present', 'late'])
             ->whereIn('user_id', $technicianIds)
             ->distinct('user_id')
             ->count('user_id');
-        $washEmployeePresentToday = TechnicianAttendance::whereDate('clock_in', today())
+        $washEmployeePresentToday = TechnicianAttendance::where('clock_in', '>=', $today)
+            ->where('clock_in', '<', $tomorrow)
             ->whereIn('status', ['present', 'late'])
             ->whereIn('user_id', $washEmployeeIds)
             ->distinct('user_id')
@@ -195,14 +200,18 @@ class DashboardController extends Controller
         }
         $attendanceDateInput = (string) $request->query('attendance_date', now()->toDateString());
         try {
-            $attendanceDate = Carbon::createFromFormat('Y-m-d', $attendanceDateInput)->toDateString();
+            $attendanceDateObj = Carbon::createFromFormat('Y-m-d', $attendanceDateInput);
+            $attendanceDateStart = $attendanceDateObj->copy()->startOfDay();
+            $attendanceDateEnd = $attendanceDateObj->copy()->endOfDay();
         } catch (\Throwable $e) {
-            $attendanceDate = now()->toDateString();
+            $attendanceDateStart = now()->startOfDay();
+            $attendanceDateEnd = now()->endOfDay();
         }
-        $attendanceDateLabel = Carbon::parse($attendanceDate)->translatedFormat('d M Y');
+        $attendanceDateLabel = $attendanceDateStart->translatedFormat('d M Y');
         $selectedRoleIds = $attendanceRole === 'karyawan-wash' ? $washEmployeeIds : $technicianIds;
         $attendanceByUser = TechnicianAttendance::query()
-            ->whereDate('clock_in', $attendanceDate)
+            ->where('clock_in', '>=', $attendanceDateStart)
+            ->where('clock_in', '<=', $attendanceDateEnd)
             ->whereIn('user_id', $selectedRoleIds)
             ->orderByDesc('clock_in')
             ->get()
@@ -289,11 +298,11 @@ class DashboardController extends Controller
             'total_customers' => $customerQuery->count(),
             'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', $currentMonthStart)->count(),
             'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
-            'tickets_today' => $ticketQuery->clone()->whereDate('created_at', today())->count(),
+            'tickets_today' => $ticketQuery->clone()->where('created_at', '>=', $today)->count(),
             'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
-            'atk_today' => AtkTransaction::whereDate('created_at', today())->count(),
+            'atk_today' => AtkTransaction::where('created_at', '>=', $today)->count(),
             'atk_month_revenue' => AtkTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
-            'wash_today' => WashTransaction::whereDate('created_at', today())->count(),
+            'wash_today' => WashTransaction::where('created_at', '>=', $today)->count(),
             'wash_month_revenue' => WashTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
             'technician_total' => $technicianIds->count(),
             'technician_present_today' => $technicianPresentToday,

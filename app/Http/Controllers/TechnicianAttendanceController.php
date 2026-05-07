@@ -666,8 +666,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 return back()->withErrors(['message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd])]);
             }
 
+            $today = today();
+            $tomorrow = today()->addDay();
+
             $alreadyClockedInToday = TechnicianAttendance::where('user_id', Auth::id())
-                ->whereDate('clock_in', today())
+                ->where('clock_in', '>=', $today)
+                ->where('clock_in', '<', $tomorrow)
                 ->exists();
 
             if ($alreadyClockedInToday) {
@@ -677,8 +681,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             // Also check for pending leave/sick for today
             $hasLeaveRequest = LeaveRequest::where('user_id', Auth::id())
                 ->where('status', 'approved')
-                ->whereDate('start_date', '<=', today())
-                ->whereDate('end_date', '>=', today())
+                ->where('start_date', '<=', $today)
+                ->where('end_date', '>=', $today)
                 ->exists();
 
             if ($hasLeaveRequest) {
@@ -746,28 +750,30 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'notes' => $request->notes,
             ]);
 
-            // Notify Group via WhatsApp
-            try {
-                $statusLabel = match($attendance->status) {
-                    'present' => 'HADIR ✅',
-                    'late' => 'TERLAMBAT ⚠️',
-                    default => strtoupper($attendance->status)
-                };
-                $time = $attendance->clock_in->format('H:i');
-                $date = $attendance->clock_in->translatedFormat('d M Y');
-                $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK*\n\n" .
-                             "👤 *Nama:* {$currentUser->name}\n" .
-                             "⏰ *Jam:* {$time} WIB\n" .
-                             "📅 *Tanggal:* {$date}\n" .
-                             "📊 *Status:* {$statusLabel}\n" .
-                             "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
-                             "🚀 _Sistem M-Store_";
-                
-                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-            } catch (\Throwable $e) {
-                Log::error('Attendance WA/TG Notification Error: ' . $e->getMessage());
-            }
+            // Notify Group via WhatsApp (Non-blocking using anonymous function)
+            dispatch(function () use ($currentUser, $attendance) {
+                try {
+                    $statusLabel = match($attendance->status) {
+                        'present' => 'HADIR ✅',
+                        'late' => 'TERLAMBAT ⚠️',
+                        default => strtoupper($attendance->status)
+                    };
+                    $time = $attendance->clock_in->format('H:i');
+                    $date = $attendance->clock_in->translatedFormat('d M Y');
+                    $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK*\n\n" .
+                                 "👤 *Nama:* {$currentUser->name}\n" .
+                                 "⏰ *Jam:* {$time} WIB\n" .
+                                 "📅 *Tanggal:* {$date}\n" .
+                                 "📊 *Status:* {$statusLabel}\n" .
+                                 "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
+                                 "🚀 _Sistem M-Store_";
+                    
+                    app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                    app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+                } catch (\Throwable $e) {
+                    Log::error('Attendance WA/TG Notification Error: ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -886,23 +892,25 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
         ]);
 
-        // Notify Group via WhatsApp
-        try {
-            $time = $attendance->clock_out->format('H:i');
-            $date = $attendance->clock_out->translatedFormat('d M Y');
-            $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
-                         "👤 *Nama:* {$currentUser->name}\n" .
-                         "⏰ *Jam:* {$time} WIB\n" .
-                         "📅 *Tanggal:* {$date}\n" .
-                         "🏁 *Status:* SELESAI TUGAS 👋\n" .
-                         "📝 *Catatan:* " . ($request->notes ?? '-') . "\n\n" .
-                         "🚀 _Sistem M-Store_";
-            
-            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-        } catch (\Throwable $e) {
-            Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
-        }
+        // Notify Group via WhatsApp (Non-blocking using anonymous function)
+        dispatch(function () use ($currentUser, $attendance) {
+            try {
+                $time = $attendance->clock_out->format('H:i');
+                $date = $attendance->clock_out->translatedFormat('d M Y');
+                $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
+                             "👤 *Nama:* {$currentUser->name}\n" .
+                             "⏰ *Jam:* {$time} WIB\n" .
+                             "📅 *Tanggal:* {$date}\n" .
+                             "🏁 *Status:* SELESAI TUGAS 👋\n" .
+                             "📝 *Catatan:* " . ($attendance->notes ? explode("\nClock Out Note: ", $attendance->notes)[1] ?? '-' : '-') . "\n\n" .
+                             "🚀 _Sistem M-Store_";
+                
+                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            } catch (\Throwable $e) {
+                Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
+            }
+        })->afterResponse();
 
         return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
     } catch (\Illuminate\Validation\ValidationException $e) {

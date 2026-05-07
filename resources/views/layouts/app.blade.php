@@ -67,11 +67,6 @@
         </div>
         <div class="list-group list-group-flush pb-2">
             @php
-                $authUser = Auth::user();
-                if ($authUser) {
-                    $authUser->loadMissing('role.permissions');
-                }
-                $isAdmin = $authUser ? $authUser->hasRole('admin') : false;
                 $permissionMap = $isAdmin || ! $authUser
                     ? []
                     : (($authUser->role?->permissions?->pluck('name')->flip()->all()) ?? []);
@@ -97,10 +92,6 @@
                 };
                 $hasRole = static fn (string $role): bool => $authUser ? $authUser->hasRole($role) : false;
                 $routeIs = static fn (...$patterns): bool => request()->routeIs(...$patterns);
-                $unreadNotificationCount = $authUser ? $authUser->unreadNotifications()->count() : 0;
-                $unreadNotifications = $authUser
-                    ? $authUser->unreadNotifications()->latest()->limit(10)->get()
-                    : collect();
             @endphp
 
             {{-- User Panel (Simplified) --}}

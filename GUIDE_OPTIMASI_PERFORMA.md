@@ -20,34 +20,25 @@ php artisan optimize
 ```
 
 ## 2. Optimasi Database
-- **Indexing:** Pastikan kolom yang sering dicari (seperti MAC, SN, Nama) sudah memiliki Index. (Saya sudah menambahkan beberapa index di update sebelumnya).
+- **Indexing:** Pastikan kolom yang sering dicari (seperti MAC, SN, Nama, Status, Created At) sudah memiliki Index. (Saya sudah menambahkan index performa pada update 7 Mei 2026).
+- **Hindari whereDate:** Gunakan range query (`where('created_at', '>=', $start)`) daripada `whereDate` agar database bisa menggunakan index secara optimal.
 - **Vacuum (SQLite):** Jika menggunakan SQLite, jalankan perintah ini sesekali untuk merapikan file database:
   ```bash
   sqlite3 database/database.sqlite "VACUUM;"
   ```
 
-## 3. Optimasi PHP (Server Level)
-Pastikan modul **OPcache** aktif di PHP Anda. OPcache menyimpan script PHP yang sudah dikompilasi di memori (RAM), sehingga server tidak perlu membaca file dari disk setiap kali ada request.
-
-Cek di terminal:
-```bash
-php -m | grep Zend\ OPcache
-```
-Jika belum ada, edit file `php.ini` dan aktifkan:
-```ini
-opcache.enable=1
-opcache.memory_consumption=128
-opcache.interned_strings_buffer=8
-opcache.max_accelerated_files=4000
-opcache.revalidate_freq=60
-```
+## 3. Optimasi PHP & Cache
+- **OPcache:** Pastikan modul **OPcache** aktif di PHP Anda.
+- **View Composer:** Data sidebar dan notifikasi sekarang dikelola melalui View Composer untuk efisiensi.
+- **Cache Settings:** Pengaturan aplikasi (Settings) sudah menggunakan cache otomatis.
 
 ## 4. Gunakan Antrian (Queues) untuk Tugas Berat
-Tugas seperti mengirim pesan WhatsApp, Telegram, atau sinkronisasi OLT yang berat jangan dijalankan langsung saat user klik tombol. Gunakan Queue:
+Tugas seperti mengirim pesan WhatsApp, Telegram, sinkronisasi OLT, atau monitoring jaringan yang berat jangan dijalankan langsung saat user klik tombol. Gunakan Queue:
 ```bash
 # Jalankan worker di background
 php artisan queue:work --daemon
 ```
+Pastikan `QUEUE_CONNECTION` di `.env` disetel ke `database` (bukan `sync`).
 
 ## 5. Kompresi Gambar & Aset
 - Gunakan format **WebP** untuk logo atau foto bukti instalasi.

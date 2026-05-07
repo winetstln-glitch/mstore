@@ -41,6 +41,26 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // View Composers for Sidebar / Layout Data
+        \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
+            $authUser = Auth::user();
+            if ($authUser) {
+                // Eager load role and permissions once
+                $authUser->loadMissing('role.permissions');
+                
+                $isAdmin = $authUser->hasRole('admin');
+                $unreadNotificationCount = $authUser->unreadNotifications()->count();
+                $unreadNotifications = $authUser->unreadNotifications()->latest()->limit(10)->get();
+                
+                $view->with([
+                    'authUser' => $authUser,
+                    'isAdmin' => $isAdmin,
+                    'unreadNotificationCount' => $unreadNotificationCount,
+                    'unreadNotifications' => $unreadNotifications,
+                ]);
+            }
+        });
+
         // Dynamic Permissions from Database
         try {
             // Use Gate::before for dynamic permission checking
