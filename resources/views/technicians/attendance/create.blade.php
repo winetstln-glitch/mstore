@@ -208,25 +208,51 @@
                     <span id="location-status" class="clock-location-status is-loading text-muted">{{ __('Mencari lokasi...') }}</span>
                 </div>
 
-                <div class="d-flex flex-column align-items-center justify-content-center">
-                    <div class="fingerprint-container" id="fingerprintContainer">
-                        <div class="fingerprint-ring ring-1"></div>
-                        <div class="fingerprint-ring ring-2"></div>
-                        <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
-                            <i class="fa-solid fa-fingerprint"></i>
-                        </button>
+                <!-- Info Jam Masuk/Keluar (Dinamis) -->
+                @if($todayAttendance)
+                    <div class="row g-2 mb-3 px-2">
+                        <div class="col-6">
+                            <div class="p-2 rounded-4 bg-primary-subtle border border-primary-subtle">
+                                <p class="xx-small text-uppercase fw-bold text-primary mb-0" style="font-size: 0.6rem;">Jam Masuk</p>
+                                <p class="small fw-bold text-dark mb-0">{{ $todayAttendance->clock_in->format('H:i') }}</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 rounded-4 {{ $todayAttendance->clock_out ? 'bg-info-subtle border-info-subtle' : 'bg-light border-light' }}">
+                                <p class="xx-small text-uppercase fw-bold {{ $todayAttendance->clock_out ? 'text-info' : 'text-muted' }} mb-0" style="font-size: 0.6rem;">Jam Pulang</p>
+                                <p class="small fw-bold {{ $todayAttendance->clock_out ? 'text-dark' : 'text-muted' }} mb-0">{{ $todayAttendance->clock_out ? $todayAttendance->clock_out->format('H:i') : '--:--' }}</p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <button type="button" id="retryLocationBtn" class="btn btn-sm btn-light rounded-pill px-3 mt-2 text-muted border">
-                        <i class="fa-solid fa-arrows-rotate me-1"></i>{{ __('Refresh Lokasi') }}
-                    </button>
+                @endif
 
-                    <div class="mt-3">
-                        <h6 class="fw-bold mb-1 text-uppercase text-dark">{{ $isOut ? __('Absen Pulang') : __('Absen Masuk') }}</h6>
-                        <p class="text-muted small mb-0 px-2" id="instruction-text">
-                            {{ __('Tombol akan aktif otomatis saat lokasi Anda ditemukan.') }}
-                        </p>
-                    </div>
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                    @if(!($todayAttendance && $todayAttendance->clock_out))
+                        <div class="fingerprint-container" id="fingerprintContainer">
+                            <div class="fingerprint-ring ring-1"></div>
+                            <div class="fingerprint-ring ring-2"></div>
+                            <button type="submit" form="attendanceForm" id="submitBtn" class="fingerprint-main-btn" disabled>
+                                <i class="fa-solid fa-fingerprint"></i>
+                            </button>
+                        </div>
+                        
+                        <button type="button" id="retryLocationBtn" class="btn btn-sm btn-light rounded-pill px-3 mt-2 text-muted border">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i>{{ __('Refresh Lokasi') }}
+                        </button>
+
+                        <div class="mt-3">
+                            <h6 class="fw-bold mb-1 text-uppercase text-dark">{{ $isOut ? __('Absen Pulang') : __('Absen Masuk') }}</h6>
+                            <p class="text-muted small mb-0 px-2" id="instruction-text">
+                                {{ __('Tombol akan aktif otomatis saat lokasi Anda ditemukan.') }}
+                            </p>
+                        </div>
+                    @else
+                        <div class="py-3">
+                            <div class="h1 text-success mb-2"><i class="fa-solid fa-circle-check"></i></div>
+                            <h6 class="fw-bold text-dark">{{ __('Presensi Selesai') }}</h6>
+                            <p class="text-muted small mb-0">{{ __('Sampai jumpa besok!') }}</p>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -271,25 +297,13 @@
                     <div class="h6 mb-0 fw-bold text-primary">{{ $shiftInfo['shift_start'] ?? '--:--' }} - {{ $shiftInfo['shift_end'] ?? '--:--' }}</div>
                 </div>
 
-                @if($todayAttendance && $todayAttendance->clock_out)
-                    <div class="text-center p-4 rounded-4 border bg-white shadow-sm mb-4">
-                        <div class="h1 text-success mb-2"><i class="fa-solid fa-circle-check"></i></div>
-                        <h6 class="fw-bold text-dark">{{ __('Presensi Selesai') }}</h6>
-                        <p class="text-muted small mb-0">{{ __('Sampai jumpa besok!') }}</p>
-                    </div>
-                @else
+                @if(!($todayAttendance && $todayAttendance->clock_out))
                     <form action="{{ $formRoute }}" method="POST" enctype="multipart/form-data" id="attendanceForm">
                         @csrf
                         @if($isOut) @method('PUT') @endif
                         <input type="hidden" name="latitude" id="latitude">
                         <input type="hidden" name="longitude" id="longitude">
                         <input type="hidden" name="device_fingerprint" id="deviceFingerprint">
-
-                        @if($isOut)
-                        <div class="bg-warning-subtle text-warning-emphasis rounded-4 p-2 text-center mb-4 small border border-warning border-opacity-25">
-                            Jam Masuk: <b>{{ $todayAttendance->clock_in->format('H:i') }}</b>
-                        </div>
-                        @endif
 
                         <div class="text-center mb-4">
                             <label class="modern-camera-box shadow-sm" id="upload-area">
