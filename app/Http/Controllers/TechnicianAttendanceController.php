@@ -691,6 +691,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
                 'device_fingerprint' => 'nullable|string|min:8|max:128',
+            ], [
+                'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
             ]);
 
             // If GPS is missing, photo MUST be present as a fallback
@@ -768,6 +770,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock In successful!'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             Log::error('Attendance Store Fatal Error: ' . $e->getMessage(), [
                 'user_id' => Auth::id(),
@@ -834,6 +838,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'latitude' => 'nullable',
             'longitude' => 'nullable',
             'device_fingerprint' => 'nullable|string|min:8|max:128',
+        ], [
+            'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
         ]);
 
         // If GPS is missing, photo MUST be present as a fallback
@@ -899,6 +905,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        throw $e;
     } catch (\Throwable $e) {
         Log::error('Attendance Update Fatal Error: ' . $e->getMessage(), [
             'user_id' => Auth::id(),
@@ -981,12 +989,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function resolveAttendancePhotoMaxKb(): int
     {
-        $maxKb = (int) Setting::getValue('attendance_photo_max_kb', 2048);
+        $maxKb = (int) Setting::getValue('attendance_photo_max_kb', 5120);
         if ($maxKb < 256) {
             return 256;
         }
-        if ($maxKb > 10240) {
-            return 10240;
+        if ($maxKb > 20480) { // Max 20MB
+            return 20480;
         }
 
         return $maxKb;

@@ -399,14 +399,61 @@
         const file = e.target.files[0];
         if (!file) return;
 
-        // Preview
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const preview = document.getElementById('image-preview');
-            preview.src = event.target.result;
-            document.getElementById('upload-area').classList.add('has-image');
+        // Compression Settings
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        const QUALITY = 0.7;
+
+        // Resize and Compress Image
+        const processImage = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/jpeg', QUALITY);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
         };
-        reader.readAsDataURL(file);
+
+        const compressedBlob = await processImage(file);
+        const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+        
+        // Update input file with compressed version
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(compressedFile);
+        photoInput.files = dataTransfer.files;
+
+        // Preview
+        const preview = document.getElementById('image-preview');
+        preview.src = URL.createObjectURL(compressedBlob);
+        document.getElementById('upload-area').classList.add('has-image');
 
         // Face Verification
         if (faceVerificationEnabled) {
