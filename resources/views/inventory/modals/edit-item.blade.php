@@ -1,6 +1,6 @@
 {{-- Modal Edit Item --}}
-<div class="modal" id="editItemModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <form id="editItemForm" action="" method="POST">
                 @csrf @method('PUT')
@@ -69,28 +69,25 @@
                     </div>
 
                     {{-- Advanced Fields --}}
-                    <button type="button" class="btn btn-link px-0 text-decoration-none" 
-                            data-bs-toggle="collapse" data-bs-target="#editAdvancedFields">
-                        <i class="fa-solid fa-chevron-down me-1"></i> {{ __('Detail Tambahan') }}
-                    </button>
-                    <div class="collapse mt-2" id="editAdvancedFields">
+                    <div class="mt-3 border-top pt-3">
+                        <h6 class="fw-bold small text-muted text-uppercase mb-3">{{ __('Detail Tambahan') }}</h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">{{ __('Jenis') }}</label>
-                                <input type="text" name="type" id="editType" class="form-control">
+                                <input type="text" name="type" id="editType" class="form-control" placeholder="Contoh: ONU, Router, Kabel">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">{{ __('Merek') }}</label>
-                                <input type="text" name="brand" id="editBrand" class="form-control">
+                                <input type="text" name="brand" id="editBrand" class="form-control" placeholder="Contoh: ZTE, Huawei, Fiberhome">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{{ __('Model') }}</label>
-                            <input type="text" name="model" id="editModel" class="form-control">
+                            <input type="text" name="model" id="editModel" class="form-control" placeholder="Contoh: F609, HG8245H">
                         </div>
                         <div class="mb-0">
                             <label class="form-label">{{ __('Deskripsi') }}</label>
-                            <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+                            <textarea name="description" id="editDescription" class="form-control" rows="3" placeholder="Keterangan tambahan barang..."></textarea>
                         </div>
                     </div>
                 </div>

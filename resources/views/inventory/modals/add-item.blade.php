@@ -1,6 +1,6 @@
 {{-- Modal Add Item --}}
-<div class="modal" id="addItemModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form action="{{ route('inventory.store') }}" method="POST">
                 @csrf

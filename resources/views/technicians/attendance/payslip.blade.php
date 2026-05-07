@@ -22,7 +22,7 @@
 
         <!-- Grid Slip Gaji -->
         <div class="row g-3 print-row">
-            @foreach($summary as $data)
+            @forelse($summary as $data)
             @php
                 $period = request('month') ? \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y') : now()->translatedFormat('F Y');
                 $waLink = "https://wa.me/" . preg_replace('/[^0-9]/', '', $data['user']->phone);
@@ -96,7 +96,11 @@
                                 <p class="x-small fw-bold text-primary text-uppercase mb-2 border-bottom border-2 border-primary-subtle pb-1">Pendapatan</p>
                                 <div class="vstack gap-1">
                                     <div class="d-flex justify-content-between x-small fw-bold">
-                                        <span class="text-muted">Gaji Pokok</span>
+                                        <span class="text-muted">Gaji Pokok Bulanan</span>
+                                        <span class="text-dark">{{ number_format($data['user']->monthly_salary ?? 0, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between x-small fw-bold">
+                                        <span class="text-muted">Gaji Harian</span>
                                         <span class="text-dark">{{ number_format($data['daily_salary'] * $data['paid_days'], 0, ',', '.') }}</span>
                                     </div>
                                     @if($data['total_bonus'] > 0)
@@ -118,7 +122,17 @@
                                                 <span>+{{ number_format($data['bonus_absensi'], 0, ',', '.') }}</span>
                                             </div>
                                         @endif
+                                        @if($data['bonus_lainnya'] > 0)
+                                            <div class="d-flex justify-content-between x-small fw-bold text-success">
+                                                <span>Lainnya</span>
+                                                <span>+{{ number_format($data['bonus_lainnya'], 0, ',', '.') }}</span>
+                                            </div>
+                                        @endif
                                     @endif
+                                    <div class="d-flex justify-content-between x-small mt-1 text-primary border-top border-1 pt-1 fw-bold">
+                                        <span>Total</span>
+                                        <span>{{ number_format(($data['daily_salary'] * $data['paid_days']) + $data['total_bonus'], 0, ',', '.') }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <!-- Potongan -->
@@ -143,10 +157,14 @@
                                             <span>-{{ number_format($data['kasbon_lainnya'], 0, ',', '.') }}</span>
                                         </div>
                                     @endif
-                                    <div class="d-flex justify-content-between x-small mt-1 text-muted border-top border-2 pt-1 fw-bold">
-                                        <span>Total Hari</span>
-                                        <span class="text-dark">{{ $data['paid_days'] }} Hari</span>
+                                    <div class="d-flex justify-content-between x-small mt-1 text-danger border-top border-1 pt-1 fw-bold">
+                                        <span>Total</span>
+                                        <span>-{{ number_format($data['total_kasbon'], 0, ',', '.') }}</span>
                                     </div>
+                                </div>
+                                <div class="d-flex justify-content-between x-small mt-2 text-muted fw-bold">
+                                    <span>Total Hari</span>
+                                    <span class="text-dark">{{ $data['paid_days'] }} Hari</span>
                                 </div>
                             </div>
                         </div>
@@ -196,7 +214,18 @@
                     </div>
                 </div>
             </div>
-            @endforeach
+            @empty
+            <div class="col-12 text-center py-5">
+                <div class="bg-white p-5 rounded-4 shadow-sm border">
+                    <i class="fa-solid fa-receipt fa-3x text-muted mb-3 opacity-25"></i>
+                    <h5 class="fw-bold text-dark">Tidak Ada Data Absensi</h5>
+                    <p class="text-muted small">Belum ada aktivitas absensi pada periode ini ({{ request('month') ?: now()->translatedFormat('F Y') }}).</p>
+                    <a href="{{ route('attendance.create') }}" class="btn btn-primary btn-sm px-4 rounded-pill">
+                        Mulai Absen Sekarang
+                    </a>
+                </div>
+            </div>
+            @endforelse
         </div>
     </div>
 </div>

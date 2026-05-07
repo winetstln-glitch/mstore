@@ -36,6 +36,7 @@ class User extends Authenticatable
         'telegram_chat_id',
         'is_active',
         'daily_salary',
+        'monthly_salary',
         'bank_name',
         'bank_account_number',
         'bank_account_name',

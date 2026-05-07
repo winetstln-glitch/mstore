@@ -920,6 +920,13 @@ class SettingController extends Controller implements HasMiddleware
                 'type' => 'number',
                 'label' => 'Attendance Radius (meters)',
             ],
+            [
+                'key' => 'attendance_working_days',
+                'value' => '28',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Hari Kerja Per Bulan',
+            ],
         ];
 
         foreach ($defaults as $setting) {

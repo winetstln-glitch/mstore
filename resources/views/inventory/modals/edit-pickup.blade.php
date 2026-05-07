@@ -1,6 +1,6 @@
 {{-- Modal Edit Pickup --}}
 <div class="modal fade" id="editPickupModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
         <form id="editPickupForm" action="" method="POST">
             @csrf @method('PUT')
             <div class="modal-content">

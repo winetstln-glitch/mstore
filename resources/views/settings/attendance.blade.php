@@ -45,11 +45,17 @@
                                     value="{{ old('attendance_office_lng', $settings['attendance_office_lng'] ?? '') }}" 
                                     class="form-control" placeholder="106.xxxx">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-medium">Radius Absen (Meter)</label>
                                 <input type="number" name="attendance_radius" 
                                     value="{{ old('attendance_radius', $settings['attendance_radius'] ?? 100) }}" 
                                     class="form-control" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-medium">Hari Kerja / Bulan</label>
+                                <input type="number" name="attendance_working_days" 
+                                    value="{{ old('attendance_working_days', $settings['attendance_working_days'] ?? 28) }}" 
+                                    class="form-control" min="1" max="31">
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 {{-- Modal Stock In --}}
-<div class="modal" id="stockInModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="stockInModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <form action="{{ route('inventory.stock-in.store') }}" method="POST">
                 @csrf

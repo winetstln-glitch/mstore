@@ -85,11 +85,20 @@
                                 @enderror
                             </div>
 
-                            <!-- Gaji harian -->
+                            <!-- Gaji -->
                             <div class="col-md-6">
-                                <label for="daily_salary" class="form-label">{{ __('Gaji Harian (IDR)') }}</label>
+                                <label for="monthly_salary" class="form-label">{{ __('Gaji Pokok Bulanan (IDR)') }}</label>
+                                <input type="number" name="monthly_salary" id="monthly_salary" value="{{ old('monthly_salary', 0) }}" class="form-control @error('monthly_salary') is-invalid @enderror">
+                                <div class="form-text">{{ __('Gaji pokok satu bulan (akan dibagi hari kerja untuk hitung harian).') }}</div>
+                                @error('monthly_salary')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="daily_salary" class="form-label">{{ __('Gaji Harian Manual (IDR)') }}</label>
                                 <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
-                                <div class="form-text">{{ __('Gaji per hari kehadiran (untuk teknisi/staff).') }}</div>
+                                <div class="form-text">{{ __('Isi jika ingin menggunakan nilai tetap per hari (abaikan gaji bulanan).') }}</div>
                                 @error('daily_salary')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -150,20 +159,31 @@
     document.addEventListener('DOMContentLoaded', function () {
         const nameInput = document.getElementById('name');
         const usernamePreview = document.getElementById('username_preview');
-        if (!nameInput || !usernamePreview) {
-            return;
+        const monthlySalaryInput = document.getElementById('monthly_salary');
+        const dailySalaryInput = document.getElementById('daily_salary');
+        const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
+
+        if (nameInput && usernamePreview) {
+            const slugify = (value) => value
+                .toLowerCase()
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            const syncPreview = () => {
+                usernamePreview.value = slugify(nameInput.value);
+            };
+            nameInput.addEventListener('input', syncPreview);
+            syncPreview();
         }
-        const slugify = (value) => value
-            .toLowerCase()
-            .normalize('NFKD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]+/g, '_')
-            .replace(/^_+|_+$/g, '');
-        const syncPreview = () => {
-            usernamePreview.value = slugify(nameInput.value);
-        };
-        nameInput.addEventListener('input', syncPreview);
-        syncPreview();
+
+        if (monthlySalaryInput && dailySalaryInput) {
+            monthlySalaryInput.addEventListener('input', function() {
+                const monthly = parseFloat(this.value) || 0;
+                const daily = Math.round(monthly / workingDays);
+                dailySalaryInput.value = daily;
+            });
+        }
     });
 </script>
 @endpush

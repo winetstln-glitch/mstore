@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\SalaryAdjustment;
 use App\Models\TechnicianAttendance;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -83,9 +84,19 @@ trait HasAttendanceFilters
 
             // Total hari yang dibayar (Hadir + Izin + Cuti + Sakit)
             $paidDays = $presentCount + $leaveCount + $permitCount + $sickCount;
-            $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
+            
+            // Resolve Daily Salary
+            $workingDays = (int) Setting::getValue('attendance_working_days', 28);
+            if ($user->daily_salary > 0) {
+                $dailySalary = $user->daily_salary;
+            } elseif ($user->monthly_salary > 0) {
+                $dailySalary = $user->monthly_salary / $workingDays;
+            } else {
+                $dailySalary = 0;
+            }
 
             $userAdjustments = $allAdjustments->get($user->id, collect());
+            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
             
             // Calculate Specific Bonuses based on description keywords
             $bonusDisiplin = $userAdjustments->where('type', 'bonus')
@@ -98,20 +109,21 @@ trait HasAttendanceFilters
                 ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'absensi'))
                 ->sum('amount');
             
-            $totalBonus = $userAdjustments->where('type', 'bonus')->sum('amount');
+            // Bonus Lainnya (Total Bonus - Specific Bonuses)
+            $bonusLainnya = $totalBonus - ($bonusDisiplin + $bonusTanggungJawab + $bonusAbsensi);
             
             // Calculate Specific Kasbon based on description keywords
+            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
+            
             $kasbonKantor = $userAdjustments->where('type', 'kasbon')
                 ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'kantor'))
                 ->sum('amount');
             $kasbonWarung = $userAdjustments->where('type', 'kasbon')
                 ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'warung'))
                 ->sum('amount');
-            $kasbonLainnya = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($a) => !str_contains(strtolower($a->description ?? ''), 'kantor') && !str_contains(strtolower($a->description ?? ''), 'warung'))
-                ->sum('amount');
-                
-            $totalKasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
+            
+            // Kasbon Lainnya (Total Kasbon - Specific Kasbons)
+            $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung);
 
             return [
                 'user' => $user,
@@ -125,6 +137,7 @@ trait HasAttendanceFilters
                 'bonus_disiplin' => $bonusDisiplin,
                 'bonus_tanggung_jawab' => $bonusTanggungJawab,
                 'bonus_absensi' => $bonusAbsensi,
+                'bonus_lainnya' => $bonusLainnya,
                 'total_bonus' => $totalBonus,
                 'kasbon_kantor' => $kasbonKantor,
                 'kasbon_warung' => $kasbonWarung,

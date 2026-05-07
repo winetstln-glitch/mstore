@@ -102,7 +102,13 @@
             @if($hasPermission('inventory.manage') || $isAdminOrFinance)
             <div class="row g-2 g-md-3 mb-4">
                 @foreach([
-                    ['Nilai Stok', 'Rp ' . number_format($totalStockValue, 0, ',', '.'), 'fa-warehouse', 'primary'],
+                    [
+                        request('type_group') === 'tool' ? 'Nilai Aset' : 
+                        (request('type_group') === 'material' ? 'Nilai Stok' : 'Nilai Stok & Aset'), 
+                        'Rp ' . number_format($totalStockValue, 0, ',', '.'), 
+                        'fa-warehouse', 
+                        'primary'
+                    ],
                     ['Total Barang', $totalItems, 'fa-boxes-stacked', 'success'],
                     ['Beli Alat', 'Rp ' . number_format($totalToolPurchases, 0, ',', '.'), 'fa-toolbox', 'info'],
                     ['Beli Material', 'Rp ' . number_format($totalMaterialPurchases, 0, ',', '.'), 'fa-microchip', 'secondary'],
@@ -450,16 +456,38 @@
 
 @push('styles')
 <style>
-    /* Ensure modal visibility */
-    .modal.show {
-        display: block !important;
-        background: rgba(0,0,0,0.5);
+    .modal-backdrop {
+        z-index: 1050;
     }
-    .modal-dialog {
-        z-index: 1060;
+    .modal {
+        z-index: 1055;
     }
     .x-small {
         font-size: 0.7rem;
+    }
+    
+    /* Fix for modal scrolling and visibility */
+    .modal-dialog-scrollable {
+        max-height: calc(100% - 1rem) !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .modal-dialog-scrollable .modal-content {
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .modal-dialog-scrollable .modal-body {
+        overflow-y: auto !important;
+        max-height: 70vh !important; /* Force a height for scrollability */
+    }
+
+    /* For mobile/small screens */
+    @media (max-width: 576px) {
+        .modal-dialog-scrollable .modal-body {
+            max-height: 60vh !important;
+        }
     }
 </style>
 @endpush
