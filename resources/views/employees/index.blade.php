@@ -126,7 +126,7 @@
                                     @endif
                                     <div>
                                         <div class="fw-bold text-dark mb-0">{{ $employee->full_name }}</div>
-                                        <div class="x-small text-muted">{{ $employee->email }}</div>
+                                        <div class="x-small text-muted">{{ $employee->user->username ?? '-' }}</div>
                                     </div>
                                 </div>
                             </td>
