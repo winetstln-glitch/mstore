@@ -59,7 +59,7 @@
                             <span class="input-group-text  border-end-0">
                                 <i class="fa-solid fa-search text-body-secondary"></i>
                             </span>
-                            <input type="text" id="deviceSearch" class="form-control border-start-0 ps-1" placeholder="{{ __('Search ID, SN, PPPoE, IP...') }}">
+                            <input type="text" id="deviceSearch" class="form-control border-start-0 ps-1" placeholder="{{ __('Search MAC, SN, IP, PPPoE...') }}">
                         </div>
                     </div>
                     <div class="col-6 col-md-2">

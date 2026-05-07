@@ -34,7 +34,9 @@ class InstallationWebController extends Controller implements HasMiddleware
             $search = $request->input('search');
             $query->whereHas('customer', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('onu_serial', 'like', "%{$search}%")
+                    ->orWhere('wan_mac', 'like', "%{$search}%");
             });
         }
 

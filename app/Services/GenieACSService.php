@@ -516,6 +516,11 @@ class GenieACSService
                         ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
                         ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
                         ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeIP' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.IPTR069' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeMac' => ['$regex' => $search, '$options' => 'i']],
+                        ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress' => ['$regex' => $search, '$options' => 'i']],
+                        ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress' => ['$regex' => $search, '$options' => 'i']],
                     ],
                 ];
                 $queryParams['query'] = json_encode($searchQuery);
@@ -562,6 +567,11 @@ class GenieACSService
                         ['_deviceId._SerialNumber' => ['$regex' => $search, '$options' => 'i']],
                         ['VirtualParameters.pppoeUsername' => ['$regex' => $search, '$options' => 'i']],
                         ['_deviceId._ProductClass' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeIP' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.IPTR069' => ['$regex' => $search, '$options' => 'i']],
+                        ['VirtualParameters.pppoeMac' => ['$regex' => $search, '$options' => 'i']],
+                        ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress' => ['$regex' => $search, '$options' => 'i']],
+                        ['InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress' => ['$regex' => $search, '$options' => 'i']],
                     ],
                 ];
                 $queryParams['query'] = json_encode($searchQuery);

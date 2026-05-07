@@ -54,7 +54,7 @@
                         <div class="col-12 col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text  border-end-0"><i class="fa-solid fa-search text-body-secondary"></i></span>
-                                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari pelanggan...') }}">
+                                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari nama, MAC, SN...') }}">
                             </div>
                         </div>
                         <div class="col-12 col-md-2">

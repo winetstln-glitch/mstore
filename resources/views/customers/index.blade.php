@@ -57,7 +57,7 @@
                     <div class="col-12 col-md-4 col-lg-3">
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
-                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari...') }}">
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('Cari nama, MAC, SN...') }}">
                         </div>
                     </div>
                     

@@ -82,9 +82,10 @@ class InventoryController extends Controller implements HasMiddleware
 
         // Total Pembelian (Purchases) separated by type_group
         $purchaseStats = Cache::remember('inventory.purchase_stats', now()->addMinutes(5), function () {
-            return InventoryTransaction::where('inventory_transactions.type', 'in')
+            return DB::table('inventory_transactions')
                 ->join('inventory_items', 'inventory_transactions.inventory_item_id', '=', 'inventory_items.id')
-                ->select('inventory_items.type_group', DB::raw('SUM(total_cost) as total'))
+                ->where('inventory_transactions.type', 'in')
+                ->select('inventory_items.type_group', DB::raw('SUM(inventory_transactions.total_cost) as total'))
                 ->groupBy('inventory_items.type_group')
                 ->pluck('total', 'type_group');
         });
@@ -249,16 +250,17 @@ class InventoryController extends Controller implements HasMiddleware
 
                         if (! empty($data['coordinator_id']) && $item->price > 0) {
                             Transaction::create([
-                                'user_id' => Auth::id(),
-                                'coordinator_id' => $data['coordinator_id'],
-                                'type' => 'expense',
-                                'category' => 'Pengeluaran Pengurus',
-                                'amount' => $item->price * $row['quantity'],
-                                'transaction_date' => now()->toDateString(),
-                                'description' => 'Pengurus mengambil '.$row['quantity'].' '.$item->unit.' '.$item->name,
-                                'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
-                            ]);
-                        }
+                            'user_id' => Auth::id(),
+                            'coordinator_id' => $data['coordinator_id'],
+                            'type' => 'expense',
+                            'category' => 'Pengeluaran Pengurus',
+                            'amount' => $item->price * $row['quantity'],
+                            'transaction_date' => now()->toDateString(),
+                            'description' => 'Pengurus mengambil '.$row['quantity'].' '.$item->unit.' '.$item->name,
+                            'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
+                        ]);
+                        Cache::forget('inventory.total_sales');
+                    }
 
                         // Auto-create Asset records for Tools
                         if ($item->type_group === 'tool') {
@@ -354,6 +356,7 @@ class InventoryController extends Controller implements HasMiddleware
                         'description' => 'Pengurus mengambil '.$request->quantity.' '.$item->unit.' '.$item->name,
                         'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
                     ]);
+                    Cache::forget('inventory.total_sales');
                 }
             });
         }
@@ -418,6 +421,8 @@ class InventoryController extends Controller implements HasMiddleware
                 'reference_number' => 'INV-IN-'.$inventoryIn->id,
             ]);
 
+            Cache::forget('inventory.purchase_stats');
+
             return $item;
         });
 
@@ -468,6 +473,9 @@ class InventoryController extends Controller implements HasMiddleware
             ]);
         }
 
+        Cache::forget('inventory.purchase_stats');
+        Cache::forget('inventory.categories');
+
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item added successfully.'));
     }
 
@@ -492,6 +500,9 @@ class InventoryController extends Controller implements HasMiddleware
         }
 
         $item->update($validated);
+
+        Cache::forget('inventory.purchase_stats');
+        Cache::forget('inventory.categories');
 
         return redirect()->route('inventory.index', ['type_group' => $validated['type_group']])->with('success', __('Item updated successfully.'));
     }

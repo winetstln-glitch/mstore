@@ -70,7 +70,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('onu_serial', 'like', "%{$search}%")
+                    ->orWhere('wan_mac', 'like', "%{$search}%");
             });
         }
 
@@ -150,7 +152,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('onu_serial', 'like', "%{$search}%")
+                    ->orWhere('wan_mac', 'like', "%{$search}%");
             });
         }
 
