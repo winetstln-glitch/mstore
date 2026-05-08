@@ -1101,12 +1101,14 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         $shiftInfo = $this->resolveTodayShiftInfo($user);
 
-        $fromSchedule = in_array($shiftInfo['source'] ?? 'default', ['daily', 'weekly'], true);
+        // Perbaikan: Gunakan shift_start dari shiftInfo jika tersedia, meskipun source-nya 'default' (untuk Admin/Leader)
         $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT], true);
+        $hasShiftTime = ! empty($shiftInfo['shift_start']) && $shiftInfo['shift_start'] !== '-';
 
-        if ($fromSchedule && $isWorkShift) {
-            $officialStart = (string) ($shiftInfo['shift_start'] ?? $globalStart);
+        if ($isWorkShift && $hasShiftTime) {
+            $officialStart = (string) $shiftInfo['shift_start'];
             $effectiveStart = $this->subtractMinutesFromTime($officialStart, $earlyMinutes);
+
             return [
                 'start' => $effectiveStart,
                 'end' => (string) ($shiftInfo['shift_end'] ?? $globalEnd),
