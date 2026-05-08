@@ -50,11 +50,12 @@ class WashReportController extends Controller
             ->whereYear('transaction_date', substr($month, 0, 4))->sum('amount');
 
         $dailyIncomeRowsQuery = WashTransaction::query()
+            ->with('user:id,name')
             ->whereBetween('created_at', [
                 $startDate.' 00:00:00',
                 $endDate.' 23:59:59',
             ])
-            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at'])
+            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at', 'user_id'])
             ->orderByDesc('created_at');
         $this->applyVehiclePlateFilter($dailyIncomeRowsQuery, $normalizedVehiclePlate);
         $dailyIncomeRows = $dailyIncomeRowsQuery->get();
