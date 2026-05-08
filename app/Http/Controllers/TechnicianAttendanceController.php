@@ -1093,6 +1093,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function resolveClockInWindow(User $user): array
     {
+        // Debug change
         $globalStart = Setting::getValue('attendance_clock_in_start', '07:00');
         $globalEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $earlyMinutes = (int) Setting::getValue('attendance_clock_in_early_minutes', 60);
