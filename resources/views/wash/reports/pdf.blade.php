@@ -40,10 +40,12 @@
 
     <table>
         <thead>
-            <tr><th colspan="4">Rincian Pemasukan Harian</th></tr>
+            <tr><th colspan="6">Rincian Pemasukan Harian</th></tr>
             <tr>
+                <th>Tanggal</th>
                 <th>Waktu</th>
                 <th>No Transaksi</th>
+                <th>Kasir</th>
                 <th>Metode</th>
                 <th class="right">Total</th>
             </tr>
@@ -51,8 +53,10 @@
         <tbody>
             @foreach($dailyIncomeRows as $r)
             <tr>
+                <td>{{ $r->created_at->format('Y-m-d') }}</td>
                 <td>{{ $r->created_at->format('H:i') }}</td>
                 <td>{{ $r->transaction_number }}</td>
+                <td>{{ $r->user->name ?? '-' }}</td>
                 <td>{{ strtoupper($r->payment_method) }}</td>
                 <td class="right">{{ number_format($r->total_amount,0,',','.') }}</td>
             </tr>

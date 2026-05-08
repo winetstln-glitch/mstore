@@ -216,9 +216,16 @@ class WashReportController extends Controller
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['monthlyIncome'], 'Pengeluaran', $data['monthlyExpense'], 'Laba', $data['monthlyIncome'] - $data['monthlyExpense']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Pemasukan Harian']));
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Waktu', 'No Trx', 'Metode', 'Total']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Waktu', 'No Trx', 'Kasir', 'Metode', 'Total']));
             foreach ($data['dailyIncomeRows'] as $r) {
-                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([$r->created_at->format('H:i'), $r->transaction_number, strtoupper($r->payment_method), $r->total_amount]));
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                    $r->created_at->format('Y-m-d'),
+                    $r->created_at->format('H:i'),
+                    $r->transaction_number,
+                    $r->user->name ?? '-',
+                    strtoupper($r->payment_method),
+                    $r->total_amount
+                ]));
             }
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Pengeluaran Harian']));
