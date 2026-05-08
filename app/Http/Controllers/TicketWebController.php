@@ -385,7 +385,13 @@ class TicketWebController extends Controller implements HasMiddleware
                                  "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                                  "🚀 _Sistem M-Store_";
                     
-                    $this->sendGroupNotification($waMessage, 'ticket');
+                    // If we already sent a status update notification in this request, only send to WhatsApp here
+                    // to avoid duplicate Telegram messages in the same group.
+                    if ($ticket->wasChanged('status')) {
+                        $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+                    } else {
+                        $this->sendGroupNotification($waMessage, 'ticket');
+                    }
                 }
             }
         }

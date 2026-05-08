@@ -69,7 +69,7 @@
                             <span class="input-group-text auth-input-addon border-end-0">
                                 <i class="fa-solid fa-user"></i>
                             </span>
-                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Username PPPoE/Hotspot atau ID Pelanggan" />
+                            <input id="login" class="form-control auth-input border-start-0 @error('login') is-invalid @enderror" type="text" name="login" value="{{ old('login') }}" required autofocus placeholder="Masukan Username" />
                             @error('login')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
