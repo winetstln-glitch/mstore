@@ -81,7 +81,7 @@ class TicketController extends Controller
                      "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                      "🚀 _Sistem M-Store_";
          
-        $this->sendGroupNotification($waMessage, 'ticket');
+        $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
 
         return response()->json($ticket, 201);
     }
@@ -152,7 +152,12 @@ class TicketController extends Controller
                          "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                          "🚀 _Sistem M-Store_";
              
-            $this->sendGroupNotification($waMessage, 'ticket');
+            // If we already sent a specialized Telegram notification (for solved/closed), only send to WhatsApp here
+            if (in_array($ticket->status, ['solved', 'closed'])) {
+                $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+            } else {
+                $this->sendGroupNotification($waMessage, 'ticket');
+            }
         }
 
         if ($ticket->wasChanged('technician_id')) {

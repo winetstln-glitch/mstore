@@ -211,7 +211,7 @@ class TicketWebController extends Controller implements HasMiddleware
                      "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                      "🚀 _Sistem M-Store_";
         
-        $this->sendGroupNotification($waMessage, 'ticket');
+        $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
 
         return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
     }
@@ -323,7 +323,12 @@ class TicketWebController extends Controller implements HasMiddleware
                          "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                          "🚀 _Sistem M-Store_";
             
-            $this->sendGroupNotification($waMessage, 'ticket');
+            // If we already sent a specialized Telegram notification (for solved/closed), only send to WhatsApp here
+            if (in_array($ticket->status, ['solved', 'closed'])) {
+                $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+            } else {
+                $this->sendGroupNotification($waMessage, 'ticket');
+            }
         }
 
         // Handle Technician Assignment
