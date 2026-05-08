@@ -203,9 +203,11 @@ class DashboardController extends Controller
             $attendanceDateObj = Carbon::createFromFormat('Y-m-d', $attendanceDateInput);
             $attendanceDateStart = $attendanceDateObj->copy()->startOfDay();
             $attendanceDateEnd = $attendanceDateObj->copy()->endOfDay();
+            $attendanceDate = $attendanceDateObj->toDateString();
         } catch (\Throwable $e) {
             $attendanceDateStart = now()->startOfDay();
             $attendanceDateEnd = now()->endOfDay();
+            $attendanceDate = now()->toDateString();
         }
         $attendanceDateLabel = $attendanceDateStart->translatedFormat('d M Y');
         $selectedRoleIds = $attendanceRole === 'karyawan-wash' ? $washEmployeeIds : $technicianIds;
