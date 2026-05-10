@@ -287,7 +287,37 @@ class SettingController extends Controller implements HasMiddleware
             return response()->download($database, $filename);
         }
 
-        // For MySQL, we could try a simple export if needed, but for now let's focus on SQLite
+        if ($connection === 'mysql') {
+            $host = config("database.connections.{$connection}.host");
+            $port = config("database.connections.{$connection}.port", 3306);
+            $username = config("database.connections.{$connection}.username");
+            $password = config("database.connections.{$connection}.password");
+
+            $filename = 'backup-'.date('Y-m-d-His').'.sql';
+            $tempPath = storage_path('app/'.$filename);
+
+            $command = "mysqldump --host={$host} --port={$port} --user={$username}";
+            if ($password) {
+                $command .= " --password={$password}";
+            }
+            $command .= " --single-transaction --quick --lock-tables=false {$database} > {$tempPath}";
+
+            exec($command, $output, $exitCode);
+
+            if ($exitCode !== 0) {
+                return redirect()->back()->with('error', 'Backup MySQL gagal. Pastikan mysqldump tersedia di server.');
+            }
+
+            if (! file_exists($tempPath)) {
+                return redirect()->back()->with('error', 'File backup tidak dapat dibuat.');
+            }
+
+            $response = response()->download($tempPath, $filename);
+            $response->deleteFileAfterSend(true);
+
+            return $response;
+        }
+
         return redirect()->back()->with('error', 'Backup for ' . $connection . ' is not supported yet.');
     }
 
