@@ -96,7 +96,9 @@
                                 <select name="usage" id="usage" class="form-select" required>
                                     <option value="">{{ __('Pilih tujuan...') }}</option>
                                     <option value="New Installation">{{ __('Pemasangan Baru') }}</option>
+                                    <option value="Installation">{{ __('Instalasi') }}</option>
                                     <option value="Replacement">{{ __('Perbaikan / Maintenance') }}</option>
+                                    <option value="Device Replacement">{{ __('Penggantian Alat') }}</option>
                                     <option value="Stock Team">{{ __('Stok Tim / Coordinator') }}</option>
                                 </select>
                             </div>
