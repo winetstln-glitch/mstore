@@ -15,6 +15,7 @@ use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\ModemDataController;
 use App\Http\Controllers\NetworkAnalyzerController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OLTController;
@@ -45,8 +46,6 @@ Route::get('locale/{lang}', function ($lang) {
 })->name('locale.switch');
 
 Route::get('/', [LandingController::class, 'index'])->name('landing');
-Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
-Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -56,6 +55,12 @@ Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::cl
 Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
+    Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
+    
+    Route::get('modem-data', [ModemDataController::class, 'index'])->name('modem-data.index')->middleware('permission:modem-data.view');
+    Route::post('modem-data', [ModemDataController::class, 'store'])->name('modem-data.store')->middleware('permission:modem-data.create|modem-data.view');
+    
     // AI Center
     Route::get('/ai-center', [\App\Http\Controllers\AiController::class, 'index'])->name('ai.index');
     Route::post('/ai-center/chat', [\App\Http\Controllers\AiController::class, 'chat'])
@@ -145,203 +150,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('tickets/{ticket}/location', [TicketWebController::class, 'updateLocation'])->name('tickets.updateLocation');
     Route::patch('tickets/{ticket}/customer', [TicketWebController::class, 'updateCustomer'])->name('tickets.updateCustomer');
     Route::resource('tickets', TicketWebController::class);
-    Route::get('modem-data', function () {
-        $modemTypes = \App\Models\InventoryItem::query()
-            ->where('type_group', 'material')
-            ->where(function ($q) {
-                $q->where('type', 'like', '%onu%')
-                    ->orWhere('name', 'like', '%onu%')
-                    ->orWhere('model', 'like', '%onu%')
-                    ->orWhere('description', 'like', '%onu%');
-            })
-            ->orderBy('type')
-            ->orderBy('brand')
-            ->orderBy('model')
-            ->get()
-            ->map(function ($item) {
-                $byName = trim((string) $item->name);
-                if ($byName !== '') {
-                    return $byName;
-                }
-
-                $composed = trim(implode(' ', array_filter([
-                    $item->brand,
-                    $item->model,
-                ])));
-                if ($composed !== '') {
-                    return $composed;
-                }
-
-                $byModel = trim((string) $item->model);
-                if ($byModel !== '') {
-                    return $byModel;
-                }
-
-                $byType = trim((string) $item->type);
-                if ($byType !== '' && strcasecmp($byType, 'onu') !== 0) {
-                    return $byType;
-                }
-
-                return null;
-            })
-            ->filter()
-            ->unique(fn ($value) => mb_strtolower((string) $value))
-            ->values();
-
-        return view('modem_data.index', compact('modemTypes'));
-    })->name('modem-data.index');
-    Route::post('modem-data', function (\Illuminate\Http\Request $request) {
-        $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'modem_type' => 'nullable|string|max:255',
-            'mac_address' => 'required|string|max:20',
-            'serial_number' => 'required|string|max:100',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'coordinates' => 'nullable|string|max:100',
-        ]);
-
-        $customerName = trim((string) $validated['customer_name']);
-        $macAddress = strtoupper(trim((string) $validated['mac_address']));
-        $serialNumber = trim((string) $validated['serial_number']);
-        $modemType = isset($validated['modem_type']) ? trim((string) $validated['modem_type']) : null;
-        $latitude = $validated['latitude'] ?? null;
-        $longitude = $validated['longitude'] ?? null;
-        $normalizedName = mb_strtolower($customerName);
-        $normalizedSerial = mb_strtolower(trim($serialNumber));
-        $macCompact = strtoupper((string) preg_replace('/[^A-Fa-f0-9]/', '', $macAddress));
-
-        $customer = null;
-        $matchedBy = null;
-
-        if ($normalizedSerial !== '') {
-            $customer = \App\Models\Customer::query()
-                ->whereRaw('LOWER(TRIM(onu_serial)) = ?', [$normalizedSerial])
-                ->first();
-            if ($customer) {
-                $matchedBy = 'serial ONU';
-            }
-        }
-
-        if (! $customer && $macCompact !== '') {
-            $customer = \App\Models\Customer::query()
-                ->whereRaw("REPLACE(REPLACE(UPPER(COALESCE(wan_mac, '')), ':', ''), '-', '') = ?", [$macCompact])
-                ->first();
-            if ($customer) {
-                $matchedBy = 'WAN MAC';
-            }
-        }
-
-        if (! $customer && $normalizedSerial !== '') {
-            $statusBySerial = \App\Models\GenieDeviceStatus::query()
-                ->whereNotNull('customer_id')
-                ->whereRaw('LOWER(TRIM(onu_serial)) = ?', [$normalizedSerial])
-                ->orderByDesc('last_inform')
-                ->first();
-            if ($statusBySerial && $statusBySerial->customer_id) {
-                $customer = \App\Models\Customer::find($statusBySerial->customer_id);
-                if ($customer) {
-                    $matchedBy = 'mapping GenieACS (serial ONU)';
-                }
-            }
-        }
-
-        if (! $customer) {
-            $customer = \App\Models\Customer::query()
-                ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName])
-                ->first();
-            if ($customer) {
-                $matchedBy = 'nama pelanggan (exact)';
-            }
-        }
-
-        if (! $customer) {
-            $customer = \App\Models\Customer::query()
-                ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedName.'%'])
-                ->orderBy('id')
-                ->first();
-            if ($customer) {
-                $matchedBy = 'nama pelanggan (mirip)';
-            }
-        }
-
-        if (! $customer) {
-            $customer = \App\Models\Customer::create([
-                'name' => $customerName,
-                // Keep schema aligned with customer created from customer management.
-                'address' => null,
-                'status' => 'active',
-                'wan_mac' => $macAddress,
-                'onu_serial' => $serialNumber,
-                'device_model' => $modemType,
-                'latitude' => $latitude,
-                'longitude' => $longitude,
-            ]);
-            $matchedBy = 'pelanggan baru otomatis';
-        } else {
-            $customer->update([
-                'wan_mac' => $macAddress,
-                'onu_serial' => $serialNumber,
-                'device_model' => $modemType ?: $customer->device_model,
-                'address' => $customer->address === 'Auto dibuat dari Pendataan Modem' ? null : $customer->address,
-                'latitude' => $latitude ?? $customer->latitude,
-                'longitude' => $longitude ?? $customer->longitude,
-            ]);
-        }
-
-        if ($normalizedSerial !== '') {
-            \App\Models\GenieDeviceStatus::query()
-                ->whereRaw('LOWER(TRIM(onu_serial)) = ?', [$normalizedSerial])
-                ->update([
-                    'customer_id' => $customer->id,
-                    'onu_serial' => $serialNumber,
-                    'updated_at' => now(),
-                ]);
-        }
-
-        $installationNotes = trim(implode("\n", array_filter([
-            'Auto dari Pendataan Modem',
-            'Type: '.($modemType ?: '-'),
-            'MAC: '.$macAddress,
-            'SN: '.$serialNumber,
-        ])));
-
-        $installation = \App\Models\Installation::firstOrCreate(
-            [
-                'customer_id' => $customer->id,
-                'serial_number' => $serialNumber,
-                'mac_address' => $macAddress,
-            ],
-            [
-                'technician_id' => auth()->id(),
-                'status' => 'registered',
-                'plan_date' => now()->toDateString(),
-                'notes' => $installationNotes,
-                'coordinates' => $validated['coordinates'] ?? null,
-            ]
-        );
-        $installationMessage = $installation->wasRecentlyCreated
-            ? ' Installation baru dibuat (ID '.$installation->id.').'
-            : ' Data instalasi sudah ada (ID '.$installation->id.').';
-
-        $syncMessage = ' Data pelanggan berhasil disinkronkan ke customer ID '.$customer->id.' (match: '.($matchedBy ?? 'manual').').';
-
-        DB::table('modem_data_records')->insert([
-            'user_id' => auth()->id(),
-            'customer_id' => $customer?->id,
-            'customer_name' => $customerName,
-            'modem_type' => $modemType,
-            'mac_address' => $macAddress,
-            'serial_number' => $serialNumber,
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'coordinates' => $validated['coordinates'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return redirect()->route('modem-data.index')->with('success', 'Data modem berhasil disimpan.'.$syncMessage.$installationMessage);
-    })->name('modem-data.store');
 
     Route::resource('installations', InstallationWebController::class);
     Route::permanentRedirect('technicians', 'employees');

@@ -163,6 +163,8 @@ class PermissionSeeder extends Seeder
 
             // Tools (Utilities)
             ['name' => 'calculator.view', 'label' => 'View Calculator PON', 'group' => 'Utilities'],
+            ['name' => 'modem-data.view', 'label' => 'View Modem Data', 'group' => 'Utilities'],
+            ['name' => 'modem-data.create', 'label' => 'Create Modem Data', 'group' => 'Utilities'],
 
             // Profile
             ['name' => 'profile.view', 'label' => 'View Profile', 'group' => 'Profile'],

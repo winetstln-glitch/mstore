@@ -49,7 +49,7 @@ class RoleController extends Controller implements HasMiddleware
             'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.report', 'map.view',
             'odp.view', 'odp.edit', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view',
             'profile.view', 'profile.update', 'notification.view', 'notification.manage',
-            'inventory.view', 'inventory.pickup',
+            'inventory.view', 'inventory.pickup', 'modem-data.view', 'modem-data.create',
         ];
 
         $coordinatorNames = [
