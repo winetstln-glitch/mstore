@@ -128,6 +128,25 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-brands fa-telegram me-1"></i> Notifikasi Telegram
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input type="hidden" name="telegram_wash_notification_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" value="1" id="telegram_wash_notification_enabled" name="telegram_wash_notification_enabled" {{ \App\Models\Setting::getValue('telegram_wash_notification_enabled', '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="telegram_wash_notification_enabled">Aktifkan Notifikasi Transaksi Wash</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="telegram_wash_group_id" class="form-label fw-medium">ID Grup Telegram</label>
+                                <input type="text" class="form-control" id="telegram_wash_group_id" name="telegram_wash_group_id" value="{{ \App\Models\Setting::getValue('telegram_wash_group_id', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end pt-3">
                         <button type="submit" class="btn btn-primary">
                             <i class="fa-solid fa-save me-1"></i> {{ __('Simpan Pengaturan') }}

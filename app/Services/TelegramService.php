@@ -559,7 +559,7 @@ class TelegramService
         $enabledKey = "telegram_{$category}_notification_enabled";
         $groupIdKey = "telegram_{$category}_group_id";
 
-        $isEnabled = Setting::getValue($enabledKey, '1') == '1';
+        $isEnabled = Setting::getValue($enabledKey, '0') == '1';
         $target = Setting::getValue($groupIdKey, Setting::getValue('telegram_technician_group_chat_id'));
 
         if (! $isEnabled) {

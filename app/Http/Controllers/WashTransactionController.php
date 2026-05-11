@@ -26,6 +26,8 @@ use OpenSpout\Writer\XLSX\Writer;
 
 class WashTransactionController extends Controller implements HasMiddleware
 {
+    use \App\Traits\SendsNotifications;
+
     public static function middleware(): array
     {
         return [
@@ -387,6 +389,23 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             DB::commit();
+
+            $itemsList = collect($items)->map(fn($item) => "- {$item['service_name']} x{$item['quantity']}")->join("\n");
+            $paymentMethodLabel = strtoupper($request->payment_method);
+            $cashierName = Auth::user()?->name ?? 'Sistem';
+            $vehiclePlate = $vehiclePlateForStore ?: '-';
+            $customerName = $request->customer_name ?? ($customer ? $customer->name : 'Tamu');
+            
+            $message = "🧼 *TRANSAKSI WASH BARU*\n\n";
+            $message .= "📋 *No. Antrian:* {$queueNumber}\n";
+            $message .= "💰 *Total:* Rp " . number_format($finalTotal, 0, ',', '.') . "\n";
+            $message .= "💳 *Metode:* {$paymentMethodLabel}\n";
+            $message .= "👤 *Pelanggan:* {$customerName}\n";
+            $message .= "🚗 *Plat:* {$vehiclePlate}\n";
+            $message .= "👤 *Kasir:* {$cashierName}\n";
+            $message .= "📦 *Layanan:*\n{$itemsList}";
+
+            $this->sendGroupNotification($message, 'wash', ['telegram']);
 
             return response()->json([
                 'success' => true,
