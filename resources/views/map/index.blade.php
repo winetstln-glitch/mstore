@@ -963,6 +963,144 @@
         };
         L.control.layers(baseMaps).addTo(map);
 
+        // Custom Map Toolbar Control (Shortcut)
+        L.Control.MapToolbar = L.Control.extend({
+            onAdd: function(map) {
+                var container = L.DomUtil.create('div', 'leaflet-control-map-toolbar');
+                container.style.backgroundColor = 'rgba(255,255,255,0.95)';
+                container.style.padding = '8px';
+                container.style.borderRadius = '8px';
+                container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '6px';
+
+                // Refresh Button
+                var refreshBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                refreshBtn.innerHTML = '<i class="fa fa-refresh"></i>';
+                refreshBtn.title = '{{ __('Segarkan') }}';
+                refreshBtn.style.width = '36px';
+                refreshBtn.style.height = '36px';
+                refreshBtn.style.backgroundColor = '#06b6d4';
+                refreshBtn.style.color = 'white';
+                refreshBtn.style.border = 'none';
+                refreshBtn.onclick = function() { location.reload(); };
+
+                // Fullscreen Button
+                var fullscreenBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                fullscreenBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                fullscreenBtn.title = '{{ __('Layar Penuh') }}';
+                fullscreenBtn.style.width = '36px';
+                fullscreenBtn.style.height = '36px';
+                fullscreenBtn.style.backgroundColor = '#6b7280';
+                fullscreenBtn.style.color = 'white';
+                fullscreenBtn.style.border = 'none';
+                fullscreenBtn.onclick = function() {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                };
+
+                // Edit Lines Button
+                var editLinesBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                editLinesBtn.innerHTML = '<i class="fa fa-pencil"></i>';
+                editLinesBtn.title = '{{ __('Edit Garis') }}';
+                editLinesBtn.style.width = '36px';
+                editLinesBtn.style.height = '36px';
+                editLinesBtn.style.backgroundColor = '#f97316';
+                editLinesBtn.style.color = 'white';
+                editLinesBtn.style.border = 'none';
+                editLinesBtn.id = 'map-btn-edit-lines';
+                editLinesBtn.onclick = function() {
+                    document.getElementById('btnEditLines').click();
+                };
+
+                @if(isset($isAdmin) && $isAdmin)
+                // Add Infrastructure Buttons
+                var separator1 = L.DomUtil.create('hr', '', container);
+                separator1.style.margin = '6px 0';
+                separator1.style.borderColor = '#e5e7eb';
+
+                // Add OLT Button
+                var addOltBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                addOltBtn.innerHTML = '<i class="fa fa-server"></i>';
+                addOltBtn.title = '{{ __('OLT') }}';
+                addOltBtn.style.width = '36px';
+                addOltBtn.style.height = '36px';
+                addOltBtn.style.backgroundColor = '#3b82f6';
+                addOltBtn.style.color = 'white';
+                addOltBtn.style.border = 'none';
+                addOltBtn.onclick = function() {
+                    document.getElementById('btnAddOltMode').click();
+                };
+
+                // Add ODC Button
+                var addOdcBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                addOdcBtn.innerHTML = '<i class="fa fa-plus"></i>';
+                addOdcBtn.title = '{{ __('ODC') }}';
+                addOdcBtn.style.width = '36px';
+                addOdcBtn.style.height = '36px';
+                addOdcBtn.style.backgroundColor = '#eab308';
+                addOdcBtn.style.color = '#1f2937';
+                addOdcBtn.style.border = 'none';
+                addOdcBtn.onclick = function() {
+                    document.getElementById('btnAddOdcMode').click();
+                };
+
+                // Add ODP Button
+                var addOdpBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                addOdpBtn.innerHTML = '<i class="fa fa-plus"></i>';
+                addOdpBtn.title = '{{ __('ODP') }}';
+                addOdpBtn.style.width = '36px';
+                addOdpBtn.style.height = '36px';
+                addOdpBtn.style.backgroundColor = '#22c55e';
+                addOdpBtn.style.color = 'white';
+                addOdpBtn.style.border = 'none';
+                addOdpBtn.onclick = function() {
+                    document.getElementById('btnAddOdpMode').click();
+                };
+
+                // Add HTB Button
+                var addHtbBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                addHtbBtn.innerHTML = '<i class="fa fa-plus"></i>';
+                addHtbBtn.title = '{{ __('HTB') }}';
+                addHtbBtn.style.width = '36px';
+                addHtbBtn.style.height = '36px';
+                addHtbBtn.style.backgroundColor = '#a855f7';
+                addHtbBtn.style.color = 'white';
+                addHtbBtn.style.border = 'none';
+                addHtbBtn.onclick = function() {
+                    document.getElementById('btnAddHtbMode').click();
+                };
+
+                // Add Closure Button
+                var addClosureBtn = L.DomUtil.create('button', 'btn btn-sm', container);
+                addClosureBtn.innerHTML = '<i class="fa fa-plus"></i>';
+                addClosureBtn.title = '{{ __('Closure') }}';
+                addClosureBtn.style.width = '36px';
+                addClosureBtn.style.height = '36px';
+                addClosureBtn.style.backgroundColor = '#1f2937';
+                addClosureBtn.style.color = 'white';
+                addClosureBtn.style.border = 'none';
+                addClosureBtn.onclick = function() {
+                    document.getElementById('btnAddClosureMode').click();
+                };
+                @endif
+
+                L.DomEvent.disableClickPropagation(container);
+                return container;
+            },
+            onRemove: function(map) {}
+        });
+
+        L.control.mapToolbar = function(opts) {
+            return new L.Control.MapToolbar(opts);
+        };
+
+        L.control.mapToolbar({ position: 'topright' }).addTo(map);
+
         var onlineColor = currentTheme === 'dark' ? '#00f2ff' : '#00a3ff';
         var onlinePulseColor = currentTheme === 'dark' ? '#00d8ff' : '#66caff';
 
