@@ -493,11 +493,11 @@
         justify-content: center;
     }
     .modern-map-popup .customer-card {
-        width: 300px;
+        width: 320px;
         color: #cbd5e1;
         font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
         font-size: 12px;
-        line-height: 1.35;
+        line-height: 1.4;
     }
     .modern-map-popup .customer-header {
         display: flex;
@@ -2226,11 +2226,11 @@
                             <div class="card-panel p-3">
                                 <div class="acs-head">
                                     <div class="acs-title">
-                                        <i data-lucide="zap" class="w-4 h-4"></i><span class="font-bold">ACS Aktif</span>
+                                        <i data-lucide="zap" class="w-4 h-4"></i><span class="font-bold">GenieACS</span>
                                     </div>
-                                    <span class="acs-up" id="popup-last-inform-${customer.id}">${hasGenieStatus ? `Last Inform: ${formatLastInform(lastInform)}` : 'Data GenieACS belum ada'}</span>
+                                    <span class="acs-up" id="popup-last-inform-${customer.id}">${hasGenieStatus ? formatLastInform(lastInform) : 'N/A'}</span>
                                 </div>
-                                <div class="acs-grid">
+                                <div class="grid grid-cols-1 gap-2">
                                     <div class="acs-item">
                                         <div class="acs-label">TR069 IP</div>
                                         <div class="acs-value acs-value-start" id="popup-acs-ip-${customer.id}">${tr069Ip}</div>
@@ -2239,18 +2239,20 @@
                                         <div class="acs-label">Last Reason</div>
                                         <div class="acs-value ${isOnline ? 'acs-value-now-online' : 'acs-value-now-offline'}" id="popup-last-reason-${customer.id}">${lastReason}</div>
                                     </div>
-                                </div>
-                                <div class="mt-3 grid grid-cols-2 gap-2">
-                                    ${customer.rx_power ? `
-                                        <div class="acs-item">
-                                            <div class="acs-label">RX Power</div>
-                                            <div class="acs-value font-bold text-emerald-400">${customer.rx_power}</div>
-                                        </div>
-                                    ` : ''}
-                                    ${customer.rdm_power ? `
-                                        <div class="acs-item">
-                                            <div class="acs-label">RDM Power</div>
-                                            <div class="acs-value font-bold text-yellow-400">${customer.rdm_power}</div>
+                                    ${(customer.rx_power || customer.rdm_power) ? `
+                                        <div class="flex gap-2 mt-1">
+                                            ${customer.rx_power ? `
+                                                <div class="flex-1 bg-slate-800/60 rounded-lg p-2 border border-slate-700/50">
+                                                    <div class="acs-label text-xs mb-1">RX Power</div>
+                                                    <div class="acs-value font-bold text-emerald-400 text-sm">${customer.rx_power}</div>
+                                                </div>
+                                            ` : ''}
+                                            ${customer.rdm_power ? `
+                                                <div class="flex-1 bg-slate-800/60 rounded-lg p-2 border border-slate-700/50">
+                                                    <div class="acs-label text-xs mb-1">RDM Power</div>
+                                                    <div class="acs-value font-bold text-yellow-400 text-sm">${customer.rdm_power}</div>
+                                                </div>
+                                            ` : ''}
                                         </div>
                                     ` : ''}
                                 </div>
