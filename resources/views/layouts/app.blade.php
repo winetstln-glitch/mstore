@@ -19,7 +19,7 @@
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <!-- Select2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -44,7 +44,7 @@
         }
     </script>
 </head>
-<body class="route-{{ request()->segment(1) ?? 'home' }} route-name-{{ str_replace('.', '-', request()->route()?->getName() ?? 'unknown') }}">
+<body class="route-{{ Str::slug(request()->segment(1) ?? 'home') }}">
 <div class="mstore-page-loader" id="mstorePageLoader" aria-hidden="true">
     <div class="mstore-page-loader-card d-flex align-items-center gap-3">
         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
@@ -799,8 +799,8 @@
                         @forelse($unreadNotifications as $notification)
                             <li>
                                 <a class="dropdown-item py-2 border-bottom" href="{{ route('notifications.redirect', $notification->id) }}">
-                                    <div class="small fw-bold">{{ $notification->data['subject'] ?? 'Notifikasi' }}</div>
-                                    <div class="small text-muted text-truncate">{{ $notification->data['message'] ?? '' }}</div>
+                                    <div class="small fw-bold">{{ strip_tags($notification->data['subject'] ?? 'Notifikasi') }}</div>
+                                    <div class="small text-muted text-truncate">{{ strip_tags($notification->data['message'] ?? '') }}</div>
                                     <div class="small text-muted mt-1" style="font-size: 0.75rem;">{{ $notification->created_at->diffForHumans() }}</div>
                                 </a>
                             </li>
@@ -828,7 +828,13 @@
                 <!-- Profile Dropdown -->
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-body" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'User') . '&background=3f6ad8&color=fff' }}" alt="Avatar" width="32" height="32" class="rounded-circle me-2" style="object-fit: cover;">
+                        @php
+                            $avatarPath = Auth::user()->avatar ?? '';
+                            $avatarUrl = $avatarPath && !str_starts_with($avatarPath, 'http') && !str_contains($avatarPath, '..')
+                                ? asset('storage/' . $avatarPath)
+                                : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'User') . '&background=3f6ad8&color=fff';
+                        @endphp
+                        <img src="{{ $avatarUrl }}" alt="Avatar" width="32" height="32" class="rounded-circle me-2" style="object-fit: cover;">
                         <span class="d-none d-md-inline fw-medium small">{{ Auth::user()->name ?? 'User' }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="profileDropdown">
