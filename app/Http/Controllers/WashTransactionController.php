@@ -339,9 +339,55 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $discountNote = 'voucher_free_wash';
             }
 
-            // Generate Queue Number (Reset daily)
+            // Determine if transaction is Caffe/Warkop or Wash
+            $isCaffe = false;
+            foreach ($items as $item) {
+                $service = WashService::find($item['wash_service_id']);
+                if ($service && $service->vehicle_type === 'coffee') {
+                    $isCaffe = true;
+                    break;
+                }
+                if (strtolower($item['service_name']) === 'kopi' || 
+                    strtolower($item['service_name']) === 'caffe' || 
+                    strtolower($item['service_name']) === 'warkop' ||
+                    str_contains(strtolower($item['service_name']), 'kopi') ||
+                    str_contains(strtolower($item['service_name']), 'caffe') ||
+                    str_contains(strtolower($item['service_name']), 'warkop')) {
+                    $isCaffe = true;
+                    break;
+                }
+            }
+
+            $prefix = $isCaffe ? 'Caffe' : 'Wash';
+            
+            // Generate sequence number for the type (reset daily)
             $today = today();
             $tomorrow = today()->addDay();
+            
+            // Get all transactions today with the same prefix to find last sequence
+            $lastSequence = 0;
+            $todayTransactions = WashTransaction::where('created_at', '>=', $today)
+                ->where('created_at', '<', $tomorrow)
+                ->orderBy('id', 'desc')
+                ->get();
+                
+            foreach ($todayTransactions as $t) {
+                if (str_starts_with($t->transaction_number, $prefix . '-')) {
+                    $parts = explode('-', $t->transaction_number);
+                    if (count($parts) === 2) {
+                        $num = (int)$parts[1];
+                        if ($num > $lastSequence) {
+                            $lastSequence = $num;
+                        }
+                    }
+                }
+            }
+            $sequenceNumber = $lastSequence + 1;
+            
+            // Format transaction number: Caffe-001, Wash-001
+            $transactionNumber = $prefix . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
+            
+            // Generate Queue Number (Reset daily for overall count)
             $lastQueue = WashTransaction::where('created_at', '>=', $today)
                 ->where('created_at', '<', $tomorrow)
                 ->max('queue_number');
@@ -350,7 +396,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             $transaction = WashTransaction::create([
                 'user_id' => Auth::id(),
                 'wash_customer_id' => $customer ? $customer->id : null,
-                'transaction_number' => 'WASH-'.time(),
+                'transaction_number' => $transactionNumber,
                 'queue_number' => $queueNumber,
                 'total_amount' => $finalTotal,
                 'discount_amount' => $discountAmount,
