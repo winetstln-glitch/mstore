@@ -406,36 +406,36 @@
 <!-- WiFi Modal -->
 <div class="modal fade" id="wifiModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="background: #1e293b; color: #f1f5f9;">
-            <div class="modal-header border-bottom border-slate-700">
-                <h5 class="modal-title font-bold text-emerald-400"><i data-lucide="wifi" class="w-5 h-5 inline-block mr-2"></i>Ganti WiFi Pelanggan</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-bold"><i data-lucide="wifi" class="w-5 h-5 inline-block mr-2"></i>Ganti WiFi Pelanggan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body">
                 <form id="wifiForm">
                     <input type="hidden" id="wifi_customer_id">
-                    <div class="mb-4">
-                        <label class="form-label font-semibold text-slate-300">Nama SSID</label>
+                    <div class="mb-3">
+                        <label class="form-label">Nama SSID</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-slate-800 border-slate-700 text-slate-400"><i data-lucide="signal" class="w-4 h-4"></i></span>
-                            <input type="text" id="wifi_ssid" class="form-control bg-slate-800 border-slate-700 text-white focus:ring-emerald-500 focus:border-emerald-500" placeholder="Masukkan SSID baru" required maxlength="32">
+                            <span class="input-group-text"><i data-lucide="signal" class="w-4 h-4"></i></span>
+                            <input type="text" id="wifi_ssid" class="form-control" placeholder="Masukkan SSID baru" required maxlength="32">
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label font-semibold text-slate-300">Password WiFi</label>
+                    <div class="mb-3">
+                        <label class="form-label">Password WiFi</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-slate-800 border-slate-700 text-slate-400"><i data-lucide="key" class="w-4 h-4"></i></span>
-                            <input type="text" id="wifi_password" class="form-control bg-slate-800 border-slate-700 text-white focus:ring-emerald-500 focus:border-emerald-500" placeholder="Minimal 8 karakter" required minlength="8">
+                            <span class="input-group-text"><i data-lucide="key" class="w-4 h-4"></i></span>
+                            <input type="text" id="wifi_password" class="form-control" placeholder="Minimal 8 karakter" required minlength="8">
                         </div>
-                        <div class="form-text text-slate-400 mt-2">
+                        <div class="form-text mt-2">
                             <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i> Perubahan akan dikirim ke GenieACS dan diupdate ke router pelanggan.
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer border-top border-slate-700">
-                <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Batal</button>
-                <button type="button" id="saveWifiBtn" class="btn btn-emerald btn-sm font-bold px-4">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="saveWifiBtn" class="btn btn-primary btn-sm font-bold px-4">
                     <span id="wifiBtnSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
                     Simpan Perubahan
                 </button>
@@ -2930,6 +2930,7 @@
 
         window.togglePassword = function(id, btnEl) {
             const textEl = document.getElementById(`pass-text-${id}`);
+            const iconEl = document.getElementById(`pass-icon-${id}`);
             if (!textEl) return;
 
             const actualPass = textEl.getAttribute('data-password') || '';
@@ -2941,12 +2942,22 @@
                     btnEl.setAttribute('data-visible', '1');
                     btnEl.setAttribute('title', 'Sembunyikan Password');
                 }
+                if (iconEl) {
+                    iconEl.setAttribute('data-lucide', 'eye-off');
+                }
             } else {
-                textEl.innerText = '********';
+                textEl.innerText = '••••••••';
                 if (btnEl) {
                     btnEl.setAttribute('data-visible', '0');
                     btnEl.setAttribute('title', 'Tampilkan Password');
                 }
+                if (iconEl) {
+                    iconEl.setAttribute('data-lucide', 'eye');
+                }
+            }
+            // Reinitialize Lucide icons
+            if (window.lucide) {
+                window.lucide.createIcons({ attrs: { class: 'lucide-icon' }, nameAttr: 'data-lucide' });
             }
         };
 
