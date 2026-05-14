@@ -11,6 +11,7 @@ class WashTransaction extends Model
         'total_amount', 'payment_method', 'cash_amount', 'change_amount', 'notes',
         'wash_customer_id', 'vehicle_brand', 'discount_amount',
         'kasbon_type', 'kasbon_user_id', 'kasbon_name', 'kasbon_settled',
+        'queue_number',
     ];
 
     public function kasbonUser()
