@@ -2264,8 +2264,10 @@
                                     <span class="status-label">Password</span>
                                     <div class="flex items-center justify-between bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
                                         <span class="text-yellow-400 font-bold font-mono text-sm" id="pass-text-${customer.id}" data-password="${customer.ssid_password || ''}">••••••••</span>
-                                        <button onclick="window.togglePassword(${customer.id}, this)" data-visible="0" title="Lihat Password" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-all">
-                                            <i data-lucide="eye" class="w-4 h-4" id="pass-icon-${customer.id}"></i>
+                                        <button onclick="window.togglePassword(${customer.id}, this)" data-visible="0" title="Lihat Password" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-all flex items-center justify-center">
+                                            <span id="pass-icon-${customer.id}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
@@ -2932,6 +2934,10 @@
             const textEl = document.getElementById(`pass-text-${id}`);
             const iconEl = document.getElementById(`pass-icon-${id}`);
             if (!textEl) return;
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
 
             const actualPass = textEl.getAttribute('data-password') || '';
             const isVisible = btnEl && btnEl.getAttribute('data-visible') === '1';
@@ -2943,7 +2949,7 @@
                     btnEl.setAttribute('title', 'Sembunyikan Password');
                 }
                 if (iconEl) {
-                    iconEl.setAttribute('data-lucide', 'eye-off');
+                    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
                 }
             } else {
                 textEl.innerText = '••••••••';
@@ -2952,12 +2958,8 @@
                     btnEl.setAttribute('title', 'Tampilkan Password');
                 }
                 if (iconEl) {
-                    iconEl.setAttribute('data-lucide', 'eye');
+                    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
                 }
-            }
-            // Reinitialize Lucide icons
-            if (window.lucide) {
-                window.lucide.createIcons({ attrs: { class: 'lucide-icon' }, nameAttr: 'data-lucide' });
             }
         };
 
