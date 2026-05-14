@@ -122,7 +122,7 @@
                                 </td>
                                 @endif
                                 <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                                <td>{{ $transaction->transaction_number }}</td>
+                                <td>{{ str_pad($transaction->queue_number, 3, '0', STR_PAD_LEFT) }}</td>
                                 <td>{{ $transaction->customer_name ?? '-' }}</td>
                                 <td>{{ $transaction->washCustomer->phone ?? '-' }}</td>
                                 <td>{{ $transaction->vehicle_plate ?? '-' }}</td>

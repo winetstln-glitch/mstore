@@ -52,7 +52,8 @@ class WashReportController extends Controller
             ->where('reference_number', 'like', 'WASH-EXP-%')
             ->where(function ($q) {
                 $q->where('category', 'like', '%Kopi%')
-                    ->orWhere('category', 'like', '%Caffe%');
+                    ->orWhere('category', 'like', '%Caffe%')
+                    ->orWhere('category', 'like', '%Warkop%');
             })
             ->whereBetween('transaction_date', [
                 $startDate.' 00:00:00',
@@ -62,7 +63,8 @@ class WashReportController extends Controller
             ->where('reference_number', 'like', 'WASH-EXP-%')
             ->where(function ($q) {
                 $q->where('category', 'like', '%Kopi%')
-                    ->orWhere('category', 'like', '%Caffe%');
+                    ->orWhere('category', 'like', '%Caffe%')
+                    ->orWhere('category', 'like', '%Warkop%');
             })
             ->whereMonth('transaction_date', substr($month, 5, 2))
             ->whereYear('transaction_date', substr($month, 0, 4))
@@ -77,7 +79,8 @@ class WashReportController extends Controller
             ->where(function ($q) {
                 $q->where('s.vehicle_type', 'coffee')
                     ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%kopi%'")
-                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'");
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'")
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%warkop%'");
             });
         if ($normalizedVehiclePlate !== '') {
             $dailyCaffeRevenueQuery->whereRaw(
@@ -93,7 +96,8 @@ class WashReportController extends Controller
             ->where(function ($q) {
                 $q->where('s.vehicle_type', 'coffee')
                     ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%kopi%'")
-                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'");
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'")
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%warkop%'");
             });
         if ($normalizedVehiclePlate !== '') {
             $monthlyCaffeRevenueQuery->whereRaw(
@@ -102,6 +106,10 @@ class WashReportController extends Controller
             );
         }
         $monthlyCaffeRevenue = (float) $monthlyCaffeRevenueQuery->sum('i.subtotal');
+        $dailyWashIncome = $dailyIncome - $dailyCaffeRevenue;
+        $dailyWashExpense = $dailyExpense - $dailyCaffeInitialCapital;
+        $monthlyWashIncome = $monthlyIncome - $monthlyCaffeRevenue;
+        $monthlyWashExpense = $monthlyExpense - $monthlyCaffeInitialCapital;
 
         $dailyIncomeRowsQuery = WashTransaction::query()
             ->with('user:id,name')
@@ -193,6 +201,7 @@ class WashReportController extends Controller
             'vehiclePlate', 'knownVehiclePlates',
             'dailyIncome', 'dailyExpense', 'monthlyIncome', 'monthlyExpense',
             'dailyCaffeInitialCapital', 'dailyCaffeRevenue', 'monthlyCaffeInitialCapital', 'monthlyCaffeRevenue',
+            'dailyWashIncome', 'dailyWashExpense', 'monthlyWashIncome', 'monthlyWashExpense',
             'dailyIncomeRows', 'dailyExpenseRows',
             'monthlyDailyIncome', 'monthlyDailyExpense',
             'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment'

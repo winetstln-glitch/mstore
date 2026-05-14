@@ -57,7 +57,47 @@
                 <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
             </form>
 
-            <!-- RINGKASAN KEUANGAN (Full Width untuk Audit) -->
+            <!-- RINGKASAN KEUANGAN WASH -->
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th style="width: 33%;">Pemasukan Wash</th>
+                            <th style="width: 33%;">Pengeluaran Wash</th>
+                            <th style="width: 34%;">Laba / Rugi Wash</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle" style="font-size: 1.1rem;">
+                            <td class="text-success fw-bold">Rp {{ number_format($dailyWashIncome,0,',','.') }}</td>
+                            <td class="text-danger fw-bold">Rp {{ number_format($dailyWashExpense,0,',','.') }}</td>
+                            <td class="fw-bold">Rp {{ number_format($dailyWashIncome - $dailyWashExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- RINGKASAN KEUANGAN CAFFE / WARKOP -->
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table-warning">
+                        <tr>
+                            <th style="width: 33%;">Modal Awal Caffe / Warkop</th>
+                            <th style="width: 33%;">Pendapatan Caffe / Warkop</th>
+                            <th style="width: 34%;">Selisih Caffe / Warkop</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-danger">Rp {{ number_format($dailyCaffeInitialCapital,0,',','.') }}</td>
+                            <td class="text-success">Rp {{ number_format($dailyCaffeRevenue,0,',','.') }}</td>
+                            <td class="{{ ($dailyCaffeRevenue - $dailyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailyCaffeRevenue - $dailyCaffeInitialCapital,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- RINGKASAN KEUANGAN TOTAL -->
             <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table mb-0">
                     <thead class="table">
@@ -72,24 +112,6 @@
                             <td class="text-success fw-bold">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
                             <td class="text-danger fw-bold">Rp {{ number_format($dailyExpense,0,',','.') }}</td>
                             <td class="fw-bold">Rp {{ number_format($dailyIncome - $dailyExpense,0,',','.') }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="table-responsive table-responsive-mobile mb-4">
-                <table class="table table-bordered table mb-0">
-                    <thead class="table">
-                        <tr>
-                            <th style="width: 33%;">Modal Awal Caffe</th>
-                            <th style="width: 33%;">Pendapatan Caffe</th>
-                            <th style="width: 34%;">Selisih Caffe</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end align-middle fw-bold">
-                            <td class="text-danger">Rp {{ number_format($dailyCaffeInitialCapital,0,',','.') }}</td>
-                            <td class="text-success">Rp {{ number_format($dailyCaffeRevenue,0,',','.') }}</td>
-                            <td class="{{ ($dailyCaffeRevenue - $dailyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailyCaffeRevenue - $dailyCaffeInitialCapital,0,',','.') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -230,13 +252,53 @@
                 <div class="col-auto"><button type="submit" class="btn btn-primary">Lihat Data</button></div>
             </form>
 
-            <!-- RINGKASAN BULANAN -->
+            <!-- RINGKASAN BULANAN WASH -->
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th style="width: 33%;">Pemasukan Wash (Bulanan)</th>
+                            <th style="width: 33%;">Pengeluaran Wash (Bulanan)</th>
+                            <th style="width: 34%;">Laba / Rugi Wash (Bulanan)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-success">Rp {{ number_format($monthlyWashIncome,0,',','.') }}</td>
+                            <td class="text-danger">Rp {{ number_format($monthlyWashExpense,0,',','.') }}</td>
+                            <td>Rp {{ number_format($monthlyWashIncome - $monthlyWashExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- RINGKASAN BULANAN CAFFE / WARKOP -->
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table-warning">
+                        <tr>
+                            <th style="width: 33%;">Modal Awal Caffe / Warkop (Bulanan)</th>
+                            <th style="width: 33%;">Pendapatan Caffe / Warkop (Bulanan)</th>
+                            <th style="width: 34%;">Selisih Caffe / Warkop (Bulanan)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-danger">Rp {{ number_format($monthlyCaffeInitialCapital,0,',','.') }}</td>
+                            <td class="text-success">Rp {{ number_format($monthlyCaffeRevenue,0,',','.') }}</td>
+                            <td class="{{ ($monthlyCaffeRevenue - $monthlyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlyCaffeRevenue - $monthlyCaffeInitialCapital,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- RINGKASAN BULANAN TOTAL -->
             <div class="table-responsive table-responsive-mobile mb-4">
                 <table class="table table-bordered table mb-0">
                     <thead class="table">
                         <tr>
-                            <th style="width: 33%;">Pemasukan Bulanan</th>
-                            <th style="width: 33%;">Pengeluaran Bulanan</th>
+                            <th style="width: 33%;">Total Pemasukan Bulanan</th>
+                            <th style="width: 33%;">Total Pengeluaran Bulanan</th>
                             <th style="width: 34%;">Laba Bersih Bulanan</th>
                         </tr>
                     </thead>
@@ -245,24 +307,6 @@
                             <td class="text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</td>
                             <td class="text-danger">Rp {{ number_format($monthlyExpense,0,',','.') }}</td>
                             <td>Rp {{ number_format($monthlyIncome - $monthlyExpense,0,',','.') }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="table-responsive table-responsive-mobile mb-4">
-                <table class="table table-bordered table mb-0">
-                    <thead class="table">
-                        <tr>
-                            <th style="width: 33%;">Modal Awal Caffe (Bulanan)</th>
-                            <th style="width: 33%;">Pendapatan Caffe (Bulanan)</th>
-                            <th style="width: 34%;">Selisih Caffe (Bulanan)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end align-middle fw-bold">
-                            <td class="text-danger">Rp {{ number_format($monthlyCaffeInitialCapital,0,',','.') }}</td>
-                            <td class="text-success">Rp {{ number_format($monthlyCaffeRevenue,0,',','.') }}</td>
-                            <td class="{{ ($monthlyCaffeRevenue - $monthlyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlyCaffeRevenue - $monthlyCaffeInitialCapital,0,',','.') }}</td>
                         </tr>
                     </tbody>
                 </table>
