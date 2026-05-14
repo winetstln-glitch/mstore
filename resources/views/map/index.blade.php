@@ -2240,6 +2240,20 @@
                                         <div class="acs-value ${isOnline ? 'acs-value-now-online' : 'acs-value-now-offline'}" id="popup-last-reason-${customer.id}">${lastReason}</div>
                                     </div>
                                 </div>
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    ${customer.rx_power ? `
+                                        <div class="acs-item">
+                                            <div class="acs-label">RX Power</div>
+                                            <div class="acs-value font-bold text-emerald-400">${customer.rx_power}</div>
+                                        </div>
+                                    ` : ''}
+                                    ${customer.rdm_power ? `
+                                        <div class="acs-item">
+                                            <div class="acs-label">RDM Power</div>
+                                            <div class="acs-value font-bold text-yellow-400">${customer.rdm_power}</div>
+                                        </div>
+                                    ` : ''}
+                                </div>
                             </div>
 
                             <div class="card-panel p-2.5 space-y-1.5">

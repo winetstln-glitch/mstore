@@ -132,7 +132,9 @@ class MapController extends Controller implements HasMiddleware
                 $customer->last_reason = $status->last_reason;
                 $customer->connection_request_url = $status->connection_request_url;
                 $customer->has_genie_status = true;
-                $customer->rx_power = null;
+                $customer->rx_power = $status->rx_power;
+                $customer->tx_power = $status->tx_power;
+                $customer->rdm_power = $status->rdm_power;
                 $customer->genie_name = null;
             } else {
                 $customer->is_online = false;
@@ -142,6 +144,8 @@ class MapController extends Controller implements HasMiddleware
                 $customer->connection_request_url = null;
                 $customer->has_genie_status = false;
                 $customer->rx_power = null;
+                $customer->tx_power = null;
+                $customer->rdm_power = null;
                 $customer->genie_name = null;
             }
 
@@ -455,6 +459,10 @@ class MapController extends Controller implements HasMiddleware
 
             $tr069Ip = $this->genieService->getTr069Ip($device);
 
+            // Extract Power Levels from GenieACS
+            $rxPower = $this->genieService->getValue(data_get($device, 'VirtualParameters.RXPower._value') ?? null);
+            $rdmPower = $this->genieService->getValue(data_get($device, 'VirtualParameters.redaman._value') ?? null);
+
             // Sync with GenieDeviceStatus table
             \App\Models\GenieDeviceStatus::updateOrCreate(
                 ['customer_id' => $customer->id],
@@ -464,6 +472,8 @@ class MapController extends Controller implements HasMiddleware
                     'last_inform' => $lastInformRaw,
                     'tr069_ip' => $tr069Ip,
                     'connection_request_url' => $this->genieService->getConnectionRequestUrl($device),
+                    'rx_power' => $rxPower,
+                    'rdm_power' => $rdmPower,
                 ]
             );
 

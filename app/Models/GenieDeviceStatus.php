@@ -16,6 +16,9 @@ class GenieDeviceStatus extends Model
         'last_reason',
         'last_notified_down_at',
         'last_notified_up_at',
+        'rx_power',
+        'tx_power',
+        'rdm_power',
     ];
 
     protected $casts = [
