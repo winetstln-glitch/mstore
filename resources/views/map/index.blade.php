@@ -16,7 +16,7 @@
                                 {{ __('Peta Distribusi') }}
                             </h5>
                             
-                            <!-- Filter & Add Buttons Container -->
+                            <!-- Filter Only -->
                             <div class="d-flex flex-wrap align-items-center gap-2">
                                 @if(isset($isAdmin) && $isAdmin)
                                 <div>
@@ -31,8 +31,8 @@
                                 </div>
                                 @endif
 
-                                <!-- Mobile: Scrollable/Button Group, Desktop: Inline -->
-                                <div class="btn-group-mobile">
+                                <!-- Hidden Buttons (for custom control) -->
+                                <div class="d-none">
                                     <button type="button" class="btn btn-primary btn-sm" id="btnAddOltMode">
                                         <i class="fa fa-server me-1 d-none d-sm-inline"></i> {{ __('OLT') }}
                                     </button>
@@ -51,21 +51,17 @@
                                     <button type="button" class="btn btn-danger btn-sm d-none" id="btnCancelAdd">
                                         <i class="fa fa-times me-1"></i> {{ __('Batal') }}
                                     </button>
+                                    <button type="button" class="btn btn-info btn-sm text-white" onclick="location.reload()" title="{{ __('Segarkan') }}">
+                                        <i class="fa fa-refresh"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
+                                        <i class="fa fa-expand"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Right Group: Utility Actions -->
-                        <div class="d-flex align-items-center gap-2 w-100 w-md-auto justify-content-md-end toolbar-actions">
-                            <button type="button" class="btn btn-info btn-sm text-white" onclick="location.reload()" title="{{ __('Segarkan') }}">
-                                <i class="fa fa-refresh"></i>
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
-                                <i class="fa fa-expand"></i>
-                            </button>
-                            <button type="button" class="btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
-                                <i class="fa fa-pencil"></i>
-                            </button>
                         </div>
                     </div>
 

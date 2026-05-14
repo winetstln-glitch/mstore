@@ -400,7 +400,6 @@ body.sb-sidenav-toggled #page-content-wrapper {
 .btn {
     border-radius: var(--border-radius-sm);
     font-weight: 500;
-    padding: 0.5rem 1rem;
     transition: all 0.2s ease;
     font-family: inherit; /* Ensure font consistency */
 }
