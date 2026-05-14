@@ -452,6 +452,11 @@
 <script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.min.js"></script>
 
 <style>
+    #map {
+        height: 80vh;
+        width: 100%;
+        border-radius: 8px;
+    }
     .modern-map-popup .leaflet-popup-content-wrapper {
         background: #0f172a !important; /* Very dark navy/slate */
         padding: 0 !important;
