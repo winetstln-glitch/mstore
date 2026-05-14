@@ -466,7 +466,7 @@
     }
     .modern-map-popup .leaflet-popup-content {
         margin: 0 !important;
-        width: 330px !important;
+        width: 320px !important;
     }
     .modern-map-popup .leaflet-popup-tip {
         background: #0f172a !important;
@@ -2223,7 +2223,7 @@
                                 <span class="status-value ${isOnline ? 'status-online' : 'status-offline'}" id="popup-status-text-${customer.id}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
                             </div>
 
-                            <div class="card-panel p-3">
+                            <div class="card-panel p-2">
                                 <div class="acs-head">
                                     <div class="acs-title">
                                         <i data-lucide="zap" class="w-4 h-4"></i><span class="font-bold">GenieACS</span>
@@ -2258,14 +2258,14 @@
                                 </div>
                             </div>
 
-                            <div class="card-panel p-2.5 space-y-1.5">
+                            <div class="card-panel p-2 space-y-1.5">
                                 <div class="kv-row"><span class="status-label">SSID</span><span class="text-yellow-400 font-bold" id="popup-ssid-${customer.id}">${ssidName}</span></div>
                                 <div class="kv-row">
                                     <span class="status-label">Password</span>
-                                    <div class="flex items-center gap-1.5 bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-700/50">
-                                        <span class="text-yellow-400 font-bold font-monospace tracking-wider" id="pass-text-${customer.id}" data-password="${customer.ssid_password || ''}">********</span>
-                                        <button onclick="window.togglePassword(${customer.id}, this)" data-visible="0" title="Tampilkan Password" class="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all">
-                                            <i data-lucide="eye" class="w-3.5 h-3.5" id="pass-icon-${customer.id}"></i>
+                                    <div class="flex items-center justify-between bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
+                                        <span class="text-yellow-400 font-bold font-mono text-sm" id="pass-text-${customer.id}" data-password="${customer.ssid_password || ''}">••••••••</span>
+                                        <button onclick="window.togglePassword(${customer.id}, this)" data-visible="0" title="Lihat Password" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-all">
+                                            <i data-lucide="eye" class="w-4 h-4" id="pass-icon-${customer.id}"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -2279,7 +2279,7 @@
                                 <button onclick="window.rebootCustomer(${customer.id})" class="popup-btn btn-red"><i data-lucide="power" class="w-4 h-4"></i><span>Reboot</span></button>
                             </div>
 
-                            <div class="card-panel p-3">
+                            <div class="card-panel p-2">
                                 <div class="traffic-head">
                                     <div class="traffic-title"><i data-lucide="activity" class="w-4 h-4 text-slate-300"></i><span>Live Traffic</span></div>
                                     <div class="traffic-legend">
