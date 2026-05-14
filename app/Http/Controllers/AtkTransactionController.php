@@ -213,8 +213,12 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 throw new \Exception('Pilih pengurus untuk transaksi pembayaran pelanggan.');
             }
 
+            $lastQueue = AtkTransaction::whereDate('created_at', today())->max('queue_number');
+            $queueNumber = $lastQueue ? $lastQueue + 1 : 1;
+
             $payload = [
                 'user_id' => Auth::id(),
+                'queue_number' => $queueNumber,
                 'transaction_number' => 'TRX-'.time(),
                 'invoice_number' => 'INV-'.time(), // Added to satisfy legacy constraint
                 'total_amount' => $total,

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 class AtkTransaction extends Model
 {
     protected $fillable = [
-        'user_id', 'transaction_number', 'total_amount', 'transaction_category', 'payment_method', 'is_debt', 'cash_amount', 'change_amount', 'amount_paid', 'coordinator_id', 'customer_name', 'customer_phone', 'due_date', 'is_settled', 'settled_at', 'settled_amount',
+        'user_id', 'transaction_number', 'total_amount', 'transaction_category', 'payment_method', 'is_debt', 'cash_amount', 'change_amount', 'amount_paid', 'coordinator_id', 'customer_name', 'customer_phone', 'due_date', 'is_settled', 'settled_at', 'settled_amount', 'queue_number',
     ];
 
     public function items()
