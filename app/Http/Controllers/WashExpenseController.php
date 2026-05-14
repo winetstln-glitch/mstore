@@ -24,14 +24,17 @@ class WashExpenseController extends Controller
     public function index(Request $request)
     {
         $hasStockTables = $this->hasStockTables();
-        $category = trim((string) $request->query('category', ''));
+        $category = $this->normalizeExpenseGroup(trim((string) $request->query('category', '')));
         $query = $this->queryWashExpenses();
         if ($category !== '') {
             $query->where(function ($q) use ($category) {
                 match ($category) {
                     'shampoo' => $q->where('category', 'like', '%Sampo%'),
                     'snack' => $q->where('category', 'like', '%Snack%'),
-                    'kopi' => $q->where('category', 'like', '%Kopi%'),
+                    'caffe' => $q->where(function ($subQ) {
+                        $subQ->where('category', 'like', '%Kopi%')
+                            ->orWhere('category', 'like', '%Caffe%');
+                    }),
                     default => $q->where('category', 'like', '%Lain%'),
                 };
             });
@@ -43,7 +46,14 @@ class WashExpenseController extends Controller
         $stockItems = $hasStockTables
             ? WashStockItem::query()
                 ->where('is_active', true)
-                ->when($category !== '', fn ($q) => $q->where('category', $category))
+                ->when($category !== '', function ($q) use ($category) {
+                    if ($category === 'caffe') {
+                        $q->whereIn('category', ['caffe', 'kopi']);
+
+                        return;
+                    }
+                    $q->where('category', $category);
+                })
                 ->orderBy('category')
                 ->orderBy('name')
                 ->get()
@@ -95,7 +105,7 @@ class WashExpenseController extends Controller
 
         $data = $request->validate([
             'transaction_date' => 'required|date',
-            'expense_group' => 'required|in:shampoo,snack,kopi,lainnya',
+            'expense_group' => 'required|in:shampoo,snack,caffe,kopi,lainnya',
             'stock_item_id' => 'nullable|exists:wash_stock_items,id',
             'item_name' => 'required_without:stock_item_id|nullable|string|max:100',
             'unit' => 'required|string|max:20',
@@ -104,6 +114,7 @@ class WashExpenseController extends Controller
             'amount' => 'nullable|numeric|min:0',
             'description' => 'required|string|max:255',
         ]);
+        $data['expense_group'] = $this->normalizeExpenseGroup((string) $data['expense_group']);
 
         $amount = (float) ($data['amount'] ?? 0);
         if ($amount <= 0) {
@@ -114,7 +125,7 @@ class WashExpenseController extends Controller
         $categoryLabel = match ($data['expense_group']) {
             'shampoo' => 'Belanja Sampo Wash',
             'snack' => 'Belanja Snack',
-            'kopi' => 'Belanja Kopi',
+            'caffe' => 'Belanja Caffe',
             default => 'Belanja Lainnya',
         };
 
@@ -205,7 +216,7 @@ class WashExpenseController extends Controller
 
         $data = $request->validate([
             'transaction_date' => 'required|date',
-            'expense_group' => 'required|in:shampoo,snack,kopi,lainnya',
+            'expense_group' => 'required|in:shampoo,snack,caffe,kopi,lainnya',
             'stock_item_id' => 'nullable|exists:wash_stock_items,id',
             'item_name' => 'required_without:stock_item_id|nullable|string|max:100',
             'unit' => 'required|string|max:20',
@@ -214,6 +225,7 @@ class WashExpenseController extends Controller
             'amount' => 'nullable|numeric|min:0',
             'description' => 'required|string|max:255',
         ]);
+        $data['expense_group'] = $this->normalizeExpenseGroup((string) $data['expense_group']);
         $amount = (float) ($data['amount'] ?? 0);
         if ($amount <= 0) {
             $amount = ((float) $data['quantity']) * ((float) $data['unit_price']);
@@ -221,7 +233,7 @@ class WashExpenseController extends Controller
         $categoryLabel = match ($data['expense_group']) {
             'shampoo' => 'Belanja Sampo Wash',
             'snack' => 'Belanja Snack',
-            'kopi' => 'Belanja Kopi',
+            'caffe' => 'Belanja Caffe',
             default => 'Belanja Lainnya',
         };
 
@@ -303,13 +315,16 @@ class WashExpenseController extends Controller
         $data = $request->validate([
             'wash_stock_item_id' => 'nullable|exists:wash_stock_items,id',
             'new_item_name' => 'required_without:wash_stock_item_id|nullable|string|max:100',
-            'new_item_category' => 'required_with:new_item_name|nullable|in:shampoo,snack,kopi,lainnya',
+            'new_item_category' => 'required_with:new_item_name|nullable|in:shampoo,snack,caffe,kopi,lainnya',
             'new_item_unit' => 'required_with:new_item_name|nullable|string|max:20',
             'new_item_minimum_stock' => 'nullable|numeric|min:0',
             'movement_date' => 'required|date',
             'quantity' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:255',
         ]);
+        if (isset($data['new_item_category'])) {
+            $data['new_item_category'] = $this->normalizeExpenseGroup((string) $data['new_item_category']);
+        }
 
         DB::transaction(function () use ($data) {
             $item = ! empty($data['wash_stock_item_id'])
@@ -364,8 +379,15 @@ class WashExpenseController extends Controller
         abort_if($name === '', 422, 'Nama item wajib diisi jika tidak memilih stok yang ada.');
 
         return WashStockItem::query()->firstOrCreate(
-            ['name' => $name, 'category' => $data['expense_group']],
+            ['name' => $name, 'category' => $this->normalizeExpenseGroup((string) $data['expense_group'])],
             ['unit' => $data['unit'], 'is_active' => true]
         );
+    }
+
+    private function normalizeExpenseGroup(string $group): string
+    {
+        $group = strtolower(trim($group));
+
+        return $group === 'kopi' ? 'caffe' : $group;
     }
 }

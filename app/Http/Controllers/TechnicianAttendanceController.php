@@ -131,7 +131,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         // Summary by Technician
-        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments);
+        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments, $request);
 
         return view('technicians.attendance.payslip', compact('summary', 'request'));
     }
@@ -176,7 +176,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         // Summary by Technician
-        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustances);
+        $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments, $request);
 
         return response()->streamDownload(function () use ($summary) {
             $writer = new Writer;

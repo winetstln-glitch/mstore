@@ -24,8 +24,15 @@
     @endif
 
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
+        <div class="card-header py-3 d-flex align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Daftar Layanan</h6>
+            <div class="wash-filter-group">
+                <button class="btn btn-sm filter-btn active" data-filter="all" type="button">Semua</button>
+                <button class="btn btn-sm filter-btn" data-filter="mobil" type="button">Mobil</button>
+                <button class="btn btn-sm filter-btn" data-filter="motor" type="button">Motor</button>
+                <button class="btn btn-sm filter-btn" data-filter="addon" type="button">Add On</button>
+                <button class="btn btn-sm filter-btn" data-filter="caffe" type="button">Caffe</button>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive table-responsive-mobile">
@@ -48,7 +55,19 @@
                     </thead>
                     <tbody>
                         @forelse($services as $service)
-                            <tr>
+                            @php
+                                $rawType = strtolower((string) ($service->vehicle_type ?? ''));
+                                $categoryRaw = strtolower((string) ($service->service_category ?? 'main'));
+                                if ($rawType === 'car') {
+                                    $normalizedType = 'mobil';
+                                } elseif ($rawType === 'coffee') {
+                                    $normalizedType = 'caffe';
+                                } else {
+                                    $normalizedType = $rawType;
+                                }
+                                $filterType = in_array($categoryRaw, ['addon', 'skincare'], true) ? 'addon' : $normalizedType;
+                            @endphp
+                            <tr data-filter="{{ $filterType }}">
                                 <td>
                                     @if($service->image)
                                         <img src="{{ Storage::url($service->image) }}" alt="{{ $service->name }}" width="50" height="50" class="img-thumbnail object-fit-cover">
@@ -63,7 +82,7 @@
                                     @if($service->vehicle_type === 'car')
                                         <span class="badge bg-primary">Mobil</span>
                                     @elseif($service->vehicle_type === 'coffee')
-                                        <span class="badge bg-info text-dark">Kopi</span>
+                                        <span class="badge bg-info text-dark">Caffe</span>
                                     @else
                                         <span class="badge bg-success">Motor</span>
                                     @endif
@@ -150,6 +169,34 @@
 </div>
 @push('styles')
 <style>
+    .wash-services-page .wash-filter-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .wash-services-page .wash-filter-group .filter-btn {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--bs-border-color);
+        background: var(--bs-white);
+        color: var(--bs-body-color);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .wash-services-page .wash-filter-group .filter-btn:hover {
+        background: var(--bs-primary-bg-subtle);
+        border-color: var(--bs-primary);
+        color: var(--bs-primary);
+    }
+
+    .wash-services-page .wash-filter-group .filter-btn.active {
+        background: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+    }
+
     .wash-services-page .wash-description-chips {
         display: flex;
         flex-wrap: wrap;
@@ -244,5 +291,30 @@
         }
     }
 </style>
+@endpush
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterButtons = document.querySelectorAll('.wash-filter-group .filter-btn');
+    const tableRows = document.querySelectorAll('#dataTable tbody tr[data-filter]');
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const filter = this.dataset.filter;
+
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            tableRows.forEach(row => {
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = row.dataset.filter === filter ? '' : 'none';
+                }
+            });
+        });
+    });
+});
+</script>
 @endpush
 @endsection

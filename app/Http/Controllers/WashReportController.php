@@ -48,6 +48,60 @@ class WashReportController extends Controller
             ->where('reference_number', 'like', 'WASH-EXP-%')
             ->whereMonth('transaction_date', substr($month, 5, 2))
             ->whereYear('transaction_date', substr($month, 0, 4))->sum('amount');
+        $dailyCaffeInitialCapital = \App\Models\Transaction::where('type', 'expense')
+            ->where('reference_number', 'like', 'WASH-EXP-%')
+            ->where(function ($q) {
+                $q->where('category', 'like', '%Kopi%')
+                    ->orWhere('category', 'like', '%Caffe%');
+            })
+            ->whereBetween('transaction_date', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])->sum('amount');
+        $monthlyCaffeInitialCapital = \App\Models\Transaction::where('type', 'expense')
+            ->where('reference_number', 'like', 'WASH-EXP-%')
+            ->where(function ($q) {
+                $q->where('category', 'like', '%Kopi%')
+                    ->orWhere('category', 'like', '%Caffe%');
+            })
+            ->whereMonth('transaction_date', substr($month, 5, 2))
+            ->whereYear('transaction_date', substr($month, 0, 4))
+            ->sum('amount');
+        $dailyCaffeRevenueQuery = DB::table('wash_transaction_items as i')
+            ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
+            ->leftJoin('wash_services as s', 's.id', '=', 'i.wash_service_id')
+            ->whereBetween('t.created_at', [
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
+            ])
+            ->where(function ($q) {
+                $q->where('s.vehicle_type', 'coffee')
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%kopi%'")
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'");
+            });
+        if ($normalizedVehiclePlate !== '') {
+            $dailyCaffeRevenueQuery->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$normalizedVehiclePlate]
+            );
+        }
+        $dailyCaffeRevenue = (float) $dailyCaffeRevenueQuery->sum('i.subtotal');
+        $monthlyCaffeRevenueQuery = DB::table('wash_transaction_items as i')
+            ->join('wash_transactions as t', 't.id', '=', 'i.wash_transaction_id')
+            ->leftJoin('wash_services as s', 's.id', '=', 'i.wash_service_id')
+            ->where('t.created_at', 'like', "$month%")
+            ->where(function ($q) {
+                $q->where('s.vehicle_type', 'coffee')
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%kopi%'")
+                    ->orWhereRaw("LOWER(COALESCE(i.service_name, '')) like '%caffe%'");
+            });
+        if ($normalizedVehiclePlate !== '') {
+            $monthlyCaffeRevenueQuery->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$normalizedVehiclePlate]
+            );
+        }
+        $monthlyCaffeRevenue = (float) $monthlyCaffeRevenueQuery->sum('i.subtotal');
 
         $dailyIncomeRowsQuery = WashTransaction::query()
             ->with('user:id,name')
@@ -138,6 +192,7 @@ class WashReportController extends Controller
             'startDate', 'endDate', 'month',
             'vehiclePlate', 'knownVehiclePlates',
             'dailyIncome', 'dailyExpense', 'monthlyIncome', 'monthlyExpense',
+            'dailyCaffeInitialCapital', 'dailyCaffeRevenue', 'monthlyCaffeInitialCapital', 'monthlyCaffeRevenue',
             'dailyIncomeRows', 'dailyExpenseRows',
             'monthlyDailyIncome', 'monthlyDailyExpense',
             'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment'
@@ -211,9 +266,11 @@ class WashReportController extends Controller
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Ringkasan Harian']));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['dailyIncome'], 'Pengeluaran', $data['dailyExpense'], 'Laba', $data['dailyIncome'] - $data['dailyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Caffe - Modal Awal', $data['dailyCaffeInitialCapital'], 'Caffe - Pendapatan', $data['dailyCaffeRevenue'], 'Caffe - Selisih', $data['dailyCaffeRevenue'] - $data['dailyCaffeInitialCapital']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Ringkasan Bulanan']));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['monthlyIncome'], 'Pengeluaran', $data['monthlyExpense'], 'Laba', $data['monthlyIncome'] - $data['monthlyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Caffe - Modal Awal', $data['monthlyCaffeInitialCapital'], 'Caffe - Pendapatan', $data['monthlyCaffeRevenue'], 'Caffe - Selisih', $data['monthlyCaffeRevenue'] - $data['monthlyCaffeInitialCapital']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Pemasukan Harian']));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Waktu', 'No Trx', 'Kasir', 'Metode', 'Total']));

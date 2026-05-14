@@ -1,6 +1,15 @@
 @extends('layouts.app')
 @section('title', isset($expense) ? 'Edit Pengeluaran Wash' : 'Tambah Pengeluaran Wash')
 @section('content')
+@php
+    $stockCategoryLabels = [
+        'shampoo' => 'Sampo Wash',
+        'snack' => 'Snack',
+        'kopi' => 'Caffe',
+        'caffe' => 'Caffe',
+        'lainnya' => 'Lainnya',
+    ];
+@endphp
 <div class="container-fluid py-3 wash-expenses-create-page">
     <div class="d-flex justify-content-between align-items-center mb-3 create-header">
         <h5 class="mb-0">{{ isset($expense) ? 'Edit Pengeluaran Wash' : 'Tambah Pengeluaran Wash' }}</h5>
@@ -20,11 +29,20 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Kategori Pembelanjaan</label>
-                        @php $selectedGroup = old('expense_group', str_contains(strtolower($expense->category ?? ''), 'sampo') ? 'shampoo' : (str_contains(strtolower($expense->category ?? ''), 'snack') ? 'snack' : (str_contains(strtolower($expense->category ?? ''), 'kopi') ? 'kopi' : 'lainnya'))); @endphp
+                        @php
+                            $selectedGroup = old(
+                                'expense_group',
+                                str_contains(strtolower($expense->category ?? ''), 'sampo')
+                                    ? 'shampoo'
+                                    : (str_contains(strtolower($expense->category ?? ''), 'snack')
+                                        ? 'snack'
+                                        : ((str_contains(strtolower($expense->category ?? ''), 'kopi') || str_contains(strtolower($expense->category ?? ''), 'caffe')) ? 'caffe' : 'lainnya'))
+                            );
+                        @endphp
                         <select name="expense_group" class="form-select" required>
                             <option value="shampoo" {{ $selectedGroup==='shampoo' ? 'selected' : '' }}>Sampo Wash</option>
                             <option value="snack" {{ $selectedGroup==='snack' ? 'selected' : '' }}>Snack</option>
-                            <option value="kopi" {{ $selectedGroup==='kopi' ? 'selected' : '' }}>Kopi</option>
+                            <option value="caffe" {{ in_array($selectedGroup, ['caffe', 'kopi'], true) ? 'selected' : '' }}>Caffe</option>
                             <option value="lainnya" {{ $selectedGroup==='lainnya' ? 'selected' : '' }}>Lainnya</option>
                         </select>
                     </div>
@@ -34,7 +52,7 @@
                             <option value="">-- Buat item baru --</option>
                             @foreach(($stockItems ?? []) as $item)
                                 <option value="{{ $item->id }}" {{ (string) old('stock_item_id', $stockMovement->wash_stock_item_id ?? '') === (string) $item->id ? 'selected' : '' }}>
-                                    {{ ucfirst($item->category) }} - {{ $item->name }} (Stok: {{ (float)$item->current_stock }} {{ $item->unit }})
+                                    {{ $stockCategoryLabels[strtolower((string) $item->category)] ?? ucfirst((string) $item->category) }} - {{ $item->name }} (Stok: {{ (float)$item->current_stock }} {{ $item->unit }})
                                 </option>
                             @endforeach
                         </select>

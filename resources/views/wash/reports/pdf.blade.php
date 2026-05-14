@@ -36,6 +36,18 @@
             <td><strong>Laba</strong></td><td class="right"><strong>{{ number_format($dailyIncome-$dailyExpense,0,',','.') }}</strong></td>
             <td><strong>Laba</strong></td><td class="right"><strong>{{ number_format($monthlyIncome-$monthlyExpense,0,',','.') }}</strong></td>
         </tr>
+        <tr>
+            <td>Modal Awal Caffe</td><td class="right">{{ number_format($dailyCaffeInitialCapital,0,',','.') }}</td>
+            <td>Modal Awal Caffe</td><td class="right">{{ number_format($monthlyCaffeInitialCapital,0,',','.') }}</td>
+        </tr>
+        <tr>
+            <td>Pendapatan Caffe</td><td class="right">{{ number_format($dailyCaffeRevenue,0,',','.') }}</td>
+            <td>Pendapatan Caffe</td><td class="right">{{ number_format($monthlyCaffeRevenue,0,',','.') }}</td>
+        </tr>
+        <tr>
+            <td><strong>Selisih Caffe</strong></td><td class="right"><strong>{{ number_format($dailyCaffeRevenue-$dailyCaffeInitialCapital,0,',','.') }}</strong></td>
+            <td><strong>Selisih Caffe</strong></td><td class="right"><strong>{{ number_format($monthlyCaffeRevenue-$monthlyCaffeInitialCapital,0,',','.') }}</strong></td>
+        </tr>
     </table>
 
     <table>

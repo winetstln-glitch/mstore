@@ -17,7 +17,7 @@
                             <button class="filter-btn" data-filter="mobil" type="button">Mobil</button>
                             <button class="filter-btn" data-filter="motor" type="button">Motor</button>
                             <button class="filter-btn" data-filter="addon" type="button">Add On</button>
-                            <button class="filter-btn" data-filter="kopi" type="button">Kopi</button>
+                            <button class="filter-btn" data-filter="caffe" type="button">Caffe</button>
                         </div>
                         <div class="mt-2">
                             <input type="text" id="serviceSearchInput" class="form-control form-control-sm wash-input" placeholder="Cari layanan cepat...">
@@ -31,7 +31,7 @@
                                     'mobil' => 'Layanan Mobil',
                                     'motor' => 'Layanan Motor',
                                     'addon' => 'Add On & Skincare',
-                                    'kopi' => 'Layanan Kopi',
+                                    'caffe' => 'Caffe',
                                     'umum' => 'Layanan Umum',
                                 ];
                             @endphp
@@ -42,18 +42,18 @@
                                 if ($rawType === 'car') {
                                     $normalizedType = 'mobil';
                                 } elseif ($rawType === 'coffee') {
-                                    $normalizedType = 'kopi';
+                                    $normalizedType = 'caffe';
                                 } else {
                                     $normalizedType = $rawType;
                                 }
-                                $addonTypeClass = in_array($normalizedType, ['mobil', 'motor', 'kopi'], true) ? $normalizedType : 'umum';
+                                $addonTypeClass = in_array($normalizedType, ['mobil', 'motor', 'caffe'], true) ? $normalizedType : 'umum';
                                 $filterType = in_array($categoryRaw, ['addon', 'skincare'], true) ? 'addon' : $normalizedType;
-                                $serviceTypeClass = in_array($filterType, ['mobil', 'motor', 'kopi', 'addon']) ? $filterType : 'umum';
+                                $serviceTypeClass = in_array($filterType, ['mobil', 'motor', 'caffe', 'addon']) ? $filterType : 'umum';
                                 $fallbackIcon = $normalizedType === 'mobil'
                                     ? 'fa-car-side'
                                     : ($normalizedType === 'motor'
                                         ? 'fa-motorcycle'
-                                        : ($normalizedType === 'kopi' ? 'fa-mug-hot' : ($filterType === 'addon' ? 'fa-plus-circle' : 'fa-soap')));
+                                        : ($normalizedType === 'caffe' ? 'fa-mug-hot' : ($filterType === 'addon' ? 'fa-plus-circle' : 'fa-soap')));
                                 $adjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
                                 $isHolidayActive = (bool) ($holidaySchedule['active'] ?? false);
                                 $effectivePrice = $isHolidayActive && !is_null($adjustment)
@@ -267,6 +267,7 @@
                                         <option value="qris">📱 QRIS</option>
                                         <option value="transfer">🏦 Transfer</option>
                                         <option value="edc">💳 EDC</option>
+                                        <option value="kasbon">📜 Kasbon</option>
                                     </select>
                                 </div>
                                 <div class="col-6" id="cashSection">
@@ -277,6 +278,36 @@
                             <div id="changeDisplay" class="wash-change-box mt-2">
                                 <span>Kembalian</span>
                                 <strong id="changeAmount">Rp 0</strong>
+                            </div>
+
+                            <div id="kasbonSection" class="mt-3" style="display: none;">
+                                <div class="card card-body bg-light">
+                                    <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-tie me-1"></i> Detail Kasbon</h6>
+                                    <div class="mb-3">
+                                        <label class="wash-field-label">Tipe Pihak Kasbon</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="kasbon_type" id="kasbon_employee" value="employee" checked>
+                                            <label class="form-check-label" for="kasbon_employee">Karyawan (Daftar Akun)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="kasbon_type" id="kasbon_outsider" value="outsider">
+                                            <label class="form-check-label" for="kasbon_outsider">Orang Luar / Nama Custom</label>
+                                        </div>
+                                    </div>
+                                    <div id="kasbon_employee_section">
+                                        <label for="kasbon_user_id" class="wash-field-label">Pilih Karyawan</label>
+                                        <select class="form-select wash-input" id="kasbon_user_id" name="kasbon_user_id">
+                                            <option value="">-- Pilih Karyawan --</option>
+                                            @foreach($allUsers as $user)
+                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div id="kasbon_outsider_section" style="display: none;">
+                                        <label for="kasbon_name" class="wash-field-label">Nama Pihak Kasbon</label>
+                                        <input type="text" class="form-control wash-input" id="kasbon_name" name="kasbon_name" placeholder="Masukkan nama...">
+                                    </div>
+                                </div>
                             </div>
 
                             <button type="submit" class="btn wash-primary-btn w-100 mt-3" id="btnCheckout" disabled>Proses Pembayaran</button>
@@ -521,6 +552,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('use_voucher').addEventListener('change', function() {
         updateCartUI();
+    });
+
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const cashSection = document.getElementById('cashSection');
+    const kasbonSection = document.getElementById('kasbonSection');
+    const kasbonTypeRadios = document.querySelectorAll('input[name="kasbon_type"]');
+    const kasbonEmployeeSection = document.getElementById('kasbon_employee_section');
+    const kasbonOutsiderSection = document.getElementById('kasbon_outsider_section');
+
+    paymentMethodSelect.addEventListener('change', function() {
+        const method = this.value;
+        if (method === 'cash') {
+            cashSection.style.display = 'block';
+            kasbonSection.style.display = 'none';
+        } else if (method === 'kasbon') {
+            cashSection.style.display = 'none';
+            kasbonSection.style.display = 'block';
+        } else {
+            cashSection.style.display = 'none';
+            kasbonSection.style.display = 'none';
+        }
+        calculateChange();
+    });
+
+    kasbonTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'employee') {
+                kasbonEmployeeSection.style.display = 'block';
+                kasbonOutsiderSection.style.display = 'none';
+            } else {
+                kasbonEmployeeSection.style.display = 'none';
+                kasbonOutsiderSection.style.display = 'block';
+            }
+        });
     });
 
     let cart = [];
@@ -965,6 +1030,16 @@ document.addEventListener('DOMContentLoaded', function () {
             vehicle_plate: document.getElementById('vehicle_plate').value,
             vehicle_brand: document.getElementById('vehicle_brand').value
         };
+
+        if (method === 'kasbon') {
+            const kasbonType = document.querySelector('input[name="kasbon_type"]:checked')?.value;
+            data.kasbon_type = kasbonType;
+            if (kasbonType === 'employee') {
+                data.kasbon_user_id = document.getElementById('kasbon_user_id')?.value;
+            } else if (kasbonType === 'outsider') {
+                data.kasbon_name = document.getElementById('kasbon_name')?.value;
+            }
+        }
         
         const btn = document.getElementById('btnCheckout');
         const originalText = btn.innerHTML;
@@ -1183,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: #fed7aa;
     }
 
-    .service-card-kopi {
+    .service-card-caffe {
         border-color: #f5d0a7;
     }
 
@@ -1357,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', function () {
         color: #c2410c;
     }
 
-    .service-type-kopi {
+    .service-type-caffe {
         background: #fef3c7;
         color: #92400e;
     }
@@ -1786,7 +1861,7 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: rgba(251, 146, 60, 0.45);
     }
 
-    [data-bs-theme="dark"] .service-card-kopi {
+    [data-bs-theme="dark"] .service-card-caffe {
         border-color: rgba(217, 119, 6, 0.45);
     }
 
@@ -1946,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', function () {
         color: #fdba74;
     }
 
-    [data-bs-theme="dark"] .service-type-kopi {
+    [data-bs-theme="dark"] .service-type-caffe {
         background: rgba(146, 64, 14, 0.35);
         color: #fcd34d;
     }

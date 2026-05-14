@@ -3,22 +3,21 @@
 @section('title', 'Tambah Layanan Wash')
 
 @section('content')
-<div class="col-12">
-    <h1 class="h3 mb-4 text-gray-800">Tambah Layanan Baru</h1>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800" id="pageTitle">Tambah Layanan Baru</h1>
+        <a href="{{ route('wash.services.index') }}" class="btn btn-secondary" title="Kembali">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="d-none d-md-inline ms-2">Kembali</span>
+        </a>
+    </div>
 
     <div class="card shadow mb-4">
-        <div class="card-header d-none d-md-flex justify-content-between align-items-center">
-            <div class="fw-semibold">Formulir Layanan</div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary">Batal</a>
-                <button type="submit" class="btn btn-primary" form="createServiceForm">Tambah Layanan Wash</button>
-            </div>
-        </div>
         <div class="card-body">
             <form id="createServiceForm" action="{{ route('wash.services.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
-                    <label for="name" class="form-label">Nama Layanan</label>
+                    <label for="name" class="form-label" id="nameLabel">Nama Layanan</label>
                     <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required>
                     @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -26,18 +25,21 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="vehicle_type" class="form-label">Jenis Kendaraan</label>
+                    <label for="vehicle_type" class="form-label" id="vehicleTypeLabel">Jenis Kendaraan</label>
                     <select class="form-select @error('vehicle_type') is-invalid @enderror" id="vehicle_type" name="vehicle_type" required>
                         <option value="car" {{ old('vehicle_type') == 'car' ? 'selected' : '' }}>Mobil</option>
                         <option value="motor" {{ old('vehicle_type') == 'motor' ? 'selected' : '' }}>Motor</option>
-                        <option value="coffee" {{ old('vehicle_type') == 'coffee' ? 'selected' : '' }}>Kopi</option>
+                        <option value="coffee" {{ old('vehicle_type') == 'coffee' ? 'selected' : '' }}>Caffe</option>
                     </select>
                     @error('vehicle_type')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text text-primary d-none" id="coffeeModeHint">
+                        Mode Caffe aktif: form disederhanakan seperti produk ATK.
+                    </div>
                 </div>
 
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-3" id="washAttributeGroup">
                     <div class="col-12 col-md-4">
                         <label for="service_category" class="form-label">Kategori Layanan</label>
                         <select class="form-select @error('service_category') is-invalid @enderror" id="service_category" name="service_category" required>
@@ -73,7 +75,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3" id="sortOrderGroup">
                     <label for="sort_order" class="form-label">Urutan Tampil</label>
                     <input type="number" class="form-control @error('sort_order') is-invalid @enderror" id="sort_order" name="sort_order" value="{{ old('sort_order', 0) }}" min="0">
                     @error('sort_order')
@@ -81,15 +83,24 @@
                     @enderror
                 </div>
 
-                <div class="mb-3">
-                    <label for="price" class="form-label">Harga</label>
-                    <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" required min="0">
-                    @error('price')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label for="cost_price" class="form-label" id="costPriceLabel">Harga Beli</label>
+                        <input type="number" class="form-control @error('cost_price') is-invalid @enderror" id="cost_price" name="cost_price" value="{{ old('cost_price', 0) }}" min="0">
+                        @error('cost_price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="price" class="form-label" id="sellingPriceLabel">Harga Jual</label>
+                        <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" required min="0">
+                        @error('price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3" id="holidayPriceGroup">
                     <label for="holiday_price" class="form-label">Penyesuaian Harga Hari Raya (+/-)</label>
                     <input type="number" class="form-control @error('holiday_price') is-invalid @enderror" id="holiday_price" name="holiday_price" value="{{ old('holiday_price') }}" placeholder="Contoh: 5000 atau -3000">
                     @error('holiday_price')
@@ -101,7 +112,7 @@
                     $rulePrices = old('rule_price', []);
                     $ruleRows = max(1, count($rulePrices));
                 @endphp
-                <div class="mb-3">
+                <div class="mb-3" id="priceRulesSection">
                     <label class="form-label d-flex justify-content-between align-items-center">
                         <span>Aturan Harga POS (Opsional)</span>
                         <div class="d-flex gap-2">
@@ -130,7 +141,7 @@
                                                 <option value="all" {{ old('rule_vehicle_type.'.$i, 'all') === 'all' ? 'selected' : '' }}>Semua</option>
                                                 <option value="car" {{ old('rule_vehicle_type.'.$i) === 'car' ? 'selected' : '' }}>Mobil</option>
                                                 <option value="motor" {{ old('rule_vehicle_type.'.$i) === 'motor' ? 'selected' : '' }}>Motor</option>
-                                                <option value="coffee" {{ old('rule_vehicle_type.'.$i) === 'coffee' ? 'selected' : '' }}>Kopi</option>
+                                                <option value="coffee" {{ old('rule_vehicle_type.'.$i) === 'coffee' ? 'selected' : '' }}>Caffe</option>
                                             </select>
                                         </td>
                                         <td>
@@ -163,9 +174,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="description" class="form-label">Deskripsi</label>
+                    <label for="description" class="form-label" id="descriptionLabel">Deskripsi</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description') }}</textarea>
-                    <div class="wash-description-editor mt-2" data-description-editor data-target="description">
+                    <div class="wash-description-editor mt-2" data-description-editor data-target="description" id="descriptionEditorWrap">
                         <div class="wash-description-chips" data-description-chips></div>
                         <div class="input-group input-group-sm mt-2">
                             <input type="text" class="form-control" data-description-input placeholder="Tambah label, contoh: Scoopy">
@@ -178,7 +189,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="image" class="form-label">Gambar Layanan</label>
+                    <label for="image" class="form-label" id="imageLabel">Gambar Layanan</label>
                     <input type="file" class="form-control @error('image') is-invalid @enderror" id="image" name="image" accept="image/*">
                     @error('image')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -191,7 +202,7 @@
                     <label class="form-check-label" for="is_active">Aktif</label>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Simpan Layanan</button>
+                <button type="submit" class="btn btn-primary" id="submitButtonDesktop">Simpan Layanan</button>
                 <a href="{{ route('wash.services.index') }}" class="btn btn-secondary">Batal</a>
             </form>
         </div>
@@ -202,7 +213,7 @@
     <div class="container py-2">
         <div class="d-flex gap-2">
             <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary w-50">Batal</a>
-            <button type="submit" class="btn btn-primary w-50" form="createServiceForm">Tambah Layanan</button>
+            <button type="submit" class="btn btn-primary w-50" form="createServiceForm" id="submitButtonMobile">Tambah Layanan</button>
         </div>
     </div>
 </div>
@@ -395,6 +406,23 @@
         const basePriceInput = document.getElementById('price');
         const vehicleTypeInput = document.getElementById('vehicle_type');
         const categoryInput = document.getElementById('service_category');
+        const sizeTierInput = document.getElementById('size_tier');
+        const packageTypeInput = document.getElementById('package_type');
+        const pageTitle = document.getElementById('pageTitle');
+        const nameLabel = document.getElementById('nameLabel');
+        const vehicleTypeLabel = document.getElementById('vehicleTypeLabel');
+        const coffeeModeHint = document.getElementById('coffeeModeHint');
+        const washAttributeGroup = document.getElementById('washAttributeGroup');
+        const sortOrderGroup = document.getElementById('sortOrderGroup');
+        const holidayPriceGroup = document.getElementById('holidayPriceGroup');
+        const priceRulesSection = document.getElementById('priceRulesSection');
+        const descriptionLabel = document.getElementById('descriptionLabel');
+        const descriptionEditorWrap = document.getElementById('descriptionEditorWrap');
+        const imageLabel = document.getElementById('imageLabel');
+        const costPriceLabel = document.getElementById('costPriceLabel');
+        const sellingPriceLabel = document.getElementById('sellingPriceLabel');
+        const submitButtonDesktop = document.getElementById('submitButtonDesktop');
+        const submitButtonMobile = document.getElementById('submitButtonMobile');
         if (!tableBody || !addButton) {
             return;
         }
@@ -407,7 +435,7 @@
                         <option value="all" selected>Semua</option>
                         <option value="car">Mobil</option>
                         <option value="motor">Motor</option>
-                        <option value="coffee">Kopi</option>
+                        <option value="coffee">Caffe</option>
                     </select>
                 </td>
                 <td>
@@ -465,6 +493,12 @@
             const vehicleType = vehicleTypeInput?.value || 'car';
             const category = categoryInput?.value || 'main';
 
+            if (vehicleType === 'coffee') {
+                return [
+                    { vehicle_type: 'coffee', size_tier: 'none', package_type: 'general', price: Math.max(0, Math.round(base)), sort_order: 1, is_active: true },
+                ];
+            }
+
             if (category === 'addon' || category === 'skincare') {
                 const sizes = vehicleType === 'car' ? ['kecil', 'sedang', 'besar'] : ['kecil', 'sedang', 'besar'];
                 return sizes.map((size, idx) => ({
@@ -494,6 +528,77 @@
                 { vehicle_type: 'car', size_tier: 'besar', package_type: 'full_clean', price: Math.max(0, Math.round(base * 1.4)), sort_order: 6, is_active: true },
             ];
         };
+
+        const applyCoffeeDefaults = function () {
+            if (vehicleTypeInput?.value !== 'coffee') {
+                return;
+            }
+            if (categoryInput) {
+                categoryInput.value = 'main';
+            }
+            if (sizeTierInput) {
+                sizeTierInput.value = 'none';
+            }
+            if (packageTypeInput) {
+                packageTypeInput.value = 'general';
+            }
+        };
+
+        const toggleCoffeeMode = function () {
+            const isCoffee = vehicleTypeInput?.value === 'coffee';
+            if (isCoffee) {
+                applyCoffeeDefaults();
+            }
+
+            if (pageTitle) {
+                pageTitle.textContent = isCoffee ? 'Tambah Produk Caffe' : 'Tambah Layanan Baru';
+            }
+            if (nameLabel) {
+                nameLabel.textContent = isCoffee ? 'Nama Produk Caffe' : 'Nama Layanan';
+            }
+            if (vehicleTypeLabel) {
+                vehicleTypeLabel.textContent = isCoffee ? 'Jenis Produk' : 'Jenis Kendaraan';
+            }
+            if (costPriceLabel) {
+                costPriceLabel.textContent = isCoffee ? 'Cost Price (HPP)' : 'Harga Beli';
+            }
+            if (sellingPriceLabel) {
+                sellingPriceLabel.textContent = isCoffee ? 'Selling Price' : 'Harga Jual';
+            }
+            if (descriptionLabel) {
+                descriptionLabel.textContent = isCoffee ? 'Deskripsi Produk' : 'Deskripsi';
+            }
+            if (imageLabel) {
+                imageLabel.textContent = isCoffee ? 'Gambar Produk' : 'Gambar Layanan';
+            }
+            if (submitButtonDesktop) {
+                submitButtonDesktop.textContent = isCoffee ? 'Simpan Produk' : 'Simpan Layanan';
+            }
+            if (submitButtonMobile) {
+                submitButtonMobile.textContent = isCoffee ? 'Simpan Produk' : 'Tambah Layanan';
+            }
+            if (coffeeModeHint) {
+                coffeeModeHint.classList.toggle('d-none', !isCoffee);
+            }
+            if (washAttributeGroup) {
+                washAttributeGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (sortOrderGroup) {
+                sortOrderGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (holidayPriceGroup) {
+                holidayPriceGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (priceRulesSection) {
+                priceRulesSection.classList.toggle('d-none', isCoffee);
+            }
+            if (descriptionEditorWrap) {
+                descriptionEditorWrap.classList.toggle('d-none', isCoffee);
+            }
+        };
+
+        vehicleTypeInput?.addEventListener('change', toggleCoffeeMode);
+        toggleCoffeeMode();
 
         addButton.addEventListener('click', function () {
             renderRow(tableBody.querySelectorAll('tr').length);

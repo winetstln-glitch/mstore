@@ -677,6 +677,12 @@ class GenieACSService
                 'Device.IP.Interface.1.IPv4Address.1.IPAddress',
                 'Device.WiFi.SSID.1.SSID',
                 'Device.WiFi.AccessPoint.1.Security.KeyPassphrase',
+                'VirtualParameters.RXPower',
+                'VirtualParameters.AddressWanIP',
+                'VirtualParameters.pppoeIP',
+                'VirtualParameters.IPTR069',
+                'VirtualParameters.pppoeUsername',
+                'VirtualParameters.pppoePassword',
             ]);
 
             $query = json_encode(['_deviceId._SerialNumber' => $serial]);

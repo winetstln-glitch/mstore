@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\SalaryAdjustment;
 use App\Models\TechnicianAttendance;
+use App\Models\WashTransaction;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -71,9 +72,9 @@ trait HasAttendanceFilters
     /**
      * Calculate summary from attendances and adjustments
      */
-    protected function calculateAttendanceSummary($attendances, $allAdjustments)
+    protected function calculateAttendanceSummary($attendances, $allAdjustments, $request = null)
     {
-        return $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments) {
+        return $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments, $request) {
             $user = $items->first()->user;
 
             $presentCount = $items->whereIn('status', ['present', 'late'])->count();
@@ -124,6 +125,25 @@ trait HasAttendanceFilters
             
             // Kasbon Lainnya (Total Kasbon - Specific Kasbons)
             $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung);
+
+            // Calculate Kasbon from Wash Transactions
+            $washKasbonQuery = WashTransaction::query()
+                ->where('kasbon_user_id', $user->id)
+                ->where('kasbon_type', 'employee')
+                ->where('kasbon_settled', false);
+
+            if ($request) {
+                if ($request->filled('date')) {
+                    $washKasbonQuery->whereDate('created_at', $request->date);
+                } elseif ($request->filled('month')) {
+                    $washKasbonQuery->whereMonth('created_at', date('m', strtotime($request->month)))
+                        ->whereYear('created_at', date('Y', strtotime($request->month)));
+                }
+            }
+
+            $washKasbonAmount = $washKasbonQuery->sum('total_amount');
+            $kasbonWarung += $washKasbonAmount;
+            $totalKasbon += $washKasbonAmount;
 
             return [
                 'user' => $user,

@@ -161,10 +161,11 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->get();
         $brands = $this->brands;
         $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $allUsers = \App\Models\User::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $holidaySchedule = $this->resolveHolidayPricingSchedule();
         $knownVehiclePlates = $this->getKnownVehiclePlates();
 
-        return view('wash.pos', compact('services', 'brands', 'employees', 'holidaySchedule', 'knownVehiclePlates'));
+        return view('wash.pos', compact('services', 'brands', 'employees', 'allUsers', 'holidaySchedule', 'knownVehiclePlates'));
     }
 
     public function checkCustomer(Request $request)
@@ -217,6 +218,9 @@ class WashTransactionController extends Controller implements HasMiddleware
             'vehicle_plate' => 'nullable|string',
             'vehicle_brand' => 'nullable|string',
             'use_voucher' => 'nullable|boolean',
+            'kasbon_type' => 'nullable|string',
+            'kasbon_user_id' => 'nullable|exists:users,id',
+            'kasbon_name' => 'nullable|string',
         ]);
 
         try {
@@ -357,35 +361,41 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'vehicle_plate' => $vehiclePlateForStore,
                 'vehicle_brand' => $request->vehicle_brand,
                 'notes' => $discountNote,
-                'status' => 'lunas',
+                'status' => $request->payment_method === 'kasbon' ? 'pending' : 'lunas',
+                'kasbon_type' => $request->payment_method === 'kasbon' ? $request->kasbon_type : null,
+                'kasbon_user_id' => $request->payment_method === 'kasbon' && $request->kasbon_type === 'employee' ? $request->kasbon_user_id : null,
+                'kasbon_name' => $request->payment_method === 'kasbon' && $request->kasbon_type === 'outsider' ? $request->kasbon_name : null,
+                'kasbon_settled' => false,
             ]);
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
             }
 
-            // Update default cash balance (Kas Utama)
-            $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-            $cash->balance = (float) $cash->balance + (float) $finalTotal;
-            $cash->save();
+            // Update default cash balance only if payment is not kasbon
+            if ($request->payment_method !== 'kasbon') {
+                $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $cash->balance = (float) $cash->balance + (float) $finalTotal;
+                $cash->save();
 
-            $cashCode = $request->payment_method === 'cash' ? '1001' : '1002';
-            $cashAccId = Account::where('code', $cashCode)->value('id');
-            $revAccId = Account::where('code', '4005')->value('id');
-            if ($cashAccId && $revAccId && $finalTotal > 0) {
-                $poster = app(AccountingPoster::class);
-                $poster->post(
-                    'WASH-'.$transaction->transaction_number,
-                    now()->toDateString(),
-                    'Wash POS',
-                    [
-                        ['account_id' => $cashAccId, 'debit' => $finalTotal, 'credit' => 0, 'unit' => 'MSTORE'],
-                        ['account_id' => $revAccId, 'debit' => 0, 'credit' => $finalTotal, 'unit' => 'MSTORE'],
-                    ],
-                    null,
-                    'wash_transaction',
-                    $transaction->id
-                );
+                $cashCode = $request->payment_method === 'cash' ? '1001' : '1002';
+                $cashAccId = Account::where('code', $cashCode)->value('id');
+                $revAccId = Account::where('code', '4005')->value('id');
+                if ($cashAccId && $revAccId && $finalTotal > 0) {
+                    $poster = app(AccountingPoster::class);
+                    $poster->post(
+                        'WASH-'.$transaction->transaction_number,
+                        now()->toDateString(),
+                        'Wash POS',
+                        [
+                            ['account_id' => $cashAccId, 'debit' => $finalTotal, 'credit' => 0, 'unit' => 'MSTORE'],
+                            ['account_id' => $revAccId, 'debit' => 0, 'credit' => $finalTotal, 'unit' => 'MSTORE'],
+                        ],
+                        null,
+                        'wash_transaction',
+                        $transaction->id
+                    );
+                }
             }
 
             DB::commit();

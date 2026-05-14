@@ -1,10 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Wash Service')
+@section('title', 'Edit Layanan Wash')
 
 @section('content')
 <div class="container-fluid wash-service-edit-page">
-    <h1 class="h3 mb-4 text-gray-800">Edit Service</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800" id="pageTitle">Edit Layanan</h1>
+        <a href="{{ route('wash.services.index') }}" class="btn btn-secondary" title="Kembali">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="d-none d-md-inline ms-2">Kembali</span>
+        </a>
+    </div>
 
     <div class="card shadow mb-4">
         <div class="card-body">
@@ -12,7 +18,7 @@
                 @csrf
                 @method('PUT')
                 <div class="mb-3">
-                    <label for="name" class="form-label">Service Name</label>
+                    <label for="name" class="form-label" id="nameLabel">Nama Layanan</label>
                     <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $service->name) }}" required>
                     @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -20,18 +26,21 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="vehicle_type" class="form-label">Vehicle Type</label>
+                    <label for="vehicle_type" class="form-label" id="vehicleTypeLabel">Jenis Kendaraan</label>
                     <select class="form-select @error('vehicle_type') is-invalid @enderror" id="vehicle_type" name="vehicle_type" required>
                         <option value="car" {{ old('vehicle_type', $service->vehicle_type) == 'car' ? 'selected' : '' }}>Car (Mobil)</option>
                         <option value="motor" {{ old('vehicle_type', $service->vehicle_type) == 'motor' ? 'selected' : '' }}>Motor (Motorcycle)</option>
-                        <option value="coffee" {{ old('vehicle_type', $service->vehicle_type) == 'coffee' ? 'selected' : '' }}>Coffee (Kopi)</option>
+                        <option value="coffee" {{ old('vehicle_type', $service->vehicle_type) == 'coffee' ? 'selected' : '' }}>Caffe</option>
                     </select>
                     @error('vehicle_type')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text text-primary d-none" id="coffeeModeHint">
+                        Mode Caffe aktif: form disederhanakan seperti produk ATK.
+                    </div>
                 </div>
 
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-3" id="washAttributeGroup">
                     <div class="col-12 col-md-4">
                         <label for="service_category" class="form-label">Kategori Layanan</label>
                         <select class="form-select @error('service_category') is-invalid @enderror" id="service_category" name="service_category" required>
@@ -67,7 +76,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3" id="sortOrderGroup">
                     <label for="sort_order" class="form-label">Urutan Tampil</label>
                     <input type="number" class="form-control @error('sort_order') is-invalid @enderror" id="sort_order" name="sort_order" value="{{ old('sort_order', $service->sort_order ?? 0) }}" min="0">
                     @error('sort_order')
@@ -75,15 +84,24 @@
                     @enderror
                 </div>
 
-                <div class="mb-3">
-                    <label for="price" class="form-label">Price</label>
-                    <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $service->price) }}" required min="0">
-                    @error('price')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label for="cost_price" class="form-label" id="costPriceLabel">Harga Beli</label>
+                        <input type="number" class="form-control @error('cost_price') is-invalid @enderror" id="cost_price" name="cost_price" value="{{ old('cost_price', $service->cost_price ?? 0) }}" min="0">
+                        @error('cost_price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="price" class="form-label" id="sellingPriceLabel">Harga Jual</label>
+                        <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $service->price) }}" required min="0">
+                        @error('price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3" id="holidayPriceGroup">
                     <label for="holiday_price" class="form-label">Penyesuaian Harga Hari Raya (+/-)</label>
                     <input type="number" class="form-control @error('holiday_price') is-invalid @enderror" id="holiday_price" name="holiday_price" value="{{ old('holiday_price', $service->holiday_price) }}" placeholder="Contoh: 5000 atau -3000">
                     @error('holiday_price')
@@ -101,7 +119,7 @@
                         $ruleRows = max(1, $existingRules->count());
                     }
                 @endphp
-                <div class="mb-3">
+                <div class="mb-3" id="priceRulesSection">
                     <label class="form-label d-flex justify-content-between align-items-center">
                         <span>Aturan Harga POS (Opsional)</span>
                         <div class="d-flex gap-2">
@@ -143,7 +161,7 @@
                                                 <option value="all" {{ $oldVehicle === 'all' || is_null($oldVehicle) ? 'selected' : '' }}>Semua</option>
                                                 <option value="car" {{ $oldVehicle === 'car' ? 'selected' : '' }}>Mobil</option>
                                                 <option value="motor" {{ $oldVehicle === 'motor' ? 'selected' : '' }}>Motor</option>
-                                                <option value="coffee" {{ $oldVehicle === 'coffee' ? 'selected' : '' }}>Kopi</option>
+                                                <option value="coffee" {{ $oldVehicle === 'coffee' ? 'selected' : '' }}>Caffe</option>
                                             </select>
                                         </td>
                                         <td>
@@ -176,9 +194,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
+                    <label for="description" class="form-label" id="descriptionLabel">Deskripsi</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3">{{ old('description', $service->description) }}</textarea>
-                    <div class="wash-description-editor mt-2" data-description-editor data-target="description">
+                    <div class="wash-description-editor mt-2" data-description-editor data-target="description" id="descriptionEditorWrap">
                         <div class="wash-description-chips" data-description-chips></div>
                         <div class="input-group input-group-sm mt-2">
                             <input type="text" class="form-control" data-description-input placeholder="Tambah label, contoh: Scoopy">
@@ -191,7 +209,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="image" class="form-label">Service Image</label>
+                    <label for="image" class="form-label" id="imageLabel">Gambar Layanan</label>
                     @if($service->image)
                         <div class="mb-2">
                             <img src="{{ Storage::url($service->image) }}" alt="Service Image" class="img-thumbnail" style="max-height: 150px;">
@@ -206,11 +224,11 @@
                 <div class="mb-3 form-check">
                     <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" {{ old('is_active', $service->is_active) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="is_active">Active</label>
+                    <label class="form-check-label" for="is_active">Aktif</label>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Update Service</button>
-                <a href="{{ route('wash.services.index') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="submitButtonDesktop">Update Layanan</button>
+                <a href="{{ route('wash.services.index') }}" class="btn btn-secondary">Batal</a>
             </form>
         </div>
     </div>
@@ -218,8 +236,8 @@
 <div class="position-fixed start-0 end-0 bg-body border-top shadow d-md-none wash-mobile-action-bar">
     <div class="container py-2">
         <div class="d-flex gap-2">
-            <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary w-50">Cancel</a>
-            <button type="submit" class="btn btn-primary w-50" form="editServiceForm">Update</button>
+            <a href="{{ route('wash.services.index') }}" class="btn btn-outline-secondary w-50">Batal</a>
+            <button type="submit" class="btn btn-primary w-50" form="editServiceForm" id="submitButtonMobile">Update Layanan</button>
         </div>
     </div>
 </div>
@@ -439,6 +457,23 @@
         const basePriceInput = document.getElementById('price');
         const vehicleTypeInput = document.getElementById('vehicle_type');
         const categoryInput = document.getElementById('service_category');
+        const sizeTierInput = document.getElementById('size_tier');
+        const packageTypeInput = document.getElementById('package_type');
+        const pageTitle = document.getElementById('pageTitle');
+        const nameLabel = document.getElementById('nameLabel');
+        const vehicleTypeLabel = document.getElementById('vehicleTypeLabel');
+        const coffeeModeHint = document.getElementById('coffeeModeHint');
+        const washAttributeGroup = document.getElementById('washAttributeGroup');
+        const sortOrderGroup = document.getElementById('sortOrderGroup');
+        const holidayPriceGroup = document.getElementById('holidayPriceGroup');
+        const priceRulesSection = document.getElementById('priceRulesSection');
+        const descriptionLabel = document.getElementById('descriptionLabel');
+        const descriptionEditorWrap = document.getElementById('descriptionEditorWrap');
+        const imageLabel = document.getElementById('imageLabel');
+        const costPriceLabel = document.getElementById('costPriceLabel');
+        const sellingPriceLabel = document.getElementById('sellingPriceLabel');
+        const submitButtonDesktop = document.getElementById('submitButtonDesktop');
+        const submitButtonMobile = document.getElementById('submitButtonMobile');
         if (!tableBody || !addButton) {
             return;
         }
@@ -451,7 +486,7 @@
                         <option value="all" selected>Semua</option>
                         <option value="car">Mobil</option>
                         <option value="motor">Motor</option>
-                        <option value="coffee">Kopi</option>
+                        <option value="coffee">Caffe</option>
                     </select>
                 </td>
                 <td>
@@ -509,6 +544,12 @@
             const vehicleType = vehicleTypeInput?.value || 'car';
             const category = categoryInput?.value || 'main';
 
+            if (vehicleType === 'coffee') {
+                return [
+                    { vehicle_type: 'coffee', size_tier: 'none', package_type: 'general', price: Math.max(0, Math.round(base)), sort_order: 1, is_active: true },
+                ];
+            }
+
             if (category === 'addon' || category === 'skincare') {
                 const sizes = ['kecil', 'sedang', 'besar'];
                 return sizes.map((size, idx) => ({
@@ -538,6 +579,77 @@
                 { vehicle_type: 'car', size_tier: 'besar', package_type: 'full_clean', price: Math.max(0, Math.round(base * 1.4)), sort_order: 6, is_active: true },
             ];
         };
+
+        const applyCoffeeDefaults = function () {
+            if (vehicleTypeInput?.value !== 'coffee') {
+                return;
+            }
+            if (categoryInput) {
+                categoryInput.value = 'main';
+            }
+            if (sizeTierInput) {
+                sizeTierInput.value = 'none';
+            }
+            if (packageTypeInput) {
+                packageTypeInput.value = 'general';
+            }
+        };
+
+        const toggleCoffeeMode = function () {
+            const isCoffee = vehicleTypeInput?.value === 'coffee';
+            if (isCoffee) {
+                applyCoffeeDefaults();
+            }
+
+            if (pageTitle) {
+                pageTitle.textContent = isCoffee ? 'Edit Produk Caffe' : 'Edit Layanan';
+            }
+            if (nameLabel) {
+                nameLabel.textContent = isCoffee ? 'Nama Produk Caffe' : 'Nama Layanan';
+            }
+            if (vehicleTypeLabel) {
+                vehicleTypeLabel.textContent = isCoffee ? 'Jenis Produk' : 'Jenis Kendaraan';
+            }
+            if (costPriceLabel) {
+                costPriceLabel.textContent = isCoffee ? 'Cost Price (HPP)' : 'Harga Beli';
+            }
+            if (sellingPriceLabel) {
+                sellingPriceLabel.textContent = isCoffee ? 'Selling Price' : 'Harga Jual';
+            }
+            if (descriptionLabel) {
+                descriptionLabel.textContent = isCoffee ? 'Deskripsi Produk' : 'Deskripsi';
+            }
+            if (imageLabel) {
+                imageLabel.textContent = isCoffee ? 'Gambar Produk' : 'Gambar Layanan';
+            }
+            if (submitButtonDesktop) {
+                submitButtonDesktop.textContent = isCoffee ? 'Update Produk' : 'Update Layanan';
+            }
+            if (submitButtonMobile) {
+                submitButtonMobile.textContent = isCoffee ? 'Update Produk' : 'Update Layanan';
+            }
+            if (coffeeModeHint) {
+                coffeeModeHint.classList.toggle('d-none', !isCoffee);
+            }
+            if (washAttributeGroup) {
+                washAttributeGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (sortOrderGroup) {
+                sortOrderGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (holidayPriceGroup) {
+                holidayPriceGroup.classList.toggle('d-none', isCoffee);
+            }
+            if (priceRulesSection) {
+                priceRulesSection.classList.toggle('d-none', isCoffee);
+            }
+            if (descriptionEditorWrap) {
+                descriptionEditorWrap.classList.toggle('d-none', isCoffee);
+            }
+        };
+
+        vehicleTypeInput?.addEventListener('change', toggleCoffeeMode);
+        toggleCoffeeMode();
 
         addButton.addEventListener('click', function () {
             renderRow(tableBody.querySelectorAll('tr').length);

@@ -1,6 +1,15 @@
 @extends('layouts.app')
 @section('title', 'Pengeluaran Wash')
 @section('content')
+@php
+    $stockCategoryLabels = [
+        'shampoo' => 'Sampo Wash',
+        'snack' => 'Snack',
+        'kopi' => 'Caffe',
+        'caffe' => 'Caffe',
+        'lainnya' => 'Lainnya',
+    ];
+@endphp
 <div class="container-fluid py-3 wash-expenses-page">
     <div class="d-flex justify-content-between align-items-center mb-3 expenses-header">
         <h5 class="m-0">Pengeluaran Wash</h5>
@@ -14,7 +23,7 @@
     @endif
     @if(($hasStockTables ?? false) === false)
     <div class="alert alert-warning">
-        Modul stok wash belum aktif penuh. Jalankan <strong>php artisan migrate --force</strong> pada server ini untuk mengaktifkan stok sampo/snack/kopi.
+        Modul stok wash belum aktif penuh. Jalankan <strong>php artisan migrate --force</strong> pada server ini untuk mengaktifkan stok sampo/snack/caffe.
     </div>
     @endif
     <div class="card expenses-panel mb-3">
@@ -25,7 +34,7 @@
                         <option value="">Semua Kategori</option>
                         <option value="shampoo" {{ ($category ?? '') === 'shampoo' ? 'selected' : '' }}>Sampo Wash</option>
                         <option value="snack" {{ ($category ?? '') === 'snack' ? 'selected' : '' }}>Snack</option>
-                        <option value="kopi" {{ ($category ?? '') === 'kopi' ? 'selected' : '' }}>Kopi</option>
+                        <option value="caffe" {{ in_array(($category ?? ''), ['caffe', 'kopi'], true) ? 'selected' : '' }}>Caffe</option>
                         <option value="lainnya" {{ ($category ?? '') === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
                     </select>
                 </div>
@@ -44,7 +53,7 @@
     </div>
     <div class="card expenses-panel mb-3">
         <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
-            <span>Stok Sampo Wash, Snack, Kopi</span>
+            <span>Stok Sampo Wash, Snack, Caffe</span>
             @if($hasStockTables ?? false)
                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#stockOutModal">
                     <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Pemakaian Stok
@@ -65,7 +74,7 @@
                 <tbody>
                     @forelse(($stockItems ?? []) as $item)
                     <tr>
-                        <td>{{ ucfirst($item->category) }}</td>
+                        <td>{{ $stockCategoryLabels[strtolower((string) $item->category)] ?? ucfirst((string) $item->category) }}</td>
                         <td>{{ $item->name }}</td>
                         <td>
                             @if((float)$item->current_stock <= (float)$item->minimum_stock)
@@ -197,21 +206,21 @@
                         <select name="wash_stock_item_id" class="form-select">
                             <option value="">-- Buat item baru di bawah --</option>
                             @foreach(($stockItems ?? []) as $item)
-                                <option value="{{ $item->id }}">{{ ucfirst($item->category) }} - {{ $item->name }} ({{ (float)$item->current_stock }} {{ $item->unit }})</option>
+                                <option value="{{ $item->id }}">{{ $stockCategoryLabels[strtolower((string) $item->category)] ?? ucfirst((string) $item->category) }} - {{ $item->name }} ({{ (float)$item->current_stock }} {{ $item->unit }})</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-md-5">
                             <label class="form-label">Item Baru (opsional)</label>
-                            <input type="text" name="new_item_name" class="form-control" placeholder="Contoh: Kopi sachet premium">
+                            <input type="text" name="new_item_name" class="form-control" placeholder="Contoh: Caffe sachet premium">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Kategori</label>
                             <select name="new_item_category" class="form-select">
                                 <option value="shampoo">Sampo Wash</option>
                                 <option value="snack">Snack</option>
-                                <option value="kopi">Kopi</option>
+                                <option value="caffe">Caffe</option>
                                 <option value="lainnya">Lainnya</option>
                             </select>
                         </div>

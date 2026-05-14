@@ -76,6 +76,24 @@
                     </tbody>
                 </table>
             </div>
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table">
+                        <tr>
+                            <th style="width: 33%;">Modal Awal Caffe</th>
+                            <th style="width: 33%;">Pendapatan Caffe</th>
+                            <th style="width: 34%;">Selisih Caffe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-danger">Rp {{ number_format($dailyCaffeInitialCapital,0,',','.') }}</td>
+                            <td class="text-success">Rp {{ number_format($dailyCaffeRevenue,0,',','.') }}</td>
+                            <td class="{{ ($dailyCaffeRevenue - $dailyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailyCaffeRevenue - $dailyCaffeInitialCapital,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <!-- TABEL 1: RINCIAN PEMASUKAN (Full Width) -->
             <h6 class="fw-bold mt-4 text-decoration-underline">A. Rincian Pemasukan (Harian)</h6>
@@ -227,6 +245,24 @@
                             <td class="text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</td>
                             <td class="text-danger">Rp {{ number_format($monthlyExpense,0,',','.') }}</td>
                             <td>Rp {{ number_format($monthlyIncome - $monthlyExpense,0,',','.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table mb-0">
+                    <thead class="table">
+                        <tr>
+                            <th style="width: 33%;">Modal Awal Caffe (Bulanan)</th>
+                            <th style="width: 33%;">Pendapatan Caffe (Bulanan)</th>
+                            <th style="width: 34%;">Selisih Caffe (Bulanan)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end align-middle fw-bold">
+                            <td class="text-danger">Rp {{ number_format($monthlyCaffeInitialCapital,0,',','.') }}</td>
+                            <td class="text-success">Rp {{ number_format($monthlyCaffeRevenue,0,',','.') }}</td>
+                            <td class="{{ ($monthlyCaffeRevenue - $monthlyCaffeInitialCapital) < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlyCaffeRevenue - $monthlyCaffeInitialCapital,0,',','.') }}</td>
                         </tr>
                     </tbody>
                 </table>

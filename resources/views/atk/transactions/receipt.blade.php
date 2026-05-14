@@ -150,6 +150,26 @@
         </div>
 
         <div class="mb-6">
+            <span class="block text-sm font-semibold mb-3 text-slate-700">Jenis Printer</span>
+            <div class="radio-tile-group">
+                <div class="relative flex-1">
+                    <input type="radio" name="printer_type" id="typeEscpos" value="escpos" class="hidden" checked onchange="updatePrinterType()">
+                    <label for="typeEscpos" class="radio-tile block">
+                        <span class="block text-sm font-bold">Receipt (ESC/POS)</span>
+                        <span class="text-[10px] opacity-60">Printer Struk</span>
+                    </label>
+                </div>
+                <div class="relative flex-1">
+                    <input type="radio" name="printer_type" id="typeTspl" value="tspl" class="hidden" onchange="updatePrinterType()">
+                    <label for="typeTspl" class="radio-tile block">
+                        <span class="block text-sm font-bold">Label (TSPL)</span>
+                        <span class="text-[10px] opacity-60">Printer Label</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
             <span class="block text-sm font-semibold mb-3 text-slate-700">Ukuran Kertas</span>
             <div class="radio-tile-group">
                 <div class="relative flex-1">
@@ -302,7 +322,20 @@ function updateView(size) {
     el.classList.add('size-' + size);
 }
 
-/** * BLUETOOTH PRINT ENGINE
+function updatePrinterType() {
+    const type = document.querySelector('input[name="printer_type"]:checked').value;
+    // Optional: add preview changes here
+}
+
+// Initialize printer type from settings
+document.addEventListener('DOMContentLoaded', function() {
+    @if(\App\Models\Setting::getValue('pos_printer_type', 'escpos') === 'tspl')
+        document.getElementById('typeTspl').checked = true;
+        updatePrinterType();
+    @endif
+});
+
+/** * ESC/POS PRINT ENGINE
  */
 class PrinterEngine {
     constructor(cols) {
@@ -350,6 +383,47 @@ class PrinterEngine {
         }
         this.raw([0x1D, 0x76, 0x30, 0, widthBytes%256, Math.floor(widthBytes/256), h%256, Math.floor(h/256)]);
         this.raw(rast); this.raw("\n");
+    }
+}
+
+/** * TSPL PRINT ENGINE (for Label Printers)
+ */
+class TsplEngine {
+    constructor(width=null, height=null, gap=null) {
+        this.width = width || {{ \App\Models\Setting::getValue('pos_label_width_mm', 80) }};
+        this.height = height || {{ \App\Models\Setting::getValue('pos_label_height_mm', 150) }};
+        this.gap = gap || {{ \App\Models\Setting::getValue('pos_label_gap_mm', 3) }};
+        this.buffer = [];
+        this.encoder = new TextEncoder();
+    }
+
+    raw(data) {
+        if (typeof data === 'string') this.buffer.push(...this.encoder.encode(data));
+        else this.buffer.push(...data);
+    }
+
+    init() {
+        const wDots = this.width * 8;
+        const hDots = this.height * 8;
+        this.raw(`SIZE ${wDots} dot,${hDots} dot\n`);
+        this.raw(`GAP ${this.gap} mm,0 mm\n`);
+        this.raw("CLS\n");
+    }
+
+    text(x, y, font, rotation, xMul, yMul, content) {
+        this.raw(`TEXT ${x},${y},"${font}",${rotation},${xMul},${yMul},"${content}"\n`);
+    }
+
+    line(x1, y1, x2, y2, thickness) {
+        this.raw(`LINE ${x1},${y1},${x2},${y2},${thickness}\n`);
+    }
+
+    print(copies=1) {
+        this.raw(`PRINT ${copies},1\n`);
+    }
+
+    generate() {
+        return new Uint8Array(this.buffer);
     }
 }
 
@@ -405,6 +479,7 @@ function downloadAtkReceiptFile(file) {
 async function printBluetooth() {
     const status = document.getElementById('print-status');
     const cols = parseInt(document.querySelector('input[name="paper_size"]:checked').value);
+    const printerType = document.querySelector('input[name="printer_type"]:checked').value;
     
     try {
         status.innerText = "Mencari Perangkat...";
@@ -418,62 +493,120 @@ async function printBluetooth() {
         const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
         const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
 
-        const engine = new PrinterEngine(cols);
-        engine.init();
+        let payload;
+        if(printerType === 'tspl') {
+            // Build TSPL label
+            const tsplWidth = cols === 32 ? 58 : 80;
+            const tspl = new TsplEngine(tsplWidth, 150);
+            tspl.init();
+            
+            let yPos = 20;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.store);
+            yPos += 40;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.addr);
+            yPos += 30;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.phone);
+            yPos += 30;
+            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+            yPos += 20;
+            
+            if(txnData.receipt_title) {
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.receipt_title);
+                yPos += 30;
+            }
+            
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "NOTA: #" + txnData.nota);
+            yPos += 30;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "TGL: " + txnData.time);
+            yPos += 30;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "KASIR: " + txnData.cashier);
+            yPos += 30;
+            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+            yPos += 20;
+            
+            txnData.items.forEach(i => {
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, i.name);
+                yPos += 30;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, i.qty + " x " + i.prc.toLocaleString('id-ID') + " = " + i.sub.toLocaleString('id-ID'));
+                yPos += 30;
+            });
+            
+            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+            yPos += 20;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 2, "TOTAL AKHIR: Rp " + txnData.total.toLocaleString('id-ID'));
+            yPos += 50;
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "METODE: " + txnData.method);
+            yPos += 30;
+            
+            if(txnData.cash > 0) {
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "TUNAI: " + txnData.cash.toLocaleString('id-ID'));
+                yPos += 30;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "KEMBALI: " + txnData.change.toLocaleString('id-ID'));
+                yPos += 30;
+            }
+            
+            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.receipt_footer_title || "*** TERIMA KASIH ***");
+            tspl.print(1);
+            payload = tspl.generate();
+        } else {
+            // Build ESC/POS receipt
+            const engine = new PrinterEngine(cols);
+            engine.init();
 
-        const logo = document.getElementById('logo-img');
-        if (logo && logo.complete) {
+            const logo = document.getElementById('logo-img');
+            if (logo && logo.complete) {
+                engine.center();
+                await engine.processLogo(logo);
+            }
+
             engine.center();
-            await engine.processLogo(logo);
-        }
+            engine.bold(true); engine.raw(txnData.store + "\n"); engine.bold(false);
+            engine.raw(txnData.addr + "\n" + txnData.phone + "\n");
+            engine.divider();
 
-        engine.center();
-        engine.bold(true); engine.raw(txnData.store + "\n"); engine.bold(false);
-        engine.raw(txnData.addr + "\n" + txnData.phone + "\n");
-        engine.divider();
+            engine.left();
+            if (txnData.receipt_title) {
+                engine.bold(true); engine.raw(txnData.receipt_title + "\n"); engine.bold(false);
+            }
+            engine.raw(`NOTA : #${txnData.nota}\n`);
+            engine.raw(`TGL  : ${txnData.time}\n`);
+            engine.raw(`KASIR: ${txnData.cashier}\n`);
+            engine.divider();
 
-        engine.left();
-        if (txnData.receipt_title) {
-            engine.bold(true); engine.raw(txnData.receipt_title + "\n"); engine.bold(false);
-        }
-        engine.raw(`NOTA : #${txnData.nota}\n`);
-        engine.raw(`TGL  : ${txnData.time}\n`);
-        engine.raw(`KASIR: ${txnData.cashier}\n`);
-        engine.divider();
+            txnData.items.forEach(i => {
+                engine.bold(true); engine.raw(i.name + "\n"); engine.bold(false);
+                engine.justify(`${i.qty} x ${i.prc.toLocaleString('id-ID')}`, i.sub.toLocaleString('id-ID'));
+            });
+            engine.divider();
 
-        txnData.items.forEach(i => {
-            engine.bold(true); engine.raw(i.name + "\n"); engine.bold(false);
-            engine.justify(`${i.qty} x ${i.prc.toLocaleString('id-ID')}`, i.sub.toLocaleString('id-ID'));
-        });
-        engine.divider();
+            engine.justify("SUBTOTAL", txnData.total.toLocaleString('id-ID'));
+            engine.bold(true);
+            engine.justify("TOTAL AKHIR", "Rp " + txnData.total.toLocaleString('id-ID'));
+            engine.bold(false);
+            engine.raw(`METODE: ${txnData.method}\n`);
 
-        engine.justify("SUBTOTAL", txnData.total.toLocaleString('id-ID'));
-        engine.bold(true);
-        engine.justify("TOTAL AKHIR", "Rp " + txnData.total.toLocaleString('id-ID'));
-        engine.bold(false);
-        engine.raw(`METODE: ${txnData.method}\n`);
+            if (txnData.cash > 0) {
+                engine.justify("TUNAI", txnData.cash.toLocaleString('id-ID'));
+                engine.justify("KEMBALI", txnData.change.toLocaleString('id-ID'));
+            }
 
-        if (txnData.cash > 0) {
-            engine.justify("TUNAI", txnData.cash.toLocaleString('id-ID'));
-            engine.justify("KEMBALI", txnData.change.toLocaleString('id-ID'));
+            engine.feed(1);
+            engine.center();
+            engine.raw((txnData.receipt_footer_title || "*** TERIMA KASIH ***") + "\n");
+            if (txnData.receipt_footer_message) {
+                String(txnData.receipt_footer_message).split('\n').forEach(line => engine.raw(line + "\n"));
+            }
+            if (txnData.receipt_footer_note) {
+                String(txnData.receipt_footer_note).split('\n').forEach(line => engine.raw(line + "\n"));
+            }
+            if (txnData.receipt_powered_by) {
+                engine.raw(String(txnData.receipt_powered_by) + "\n");
+            }
+            engine.feed(4);
+            payload = new Uint8Array(engine.buffer);
         }
-
-        engine.feed(1);
-        engine.center();
-        engine.raw((txnData.receipt_footer_title || "*** TERIMA KASIH ***") + "\n");
-        if (txnData.receipt_footer_message) {
-            String(txnData.receipt_footer_message).split('\n').forEach(line => engine.raw(line + "\n"));
-        }
-        if (txnData.receipt_footer_note) {
-            String(txnData.receipt_footer_note).split('\n').forEach(line => engine.raw(line + "\n"));
-        }
-        if (txnData.receipt_powered_by) {
-            engine.raw(String(txnData.receipt_powered_by) + "\n");
-        }
-        engine.feed(4);
 
         status.innerText = "Mengirim Data...";
-        const payload = new Uint8Array(engine.buffer);
         const chunkSize = 20;
         for (let i = 0; i < payload.length; i += chunkSize) {
             await char.writeValue(payload.slice(i, i + chunkSize));

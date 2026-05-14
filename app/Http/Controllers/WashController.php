@@ -195,6 +195,7 @@ class WashController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
             'holiday_price' => 'nullable|numeric',
             'vehicle_type' => 'required|in:car,motor,coffee',
             'service_category' => 'required|in:main,addon,skincare',
@@ -219,6 +220,7 @@ class WashController extends Controller
 
         $data = $request->all();
         $data['holiday_price'] = $request->filled('holiday_price') ? $request->holiday_price : null;
+        $data['cost_price'] = $request->filled('cost_price') ? $request->cost_price : 0;
         $data['sort_order'] = $request->filled('sort_order') ? (int) $request->sort_order : 0;
 
         if ($request->hasFile('image')) {
@@ -250,6 +252,7 @@ class WashController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
             'holiday_price' => 'nullable|numeric',
             'vehicle_type' => 'required|in:car,motor,coffee',
             'service_category' => 'required|in:main,addon,skincare',
@@ -274,6 +277,7 @@ class WashController extends Controller
 
         $data = $request->all();
         $data['holiday_price'] = $request->filled('holiday_price') ? $request->holiday_price : null;
+        $data['cost_price'] = $request->filled('cost_price') ? $request->cost_price : 0;
         $data['sort_order'] = $request->filled('sort_order') ? (int) $request->sort_order : 0;
 
         if ($request->hasFile('image')) {

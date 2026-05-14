@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class WashService extends Model
 {
     protected $fillable = [
-        'name', 'vehicle_type', 'service_category', 'size_tier', 'package_type', 'sort_order', 'price', 'holiday_price', 'description', 'image', 'is_active',
+        'name', 'vehicle_type', 'service_category', 'size_tier', 'package_type', 'sort_order', 'price', 'cost_price', 'holiday_price', 'description', 'image', 'is_active',
     ];
 
     public const CATEGORY_OPTIONS = [
