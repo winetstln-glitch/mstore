@@ -1056,17 +1056,28 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify(data)
         })
         .then(async response => {
-            if (!response.ok) {
-                let errorMsg = 'Respons jaringan tidak valid';
-                try {
-                    const errorData = await response.json();
-                    errorMsg = errorData.message || errorMsg;
-                } catch (e) {
-                    // ignore
+            let responseText = '';
+            try {
+                responseText = await response.text();
+                if (!response.ok) {
+                    let errorMsg = 'Respons jaringan tidak valid';
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        errorMsg = errorData.message || errorMsg;
+                    } catch (e) {
+                        // If not JSON, use first 200 chars of response text
+                        errorMsg = responseText.substring(0, 200);
+                    }
+                    throw new Error(errorMsg);
                 }
-                throw new Error(errorMsg);
+                return JSON.parse(responseText);
+            } catch (e) {
+                if (e instanceof SyntaxError) {
+                    // JSON parse error
+                    throw new Error('Respons server tidak valid: ' + (responseText.substring(0, 200) || 'Tidak ada data'));
+                }
+                throw e;
             }
-            return response.json();
         })
         .then(async data => {
             if (data.success) {
