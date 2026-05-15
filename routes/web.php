@@ -154,7 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('installations', InstallationWebController::class);
     
     // Technician Attendance & Kasbon (PLACE BEFORE CATCH-ALL)
-    Route::get('technicians/kasbon', [\App\Http\Controllers\SalaryAdjustmentController::class, 'index'])->name('technicians.kasbon.index');
+    Route::get('kasbon', [\App\Http\Controllers\SalaryAdjustmentController::class, 'index'])->name('technicians.kasbon.index');
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
     Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
     
