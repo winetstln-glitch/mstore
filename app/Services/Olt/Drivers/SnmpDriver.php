@@ -203,13 +203,18 @@ class SnmpDriver implements OltDriverInterface
 
         foreach ($categories as $cat) {
             $baseOid = $activeOIDs[$cat];
+            Log::info("[OLT SYNC] Trying snmprealwalk for category {$cat} with OID: {$baseOid}");
+            
             $rawData = @snmprealwalk($host, $this->community, $baseOid, $this->timeout, $this->retries);
             
             if ($rawData === false) {
-                Log::warning("[OLT SYNC] snmprealwalk failed for OID {$baseOid}");
+                Log::warning("[OLT SYNC] snmprealwalk FAILED for category {$cat} (OID: {$baseOid}) - error: " . error_get_last()['message'] ?? 'unknown');
                 $dataStore[$cat] = [];
                 continue;
             }
+
+            Log::info("[OLT SYNC] snmprealwalk SUCCESS for category {$cat} - found " . count($rawData) . " entries");
+            Log::info("[OLT SYNC] Sample entries for {$cat}: " . json_encode(array_slice($rawData, 0, 5)));
 
             $dataStore[$cat] = [];
             foreach ($rawData as $oid => $value) {
@@ -231,6 +236,8 @@ class SnmpDriver implements OltDriverInterface
                     $dataStore[$cat][$idx] = $this->cleanValue($value);
                 }
             }
+            
+            Log::info("[OLT SYNC] Parsed entries for {$cat}: " . count($dataStore[$cat]));
         }
 
         Log::info("[OLT SYNC] Walk selesai. Entry per OID: " . json_encode(array_map(fn($c) => count($dataStore[$c]), $categories)));
