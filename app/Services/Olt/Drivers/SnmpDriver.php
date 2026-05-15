@@ -169,12 +169,15 @@ class SnmpDriver implements OltDriverInterface
                 }
             }
             
-            Log::warning("[OLT SYNC] DEBUG: No profile worked! Trying simple snmpwalk of OID 1.3.6.1 to find available OIDs");
+            Log::warning("[OLT SYNC] DEBUG: No profile worked! Trying simple snmpwalk of OID 1.3.6.1 with reduced timeout");
             $host = $this->olt->host . ':' . $this->port;
-            $rawAll = @snmprealwalk($host, $this->community, '1.3.6.1', $this->timeout, $this->retries);
+            $shortTimeout = 2 * 1000000; // 2 detik
+            $rawAll = @snmprealwalk($host, $this->community, '1.3.6.1', $shortTimeout, 1);
             if ($rawAll !== false) {
                 Log::info("[OLT SYNC] DEBUG: Found " . count($rawAll) . " top-level OIDs");
                 Log::info("[OLT SYNC] DEBUG: Sample OIDs found: " . json_encode(array_slice(array_keys($rawAll), 0, 30)));
+            } else {
+                Log::warning("[OLT SYNC] DEBUG: snmpwalk 1.3.6.1 also failed: " . (error_get_last()['message'] ?? 'unknown'));
             }
         }
 
@@ -279,6 +282,11 @@ class SnmpDriver implements OltDriverInterface
         if (empty($nameData)) {
             Log::warning("[OLT SYNC] No name data found, trying to use other OID as key");
             $nameData = $dataStore['status'] ?? $dataStore['rx'] ?? [];
+        }
+
+        if (!is_array($nameData) || empty($nameData)) {
+            Log::warning("[OLT SYNC] No valid name/status/rx data found to use as key");
+            return [];
         }
 
         foreach ($nameData as $idx => $rawName) {
