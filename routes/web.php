@@ -156,7 +156,8 @@ Route::middleware('auth')->group(function () {
     Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
         ->where('any', '.*');
 
-    // Technician Attendance
+    // Technician Attendance & Kasbon
+    Route::get('technicians/kasbon', [\App\Http\Controllers\SalaryAdjustmentController::class, 'index'])->name('technicians.kasbon.index');
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
     Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
     Route::get('attendance/daily', [TechnicianAttendanceController::class, 'daily'])->name('attendance.daily');
