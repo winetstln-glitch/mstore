@@ -318,7 +318,7 @@
         <div class="divider"></div>
 
         <table class="info-table">
-            <tr><td class="label">Nota</td><td>: {{ $transaction->transaction_number }}</td></tr>
+            <tr><td class="label">Nota</td><td>: {{ $transaction->queue_number ?? $transaction->transaction_number }}</td></tr>
             <tr><td class="label">Waktu</td><td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td></tr>
             <tr><td class="label">Kasir</td><td>: {{ $cashierName }}</td></tr>
             <tr><td class="label">Pelanggan/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
@@ -418,7 +418,7 @@ const data = {{ Js::from([
     'store' => $receiptStoreName,
     'address' => $receiptStoreAddress,
     'phone' => $receiptStorePhoneLabel,
-    'number' => $transaction->transaction_number,
+    'number' => $transaction->queue_number ?? $transaction->transaction_number,
     'date' => $transaction->created_at->format('d/m/y H:i'),
     'cashier' => $cashierName,
     'customer' => $customerName . " / " . $vehiclePlate,
