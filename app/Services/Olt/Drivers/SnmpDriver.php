@@ -145,6 +145,39 @@ class SnmpDriver implements OltDriverInterface
         $brand = strtolower($this->olt->brand);
         $profiles = $this->brandProfiles[$brand] ?? [];
 
+        $debug = true;
+        
+        if ($debug) {
+            Log::info("[OLT SYNC] DEBUG MODE ACTIVE: Trying ALL profiles from ALL brands");
+            $allProfiles = [];
+            foreach ($this->brandProfiles as $b => $brandProfiles) {
+                $allProfiles = array_merge($allProfiles, $brandProfiles);
+            }
+            Log::info("[OLT SYNC] DEBUG: Total profiles to try: " . count($allProfiles));
+            
+            foreach ($allProfiles as $profile) {
+                Log::info("[OLT SYNC] DEBUG: Trying profile: " . $profile['name']);
+                try {
+                    $onus = $this->fetchOnusFromProfile($profile);
+                    if (count($onus) > 0) {
+                        Log::info("[OLT SYNC] DEBUG: SUCCESS! Profile " . $profile['name'] . " found " . count($onus) . " ONUs!");
+                        $this->olt->update(['last_profile' => $profile['name']]);
+                        return $onus;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("[OLT SYNC] DEBUG: Profile " . $profile['name'] . " failed: " . $e->getMessage());
+                }
+            }
+            
+            Log::warning("[OLT SYNC] DEBUG: No profile worked! Trying simple snmpwalk of OID 1.3.6.1 to find available OIDs");
+            $host = $this->olt->host . ':' . $this->port;
+            $rawAll = @snmprealwalk($host, $this->community, '1.3.6.1', $this->timeout, $this->retries);
+            if ($rawAll !== false) {
+                Log::info("[OLT SYNC] DEBUG: Found " . count($rawAll) . " top-level OIDs");
+                Log::info("[OLT SYNC] DEBUG: Sample OIDs found: " . json_encode(array_slice(array_keys($rawAll), 0, 30)));
+            }
+        }
+
         if (empty($profiles)) {
             throw new Exception("SNMP Profile for brand {$brand} not found.");
         }
