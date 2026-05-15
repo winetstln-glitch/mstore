@@ -359,40 +359,20 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             $prefix = $isCaffe ? 'Caffe' : 'Wash';
-            
-            // Generate sequence number for the type (reset daily)
             $today = today();
             $tomorrow = today()->addDay();
-            
-            // Get all transactions today with the same prefix to find last sequence
-            $lastSequence = 0;
-            $todayTransactions = WashTransaction::where('created_at', '>=', $today)
-                ->where('created_at', '<', $tomorrow)
-                ->orderBy('id', 'desc')
-                ->get();
-                
-            foreach ($todayTransactions as $t) {
-                if (str_starts_with($t->transaction_number, $prefix . '-')) {
-                    $parts = explode('-', $t->transaction_number);
-                    if (count($parts) === 2) {
-                        $num = (int)$parts[1];
-                        if ($num > $lastSequence) {
-                            $lastSequence = $num;
-                        }
-                    }
-                }
-            }
-            $sequenceNumber = $lastSequence + 1;
-            
-            // Format transaction number: Caffe-001, Wash-001
-            $transactionNumber = $prefix . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
+            $dateStr = $today->format('Ymd'); // Format tanggal: 20260515
             
             // Generate Queue Number (Reset daily for overall count)
             $lastQueue = WashTransaction::where('created_at', '>=', $today)
                 ->where('created_at', '<', $tomorrow)
                 ->max('queue_number');
             $queueNumber = ($lastQueue ?? 0) + 1;
-
+            
+            // Create transaction with a 100% unique transaction number using timestamp + random
+            $uniqueSuffix = time() . '-' . rand(100000, 999999);
+            $transactionNumber = $prefix . '-' . $dateStr . '-' . $uniqueSuffix;
+            
             $transaction = WashTransaction::create([
                 'user_id' => Auth::id(),
                 'wash_customer_id' => $customer ? $customer->id : null,

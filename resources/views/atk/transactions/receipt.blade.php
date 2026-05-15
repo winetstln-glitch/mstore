@@ -230,6 +230,10 @@
             <div class="flex justify-between"><span>KASIR</span><span>{{ strtoupper($transaction->user->name ?? 'Admin') }}</span></div>
         </div>
 
+        @if(!empty($transaction->queue_number))
+            <div class="text-center border-2 border-slate-900 p-3 my-3 text-xl font-bold">ANTRIAN: #{{ $transaction->queue_number }}</div>
+        @endif
+
         <div class="border-t border-dashed border-slate-900 my-3"></div>
 
         <div class="space-y-3">
@@ -299,6 +303,7 @@ const txnData = {{ Js::from([
     'nota' => $transaction->transaction_number,
     'time' => $transaction->created_at->format('d/m/Y H:i'),
     'cashier' => $transaction->user->name ?? 'Admin',
+    'queue' => $transaction->queue_number ?? null,
     'receipt_title' => $receiptTitle,
     'receipt_footer_title' => $receiptFooterTitle,
     'receipt_footer_message' => $receiptFooterMessage,
@@ -494,35 +499,43 @@ async function printBluetooth() {
         const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
 
         let payload;
-        if(printerType === 'tspl') {
-            // Build TSPL label
-            const tsplWidth = cols === 32 ? 58 : 80;
-            const tspl = new TsplEngine(tsplWidth, 150);
-            tspl.init();
-            
-            let yPos = 20;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.store);
-            yPos += 40;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.addr);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.phone);
-            yPos += 30;
-            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
-            yPos += 20;
-            
-            if(txnData.receipt_title) {
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.receipt_title);
+            if(printerType === 'tspl') {
+                // Build TSPL label
+                const tsplWidth = cols === 32 ? 58 : 80;
+                const tspl = new TsplEngine(tsplWidth, 150);
+                tspl.init();
+                
+                let yPos = 20;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.store);
+                yPos += 40;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.addr);
                 yPos += 30;
-            }
-            
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "NOTA: #" + txnData.nota);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "TGL: " + txnData.time);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "KASIR: " + txnData.cashier);
-            yPos += 30;
-            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
-            yPos += 20;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.phone);
+                yPos += 30;
+                tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+                yPos += 20;
+                
+                if(txnData.receipt_title) {
+                    tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, txnData.receipt_title);
+                    yPos += 30;
+                }
+                
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "NOTA: #" + txnData.nota);
+                yPos += 30;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "TGL: " + txnData.time);
+                yPos += 30;
+                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "KASIR: " + txnData.cashier);
+                yPos += 30;
+                
+                if(txnData.queue) {
+                    tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+                    yPos += 20;
+                    tspl.text(20, yPos, "TSS24.BF2", 0, 1, 2, "ANTRIAN: #" + txnData.queue);
+                    yPos += 50;
+                }
+                
+                tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
+                yPos += 20;
             
             txnData.items.forEach(i => {
                 tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, i.name);
@@ -571,6 +584,15 @@ async function printBluetooth() {
             engine.raw(`NOTA : #${txnData.nota}\n`);
             engine.raw(`TGL  : ${txnData.time}\n`);
             engine.raw(`KASIR: ${txnData.cashier}\n`);
+            
+            if(txnData.queue) {
+                engine.center();
+                engine.bold(true);
+                engine.raw("\nANTRIAN: #" + txnData.queue + "\n\n");
+                engine.bold(false);
+                engine.left();
+            }
+            
             engine.divider();
 
             txnData.items.forEach(i => {

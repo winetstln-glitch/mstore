@@ -191,6 +191,8 @@ Route::middleware('auth')->group(function () {
     Route::get('olt/{olt}/system-info', [OLTController::class, 'getSystemInfo'])->name('olt.system_info');
     Route::get('olt/{olt}/onus', [OnuController::class, 'index'])->name('olt.onus.index');
     Route::post('olt/{olt}/onus/sync', [OnuController::class, 'sync'])->name('olt.onus.sync');
+    Route::put('olt/onu/{onu}', [OnuController::class, 'update'])->name('olt.onu.update');
+    Route::post('olt/onu/{onu}/reboot', [OnuController::class, 'reboot'])->name('olt.onu.reboot');
     Route::resource('olt', OLTController::class);
     // ... kode router lainnya ...
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');

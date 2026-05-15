@@ -86,6 +86,7 @@ class OLTController extends Controller implements HasMiddleware
             'password' => 'required|string|max:255',
             'type' => 'required|string|in:epon,gpon,xpon',
             'brand' => 'required|string|in:zte,huawei,hsgq,vsol,cdata',
+            'model' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'description' => 'nullable|string',
@@ -93,6 +94,8 @@ class OLTController extends Controller implements HasMiddleware
             'snmp_port' => 'nullable|integer',
             'snmp_community' => 'nullable|string|max:255',
             'snmp_version' => 'nullable|string|max:10',
+            'web_user' => 'nullable|string|max:255',
+            'web_password' => 'nullable|string|max:255',
         ]);
 
         [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
@@ -125,6 +128,7 @@ class OLTController extends Controller implements HasMiddleware
             'password' => 'nullable|string|max:255', // Password optional on update
             'type' => 'sometimes|required|string|in:epon,gpon,xpon',
             'brand' => 'sometimes|required|string|in:zte,huawei,hsgq,vsol,cdata',
+            'model' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'description' => 'nullable|string',
@@ -132,6 +136,8 @@ class OLTController extends Controller implements HasMiddleware
             'snmp_port' => 'nullable|integer',
             'snmp_community' => 'nullable|string|max:255',
             'snmp_version' => 'nullable|string|max:10',
+            'web_user' => 'nullable|string|max:255',
+            'web_password' => 'nullable|string|max:255',
         ]);
 
         if (isset($validated['host']) && isset($validated['port'])) {
@@ -142,6 +148,10 @@ class OLTController extends Controller implements HasMiddleware
 
         if (empty($validated['password'])) {
             unset($validated['password']);
+        }
+
+        if (empty($validated['web_password'])) {
+            unset($validated['web_password']);
         }
 
         $olt->update($validated);

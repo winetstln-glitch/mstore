@@ -15,6 +15,7 @@ class Olt extends Model
         'password',
         'type',
         'brand',
+        'model',
         'is_active',
         'description',
         'latitude',
@@ -22,11 +23,15 @@ class Olt extends Model
         'snmp_version',
         'snmp_community',
         'snmp_port',
+        'web_user',
+        'web_password',
+        'last_profile',
     ];
 
     protected $hidden = [
         'password',
         'snmp_community',
+        'web_password',
     ];
 
     protected $casts = [

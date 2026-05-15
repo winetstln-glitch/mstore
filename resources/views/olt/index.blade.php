@@ -77,12 +77,6 @@
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="d-flex justify-content-end gap-1">
-                                            @if(Auth::user()->hasPermission('olt.view'))
-                                            <a href="{{ route('olt.onus.index', $olt) }}" class="btn btn-sm btn-outline-success" title="{{ __('ONU Management') }}">
-                                                <i class="fa-solid fa-network-wired"></i>
-                                            </a>
-                                            @endif
-                                            
                                             @if(Auth::user()->hasPermission('olt.edit'))
                                             <a href="{{ route('olt.edit', $olt) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>

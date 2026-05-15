@@ -8,61 +8,56 @@
             <div class="main-card mb-3 card shadow-sm border-0 border-top border-4 border-primary">
                 <div class="card-body p-2 p-md-3">
                     <!-- Responsive Toolbar -->
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3 toolbar-container">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-2 toolbar-container">
                         
-                        <!-- Left Group: Title & Add Buttons -->
+                        <!-- Left Group: Title Only -->
                         <div class="d-flex flex-column w-100 w-md-auto toolbar-title">
-                            <h5 class="card-title fw-bold mb-2 mb-md-0 text-nowrap">
+                            <h5 class="card-title fw-bold mb-0 text-nowrap">
                                 {{ __('Peta Distribusi') }}
                             </h5>
-                            
-                            <!-- Filter Only -->
-                            <div class="d-flex flex-wrap align-items-center gap-2">
-                                @if(isset($isAdmin) && $isAdmin)
-                                <div>
-                                    <select class="form-select form-select-sm" id="areaFilter" style="min-width: 150px;">
-                                        <option value="">{{ __('Semua Area') }}</option>
-                                        @foreach($coordinators as $coord)
-                                            @if($coord->region)
-                                                <option value="{{ $coord->region_id }}">{{ $coord->region->name }} ({{ $coord->name }})</option>
-                                            @endif
-                                        @endforeach
-                                    </select>
-                                </div>
-                                @endif
-
-                                <!-- Hidden Buttons (for custom control) -->
-                                <div class="d-none">
-                                    <button type="button" class="btn btn-primary btn-sm" id="btnAddOltMode">
-                                        <i class="fa fa-server me-1 d-none d-sm-inline"></i> {{ __('OLT') }}
-                                    </button>
-                                    <button type="button" class="btn btn-warning text-dark btn-sm" id="btnAddOdcMode">
-                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODC') }}
-                                    </button>
-                                    <button type="button" class="btn btn-success btn-sm" id="btnAddOdpMode">
-                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODP') }}
-                                    </button>
-                                    <button type="button" class="btn btn-indigo btn-sm" id="btnAddHtbMode">
-                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('HTB') }}
-                                    </button>
-                                    <button type="button" class="btn btn-dark btn-sm" id="btnAddClosureMode">
-                                        <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('Closure') }}
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm d-none" id="btnCancelAdd">
-                                        <i class="fa fa-times me-1"></i> {{ __('Batal') }}
-                                    </button>
-                                    <button type="button" class="btn btn-info btn-sm text-white" onclick="location.reload()" title="{{ __('Segarkan') }}">
-                                        <i class="fa fa-refresh"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
-                                        <i class="fa fa-expand"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
-                                        <i class="fa fa-pencil"></i>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+
+                    <!-- Hidden Elements (for custom control) -->
+                    <div class="d-none">
+                        @if(isset($isAdmin) && $isAdmin)
+                        <select class="form-select form-select-sm" id="areaFilter" style="min-width: 150px;">
+                            <option value="">{{ __('Semua Area') }}</option>
+                            @foreach($coordinators as $coord)
+                                @if($coord->region)
+                                    <option value="{{ $coord->region_id }}">{{ $coord->region->name }} ({{ $coord->name }})</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        @endif
+
+                        <button type="button" class="btn btn-primary btn-sm" id="btnAddOltMode">
+                            <i class="fa fa-server me-1 d-none d-sm-inline"></i> {{ __('OLT') }}
+                        </button>
+                        <button type="button" class="btn btn-warning text-dark btn-sm" id="btnAddOdcMode">
+                            <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODC') }}
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" id="btnAddOdpMode">
+                            <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('ODP') }}
+                        </button>
+                        <button type="button" class="btn btn-indigo btn-sm" id="btnAddHtbMode">
+                            <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('HTB') }}
+                        </button>
+                        <button type="button" class="btn btn-dark btn-sm" id="btnAddClosureMode">
+                            <i class="fa fa-plus me-1 d-none d-sm-inline"></i> {{ __('Closure') }}
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm d-none" id="btnCancelAdd">
+                            <i class="fa fa-times me-1"></i> {{ __('Batal') }}
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm text-white" onclick="location.reload()" title="{{ __('Segarkan') }}">
+                            <i class="fa fa-refresh"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnFullscreen" title="{{ __('Layar Penuh') }}">
+                            <i class="fa fa-expand"></i>
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm" id="btnEditLines" title="{{ __('Edit Garis') }}">
+                            <i class="fa fa-pencil"></i>
+                        </button>
                     </div>
 
                     <div id="map" class="border"></div>

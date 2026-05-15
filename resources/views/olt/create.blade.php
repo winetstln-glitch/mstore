@@ -206,6 +206,45 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-6">
+                            <label for="model" class="form-label">{{ __('Model') }}</label>
+                            <select name="model" id="model" class="form-select @error('model') is-invalid @enderror">
+                                <option value="">-- Pilih Model --</option>
+                                <optgroup label="HIOSO / C-Data">
+                                    <option value="HA7304" {{ old('model') == 'HA7304' ? 'selected' : '' }}>HA7304</option>
+                                    <option value="HA7308" {{ old('model') == 'HA7308' ? 'selected' : '' }}>HA7308</option>
+                                    <option value="HA7004" {{ old('model') == 'HA7004' ? 'selected' : '' }}>HA7004</option>
+                                </optgroup>
+                                <optgroup label="ZTE">
+                                    <option value="C320" {{ old('model') == 'C320' ? 'selected' : '' }}>C320</option>
+                                    <option value="C300" {{ old('model') == 'C300' ? 'selected' : '' }}>C300</option>
+                                    <option value="C600" {{ old('model') == 'C600' ? 'selected' : '' }}>C600</option>
+                                    <option value="C610" {{ old('model') == 'C610' ? 'selected' : '' }}>C610</option>
+                                </optgroup>
+                                <optgroup label="Huawei">
+                                    <option value="MA5608T" {{ old('model') == 'MA5608T' ? 'selected' : '' }}>MA5608T</option>
+                                    <option value="MA5680T" {{ old('model') == 'MA5680T' ? 'selected' : '' }}>MA5680T</option>
+                                    <option value="MA5683T" {{ old('model') == 'MA5683T' ? 'selected' : '' }}>MA5683T</option>
+                                    <option value="MA5800-X2" {{ old('model') == 'MA5800-X2' ? 'selected' : '' }}>MA5800-X2</option>
+                                    <option value="MA5800-X7" {{ old('model') == 'MA5800-X7' ? 'selected' : '' }}>MA5800-X7</option>
+                                </optgroup>
+                                <optgroup label="VSOL">
+                                    <option value="V1600D4" {{ old('model') == 'V1600D4' ? 'selected' : '' }}>V1600D4</option>
+                                    <option value="V1600D8" {{ old('model') == 'V1600D8' ? 'selected' : '' }}>V1600D8</option>
+                                    <option value="V1600G1" {{ old('model') == 'V1600G1' ? 'selected' : '' }}>V1600G1</option>
+                                    <option value="V1600G2" {{ old('model') == 'V1600G2' ? 'selected' : '' }}>V1600G2</option>
+                                </optgroup>
+                                <optgroup label="HSGQ">
+                                    <option value="G008" {{ old('model') == 'G008' ? 'selected' : '' }}>G008</option>
+                                    <option value="G016" {{ old('model') == 'G016' ? 'selected' : '' }}>G016</option>
+                                    <option value="G02ID" {{ old('model') == 'G02ID' ? 'selected' : '' }}>G02ID</option>
+                                </optgroup>
+                            </select>
+                            @error('model')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-6 d-flex align-items-center pt-4">
                             <div class="form-check form-switch">
                                 <input type="hidden" name="is_active" value="0">
@@ -214,6 +253,31 @@
                             </div>
                             @error('is_active')
                                 <div class="text-danger small ms-2">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-body-secondary text-uppercase small mb-3 border-top pt-3">{{ __('Web Interface Credentials') }}</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="web_user" class="form-label">{{ __('Web Username') }}</label>
+                            <input type="text" name="web_user" id="web_user" value="{{ old('web_user', 'admin') }}" class="form-control @error('web_user') is-invalid @enderror">
+                            <div class="form-text">{{ __('For ONU reboot and management via web UI') }}</div>
+                            @error('web_user')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="web_password" class="form-label">{{ __('Web Password') }}</label>
+                            <div class="input-group">
+                                <input type="password" name="web_password" id="web_password" value="{{ old('web_password', 'admin') }}" class="form-control @error('web_password') is-invalid @enderror">
+                                <button class="btn btn-outline-secondary" type="button" data-toggle-password="web_password" aria-label="Tampilkan/Sembunyikan Password">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            @error('web_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>

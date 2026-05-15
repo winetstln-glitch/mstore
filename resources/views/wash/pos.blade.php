@@ -1055,9 +1055,16 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: JSON.stringify(data)
         })
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
-                throw new Error('Respons jaringan tidak valid');
+                let errorMsg = 'Respons jaringan tidak valid';
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorMsg;
+                } catch (e) {
+                    // ignore
+                }
+                throw new Error(errorMsg);
             }
             return response.json();
         })

@@ -92,7 +92,7 @@ class SnmpDriver implements OltDriverInterface
     public function connect(Olt $olt, $timeout = 10)
     {
         if (!extension_loaded('snmp')) {
-            throw new Exception('PHP SNMP extension is not loaded.');
+            throw new Exception('PHP SNMP extension tidak ter-load! Aktifkan di php.ini dengan menghapus tanda ";" di depan "extension=snmp".');
         }
 
         $this->olt = $olt;
@@ -104,7 +104,7 @@ class SnmpDriver implements OltDriverInterface
         // Test connection
         $sysDescr = @snmpget($this->olt->host.':'.$this->port, $this->community, '1.3.6.1.2.1.1.1.0', $this->timeout, $this->retries);
         if ($sysDescr === false) {
-            throw new Exception('Could not connect to OLT via SNMP.');
+            throw new Exception('Tidak bisa terhubung ke OLT via SNMP. Periksa Community, Port, dan konfigurasi OLT.');
         }
 
         return true;
@@ -176,12 +176,18 @@ class SnmpDriver implements OltDriverInterface
             $sn = $this->cleanValue($this->getByIndex($snsRaw, $idx, $profile['sn_table'] ?? ''));
             $rxPower = $this->cleanValue($this->getByIndex($rxPowerRaw, $idx, $profile['rx_power_table'] ?? ''));
 
+            $formattedSignal = $this->formatSignal($rxPower, $this->olt->brand);
             $onus[] = [
                 'interface' => $this->formatInterface($idx, $profile['name']),
+                'onu_index' => $idx,
                 'name' => $name,
                 'serial_number' => $this->formatSn($sn),
+                'sn' => $this->formatSn($sn),
                 'status' => $this->mapStatus($statusValue, $this->olt->brand),
-                'signal' => $this->formatSignal($rxPower, $this->olt->brand),
+                'signal' => $formattedSignal,
+                'rx_power' => $formattedSignal,
+                'tx_power' => null, // TX power not available in all profiles, set to null for now
+                'mac' => null, // MAC address not available in all profiles, set to null for now
                 'description' => "Synced via SNMP ({$profile['name']})"
             ];
         }
