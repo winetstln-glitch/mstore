@@ -152,14 +152,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('tickets', TicketWebController::class);
 
     Route::resource('installations', InstallationWebController::class);
-    Route::permanentRedirect('technicians', 'employees');
-    Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
-        ->where('any', '.*');
-
-    // Technician Attendance & Kasbon
+    
+    // Technician Attendance & Kasbon (PLACE BEFORE CATCH-ALL)
     Route::get('technicians/kasbon', [\App\Http\Controllers\SalaryAdjustmentController::class, 'index'])->name('technicians.kasbon.index');
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
     Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
+    
+    Route::permanentRedirect('technicians', 'employees');
+    Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
+        ->where('any', '.*');
     Route::get('attendance/daily', [TechnicianAttendanceController::class, 'daily'])->name('attendance.daily');
     Route::get('attendance/payslip', [TechnicianAttendanceController::class, 'payslip'])->name('attendance.payslip');
     Route::get('attendance/excel', [TechnicianAttendanceController::class, 'exportExcel'])->name('attendance.excel');
