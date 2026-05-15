@@ -200,71 +200,52 @@ class SnmpDriver implements OltDriverInterface
 
         $dataStore = [];
         $categories = array_keys($activeOIDs);
-        foreach ($categories as $c) {
-            $dataStore[$c] = [];
-        }
 
-        $currentPointers = array_values($activeOIDs);
-        $finished = array_fill(0, count($categories), false);
-
-        while (in_array(false, $finished, true)) {
-            $toFetch = [];
-            $fetchIndices = [];
-            foreach ($categories as $i => $cat) {
-                if (!$finished[$i]) {
-                    $toFetch[] = $currentPointers[$i];
-                    $fetchIndices[] = $i;
-                }
+        foreach ($categories as $cat) {
+            $baseOid = $activeOIDs[$cat];
+            $rawData = @snmprealwalk($host, $this->community, $baseOid, $this->timeout, $this->retries);
+            
+            if ($rawData === false) {
+                Log::warning("[OLT SYNC] snmprealwalk failed for OID {$baseOid}");
+                $dataStore[$cat] = [];
+                continue;
             }
 
-            if (empty($toFetch)) {
-                break;
-            }
-
-            $vbs = [];
-            foreach ($toFetch as $oid) {
-                $result = @snmpgetnext($host, $this->community, $oid, $this->timeout, $this->retries);
-                $vbs[] = $result !== false ? $result : null;
-            }
-
-            foreach ($fetchIndices as $i => $catIdx) {
-                $vbValue = $vbs[$i] ?? null;
-                if ($vbValue === null) {
-                    $finished[$catIdx] = true;
-                    continue;
-                }
-
-                $baseOid = $activeOIDs[$categories[$catIdx]];
-                $cleanOid = $this->getOidFromValue($vbValue, $baseOid);
-
-                if ($cleanOid && strpos($cleanOid, $baseOid) === 0) {
-                    $idx = $this->extractIndex($cleanOid, $baseOid);
-
+            $dataStore[$cat] = [];
+            foreach ($rawData as $oid => $value) {
+                $cleanOid = ltrim($oid, '.');
+                $cleanBaseOid = ltrim($baseOid, '.');
+                
+                if (strpos($cleanOid, $cleanBaseOid) === 0) {
+                    $idx = ltrim(substr($cleanOid, strlen($cleanBaseOid)), '.');
+                    
                     if ($isHsgq) {
                         if (str_ends_with($idx, '.65535.65535')) {
-                            $currentPointers[$catIdx] = $cleanOid;
                             continue;
                         }
                         if (str_ends_with($idx, '.0.0')) {
                             $idx = substr($idx, 0, -4);
                         }
                     }
-
-                    $dataStore[$categories[$catIdx]][$idx] = $this->cleanValue($vbValue);
-                    $currentPointers[$catIdx] = $cleanOid;
-                } else {
-                    $finished[$catIdx] = true;
+                    
+                    $dataStore[$cat][$idx] = $this->cleanValue($value);
                 }
             }
         }
 
         Log::info("[OLT SYNC] Walk selesai. Entry per OID: " . json_encode(array_map(fn($c) => count($dataStore[$c]), $categories)));
 
-        foreach (($dataStore['name'] ?? []) as $idx => $rawName) {
-            $name = preg_replace('/[^\x20-\x7E]/', '', (string)$rawName);
+        $nameData = $dataStore['name'] ?? [];
+        if (empty($nameData)) {
+            Log::warning("[OLT SYNC] No name data found, trying to use other OID as key");
+            $nameData = $dataStore['status'] ?? $dataStore['rx'] ?? [];
+        }
+
+        foreach ($nameData as $idx => $rawName) {
+            $name = preg_replace('/[^\x20-\x7E]/', '', (string)($dataStore['name'][$idx] ?? $rawName));
             $name = trim($name);
             if (empty($name) || in_array(strtolower($name), ['public', 'internal', 'private'], true)) {
-                continue;
+                $name = "ONU-{$idx}";
             }
 
             $status = 'Down';
