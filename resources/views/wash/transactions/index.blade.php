@@ -153,6 +153,9 @@
                                             data-vehicle-brand="{{ $transaction->vehicle_brand ?? '' }}"
                                             data-payment-method="{{ $transaction->payment_method ?? 'cash' }}"
                                             data-cash-amount="{{ (int) ($transaction->cash_amount ?? 0) }}"
+                                            data-kasbon-type="{{ $transaction->kasbon_type ?? '' }}"
+                                            data-kasbon-user-id="{{ $transaction->kasbon_user_id ?? '' }}"
+                                            data-kasbon-name="{{ $transaction->kasbon_name ?? '' }}"
                                             data-items='@json($transaction->items->map(fn($item) => ["id" => $item->id, "service_name" => $item->service_name, "quantity" => (int) $item->quantity])->values())'
                                         >
                                             <i class="fas fa-pen"></i>
@@ -208,14 +211,46 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="edit_payment_method">Metode Pembayaran</label>
-                        <select class="form-select js-payment-method" id="edit_payment_method" name="payment_method" data-cash-target="#edit_cash_amount_group">
-                            <option value="cash">Tunai</option>
-                            <option value="qris">QRIS</option>
+                        <select class="form-select js-payment-method" id="edit_payment_method" name="payment_method" data-cash-target="#edit_cash_amount_group" data-kasbon-target="#edit_kasbon_group">
+                            <option value="cash">💵 Tunai</option>
+                            <option value="qris">📱 QRIS</option>
+                            <option value="transfer">🏦 Transfer</option>
+                            <option value="edc">💳 EDC</option>
+                            <option value="kasbon">📜 Kasbon</option>
                         </select>
                     </div>
-                    <div class="mb-0" id="edit_cash_amount_group">
+                    <div class="mb-3" id="edit_cash_amount_group">
                         <label class="form-label" for="edit_cash_amount">Nominal Tunai</label>
                         <input type="number" min="0" class="form-control" id="edit_cash_amount" name="cash_amount">
+                    </div>
+                    <div class="mb-3" id="edit_kasbon_group" style="display: none;">
+                        <div class="card card-body bg-light">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-tie me-1"></i> Detail Kasbon</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Tipe Pihak Kasbon</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="kasbon_type" id="edit_kasbon_employee" value="employee">
+                                    <label class="form-check-label" for="edit_kasbon_employee">Karyawan (Daftar Akun)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="kasbon_type" id="edit_kasbon_outsider" value="outsider">
+                                    <label class="form-check-label" for="edit_kasbon_outsider">Orang Luar / Nama Custom</label>
+                                </div>
+                            </div>
+                            <div id="edit_kasbon_employee_section">
+                                <label for="edit_kasbon_user_id" class="form-label">Pilih Karyawan</label>
+                                <select class="form-select" id="edit_kasbon_user_id" name="kasbon_user_id">
+                                    <option value="">-- Pilih Karyawan --</option>
+                                    @foreach(\App\Models\User::all() as $user)
+                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div id="edit_kasbon_outsider_section" style="display: none;">
+                                <label for="edit_kasbon_name" class="form-label">Nama Pihak Kasbon</label>
+                                <input type="text" class="form-control" id="edit_kasbon_name" name="kasbon_name" placeholder="Masukkan nama...">
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-3">
                         <label class="form-label mb-2">Jumlah Layanan</label>
@@ -409,11 +444,18 @@
     const selectedCount = document.getElementById('selectedCount');
     const selectedCountDesktop = document.getElementById('selectedCountDesktop');
     const bulkDeleteForm = document.getElementById('bulkDeleteForm');
-    const updateCashVisibility = () => {
-        if (!paymentSelect || !cashGroup) {
+    const updatePaymentVisibility = () => {
+        if (!paymentSelect) {
             return;
         }
-        cashGroup.style.display = paymentSelect.value === 'cash' ? '' : 'none';
+        const method = paymentSelect.value;
+        if (cashGroup) {
+            cashGroup.style.display = method === 'cash' ? '' : 'none';
+        }
+        const kasbonGroup = document.getElementById('edit_kasbon_group');
+        if (kasbonGroup) {
+            kasbonGroup.style.display = method === 'kasbon' ? '' : 'none';
+        }
     };
     const updateBulkDeleteBtn = () => {
         const selected = document.querySelectorAll('.transaction-checkbox:checked');
@@ -440,8 +482,25 @@
         updateBulkDeleteBtn();
     };
     if (paymentSelect) {
-        paymentSelect.addEventListener('change', updateCashVisibility);
+        paymentSelect.addEventListener('change', updatePaymentVisibility);
     }
+
+    const kasbonTypeRadios = document.querySelectorAll('#editTransactionModal input[name="kasbon_type"]');
+    kasbonTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const employeeSection = document.getElementById('edit_kasbon_employee_section');
+            const outsiderSection = document.getElementById('edit_kasbon_outsider_section');
+            if (employeeSection && outsiderSection) {
+                if (this.value === 'employee') {
+                    employeeSection.style.display = '';
+                    outsiderSection.style.display = 'none';
+                } else {
+                    employeeSection.style.display = 'none';
+                    outsiderSection.style.display = '';
+                }
+            }
+        });
+    });
     if (selectAll) {
         selectAll.addEventListener('change', function() {
             setAllChecked(this.checked);
@@ -487,6 +546,44 @@
             brandInput.value = trigger.getAttribute('data-vehicle-brand') || '';
             paymentSelect.value = (trigger.getAttribute('data-payment-method') || 'cash').toLowerCase();
             cashInput.value = trigger.getAttribute('data-cash-amount') || '0';
+            
+            const kasbonType = trigger.getAttribute('data-kasbon-type') || '';
+            const kasbonUserId = trigger.getAttribute('data-kasbon-user-id') || '';
+            const kasbonName = trigger.getAttribute('data-kasbon-name') || '';
+            
+            const kasbonEmployeeRadio = document.getElementById('edit_kasbon_employee');
+            const kasbonOutsiderRadio = document.getElementById('edit_kasbon_outsider');
+            const editKasbonUserId = document.getElementById('edit_kasbon_user_id');
+            const editKasbonName = document.getElementById('edit_kasbon_name');
+            
+            if (kasbonEmployeeRadio && kasbonOutsiderRadio) {
+                if (kasbonType === 'employee') {
+                    kasbonEmployeeRadio.checked = true;
+                } else if (kasbonType === 'outsider') {
+                    kasbonOutsiderRadio.checked = true;
+                }
+            }
+            
+            if (editKasbonUserId) {
+                editKasbonUserId.value = kasbonUserId;
+            }
+            
+            if (editKasbonName) {
+                editKasbonName.value = kasbonName;
+            }
+            
+            const employeeSection = document.getElementById('edit_kasbon_employee_section');
+            const outsiderSection = document.getElementById('edit_kasbon_outsider_section');
+            if (employeeSection && outsiderSection) {
+                if (kasbonType === 'employee') {
+                    employeeSection.style.display = '';
+                    outsiderSection.style.display = 'none';
+                } else if (kasbonType === 'outsider') {
+                    employeeSection.style.display = 'none';
+                    outsiderSection.style.display = '';
+                }
+            }
+            
             const items = JSON.parse(trigger.getAttribute('data-items') || '[]');
             itemsContainer.innerHTML = '';
             items.forEach((item, index) => {
@@ -499,7 +596,7 @@
                 `;
                 itemsContainer.appendChild(row);
             });
-            updateCashVisibility();
+            updatePaymentVisibility();
         });
     }
 </script>

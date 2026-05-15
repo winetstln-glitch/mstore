@@ -564,8 +564,11 @@ class WashTransactionController extends Controller implements HasMiddleware
             'customer_name' => 'nullable|string|max:255',
             'vehicle_plate' => 'nullable|string|max:50',
             'vehicle_brand' => 'nullable|string|max:100',
-            'payment_method' => 'required|in:cash,qris',
+            'payment_method' => 'required|in:cash,qris,transfer,edc,kasbon',
             'cash_amount' => 'nullable|numeric|min:0',
+            'kasbon_type' => 'nullable|in:employee,outsider',
+            'kasbon_user_id' => 'nullable|integer|exists:users,id',
+            'kasbon_name' => 'nullable|string|max:255',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
@@ -599,7 +602,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 ? max(0, $cashAmount - $finalTotal)
                 : 0;
 
-            $transaction->update([
+            $updateData = [
                 'customer_name' => $validated['customer_name'] ?? null,
                 'vehicle_plate' => $validated['vehicle_plate'] ?? null,
                 'vehicle_brand' => $validated['vehicle_brand'] ?? null,
@@ -607,7 +610,21 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'cash_amount' => $cashAmount,
                 'change_amount' => $changeAmount,
                 'total_amount' => $finalTotal,
-            ]);
+            ];
+
+            if ($paymentMethod === 'kasbon') {
+                $updateData['kasbon_type'] = $validated['kasbon_type'] ?? null;
+                $updateData['kasbon_user_id'] = $validated['kasbon_user_id'] ?? null;
+                $updateData['kasbon_name'] = $validated['kasbon_name'] ?? null;
+                $updateData['kasbon_settled'] = false;
+            } else {
+                $updateData['kasbon_type'] = null;
+                $updateData['kasbon_user_id'] = null;
+                $updateData['kasbon_name'] = null;
+                $updateData['kasbon_settled'] = null;
+            }
+
+            $transaction->update($updateData);
 
             $journals = Journal::where('source_type', 'wash_transaction')
                 ->where('source_id', $transaction->id)
