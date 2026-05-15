@@ -101,7 +101,7 @@
                             </th>
                             @endif
                             <th>Tanggal</th>
-                            <th>Antri</th>
+                            <th>No. Antri</th>
                             <th>No. Transaksi</th>
                             <th>Pelanggan</th>
                             <th>No. WhatsApp</th>
