@@ -642,6 +642,11 @@
                             <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
                         </a>
                         @endif
+                        @if($hasRole('admin') || $hasRole('finance') || $hasRole('hrd manager'))
+                        <a href="{{ route('technicians.kasbon.index') }}" class="sidebar-item {{ $routeIs('technicians.kasbon.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-coins"></i> {{ __('Rincian Kasbon') }}
+                        </a>
+                        @endif
                     </div>
                 </div>
 
