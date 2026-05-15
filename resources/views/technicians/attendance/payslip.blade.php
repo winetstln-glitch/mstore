@@ -173,6 +173,12 @@
                                             <span>-{{ number_format($data['kasbon_warung'], 0, ',', '.') }}</span>
                                         </div>
                                     @endif
+                                    @if($data['kasbon_wash'] > 0)
+                                        <div class="d-flex justify-content-between x-small fw-bold text-danger">
+                                            <span>Bon Wash</span>
+                                            <span>-{{ number_format($data['kasbon_wash'], 0, ',', '.') }}</span>
+                                        </div>
+                                    @endif
                                     @if($data['kasbon_lainnya'] > 0)
                                         <div class="d-flex justify-content-between x-small fw-bold text-danger">
                                             <span>Lainnya</span>

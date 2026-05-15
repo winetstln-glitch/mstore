@@ -122,28 +122,12 @@ trait HasAttendanceFilters
             $kasbonWarung = $userAdjustments->where('type', 'kasbon')
                 ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'warung'))
                 ->sum('amount');
+            $kasbonWash = $userAdjustments->where('type', 'kasbon')
+                ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'layanan cuci') || str_contains(strtolower($a->description ?? ''), 'kasbon karyawan'))
+                ->sum('amount');
             
             // Kasbon Lainnya (Total Kasbon - Specific Kasbons)
-            $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung);
-
-            // Calculate Kasbon from Wash Transactions
-            $washKasbonQuery = WashTransaction::query()
-                ->where('kasbon_user_id', $user->id)
-                ->where('kasbon_type', 'employee')
-                ->where('kasbon_settled', false);
-
-            if ($request) {
-                if ($request->filled('date')) {
-                    $washKasbonQuery->whereDate('created_at', $request->date);
-                } elseif ($request->filled('month')) {
-                    $washKasbonQuery->whereMonth('created_at', date('m', strtotime($request->month)))
-                        ->whereYear('created_at', date('Y', strtotime($request->month)));
-                }
-            }
-
-            $washKasbonAmount = $washKasbonQuery->sum('total_amount');
-            $kasbonWarung += $washKasbonAmount;
-            $totalKasbon += $washKasbonAmount;
+            $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung + $kasbonWash);
 
             return [
                 'user' => $user,
@@ -161,6 +145,7 @@ trait HasAttendanceFilters
                 'total_bonus' => $totalBonus,
                 'kasbon_kantor' => $kasbonKantor,
                 'kasbon_warung' => $kasbonWarung,
+                'kasbon_wash' => $kasbonWash,
                 'kasbon_lainnya' => $kasbonLainnya,
                 'total_kasbon' => $totalKasbon,
                 'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
