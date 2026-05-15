@@ -101,6 +101,7 @@
                             </th>
                             @endif
                             <th>Tanggal</th>
+                            <th>Antri</th>
                             <th>No. Transaksi</th>
                             <th>Pelanggan</th>
                             <th>No. WhatsApp</th>
@@ -122,6 +123,7 @@
                                 </td>
                                 @endif
                                 <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
+                                <td>{{ $transaction->queue_number ?? '-' }}</td>
                                 <td>{{ $transaction->transaction_number }}</td>
                                 <td>{{ $transaction->customer_name ?? '-' }}</td>
                                 <td>{{ $transaction->washCustomer->phone ?? '-' }}</td>
@@ -168,7 +170,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ Auth::user()->hasPermission('wash.manage') ? 10 : 9 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
+                                <td colspan="{{ Auth::user()->hasPermission('wash.manage') ? 11 : 10 }}" class="text-center">Tidak ada transaksi ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>

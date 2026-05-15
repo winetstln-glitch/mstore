@@ -126,10 +126,11 @@
                             <th style="width: 5%;">No</th>
                             <th style="width: 10%;">Tanggal</th>
                             <th style="width: 10%;">Waktu</th>
+                            <th style="width: 10%;">No. Antri</th>
                             <th style="width: 15%;">No. Transaksi</th>
                             <th style="width: 15%;">Kasir</th>
                             <th style="width: 15%;">Metode Pembayaran</th>
-                            <th class="text-end" style="width: 30%;">Nominal (Rp)</th>
+                            <th class="text-end" style="width: 20%;">Nominal (Rp)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,18 +139,19 @@
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td>{{ $r->created_at->format('Y-m-d') }}</td>
                             <td>{{ $r->created_at->format('H:i') }}</td>
+                            <td>{{ $r->queue_number ?? '-' }}</td>
                             <td class="font-monospace">{{ $r->transaction_number }}</td>
                             <td>{{ $r->user->name ?? '-' }}</td>
                             <td><span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span></td>
                             <td class="text-end">{{ number_format($r->total_amount,0,',','.') }}</td>
                         </tr>
                         @empty
-                        <tr><td colspan="7" class="text-center py-3">Tidak ada data pemasukan</td></tr>
+                        <tr><td colspan="8" class="text-center py-3">Tidak ada data pemasukan</td></tr>
                         @endforelse
                         
                         <!-- Total Footer -->
                         <tr class="table fw-bold">
-                            <td colspan="6" class="text-end">Total Pemasukan:</td>
+                            <td colspan="7" class="text-end">Total Pemasukan:</td>
                             <td class="text-end">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
                         </tr>
                     </tbody>

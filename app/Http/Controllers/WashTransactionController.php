@@ -390,10 +390,11 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'kasbon_settled' => false,
             ]);
             
-            // Step 2: Now find the last sequence number for today with same prefix
+            // Step 2: Now find the last sequence number for today with same prefix and date
+            $dateStrForSearch = $transaction->created_at->format('dmy');
             $lastTransaction = WashTransaction::where('created_at', '>=', $today)
                 ->where('created_at', '<', $tomorrow)
-                ->where('transaction_number', 'LIKE', $prefix . '-%')
+                ->where('transaction_number', 'LIKE', $prefix . '-' . $dateStrForSearch . '-%')
                 ->where('id', '!=', $transaction->id)
                 ->orderBy('id', 'desc')
                 ->first();
@@ -401,14 +402,15 @@ class WashTransactionController extends Controller implements HasMiddleware
             $lastSequence = 0;
             if ($lastTransaction) {
                 $parts = explode('-', $lastTransaction->transaction_number);
-                if (count($parts) === 2) {
-                    $lastSequence = (int)$parts[1];
+                if (count($parts) === 3) {
+                    $lastSequence = (int)$parts[2];
                 }
             }
             $sequenceNumber = $lastSequence + 1;
             
-            // Step 3: Update transaction with short format: Wash-001
-            $finalTransactionNumber = $prefix . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
+            // Step 3: Update transaction with date format: Wash-140526-001 (ddmmyy)
+            $dateStr = $transaction->created_at->format('dmy'); // ddmmyy
+            $finalTransactionNumber = $prefix . '-' . $dateStr . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
             
             // Try to update with retry in case of race condition (though unlikely since we used temp first)
             $retryCount = 0;
@@ -432,7 +434,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             
             if (!$success) {
                 // Fallback to longer format if short one fails
-                $finalTransactionNumber = $prefix . '-' . $today->format('Ymd') . '-' . $transaction->id;
+                $finalTransactionNumber = $prefix . '-' . $dateStr . '-' . $transaction->id;
                 $transaction->update(['transaction_number' => $finalTransactionNumber]);
             }
 

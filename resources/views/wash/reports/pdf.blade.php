@@ -52,10 +52,11 @@
 
     <table>
         <thead>
-            <tr><th colspan="6">Rincian Pemasukan Harian</th></tr>
+            <tr><th colspan="7">Rincian Pemasukan Harian</th></tr>
             <tr>
                 <th>Tanggal</th>
                 <th>Waktu</th>
+                <th>No Antri</th>
                 <th>No Transaksi</th>
                 <th>Kasir</th>
                 <th>Metode</th>
@@ -67,6 +68,7 @@
             <tr>
                 <td>{{ $r->created_at->format('Y-m-d') }}</td>
                 <td>{{ $r->created_at->format('H:i') }}</td>
+                <td>{{ $r->queue_number ?? '-' }}</td>
                 <td>{{ $r->transaction_number }}</td>
                 <td>{{ $r->user->name ?? '-' }}</td>
                 <td>{{ strtoupper($r->payment_method) }}</td>
