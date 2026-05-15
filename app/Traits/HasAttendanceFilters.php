@@ -120,14 +120,11 @@ trait HasAttendanceFilters
                 ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'kantor'))
                 ->sum('amount');
             $kasbonWarung = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'warung'))
-                ->sum('amount');
-            $kasbonWash = $userAdjustments->where('type', 'kasbon')
-                ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'layanan cuci') || str_contains(strtolower($a->description ?? ''), 'kasbon karyawan'))
+                ->filter(fn($a) => str_contains(strtolower($a->description ?? ''), 'warung') || str_contains(strtolower($a->description ?? ''), 'layanan cuci') || str_contains(strtolower($a->description ?? ''), 'kasbon karyawan'))
                 ->sum('amount');
             
             // Kasbon Lainnya (Total Kasbon - Specific Kasbons)
-            $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung + $kasbonWash);
+            $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung);
 
             return [
                 'user' => $user,
@@ -145,7 +142,6 @@ trait HasAttendanceFilters
                 'total_bonus' => $totalBonus,
                 'kasbon_kantor' => $kasbonKantor,
                 'kasbon_warung' => $kasbonWarung,
-                'kasbon_wash' => $kasbonWash,
                 'kasbon_lainnya' => $kasbonLainnya,
                 'total_kasbon' => $totalKasbon,
                 'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
