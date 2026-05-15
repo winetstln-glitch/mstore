@@ -361,7 +361,6 @@ class WashTransactionController extends Controller implements HasMiddleware
             $prefix = $isCaffe ? 'Caffe' : 'Wash';
             $today = today();
             $tomorrow = today()->addDay();
-            $dateStr = $today->format('Ymd'); // Format tanggal: 20260515
             
             // Generate Queue Number (Reset daily for overall count)
             $lastQueue = WashTransaction::where('created_at', '>=', $today)
@@ -369,14 +368,11 @@ class WashTransactionController extends Controller implements HasMiddleware
                 ->max('queue_number');
             $queueNumber = ($lastQueue ?? 0) + 1;
             
-            // Create transaction with a 100% unique transaction number using timestamp + random
-            $uniqueSuffix = time() . '-' . rand(100000, 999999);
-            $transactionNumber = $prefix . '-' . $dateStr . '-' . $uniqueSuffix;
-            
+            // Step 1: Create transaction FIRST with a dummy unique transaction number (using ID placeholder to prevent conflict)
             $transaction = WashTransaction::create([
                 'user_id' => Auth::id(),
                 'wash_customer_id' => $customer ? $customer->id : null,
-                'transaction_number' => $transactionNumber,
+                'transaction_number' => 'TEMP-' . uniqid(), // Temporary unique value
                 'queue_number' => $queueNumber,
                 'total_amount' => $finalTotal,
                 'discount_amount' => $discountAmount,
@@ -393,6 +389,52 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'kasbon_name' => $request->payment_method === 'kasbon' && $request->kasbon_type === 'outsider' ? $request->kasbon_name : null,
                 'kasbon_settled' => false,
             ]);
+            
+            // Step 2: Now find the last sequence number for today with same prefix
+            $lastTransaction = WashTransaction::where('created_at', '>=', $today)
+                ->where('created_at', '<', $tomorrow)
+                ->where('transaction_number', 'LIKE', $prefix . '-%')
+                ->where('id', '!=', $transaction->id)
+                ->orderBy('id', 'desc')
+                ->first();
+                
+            $lastSequence = 0;
+            if ($lastTransaction) {
+                $parts = explode('-', $lastTransaction->transaction_number);
+                if (count($parts) === 2) {
+                    $lastSequence = (int)$parts[1];
+                }
+            }
+            $sequenceNumber = $lastSequence + 1;
+            
+            // Step 3: Update transaction with short format: Wash-001
+            $finalTransactionNumber = $prefix . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
+            
+            // Try to update with retry in case of race condition (though unlikely since we used temp first)
+            $retryCount = 0;
+            $maxRetries = 3;
+            $success = false;
+            
+            while (!$success && $retryCount < $maxRetries) {
+                try {
+                    $transaction->update(['transaction_number' => $finalTransactionNumber]);
+                    $success = true;
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if (str_contains($e->getMessage(), 'UNIQUE constraint failed') || str_contains($e->getMessage(), '1062 Duplicate entry')) {
+                        $sequenceNumber++;
+                        $finalTransactionNumber = $prefix . '-' . str_pad($sequenceNumber, 3, '0', STR_PAD_LEFT);
+                        $retryCount++;
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
+            
+            if (!$success) {
+                // Fallback to longer format if short one fails
+                $finalTransactionNumber = $prefix . '-' . $today->format('Ymd') . '-' . $transaction->id;
+                $transaction->update(['transaction_number' => $finalTransactionNumber]);
+            }
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
