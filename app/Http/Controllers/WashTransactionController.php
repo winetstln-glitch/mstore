@@ -466,6 +466,20 @@ class WashTransactionController extends Controller implements HasMiddleware
                         $transaction->id
                     );
                 }
+            } else {
+                // Jika payment_method adalah kasbon, buat SalaryAdjustment untuk muncul di halaman rincian kasbon
+                $kasbonDescription = $request->kasbon_type === 'employee' 
+                    ? 'Kasbon karyawan untuk layanan cuci' 
+                    : 'Kasbon untuk layanan cuci';
+                
+                \App\Models\SalaryAdjustment::create([
+                    'user_id' => $request->kasbon_type === 'employee' ? $request->kasbon_user_id : Auth::id(),
+                    'type' => 'kasbon',
+                    'amount' => $finalTotal,
+                    'date' => now()->toDateString(),
+                    'description' => $kasbonDescription . ' (' . $transaction->transaction_number . ')',
+                    'status' => 'pending',
+                ]);
             }
 
             DB::commit();
