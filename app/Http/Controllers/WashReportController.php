@@ -117,7 +117,7 @@ class WashReportController extends Controller
                 $startDate.' 00:00:00',
                 $endDate.' 23:59:59',
             ])
-            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at', 'user_id'])
+            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at', 'user_id', 'queue_number'])
             ->orderByDesc('created_at');
         $this->applyVehiclePlateFilter($dailyIncomeRowsQuery, $normalizedVehiclePlate);
         $dailyIncomeRows = $dailyIncomeRowsQuery->get();
@@ -282,11 +282,12 @@ class WashReportController extends Controller
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Caffe - Modal Awal', $data['monthlyCaffeInitialCapital'], 'Caffe - Pendapatan', $data['monthlyCaffeRevenue'], 'Caffe - Selisih', $data['monthlyCaffeRevenue'] - $data['monthlyCaffeInitialCapital']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Pemasukan Harian']));
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Waktu', 'No Trx', 'Kasir', 'Metode', 'Total']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Waktu', 'No Antri', 'No Trx', 'Kasir', 'Metode', 'Total']));
             foreach ($data['dailyIncomeRows'] as $r) {
                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                     $r->created_at->format('Y-m-d'),
                     $r->created_at->format('H:i'),
+                    $r->queue_number ?? '-',
                     $r->transaction_number,
                     $r->user->name ?? '-',
                     strtoupper($r->payment_method),
