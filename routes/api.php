@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\InstallationController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\VpnController;
+use App\Http\Controllers\Api\OLTController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -41,3 +42,18 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/integration', [\App\Http\Controllers\Api\IntegrationController::class, 'handle']);
 
 Route::match(['GET', 'POST'], '/vpn/report-ip', [VpnController::class, 'reportIp'])->name('api.vpn.report-ip');
+Route::prefix('v1')->group(function () {
+    // Dashboard
+    Route::get('dashboard', [OLTController::class, 'dashboard']);
+    
+    // OLT Management
+    Route::get('olts', [OLTController::class, 'index']);
+    Route::post('olts', [OLTController::class, 'store']);
+    Route::get('olts/{olt}', [OLTController::class, 'show']);
+    Route::post('olts/{olt}/poll', [OLTController::class, 'poll']);
+    Route::post('olts/connect-test', [OLTController::class, 'connectTest']);
+    
+    // ONTs
+    Route::get('olts/{olt}/onts', [OLTController::class, 'ontList']);
+    Route::get('olts/{olt}/onts/{ont}', [OLTController::class, 'ontShow']);
+});

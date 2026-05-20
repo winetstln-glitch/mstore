@@ -62,7 +62,8 @@ class SettingController extends Controller implements HasMiddleware
             ->orderBy('group')
             ->orderBy('id')
             ->get()
-            ->groupBy('group');
+            ->pluck('value', 'key')
+            ->all();
 
         return view('settings.attendance', compact('settings'));
     }
@@ -157,6 +158,7 @@ class SettingController extends Controller implements HasMiddleware
             'wash_receipt_footer_note' => 'nullable|string|max:500',
             'wash_receipt_powered_by' => 'nullable|string|max:120',
             'wash_receipt_holiday_greeting' => 'nullable|string|max:500',
+            'wash_loyalty_target' => 'nullable|integer|min:1',
             'wash_holiday_pricing_start_date' => 'nullable|date_format:Y-m-d',
             'wash_holiday_pricing_end_date' => 'nullable|date_format:Y-m-d|after_or_equal:wash_holiday_pricing_start_date',
             'landing_internet_promo_enabled' => 'nullable|in:0,1',
@@ -593,6 +595,13 @@ class SettingController extends Controller implements HasMiddleware
                 'label' => 'ID Grup Telegram Notifikasi Wash',
             ],
             [
+                'key' => 'wash_loyalty_target',
+                'value' => '11',
+                'group' => 'general',
+                'type' => 'number',
+                'label' => 'Target Cuci untuk Mendapatkan Bonus Gratis',
+            ],
+            [
                 'key' => 'landing_internet_promo_enabled',
                 'value' => '1',
                 'group' => 'general',
@@ -1021,6 +1030,57 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'attendance',
                 'type' => 'number',
                 'label' => 'Hari Kerja Per Bulan',
+            ],
+            [
+                'key' => 'attendance_late_tolerance',
+                'value' => '0',
+                'group' => 'attendance',
+                'type' => 'number',
+                'label' => 'Toleransi Terlambat (Menit)',
+            ],
+            // Teknisi Shift Cutoffs
+            [
+                'key' => 'schedule_teknisi_shift_1_cutoff',
+                'value' => '10:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Shift 1 Teknisi',
+            ],
+            [
+                'key' => 'schedule_teknisi_shift_2_cutoff',
+                'value' => '17:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Shift 2 Teknisi',
+            ],
+            [
+                'key' => 'schedule_teknisi_longshift_cutoff',
+                'value' => '10:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Longshift Teknisi',
+            ],
+            // Wash Shift Cutoffs
+            [
+                'key' => 'schedule_wash_shift_1_cutoff',
+                'value' => '10:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Shift 1 Wash',
+            ],
+            [
+                'key' => 'schedule_wash_shift_2_cutoff',
+                'value' => '15:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Shift 2 Wash',
+            ],
+            [
+                'key' => 'schedule_wash_longshift_cutoff',
+                'value' => '10:00',
+                'group' => 'schedule',
+                'type' => 'time',
+                'label' => 'Batas Absen Longshift Wash',
             ],
         ];
 

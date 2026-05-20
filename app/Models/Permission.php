@@ -23,12 +23,21 @@ class Permission extends Model
         
         $tabMap = [
             'Pelanggan & Layanan' => ['Customer Management', 'Ticket Management', 'Installation Management', 'Service Management'],
-            'Jaringan' => ['ODC Management', 'ODP Management', 'HTB Management', 'OLT Management', 'Router Management', 'Map', 'Network Monitor'],
-            'Keuangan' => ['Finance', 'Investor Management'],
-            'Operasional' => ['Technician Management', 'Attendance', 'Leave Management', 'Schedule Management', 'Inventory (Alat & Material)'],
+            'Jaringan' => [
+                'ODC Management', 'ODP Management', 'HTB Management', 'OLT Management', 'Router Management',
+                'Closure Management', 'PPPoE Management', 'Hotspot Management', 'Radius', 'Map', 'Network Monitor'
+            ],
+            'Keuangan' => ['Finance', 'Investor Management', 'Accounting'],
+            'Operasional' => [
+                'Technician Management', 'Attendance', 'Leave Management', 'Schedule Management',
+                'Inventory (Alat & Material)', 'Employee Management'
+            ],
             'Toko ATK' => ['ATK Store'],
             'Cuci Kendaraan' => ['Car Wash'],
-            'Sistem' => ['User Management', 'Role Management', 'Settings', 'Coordinator Management', 'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification'],
+            'Sistem' => [
+                'User Management', 'Role Management', 'Settings', 'Coordinator Management',
+                'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification'
+            ],
             'Umum' => ['Dashboard', 'Utilities', 'Profile'],
         ];
 

@@ -97,6 +97,12 @@
             </div>
 
             <div class="card-body">
+                <!-- Panduan -->
+                <div class="alert alert-info py-2 mb-4">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>Panduan:</strong> Halaman ini menampilkan <strong>riwayat absensi yang sudah ada</strong>. Untuk melihat <strong>SEMUA karyawan (termasuk yang belum absen)</strong>, klik tombol <strong>"Absensi Harian"</strong> di atas!
+                </div>
+
                 <!-- Ringkasan -->
                 <div class="row g-2 mb-4">
                     <div class="col-4 col-md-2">

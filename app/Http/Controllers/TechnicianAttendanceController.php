@@ -60,32 +60,47 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function daily(Request $request)
     {
-        $date = $request->query('date', date('Y-m-d'));
+        $month = $request->query('month');
+        if ($month) {
+            $startDate = Carbon::parse($month)->startOfMonth()->toDateString();
+            $endDate = Carbon::parse($month)->endOfMonth()->toDateString();
+        } else {
+            $startDate = $request->query('start_date', date('Y-m-d'));
+            $endDate = $request->query('end_date', date('Y-m-d'));
+        }
         $status = (string) $request->query('status', '');
 
-        // Get all users who should have attendance (technicians and admins)
-        $users = User::whereHas('role', function ($q) {
-            $q->whereIn('name', ['technician', 'admin']);
-        })->where('is_active', true)->get();
-
-        // Get attendance for the selected date
-        $attendances = TechnicianAttendance::whereDate('clock_in', $date)
-            ->with('user')
-            ->get()
-            ->keyBy('user_id');
-
-        if ($status !== '') {
-            $users = $users->filter(function ($user) use ($attendances, $status) {
-                $attendance = $attendances->get($user->id);
-                if ($status === 'belum_absen') {
-                    return ! $attendance;
-                }
-
-                return $attendance && $attendance->status === $status;
-            })->values();
+        // Ensure startDate is not after endDate
+        if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
+            [$startDate, $endDate] = [$endDate, $startDate];
         }
 
-        return view('technicians.attendance.daily', compact('users', 'attendances', 'date', 'status'));
+        // Get all users who should have attendance (all except customer)
+        $users = User::whereHas('role', function ($q) {
+            $q->where('name', '!=', 'customer');
+        })->where('is_active', true)->orderBy('name')->get();
+
+        // Get attendance for the date range
+        $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->with('user');
+
+        $allAttendances = $attendancesQuery->get();
+
+        // Group attendances by date and user_id
+        $attendancesByDate = $allAttendances
+            ->groupBy(fn($a) => $a->clock_in->toDateString())
+            ->map(fn($items) => $items->keyBy('user_id'));
+
+        // Get list of dates in range
+        $dates = [];
+        $current = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        while ($current->lte($end)) {
+            $dates[] = $current->toDateString();
+            $current->addDay();
+        }
+
+        return view('technicians.attendance.daily', compact('users', 'attendancesByDate', 'dates', 'startDate', 'endDate', 'status'));
     }
 
     /**
@@ -111,9 +126,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
-        // List technicians and admins for filter
+        // List all users except customer for filter
         $techniciansQuery = User::whereHas('role', function ($q) {
-            $q->whereIn('name', ['technician', 'admin']);
+            $q->where('name', '!=', 'customer');
         });
 
         if (! $this->canViewAllAttendanceData()) {
@@ -138,6 +153,90 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function exportExcel(Request $request)
     {
+        // If scope is daily, export date range attendance
+        if ($request->query('scope') === 'daily') {
+            $month = $request->query('month');
+            if ($month) {
+                $startDate = Carbon::parse($month)->startOfMonth()->toDateString();
+                $endDate = Carbon::parse($month)->endOfMonth()->toDateString();
+            } else {
+                $startDate = $request->query('start_date', date('Y-m-d'));
+                $endDate = $request->query('end_date', date('Y-m-d'));
+            }
+
+            if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
+                [$startDate, $endDate] = [$endDate, $startDate];
+            }
+
+            $users = User::whereHas('role', function ($q) {
+                $q->where('name', '!=', 'customer');
+            })->where('is_active', true)->orderBy('name')->get();
+
+            $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->with('user');
+
+            $allAttendances = $attendancesQuery->get();
+
+            $attendancesByDate = $allAttendances
+                ->groupBy(fn($a) => $a->clock_in->toDateString())
+                ->map(fn($items) => $items->keyBy('user_id'));
+
+            $dates = [];
+            $current = Carbon::parse($startDate);
+            $end = Carbon::parse($endDate);
+            while ($current->lte($end)) {
+                $dates[] = $current->toDateString();
+                $current->addDay();
+            }
+
+            return response()->streamDownload(function () use ($users, $attendancesByDate, $dates, $startDate, $endDate) {
+                $writer = new Writer;
+                $writer->openToFile('php://output');
+
+                $writer->addRow(Row::fromValues(['KEHADIRAN KARYAWAN HARIAN']));
+                $writer->addRow(Row::fromValues(['Periode: ' . Carbon::parse($startDate)->translatedFormat('d F Y') . ' - ' . Carbon::parse($endDate)->translatedFormat('d F Y')]));
+                $writer->addRow(Row::fromValues(['Tanggal Cetak: ' . now()->translatedFormat('d F Y H:i')]));
+                $writer->addRow(Row::fromValues([]));
+
+                foreach ($dates as $dateStr) {
+                    $writer->addRow(Row::fromValues(['Tanggal: ' . Carbon::parse($dateStr)->translatedFormat('l, d F Y')]));
+                    $writer->addRow(Row::fromValues([
+                        'No',
+                        'Nama Karyawan',
+                        'Peran',
+                        'Jam Masuk',
+                        'Jam Keluar',
+                        'Status',
+                        'Catatan',
+                    ]));
+
+                    $attendances = $attendancesByDate->get($dateStr, collect());
+                    $i = 1;
+                    foreach ($users as $user) {
+                        $attendance = $attendances->get($user->id);
+                        $isOff = $this->isUserOffOnDate($user, $dateStr);
+                        if ($isOff) {
+                            $status = 'OFF';
+                        } else {
+                            $status = $attendance ? __(ucfirst($attendance->status)) : 'Belum Absen';
+                        }
+                        $writer->addRow(Row::fromValues([
+                            $i++,
+                            $user->name,
+                            $user->role->name ?? '-',
+                            $isOff ? '-' : ($attendance && $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-'),
+                            $isOff ? '-' : ($attendance && $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-'),
+                            $status,
+                            $attendance->notes ?? '-',
+                        ]));
+                    }
+                    $writer->addRow(Row::fromValues([]));
+                }
+
+                $writer->close();
+            }, 'kehadiran_karyawan_harian_'.$startDate.'_'.$endDate.'.xlsx');
+        }
+
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         
         // If specific download detail requested
@@ -533,7 +632,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ], 422);
             }
 
-            $status = $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart));
+            $status = $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), (string) ($clockInWindow['shift_cutoff'] ?? $clockInEnd));
 
             $attendance = TechnicianAttendance::create([
                 'user_id' => $user->id,
@@ -746,7 +845,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'device_fingerprint_clock_in' => $deviceFingerprint,
                 'ip_clock_in' => (string) ($request->ip() ?? ''),
                 'user_agent_clock_in' => mb_substr((string) $request->userAgent(), 0, 255),
-                'status' => $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), $now),
+                'status' => $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), (string) ($clockInWindow['shift_cutoff'] ?? $clockInEnd), $now),
                 'notes' => $request->notes,
             ]);
 
@@ -1109,11 +1208,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($isWorkShift && $hasShiftTime) {
             $officialStart = (string) $shiftInfo['shift_start'];
             $effectiveStart = $this->subtractMinutesFromTime($officialStart, $earlyMinutes);
+            $shiftCutoff = (string) ($shiftInfo['shift_cutoff'] ?? $globalEnd);
 
             return [
                 'start' => $effectiveStart,
                 'end' => (string) ($shiftInfo['shift_end'] ?? $globalEnd),
                 'official_start' => $officialStart,
+                'shift_cutoff' => $shiftCutoff,
             ];
         }
 
@@ -1122,10 +1223,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'start' => $this->subtractMinutesFromTime($globalStartText, $earlyMinutes),
             'end' => (string) $globalEnd,
             'official_start' => $globalStartText,
+            'shift_cutoff' => $globalEnd,
         ];
     }
 
-    private function determineClockInStatus(string $clockInStart, ?Carbon $now = null): string
+    private function determineClockInStatus(string $clockInStart, string $shiftCutoff, ?Carbon $now = null): string
     {
         $checkTime = ($now ?? now())->copy()->timezone(config('app.timezone', 'Asia/Jakarta'));
         $lateTolerance = (int) Setting::getValue('attendance_late_tolerance', 0);
@@ -1134,6 +1236,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockInStartMinutes = $this->timeToMinutes($clockInStart, 8 * 60);
         $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
         $lateThreshold = min((23 * 60) + 59, $clockInStartMinutes + $lateTolerance);
+        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
+
+        if ($currentMinutes > $cutoffMinutes) {
+            return 'alpha';
+        }
 
         return $currentMinutes > $lateThreshold ? 'late' : 'present';
     }
@@ -1193,7 +1300,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $today = now();
 
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
+        $isExcludedFromSchedule = $roleName === 'direktur';
 
         if (! $isExcludedFromSchedule) {
             if (Schema::hasTable('technician_daily_schedules')) {
@@ -1222,7 +1329,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         if (! in_array($status, [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT, TechnicianSchedule::STATUS_OFF], true)) {
-            $status = TechnicianSchedule::STATUS_PIKET; // Default to Piket for admin/excluded
+            $status = TechnicianSchedule::STATUS_PIKET;
             $source = 'default';
         }
 
@@ -1230,11 +1337,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $shiftLabel = '-';
         $shiftStart = '-';
         $shiftEnd = '-';
+        $shiftCutoff = '-';
 
         if ($status === TechnicianSchedule::STATUS_LONGSHIFT) {
             $shiftLabel = 'Longshift';
             $shiftStart = (string) $shiftConfig['longshift_start'];
             $shiftEnd = (string) $shiftConfig['longshift_end'];
+            $shiftCutoff = (string) $shiftConfig['longshift_cutoff'];
         } elseif ($status === TechnicianSchedule::STATUS_PIKET) {
             // Perbaikan: Mapping shift1/shift2/longshift dari pengaturan mingguan
             $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
@@ -1250,19 +1359,23 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 $shiftLabel = 'Longshift';
                 $shiftStart = (string) $shiftConfig['longshift_start'];
                 $shiftEnd = (string) $shiftConfig['longshift_end'];
+                $shiftCutoff = (string) $shiftConfig['longshift_cutoff'];
             } elseif ($mappedShift === 'shift2') {
                 $shiftLabel = 'Shift 2';
                 $shiftStart = (string) $shiftConfig['shift_2_start'];
                 $shiftEnd = (string) $shiftConfig['shift_2_end'];
+                $shiftCutoff = (string) $shiftConfig['shift_2_cutoff'];
             } else {
                 $shiftLabel = 'Shift 1';
                 $shiftStart = (string) $shiftConfig['shift_1_start'];
                 $shiftEnd = (string) $shiftConfig['shift_1_end'];
+                $shiftCutoff = (string) $shiftConfig['shift_1_cutoff'];
             }
         } elseif ($status === TechnicianSchedule::STATUS_BACKUP) {
             $shiftLabel = 'Shift 2';
             $shiftStart = (string) $shiftConfig['shift_2_start'];
             $shiftEnd = (string) $shiftConfig['shift_2_end'];
+            $shiftCutoff = (string) $shiftConfig['shift_2_cutoff'];
         }
 
         return [
@@ -1277,8 +1390,46 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'shift_label' => $shiftLabel,
             'shift_start' => $shiftStart,
             'shift_end' => $shiftEnd,
+            'shift_cutoff' => $shiftCutoff,
             'source' => $source,
         ];
+    }
+
+    public function isUserOffOnDate(User $user, string $dateStr): bool
+    {
+        $date = Carbon::parse($dateStr);
+        $roleName = strtolower((string) ($user->role?->name ?? ''));
+        $isExcludedFromSchedule = $roleName === 'direktur';
+        
+        if ($isExcludedFromSchedule) {
+            return false;
+        }
+        
+        $status = null;
+        
+        if (Schema::hasTable('technician_daily_schedules')) {
+            $daily = TechnicianDailySchedule::query()
+                ->where('user_id', $user->id)
+                ->whereDate('date', $date->toDateString())
+                ->first();
+            if ($daily) {
+                $status = (string) $daily->status;
+            }
+        }
+        
+        if ($status === null && Schema::hasTable('technician_schedules')) {
+            $weekYear = (int) $date->copy()->weekYear;
+            $weekly = TechnicianSchedule::query()
+                ->where('user_id', $user->id)
+                ->where('year', $weekYear)
+                ->where('week_number', $date->weekOfYear)
+                ->first();
+            if ($weekly) {
+                $status = (string) $weekly->status;
+            }
+        }
+        
+        return $status === TechnicianSchedule::STATUS_OFF;
     }
 
     private function attendanceShiftConfig(string $group): array
@@ -1287,20 +1438,26 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return [
                 'shift_1_start' => Setting::getValue('schedule_wash_shift_1_start', '08:00'),
                 'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
+                'shift_1_cutoff' => Setting::getValue('schedule_wash_shift_1_cutoff', '10:00'),
                 'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
                 'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
+                'shift_2_cutoff' => Setting::getValue('schedule_wash_shift_2_cutoff', '15:00'),
                 'longshift_start' => Setting::getValue('schedule_wash_longshift_start', '08:00'),
                 'longshift_end' => Setting::getValue('schedule_wash_longshift_end', '20:00'),
+                'longshift_cutoff' => Setting::getValue('schedule_wash_longshift_cutoff', '10:00'),
             ];
         }
 
         return [
             'shift_1_start' => Setting::getValue('schedule_teknisi_shift_1_start', '08:00'),
             'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
+            'shift_1_cutoff' => Setting::getValue('schedule_teknisi_shift_1_cutoff', '10:00'),
             'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
             'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
+            'shift_2_cutoff' => Setting::getValue('schedule_teknisi_shift_2_cutoff', '17:00'),
             'longshift_start' => Setting::getValue('schedule_teknisi_longshift_start', '08:00'),
             'longshift_end' => Setting::getValue('schedule_teknisi_longshift_end', '20:00'),
+            'longshift_cutoff' => Setting::getValue('schedule_teknisi_longshift_cutoff', '10:00'),
         ];
     }
 

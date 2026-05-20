@@ -111,6 +111,19 @@
 
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-gift me-1"></i> Bonus Loyalty Cuci
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="wash_loyalty_target" class="form-label fw-medium">Target Cuci untuk Mendapatkan Bonus Gratis</label>
+                                <input type="number" min="1" class="form-control" id="wash_loyalty_target" name="wash_loyalty_target" value="{{ \App\Models\Setting::getValue('wash_loyalty_target', '11') }}">
+                                <div class="small text-muted mt-1">Misalnya isi 11, maka pada cuci ke-11 akan mendapat bonus gratis 1 layanan.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Harga Hari Raya
                         </h6>
                         <div class="row g-3">

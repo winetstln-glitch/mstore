@@ -123,12 +123,22 @@
                                 </td>
                                 @endif
                                 <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                                <td>{{ $transaction->queue_number ?? '-' }}</td>
+                                <td>
+                                    {{ $transaction->queue_number ?? '-' }}
+                                    @if(($transaction->notes ?? null) === 'bonus_cuci_10x')
+                                        <span class="badge bg-success ms-1">Bonus Gratis</span>
+                                    @endif
+                                </td>
                                 <td>{{ $transaction->transaction_number }}</td>
                                 <td>{{ $transaction->customer_name ?? '-' }}</td>
                                 <td>{{ $transaction->washCustomer->phone ?? '-' }}</td>
                                 <td>{{ $transaction->vehicle_plate ?? '-' }}</td>
-                                <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
+                                <td>
+                                    Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}
+                                    @if(($transaction->notes ?? null) === 'bonus_cuci_10x' && ($transaction->discount_amount ?? 0) > 0)
+                                        <br><small class="text-success">(Diskon bonus: Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }})</small>
+                                    @endif
+                                </td>
                                 <td>{{ ucfirst($transaction->payment_method) }}</td>
                                 <td>{{ $transaction->user->name ?? 'Tidak Diketahui' }}</td>
                                 <td>

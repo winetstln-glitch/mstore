@@ -327,7 +327,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
-                Selamat! anda sudah mencapai bonus cuci ke-10 dan  mendapatkan gratis 1 layanan.
+                Selamat! anda sudah mencapai bonus cuci dan mendapatkan gratis 1 layanan.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="btnLoyaltyBonusOk">OK</button>
@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const vehiclePlate = document.getElementById('vehicle_plate').value;
         const customerName = document.getElementById('customer_name').value;
         if (!vehiclePlate) {
-            alert('Isi plat kendaraan untuk cek bonus 10x cuci');
+            alert('Isi plat kendaraan untuk cek bonus cuci');
             return;
         }
         const params = new URLSearchParams({
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         voucherSection.style.display = 'none';
                     }
                 } else {
-                    info.innerHTML = '<span class="text-warning">Belum ada riwayat, bonus akan didapat pada cuci ke-10.</span>';
+                    info.innerHTML = `<span class="text-warning">Belum ada riwayat, bonus akan didapat pada cuci ke-${data.loyalty_target}.</span>`;
                     voucherSection.style.display = 'none';
                 }
             })

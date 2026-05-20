@@ -135,15 +135,30 @@
                     </thead>
                     <tbody>
                         @forelse($dailyIncomeRows as $index => $r)
-                        <tr>
+                        <tr @if(($r->notes ?? null) === 'bonus_cuci_10x') class="table-success" @endif>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td>{{ $r->created_at->format('Y-m-d') }}</td>
                             <td>{{ $r->created_at->format('H:i') }}</td>
-                            <td>{{ $r->queue_number ?? '-' }}</td>
+                            <td>
+                                {{ $r->queue_number ?? '-' }}
+                                @if(($r->notes ?? null) === 'bonus_cuci_10x')
+                                    <br><span class="badge bg-success ms-1 mt-1"><i class="fa-solid fa-gift me-1"></i>Bonus Gratis</span>
+                                @endif
+                            </td>
                             <td class="font-monospace">{{ $r->transaction_number }}</td>
                             <td>{{ $r->user->name ?? '-' }}</td>
-                            <td><span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span></td>
-                            <td class="text-end">{{ number_format($r->total_amount,0,',','.') }}</td>
+                            <td>
+                                @if(($r->notes ?? null) === 'bonus_cuci_10x')
+                                    <span class="badge bg-success mb-1"><i class="fa-solid fa-gift me-1"></i>BONUS</span><br>
+                                @endif
+                                <span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span>
+                            </td>
+                            <td class="text-end">
+                                {{ number_format($r->total_amount,0,',','.') }}
+                                @if(($r->notes ?? null) === 'bonus_cuci_10x' && ($r->discount_amount ?? 0) > 0)
+                                    <br><small class="text-success fw-bold"><i class="fa-solid fa-percent me-1"></i>Diskon Bonus: Rp {{ number_format($r->discount_amount,0,',','.') }}</small>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr><td colspan="8" class="text-center py-3">Tidak ada data pemasukan</td></tr>
@@ -216,6 +231,7 @@
                                 $dailyQris = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
                                 $dailyTransfer = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
                                 $dailySetoranCash = $dailyCash - (float) $dailyExpense;
+                                $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => ($r->notes ?? null) === 'bonus_cuci_10x')->count();
                             @endphp
                             @forelse($dailyByPayment as $r)
                             <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
@@ -226,6 +242,12 @@
                                 <td>Setoran Cash (Cash - Pengeluaran)</td>
                                 <td class="text-end {{ $dailySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailySetoranCash,0,',','.') }}</td>
                             </tr>
+                            @if($loyaltyBonusCount > 0)
+                            <tr class="table-success">
+                                <td><strong>Transaksi Bonus Gratis</strong></td>
+                                <td class="text-end"><strong>{{ $loyaltyBonusCount }}x</strong></td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>

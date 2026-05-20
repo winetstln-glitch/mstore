@@ -1,307 +1,406 @@
 <?php
+// app/Services/OLT/Drivers/CDataDriver.php
 
-namespace App\Services\Olt\Drivers;
+namespace App\Services\OLT\Drivers;
 
-use App\Models\Olt;
-use App\Services\Olt\OltDriverInterface;
-use App\Services\Olt\OltHttpClient;
-use App\Services\Olt\TelnetClient;
+use App\Services\OLT\Contracts\OLTDriverInterface;
+use App\Services\SNMP\SNMPHelper;
+use Illuminate\Support\Facades\Log;
 
-class CDataDriver implements OltDriverInterface
+class CDataDriver implements OLTDriverInterface
 {
-    protected $client;
+    protected SNMPHelper $snmp;
+    protected string $ip;
+    protected string $readCommunity;
+    protected ?string $writeCommunity;
+    protected ?\App\Models\Olt $oltInstance = null;
 
-    protected $httpClient;
+    const OID_SYS = [
+        'model_name'   => '.1.3.6.1.4.1.17409.2.3.1.2.1.1.2.1',
+        'uptime'       => '.1.3.6.1.4.1.17409.2.3.1.2.1.1.5.1',
+        'vendor'       => '.1.3.6.1.4.1.17409.2.3.1.2.1.1.10.1',
+        'serial'       => '.1.3.6.1.4.1.17409.2.3.1.3.1.1.12.1.0',
+        'firmware'     => '.1.3.6.1.4.1.17409.2.3.1.3.1.1.15.1.0',
+        'firmware_ver' => '.1.3.6.1.4.1.17409.2.3.1.3.1.1.9.1.0',
+        'sys_uptime'   => '.1.3.6.1.4.1.17409.2.3.1.3.1.1.10.1.0',
+    ];
 
-    protected $olt;
+    const OID_ONT = [
+        'name'       => '.1.3.6.1.4.1.17409.2.8.4.1.1.2',
+        'mac'        => '.1.3.6.1.4.1.17409.2.8.4.1.1.3',
+        'status'     => '.1.3.6.1.4.1.17409.2.8.4.1.1.4',
+        'vendor'     => '.1.3.6.1.4.1.17409.2.8.4.1.1.5',
+        'model'      => '.1.3.6.1.4.1.17409.2.8.4.1.1.6',
+        'rx_power'   => '.1.3.6.1.4.1.17409.2.3.3.6.1.2',
+    ];
 
-    protected $mode = 'telnet';
+    const PORT_PREFIXES = [
+        'gpon 0/0/1',
+        'gpon 0/0/2',
+        'gpon 0/0/3',
+        'gpon 0/0/4',
+        'gpon 0/0/5',
+        'gpon 0/0/6',
+        'gpon 0/0/7',
+        'gpon 0/0/8',
+    ];
 
-    public function __construct()
+    public function __construct(string $ip, string $readCommunity = 'public', ?string $writeCommunity = null)
     {
-        $this->client = new TelnetClient;
-        $this->httpClient = new OltHttpClient;
+        $this->ip = $ip;
+        $this->readCommunity = $readCommunity;
+        $this->writeCommunity = $writeCommunity;
+        $this->snmp = new SNMPHelper($ip, $readCommunity, $writeCommunity);
     }
 
-    public function connect(Olt $olt, $timeout = 10)
+    public function connect($olt, int $timeout = 10): void
     {
-        $this->olt = $olt;
-
-        if (in_array($olt->port, [80, 443, 8080])) {
-            $this->mode = 'http';
-            $this->httpClient->connect($olt->host, $olt->port, $timeout);
-            $this->loginHttp($olt->username, $olt->password);
-        } else {
-            $this->mode = 'telnet';
-            $this->connectTelnet($olt, $timeout);
-        }
+        $this->oltInstance = $olt;
+        
+        $this->ip = $olt->ip_address ?? $this->ip;
+        $this->readCommunity = $olt->read_community ?? $this->readCommunity;
+        $this->writeCommunity = $olt->write_community ?? $this->writeCommunity;
+        
+        $this->snmp = new SNMPHelper(
+            $this->ip,
+            $this->readCommunity,
+            $this->writeCommunity,
+            $timeout,
+            0
+        );
+        
+        Log::info("CDataDriver connected to {$this->ip}");
     }
 
-    protected function connectTelnet(Olt $olt, $timeout)
+    public function disconnect(): void
     {
-        $this->client->connect($olt->host, $olt->port, $timeout);
+        $this->oltInstance = null;
+        Log::info("CDataDriver disconnected from {$this->ip}");
+    }
 
+    public function testConnection(): bool
+    {
         try {
-            $this->client->login(
-                $olt->username,
-                $olt->password,
-                ['Username:', 'Login:', 'User Name:', 'user:', 'username:', 'login:'],
-                ['Password:', 'Pass:', 'password:', 'pass:']
-            );
-
-            // Wait for successful login prompt
-            $this->client->waitPrompt(['#', '>', 'OLT>', 'EPON#', 'GPON#', '$']);
-
-            $this->client->setPrompt(['#', '>', 'OLT>', 'EPON#', 'GPON#', '$']);
-
-            // C-Data often drops directly to enable mode or needs 'enable'
-            $this->client->write('enable');
-            try {
-                $buffer = $this->client->waitPrompt(['Password:', 'Pass:', 'password:', 'pass:', '#', '>', 'OLT>', 'EPON#', 'GPON#', '$']);
-                if (stripos($buffer, 'Password:') !== false || stripos($buffer, 'Pass:') !== false) {
-                    $this->client->write($olt->password);
-                    $this->client->waitPrompt(['#', '>', 'OLT>', 'EPON#', 'GPON#', '$']);
-                }
-            } catch (\Exception $e) {
-                // Ignore
-            }
-
-            // Disable pagination
-            try {
-                $this->client->write('terminal length 0');
-                $this->client->waitPrompt(['#', '>', 'OLT>', 'EPON#', 'GPON#', '$']);
-            } catch (\Exception $e) {
-                // Ignore
-            }
-
-        } catch (\Exception $e) {
-            throw new \Exception('Login failed: '.$e->getMessage());
+            $result = $this->snmp->get('.1.3.6.1.4.1.17409.2.3.1.2.1.1.2.1');
+            return !empty($result);
+        } catch (\Throwable $e) {
+            Log::error("C-Data OLT connection test failed: " . $e->getMessage());
+            return false;
         }
     }
 
-    protected function loginHttp($username, $password)
+    public function getDeviceInfo(): array
     {
-        // Try common C-Data login paths
-        $paths = [
-            '/login.cgi',
-            '/goform/login',
-            '/admin/login.asp',
-            '/cgi-bin/login.cgi',
+        $info = [];
+        foreach (self::OID_SYS as $key => $oid) {
+            $value = $this->snmp->get($oid);
+            
+            if ($key === 'uptime' || $key === 'sys_uptime') {
+                $value = $this->snmp->parseTimeticks($value);
+            }
+            
+            $info[$key] = $value;
+        }
+
+        return $info;
+    }
+
+    public function getSystemResources(): array
+    {
+        return [
+            'cpu_usage' => null,
+            'memory_usage' => null,
+            'temperature' => null,
         ];
+    }
 
-        $success = false;
-        $lastError = '';
+    public function getPorts(): array
+    {
+        $ports = [];
+        foreach (self::PORT_PREFIXES as $i => $portName) {
+            $portIndex = $i + 1;
+            $index = 4718592 + ($i * 4096);
+            $ports[$index] = [
+                'name' => 'PON' . str_pad($portIndex, 2, '0', STR_PAD_LEFT),
+                'index' => $index,
+                'type' => 'pon',
+                'rx_bytes' => 0,
+                'tx_bytes' => 0,
+                'admin_status' => 'up',
+                'oper_status' => 'up',
+            ];
+        }
 
-        foreach ($paths as $path) {
-            try {
-                \Illuminate\Support\Facades\Log::info("C-Data HTTP Login Attempt: {$path}");
+        $result = [];
+        foreach ($ports as $port) {
+            $result[$port['name']] = $port;
+        }
+        return $result;
+    }
 
-                // C-Data often uses a simple POST
-                $response = $this->httpClient->post($path, [
-                    'username' => $username,
-                    'password' => $password,
-                    'Action' => 'Login', // Common in C-Data
-                    'key' => rand(1000, 9999), // Some versions require a random key
-                ]);
+    public function getOnts(string $portName): array
+    {
+        $ports = $this->getPorts();
+        $portMap = [];
+        foreach ($ports as $name => $port) {
+            $portIndex = (int)str_replace('PON', '', $name);
+            $prefix = 'gpon 0/0/' . $portIndex;
+            $portMap[$prefix] = [
+                'port_name' => $name,
+                'port_index' => $port['index'],
+            ];
+        }
 
-                \Illuminate\Support\Facades\Log::info("C-Data HTTP Login Response: {$response->status()}");
+        $onts = [];
+        
+        $allRaw = $this->snmp->walk('.1.3.6.1.4.1.17409.2.8.4.1.1');
+        
+        $ontData = [];
+        foreach ($allRaw as $line) {
+            $parts = explode(' = ', $line, 2);
+            if (count($parts) !== 2) continue;
+            
+            $oidPart = $parts[0];
+            $valuePart = $parts[1];
+            
+            $oidComponents = explode('.', ltrim($oidPart, '.'));
+            $numComponents = count($oidComponents);
+            
+            if ($numComponents < 14) continue;
+            
+            $fieldIdx = (int)$oidComponents[12];
+            $ontIndex = $oidComponents[13];
+            $value = $this->snmp->stripTypePrefix(trim($valuePart));
+            
+            if (!isset($ontData[$ontIndex])) {
+                $ontData[$ontIndex] = [];
+            }
+            
+            switch ($fieldIdx) {
+                case 2:
+                    $ontData[$ontIndex]['name'] = trim($value, '"');
+                    break;
+                case 3:
+                    $ontData[$ontIndex]['mac'] = $this->parseHexMac($value);
+                    break;
+                case 4:
+                    $ontData[$ontIndex]['status'] = $value == 1 ? 'online' : 'offline';
+                    break;
+                case 5:
+                    $ontData[$ontIndex]['vendor'] = trim($value, '"');
+                    break;
+                case 6:
+                    $ontData[$ontIndex]['model'] = trim($value, '"');
+                    break;
+            }
+        }
+        
+        $rxPowerRaw = $this->snmp->walk(self::OID_ONT['rx_power']);
+        $rxPowerMap = [];
+        foreach ($rxPowerRaw as $line) {
+            $parts = explode(' = ', $line, 2);
+            if (count($parts) !== 2) continue;
+            $oidPart = $parts[0];
+            $valuePart = $parts[1];
+            $oidComponents = explode('.', ltrim($oidPart, '.'));
+            $ontIndex = end($oidComponents);
+            $val = (int)$this->snmp->stripTypePrefix($valuePart);
+            if ($val === 0) {
+                $rxPowerMap[$ontIndex] = null;
+            } else {
+                $rxPowerMap[$ontIndex] = $val / 100;
+            }
+        }
 
-                if ($response->status() === 200 || $response->status() === 302) {
-                    $success = true;
+        foreach ($ontData as $ontIndex => $data) {
+            if (!isset($data['name'])) continue;
+            
+            $ontName = $data['name'];
+            
+            $matchedPort = null;
+            foreach ($portMap as $prefix => $portInfo) {
+                if (str_starts_with($ontName, $prefix)) {
+                    $matchedPort = $portInfo;
                     break;
                 }
-            } catch (\Exception $e) {
-                $lastError = $e->getMessage();
-                \Illuminate\Support\Facades\Log::error("C-Data HTTP Login Error: {$e->getMessage()}");
-            }
-        }
-
-        if (! $success) {
-            throw new \Exception('HTTP Login failed. Tried common paths. Last error: '.$lastError);
-        }
-    }
-
-    public function getOnus()
-    {
-        if ($this->mode === 'http') {
-            return $this->getOnusHttp();
-        }
-
-        return $this->getOnusTelnet();
-    }
-
-    protected function getOnusTelnet()
-    {
-        $commands = [
-            'show epon onu-information',
-            'show epon onu state',
-            'show epon onu all',
-            'show gpon onu-information',
-            'show gpon onu state',
-            'show gpon onu all',
-            'show onu all',
-        ];
-
-        $output = '';
-        foreach ($commands as $cmd) {
-            try {
-                $result = $this->client->exec($cmd);
-                if (! str_contains(strtolower($result), 'unknown') && ! str_contains(strtolower($result), 'error')) {
-                    $output .= "\n".$result;
-                }
-            } catch (\Exception $e) {
-            }
-        }
-
-        return $this->parseOnuOutput($output);
-    }
-
-    protected function getOnusHttp()
-    {
-        // C-Data Web UI for ONUs is usually in a frame or fetched via AJAX
-        $paths = [
-            '/onu_list.cgi',
-            '/onu_info.asp',
-            '/admin/onu_list.asp',
-            '/epon/onu_list.asp',
-            '/cgi-bin/onu_list.cgi',
-            '/cgi-bin/onu_info.cgi',
-        ];
-
-        foreach ($paths as $path) {
-            try {
-                \Illuminate\Support\Facades\Log::info("C-Data HTTP Fetch Attempt: {$path}");
-                $response = $this->httpClient->get($path);
-
-                \Illuminate\Support\Facades\Log::info("C-Data HTTP Fetch Response: {$response->status()} - Length: ".strlen($response->body()));
-
-                if ($response->successful() && strlen($response->body()) > 100) {
-                    // Very rough parsing
-                    $onus = $this->parseOnuHtml($response->body());
-                    if (count($onus) > 0) {
-                        return $onus;
-                    } else {
-                        \Illuminate\Support\Facades\Log::warning("C-Data HTTP Parsed 0 ONUs from {$path}. Content preview: ".substr($response->body(), 0, 500));
-                    }
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("C-Data HTTP Fetch Error: {$e->getMessage()}");
-
-                continue;
-            }
-        }
-
-        throw new \Exception('HTTP Fetch failed. Could not find valid ONU list page. Check logs for details.');
-    }
-
-    protected function parseOnuHtml($html)
-    {
-        // Basic MAC finding for C-Data
-        $onus = [];
-        preg_match_all('/([0-9a-fA-F]{2}[:.-]?){5}[0-9a-fA-F]{2}/', $html, $matches);
-
-        if (! empty($matches[0])) {
-            foreach (array_unique($matches[0]) as $index => $mac) {
-                $mac = str_replace(['-', '.'], ':', $mac);
-                $onus[] = [
-                    'interface' => 'WEB-'.($index + 1),
-                    'status' => 'online',
-                    'mac_address' => $mac,
-                    'distance' => 0,
-                    'signal' => null,
-                    'serial_number' => null,
-                    'name' => null,
-                ];
-            }
-        }
-
-        return $onus;
-    }
-
-    protected function parseOnuOutput($output)
-    {
-        $onus = [];
-        $lines = explode("\n", $output);
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-            // Skip headers
-            if (empty($line) || str_starts_with($line, 'Interface') || str_starts_with($line, 'UNI')) {
-                continue;
             }
 
-            // C-Data Format 1: EPON0/1:1  Online  00:11:22...
-            // C-Data Format 2: 0/1/1      Online  ...
-            // Regex to catch interface, status, mac
-            if (preg_match('/^((?:EPON|GPON|XPON)?\d+\/\d+(?:[:\/]\d+)?)\s+(\S+)\s+([0-9a-fA-F:.]+)/', $line, $matches)) {
-                $status = strtolower($matches[2]);
-                $dbStatus = 'offline';
+            if (!$matchedPort) continue;
+            if ($matchedPort['port_name'] !== $portName) continue;
 
-                if (in_array($status, ['online', 'up', 'working'])) {
-                    $dbStatus = 'online';
-                } elseif (in_array($status, ['offline', 'down', 'dying-gasp'])) {
-                    $dbStatus = 'offline';
-                } elseif (str_contains($status, 'los')) {
-                    $dbStatus = 'los';
-                }
-
-                $onus[] = [
-                    'interface' => $matches[1],
-                    'status' => $dbStatus,
-                    'mac_address' => $matches[3],
-                    'distance' => null, // C-Data usually needs 'show onu distance'
-                    'signal' => null,   // C-Data usually needs 'show onu optical'
-                    'serial_number' => null,
-                    'name' => null,
-                ];
+            $rxPower = $rxPowerMap[$ontIndex] ?? null;
+            
+            if ($rxPower !== null && $rxPower !== 0) {
+                $status = 'online';
+            } else {
+                $status = 'offline';
             }
-        }
-
-        return $onus;
-    }
-
-    public function getSystemInfo()
-    {
-        if ($this->mode === 'http') {
-            return ['uptime' => 'N/A', 'version' => 'N/A', 'cpu' => 'N/A', 'temp' => 'N/A'];
-        }
-
-        try {
-            $output = $this->client->exec('show version');
-
-            return [
-                'uptime' => $this->parseUptime($output),
-                'version' => $this->parseVersion($output),
-                'temp' => 'N/A',
-                'cpu' => 'N/A',
+            
+            $ontResult = [
+                'port_index' => $matchedPort['port_index'],
+                'ont_index' => (int)$ontIndex,
+                'ont_id' => $ontName,
+                'pon_port' => $matchedPort['port_name'],
+                'status' => $status,
+                'mac_address' => $data['mac'] ?? null,
+                'vendor' => $data['vendor'] ?? null,
+                'model' => $data['model'] ?? null,
+                'rx_power' => $rxPower,
             ];
-        } catch (\Exception $e) {
-            return ['uptime' => 'Error', 'version' => 'Error', 'error' => $e->getMessage()];
+
+            $onts[] = $ontResult;
         }
+
+        return $onts;
     }
 
-    protected function parseUptime($output)
+    public function getOnus(): array
     {
-        if (preg_match('/uptime is (.*?)\n/i', $output, $matches)) {
-            return trim($matches[1]);
+        $onus = [];
+        
+        $ports = $this->getPorts();
+        $portMap = [];
+        foreach ($ports as $name => $port) {
+            $portIndex = (int)str_replace('PON', '', $name);
+            $prefix = 'gpon 0/0/' . $portIndex;
+            $portMap[$prefix] = [
+                'port_name' => $name,
+                'port_index' => $port['index'],
+            ];
         }
-
-        return 'Unknown';
+        
+        $allRaw = $this->snmp->walk('.1.3.6.1.4.1.17409.2.8.4.1.1');
+        $rxPowerRaw = $this->snmp->walk(self::OID_ONT['rx_power']);
+        
+        $ontData = [];
+        foreach ($allRaw as $line) {
+            $parts = explode(' = ', $line, 2);
+            if (count($parts) !== 2) continue;
+            
+            $oidPart = $parts[0];
+            $valuePart = $parts[1];
+            
+            $oidComponents = explode('.', ltrim($oidPart, '.'));
+            $numComponents = count($oidComponents);
+            
+            if ($numComponents < 14) continue;
+            
+            $fieldIdx = (int)$oidComponents[12];
+            $ontIndex = $oidComponents[13];
+            $value = $this->snmp->stripTypePrefix(trim($valuePart));
+            
+            if (!isset($ontData[$ontIndex])) {
+                $ontData[$ontIndex] = [];
+            }
+            
+            switch ($fieldIdx) {
+                case 2:
+                    $ontData[$ontIndex]['name'] = trim($value, '"');
+                    break;
+                case 3:
+                    $ontData[$ontIndex]['mac'] = $this->parseHexMac($value);
+                    break;
+                case 4:
+                    $ontData[$ontIndex]['status_val'] = $value;
+                    break;
+                case 5:
+                    $ontData[$ontIndex]['vendor'] = trim($value, '"');
+                    break;
+                case 6:
+                    $ontData[$ontIndex]['model'] = trim($value, '"');
+                    break;
+            }
+        }
+        
+        $rxPowerMap = [];
+        foreach ($rxPowerRaw as $line) {
+            $parts = explode(' = ', $line, 2);
+            if (count($parts) !== 2) continue;
+            $oidPart = $parts[0];
+            $valuePart = $parts[1];
+            $oidComponents = explode('.', ltrim($oidPart, '.'));
+            $ontIndex = end($oidComponents);
+            $val = (int)$this->snmp->stripTypePrefix($valuePart);
+            if ($val === 0) {
+                $rxPowerMap[$ontIndex] = null;
+            } else {
+                $rxPowerMap[$ontIndex] = $val / 100;
+            }
+        }
+        
+        foreach ($ontData as $ontIndex => $data) {
+            if (!isset($data['name'])) continue;
+            
+            $ontName = $data['name'];
+            $matchedPort = null;
+            foreach ($portMap as $prefix => $portInfo) {
+                if (str_starts_with($ontName, $prefix)) {
+                    $matchedPort = $portInfo;
+                    break;
+                }
+            }
+            if (!$matchedPort) continue;
+            
+            $rxPower = $rxPowerMap[$ontIndex] ?? null;
+            
+            if ($rxPower !== null && $rxPower !== 0) {
+                $status = 'online';
+            } else {
+                $status = 'offline';
+            }
+            
+            $onus[] = [
+                'interface' => $matchedPort['port_name'] . '/' . $ontName,
+                'ont_id' => $ontName,
+                'name' => $ontName,
+                'vendor' => $data['vendor'] ?? null,
+                'model' => $data['model'] ?? null,
+                'serial_number' => null,
+                'mac_address' => $data['mac'] ?? null,
+                'rx_power' => $rxPower,
+                'tx_power' => null,
+                'voltage' => null,
+                'temperature' => null,
+                'status' => $status,
+                'pon_port' => $matchedPort['port_name'],
+            ];
+        }
+        
+        return $onus;
     }
 
-    protected function parseVersion($output)
+    public function getOntDetail(string $ontId): array
     {
-        if (preg_match('/version\s*:?\s*([^\n]+)/i', $output, $matches)) {
-            return trim($matches[1]);
-        }
-
-        return 'Unknown';
+        return ['ont_id' => $ontId];
     }
 
-    public function disconnect()
+    public function getOntOpticalInfo(string $ontId): array
     {
-        if ($this->mode === 'telnet') {
-            $this->client->disconnect();
+        return [];
+    }
+
+    public function getOntTraffic(string $ontId): array
+    {
+        return [];
+    }
+
+    public function rebootOnt(string $ontId): bool
+    {
+        return false;
+    }
+
+    public function getAlarms(): array
+    {
+        return [];
+    }
+
+    protected function parseHexMac(?string $raw): string
+    {
+        if (empty($raw)) return '';
+        $hex = preg_replace('/[^0-9A-Fa-f]/', '', $raw);
+        if (strlen($hex) === 12) {
+            return implode(':', str_split(strtoupper($hex), 2));
         }
+        return $raw;
     }
 }

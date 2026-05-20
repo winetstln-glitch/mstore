@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('olts', function (Blueprint $table) {
             if (! Schema::hasColumn('olts', 'snmp_version')) {
-                $table->string('snmp_version', 10)->default('2c')->after('longitude');
+                $table->string('snmp_version', 10)->default('2c');
             }
             if (! Schema::hasColumn('olts', 'snmp_community')) {
                 $table->string('snmp_community')->nullable()->after('snmp_version');

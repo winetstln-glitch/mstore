@@ -312,6 +312,10 @@ class DashboardController extends Controller
             'wash_employee_total' => $washEmployeeIds->count(),
             'wash_employee_present_today' => $washEmployeePresentToday,
             'wash_employee_not_present_today' => max($washEmployeeIds->count() - $washEmployeePresentToday, 0),
+            'total_olts' => \App\Models\OLT::count(),
+            'online_olts' => \App\Models\OLT::where('status', 'online')->count(),
+            'total_onts' => \App\Models\ONT::withoutTrashed()->count(),
+            'online_onts' => \App\Models\ONT::withoutTrashed()->where('oper_status', 'online')->count(),
         ];
 
         $presenceCutoff = now()->subSeconds(90);

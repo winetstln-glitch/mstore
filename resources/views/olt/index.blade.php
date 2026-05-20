@@ -1,198 +1,232 @@
+{{-- resources/views/olt/index.blade.php --}}
 @extends('layouts.app')
 
-@section('title', __('OLT Management'))
+@section('title', 'Manajemen OLT')
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold text-body">{{ __('OLT Management') }}</h5>
-                @if(Auth::user()->hasPermission('olt.create'))
-                <a href="{{ route('olt.create') }}" class="btn btn-primary">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Add OLT') }}
-                </a>
-                @endif
+<div class="container-fluid px-0">
+    {{-- Header --}}
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Manajemen OLT</h4>
+            <p class="text-muted small mb-0">Kelola seluruh server OLT dan perangkat ONU</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('olt.create') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus me-1"></i> Tambah OLT
+            </a>
+            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="fa-solid fa-rotate me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    {{-- Stats Cards --}}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-3">
+                    <p class="text-muted small mb-1">Total OLT</p>
+                    <h3 class="fw-bold mb-0 text-primary">{{ $stats['total_olts'] }}</h3>
+                </div>
             </div>
-
-            <div class="card-body">
-                {{-- Alerts handled by SweetAlert in Layout --}}
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle table-responsive-mobile">
-                        <thead class="">
-                            <tr>
-                                <th scope="col" class="ps-3">{{ __('Name') }}</th>
-                                <th scope="col">{{ __('Host / IP Address') }}</th>
-                                <th scope="col">{{ __('Connection') }}</th>
-                                <th scope="col">{{ __('Type') }}</th>
-                                <th scope="col">{{ __('Brand') }}</th>
-                                <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col" class="text-end pe-3">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($olts as $olt)
-                                <tr>
-                                    <td class="ps-3">
-                                        <div class="fw-bold">
-                                            <a href="{{ route('olt.show', $olt) }}" class="text-decoration-none text-dark">
-                                                {{ $olt->name }}
-                                            </a>
-                                        </div>
-                                        <div class="small text-muted">{{ $olt->description }}</div>
-                                    </td>
-                                    <td>
-                                        @php
-                                            $scheme = request()->isSecure() ? 'https' : 'http';
-                                            $url = $scheme . '://' . $olt->host;
-                                            if ($olt->port && !in_array($olt->port, [80, 443])) {
-                                                $url .= ':' . $olt->port;
-                                            }
-                                        @endphp
-                                        <div>
-                                            <a href="{{ $url }}" target="_blank" class="text-decoration-none">
-                                                {{ $olt->host }}@if($olt->port):{{ $olt->port }}@endif
-                                            </a>
-                                        </div>
-                                        <button onclick="testConnection({{ $olt->id }})" class="btn btn-link btn-sm p-0 text-decoration-none">{{ __('Test Connection') }}</button>
-                                    </td>
-                                    <td>
-                                        <span id="status-{{ $olt->id }}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                            {{ __('Checking...') }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle text-uppercase">
-                                            {{ $olt->type }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="text-uppercase">{{ $olt->brand }}</div>
-                                    </td>
-                                    <td>
-                                        <span class="badge {{ $olt->is_active ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle' }} border">
-                                            {{ $olt->is_active ? __('Active') : __('Inactive') }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end pe-3">
-                                        <div class="d-flex justify-content-end gap-1">
-                                            @if(Auth::user()->hasPermission('olt.edit'))
-                                            <a href="{{ route('olt.edit', $olt) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </a>
-                                            @endif
-                                            
-                                            @if(Auth::user()->hasPermission('olt.delete'))
-                                            <form action="{{ route('olt.destroy', $olt) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this OLT?') }}');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center py-5">
-                                        <div class="text-muted">
-                                            <i class="fa-solid fa-server fa-3x mb-3"></i>
-                                            <p class="mb-0">{{ __('No OLT devices found.') }}</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-3">
+                    <p class="text-muted small mb-1">OLT Online</p>
+                    <h3 class="fw-bold mb-0 text-success">{{ $stats['online_olts'] }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-3">
+                    <p class="text-muted small mb-1">Total ONU Terdaftar</p>
+                    <h3 class="fw-bold mb-0 text-info">{{ $stats['total_onts'] }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-3">
+                    <p class="text-muted small mb-1">ONU Online</p>
+                    <h3 class="fw-bold mb-0 text-success">{{ $stats['online_onts'] }}</h3>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Tabel OLT --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-3 py-3">Nama OLT</th>
+                            <th class="py-3">IP Address</th>
+                            <th class="py-3">Vendor</th>
+                            <th class="py-3">Model</th>
+                            <th class="py-3">Lokasi</th>
+                            <th class="py-3">Status</th>
+                            <th class="py-3">ONU</th>
+                            <th class="py-3">Last Polling</th>
+                            <th class="pe-3 py-3 text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($olts as $olt)
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{{ route('olt.show', $olt->id) }}" class="fw-medium text-decoration-none">
+                                    {{ $olt->name }}
+                                </a>
+                            </td>
+                            <td><code>{{ $olt->ip_address }}</code></td>
+                            <td>
+                                <span class="badge bg-secondary">{{ strtoupper($olt->vendor) }}</span>
+                            </td>
+                            <td>{{ $olt->model ?? '-' }}</td>
+                            <td class="small">{{ $olt->location ?? '-' }}</td>
+                            <td>
+                                @if($olt->status === 'online')
+                                    <span class="badge bg-success">Online</span>
+                                @elseif($olt->status === 'warning')
+                                    <span class="badge bg-warning text-dark">Warning</span>
+                                @elseif($olt->status === 'critical')
+                                    <span class="badge bg-danger">Critical</span>
+                                @else
+                                    <span class="badge bg-secondary">Offline</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ $olt->onts_count ?? 0 }} ONU
+                                </span>
+                            </td>
+                            <td class="small">
+                                @if($olt->last_polled_at)
+                                    {{ $olt->last_polled_at->diffForHumans() }}
+                                @else
+                                    <span class="text-muted">Belum pernah</span>
+                                @endif
+                            </td>
+                            <td class="pe-3 text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('olt.show', $olt->id) }}" class="btn btn-outline-primary" title="Detail">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('olt.onts', $olt->id) }}" class="btn btn-outline-info" title="Daftar ONU">
+                                        <i class="fa-solid fa-list"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success" 
+                                            onclick="pollOlt({{ $olt->id }})" title="Polling">
+                                        <i class="fa-solid fa-rotate"></i>
+                                    </button>
+                                    <a href="{{ route('olt.edit', $olt->id) }}" class="btn btn-outline-warning" title="Edit">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="deleteOlt({{ $olt->id }}, '{{ $olt->name }}')" title="Hapus">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <div class="py-4">
+                                    <i class="fa-solid fa-server fa-3x mb-3 text-secondary"></i>
+                                    <p class="mb-1">Belum ada data OLT</p>
+                                    <small>Klik "Tambah OLT" untuk menambahkan server baru</small>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if($olts instanceof \Illuminate\Pagination\LengthAwarePaginator)
+        <div class="card-footer bg-white border-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    Menampilkan {{ $olts->firstItem() ?? 0 }} - {{ $olts->lastItem() ?? 0 }} dari {{ $olts->total() }} data
+                </small>
+                {{ $olts->links() }}
+            </div>
+        </div>
+        @endif
+    </div>
 </div>
+
+{{-- Form Delete --}}
+<form id="delete-form" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
 @endsection
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var oltIds = @json($olts->pluck('id'));
-
-        oltIds.forEach(function (id) {
-            var badge = document.getElementById('status-' + id);
-            if (!badge) {
-                return;
-            }
-
-            fetch('{{ url('olt') }}/' + id + '/check-status')
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    var status = data.status || 'offline';
-                    var message = data.message || status;
-
-                    badge.textContent = message;
-
-                    badge.classList.remove(
-                        'bg-secondary-subtle',
-                        'text-secondary',
-                        'border-secondary-subtle',
-                        'bg-success-subtle',
-                        'text-success',
-                        'border-success-subtle',
-                        'bg-danger-subtle',
-                        'text-danger',
-                        'border-danger-subtle'
-                    );
-
-                    if (status === 'online') {
-                        badge.classList.add('bg-success-subtle', 'text-success', 'border-success-subtle');
-                    } else {
-                        badge.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle');
-                    }
-                })
-                .catch(function () {
-                    badge.textContent = '{{ __('Error') }}';
-                    badge.classList.remove(
-                        'bg-secondary-subtle',
-                        'text-secondary',
-                        'border-secondary-subtle'
-                    );
-                    badge.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle');
-                });
-        });
+function pollOlt(id) {
+    Swal.fire({
+        title: 'Polling OLT',
+        text: 'Memulai polling data dari OLT...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
     });
 
-    function testConnection(id) {
-        var btn = event.target.closest('button');
-        var originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> {{ __('Testing...') }}';
-        btn.disabled = true;
+    fetch(`/olt/${id}/poll`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        Swal.close();
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Polling Berhasil',
+                text: `Ditemukan ${data.onts_found} ONU dalam ${data.duration_ms}ms`,
+                timer: 3000,
+                showConfirmButton: false
+            });
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Polling Gagal',
+                text: data.error || 'Terjadi kesalahan koneksi',
+            });
+        }
+    })
+    .catch(err => {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    });
+}
 
-        fetch('{{ route('olt.test_connection') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ id: id })
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (data.success) {
-                alert('{{ __('Connection Successful') }}: ' + data.message);
-            } else {
-                alert('{{ __('Connection Failed') }}: ' + data.message);
-            }
-        })
-        .catch(function (error) {
-            alert('{{ __('Error') }}: ' + error.message);
-        })
-        .finally(function () {
-            btn.innerHTML = originalHtml;
-            btn.disabled = false;
-        });
-    }
+function deleteOlt(id, name) {
+    Swal.fire({
+        title: 'Hapus OLT',
+        html: `Yakin ingin menghapus <b>${name}</b>?<br><small class="text-danger">Semua data ONU terkait juga akan dihapus</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then(result => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('delete-form');
+            form.action = `/olt/${id}`;
+            form.submit();
+        }
+    });
+}
 </script>
 @endpush

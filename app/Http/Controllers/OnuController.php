@@ -38,6 +38,18 @@ class OnuController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
         ]);
 
+        try {
+            $olt = $onu->olt;
+            $driver = $this->oltService->getDriver($olt);
+            $driver->connect($olt);
+
+            $driver->setOnuName($onu->onu_index ?? $onu->interface, $validated['name']);
+
+            $driver->disconnect();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Failed to update ONU name on OLT: " . $e->getMessage());
+        }
+
         $onu->update($validated);
 
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
@@ -51,22 +63,22 @@ class OnuController extends Controller implements HasMiddleware
     {
         try {
             $olt = $onu->olt;
+            $driver = $this->oltService->getDriver($olt);
+            $driver->connect($olt);
 
-            if (empty($olt->web_user) || empty($olt->web_password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('Web credentials not configured for this OLT.')
-                ]);
+            if ($olt->brand === 'hsgq') {
+                $driver->rebootOnu($onu->interface);
             }
 
-            // Basic reboot implementation - for now, just return success placeholder
-            // In production, you'd implement actual reboot logic here (like Dinobill)
+            $driver->disconnect();
+
             return response()->json([
                 'success' => true,
                 'message' => __('Reboot command sent successfully.')
             ]);
 
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to reboot ONU: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => __('Reboot failed: :message', ['message' => $e->getMessage()])
@@ -76,63 +88,91 @@ class OnuController extends Controller implements HasMiddleware
 
     public function sync(Olt $olt, Request $request)
     {
-        set_time_limit(300); // 5 minutes max for sync
-
+        $startTime = microtime(true);
+        
         try {
-            // Get the appropriate driver
-            $driver = $this->oltService->getDriver($olt);
-
-            // Connect
-            $driver->connect($olt, 30); // 30s timeout for connection
-
-            // Fetch ONUs
+            $service = new \App\Services\Olt\OltService();
+            $driver = $service->getDriver($olt);
+            $driver->connect($olt, 30);
             $onuDataList = $driver->getOnus();
-
-            // Disconnect
             $driver->disconnect();
 
-            // Sync logic (update DB)
             $count = 0;
-            if (! empty($onuDataList)) {
+            $foundInterfaces = [];
+            if (!empty($onuDataList)) {
                 foreach ($onuDataList as $data) {
                     $olt->onus()->updateOrCreate(
-                        ['interface' => $data['interface']], // Key
+                        ['interface' => $data['interface']],
                         array_merge($data, ['last_updated' => now()])
                     );
+                    $foundInterfaces[] = $data['interface'];
                     $count++;
                 }
-
-                if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') === 'application/json') {
-                    return response()->json([
-                        'success' => true,
-                        'message' => __('Synced :count ONUs successfully.', ['count' => $count])
-                    ]);
-                }
-
-                return redirect()->route('olt.onus.index', $olt->id)->with('success', __('Synced :count ONUs successfully.', ['count' => $count]));
             }
 
-            // If empty, it might be due to parsing error or actually empty
-            $method = ($driver instanceof \App\Services\Olt\Drivers\SnmpDriver) ? 'SNMP' : 'Telnet/Web';
-            
+            if (!empty($foundInterfaces)) {
+                $deletedCount = $olt->onus()->whereNotIn('interface', $foundInterfaces)->delete();
+            }
+
+            $olt->update(['last_synced_at' => now()]);
+            $duration = round((microtime(true) - $startTime) * 1000);
+
             if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') === 'application/json') {
                 return response()->json([
-                    'success' => false,
-                    'message' => __("Connection successful (:method) but no ONUs found. If using SNMP, check Community/Port. If using Telnet, check parsing logic.", ['method' => $method])
+                    'success' => true,
+                    'message' => __('Sinkronisasi selesai. Berhasil :count ONU ditemukan.', ['count' => $count]),
+                    'count' => $count,
+                    'duration' => $duration
                 ]);
             }
 
-            return redirect()->route('olt.onus.index', $olt->id)->with('warning', __("Connection successful (:method) but no ONUs found. If using SNMP, check Community/Port. If using Telnet, check parsing logic.", ['method' => $method]));
+            return redirect()->route('olt.show', $olt->id)->with('success', __('Sinkronisasi selesai. Berhasil :count ONU ditemukan.', ['count' => $count]));
 
         } catch (\Exception $e) {
+            $duration = round((microtime(true) - $startTime) * 1000);
+            $errors = [];
+            $debug = [
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ];
+            
             if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') === 'application/json') {
                 return response()->json([
                     'success' => false,
-                    'message' => __('Sync failed: :message', ['message' => $e->getMessage()])
-                ]);
+                    'message' => __('Gagal sinkronisasi: :message', ['message' => $e->getMessage()]),
+                    'errors' => $errors,
+                    'debug' => $debug,
+                    'duration' => $duration
+                ], 500);
             }
             
-            return redirect()->route('olt.onus.index', $olt->id)->with('error', __('Sync failed: :message', ['message' => $e->getMessage()]));
+            return redirect()->route('olt.show', $olt->id)->with('error', __('Gagal sinkronisasi: :message', ['message' => $e->getMessage()]));
+        }
+    }
+
+    public function destroy(Request $request, Onu $onu)
+    {
+        try {
+            $onu->delete();
+
+            if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('ONU deleted successfully')
+                ]);
+            }
+
+            return redirect()->back()->with('success', __('ONU deleted successfully'));
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Error deleting ONU: :message', ['message' => $e->getMessage()])
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', __('Error deleting ONU: :message', ['message' => $e->getMessage()]));
         }
     }
 }

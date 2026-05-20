@@ -25,9 +25,10 @@ $customerName = trim((string) ($transaction->customer_name ?? ''));
 $customerName = $customerName !== '' ? $customerName : '-';
 $vehiclePlate = strtoupper(trim((string) ($transaction->vehicle_plate ?? '')));
 $vehiclePlate = $vehiclePlate !== '' ? $vehiclePlate : '-';
+$loyaltyTarget = (int) \App\Models\Setting::getValue('wash_loyalty_target', 11);
 $discountLabel = __('Diskon');
 if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
-    $discountLabel = 'Bonus Cuci 10x';
+    $discountLabel = 'Bonus Cuci ' . $loyaltyTarget . 'x';
 } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
     $discountLabel = 'Voucher Cuci Gratis';
 }

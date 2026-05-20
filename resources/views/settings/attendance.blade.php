@@ -10,6 +10,11 @@
                 <h5 class="mb-0 fw-bold"><i class="fa-solid fa-sliders me-2"></i>{{ __('Pengaturan Absensi') }}</h5>
             </div>
             <div class="card-body">
+                <!-- Panduan -->
+                <div class="alert alert-info py-2 mb-4">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>Panduan:</strong> Halaman ini untuk mengatur <strong>template jadwal default per grup</strong> (Teknisi, Operator Wash, Lainnya). Untuk mengatur jadwal <strong>individual per karyawan</strong>, gunakan menu <strong>"Jadwal Karyawan"</strong>!
+                </div>
                 <form action="{{ route('settings.update') }}" method="POST">
                     @csrf
 
@@ -57,22 +62,15 @@
                                     value="{{ old('attendance_working_days', $settings['attendance_working_days'] ?? 28) }}" 
                                     class="form-control" min="1" max="31">
                             </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-medium">Toleransi Terlambat (Menit)</label>
+                                <input type="number" name="attendance_late_tolerance" 
+                                    value="{{ old('attendance_late_tolerance', $settings['attendance_late_tolerance'] ?? 0) }}" 
+                                    class="form-control" min="0">
+                                <div class="form-text">Contoh: 15 = boleh terlambat 15 menit tanpa status late</div>
+                            </div>
                         </div>
                     </div>
-
-                    @php
-                        $days = [
-                            'Monday' => 'Senin',
-                            'Tuesday' => 'Selasa',
-                            'Wednesday' => 'Rabu',
-                            'Thursday' => 'Kamis',
-                            'Friday' => 'Jumat',
-                            'Saturday' => 'Sabtu',
-                            'Sunday' => 'Minggu',
-                        ];
-                        $scheduleTeknisi = json_decode($settings['weekly_schedule_teknisi'] ?? '{}', true);
-                        $scheduleWash = json_decode($settings['weekly_schedule_wash'] ?? '{}', true);
-                    @endphp
 
                     <!-- ==================== SHIFT TEKNISI ==================== -->
                     <div class="mb-4">
@@ -83,9 +81,10 @@
                             <table class="table table-bordered table-sm mb-0">
                                 <thead class="table-light">
                                     <tr class="text-center">
-                                        <th class="align-middle" style="width:35%">Nama Shift</th>
-                                        <th class="align-middle" style="width:30%">Jam Mulai</th>
-                                        <th class="align-middle" style="width:30%">Jam Selesai</th>
+                                        <th class="align-middle" style="width:30%">Nama Shift</th>
+                                        <th class="align-middle" style="width:20%">Jam Mulai</th>
+                                        <th class="align-middle" style="width:20%">Jam Selesai</th>
+                                        <th class="align-middle" style="width:30%">Batas Absen (Maksimal Jam Masuk)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -103,6 +102,11 @@
                                                 value="{{ old('schedule_teknisi_shift_1_end', $settings['schedule_teknisi_shift_1_end'] ?? '17:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_1_cutoff"
+                                                value="{{ old('schedule_teknisi_shift_1_cutoff', $settings['schedule_teknisi_shift_1_cutoff'] ?? '10:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="fw-medium align-middle ps-3">
@@ -116,6 +120,11 @@
                                         <td>
                                             <input type="time" name="schedule_teknisi_shift_2_end"
                                                 value="{{ old('schedule_teknisi_shift_2_end', $settings['schedule_teknisi_shift_2_end'] ?? '00:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_shift_2_cutoff"
+                                                value="{{ old('schedule_teknisi_shift_2_cutoff', $settings['schedule_teknisi_shift_2_cutoff'] ?? '17:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
                                     </tr>
@@ -133,6 +142,11 @@
                                                 value="{{ old('schedule_teknisi_longshift_end', $settings['schedule_teknisi_longshift_end'] ?? '20:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
+                                        <td>
+                                            <input type="time" name="schedule_teknisi_longshift_cutoff"
+                                                value="{{ old('schedule_teknisi_longshift_cutoff', $settings['schedule_teknisi_longshift_cutoff'] ?? '10:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -148,9 +162,10 @@
                             <table class="table table-bordered table-sm mb-0">
                                 <thead class="table-light">
                                     <tr class="text-center">
-                                        <th class="align-middle" style="width:35%">Nama Shift</th>
-                                        <th class="align-middle" style="width:30%">Jam Mulai</th>
-                                        <th class="align-middle" style="width:30%">Jam Selesai</th>
+                                        <th class="align-middle" style="width:30%">Nama Shift</th>
+                                        <th class="align-middle" style="width:20%">Jam Mulai</th>
+                                        <th class="align-middle" style="width:20%">Jam Selesai</th>
+                                        <th class="align-middle" style="width:30%">Batas Absen (Maksimal Jam Masuk)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -168,6 +183,11 @@
                                                 value="{{ old('schedule_wash_shift_1_end', $settings['schedule_wash_shift_1_end'] ?? '17:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_1_cutoff"
+                                                value="{{ old('schedule_wash_shift_1_cutoff', $settings['schedule_wash_shift_1_cutoff'] ?? '10:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="fw-medium align-middle ps-3">
@@ -181,6 +201,11 @@
                                         <td>
                                             <input type="time" name="schedule_wash_shift_2_end"
                                                 value="{{ old('schedule_wash_shift_2_end', $settings['schedule_wash_shift_2_end'] ?? '22:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_shift_2_cutoff"
+                                                value="{{ old('schedule_wash_shift_2_cutoff', $settings['schedule_wash_shift_2_cutoff'] ?? '15:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
                                     </tr>
@@ -198,109 +223,12 @@
                                                 value="{{ old('schedule_wash_longshift_end', $settings['schedule_wash_longshift_end'] ?? '20:00') }}"
                                                 class="form-control form-control-sm">
                                         </td>
+                                        <td>
+                                            <input type="time" name="schedule_wash_longshift_cutoff"
+                                                value="{{ old('schedule_wash_longshift_cutoff', $settings['schedule_wash_longshift_cutoff'] ?? '10:00') }}"
+                                                class="form-control form-control-sm">
+                                        </td>
                                     </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <small class="text-muted d-block mt-2">* Jadwal mingguan per grup akan merujuk ke Shift 1 / Shift 2 / Longshift masing-masing grup</small>
-                    </div>
-
-                    <div class="alert alert-info border mb-4">
-                        <div class="fw-semibold mb-2">
-                            <i class="fa-solid fa-circle-info me-1"></i>Cara Pengaturan Jadwal Mingguan
-                        </div>
-                        <ol class="mb-0 ps-3 small">
-                            <li class="mb-1">Atur dulu jam Shift 1, Shift 2, dan Longshift di bagian atas (Teknisi/Wash).</li>
-                            <li class="mb-1">Di tabel mingguan, centang kolom <strong>Aktif</strong> untuk hari kerja.</li>
-                            <li class="mb-1">Pilih jenis shift hari itu: <strong>Shift 1</strong>, <strong>Shift 2</strong>, atau <strong>Longshift</strong>.</li>
-                            <li class="mb-1">Hari yang tidak dicentang akan dianggap <strong>OFF</strong> saat dipakai sebagai referensi.</li>
-                            <li>Simpan pengaturan, lalu buka menu <strong>Schedules</strong> untuk atur jadwal per orang (S1/S2/LS/OFF).</li>
-                        </ol>
-                    </div>
-
-                    <!-- ==================== JADWAL MINGGUAN TEKNISI ==================== -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
-                            <i class="fa-solid fa-calendar-week me-1"></i> Jadwal Mingguan Teknisi
-                        </h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm mb-0">
-                                <thead class="table-light">
-                                    <tr class="text-center">
-                                        <th class="align-middle">Hari</th>
-                                        <th class="align-middle" style="width:90px">Aktif</th>
-                                        <th class="align-middle" style="width:200px">Pilih Shift</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($days as $key => $label)
-                                        @php
-                                            $dayData = $scheduleTeknisi[$key] ?? ['enabled' => false, 'shift' => 'shift1'];
-                                            $oldDay = old("weekly_schedule_teknisi.{$key}");
-                                            $isEnabled = $oldDay ? ($oldDay['enabled'] ?? false) : !empty($dayData['enabled']);
-                                            $selectedShift = $oldDay ? ($oldDay['shift'] ?? 'shift1') : ($dayData['shift'] ?? 'shift1');
-                                        @endphp
-                                        <tr>
-                                            <td class="fw-medium align-middle ps-3">{{ $label }}</td>
-                                            <td class="text-center align-middle">
-                                                <input type="hidden" name="weekly_schedule_teknisi[{{ $key }}][enabled]" value="0">
-                                                <input class="form-check-input" type="checkbox"
-                                                    name="weekly_schedule_teknisi[{{ $key }}][enabled]" value="1"
-                                                    {{ $isEnabled ? 'checked' : '' }}>
-                                            </td>
-                                            <td class="align-middle">
-                                                <select name="weekly_schedule_teknisi[{{ $key }}][shift]" class="form-select form-select-sm schedule-shift">
-                                                    <option value="shift1" {{ $selectedShift === 'shift1' ? 'selected' : '' }}>Shift 1</option>
-                                                    <option value="shift2" {{ $selectedShift === 'shift2' ? 'selected' : '' }}>Shift 2</option>
-                                                    <option value="longshift" {{ $selectedShift === 'longshift' ? 'selected' : '' }}>Longshift</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- ==================== JADWAL MINGGUAN OPERATOR WASH ==================== -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
-                            <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Mingguan Operator Wash
-                        </h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm mb-0">
-                                <thead class="table-light">
-                                    <tr class="text-center">
-                                        <th class="align-middle">Hari</th>
-                                        <th class="align-middle" style="width:90px">Aktif</th>
-                                        <th class="align-middle" style="width:200px">Pilih Shift</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($days as $key => $label)
-                                        @php
-                                            $dayData = $scheduleWash[$key] ?? ['enabled' => false, 'shift' => 'shift1'];
-                                            $oldDay = old("weekly_schedule_wash.{$key}");
-                                            $isEnabled = $oldDay ? ($oldDay['enabled'] ?? false) : !empty($dayData['enabled']);
-                                            $selectedShift = $oldDay ? ($oldDay['shift'] ?? 'shift1') : ($dayData['shift'] ?? 'shift1');
-                                        @endphp
-                                        <tr>
-                                            <td class="fw-medium align-middle ps-3">{{ $label }}</td>
-                                            <td class="text-center align-middle">
-                                                <input type="hidden" name="weekly_schedule_wash[{{ $key }}][enabled]" value="0">
-                                                <input class="form-check-input" type="checkbox"
-                                                    name="weekly_schedule_wash[{{ $key }}][enabled]" value="1"
-                                                    {{ $isEnabled ? 'checked' : '' }}>
-                                            </td>
-                                            <td class="align-middle">
-                                                <select name="weekly_schedule_wash[{{ $key }}][shift]" class="form-select form-select-sm schedule-shift">
-                                                    <option value="shift1" {{ $selectedShift === 'shift1' ? 'selected' : '' }}>Shift 1</option>
-                                                    <option value="shift2" {{ $selectedShift === 'shift2' ? 'selected' : '' }}>Shift 2</option>
-                                                    <option value="longshift" {{ $selectedShift === 'longshift' ? 'selected' : '' }}>Longshift</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -390,24 +318,5 @@
     </div>
 </div>
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Disable select shift jika hari tidak aktif
-    document.querySelectorAll('input[type="checkbox"][name*="[enabled]"]').forEach(cb => {
-        const select = cb.closest('tr').querySelector('.schedule-shift');
-        toggleShiftSelect(cb, select);
-        
-        cb.addEventListener('change', function() {
-            toggleShiftSelect(this, select);
-        });
-    });
-    
-    function toggleShiftSelect(checkbox, select) {
-        select.disabled = !checkbox.checked;
-        select.style.opacity = checkbox.checked ? '1' : '0.5';
-    }
-});
-</script>
-@endpush
+
 @endsection

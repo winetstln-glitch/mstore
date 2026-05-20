@@ -1,493 +1,548 @@
+{{-- resources/views/olt/show.blade.php --}}
 @extends('layouts.app')
 
+@section('title', 'Detail OLT - ' . $olt->name)
+
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-12">
-        <div class="card shadow-sm border-0 border-top border-4 border-primary">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-server text-primary fs-4"></i>
-                    <h5 class="mb-0 fw-bold">{{ $olt->name }}</h5>
-                    <span class="badge {{ $olt->is_active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
-                        {{ $olt->is_active ? __('Active') : __('Inactive') }}
-                    </span>
-                </div>
-                <div class="d-flex gap-2">
-                    <button onclick="syncOLT()" class="btn btn-primary">
-                        <i class="fa-solid fa-sync-alt me-1"></i> {{ __('Sync OLT Data') }}
-                    </button>
-                    <a href="{{ route('olt.edit', $olt) }}" class="btn btn-outline-primary">
-                        <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit') }}
-                    </a>
-                    <a href="{{ route('olt.index') }}" class="btn btn-outline-secondary">
-                        <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Back') }}
-                    </a>
+<style>
+.table td, .table th {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.ont-row {
+    cursor: default;
+    transition: none !important;
+}
+.ont-row:hover {
+    background-color: transparent !important;
+}
+</style>
+<div class="container-fluid px-0">
+    {{-- Header --}}
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ route('olt.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4 class="fw-bold mb-0">{{ $olt->name }}</h4>
+                <span class="text-muted small">
+                    <code>{{ $olt->ip_address }}</code> &middot;
+                    <span class="badge bg-secondary">{{ strtoupper($olt->vendor) }}</span>
+                    @if($olt->model) &middot; {{ $olt->model }} @endif
+                </span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small">Pilih OLT:</label>
+            <select id="selectOlt" class="form-select form-select-sm" style="min-width: 200px;">
+                @foreach($allOlts as $o)
+                    <option value="{{ $o->id }}" {{ $o->id === $olt->id ? 'selected' : '' }}>
+                        {{ $o->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('olt.onus.filter', $olt->id) }}" class="btn btn-info text-white">
+                <i class="fa-solid fa-list me-1"></i> Daftar ONU
+            </a>
+            <button class="btn btn-success" onclick="pollOlt({{ $olt->id }})">
+                <i class="fa-solid fa-rotate me-1"></i> Polling
+            </button>
+            <a href="{{ route('olt.edit', $olt->id) }}" class="btn btn-warning">
+                <i class="fa-solid fa-pen me-1"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    {{-- Info Cards --}}
+    <div class="row g-3 mb-4">
+        {{-- Status OLT --}}
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 rounded-circle 
+                            {{ $olt->status === 'online' ? 'bg-success' : 'bg-secondary' }} bg-opacity-10">
+                            <i class="fa-solid fa-server fa-lg 
+                                {{ $olt->status === 'online' ? 'text-success' : 'text-secondary' }}"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Status OLT</p>
+                            <h5 class="fw-bold mb-0">
+                                @if($olt->status === 'online')
+                                    <span class="text-success">Online</span>
+                                @else
+                                    <span class="text-secondary">Offline</span>
+                                @endif
+                            </h5>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="card-body p-4">
-                <!-- Statistics Cards -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="card bg-primary-subtle border-0 h-100 cursor-pointer" style="border-left: 4px solid #3b82f6;">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="bg-white rounded-2 p-3">
-                                    <i class="fa-solid fa-microchip text-primary fs-3"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="text-primary-emphasis text-uppercase small fw-bold mb-0">{{ __('Total ONUs') }}</h6>
-                                    <h2 class="display-6 fw-bold text-primary mb-0">{{ $totalOnus }}</h2>
-                                </div>
-                            </div>
+        {{-- Uptime --}}
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 rounded-circle bg-info bg-opacity-10">
+                            <i class="fa-regular fa-clock fa-lg text-info"></i>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-success-subtle border-0 h-100 cursor-pointer" style="border-left: 4px solid #10b981;">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="bg-white rounded-2 p-3">
-                                    <i class="fa-solid fa-wifi text-success fs-3"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="text-success-emphasis text-uppercase small fw-bold mb-0">{{ __('Online') }}</h6>
-                                    <h2 class="display-6 fw-bold text-success mb-0">{{ $onlineOnus }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-danger-subtle border-0 h-100 cursor-pointer" style="border-left: 4px solid #ef4444;">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="bg-white rounded-2 p-3">
-                                    <i class="fa-solid fa-power-off text-danger fs-3"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="text-danger-emphasis text-uppercase small fw-bold mb-0">{{ __('Offline / LOS') }}</h6>
-                                    <h2 class="display-6 fw-bold text-danger mb-0">{{ $offlineOnus + $losOnus }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-warning-subtle border-0 h-100 cursor-pointer" style="border-left: 4px solid #f59e0b;">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="bg-white rounded-2 p-3">
-                                    <i class="fa-solid fa-triangle-exclamation text-warning fs-3"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="text-warning-emphasis text-uppercase small fw-bold mb-0">{{ __('Low Signal') }} (&lt; -25dBm)</h6>
-                                    <h2 class="display-6 fw-bold text-warning mb-0">{{ $badSignal }}</h2>
-                                </div>
-                            </div>
+                        <div>
+                            <p class="text-muted small mb-0">Uptime</p>
+                            <h5 class="fw-bold mb-0 small">
+                                {{ $olt->uptime ?? '-' }}
+                            </h5>
+                            @if($olt->last_online_at)
+                                <small class="text-muted">Sejak {{ $olt->last_online_at->diffForHumans() }}</small>
+                            @endif
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Tabs -->
-                <div class="card border-0">
-                    <div class="card-header bg-light border-bottom-0 p-0">
-                        <ul class="nav nav-tabs" id="oltTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitor" type="button" role="tab" aria-controls="monitor" aria-selected="true">
-                                    <i class="fa-solid fa-desktop me-2"></i> {{ __('Monitor ONU') }}
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="false">
-                                    <i class="fa-solid fa-info-circle me-2"></i> {{ __('System Info') }}
-                                </button>
-                            </li>
-                        </ul>
+        {{-- ONU Stats --}}
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 rounded-circle bg-primary bg-opacity-10">
+                            <i class="fa-solid fa-wifi fa-lg text-primary"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">ONU Terdaftar</p>
+                            <h5 class="fw-bold mb-0">{{ $stats['total_onts'] }}</h5>
+                            <small class="text-success">{{ $stats['online_onts'] }} Online</small>
+                            <small class="text-danger ms-1">{{ $stats['offline_onts'] }} Offline</small>
+                        </div>
                     </div>
-                    <div class="card-body p-4">
-                        <div class="tab-content" id="oltTabsContent">
-                            <!-- Monitor Tab -->
-                            <div class="tab-pane fade show active" id="monitor" role="tabpanel" aria-labelledby="monitor-tab">
-                                <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
-                                    <div class="position-relative" style="max-width: 400px;">
-                                        <i class="fa-solid fa-search position-absolute text-muted" style="left: 15px; top: 50%; transform: translateY(-50%);"></i>
-                                        <input type="text" id="onuSearch" class="form-control ps-5" placeholder="{{ __('Search ONU...') }}">
-                                    </div>
-                                </div>
+                </div>
+            </div>
+        </div>
 
-                                <div class="table-responsive">
-                                    <table id="onuTable" class="table table-hover align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>{{ __('Index') }}</th>
-                                                <th>{{ __('Name') }}</th>
-                                                <th>{{ __('SN') }}</th>
-                                                <th>{{ __('MAC') }}</th>
-                                                <th>{{ __('TX Power') }}</th>
-                                                <th>{{ __('RX Signal') }}</th>
-                                                <th>{{ __('Status') }}</th>
-                                                <th>{{ __('Last Sync') }}</th>
-                                                <th>{{ __('Action') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="onuTableBody">
-                                            @forelse($onus as $onu)
-                            <tr class="onu-row">
-                                <td><code class="text-body">{{ $onu->onu_index }}</code></td>
-                                <td class="fw-bold">{{ $onu->name }}</td>
-                                <td class="font-monospace text-muted small">{{ $onu->sn ?? '-' }}</td>
-                                <td class="font-monospace text-muted small">{{ $onu->mac ?? '-' }}</td>
-                                <td>{{ $onu->tx_power ?? '-' }} dBm</td>
-                                <td>
-                                    @php
-                                        $rx = floatval($onu->rx_power);
-                                        $sigClass = $rx < -27 ? 'text-danger' : ($rx < -25 ? 'text-warning' : 'text-success');
-                                    @endphp
-                                    @if($onu->rx_power)
-                                        <span class="fw-bold {{ $sigClass }}">{{ $onu->rx_power }} dBm</span>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge {{ $onu->status == 'online' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
-                                        <i class="fa-solid fa-{{ $onu->status == 'online' ? 'check-circle' : 'times-circle' }} me-1"></i>
-                                        {{ ucfirst($onu->status) }}
-                                    </span>
-                                </td>
-                                <td class="text-muted small">
-                                    @if($onu->last_updated)
-                                        {{ \Carbon\Carbon::parse($onu->last_updated)->format('d/m/Y H:i') }}
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="d-flex gap-1">
-                                        <button class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}" onclick="editName('{{ $onu->id }}', '{{ $onu->name }}')">
-                                            <i class="fa-solid fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-warning" title="{{ __('Reboot') }}" onclick="rebootOnu('{{ $onu->id }}', '{{ $onu->onu_index }}')">
-                                            <i class="fa-solid fa-power-off"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="9" class="text-center py-5">
-                                    <div class="mb-4">
-                                        <i class="fa-solid fa-plug-circle-xmark fa-4x text-warning mb-3"></i>
-                                        <h5 class="text-muted">{{ __('No ONU devices found yet') }}</h5>
-                                    </div>
-                                    <div class="text-start mx-auto" style="max-width: 500px;">
-                                        <div class="card bg-light border-0">
-                                            <div class="card-body">
-                                                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-info-circle me-2"></i>{{ __('Important Notes') }}</h6>
-                                                <ul class="mb-0 text-muted small">
-                                                    <li class="mb-2">
-                                                        <strong>Status "Online" hanya cek port</strong> - bukan koneksi SNMP
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <strong>Butuh PHP SNMP Extension!</strong> - Aktifkan di <code>php.ini</code>:<br>
-                                                        <code class="text-danger">extension=snmp</code> (hilangkan tanda <code>;</code> di depan)
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <strong>Setelah mengaktifkan SNMP</strong> - Klik tombol "Sync OLT Data" di atas
-                                                    </li>
-                                                    <li>
-                                                        <strong>Alternatif</strong> - Anda bisa menambahkan ONU secara manual di halaman lain
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                @if(method_exists($onus, 'links'))
-                                    <div class="mt-4">
-                                        {{ $onus->links() }}
-                                    </div>
+        {{-- CPU / Memory --}}
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 rounded-circle bg-warning bg-opacity-10">
+                            <i class="fa-solid fa-microchip fa-lg text-warning"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">CPU / Memory</p>
+                            <h5 class="fw-bold mb-0">
+                                @if($olt->cpu_usage !== null)
+                                    {{ $olt->cpu_usage }}%
+                                @else
+                                    -
                                 @endif
-                            </div>
-
-                            <!-- Info Tab -->
-                            <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
-                                <div class="row g-4">
-                                    <div class="col-md-6">
-                                        <div class="card">
-                                            <div class="card-header fw-bold">
-                                                <i class="fa-solid fa-circle-info me-2 text-muted"></i> {{ __('Basic Information') }}
-                                            </div>
-                                            <div class="card-body">
-                                                <dl class="row mb-0">
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Host / IP Address') }}</dt>
-                                                    <dd class="col-sm-8 fw-medium font-monospace">{{ $olt->host }}:{{ $olt->port }}</dd>
-
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Brand') }} / {{ __('Model') }}</dt>
-                                                    <dd class="col-sm-8 text-uppercase">{{ $olt->brand }} / {{ $olt->model ?? 'N/A' }}</dd>
-
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Username') }}</dt>
-                                                    <dd class="col-sm-8">{{ $olt->username ?? 'N/A' }}</dd>
-
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Uptime') }}</dt>
-                                                    <dd class="col-sm-8" id="sys-uptime">
-                                                        <span class="placeholder-glow"><span class="placeholder col-6"></span></span>
-                                                    </dd>
-
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Temperature') }}</dt>
-                                                    <dd class="col-sm-8" id="sys-temp">
-                                                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
-                                                    </dd>
-
-                                                    <dt class="col-sm-4 text-secondary">{{ __('Firmware') }}</dt>
-                                                    <dd class="col-sm-8 small text-muted" id="sys-version">
-                                                        <span class="placeholder-glow"><span class="placeholder col-8"></span></span>
-                                                    </dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="card h-100">
-                                            <div class="card-header fw-bold">
-                                                <i class="fa-solid fa-bolt me-2 text-muted"></i> {{ __('Management Actions') }}
-                                            </div>
-                                            <div class="card-body d-flex flex-column gap-2">
-                                                <button onclick="testConnection()" class="btn btn-outline-info text-start">
-                                                    <i class="fa-solid fa-plug me-2"></i> {{ __('Test Connection') }}
-                                                </button>
-                                                <button onclick="syncOLT()" class="btn btn-outline-success text-start">
-                                                    <i class="fa-solid fa-sync me-2"></i> {{ __('Sync ONUs from Device') }}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                /
+                                @if($olt->memory_usage !== null)
+                                    {{ $olt->memory_usage }}%
+                                @else
+                                    -
+                                @endif
+                            </h5>
+                            @if($olt->temperature !== null)
+                                <small class="text-muted">{{ $olt->temperature }}&deg;C</small>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Tabel ONU --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between py-3">
+            <h5 class="fw-bold mb-0">
+                <i class="fa-solid fa-list me-2"></i> Daftar ONU Terdaftar
+            </h5>
+            <div class="d-flex gap-2">
+                <input type="text" id="searchOnt" class="form-control form-control-sm" 
+                       placeholder="Cari ONU..." style="width: 200px;">
+                <select id="filterStatus" class="form-select form-select-sm" style="width: 130px;">
+                    <option value="">Semua Status</option>
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                    <option value="dying_gasp">Dying Gasp</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="ontTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="py-3">LOCATION</th>
+                            <th class="py-3">SERIAL / MAC</th>
+                            <th class="py-3">NAME</th>
+                            <th class="py-3">STATUS</th>
+                            <th class="py-3">SIGNAL</th>
+                            <th class="py-3">RX POWER</th>
+                            <th class="py-3">OLT TARGET</th>
+                            <th class="py-3">LAST SEEN</th>
+                            <th class="pe-3 py-3 text-end">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($onts as $index => $ont)
+                        <tr class="ont-row" 
+                            data-status="{{ $ont->oper_status }}"
+                            data-search="{{ strtolower($ont->ont_id . ' ' . ($ont->name ?? '') . ' ' . ($ont->vendor ?? '') . ' ' . ($ont->model ?? '') . ' ' . ($ont->serial_number ?? '') . ' ' . ($ont->mac_address ?? '')) }}">
+                            <td class="ps-3">
+                                <div class="fw-medium">{{ $ont->port->name ?? '-' }}</div>
+                            </td>
+                            <td>
+                                @if($ont->serial_number || $ont->mac_address)
+                                    <div class="fw-medium font-monospace text-sm">{{ $ont->serial_number ?? $ont->mac_address }}</div>
+                                    @if($ont->vendor)
+                                        <div class="text-muted text-xs">{{ $ont->vendor }}</div>
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="fw-medium">{{ $ont->name ?? '-' }}</td>
+                            <td>
+                                @if($ont->oper_status === 'online')
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                        <i class="fa-solid fa-circle-check me-1"></i> online
+                                    </span>
+                                @elseif($ont->oper_status === 'dying_gasp')
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                                        <i class="fa-solid fa-circle-exclamation me-1"></i> dying_gasp
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                                        <i class="fa-solid fa-circle-xmark me-1"></i> offline
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($ont->rx_power !== null)
+                                    @php
+                                        $signalLabel = 'Poor';
+                                        $signalIcon = 'fa-circle-exclamation';
+                                        $signalClass = 'text-danger';
+                                        if ($ont->rx_power > -23) {
+                                            $signalLabel = 'Excellent';
+                                            $signalIcon = 'fa-star';
+                                            $signalClass = 'text-success';
+                                        } elseif ($ont->rx_power > -25) {
+                                            $signalLabel = 'Good';
+                                            $signalIcon = 'fa-star';
+                                            $signalClass = 'text-info';
+                                        } elseif ($ont->rx_power > -29) {
+                                            $signalLabel = 'Fair';
+                                            $signalIcon = 'fa-star-half-stroke';
+                                            $signalClass = 'text-warning';
+                                        }
+                                    @endphp
+                                    <span class="{{ $signalClass }}">
+                                        <i class="fa-solid {{ $signalIcon }} me-1"></i>{{ $signalLabel }}
+                                    </span>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>
+                                @if($ont->rx_power !== null)
+                                    @php
+                                        $rxClass = 'text-muted';
+                                        if ($ont->rx_power > -23) {
+                                            $rxClass = 'text-success';
+                                        } elseif ($ont->rx_power > -25) {
+                                            $rxClass = 'text-warning';
+                                        } elseif ($ont->rx_power > -29) {
+                                            $rxClass = 'text-danger';
+                                        } else {
+                                            $rxClass = 'text-danger-emphasis';
+                                        }
+                                    @endphp
+                                    <span class="{{ $rxClass }}">
+                                        {{ number_format($ont->rx_power, 2) }} dBm
+                                    </span>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>{{ $olt->name }}</td>
+                            <td class="text-muted small">
+                                {{ $ont->last_polled_at ? $ont->last_polled_at->format('n/j/Y, g:i:s A') : '-' }}
+                            </td>
+                            <td class="pe-3 text-end">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="showOntDetail({{ $ont->id }})" title="Detail">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" 
+                                        onclick="editOnt({{ $ont->id }}, '{{ $ont->name ?? '' }}', {{ $olt->id }})" title="Edit Nama">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteOnt({{ $ont->id }}, '{{ $ont->name ?? $ont->ont_id }}', {{ $olt->id }})" title="Hapus">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-wifi fa-3x mb-3 text-secondary"></i>
+                                <p class="mb-0">Belum ada ONU terdaftar</p>
+                                <small>Lakukan polling untuk mendapatkan data ONU</small>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Port Stats --}}
+    <div class="row g-3">
+        @foreach($ports as $port)
+        <div class="col-md-4 col-lg-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ $port->name }}</h6>
+                            <span class="badge bg-{{ $port->oper_status === 'up' ? 'success' : 'secondary' }}">
+                                {{ strtoupper($port->oper_status) }}
+                            </span>
+                        </div>
+                        <span class="badge bg-{{ $port->type === 'pon' ? 'info' : ($port->type === 'xge' ? 'warning' : 'secondary') }}">
+                            {{ strtoupper($port->type) }}
+                        </span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">RX</span>
+                            <span>{{ formatBytes($port->rx_bytes) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">TX</span>
+                            <span>{{ formatBytes($port->tx_bytes) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
 </div>
 
-<!-- Modals -->
-<div class="modal fade" id="editNameModal" tabindex="-1" aria-hidden="true">
+<!-- Modal Edit ONU -->
+<div class="modal fade" id="editOntModal" tabindex="-1" aria-labelledby="editOntModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Edit ONU Name') }}</h5>
+                <h5 class="modal-title" id="editOntModalLabel">Edit Nama ONU</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <input type="hidden" id="editOnuId">
-                <div class="mb-3">
-                    <label for="newOnuName" class="form-label">{{ __('Name') }}</label>
-                    <input type="text" class="form-control" id="newOnuName">
+            <form id="editOntForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editOntName" class="form-label">Nama ONU</label>
+                        <input type="text" class="form-control" id="editOntName" name="name" required>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                <button type="button" class="btn btn-primary" onclick="saveOnuName()">{{ __('Save') }}</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Toast -->
-<div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-    <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <i class="fa-solid fa-info-circle me-2 text-primary"></i>
-            <strong class="me-auto" id="toastTitle">Notification</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="toastBody"></div>
-    </div>
-</div>
+@endsection
 
+@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetchSystemInfo();
-    
-    document.getElementById('onuSearch').addEventListener('input', function(e) {
-        const search = e.target.value.toLowerCase();
-        document.querySelectorAll('.onu-row').forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(search) ? '' : 'none';
-        });
-    });
+// Select OLT dropdown
+document.getElementById('selectOlt')?.addEventListener('change', function() {
+    if (this.value) {
+        window.location.href = '/olt/' + this.value;
+    }
 });
 
-function syncOLT() {
-    const btn = event.currentTarget;
-    const oldHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Syncing...';
-    showToast('{{ __('Pulling SNMP data...') }}', 'info');
+// Search & Filter ONU Table
+document.getElementById('searchOnt')?.addEventListener('input', filterOnts);
+document.getElementById('filterStatus')?.addEventListener('change', filterOnts);
+
+function filterOnts() {
+    const search = document.getElementById('searchOnt')?.value.toLowerCase() || '';
+    const status = document.getElementById('filterStatus')?.value || '';
     
-    fetch('{{ route('olt.onus.sync', $olt) }}', {
+    document.querySelectorAll('.ont-row').forEach(row => {
+        const matchSearch = !search || row.dataset.search.includes(search);
+        const matchStatus = !status || row.dataset.status === status;
+        row.style.display = matchSearch && matchStatus ? '' : 'none';
+    });
+}
+
+function pollOlt(id) {
+    const btn = event?.target?.closest('button');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Polling...';
+    }
+
+    Swal.fire({
+        title: 'Polling OLT',
+        text: 'Mengambil data dari OLT...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch(`/olt/${id}/poll`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
         }
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-        if (data.success) {
-            showToast(data.message, 'success');
+        Swal.close();
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Polling';
+        }
+
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Polling Berhasil',
+                html: `Ditemukan <b>${data.onts_found}</b> ONU dalam ${data.duration_ms}ms`,
+                timer: 3000,
+                showConfirmButton: false
+            });
             setTimeout(() => location.reload(), 1500);
         } else {
-            showToast(data.message, 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'Polling Gagal',
+                text: data.error || 'Terjadi kesalahan koneksi ke OLT',
+            });
         }
     })
-    .catch(error => {
-        showToast('{{ __('Sync failed') }}: ' + error.message, 'error');
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
+    .catch(err => {
+        Swal.close();
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Polling';
+        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Network Error',
+            text: err.message,
+        });
     });
 }
 
-function editName(id, name) {
-    document.getElementById('editOnuId').value = id;
-    document.getElementById('newOnuName').value = name;
-    new bootstrap.Modal(document.getElementById('editNameModal')).show();
+function showOntDetail(id) {
+    window.location.href = `/olt/onu/${id}/detail`;
 }
 
-function saveOnuName() {
-    const id = document.getElementById('editOnuId').value;
-    const name = document.getElementById('newOnuName').value;
-    
-    fetch('/olt/onu/' + id, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ name: name })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('{{ __('Name updated successfully!') }}', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editNameModal')).hide();
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast(data.message || '{{ __('Error updating name') }}', 'error');
+function rebootOnt(id, ontId) {
+    Swal.fire({
+        title: 'Reboot ONU',
+        html: `Yakin ingin me-reboot ONU <b>${ontId}</b>?<br><small class="text-warning">Koneksi pelanggan akan terputus sementara</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Reboot',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#f59e0b',
+        reverseButtons: true
+    }).then(result => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Mengirim perintah...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch(`/olt/onu/${id}/reboot`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                Swal.close();
+                Swal.fire({
+                    icon: data.success ? 'success' : 'error',
+                    title: data.success ? 'Reboot Berhasil' : 'Reboot Gagal',
+                    text: data.message,
+                });
+            })
+            .catch(err => {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message,
+                });
+            });
         }
-    })
-    .catch(error => {
-        showToast('{{ __('Error') }}: ' + error.message, 'error');
     });
 }
 
-function rebootOnu(id, index) {
-    if (!confirm('{{ __('Are you sure you want to reboot ONU') }} ' + index + '?')) return;
+function editOnt(id, currentName, oltId) {
+    const form = document.getElementById('editOntForm');
+    form.action = '/olt/onu/' + id;
+    document.getElementById('editOntName').value = currentName;
     
-    showToast('{{ __('Sending reboot command...') }}', 'info');
-    
-    fetch('/olt/onu/' + id + '/reboot', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        showToast(data.message || '{{ __('Reboot command sent') }}', data.success ? 'success' : 'error');
-    })
-    .catch(error => {
-        showToast('{{ __('Error') }}: ' + error.message, 'error');
-    });
+    const modal = new bootstrap.Modal(document.getElementById('editOntModal'));
+    modal.show();
 }
 
-function fetchSystemInfo() {
-    fetch('{{ route('olt.system_info', $olt) }}')
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            document.getElementById('sys-uptime').innerHTML = '<span class="text-danger" title="' + data.error + '">Error</span>';
-            document.getElementById('sys-temp').innerHTML = '<span class="text-danger">Error</span>';
-            document.getElementById('sys-version').innerHTML = '<span class="text-danger">' + data.error + '</span>';
-        } else {
-            document.getElementById('sys-uptime').innerText = data.uptime || 'N/A';
-            document.getElementById('sys-temp').innerText = data.temp || 'N/A';
-            document.getElementById('sys-version').innerText = data.version || 'N/A';
+function deleteOnt(id, ontId, oltId) {
+    Swal.fire({
+        title: 'Hapus ONU',
+        html: `Yakin ingin menghapus ONU <b>${ontId}</b>?<br><small class="text-danger">Data ONU akan dihapus secara permanen</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then(result => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/olt/onu/' + id;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+            form.appendChild(csrfInput);
+            
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            form.appendChild(methodInput);
+            
+            document.body.appendChild(form);
+            form.submit();
         }
-    })
-    .catch(error => {
-        document.getElementById('sys-uptime').innerHTML = '<span class="text-danger">Failed</span>';
-        document.getElementById('sys-temp').innerHTML = '<span class="text-danger">Failed</span>';
-        document.getElementById('sys-version').innerHTML = '<span class="text-danger">Failed to fetch</span>';
     });
-}
-
-function testConnection() {
-    const btn = event.target.closest('button');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> {{ __('Testing...') }}';
-    btn.disabled = true;
-
-    fetch('{{ route('olt.test_connection') }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ id: {{ $olt->id }} })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('{{ __('Success!') }}: ' + data.message, 'success');
-        } else {
-            showToast('{{ __('Error!') }}: ' + data.message, 'error');
-        }
-    })
-    .catch(error => {
-        showToast('{{ __('Error!') }}: ' + error.message, 'error');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
-function showToast(message, type = 'info') {
-    const toastEl = document.getElementById('toast');
-    const toastBody = document.getElementById('toastBody');
-    const toastTitle = document.getElementById('toastTitle');
-    
-    toastBody.textContent = message;
-    
-    const header = toastEl.querySelector('.toast-header');
-    header.classList.remove('bg-primary', 'bg-success', 'bg-danger', 'bg-warning');
-    
-    switch(type) {
-        case 'success':
-            toastTitle.innerHTML = '<i class="fa-solid fa-check-circle me-2 text-success"></i> Success';
-            break;
-        case 'error':
-            toastTitle.innerHTML = '<i class="fa-solid fa-times-circle me-2 text-danger"></i> Error';
-            break;
-        case 'warning':
-            toastTitle.innerHTML = '<i class="fa-solid fa-exclamation-triangle me-2 text-warning"></i> Warning';
-            break;
-        default:
-            toastTitle.innerHTML = '<i class="fa-solid fa-info-circle me-2 text-primary"></i> Info';
-    }
-    
-    const toast = new bootstrap.Toast(toastEl);
-    toast.show();
 }
 </script>
-@endsection
+@endpush

@@ -612,10 +612,10 @@
                 </a>
                 @endif
 
-                <a class="sidebar-item {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#opsSdmCollapse" role="button" aria-expanded="{{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="opsSdmCollapse">
-                    <i class="fa-solid fa-users-gear"></i> {{ __('SDM & Kehadiran') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                <a class="sidebar-item {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#hrCollapse" role="button" aria-expanded="{{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="hrCollapse">
+                    <i class="fa-solid fa-users-gear"></i> {{ __('Kepegawaian') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'show' : '' }}" id="opsSdmCollapse">
+                <div class="collapse {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'show' : '' }}" id="hrCollapse">
                     <div class="ps-3">
                         @if($hasPermission('employee.view'))
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ $routeIs('employees.*') ? 'active' : '' }}">
@@ -629,7 +629,7 @@
                         @endif
                         @if($hasPermission('schedule.view'))
                         <a href="{{ route('schedules.index') }}" class="sidebar-item {{ $routeIs('schedules.*') ? 'active' : '' }}">
-                            <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Teknisi') }}
+                            <i class="fa-regular fa-calendar-alt"></i> {{ __('Jadwal Karyawan') }}
                         </a>
                         @endif
                         @if($hasPermission('setting.view'))

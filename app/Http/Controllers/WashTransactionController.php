@@ -47,6 +47,11 @@ class WashTransactionController extends Controller implements HasMiddleware
         ],
     ];
 
+    private function getLoyaltyTarget(): int
+    {
+        return (int) Setting::getValue('wash_loyalty_target', 11);
+    }
+
     public function dashboard()
     {
         $today = now()->format('Y-m-d');
@@ -179,9 +184,10 @@ class WashTransactionController extends Controller implements HasMiddleware
         if ($loyaltyType && $loyaltyValue) {
             $visitCount = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->count();
         }
-        $nextBonusIn = 10 - ($visitCount % 10);
+        $loyaltyTarget = $this->getLoyaltyTarget();
+        $nextBonusIn = $loyaltyTarget - ($visitCount % $loyaltyTarget);
         if ($nextBonusIn === 0) {
-            $nextBonusIn = 10;
+            $nextBonusIn = $loyaltyTarget;
         }
 
         if ($customer || $visitCount > 0) {
@@ -191,6 +197,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'visit_count' => $visitCount,
                 'free_wash_eligibility' => $loyaltyType === 'plate' ? (int) ($customer->free_wash_eligibility ?? 0) : 0,
                 'next_bonus_in' => $nextBonusIn,
+                'loyalty_target' => $loyaltyTarget,
                 'loyalty_basis' => $loyaltyType,
             ]);
         }
@@ -199,7 +206,8 @@ class WashTransactionController extends Controller implements HasMiddleware
             'found' => false,
             'visit_count' => 0,
             'free_wash_eligibility' => 0,
-            'next_bonus_in' => 10,
+            'next_bonus_in' => $loyaltyTarget,
+            'loyalty_target' => $loyaltyTarget,
             'loyalty_basis' => $loyaltyType,
         ]);
     }
@@ -304,10 +312,11 @@ class WashTransactionController extends Controller implements HasMiddleware
             );
             $hasLoyaltyPlate = $loyaltyType === 'plate' && ! empty($loyaltyValue);
             $visitCountBefore = 0;
-            $isTenthVisit = false;
+            $isLoyaltyBonusVisit = false;
+            $loyaltyTarget = $this->getLoyaltyTarget();
             if ($hasLoyaltyPlate) {
                 $visitCountBefore = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->lockForUpdate()->count();
-                $isTenthVisit = (($visitCountBefore + 1) % 10) === 0;
+                $isLoyaltyBonusVisit = (($visitCountBefore + 1) % $loyaltyTarget) === 0;
             }
 
             if ($hasLoyaltyPlate && $customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
@@ -318,7 +327,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 }
             }
 
-            if ($discountAmount <= 0 && $isTenthVisit && count($items) > 0) {
+            if ($discountAmount <= 0 && $isLoyaltyBonusVisit && count($items) > 0) {
                 $discountAmount = $items[0]['price'];
                 $discountType = 'loyalty';
             }
@@ -326,7 +335,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             if ($customer) {
                 $nextVisitCount = ((int) $customer->visit_count) + 1;
                 $customer->increment('visit_count');
-                if ($hasLoyaltyPlate && $nextVisitCount % 10 === 0 && $discountType !== 'loyalty') {
+                if ($hasLoyaltyPlate && $nextVisitCount % $loyaltyTarget === 0 && $discountType !== 'loyalty') {
                     $customer->increment('free_wash_eligibility');
                 }
             }
@@ -960,8 +969,9 @@ class WashTransactionController extends Controller implements HasMiddleware
         });
 
         $visitCount = (int) $query->count();
-        $progressInCycle = $visitCount % 10;
-        $visitsToNextBonus = $progressInCycle === 0 ? 0 : (10 - $progressInCycle);
+        $loyaltyTarget = $this->getLoyaltyTarget();
+        $progressInCycle = $visitCount % $loyaltyTarget;
+        $visitsToNextBonus = $progressInCycle === 0 ? 0 : ($loyaltyTarget - $progressInCycle);
 
         return [$visitCount, $visitsToNextBonus];
     }

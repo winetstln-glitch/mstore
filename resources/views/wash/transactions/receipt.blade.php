@@ -29,9 +29,10 @@
     $cashierName = strtoupper(trim((string) ($transaction->user->name ?? '')));
     $cashierName = $cashierName !== '' ? $cashierName : '-';
     $printedAt = date('d/m/Y H:i:s');
+    $loyaltyTarget = (int) \App\Models\Setting::getValue('wash_loyalty_target', 11);
     $discountLabel = 'Diskon';
     if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
-        $discountLabel = 'Bonus Cuci 10x';
+        $discountLabel = 'Bonus Cuci ' . $loyaltyTarget . 'x';
     } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
         $discountLabel = 'Voucher Cuci Gratis';
     }
@@ -446,7 +447,8 @@ const data = {{ Js::from([
     'method'=>strtoupper($transaction->payment_method ?? 'CASH'),
     'cash'=>(float)($transaction->cash_amount ?? 0),
     'change'=>(float)($transaction->change_amount ?? 0),
-    'printed_at'=>$printedAt
+    'printed_at'=>$printedAt,
+    'loyalty_target' => $loyaltyTarget
 ]) }};
 
 // === PREVIEW ===
@@ -589,7 +591,7 @@ function buildEscPosText(data){
     data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});
     if(data.discount>0){txt+="[L]"+data.discount_label+" [R]-"+data.discount+"\n";}
     if(data.has_holiday_adjustment){txt+="[L]Penyesuaian Hari Raya [R]"+(data.holiday_adjustment_total>=0?"+":"-")+Math.abs(data.holiday_adjustment_total)+"\n";}
-    if(data.is_loyalty_bonus){txt+="[C]<b>*** BONUS CUCI 10X ***</b>\n";}
+    if(data.is_loyalty_bonus){txt+="[C]<b>*** BONUS CUCI " + data.loyalty_target + "X ***</b>\n";}
     txt+="[L]TOTAL [R]"+data.total+"\n";
     txt+="[L]Metode: "+data.method+"\n";
     if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
@@ -748,7 +750,7 @@ async function printBluetoothDirect(){
             esc.line();
             if(data.discount>0) esc.justify(data.discount_label,"-"+formatIdr(data.discount));
             if(data.has_holiday_adjustment) esc.justify("Penyesuaian Hari Raya",(data.holiday_adjustment_total>=0?"+":"-")+formatIdr(Math.abs(data.holiday_adjustment_total)));
-            if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI 10X ***\n");esc.bold(false);esc.left();}
+            if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI " + data.loyalty_target + "X ***\n");esc.bold(false);esc.left();}
             esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
             esc.add("Metode: "+data.method+"\n");
             if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}

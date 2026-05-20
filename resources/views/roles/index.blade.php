@@ -46,7 +46,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                        {{ $role->permissions->count() }} {{ __('Permissions') }}
+                                        {{ $role->permissions_count }} {{ __('Permissions') }}
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
@@ -55,8 +55,8 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         
-                                        @if($role->name !== 'admin')
-                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure?') }}');">
+                                        @if(!in_array($role->name, ['admin', 'customer']))
+                                            <form action="{{ route('roles.destroy', $role) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this role?') }}');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">

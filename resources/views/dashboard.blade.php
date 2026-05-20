@@ -118,6 +118,38 @@
             <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
         </div>
     </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('OLT Online') }}</h6>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['online_olts'] }} / {{ $stats['total_olts'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Total OLT terdaftar') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-body-secondary small fw-bold mb-0">{{ __('ONU Online') }}</h6>
+                    <div class="bg-success bg-opacity-10 text-success rounded p-2">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ $stats['online_onts'] }} / {{ $stats['total_onts'] }}</h3>
+                <div class="small text-body-secondary">
+                    <span>{{ __('Total ONU terdaftar') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4 mb-4">

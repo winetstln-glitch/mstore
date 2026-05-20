@@ -1,330 +1,411 @@
 <?php
+// app/Http/Controllers/OLTController.php
 
 namespace App\Http\Controllers;
 
-use App\Models\Olt;
+use App\Models\OLT;
+use App\Models\ONT;
+use App\Models\OLTPort;
+use App\Models\Alarm;
+use App\Models\PollingLog;
+use App\Services\OLT\OLTFactory;
+use App\Services\OLT\OLTPollService;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
-class OLTController extends Controller implements HasMiddleware
+class OLTController extends Controller
 {
-    /**
-     * Get the middleware that should be assigned to the controller.
-     */
-    public static function middleware(): array
+    protected OLTFactory $factory;
+    protected OLTPollService $pollService;
+
+    public function __construct(OLTFactory $factory, OLTPollService $pollService)
     {
-        return [
-            new Middleware('permission:olt.view', only: ['index', 'show']),
-            new Middleware('permission:olt.create', only: ['create', 'store']),
-            new Middleware('permission:olt.edit', only: ['edit', 'update']),
-            new Middleware('permission:olt.delete', only: ['destroy']),
-            new Middleware('permission:olt.test_connection', only: ['testConnection']),
-        ];
+        $this->factory = $factory;
+        $this->pollService = $pollService;
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of OLTs.
      */
     public function index()
     {
-        $olts = Olt::paginate(10);
-
-        return view('olt.index', compact('olts'));
+        $olts = OLT::withCount('onts')->orderBy('name')->paginate(20);
+        
+        $stats = [
+            'total_olts' => OLT::count(),
+            'online_olts' => OLT::where('status', 'online')->count(),
+            'total_onts' => ONT::withoutTrashed()->has('olt')->count(),
+            'online_onts' => ONT::withoutTrashed()->has('olt')->where('oper_status', 'online')->count(),
+        ];
+        
+        return view('olt.index', compact('olts', 'stats'));
     }
 
     /**
-        /**
-     * Display the specified resource.
-     */
-    public function show(Olt $olt)
-    {
-        // 1. Hitung statistik dari DB (Kode asli Anda)
-        $totalOnus = $olt->onus()->count();
-        $onlineOnus = $olt->onus()->where('status', 'online')->count();
-        $offlineOnus = $olt->onus()->where('status', 'offline')->count();
-        $losOnus = $olt->onus()->where('status', 'los')->count();
-
-        // Signal distribution
-        $goodSignal = $olt->onus()->where('signal', '>=', -25)->count();
-        $warningSignal = $olt->onus()->whereBetween('signal', [-27, -25.1])->count();
-        $badSignal = $olt->onus()->where('signal', '<', -27)->count();
-
-        // --- TAMBAHKAN KODE INI (PENTING) ---
-        // Ambil daftar ONU yang terkait dengan OLT ini, sekaligus pagination
-        // Pastikan model Olt punya relasi hasMany('onus')
-        $onus = $olt->onus()->orderBy('interface')->paginate(20);
-        // ---------------------------------------
-
-        // 2. Kirim variabel $onus ke View melalui compact
-        return view('olt.show', compact(
-            'olt',
-            'onus', // <-- Jangan lupa tambahkan ini agar data masuk ke View
-            'totalOnus', 'onlineOnus', 'offlineOnus', 'losOnus',
-            'goodSignal', 'warningSignal', 'badSignal'
-        ));
-    }
-
-    /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new OLT.
      */
     public function create()
     {
-        return view('olt.create');
+        return view('olt.form');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created OLT.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'host' => 'required|string|max:255',
-            'port' => 'required|integer',
-            'username' => 'required|string|max:255',
-            'password' => 'required|string|max:255',
-            'type' => 'required|string|in:epon,gpon,xpon',
-            'brand' => 'required|string|in:zte,huawei,hsgq,vsol,cdata',
-            'model' => 'nullable|string|max:255',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:100',
+            'ip_address' => 'required|ip|unique:olts,ip_address,NULL,id,deleted_at,NULL',
+            'vendor' => 'required|string|max:50',
+            'model' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:200',
+            'read_community' => 'required|string|max:100',
+            'write_community' => 'nullable|string|max:100',
+            'snmp_version' => 'in:v1,v2c,v3',
+            'poll_interval' => 'integer|min:30|max:86400',
+            'snmp_timeout' => 'integer|min:1|max:60',
+            'snmp_retries' => 'integer|min:0|max:10',
             'is_active' => 'boolean',
-            'snmp_port' => 'nullable|integer',
-            'snmp_community' => 'nullable|string|max:255',
-            'snmp_version' => 'nullable|string|max:10',
-            'web_user' => 'nullable|string|max:255',
-            'web_password' => 'nullable|string|max:255',
         ]);
 
-        [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
-        $validated['host'] = $host;
-        $validated['port'] = $port;
-
-        Olt::create($validated);
-
-        return redirect()->route('olt.index')->with('success', __('OLT created successfully.'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Olt $olt)
-    {
-        return view('olt.edit', compact('olt'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Olt $olt)
-    {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'host' => 'sometimes|required|string|max:255',
-            'port' => 'sometimes|required|integer',
-            'username' => 'sometimes|required|string|max:255',
-            'password' => 'nullable|string|max:255', // Password optional on update
-            'type' => 'sometimes|required|string|in:epon,gpon,xpon',
-            'brand' => 'sometimes|required|string|in:zte,huawei,hsgq,vsol,cdata',
-            'model' => 'nullable|string|max:255',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'snmp_port' => 'nullable|integer',
-            'snmp_community' => 'nullable|string|max:255',
-            'snmp_version' => 'nullable|string|max:10',
-            'web_user' => 'nullable|string|max:255',
-            'web_password' => 'nullable|string|max:255',
-        ]);
-
-        if (isset($validated['host']) && isset($validated['port'])) {
-            [$host, $port] = $this->normalizeHostPort($validated['host'], $validated['port']);
-            $validated['host'] = $host;
-            $validated['port'] = $port;
-        }
-
-        if (empty($validated['password'])) {
-            unset($validated['password']);
-        }
-
-        if (empty($validated['web_password'])) {
-            unset($validated['web_password']);
-        }
-
-        $olt->update($validated);
-
-        if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'id' => $olt->id]);
-        }
-
-        return redirect()->route('olt.index')->with('success', __('OLT updated successfully.'));
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Olt $olt)
-    {
-        $olt->delete();
-
-        if (request()->wantsJson()) {
-            return response()->json(['success' => true]);
-        }
-
-        return redirect()->route('olt.index')->with('success', __('OLT deleted successfully.'));
-    }
-
-    /**
-     * Check OLT status (ping/port check).
-     */
-    public function checkStatus(Olt $olt)
-    {
-        $host = $olt->host;
-        $port = $olt->port;
-        $timeout = 2; // Fast check
-
+        $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['status'] = 'offline';
+        
+        $olt = OLT::create($validated);
+        
         try {
-            $connection = @fsockopen($host, $port, $errno, $errstr, $timeout);
-
-            if ($connection) {
-                fclose($connection);
-
-                return response()->json(['status' => 'online', 'message' => __('Online')]);
-            } else {
-                return response()->json(['status' => 'offline', 'message' => __('Offline')]);
+            $driver = $this->factory->create($olt);
+            $connected = $driver->testConnection();
+            if ($connected) {
+                $olt->update(['status' => 'online', 'last_online_at' => now()]);
             }
         } catch (\Throwable $e) {
-            return response()->json(['status' => 'offline', 'message' => __('Error')]);
+            Log::error("Error testing connection after creating OLT: " . $e->getMessage());
         }
+        
+        return redirect()->route('olt.index')->with('success', 'OLT berhasil ditambahkan');
     }
 
     /**
-     * Get System Info from OLT (AJAX).
+     * Display the specified OLT with its ONUs.
      */
-    public function getSystemInfo(Olt $olt)
+    public function show(OLT $olt)
     {
-        try {
-            $service = new \App\Services\Olt\OltService;
-            $driver = $service->getDriver($olt);
-            $driver->connect($olt);
-            $info = $driver->getSystemInfo();
-            $driver->disconnect();
-
-            return response()->json($info);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'uptime' => 'Error',
-                'version' => 'Error',
-                'temp' => 'Error',
-                'cpu' => 'Error',
-                'error' => $e->getMessage(),
-            ], 200);
-        }
+        $olt->load('ports');
+        $onts = ONT::where('olt_id', $olt->id)
+            ->with('port')
+            ->orderBy('ont_id')
+            ->get();
+        $ports = $olt->ports;
+        
+        // Get all OLTs for select dropdown
+        $allOlts = OLT::orderBy('name')->get();
+        
+        $stats = [
+            'total_onts' => $onts->count(),
+            'online_onts' => $onts->where('oper_status', 'online')->count(),
+            'offline_onts' => $onts->where('oper_status', 'offline')->count(),
+            'dying_gasp_onts' => $onts->where('oper_status', 'dying_gasp')->count(),
+        ];
+        
+        // Latest polling log
+        $lastPoll = PollingLog::where('olt_id', $olt->id)->latest()->first();
+        
+        return view('olt.show', compact('olt', 'onts', 'ports', 'stats', 'lastPoll', 'allOlts'));
     }
 
     /**
-     * Test connection to OLT.
+     * Show the form for editing the specified OLT.
+     */
+    public function edit(OLT $olt)
+    {
+        return view('olt.form', compact('olt'));
+    }
+
+    /**
+     * Update the specified OLT.
+     */
+    public function update(Request $request, OLT $olt)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'ip_address' => 'required|ip|unique:olts,ip_address,' . $olt->id . ',id,deleted_at,NULL',
+            'vendor' => 'required|string|max:50',
+            'model' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:200',
+            'read_community' => 'required|string|max:100',
+            'write_community' => 'nullable|string|max:100',
+            'snmp_version' => 'in:v1,v2c,v3',
+            'poll_interval' => 'integer|min:30|max:86400',
+            'snmp_timeout' => 'integer|min:1|max:60',
+            'snmp_retries' => 'integer|min:0|max:10',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
+        
+        $olt->update($validated);
+        
+        return redirect()->route('olt.index')->with('success', 'OLT berhasil diupdate');
+    }
+
+    /**
+     * Remove the specified OLT.
+     */
+    public function destroy(OLT $olt)
+    {
+        $olt->onts()->delete();
+        $olt->delete();
+        
+        return redirect()->route('olt.index')->with('success', 'OLT berhasil dihapus');
+    }
+
+    /**
+     * Test SNMP connection to OLT (used in create/edit form).
      */
     public function testConnection(Request $request)
     {
-        set_time_limit(120); // Allow longer execution time
-
         $request->validate([
-            'id' => 'nullable|integer|exists:olts,id',
-            'host' => 'required_without:id',
-            'port' => 'required_without:id',
-            'username' => 'nullable|string',
-            'password' => 'nullable|string',
-            'brand' => 'nullable|string',
+            'ip_address' => 'required|ip',
+            'vendor' => 'required|string|max:50',
+            'read_community' => 'required|string|max:100',
         ]);
 
-        // Scenario 1: Test existing OLT by ID (Preferred for Index Page)
-        if ($request->filled('id')) {
-            try {
-                $olt = Olt::findOrFail($request->id);
-                $service = new \App\Services\Olt\OltService;
-                $result = $service->testLogin($olt, 20); // 20s timeout
-
-                if ($result['success']) {
-                    return response()->json(['success' => true, 'message' => __('Connection and Login successful!')]);
-                } else {
-                    \Illuminate\Support\Facades\Log::error("OLT Test Connection Failed (ID: {$olt->id}): ".$result['message']);
-
-                    return response()->json(['success' => false, 'message' => __('Login failed: :message', ['message' => $result['message']])], 500);
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error("OLT Test Connection Error (ID: {$request->id}): ".$e->getMessage());
-
-                return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
-            }
-        }
-
-        // Scenario 2: Test manually provided credentials (Preferred for Create/Edit Page)
-        [$host, $port] = $this->normalizeHostPort($request->host, $request->port);
-
-        if ($request->filled(['username', 'password', 'brand'])) {
-            try {
-                $service = new \App\Services\Olt\OltService;
-
-                // Create a temporary OLT object
-                $tempOlt = new Olt([
-                    'host' => $host,
-                    'port' => $port,
-                    'username' => $request->username,
-                    'password' => $request->password,
-                    'brand' => $request->brand,
-                ]);
-
-                $result = $service->testLogin($tempOlt, 20); // 20s timeout
-
-                if ($result['success']) {
-                    return response()->json(['success' => true, 'message' => __('Connection and Login successful!')]);
-                } else {
-                    \Illuminate\Support\Facades\Log::error('OLT Manual Test Failed: '.$result['message']);
-
-                    return response()->json(['success' => false, 'message' => __('Login failed: :message', ['message' => $result['message']])], 500);
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('OLT Manual Test Error: '.$e->getMessage());
-
-                return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
-            }
-        }
-
-        // Scenario 3: Fallback to simple port check (if no credentials provided)
         try {
-            $connection = @fsockopen($host, $port, $errno, $errstr, 5);
-
-            if ($connection) {
-                fclose($connection);
-
-                return response()->json(['success' => true, 'message' => __('Connection successful! Port is open. (Login not tested)')]);
-            } else {
-                return response()->json(['success' => false, 'message' => __('Connection failed: :message', ['message' => "$errstr ($errno)"])], 500);
+            $driver = $this->factory->createFromArray($request->all());
+            $connected = $driver->testConnection();
+            
+            if ($connected) {
+                $info = $driver->getDeviceInfo();
+                return response()->json([
+                    'connected' => true,
+                    'info' => $info,
+                ]);
             }
+            
+            return response()->json([
+                'connected' => false,
+                'message' => 'Tidak dapat terhubung ke OLT. Periksa IP dan community string.',
+            ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => __('Connection error: :message', ['message' => $e->getMessage()])], 500);
+            Log::error("OLT test connection error: " . $e->getMessage());
+            return response()->json([
+                'connected' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ]);
         }
     }
 
-    protected function normalizeHostPort($host, $port): array
+    /**
+     * Check OLT status (SNMP ping).
+     */
+    public function checkStatus(OLT $olt)
     {
-        $normalizedHost = trim((string) $host);
-        $normalizedPort = $port;
+        try {
+            $driver = $this->factory->create($olt);
+            $online = $driver->testConnection();
+            
+            $olt->update([
+                'status' => $online ? 'online' : 'offline',
+                'last_polled_at' => now(),
+                'last_online_at' => $online ? now() : $olt->last_online_at,
+            ]);
+            
+            return response()->json([
+                'status' => $olt->status,
+                'last_polled' => $olt->last_polled_at?->diffForHumans(),
+            ]);
+        } catch (\Throwable $e) {
+            $olt->update(['status' => 'offline']);
+            return response()->json(['status' => 'offline', 'error' => $e->getMessage()]);
+        }
+    }
 
-        if (strpos($normalizedHost, ':') !== false) {
-            $parts = explode(':', $normalizedHost);
-            $maybePort = array_pop($parts);
-
-            if (is_numeric($maybePort)) {
-                $normalizedHost = implode(':', $parts);
-                $normalizedPort = (int) $maybePort;
+    /**
+     * Batch check status of all active OLTs.
+     */
+    public function batchCheckStatus()
+    {
+        $olts = OLT::where('is_active', true)->get();
+        $results = [];
+        
+        foreach ($olts as $olt) {
+            try {
+                $driver = $this->factory->create($olt);
+                $online = $driver->testConnection();
+                $olt->update(['status' => $online ? 'online' : 'offline']);
+                $results[] = [
+                    'id' => $olt->id,
+                    'name' => $olt->name,
+                    'status' => $olt->status,
+                ];
+            } catch (\Throwable $e) {
+                $olt->update(['status' => 'offline']);
+                $results[] = [
+                    'id' => $olt->id,
+                    'name' => $olt->name,
+                    'status' => 'offline',
+                    'error' => $e->getMessage(),
+                ];
             }
         }
+        
+        return response()->json([
+            'checked' => count($results),
+            'results' => $results,
+        ]);
+    }
 
-        return [$normalizedHost, $normalizedPort];
+    /**
+     * Get system info from OLT.
+     */
+    public function systemInfo(OLT $olt)
+    {
+        try {
+            $driver = $this->factory->create($olt);
+            
+            $info = $driver->getDeviceInfo();
+            $resources = $driver->getSystemResources();
+            $ports = $driver->getPorts();
+            
+            return response()->json([
+                'success' => true,
+                'device' => $info,
+                'resources' => $resources,
+                'ports' => $ports,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Sync ONUs from OLT via SNMP.
+     */
+    public function syncOnus(Request $request, OLT $olt)
+    {
+        $request->validate(['port' => 'nullable|string']);
+        
+        try {
+            $result = $this->pollService->poll($olt->id);
+            
+            if ($result['status'] === 'success') {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Sinkronisasi berhasil. Ditemukan {$result['onts_found']} ONU.",
+                    'onts_found' => $result['onts_found'],
+                    'duration_ms' => $result['duration_ms'],
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => $result['error'] ?? 'Sinkronisasi gagal',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Filter ONUs by parameters.
+     */
+    public function filterOnus(Request $request, OLT $olt)
+    {
+        $query = ONT::where('olt_id', $olt->id)->with('port');
+        
+        if ($search = $request->get('search')) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('ont_id', 'like', "%{$search}%")
+                  ->orWhere('serial_number', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($status = $request->get('status')) {
+            $query->where('oper_status', $status);
+        }
+        
+        if ($portId = $request->get('port_id')) {
+            $query->where('olt_port_id', $portId);
+        }
+        
+        if ($vendor = $request->get('vendor')) {
+            $query->where('vendor', $vendor);
+        }
+        
+        $perPage = $request->get('per_page', 50);
+        $onts = $query->orderBy('ont_id')->paginate($perPage);
+        
+        if ($request->wantsJson()) {
+            return response()->json($onts);
+        }
+        
+        return view('olt.onus.index', compact('olt', 'onts'));
+    }
+
+    /**
+     * Update a single ONU.
+     */
+    public function updateOnu(Request $request, ONT $onu)
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:200',
+            'vendor' => 'nullable|string|max:50',
+            'model' => 'nullable|string|max:100',
+            'serial_number' => 'nullable|string|max:64',
+            'mac_address' => 'nullable|string|max:17',
+            'firmware_version' => 'nullable|string|max:50',
+        ]);
+        
+        $onu->update($validated);
+        
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'ONU berhasil diupdate']);
+        }
+        
+        return back()->with('success', 'ONU berhasil diupdate');
+    }
+
+    /**
+     * Delete a single ONU.
+     */
+    public function destroyOnu(Request $request, ONT $onu)
+    {
+        $onu->delete();
+        
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'ONU berhasil dihapus']);
+        }
+        
+        return back()->with('success', 'ONU berhasil dihapus');
+    }
+
+    /**
+     * Poll a specific OLT (called from button).
+     */
+    public function poll(OLT $olt)
+    {
+        $result = $this->pollService->poll($olt->id);
+        
+        if (request()->wantsJson()) {
+            return response()->json($result);
+        }
+        
+        if ($result['status'] === 'success') {
+            return back()->with('success', "Polling berhasil. Ditemukan {$result['onts_found']} ONU.");
+        }
+        
+        return back()->with('error', $result['error'] ?? 'Polling gagal');
     }
 }

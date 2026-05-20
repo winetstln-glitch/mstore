@@ -117,7 +117,7 @@ class WashReportController extends Controller
                 $startDate.' 00:00:00',
                 $endDate.' 23:59:59',
             ])
-            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at', 'user_id', 'queue_number'])
+            ->select(['id', 'transaction_number', 'total_amount', 'payment_method', 'vehicle_plate', 'created_at', 'user_id', 'queue_number', 'notes', 'discount_amount'])
             ->orderByDesc('created_at');
         $this->applyVehiclePlateFilter($dailyIncomeRowsQuery, $normalizedVehiclePlate);
         $dailyIncomeRows = $dailyIncomeRowsQuery->get();
