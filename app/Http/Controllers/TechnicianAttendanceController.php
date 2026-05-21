@@ -75,9 +75,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             [$startDate, $endDate] = [$endDate, $startDate];
         }
 
-        // Get all users who should have attendance (all except customer)
+        // Get all users who should have attendance (all except customer and coordinator)
         $users = User::whereHas('role', function ($q) {
-            $q->where('name', '!=', 'customer');
+            $q->where('name', '!=', 'customer')->where('name', '!=', 'coordinator');
         })->where('is_active', true)->orderBy('name')->get();
 
         // Get attendance for the date range
@@ -126,9 +126,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
-        // List all users except customer for filter
+        // List all users except customer and coordinator for filter
         $techniciansQuery = User::whereHas('role', function ($q) {
-            $q->where('name', '!=', 'customer');
+            $q->where('name', '!=', 'customer')->where('name', '!=', 'coordinator');
         });
 
         if (! $this->canViewAllAttendanceData()) {
@@ -169,7 +169,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $users = User::whereHas('role', function ($q) {
-                $q->where('name', '!=', 'customer');
+                $q->where('name', '!=', 'customer')->where('name', '!=', 'coordinator');
             })->where('is_active', true)->orderBy('name')->get();
 
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
@@ -1163,6 +1163,14 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         ];
     }
 
+    private function isUserCoordinator(?User $user): bool
+    {
+        if (!$user || !$user->role) {
+            return false;
+        }
+        return strtolower($user->role->name) === 'coordinator';
+    }
+
     private function isAttendanceEligibleUser(?User $user): bool
     {
         if (! $user || ! $user->role) {
@@ -1300,7 +1308,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $today = now();
 
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = $roleName === 'direktur';
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'coordinator'], true);
 
         if (! $isExcludedFromSchedule) {
             if (Schema::hasTable('technician_daily_schedules')) {
@@ -1399,7 +1407,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         $date = Carbon::parse($dateStr);
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = $roleName === 'direktur';
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'coordinator'], true);
         
         if ($isExcludedFromSchedule) {
             return false;
