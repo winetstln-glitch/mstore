@@ -239,22 +239,25 @@ return new class extends Migration
             ['name' => 'accounting.manage', 'label' => 'Kelola Akuntansi', 'group' => 'Accounting'],
         ];
 
-        // Step 1: Get existing data before truncating
+        // Step 1: Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+
+        // Step 2: Get existing data before truncating
         $oldPermissions = DB::table('permissions')->get()->keyBy('id');
         $oldRolePerms = DB::table('permission_role')->get();
 
-        // Step 2: Truncate both tables
+        // Step 3: Truncate both tables
         DB::table('permission_role')->truncate();
         DB::table('permissions')->truncate();
 
-        // Step 3: Insert new permissions and build name -> id map
+        // Step 4: Insert new permissions and build name -> id map
         $nameToNewId = [];
         foreach ($correctPermissions as $perm) {
             $newId = DB::table('permissions')->insertGetId($perm);
             $nameToNewId[$perm['name']] = $newId;
         }
 
-        // Step 4: Re-attach old role permissions using name map
+        // Step 5: Re-attach old role permissions using name map
         foreach ($oldRolePerms as $rp) {
             if (isset($oldPermissions[$rp->permission_id])) {
                 $oldName = $oldPermissions[$rp->permission_id]->name;
@@ -268,6 +271,9 @@ return new class extends Migration
                 }
             }
         }
+
+        // Step 6: Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
     }
 
     public function down(): void
