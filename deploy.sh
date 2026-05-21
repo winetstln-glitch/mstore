@@ -3,6 +3,15 @@ set -e
 
 echo "=== Memulai deploy aplikasi MStore ==="
 
+# 0. Backup database & file (WAJIB!)
+echo "0. Creating backup of database and files..."
+if [ -x "artisan" ]; then
+    php artisan db:backup
+    echo "   Backup selesai!"
+else
+    echo "   Perintah artisan tidak ditemukan, backup dilewati!"
+fi
+
 # 1. Install dependencies
 echo "1. Installing dependencies..."
 composer install --no-dev --optimize-autoloader
