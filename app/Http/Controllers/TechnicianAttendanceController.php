@@ -60,6 +60,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function daily(Request $request)
     {
+        $user = Auth::user();
+        if ($this->isUserCoordinator($user)) {
+            abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
+        }
+
         $month = $request->query('month');
         if ($month) {
             $startDate = Carbon::parse($month)->startOfMonth()->toDateString();
@@ -108,6 +113,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+        if ($this->isUserCoordinator($user)) {
+            abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
+        }
+
         $query = $this->getFilteredAttendanceQuery($request);
 
         // Calculate stats for the current filter
@@ -142,6 +152,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function payslip(Request $request)
     {
+        $user = Auth::user();
+        if ($this->isUserCoordinator($user)) {
+            abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
+        }
+
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
@@ -153,6 +168,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     public function exportExcel(Request $request)
     {
+        $user = Auth::user();
+        if ($this->isUserCoordinator($user)) {
+            abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
+        }
+
         // If scope is daily, export date range attendance
         if ($request->query('scope') === 'daily') {
             $month = $request->query('month');
