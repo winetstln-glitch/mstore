@@ -4,14 +4,49 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 1. Administrator
-- **Name**: `administrator` (atau `admin`)
+## 1. Admin / Administrator
+- **Name**: `admin` atau `administrator`
 - **Izin**: Semua izin (full access)
 - **Kegunaan**: Super admin, bisa mengakses semua fitur
 
 ---
 
-## 2. Network Operations Center (NOC)
+## 2. Direktur / Director
+- **Name**: `direktur` atau `director`
+- **Izin**:
+  - dashboard.view
+  - customer.view, customer.create, customer.edit, customer.delete, customer.export
+  - ticket.view, ticket.create, ticket.edit, ticket.delete, ticket.complete
+  - installation.view, installation.create, installation.edit, installation.delete
+  - attendance.view, attendance.create, attendance.edit, attendance.delete, attendance.report
+  - schedule.view, schedule.create, schedule.edit, schedule.delete
+  - leave.view, leave.create, leave.edit, leave.delete
+  - map.view
+  - profile.view, profile.update
+  - notification.view, notification.manage
+  - technician.view, technician.create, technician.edit, technician.delete
+  - user.view, user.create, user.edit, user.delete
+  - role.view, role.create, role.edit, role.delete
+  - inventory.view, inventory.manage, inventory.pickup
+  - finance.view, finance.create, finance.edit, finance.delete, finance.report
+  - atk.view, atk.pos, atk.manage, atk.report
+  - wash.view, wash.pos, wash.manage, wash.report
+  - router.view, router.create, router.edit, router.delete
+  - hotspot.view, hotspot.create, hotspot.edit, hotspot.delete
+  - pppoe.view, pppoe.create, pppoe.edit, pppoe.delete
+  - olt.view, olt.create, olt.edit, olt.delete
+  - ont.view, ont.create, ont.edit, ont.delete
+  - odp.view, odp.create, odp.edit, odp.delete
+  - odc.view, odc.create, odc.edit, odc.delete
+  - closure.view, closure.create, closure.edit, closure.delete
+  - region.view, region.create, region.edit, region.delete
+  - package.view, package.create, package.edit, package.delete
+  - setting.view, setting.create, setting.edit, setting.delete
+- **Kegunaan**: Direktur perusahaan, akses hampir semua fitur
+
+---
+
+## 3. Network Operations Center (NOC)
 - **Name**: `network-operations-center` (atau `noc`)
 - **Izin Group**: 
   - Dashboard
@@ -37,7 +72,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 3. Teknisi
+## 4. Teknisi
 - **Name**: `teknisi`
 - **Izin**:
   - dashboard.view
@@ -59,7 +94,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 4. Leader
+## 5. Leader
 - **Name**: `leader`
 - **Izin**:
   - dashboard.view
@@ -75,7 +110,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 5. Koordinator
+## 6. Koordinator / Coordinator
 - **Name**: `koordinator` (atau `coordinator`)
 - **Izin**:
   - dashboard.view
@@ -91,7 +126,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 6. Reseller
+## 7. Reseller
 - **Name**: `reseller`
 - **Izin**:
   - dashboard.view
@@ -108,7 +143,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 7. Staf Keuangan
+## 8. Staf Keuangan / Finance
 - **Name**: `staf-keuangan` (atau `finance`)
 - **Izin**:
   - dashboard.view
@@ -122,7 +157,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 8. Kasir ATK
+## 9. Kasir ATK
 - **Name**: `kasir-atk`
 - **Izin**:
   - atk.view, atk.pos, atk.report
@@ -132,21 +167,21 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 9. Kasir Wash
+## 10. Kasir Wash
 - **Name**: `kasir-wash`
 - **Izin**: Semua izin Teknisi + Semua izin Wash
 - **Kegunaan**: Kasir layanan cuci
 
 ---
 
-## 10. Karyawan Wash
-- **Name**: `karyawan-wash`
+## 11. Karyawan Wash / Operator Wash
+- **Name**: `karyawan-wash` (atau `operator-wash`)
 - **Izin**: Semua izin Teknisi + Semua izin Wash
 - **Kegunaan**: Operator layanan cuci
 
 ---
 
-## 11. Manager HRD
+## 12. Manager HRD / HRD Manager
 - **Name**: `manager-hrd` (atau `hrd-manager`)
 - **Izin**:
   - dashboard.view
@@ -163,7 +198,7 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 12. Customer
+## 13. Customer
 - **Name**: `customer`
 - **Izin**: Tidak ada izin (hanya akses portal customer)
 - **Kegunaan**: Pelanggan
