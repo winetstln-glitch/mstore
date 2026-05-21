@@ -1,18 +1,18 @@
 # Daftar Role dan Template Default di Aplikasi MStore
 
-Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
+Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya (sudah disederhanakan dan konsisten):
 
 ---
 
-## 1. Admin / Administrator
-- **Name**: `admin` atau `administrator`
+## 1. Admin
+- **Name**: `admin`
 - **Izin**: Semua izin (full access)
 - **Kegunaan**: Super admin, bisa mengakses semua fitur
 
 ---
 
-## 2. Direktur / Director
-- **Name**: `direktur` atau `director`
+## 2. Direktur
+- **Name**: `direktur`
 - **Izin**:
   - dashboard.view
   - customer.view, customer.create, customer.edit, customer.delete, customer.export
@@ -46,8 +46,8 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 3. Network Operations Center (NOC)
-- **Name**: `network-operations-center` (atau `noc`)
+## 3. NOC
+- **Name**: `noc`
 - **Izin Group**: 
   - Dashboard
   - Customer Management
@@ -110,8 +110,8 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 6. Koordinator / Coordinator
-- **Name**: `koordinator` (atau `coordinator`)
+## 6. Koordinator
+- **Name**: `koordinator`
 - **Izin**:
   - dashboard.view
   - inventory.view, inventory.pickup, inventory.manage
@@ -143,8 +143,8 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 8. Staf Keuangan / Finance
-- **Name**: `staf-keuangan` (atau `finance`)
+## 8. Staf Keuangan
+- **Name**: `staf-keuangan`
 - **Izin**:
   - dashboard.view
   - finance.view, finance.create, finance.edit, finance.delete, finance.report
@@ -174,15 +174,15 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 
 ---
 
-## 11. Karyawan Wash / Operator Wash
-- **Name**: `karyawan-wash` (atau `operator-wash`)
+## 11. Karyawan Wash
+- **Name**: `karyawan-wash`
 - **Izin**: Semua izin Teknisi + Semua izin Wash
 - **Kegunaan**: Operator layanan cuci
 
 ---
 
-## 12. Manager HRD / HRD Manager
-- **Name**: `manager-hrd` (atau `hrd-manager`)
+## 12. Manager HRD
+- **Name**: `manager-hrd`
 - **Izin**:
   - dashboard.view
   - employee.view, employee.create, employee.edit, employee.delete
@@ -202,3 +202,15 @@ Berikut adalah daftar semua role yang tersedia beserta template izin defaultnya:
 - **Name**: `customer`
 - **Izin**: Tidak ada izin (hanya akses portal customer)
 - **Kegunaan**: Pelanggan
+
+---
+
+## Cara Normalisasi Role di Database
+Jalankan perintah ini untuk menormalisasi role di database:
+```bash
+php artisan roles:normalize
+```
+Perintah ini akan:
+- Menggabungkan role duplikat (misal: Administrator ke Admin, Coordinator ke Koordinator)
+- Memindahkan user dari role lama ke role baru
+- Menghapus role lama yang tidak dibutuhkan

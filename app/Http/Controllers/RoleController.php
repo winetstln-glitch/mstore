@@ -44,7 +44,7 @@ class RoleController extends Controller implements HasMiddleware
         $user = auth()->user();
 
         // Super admin / full access users can assign any permission
-        if ($user->hasRole('admin') || $user->hasRole('administrator')) {
+        if ($user->hasRole('admin')) {
             return Permission::all();
         }
 
@@ -168,24 +168,17 @@ class RoleController extends Controller implements HasMiddleware
 
         $templates = [
             'Admin' => $allPermissions->pluck('id')->values()->toArray(),
-            'Administrator' => $allPermissions->pluck('id')->values()->toArray(),
             'Direktur' => $allPermissions->whereIn('name', $directorNames)->pluck('id')->values()->toArray(),
-            'Director' => $allPermissions->whereIn('name', $directorNames)->pluck('id')->values()->toArray(),
-            'Network Operations Center' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
             'NOC' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
             'Teknisi' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
             'Leader' => $allPermissions->whereIn('name', $leaderNames)->pluck('id')->values()->toArray(),
             'Koordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
-            'Coordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
             'Reseller' => $allPermissions->whereIn('name', $resellerNames)->pluck('id')->values()->toArray(),
             'Staf Keuangan' => $allPermissions->whereIn('name', $financeStaffNames)->pluck('id')->values()->toArray(),
-            'Finance' => $allPermissions->whereIn('name', $financeStaffNames)->pluck('id')->values()->toArray(),
             'Kasir ATK' => $allPermissions->whereIn('name', $cashierAtkNames)->pluck('id')->values()->toArray(),
             'Kasir Wash' => $allPermissions->whereIn('name', $cashierWashNames)->pluck('id')->values()->toArray(),
             'Karyawan Wash' => $allPermissions->whereIn('name', $washEmployeeNames)->pluck('id')->values()->toArray(),
-            'Operator Wash' => $allPermissions->whereIn('name', $washEmployeeNames)->pluck('id')->values()->toArray(),
             'Manager HRD' => $allPermissions->whereIn('name', $hrdManagerNames)->pluck('id')->values()->toArray(),
-            'HRD Manager' => $allPermissions->whereIn('name', $hrdManagerNames)->pluck('id')->values()->toArray(),
             'Customer' => [],
         ];
 
@@ -328,7 +321,7 @@ class RoleController extends Controller implements HasMiddleware
         }
 
         // Protect critical roles from having their name/slug changed
-        $protectedRoles = ['admin', 'administrator', 'customer'];
+        $protectedRoles = ['admin', 'customer'];
         if (in_array($role->name, $protectedRoles)) {
             $role->update([
                 'label' => $validated['label'],
@@ -354,7 +347,7 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function destroy(Role $role)
     {
-        $protectedRoles = ['admin', 'administrator', 'customer'];
+        $protectedRoles = ['admin', 'customer'];
         if (in_array($role->name, $protectedRoles)) {
             return back()->with('error', __('Tidak dapat menghapus role inti sistem.'));
         }

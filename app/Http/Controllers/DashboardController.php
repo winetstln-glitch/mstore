@@ -141,8 +141,8 @@ class DashboardController extends Controller
         $prevMonthStart = now()->copy()->subMonthNoOverflow()->startOfMonth();
         $prevMonthEnd = now()->copy()->subMonthNoOverflow()->endOfMonth();
 
-        // Filter Logic: Exclude Admin, Administrator, and Finance Staff from filtering
-        if (! $user->hasRole('admin') && ! $user->hasRole('administrator') && ! $user->hasRole('finance')) {
+        // Filter Logic: Exclude Admin and Finance Staff from filtering
+        if (! $user->hasRole('admin') && ! $user->hasRole('staf-keuangan')) {
             $coordinator = Coordinator::select('id', 'region_id')->where('user_id', $user->id)->first();
             if ($coordinator && $coordinator->region_id) {
                 // Filter Customers by Region

@@ -173,15 +173,22 @@ class User extends Authenticatable
             return false;
         }
         $roleNameLower = strtolower(trim($roleName));
-        $roleNameNormalized = \Illuminate\Support\Str::slug($roleNameLower);
-        return $this->role->name === $roleNameLower || 
-               $this->role->name === $roleNameNormalized || 
-               strtolower($this->role->label) === $roleNameLower;
+        $roleMapping = [
+            'administrator' => 'admin',
+            'director' => 'direktur',
+            'network operations center' => 'noc',
+            'coordinator' => 'koordinator',
+            'finance' => 'staf-keuangan',
+            'hrd manager' => 'manager-hrd',
+            'operator wash' => 'karyawan-wash',
+        ];
+        $normalizedRoleName = $roleMapping[$roleNameLower] ?? $roleNameLower;
+        return $this->role->name === $normalizedRoleName;
     }
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->hasRole('admin') || $this->hasRole('administrator')) {
+        if ($this->hasRole('admin')) {
             return true;
         }
 
