@@ -169,12 +169,19 @@ class User extends Authenticatable
 
     public function hasRole(string $roleName): bool
     {
-        return $this->role && $this->role->name === $roleName;
+        if (! $this->role) {
+            return false;
+        }
+        $roleNameLower = strtolower(trim($roleName));
+        $roleNameNormalized = \Illuminate\Support\Str::slug($roleNameLower);
+        return $this->role->name === $roleNameLower || 
+               $this->role->name === $roleNameNormalized || 
+               strtolower($this->role->label) === $roleNameLower;
     }
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->hasRole('admin')) {
+        if ($this->hasRole('admin') || $this->hasRole('administrator')) {
             return true;
         }
 
