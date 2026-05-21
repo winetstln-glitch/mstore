@@ -1,86 +1,108 @@
-# Panduan Update Server MStore
+# Panduan Update Aplikasi ke Server
 
-Ikuti langkah-langkah berikut untuk memperbarui aplikasi MStore di server produksi.
+Berikut adalah langkah-langkah untuk mengupdate aplikasi MStore ke server:
 
-## 1. Persiapan
-Pastikan Anda memiliki akses SSH ke server dan berada di direktori proyek (biasanya `/var/www/mstore` atau `~/mstore`).
+---
 
-## 2. Update Otomatis (Rekomendasi)
-Jika skrip `deploy.sh` sudah tersedia dan memiliki izin eksekusi, jalankan perintah berikut:
+## 1. Push Perubahan ke GitHub
 
+Pastikan semua perubahan sudah di-commit dan di-push ke repository GitHub:
 ```bash
-./deploy.sh
+git status
+git add -A
+git commit -m "Update aplikasi"
+git push origin main
 ```
 
-Skrip ini akan melakukan:
-- Pull kode terbaru dari Git
-- Install dependensi PHP & Node.js
-- Jalankan migrasi database
-- Update seeder (permission, role, setting)
-- Link storage
-- Bersihkan dan cache konfigurasi
-- Probe endpoint integrasi hotspot (`/api/hotspot/health`)
+---
 
-## 2b. Zero-Config Ready Command
-Untuk memastikan server langsung siap dipakai login hotspot tanpa langkah manual tambahan:
+## 2. Login ke Server
 
+SSH ke server:
 ```bash
-composer run post-install-ready
+ssh user@server-ip
 ```
 
-## 3. Update Manual (Jika script gagal)
-Jika Anda perlu melakukan update secara manual, jalankan perintah berikut secara berurutan:
+---
 
-### Ambil Kode Terbaru
+## 3. Pindah ke Direktori Aplikasi
+
+```bash
+cd /path/to/mstore
+```
+
+---
+
+## 4. Pull Perubahan dari GitHub
+
 ```bash
 git pull origin main
 ```
 
-### Install Dependensi
+---
+
+## 5. Install Dependencies (jika ada perubahan di composer.json)
+
 ```bash
-composer install --optimize-autoloader --no-dev
-npm install
-npm run build
+composer install --no-dev --optimize-autoloader
 ```
 
-### Update Database
-**PENTING:** Langkah ini wajib dilakukan karena ada perubahan struktur tabel (penambahan kolom `type_group`, tabel `assets`, dll).
+---
+
+## 6. Jalankan Migrasi Database
+
 ```bash
 php artisan migrate --force
 ```
 
-### Update Data Referensi (Seeder)
-```bash
-php artisan db:seed --class=PermissionSeeder --force
-php artisan db:seed --class=RoleSeeder --force
-php artisan db:seed --class=SettingSeeder --force
-```
+---
 
-### Konfigurasi & Cache
+## 7. Clear & Cache Konfigurasi
+
 ```bash
-php artisan storage:link
-php artisan optimize:clear
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+# Untuk production, cache konfigurasi:
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
 
-### Restart Layanan (Opsional tapi Disarankan)
-Jika menggunakan Supervisor untuk queue:
+---
+
+## 8. Compile Asset Frontend (jika ada perubahan)
+
+```bash
+npm install
+npm run build
+```
+
+---
+
+## 9. Restart Queue Worker (jika menggunakan queue)
+
+Jika menggunakan Supervisor:
+```bash
+sudo supervisorctl restart mstore-worker
+```
+
+Atau jika menjalankan secara manual:
 ```bash
 php artisan queue:restart
 ```
 
-Jika perlu merestart PHP-FPM (sesuaikan versi php, misal 8.1, 8.2, dst):
+---
+
+## 10. Set Permission (jika diperlukan)
+
 ```bash
-sudo service php8.2-fpm reload
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
 ```
 
-## 4. Verifikasi Pasca Update
-1. **Cek Inventaris:** Buka menu Inventory, pastikan filter "Material & Devices" dan "Tools & Assets" berfungsi.
-2. **Cek Modal Edit:** Coba edit item inventaris, pastikan field "Type Group" muncul dan terisi dengan benar.
-3. **Cek Translasi:** Pastikan antarmuka menggunakan Bahasa Indonesia (sesuai setting `APP_LOCALE=id` di `.env`).
+---
 
-## Catatan Penting
-- **Backup:** Selalu disarankan melakukan backup database sebelum menjalankan migrasi besar.
-- **Environment:** Pastikan file `.env` di server memiliki `APP_ENV=production` dan `APP_DEBUG=false` untuk keamanan.
+Selesai! Aplikasi sudah terupdate di server!
