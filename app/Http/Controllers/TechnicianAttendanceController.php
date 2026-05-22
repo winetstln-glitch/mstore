@@ -1177,9 +1177,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return [
             'admin', 'administrator', // administrasi
             'leader', // team leader
-            'finance', 'staf-keuangan', // administrasi/keuangan
+            'finance', 'staf-keuangan', 'finance-staft', 'staf finance', // administrasi/keuangan
             'hrd manager', 'hrd', // hrd
-            'direktur', 'director', // direktur
             'noc', 'network-operations-center', // noc
             'technician', // teknisi
             'kasir-atk', // kasir atk
