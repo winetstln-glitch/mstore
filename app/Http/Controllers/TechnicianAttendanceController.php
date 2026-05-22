@@ -1175,17 +1175,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     private function attendanceEligibleRoleNames(): array
     {
         return [
-            'admin', // administrasi
+            'admin', 'administrator', // administrasi
             'leader', // team leader
-            'finance', // administrasi/keuangan
-            'hrd manager',
-            'direktur',
-            'noc',
-            'network-operations-center',
-            'technician',
-            'kasir-atk',
-            'kasir-wash',
-            'karyawan-wash', // operator wash
+            'finance', 'staf-keuangan', // administrasi/keuangan
+            'hrd manager', 'hrd', // hrd
+            'direktur', 'director', // direktur
+            'noc', 'network-operations-center', // noc
+            'technician', // teknisi
+            'kasir-atk', // kasir atk
+            'kasir-wash', // kasir wash
+            'karyawan-wash', 'operator-wash', // operator wash
         ];
     }
 
