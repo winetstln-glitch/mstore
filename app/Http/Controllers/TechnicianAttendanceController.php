@@ -47,8 +47,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:attendance.view', only: ['index', 'daily', 'exportExcel', 'payslip']),
-            // Absensi mandiri (store/update) dikontrol oleh validasi role di method,
-            // agar akun admin/staf yang eligible tidak gagal karena mapping permission server.
             new Middleware('permission:attendance.create', only: ['kiosk', 'kioskScan']),
             new Middleware('permission:attendance.edit', only: ['edit']),
             new Middleware('permission:attendance.delete', only: ['destroy', 'bulkDestroy']),
@@ -75,30 +73,29 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         $status = (string) $request->query('status', '');
 
-        // Ensure startDate is not after endDate
         if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
             [$startDate, $endDate] = [$endDate, $startDate];
         }
 
-        // Get all users who should have attendance (all except customer, koordinator, and coordinator)
+        // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
         $users = User::whereHas('role', function ($q) {
             $q->where('name', '!=', 'customer')
               ->where('name', '!=', 'koordinator')
               ->where('name', '!=', 'coordinator');
-        })->where('is_active', true)->orderBy('name')->get();
+        })->where('is_active', true)
+          ->with('role')
+          ->orderBy('name')
+          ->get();
 
-        // Get attendance for the date range
         $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with('user');
 
         $allAttendances = $attendancesQuery->get();
 
-        // Group attendances by date and user_id
         $attendancesByDate = $allAttendances
             ->groupBy(fn($a) => $a->clock_in->toDateString())
             ->map(fn($items) => $items->keyBy('user_id'));
 
-        // Get list of dates in range
         $dates = [];
         $current = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
@@ -122,7 +119,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $query = $this->getFilteredAttendanceQuery($request);
 
-        // Calculate stats for the current filter
         $statsQuery = clone $query;
         $allAttendances = $statsQuery->get();
 
@@ -138,7 +134,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
-        // List all users except customer, koordinator, and coordinator for filter
         $techniciansQuery = User::whereHas('role', function ($q) {
             $q->where('name', '!=', 'customer')
               ->where('name', '!=', 'koordinator')
@@ -164,7 +159,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
-        // Summary by Technician
         $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments, $request);
 
         return view('technicians.attendance.payslip', compact('summary', 'request'));
@@ -192,11 +186,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 [$startDate, $endDate] = [$endDate, $startDate];
             }
 
+            // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
             $users = User::whereHas('role', function ($q) {
                 $q->where('name', '!=', 'customer')
                   ->where('name', '!=', 'koordinator')
                   ->where('name', '!=', 'coordinator');
-            })->where('is_active', true)->orderBy('name')->get();
+            })->where('is_active', true)
+              ->with('role')
+              ->orderBy('name')
+              ->get();
 
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                 ->with('user');
@@ -253,7 +251,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                             $isOff ? '-' : ($attendance && $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-'),
                             $isOff ? '-' : ($attendance && $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-'),
                             $status,
-                            $attendance->notes ?? '-',
+                            // PERBAIKAN: Gunakan null safe operator untuk menghindari error
+                            $attendance?->notes ?? '-',
                         ]));
                     }
                     $writer->addRow(Row::fromValues([]));
@@ -265,7 +264,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         
-        // If specific download detail requested
         if ($request->query('download') === 'details') {
             return response()->streamDownload(function () use ($attendances) {
                 $writer = new Writer;
@@ -290,7 +288,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                         $attendance->clock_in->format('H:i'),
                         $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
                         __(ucfirst($attendance->status)),
-                        $attendance->notes,
+                        $attendance->notes ?? '-',
                     ]));
                 }
 
@@ -300,14 +298,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
-        // Summary by Technician
         $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments, $request);
 
         return response()->streamDownload(function () use ($summary) {
             $writer = new Writer;
             $writer->openToFile('php://output');
 
-            // Sheet 1: Summary
             $writer->addRow(Row::fromValues(['REKAP GAJI TEKNISI']));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues([
@@ -334,7 +330,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 ]));
             }
 
-            // Sheet 2: Details
             $writer->addNewSheetAndMakeItCurrent();
             $writer->addRow(Row::fromValues(['DETAIL ABSENSI']));
             $writer->addRow(Row::fromValues([]));
@@ -355,7 +350,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                         $attendance->clock_in->format('H:i'),
                         $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
                         __(ucfirst($attendance->status)),
-                        $attendance->notes,
+                        $attendance->notes ?? '-',
                     ]));
                 }
             }
@@ -381,7 +376,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return back()->with('error', __('No attendance records or pending adjustments found for the selected period.'));
         }
 
-        // Summary by Technician
         $userIds = $attendances->pluck('user_id')->merge($pendingAdjustments->pluck('user_id'))->unique();
         $totalAmount = 0;
 
@@ -389,7 +383,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $userItems = $attendances->where('user_id', $userId);
             $userAdjustments = $adjustmentsByUser->get($userId, collect());
 
-            // Attendance Salary
             $attendanceSalary = 0;
             if ($userItems->isNotEmpty()) {
                 $user = $userItems->first()->user;
@@ -400,7 +393,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 $attendanceSalary = $paidDays * $dailySalary;
             }
 
-            // Adjustments
             $bonus = $userAdjustments->where('type', 'bonus')->sum('amount');
             $kasbon = $userAdjustments->where('type', 'kasbon')->sum('amount');
 
@@ -411,7 +403,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return back()->with('error', __('Total salary amount is zero or negative. No transaction created.'));
         }
 
-        // Create Description
         $period = $request->filled('month') 
             ? Carbon::parse($request->month)->translatedFormat('F Y')
             : ($request->filled('date') ? Carbon::parse($request->date)->translatedFormat('d F Y') : __('All Time'));
@@ -433,7 +424,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'transaction_date' => now(),
         ]);
 
-        // Mark adjustments as processed
         if ($pendingAdjustments->isNotEmpty()) {
             SalaryAdjustment::whereIn('id', $pendingAdjustments->pluck('id'))->update(['status' => 'processed']);
         }
@@ -465,7 +455,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $sentCount = 0;
         $channels = [];
 
-        // WhatsApp
         if ($user->phone) {
             $wa = new \App\Services\WhatsAppService;
             $wa->sendMessage($user->phone, $message, 'attendance_notification');
@@ -473,10 +462,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $channels[] = 'WhatsApp';
         }
 
-        // Telegram
         if ($user->telegram_chat_id) {
             $telegram = new \App\Services\TelegramService;
-            // Use Markdown for Telegram with escaping
             $tgMessage = "🔔 *DETAIL ABSENSI*\n\n".
                 "Halo *".\App\Services\TelegramService::escape($user->name)."*,\n\n".
                 "Berikut detail absensi Anda:\n".
@@ -515,7 +502,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'notes' => 'nullable|string',
         ]);
 
-        // Check if exists
         $exists = TechnicianAttendance::where('user_id', $request->user_id)
             ->whereDate('clock_in', $request->date)
             ->exists();
@@ -526,13 +512,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         $attendance = TechnicianAttendance::create([
             'user_id' => $request->user_id,
-            'clock_in' => $request->date.' 08:00:00', // Default time
+            'clock_in' => $request->date.' 08:00:00',
             'clock_out' => $request->date.' 17:00:00',
             'status' => $request->status,
             'notes' => $request->notes,
         ]);
 
-        // Notify Group via WhatsApp
         try {
             $user = $attendance->user;
             $statusLabel = match($attendance->status) {
@@ -556,7 +541,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
             app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Manual Attendance WA Notification Error: ' . $e->getMessage());
+            Log::error('Manual Attendance WA Notification Error: ' . $e->getMessage());
         }
 
         return back()->with('success', __('Manual attendance added successfully.'));
@@ -633,7 +618,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ->first();
 
         if (! $todayAttendance) {
-            // Check if user is currently on leave/sick
             $hasLeaveRequest = LeaveRequest::where('user_id', $user->id)
                 ->where('status', 'approved')
                 ->whereDate('start_date', '<=', today())
@@ -667,7 +651,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'notes' => 'Kiosk scan ID Card otomatis. Admin: '.Auth::user()->name,
             ]);
 
-            // Notify Group via WhatsApp
+            // PERBAIKAN: Perbaiki indentasi try-catch
             try {
                 $statusLabel = match($attendance->status) {
                     'present' => 'HADIR ✅',
@@ -687,7 +671,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
                 app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Kiosk Attendance WA Notification Error: ' . $e->getMessage());
+                Log::error('Kiosk Attendance WA Notification Error: ' . $e->getMessage());
             }
 
             return response()->json([
@@ -712,7 +696,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ], 422);
         }
 
-        // Add cooldown between clock in and clock out (e.g., 5 minutes for kiosk)
         $cooldownMinutes = (int) Setting::getValue('attendance_kiosk_cooldown_minutes', 5);
         $diffInMinutes = $todayAttendance->clock_in->diffInMinutes(now());
         if ($diffInMinutes < $cooldownMinutes) {
@@ -729,22 +712,22 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'notes' => trim(($todayAttendance->notes ?? '')."\nClock Out Kiosk otomatis oleh ".Auth::user()->name),
         ]);
 
-        // Notify Group via WhatsApp
+        // PERBAIKAN: Perbaiki indentasi try-catch
         try {
             $time = $todayAttendance->clock_out->format('H:i');
             $date = $todayAttendance->clock_out->translatedFormat('d M Y');
             $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG (KIOSK)*\n\n" .
-                             "👤 *Nama:* {$user->name}\n" .
-                             "⏰ *Jam:* {$time} WIB\n" .
-                             "📅 *Tanggal:* {$date}\n" .
-                             "🏁 *Status:* SELESAI TUGAS 👋\n" .
-                             "📝 *Metode:* Kiosk Scan\n\n" .
-                             "🚀 _Sistem M-Store_";
-                
-                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-            } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Kiosk Clock Out WA Notification Error: ' . $e->getMessage());
+                         "👤 *Nama:* {$user->name}\n" .
+                         "⏰ *Jam:* {$time} WIB\n" .
+                         "📅 *Tanggal:* {$date}\n" .
+                         "🏁 *Status:* SELESAI TUGAS 👋\n" .
+                         "📝 *Metode:* Kiosk Scan\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+        } catch (\Exception $e) {
+            Log::error('Kiosk Clock Out WA Notification Error: ' . $e->getMessage());
         }
 
         return response()->json([
@@ -779,7 +762,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         try {
-            // Validation: Clock In allowed based on user shift (fallback to global settings)
             $clockInWindow = $this->resolveClockInWindow(Auth::user());
             $clockInStart = $clockInWindow['start'];
             $clockInEnd = $clockInWindow['end'];
@@ -803,7 +785,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 return redirect()->route($this->attendanceRedirectRoute($request))->withErrors(['message' => __('Gagal: Anda sudah melakukan absen masuk hari ini.')]);
             }
 
-            // Also check for pending leave/sick for today
             $hasLeaveRequest = LeaveRequest::where('user_id', Auth::id())
                 ->where('status', 'approved')
                 ->where('start_date', '<=', $today)
@@ -824,7 +805,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
             ]);
 
-            // If GPS is missing, photo MUST be present as a fallback
             if (! $request->latitude || ! $request->longitude) {
                 if (! $request->hasFile('photo')) {
                     return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
@@ -839,17 +819,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                     'attendance_device_locked_at' => now(),
                 ])->save();
             } elseif ((string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
-                // Permudah alur absensi: jika perangkat berubah, re-bind otomatis saat clock in.
                 $currentUser->forceFill([
                     'attendance_device_hash' => $deviceFingerprint,
                     'attendance_device_locked_at' => now(),
                 ])->save();
             }
 
-            // Radius Check
             $officeLat = Setting::getValue('attendance_office_lat');
             $officeLng = Setting::getValue('attendance_office_lng');
-            $radius = Setting::getValue('attendance_radius', 100); // meters
+            $radius = Setting::getValue('attendance_radius', 100);
 
             if ($officeLat && $officeLng && $request->latitude && $request->longitude) {
                 $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLng);
@@ -875,7 +853,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'notes' => $request->notes,
             ]);
 
-            // Notify Group via WhatsApp (Non-blocking using anonymous function)
             dispatch(function () use ($currentUser, $attendance) {
                 try {
                     $statusLabel = match($attendance->status) {
@@ -916,6 +893,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     /**
      * Update the specified resource in storage (Clock Out).
+     * ===================================================================
+     * PERBAIKAN KRITIS: Struktur try-catch telah diperbaiki
+     * - Semua kode sekarang berada di dalam try block
+     * - Kurung kurawal yang hilang telah ditambahkan
+     * - Kurung kurawal berlebihan telah dihapus
+     * ===================================================================
      */
     public function update(Request $request, $id)
     {
@@ -930,123 +913,124 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $clockOutStart = Setting::getValue('attendance_clock_out_start', '20:00');
             $clockOutEnd = Setting::getValue('attendance_clock_out_end', '01:00');
 
-        $now = now();
-        $currentTime = $now->format('H:i');
+            $now = now();
+            $currentTime = $now->format('H:i');
 
-        // Logic for overnight time range (e.g. 20:00 to 01:00)
-        // If start > end, it means it crosses midnight.
-        // Allowed if time >= start OR time <= end
-        // Else (start < end), allowed if time >= start AND time <= end
-
-        $isAllowed = false;
-        if ($clockOutStart > $clockOutEnd) {
-            // Crosses midnight
-            $isAllowed = ($currentTime >= $clockOutStart || $currentTime <= $clockOutEnd);
-        } else {
-            // Same day
-            $isAllowed = ($currentTime >= $clockOutStart && $currentTime <= $clockOutEnd);
-        }
-
-        if (! $isAllowed) {
-            return back()->withErrors(['message' => __('Clock Out only allowed between :start - :end WIB.', ['start' => $clockOutStart, 'end' => $clockOutEnd])]);
-        }
-
-        $attendance = TechnicianAttendance::where('user_id', Auth::id())->findOrFail($id);
-
-        // Add cooldown between clock in and clock out (e.g., 30 minutes)
-        $cooldownMinutes = (int) Setting::getValue('attendance_cooldown_minutes', 30);
-        $diffInMinutes = $attendance->clock_in->diffInMinutes(now());
-        if ($diffInMinutes < $cooldownMinutes) {
-            return back()->withErrors(['message' => __('Gagal: Jeda waktu absen masuk dan pulang minimal :min menit. Baru :diff menit berlalu.', [
-                'min' => $cooldownMinutes,
-                'diff' => $diffInMinutes,
-            ])]);
-        }
-
-        $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
-        $request->validate([
-            'photo' => 'nullable|image|max:'.$photoMaxKb,
-            'latitude' => 'nullable',
-            'longitude' => 'nullable',
-            'device_fingerprint' => 'nullable|string|min:8|max:128',
-        ], [
-            'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
-        ]);
-
-        // If GPS is missing, photo MUST be present as a fallback
-        if (! $request->latitude || ! $request->longitude) {
-            if (! $request->hasFile('photo')) {
-                return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
+            // Logic for overnight time range (e.g. 20:00 to 01:00)
+            $isAllowed = false;
+            if ($clockOutStart > $clockOutEnd) {
+                // Crosses midnight
+                $isAllowed = ($currentTime >= $clockOutStart || $currentTime <= $clockOutEnd);
+            } else {
+                // Same day
+                $isAllowed = ($currentTime >= $clockOutStart && $currentTime <= $clockOutEnd);
             }
-        }
 
-        $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
-        $currentUser = Auth::user();
-        $currentUserAgent = mb_substr((string) $request->userAgent(), 0, 255);
-        if (! $currentUser->attendance_device_hash || (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
-            $currentUser->forceFill([
-                'attendance_device_hash' => $deviceFingerprint,
-                'attendance_device_locked_at' => now(),
-            ])->save();
-        }
-
-        // Radius Check
-        $officeLat = Setting::getValue('attendance_office_lat');
-        $officeLng = Setting::getValue('attendance_office_lng');
-        $radius = Setting::getValue('attendance_radius', 100); // meters
-
-        if ($officeLat && $officeLng && $request->latitude && $request->longitude) {
-            $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLng);
-            if ($distance > $radius) {
-                return back()->withErrors(['message' => __('You are too far from the office. Distance: :dist m. Max: :max m.', ['dist' => round($distance), 'max' => $radius])]);
+            if (! $isAllowed) {
+                return back()->withErrors(['message' => __('Clock Out only allowed between :start - :end WIB.', ['start' => $clockOutStart, 'end' => $clockOutEnd])]);
             }
-        }
 
-        $path = $request->hasFile('photo')
-            ? $request->file('photo')->store('attendance-photos', 'public')
-            : null;
+            $attendance = TechnicianAttendance::where('user_id', Auth::id())->findOrFail($id);
 
-        $attendance->update([
-            'clock_out' => now(),
-            'photo_clock_out' => $path,
-            'lat_clock_out' => $request->latitude ?: null,
-            'lng_clock_out' => $request->longitude ?: null,
-            'device_fingerprint_clock_out' => $deviceFingerprint,
-            'ip_clock_out' => (string) ($request->ip() ?? ''),
-            'user_agent_clock_out' => $currentUserAgent,
-            'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
-        ]);
-
-        // Notify Group via WhatsApp (Non-blocking using anonymous function)
-        dispatch(function () use ($currentUser, $attendance) {
-            try {
-                $time = $attendance->clock_out->format('H:i');
-                $date = $attendance->clock_out->translatedFormat('d M Y');
-                $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
-                             "👤 *Nama:* {$currentUser->name}\n" .
-                             "⏰ *Jam:* {$time} WIB\n" .
-                             "📅 *Tanggal:* {$date}\n" .
-                             "🏁 *Status:* SELESAI TUGAS 👋\n" .
-                             "📝 *Catatan:* " . ($attendance->notes ? explode("\nClock Out Note: ", $attendance->notes)[1] ?? '-' : '-') . "\n\n" .
-                             "🚀 _Sistem M-Store_";
-                
-                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
-            } catch (\Throwable $e) {
-                Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
+            // Add cooldown between clock in and clock out (e.g., 30 minutes)
+            $cooldownMinutes = (int) Setting::getValue('attendance_cooldown_minutes', 30);
+            $diffInMinutes = $attendance->clock_in->diffInMinutes(now());
+            if ($diffInMinutes < $cooldownMinutes) {
+                return back()->withErrors(['message' => __('Gagal: Jeda waktu absen masuk dan pulang minimal :min menit. Baru :diff menit berlalu.', [
+                    'min' => $cooldownMinutes,
+                    'diff' => $diffInMinutes,
+                ])]);
             }
-        })->afterResponse();
 
-        return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        throw $e;
-    } catch (\Throwable $e) {
-        Log::error('Attendance Update Fatal Error: ' . $e->getMessage(), [
-            'user_id' => Auth::id(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        return back()->withErrors(['message' => __('Terjadi kesalahan saat memproses absensi pulang: ') . $e->getMessage()]);
-    }
+            $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
+            $request->validate([
+                'photo' => 'nullable|image|max:'.$photoMaxKb,
+                'latitude' => 'nullable',
+                'longitude' => 'nullable',
+                'device_fingerprint' => 'nullable|string|min:8|max:128',
+            ], [
+                'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
+            ]);
+
+            // If GPS is missing, photo MUST be present as a fallback
+            if (! $request->latitude || ! $request->longitude) {
+                if (! $request->hasFile('photo')) {
+                    return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
+                }
+            }
+
+            $deviceFingerprint = $this->resolveAttendanceDeviceFingerprint($request);
+            $currentUser = Auth::user();
+            $currentUserAgent = mb_substr((string) $request->userAgent(), 0, 255);
+            if (! $currentUser->attendance_device_hash || (string) $currentUser->attendance_device_hash !== $deviceFingerprint) {
+                $currentUser->forceFill([
+                    'attendance_device_hash' => $deviceFingerprint,
+                    'attendance_device_locked_at' => now(),
+                ])->save();
+            }
+
+            // Radius Check
+            $officeLat = Setting::getValue('attendance_office_lat');
+            $officeLng = Setting::getValue('attendance_office_lng');
+            $radius = Setting::getValue('attendance_radius', 100);
+
+            if ($officeLat && $officeLng && $request->latitude && $request->longitude) {
+                $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLng);
+                if ($distance > $radius) {
+                    return back()->withErrors(['message' => __('You are too far from the office. Distance: :dist m. Max: :max m.', ['dist' => round($distance), 'max' => $radius])]);
+                }
+            }
+
+            $path = $request->hasFile('photo')
+                ? $request->file('photo')->store('attendance-photos', 'public')
+                : null;
+
+            $attendance->update([
+                'clock_out' => now(),
+                'photo_clock_out' => $path,
+                'lat_clock_out' => $request->latitude ?: null,
+                'lng_clock_out' => $request->longitude ?: null,
+                'device_fingerprint_clock_out' => $deviceFingerprint,
+                'ip_clock_out' => (string) ($request->ip() ?? ''),
+                'user_agent_clock_out' => $currentUserAgent,
+                'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
+            ]);
+
+            // Notify Group via WhatsApp (Non-blocking using anonymous function)
+            dispatch(function () use ($currentUser, $attendance) {
+                try {
+                    $time = $attendance->clock_out->format('H:i');
+                    $date = $attendance->clock_out->translatedFormat('d M Y');
+                    $clockOutNotes = '-';
+                    if ($attendance->notes) {
+                        $parts = explode("\nClock Out Note: ", $attendance->notes);
+                        $clockOutNotes = $parts[1] ?? '-';
+                    }
+                    $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
+                                 "👤 *Nama:* {$currentUser->name}\n" .
+                                 "⏰ *Jam:* {$time} WIB\n" .
+                                 "📅 *Tanggal:* {$date}\n" .
+                                 "🏁 *Status:* SELESAI TUGAS 👋\n" .
+                                 "📝 *Catatan:* {$clockOutNotes}\n\n" .
+                                 "🚀 _Sistem M-Store_";
+                    
+                    app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
+                    app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+                } catch (\Throwable $e) {
+                    Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
+                }
+            })->afterResponse();
+
+            return redirect()->route($this->attendanceRedirectRoute($request))->with('success', __('Clock Out successful!'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Attendance Update Fatal Error: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['message' => __('Terjadi kesalahan saat memproses absensi pulang: ') . $e->getMessage()]);
+        }
     }
 
     public function destroy(TechnicianAttendance $attendance)
@@ -1094,7 +1078,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     /**
      * Calculate distance between two points in meters using Haversine formula.
      */
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2): float
     {
         $earthRadius = 6371000; // meters
 
@@ -1126,7 +1110,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($maxKb < 256) {
             return 256;
         }
-        if ($maxKb > 20480) { // Max 20MB
+        if ($maxKb > 20480) {
             return 20480;
         }
 
@@ -1140,7 +1124,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return $rawFingerprint;
         }
 
-        // Fallback agar absensi tidak gagal saat browser tidak mengirim fingerprint.
         $fallbackPayload = implode('|', [
             (string) Auth::id(),
             mb_substr((string) $request->userAgent(), 0, 255),
@@ -1156,9 +1139,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return null;
         }
 
-        // Broaden user resolution for Kiosk:
-        // Any active user with an ID card code, username, or ID matching the scan
-        // should be allowed to use the kiosk if they belong to a staff-related role.
         return User::query()
             ->where('is_active', true)
             ->where(function ($query) use ($code) {
@@ -1175,15 +1155,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     private function attendanceEligibleRoleNames(): array
     {
         return [
-            'admin', 'administrator', // administrasi
-            'leader', // team leader
-            'finance', 'staf-keuangan', 'finance-staft', 'staf finance', // administrasi/keuangan
-            'hrd manager', 'hrd', // hrd
-            'noc', 'network-operations-center', // noc
-            'technician', // teknisi
-            'kasir-atk', // kasir atk
-            'kasir-wash', // kasir wash
-            'karyawan-wash', 'operator-wash', // operator wash
+            'admin', 'administrator',
+            'leader',
+            'finance', 'staf-keuangan', 'finance-staft', 'staf finance',
+            'hrd manager', 'hrd',
+            'noc', 'network-operations-center',
+            'technician',
+            'kasir-atk',
+            'kasir-wash',
+            'karyawan-wash', 'operator-wash',
         ];
     }
 
@@ -1225,7 +1205,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function resolveClockInWindow(User $user): array
     {
-        // Debug change
         $globalStart = Setting::getValue('attendance_clock_in_start', '07:00');
         $globalEnd = Setting::getValue('attendance_clock_in_end', '13:00');
         $earlyMinutes = (int) Setting::getValue('attendance_clock_in_early_minutes', 60);
@@ -1234,7 +1213,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
         $shiftInfo = $this->resolveTodayShiftInfo($user);
 
-        // Perbaikan: Gunakan shift_start dari shiftInfo jika tersedia, meskipun source-nya 'default' (untuk Admin/Leader)
         $isWorkShift = in_array($shiftInfo['status'] ?? '', [TechnicianSchedule::STATUS_PIKET, TechnicianSchedule::STATUS_BACKUP, TechnicianSchedule::STATUS_LONGSHIFT], true);
         $hasShiftTime = ! empty($shiftInfo['shift_start']) && $shiftInfo['shift_start'] !== '-';
 
@@ -1308,7 +1286,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function timeToMinutes(string $time, int $default): int
     {
-        // Remove everything except digits and colon
         $time = preg_replace('/[^0-9:]/', '', $time);
         
         if (! preg_match('/^(\d{1,2}):(\d{2})$/', $time, $matches)) {
@@ -1378,7 +1355,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $shiftEnd = (string) $shiftConfig['longshift_end'];
             $shiftCutoff = (string) $shiftConfig['longshift_cutoff'];
         } elseif ($status === TechnicianSchedule::STATUS_PIKET) {
-            // Perbaikan: Mapping shift1/shift2/longshift dari pengaturan mingguan
             $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
             $scheduleRaw = (string) Setting::getValue($settingKey, '{}');
             $schedule = json_decode($scheduleRaw, true);
