@@ -12,11 +12,11 @@
             </div>
 
             <div class="card-body">
-                {{-- Alerts handled by SweetAlert in Layout --}}
+                {{-- Notifikasi Sukses/Gagal global ditangani SweetAlert di Layout --}}
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle table-responsive-mobile">
-                        <thead class="">
+                    <table class="table table-hover align-middle">
+                        <thead>
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Nama') }}</th>
                                 <th scope="col">{{ __('Kontak') }}</th>
@@ -30,17 +30,20 @@
                                 <tr>
                                     <td class="ps-3">
                                         <div class="d-flex align-items-center">
+                                            {{-- Penanganan huruf inisial yang aman untuk UTF-8 & otomatis Uppercase --}}
                                             <div class="avatar avatar-sm me-3 bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <span class="fw-bold">{{ substr($technician->name, 0, 1) }}</span>
+                                                <span class="fw-bold">{{ \Illuminate\Support\Str::of($technician->name)->trim()->substr(0, 1)->upper() }}</span>
                                             </div>
                                             <div class="fw-medium">{{ $technician->name }}</div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="small">{{ $technician->email }}</div>
+                                        <div class="small fw-semibold text-dark">{{ $technician->email }}</div>
                                         <div class="text-muted small">{{ $technician->phone ?? __('Tidak ada nomor') }}</div>
                                         @if($technician->telegram_chat_id)
-                                            <div class="small text-info"><i class="fa-brands fa-telegram"></i> {{ $technician->telegram_chat_id }}</div>
+                                            <div class="small text-info mt-1">
+                                                <i class="fa-brands fa-telegram me-1"></i>{{ $technician->telegram_chat_id }}
+                                            </div>
                                         @endif
                                     </td>
                                     <td>
@@ -59,7 +62,9 @@
                                             <a href="{{ route('technicians.edit', $technician) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Ubah') }}">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
-                                            <form action="{{ route('technicians.destroy', $technician) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus teknisi ini?') }}')">
+                                            
+                                            {{-- Cukup tambahkan class 'form-delete'. Sisanya ditangani script global --}}
+                                            <form action="{{ route('technicians.destroy', $technician) }}" method="POST" class="d-inline form-delete">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
@@ -71,7 +76,8 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fa-regular fa-folder-open d-block fs-2 mb-2 text-secondary"></i>
                                         {{ __('Tidak ada teknisi.') }}
                                     </td>
                                 </tr>
