@@ -1,5 +1,19 @@
 @extends('layouts.app')
 
+{{-- Push TomSelect Styles ke Head Layout --}}
+@if(Auth::user()->hasRole('admin'))
+    @push('styles')
+        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+        <style>
+            /* Memperbaiki tinggi baris & keselarasan visual TomSelect */
+            .ts-wrapper.single .ts-control {
+                padding: .375rem .75rem !important;
+                font-size: .875rem !important;
+            }
+        </style>
+    @endpush
+@endif
+
 @section('content')
 <div class="row">
     <div class="col-12">
@@ -7,7 +21,9 @@
             <div class="card-header py-3">
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clipboard-user me-2 text-primary"></i>{{ __('Rekap Absensi Teknisi') }}</h5>
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fa-solid fa-clipboard-user me-2 text-primary"></i>{{ __('Rekap Absensi Teknisi') }}
+                        </h5>
                         <div class="d-flex gap-2">
                             <a href="{{ route('attendance.daily') }}" class="btn btn-info text-white btn-sm">
                                 <i class="fa-solid fa-calendar-day me-1"></i>{{ __('Absensi Harian') }}
@@ -103,55 +119,31 @@
                     <strong>Panduan:</strong> Halaman ini menampilkan <strong>riwayat absensi yang sudah ada</strong>. Untuk melihat <strong>SEMUA karyawan (termasuk yang belum absen)</strong>, klik tombol <strong>"Absensi Harian"</strong> di atas!
                 </div>
 
-                <!-- Ringkasan -->
+                <!-- Ringkasan Statistik -->
                 <div class="row g-2 mb-4">
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-success-subtle border border-success rounded text-center">
-                            <div class="h4 mb-0 text-success fw-bold">{{ $stats['present'] }}</div>
-                            <div class="small text-success-emphasis fw-bold">{{ __('Hadir') }}</div>
+                    @foreach(['present' => ['bg' => 'success', 'text' => __('Hadir')], 
+                             'late'    => ['bg' => 'warning', 'text' => __('Terlambat')], 
+                             'leave'   => ['bg' => 'info', 'text' => __('Cuti')], 
+                             'permit'  => ['bg' => 'primary', 'text' => __('Izin')], 
+                             'sick'    => ['bg' => 'secondary', 'text' => __('Sakit')], 
+                             'alpha'   => ['bg' => 'danger', 'text' => __('Alpha')]] as $key => $theme)
+                        <div class="col-4 col-md-2">
+                            <div class="p-2 bg-{{ $theme['bg'] }}-subtle border border-{{ $theme['bg'] }} rounded text-center">
+                                <div class="h4 mb-0 text-{{ $theme['bg'] }} fw-bold">{{ $stats[$key] ?? 0 }}</div>
+                                <div class="small text-{{ $theme['bg'] }}-emphasis fw-bold">{{ $theme['text'] }}</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-warning-subtle border border-warning rounded text-center">
-                            <div class="h4 mb-0 text-warning fw-bold">{{ $stats['late'] }}</div>
-                            <div class="small text-warning-emphasis fw-bold">{{ __('Terlambat') }}</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-info-subtle border border-info rounded text-center">
-                            <div class="h4 mb-0 text-info fw-bold">{{ $stats['leave'] }}</div>
-                            <div class="small text-info-emphasis fw-bold">{{ __('Cuti') }}</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-primary-subtle border border-primary rounded text-center">
-                            <div class="h4 mb-0 text-primary fw-bold">{{ $stats['permit'] }}</div>
-                            <div class="small text-primary-emphasis fw-bold">{{ __('Izin') }}</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-secondary-subtle border border-secondary rounded text-center">
-                            <div class="h4 mb-0 text-secondary fw-bold">{{ $stats['sick'] }}</div>
-                            <div class="small text-secondary-emphasis fw-bold">{{ __('Sakit') }}</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 bg-danger-subtle border border-danger rounded text-center">
-                            <div class="h4 mb-0 text-danger fw-bold">{{ $stats['alpha'] }}</div>
-                            <div class="small text-danger-emphasis fw-bold">{{ __('Alpha') }}</div>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
 
-                {{-- Alerts handled by SweetAlert in Layout --}}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle table-responsive-mobile">
                         <thead class="table-light">
                             <tr>
                                 @if(Auth::user()->hasRole('admin'))
-                                <th class="ps-3">
-                                    <input type="checkbox" id="selectAllAttendance" onclick="toggleSelectAll()">
-                                </th>
+                                    <th class="ps-3" style="width: 40px;">
+                                        <input type="checkbox" id="selectAllAttendance" onclick="toggleSelectAll()">
+                                    </th>
                                 @endif
                                 <th>{{ __('Teknisi') }}</th>
                                 <th>{{ __('Tanggal') }}</th>
@@ -159,9 +151,9 @@
                                 <th>{{ __('Jam Pulang') }}</th>
                                 <th>{{ __('Lokasi') }}</th>
                                 <th>{{ __('Status') }}</th>
-                                <th class="pe-3">{{ __('Foto') }}</th>
+                                <th style="width: 90px;">{{ __('Foto') }}</th>
                                 @if(Auth::user()->hasRole('admin'))
-                                <th class="text-end pe-3">{{ __('Aksi') }}</th>
+                                    <th class="text-end pe-3" style="width: 150px;">{{ __('Aksi') }}</th>
                                 @endif
                             </tr>
                         </thead>
@@ -169,16 +161,14 @@
                             @forelse($attendances as $attendance)
                                 <tr>
                                     @if(Auth::user()->hasRole('admin'))
-                                    <td class="ps-3">
-                                        <input type="checkbox" class="attendance-select" value="{{ $attendance->id }}">
-                                    </td>
+                                        <td class="ps-3">
+                                            <input type="checkbox" class="attendance-select" value="{{ $attendance->id }}">
+                                        </td>
                                     @endif
                                     <td>
                                         <div class="fw-medium">{{ $attendance->user->name }}</div>
                                         <div class="mt-1">
-                                            @php
-                                                $shift = $attendance->shift_info;
-                                            @endphp
+                                            @php $shift = $attendance->shift_info; @endphp
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle x-small py-1" title="{{ __('Jadwal Shift') }}">
                                                 <i class="fa-solid fa-clock me-1"></i>{{ $shift['start'] }} - {{ $shift['end'] }}
                                             </span>
@@ -188,19 +178,15 @@
                                         {{ $attendance->clock_in->translatedFormat('d M Y') }}
                                     </td>
                                     <td class="small">
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
-                                                <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>{{ $attendance->clock_in->format('H:i') }}
-                                            </span>
-                                        </div>
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>{{ $attendance->clock_in->format('H:i') }}
+                                        </span>
                                     </td>
                                     <td class="small">
                                         @if($attendance->clock_out)
-                                            <div class="d-flex flex-column gap-1">
-                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
-                                                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>{{ $attendance->clock_out->format('H:i') }}
-                                                </span>
-                                            </div>
+                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
+                                                <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>{{ $attendance->clock_out->format('H:i') }}
+                                            </span>
                                         @else
                                             <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-3">--:--</span>
                                         @endif
@@ -232,42 +218,47 @@
                                         </span>
                                     </td>
                                     <td class="pe-3">
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex gap-1">
                                             @if($attendance->photo_clock_in)
                                                 <a href="{{ Storage::url($attendance->photo_clock_in) }}" target="_blank">
-                                                    <img src="{{ Storage::url($attendance->photo_clock_in) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="In" loading="lazy" decoding="async">
+                                                    <img src="{{ Storage::url($attendance->photo_clock_in) }}" class="rounded object-fit-cover border shadow-xs" style="width: 32px; height: 32px;" alt="In" loading="lazy">
                                                 </a>
                                             @endif
                                             @if($attendance->photo_clock_out)
                                                 <a href="{{ Storage::url($attendance->photo_clock_out) }}" target="_blank">
-                                                    <img src="{{ Storage::url($attendance->photo_clock_out) }}" class="rounded object-fit-cover border" style="width: 32px; height: 32px;" alt="Out" loading="lazy" decoding="async">
+                                                    <img src="{{ Storage::url($attendance->photo_clock_out) }}" class="rounded object-fit-cover border shadow-xs" style="width: 32px; height: 32px;" alt="Out" loading="lazy">
                                                 </a>
                                             @endif
                                         </div>
                                     </td>
                                     @if(Auth::user()->hasRole('admin'))
-                                    <td class="text-end pe-3">
-                                        <div class="d-inline-flex gap-1">
-                                            <form method="POST" action="{{ route('attendance.notify', $attendance) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-success text-white btn-sm" title="{{ __('Send WhatsApp Notification') }}" onclick="return confirm('{{ __('Send WhatsApp notification?') }}')" data-bs-toggle="tooltip">
-                                                    <i class="fa-brands fa-whatsapp"></i> <span class="d-none d-sm-inline ms-1">{{ __('Notifikasi') }}</span>
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ route('attendance.destroy', $attendance->id) }}" onsubmit="return confirm('{{ __('Yakin ingin menghapus data ini?') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('Hapus') }}">
-                                                    <i class="fa-regular fa-trash-can"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                        <td class="text-end pe-3">
+                                            <div class="d-inline-flex gap-1">
+                                                {{-- Notifikasi WhatsApp --}}
+                                                <form method="POST" action="{{ route('attendance.notify', $attendance) }}" class="form-whatsapp">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-success text-white btn-sm btn-notify" title="{{ __('Kirim WhatsApp') }}">
+                                                        <i class="fa-brands fa-whatsapp"></i> <span class="d-none d-sm-inline ms-1">{{ __('Notifikasi') }}</span>
+                                                    </button>
+                                                </form>
+                                                {{-- Single Delete dengan Trigger Class SweetAlert global --}}
+                                                <form method="POST" action="{{ route('attendance.destroy', $attendance->id) }}" class="form-delete">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('Hapus') }}">
+                                                        <i class="fa-regular fa-trash-can"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
                                     @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ Auth::user()->hasRole('admin') ? 8 : 6 }}" class="text-center py-4 text-muted">{{ __('Tidak ada data absensi.') }}</td>
+                                    <td colspan="{{ Auth::user()->hasRole('admin') ? 9 : 7 }}" class="text-center py-5 text-muted">
+                                        <i class="fa-regular fa-folder-open d-block fs-3 mb-2 text-secondary"></i>
+                                        {{ __('Tidak ada data absensi.') }}
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -295,7 +286,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
-                        <select name="user_id" class="form-select js-search-select" required>
+                        <select name="user_id" class="form-select js-search-select-modal" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
                                 <option value="{{ $tech->id }}">{{ $tech->name }}</option>
@@ -344,7 +335,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
-                        <select name="user_id" class="form-select js-search-select" required>
+                        <select name="user_id" class="form-select js-search-select-modal" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
                                 <option value="{{ $tech->id }}">{{ $tech->name }}</option>
@@ -361,7 +352,6 @@
                     <div class="mb-3">
                         <label class="form-label fw-medium">{{ __('Kategori') }}</label>
                         <select name="category" id="adjustment_category" class="form-select" required onchange="updateAdjustmentDescription()">
-                            <!-- Bonus Categories (Default) -->
                             <option value="disiplin">Bonus Disiplin</option>
                             <option value="tanggung jawab">Bonus Tanggung Jawab</option>
                             <option value="absensi">Bonus Absensi</option>
@@ -390,9 +380,6 @@
     </div>
 </div>
 
-@if(Auth::user()->hasRole('admin'))
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <form id="form-recap-finance" action="{{ route('attendance.recap_finance') }}" method="POST" style="display: none;">
     @csrf
     <input type="hidden" name="user_id" value="{{ request('user_id') }}">
@@ -404,119 +391,184 @@
     @csrf
     @method('DELETE')
 </form>
+@endsection
 
-<script>
-function confirmRecapFinance() {
-    Swal.fire({
-        title: '{{ __('Catat Pengeluaran Gaji?') }}',
-        text: '{{ __('Ini akan membuat transaksi pengeluaran di Keuangan berdasarkan filter saat ini.') }}',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ffc107',
-        cancelButtonColor: '#d33',
-        confirmButtonText: '{{ __('Ya, Catat Sekarang!') }}',
-        cancelButtonText: '{{ __('Batal') }}'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            document.getElementById('form-recap-finance').submit();
-        }
-    });
-}
-
-function toggleSelectAll() {
-    const master = document.getElementById('selectAllAttendance');
-    const items = document.querySelectorAll('.attendance-select');
-    items.forEach(cb => cb.checked = master.checked);
-}
-
-function submitBulkDelete() {
-    const selected = Array.from(document.querySelectorAll('.attendance-select:checked')).map(cb => cb.value);
-    if (selected.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: '{{ __('Tidak ada data absensi yang dipilih.') }}'
-        });
-        return;
-    }
-    Swal.fire({
-        title: '{{ __('Yakin ingin menghapus data ini?') }}',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '{{ __('Ya, Hapus') }}',
-        cancelButtonText: '{{ __('Batal') }}'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.getElementById('bulkDeleteForm');
-            form.innerHTML = '@csrf<input type="hidden" name="_method" value="DELETE">';
-            selected.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = id;
-                form.appendChild(input);
+{{-- Push TomSelect & Custom Scripts ke Bottom Layout --}}
+@if(Auth::user()->hasRole('admin'))
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. Inisialisasi TomSelect untuk Input Filter normal
+            document.querySelectorAll('.js-search-select').forEach(function (el) {
+                if (!el.tomselect) {
+                    new TomSelect(el, {
+                        create: false,
+                        sortField: { field: 'text', direction: 'asc' },
+                    });
+                }
             });
-            form.submit();
-        }
-    });
-}
 
-document.addEventListener('DOMContentLoaded', function () {
-    if (window.TomSelect) {
-        document.querySelectorAll('.js-search-select').forEach(function (el) {
-            if (! el.tomselect) {
-                new TomSelect(el, {
-                    create: false,
-                    sortField: { field: 'text', direction: 'asc' },
+            // 2. Inisialisasi TomSelect di dalam Modal (Menggunakan dropdownParent agar tidak tertutup modal)
+            document.querySelectorAll('.js-search-select-modal').forEach(function (el) {
+                if (!el.tomselect) {
+                    new TomSelect(el, {
+                        create: false,
+                        dropdownParent: 'body', // Melempar dropdown ke body root, aman dari overflow:hidden modal
+                        sortField: { field: 'text', direction: 'asc' },
+                    });
+                }
+            });
+            
+            // 3. Tangani Interupsi Hapus Single dengan SweetAlert
+            document.querySelectorAll('.form-delete').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: '{{ __('Apakah Anda yakin?') }}',
+                        text: '{{ __('Data absensi yang dihapus tidak dapat dikembalikan!') }}',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '{{ __('Ya, Hapus!') }}',
+                        cancelButtonText: '{{ __('Batal') }}',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+
+            // 4. Tangani Interupsi WhatsApp dengan SweetAlert
+            document.querySelectorAll('.form-whatsapp').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: '{{ __('Kirim Notifikasi WhatsApp?') }}',
+                        text: '{{ __('Sistem akan mengirimkan ringkasan absensi ini ke nomor teknisi terkait.') }}',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#198754', // Warna sukses hijau WA
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '{{ __('Kirim') }}',
+                        cancelButtonText: '{{ __('Batal') }}',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        });
+
+        function confirmRecapFinance() {
+            Swal.fire({
+                title: '{{ __('Catat Pengeluaran Gaji?') }}',
+                text: '{{ __('Ini akan membuat transaksi pengeluaran di Keuangan berdasarkan filter saat ini.') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '{{ __('Ya, Catat Sekarang!') }}',
+                cancelButtonText: '{{ __('Batal') }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-recap-finance').submit();
+                }
+            });
+        }
+
+        function toggleSelectAll() {
+            const master = document.getElementById('selectAllAttendance');
+            const items = document.querySelectorAll('.attendance-select');
+            items.forEach(cb => cb.checked = master.checked);
+        }
+
+        function submitBulkDelete() {
+            const selected = Array.from(document.querySelectorAll('.attendance-select:checked')).map(cb => cb.value);
+            if (selected.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '{{ __('Peringatan') }}',
+                    text: '{{ __('Tidak ada data absensi yang dipilih.') }}'
+                });
+                return;
+            }
+            Swal.fire({
+                title: '{{ __('Yakin ingin menghapus data terpilih?') }}',
+                text: '{{ __('Semua data absensi yang dicentang akan dihapus permanen!') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '{{ __('Ya, Hapus Semuanya!') }}',
+                cancelButtonText: '{{ __('Batal') }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('bulkDeleteForm');
+                    form.innerHTML = '@csrf<input type="hidden" name="_method" value="DELETE">';
+                    selected.forEach(id => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'ids[]';
+                        input.value = id;
+                        form.appendChild(input);
+                    });
+                    form.submit();
+                }
+            });
+        }
+
+        function updateAdjustmentCategories() {
+            const type = document.getElementById('adjustment_type').value;
+            const categorySelect = document.getElementById('adjustment_category');
+            
+            categorySelect.innerHTML = '';
+            
+            if (type === 'bonus') {
+                const options = [
+                    { value: 'disiplin', text: 'Bonus Disiplin' },
+                    { value: 'tanggung jawab', text: 'Bonus Tanggung Jawab' },
+                    { value: 'absensi', text: 'Bonus Absensi' }
+                ];
+                options.forEach(opt => {
+                    const el = document.createElement('option');
+                    el.value = opt.value;
+                    el.textContent = opt.text;
+                    categorySelect.appendChild(el);
+                });
+            } else if (type === 'kasbon') {
+                const options = [
+                    { value: 'bon kantor', text: 'Bon Kantor' },
+                    { value: 'bon warung', text: 'Bon Warung' }
+                ];
+                options.forEach(opt => {
+                    const el = document.createElement('option');
+                    el.value = opt.value;
+                    el.textContent = opt.text;
+                    categorySelect.appendChild(el);
                 });
             }
-        });
-    }
-});
+            
+            updateAdjustmentDescription();
+        }
 
-function updateAdjustmentCategories() {
-    const type = document.getElementById('adjustment_type').value;
-    const categorySelect = document.getElementById('adjustment_category');
-    
-    // Clear current options
-    categorySelect.innerHTML = '';
-    
-    if (type === 'bonus') {
-        const options = [
-            { value: 'disiplin', text: 'Bonus Disiplin' },
-            { value: 'tanggung jawab', text: 'Bonus Tanggung Jawab' },
-            { value: 'absensi', text: 'Bonus Absensi' }
-        ];
-        options.forEach(opt => {
-            const el = document.createElement('option');
-            el.value = opt.value;
-            el.textContent = opt.text;
-            categorySelect.appendChild(el);
-        });
-    } else if (type === 'kasbon') {
-        const options = [
-            { value: 'bon kantor', text: 'Bon Kantor' },
-            { value: 'bon warung', text: 'Bon Warung' }
-        ];
-        options.forEach(opt => {
-            const el = document.createElement('option');
-            el.value = opt.value;
-            el.textContent = opt.text;
-            categorySelect.appendChild(el);
-        });
-    }
-    
-    updateAdjustmentDescription();
-}
-
-function updateAdjustmentDescription() {
-    const categorySelect = document.getElementById('adjustment_category');
-    const descriptionTextarea = document.getElementById('adjustment_description');
-    const selectedText = categorySelect.options[categorySelect.selectedIndex].text;
-    descriptionTextarea.value = selectedText;
-}
-</script>
+        function updateAdjustmentDescription() {
+            const categorySelect = document.getElementById('adjustment_category');
+            const descriptionTextarea = document.getElementById('adjustment_description');
+            
+            // Tambahkan validasi defensif (mencegah error bila seleksi belum siap)
+            if (categorySelect && categorySelect.options && categorySelect.selectedIndex > -1) {
+                const selectedText = categorySelect.options[categorySelect.selectedIndex].text;
+                descriptionTextarea.value = selectedText;
+            } else {
+                descriptionTextarea.value = '';
+            }
+        }
+        </script>
+    @endpush
 @endif
-
-@endsection
