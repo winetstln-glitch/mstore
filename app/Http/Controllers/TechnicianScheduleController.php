@@ -1554,6 +1554,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             'admin',
             'direktur',
             'coordinator',
+            'koordinator',
             'owner',
             'owner-pendiri',
             'customer',
