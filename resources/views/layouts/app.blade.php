@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name', 'MStore'))</title>
+    <title>@yield('title', config('app.name', 'Mstore Gt Wash'))</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ app()->environment('production') ? secure_asset('favicon.svg') : asset('favicon.svg') }}">
     <link rel="alternate icon" href="{{ app()->environment('production') ? secure_asset('favicon.ico') : asset('favicon.ico') }}">
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5.3 CSS -->
@@ -61,7 +59,7 @@
             </div>
             <span class="sidebar-brand-text ms-2"></span>
             <!-- Close Button for Mobile -->
-            <button class="btn btn-link position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;">
+            <button class="btn btn-link position-absolute top-0 end-0 me-2 d-lg-none" id="sidebarClose" style="z-index: 1051;" aria-label="Tutup Sidebar">
                 <i class="fa-solid fa-times fa-lg"></i>
             </button>
         </div>
@@ -102,6 +100,12 @@
             @if($hasPermission('dashboard.view'))
             <a href="{{ route('dashboard') }}" class="sidebar-item {{ $routeIs('dashboard') ? 'active' : '' }}">
                 <i class="fa fa-tachometer-alt"></i> {{ __('Dasbor') }}
+            </a>
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-item {{ $routeIs('admin.dashboard') ? 'active' : '' }}">
+                <i class="fa-solid fa-chart-line"></i> Admin & HRD Dashboard
+            </a>
+            <a href="{{ route('admin.audit-trail') }}" class="sidebar-item {{ $routeIs('admin.audit-trail') ? 'active' : '' }}">
+                <i class="fa-solid fa-clipboard-list"></i> Audit Trail
             </a>
             @endif
 
@@ -612,10 +616,13 @@
                 </a>
                 @endif
 
-                <a class="sidebar-item {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'active' : '' }}" data-bs-toggle="collapse" href="#hrCollapse" role="button" aria-expanded="{{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'true' : 'false' }}" aria-controls="hrCollapse">
+                @php
+                    $hrdAnyActive = $routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*') || $routeIs('employee.leave-requests') || $routeIs('admin.leave-requests');
+                @endphp
+                <a class="sidebar-item {{ $hrdAnyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#hrCollapse" role="button" aria-expanded="{{ $hrdAnyActive ? 'true' : 'false' }}" aria-controls="hrCollapse">
                     <i class="fa-solid fa-users-gear"></i> {{ __('Kepegawaian') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                 </a>
-                <div class="collapse {{ ($routeIs('employees.*') || $routeIs('attendance.*') || $routeIs('schedules.*') || $routeIs('leave-requests.*') || $routeIs('settings.attendance.*')) ? 'show' : '' }}" id="hrCollapse">
+                <div class="collapse {{ $hrdAnyActive ? 'show' : '' }}" id="hrCollapse">
                     <div class="ps-3">
                         @if($hasPermission('employee.view'))
                         <a href="{{ route('employees.index') }}" class="sidebar-item {{ $routeIs('employees.*') ? 'active' : '' }}">
@@ -638,9 +645,14 @@
                         </a>
                         @endif
                         @if($hasPermission('leave.view'))
-                        <a href="{{ route('leave-requests.index') }}" class="sidebar-item {{ $routeIs('leave-requests.*') ? 'active' : '' }}">
-                            <i class="fa-regular fa-envelope-open"></i> {{ __('Cuti / Izin') }}
-                        </a>
+                            @if($hasPermission('leave.manage'))
+                            <a href="{{ route('admin.leave-requests') }}" class="sidebar-item {{ $routeIs('admin.leave-requests') ? 'active' : '' }}">
+                                <i class="fa-solid fa-users-between-lines"></i> Kelola Cuti/Izin
+                            </a>
+                            @endif
+                            <a href="{{ route('employee.leave-requests') }}" class="sidebar-item {{ $routeIs('employee.leave-requests') ? 'active' : '' }}">
+                                <i class="fa-regular fa-envelope-open"></i> Cuti/Izin Saya
+                            </a>
                         @endif
                         @if($hasRole('admin') || $hasRole('finance') || $hasRole('hrd manager'))
                         <a href="{{ route('technicians.kasbon.index') }}" class="sidebar-item {{ $routeIs('technicians.kasbon.*') ? 'active' : '' }}">
@@ -676,16 +688,16 @@
 
             @php
                 $attendanceSettingsRoute = $routeIs('settings.attendance.*');
-                $systemActive = ($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('users.*') || $routeIs('roles.*') || $routeIs('regions.*') || $routeIs('coordinators.*') || $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
+                $systemAnyActive = ($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('users.*') || $routeIs('roles.*') || $routeIs('regions.*') || $routeIs('coordinators.*') || $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
                 $settingsAreaActive = (($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('regions.*') || $routeIs('coordinators.*'));
                 $userAreaActive = $routeIs('users.*') || $routeIs('roles.*');
                 $integrationAreaActive = $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
             @endphp
 
-            <a class="sidebar-item {{ $systemActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemCollapse" role="button" aria-expanded="{{ $systemActive ? 'true' : 'false' }}" aria-controls="systemCollapse">
+            <a class="sidebar-item {{ $systemAnyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemCollapse" role="button" aria-expanded="{{ $systemAnyActive ? 'true' : 'false' }}" aria-controls="systemCollapse">
                 <i class="fa fa-cogs"></i> {{ __('Konfigurasi Sistem') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
-            <div class="collapse {{ $systemActive ? 'show' : '' }}" id="systemCollapse">
+            <div class="collapse {{ $systemAnyActive ? 'show' : '' }}" id="systemCollapse">
                 <div class="ps-3">
                     <a class="sidebar-item {{ $settingsAreaActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemSettingsCollapse" role="button" aria-expanded="{{ $settingsAreaActive ? 'true' : 'false' }}" aria-controls="systemSettingsCollapse">
                         <i class="fa-solid fa-sliders"></i> {{ __('Pengaturan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
@@ -912,6 +924,9 @@
     <!-- Feather Icons -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
+{{-- ========================================== --}}
+{{-- SCRIPT 1: MOBILE MENU TOGGLE --}}
+{{-- ========================================== --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -922,27 +937,32 @@
             });
         }
     });
+</script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 2: NOTIFIKASI (mstoreNotify) --}}
+{{-- ========================================== --}}
+<script>
+    window.mstoreBuildPopupConfig = function (overrides) {
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const popupBase = {
+            customClass: {
+                popup: 'mstore-swal-popup',
+                title: 'mstore-swal-title',
+                htmlContainer: 'mstore-swal-html'
+            },
+            background: isDark ? '#0f172a' : '#ffffff',
+            color: isDark ? '#e2e8f0' : '#1e293b',
+            showConfirmButton: false,
+            timerProgressBar: true
+        };
+        return Object.assign({}, popupBase, overrides || {});
+    };
 
     (function () {
-        const buildPopupConfig = function (overrides) {
-            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const popupBase = {
-                customClass: {
-                    popup: 'mstore-swal-popup',
-                    title: 'mstore-swal-title',
-                    htmlContainer: 'mstore-swal-html'
-                },
-                background: isDark ? '#0f172a' : '#ffffff',
-                color: isDark ? '#e2e8f0' : '#1e293b',
-                showConfirmButton: false,
-                timerProgressBar: true
-            };
-            return Object.assign({}, popupBase, overrides || {});
-        };
-
         window.mstoreNotify = {
             success: function (message, options) {
-                return Swal.fire(buildPopupConfig(Object.assign({
+                return Swal.fire(window.mstoreBuildPopupConfig(Object.assign({
                     icon: 'success',
                     title: 'Berhasil',
                     html: message || 'Aksi berhasil diproses',
@@ -952,7 +972,7 @@
                 }, options || {})));
             },
             error: function (message, options) {
-                return Swal.fire(buildPopupConfig(Object.assign({
+                return Swal.fire(window.mstoreBuildPopupConfig(Object.assign({
                     icon: 'error',
                     title: 'Terjadi Kesalahan',
                     html: message || 'Terjadi kesalahan saat memproses data',
@@ -961,7 +981,7 @@
                 }, options || {})));
             },
             warning: function (message, options) {
-                return Swal.fire(buildPopupConfig(Object.assign({
+                return Swal.fire(window.mstoreBuildPopupConfig(Object.assign({
                     icon: 'warning',
                     title: 'Peringatan',
                     html: message || 'Harap periksa kembali data Anda',
@@ -970,7 +990,7 @@
                 }, options || {})));
             },
             info: function (message, options) {
-                return Swal.fire(buildPopupConfig(Object.assign({
+                return Swal.fire(window.mstoreBuildPopupConfig(Object.assign({
                     icon: 'info',
                     title: 'Informasi',
                     html: message || 'Informasi terbaru',
@@ -979,7 +999,7 @@
                 }, options || {})));
             },
             loading: function (message, options) {
-                return Swal.fire(buildPopupConfig(Object.assign({
+                return Swal.fire(window.mstoreBuildPopupConfig(Object.assign({
                     title: message || 'Memproses...',
                     html: 'Mohon tunggu sebentar',
                     allowOutsideClick: false,
@@ -993,201 +1013,225 @@
                 Swal.close();
             }
         };
+    })();
+</script>
 
-        window.mstoreNotify.bindAutoLoading = function (root) {
-            const scope = root || document;
-            scope.querySelectorAll('form').forEach(function (form) {
-                if (form.dataset.loadingBound === '1') {
-                    return;
-                }
-                form.dataset.loadingBound = '1';
-                form.addEventListener('submit', function (event) {
-                    if (event.defaultPrevented) {
-                        return;
-                    }
-                    const methodInput = form.querySelector('input[name="_method"]');
-                    const isDeleteForm = methodInput && (methodInput.value || '').toUpperCase() === 'DELETE';
-                    if (isDeleteForm && form.dataset.deleteConfirmed !== '1') {
-                        return;
-                    }
-                    const method = (form.getAttribute('method') || 'get').toLowerCase();
-                    if (method === 'get') {
-                        return;
-                    }
-                    if (form.hasAttribute('data-no-loading') || form.dataset.noLoading === 'true') {
-                        return;
-                    }
-                    if (form.hasAttribute('data-ajax') || form.dataset.ajax === 'true') {
-                        return;
-                    }
-                    const submitter = event.submitter || document.activeElement;
-                    if (submitter && (submitter.hasAttribute('data-no-loading') || submitter.dataset.noLoading === 'true')) {
-                        return;
-                    }
-                    if (form.dataset.isSubmitting === '1') {
-                        event.preventDefault();
-                        return;
-                    }
-                    if (!form.checkValidity()) {
-                        return;
-                    }
-                    form.dataset.isSubmitting = '1';
-                    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (button) {
-                        button.disabled = true;
-                    });
-                    const loadingDelay = Number(form.dataset.loadingDelay || 300);
-                    window.setTimeout(function () {
-                        if (form.dataset.isSubmitting !== '1') {
-                            return;
-                        }
-                        window.mstoreNotify.loading(form.dataset.loadingMessage || 'Memproses data...');
-                    }, Number.isFinite(loadingDelay) ? loadingDelay : 300);
-                });
-            });
-        };
-
-        window.mstoreNotify.bindAutoLoading(document);
-        window.mstoreNotify.bindDeleteConfirm = function (root) {
-            const scope = root || document;
-            scope.querySelectorAll('form').forEach(function (form) {
-                if (form.dataset.deleteConfirmBound === '1') {
+{{-- ========================================== --}}
+{{-- SCRIPT 3: AUTO LOADING FORM & NAVIGASI --}}
+{{-- ========================================== --}}
+<script>
+    window.mstoreNotify.bindAutoLoading = function (root) {
+        const scope = root || document;
+        scope.querySelectorAll('form').forEach(function (form) {
+            if (form.dataset.loadingBound === '1') {
+                return;
+            }
+            form.dataset.loadingBound = '1';
+            form.addEventListener('submit', function (event) {
+                if (event.defaultPrevented) {
                     return;
                 }
                 const methodInput = form.querySelector('input[name="_method"]');
                 const isDeleteForm = methodInput && (methodInput.value || '').toUpperCase() === 'DELETE';
-                if (!isDeleteForm) {
+                if (isDeleteForm && form.dataset.deleteConfirmed !== '1') {
                     return;
                 }
-                form.dataset.deleteConfirmBound = '1';
-                if (form.getAttribute('onsubmit')) {
-                    form.removeAttribute('onsubmit');
-                }
-                form.addEventListener('submit', function (event) {
-                    if (event.defaultPrevented) {
-                        return;
-                    }
-                    if (form.hasAttribute('data-no-delete-confirm') || form.dataset.noDeleteConfirm === 'true') {
-                        return;
-                    }
-                    if (form.dataset.deleteConfirmed === '1') {
-                        return;
-                    }
-                    event.preventDefault();
-                    Swal.fire(buildPopupConfig({
-                        icon: 'warning',
-                        title: 'Konfirmasi Hapus',
-                        html: form.dataset.confirmMessage || 'Data yang dihapus tidak bisa dikembalikan.',
-                        showCancelButton: true,
-                        showConfirmButton: true,
-                        confirmButtonText: 'Ya, hapus',
-                        cancelButtonText: 'Batal',
-                        reverseButtons: true,
-                        focusCancel: true
-                    })).then(function (result) {
-                        if (!result.isConfirmed) {
-                            return;
-                        }
-                        form.dataset.deleteConfirmed = '1';
-                        if (typeof form.requestSubmit === 'function') {
-                            form.requestSubmit();
-                            return;
-                        }
-                        form.submit();
-                    });
-                });
-            });
-        };
-
-        window.mstoreNotify.bindDeleteConfirm(document);
-        window.mstoreNotify.showPageLoading = function (message) {
-            const loader = document.getElementById('mstorePageLoader');
-            if (!loader) {
-                return;
-            }
-            const textElement = document.getElementById('mstorePageLoaderText');
-            if (textElement && message) {
-                textElement.textContent = message;
-            }
-            loader.classList.add('is-active');
-            loader.setAttribute('aria-hidden', 'false');
-        };
-
-        window.mstoreNotify.hidePageLoading = function () {
-            const loader = document.getElementById('mstorePageLoader');
-            if (!loader) {
-                return;
-            }
-            loader.classList.remove('is-active');
-            loader.setAttribute('aria-hidden', 'true');
-        };
-
-        window.mstoreNotify.bindNavigationLoading = function (root) {
-            const scope = root || document;
-            const looksLikeFileDownload = function (url) {
-                if (!url) {
-                    return false;
-                }
-                const normalized = (url || '').toLowerCase();
-                if (normalized.indexOf('/export/') !== -1 || normalized.indexOf('-export/') !== -1) {
-                    return true;
-                }
-                if (normalized.indexOf('download=') !== -1) {
-                    return true;
-                }
-                return /\.(csv|xlsx|xls|pdf)(\?|#|$)/i.test(normalized);
-            };
-            scope.querySelectorAll('a[href]').forEach(function (link) {
-                if (link.dataset.navLoadingBound === '1') {
+                const method = (form.getAttribute('method') || 'get').toLowerCase();
+                if (method === 'get') {
                     return;
                 }
-                link.dataset.navLoadingBound = '1';
-                link.addEventListener('click', function (event) {
-                    if (event.defaultPrevented || event.button !== 0) {
-                        return;
-                    }
-                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-                        return;
-                    }
-                    const href = link.getAttribute('href') || '';
-                    if (!href || href.charAt(0) === '#') {
-                        return;
-                    }
-                    if (href.toLowerCase().indexOf('javascript:') === 0) {
-                        return;
-                    }
-                    if (looksLikeFileDownload(href)) {
-                        return;
-                    }
-                    if (link.hasAttribute('download') || link.target === '_blank') {
-                        return;
-                    }
-                    if (link.hasAttribute('data-no-loading') || link.dataset.noLoading === 'true') {
-                        return;
-                    }
-                    if (link.hasAttribute('data-bs-toggle') || link.getAttribute('role') === 'button') {
-                        return;
-                    }
-                    const targetUrl = link.href;
-                    if (!targetUrl) {
-                        return;
-                    }
-                    if (targetUrl.split('#')[0] === window.location.href.split('#')[0]) {
-                        return;
-                    }
+                if (form.hasAttribute('data-no-loading') || form.dataset.noLoading === 'true') {
+                    return;
+                }
+                if (form.hasAttribute('data-ajax') || form.dataset.ajax === 'true') {
+                    return;
+                }
+                const submitter = event.submitter || document.activeElement;
+                if (submitter && (submitter.hasAttribute('data-no-loading') || submitter.dataset.noLoading === 'true')) {
+                    return;
+                }
+                if (form.dataset.isSubmitting === '1') {
                     event.preventDefault();
-                    window.mstoreNotify.showPageLoading(link.dataset.loadingMessage || 'Membuka halaman...');
-                    window.setTimeout(function () {
-                        window.location.assign(targetUrl);
-                    }, 60);
+                    return;
+                }
+                if (!form.checkValidity()) {
+                    return;
+                }
+                form.dataset.isSubmitting = '1';
+                form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (button) {
+                    button.disabled = true;
                 });
+                const loadingDelay = Number(form.dataset.loadingDelay || 300);
+                window.setTimeout(function () {
+                    if (form.dataset.isSubmitting !== '1') {
+                        return;
+                    }
+                    window.mstoreNotify.loading(form.dataset.loadingMessage || 'Memproses data...');
+                }, Number.isFinite(loadingDelay) ? loadingDelay : 300);
             });
-        };
-
-        window.mstoreNotify.bindNavigationLoading(document);
-        window.addEventListener('pageshow', function () {
-            window.mstoreNotify.hidePageLoading();
         });
+    };
 
+    window.mstoreNotify.bindAutoLoading(document);
+
+    window.mstoreNotify.bindNavigationLoading = function (root) {
+        const scope = root || document;
+        const looksLikeFileDownload = function (url) {
+            if (!url) {
+                return false;
+            }
+            const normalized = (url || '').toLowerCase();
+            if (normalized.indexOf('/export/') !== -1 || normalized.indexOf('-export/') !== -1) {
+                return true;
+            }
+            if (normalized.indexOf('download=') !== -1) {
+                return true;
+            }
+            return /\.(csv|xlsx|xls|pdf)(\?|#|$)/i.test(normalized);
+        };
+        scope.querySelectorAll('a[href]').forEach(function (link) {
+            if (link.dataset.navLoadingBound === '1') {
+                return;
+            }
+            link.dataset.navLoadingBound = '1';
+            link.addEventListener('click', function (event) {
+                if (event.defaultPrevented || event.button !== 0) {
+                    return;
+                }
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+                const href = link.getAttribute('href') || '';
+                if (!href || href.charAt(0) === '#') {
+                    return;
+                }
+                if (href.toLowerCase().indexOf('javascript:') === 0) {
+                    return;
+                }
+                if (looksLikeFileDownload(href)) {
+                    return;
+                }
+                if (link.hasAttribute('download') || link.target === '_blank') {
+                    return;
+                }
+                if (link.hasAttribute('data-no-loading') || link.dataset.noLoading === 'true') {
+                    return;
+                }
+                if (link.hasAttribute('data-bs-toggle') || link.getAttribute('role') === 'button') {
+                    return;
+                }
+                const targetUrl = link.href;
+                if (!targetUrl) {
+                    return;
+                }
+                if (targetUrl.split('#')[0] === window.location.href.split('#')[0]) {
+                    return;
+                }
+                event.preventDefault();
+                window.mstoreNotify.showPageLoading(link.dataset.loadingMessage || 'Membuka halaman...');
+                window.setTimeout(function () {
+                    window.location.assign(targetUrl);
+                }, 60);
+            });
+        });
+    };
+
+    window.mstoreNotify.bindNavigationLoading(document);
+    window.addEventListener('pageshow', function () {
+        window.mstoreNotify.hidePageLoading();
+    });
+</script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 4: DELETE CONFIRMATION --}}
+{{-- ========================================== --}}
+<script>
+    window.mstoreNotify.bindDeleteConfirm = function (root) {
+        const scope = root || document;
+        scope.querySelectorAll('form').forEach(function (form) {
+            if (form.dataset.deleteConfirmBound === '1') {
+                return;
+            }
+            const methodInput = form.querySelector('input[name="_method"]');
+            const isDeleteForm = methodInput && (methodInput.value || '').toUpperCase() === 'DELETE';
+            if (!isDeleteForm) {
+                return;
+            }
+            form.dataset.deleteConfirmBound = '1';
+            if (form.getAttribute('onsubmit')) {
+                form.removeAttribute('onsubmit');
+            }
+            form.addEventListener('submit', function (event) {
+                if (event.defaultPrevented) {
+                    return;
+                }
+                if (form.hasAttribute('data-no-delete-confirm') || form.dataset.noDeleteConfirm === 'true') {
+                    return;
+                }
+                if (form.dataset.deleteConfirmed === '1') {
+                    return;
+                }
+                event.preventDefault();
+                Swal.fire(window.mstoreBuildPopupConfig({
+                    icon: 'warning',
+                    title: 'Konfirmasi Hapus',
+                    html: form.dataset.confirmMessage || 'Data yang dihapus tidak bisa dikembalikan.',
+                    showCancelButton: true,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    focusCancel: true
+                })).then(function (result) {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                    form.dataset.deleteConfirmed = '1';
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                        return;
+                    }
+                    form.submit();
+                });
+            });
+        });
+    };
+
+    window.mstoreNotify.bindDeleteConfirm(document);
+</script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 5: PAGE LOADING HELPER --}}
+{{-- ========================================== --}}
+<script>
+    window.mstoreNotify.showPageLoading = function (message) {
+        const loader = document.getElementById('mstorePageLoader');
+        if (!loader) {
+            return;
+        }
+        const textElement = document.getElementById('mstorePageLoaderText');
+        if (textElement && message) {
+            textElement.textContent = message;
+        }
+        loader.classList.add('is-active');
+        loader.setAttribute('aria-hidden', 'false');
+    };
+
+    window.mstoreNotify.hidePageLoading = function () {
+        const loader = document.getElementById('mstorePageLoader');
+        if (!loader) {
+            return;
+        }
+        loader.classList.remove('is-active');
+        loader.setAttribute('aria-hidden', 'true');
+    };
+</script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 6: FLASH MESSAGE NOTIFICATION --}}
+{{-- ========================================== --}}
+<script>
+    (function() {
         @if($errors->any())
             window.mstoreNotify.error({!! json_encode('<ul class="text-start mb-0 ps-3"><li>' . implode('</li><li>', $errors->all()) . '</li></ul>') !!});
         @elseif(session('error'))
@@ -1205,6 +1249,10 @@
 <!-- Custom Dashboard JS -->
 <script src="{{ app()->environment('production') ? secure_asset('js/dashboard-custom.js') : asset('js/dashboard-custom.js') }}"></script>
 <script src="{{ app()->environment('production') ? secure_asset('js/android-interact.js') : asset('js/android-interact.js') }}"></script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 7: FEATHER ICONS & RESPONSIVE TABLE --}}
+{{-- ========================================== --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.feather) {
@@ -1250,6 +1298,10 @@
         });
     });
 </script>
+
+{{-- ========================================== --}}
+{{-- SCRIPT 8: PASSWORD TOGGLE --}}
+{{-- ========================================== --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const showPasswordLabel = @json(__('Tampilkan password'));
@@ -1302,6 +1354,9 @@
     });
 </script>
 
+{{-- ========================================== --}}
+{{-- SCRIPT 9: UPLOAD LOADING INDICATOR --}}
+{{-- ========================================== --}}
 <script>
     document.addEventListener('submit', function (event) {
         const form = event.target;
@@ -1324,6 +1379,9 @@
     });
 </script>
 
+{{-- ========================================== --}}
+{{-- SCRIPT 10: PRESENCE PING (AUTENTIKASI) --}}
+{{-- ========================================== --}}
 @auth
 <script>
     document.addEventListener('DOMContentLoaded', function () {

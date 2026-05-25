@@ -151,6 +151,7 @@ class WhatsAppController extends Controller implements HasMiddleware
         Setting::firstOrCreate(['key' => 'whatsapp_modem_up_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem UP Notification Enabled']);
         Setting::firstOrCreate(['key' => 'whatsapp_modem_down_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem DOWN Notification Enabled']);
         Setting::firstOrCreate(['key' => 'whatsapp_modem_recap_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Modem RECAP Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'whatsapp_autoreply_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Auto Reply Enabled']);
         
         Setting::firstOrCreate(['key' => 'whatsapp_ticket_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Ticket Group ID']);
         Setting::firstOrCreate(['key' => 'whatsapp_attendance_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Attendance Group ID']);
@@ -188,6 +189,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_modem_up_notification_enabled' => 'nullable|in:0,1',
             'whatsapp_modem_down_notification_enabled' => 'nullable|in:0,1',
             'whatsapp_modem_recap_notification_enabled' => 'nullable|in:0,1',
+            'whatsapp_autoreply_enabled' => 'nullable|in:0,1',
         ]);
 
         $groupSettings = [
@@ -201,6 +203,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_modem_up_notification_enabled' => 'WhatsApp Modem UP Notification Enabled',
             'whatsapp_modem_down_notification_enabled' => 'WhatsApp Modem DOWN Notification Enabled',
             'whatsapp_modem_recap_notification_enabled' => 'WhatsApp Modem RECAP Notification Enabled',
+            'whatsapp_autoreply_enabled' => 'WhatsApp Auto Reply Enabled',
         ];
 
         foreach ($groupSettings as $key => $label) {

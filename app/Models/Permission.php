@@ -25,7 +25,7 @@ class Permission extends Model
             'Pelanggan & Layanan' => ['Customer Management', 'Ticket Management', 'Installation Management', 'Service Management'],
             'Jaringan' => [
                 'ODC Management', 'ODP Management', 'HTB Management', 'OLT Management', 'Router Management',
-                'Closure Management', 'PPPoE Management', 'Hotspot Management', 'Radius', 'Map', 'Network Monitor'
+                'Closure Management', 'PPPoE Management', 'Hotspot Management', 'Radius', 'Map', 'Network Monitor', 'Utilities'
             ],
             'Keuangan' => ['Finance', 'Investor Management', 'Accounting'],
             'Operasional' => [
@@ -36,9 +36,9 @@ class Permission extends Model
             'Cuci Kendaraan' => ['Car Wash'],
             'Sistem' => [
                 'User Management', 'Role Management', 'Settings', 'Coordinator Management',
-                'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification'
+                'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification', 'Integrasi'
             ],
-            'Umum' => ['Dashboard', 'Utilities', 'Profile'],
+            'Umum' => ['Dashboard', 'Profile'],
         ];
 
         $grouped = [];

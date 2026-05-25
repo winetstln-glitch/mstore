@@ -4,21 +4,52 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TechnicianAttendance extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'work_date',
+        'clock_in',
+        'clock_out',
+        'photo_clock_in',
+        'photo_clock_out',
+        'lat_clock_in',
+        'lng_clock_in',
+        'lat_clock_out',
+        'lng_clock_out',
+        'device_fingerprint_clock_in',
+        'device_fingerprint_clock_out',
+        'ip_clock_in',
+        'ip_clock_out',
+        'user_agent_clock_in',
+        'user_agent_clock_out',
+        'status',
+        'late_minutes',
+        'permission_minutes',
+        'notes',
+        'generated_type',
+        'edited_by',
+        'edit_reason',
+    ];
 
     protected $casts = [
+        'work_date' => 'date',
         'clock_in' => 'datetime',
         'clock_out' => 'datetime',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function editedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'edited_by');
     }
 
     /**
@@ -27,14 +58,22 @@ class TechnicianAttendance extends Model
     public function getShiftInfoAttribute()
     {
         $user = $this->user;
-        $date = $this->clock_in;
+        $date = $this->work_date ?? $this->clock_in;
         
         $group = 'teknisi';
         $roleName = strtolower((string) ($user->role?->name ?? ''));
         if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
             $group = 'wash';
-        } elseif (\Schema::hasTable('wash_employees') && \App\Models\WashEmployee::where('user_id', $user->id)->exists()) {
-            $group = 'wash';
+        } else {
+            static $washEmployeesCache = null;
+            if ($washEmployeesCache === null) {
+                $washEmployeesCache = \Schema::hasTable('wash_employees') 
+                    ? \App\Models\WashEmployee::pluck('user_id')->all() 
+                    : [];
+            }
+            if (in_array($user->id, $washEmployeesCache)) {
+                $group = 'wash';
+            }
         }
 
         $status = null;

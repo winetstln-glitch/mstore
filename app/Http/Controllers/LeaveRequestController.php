@@ -21,20 +21,16 @@ class LeaveRequestController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:leave.view', only: ['index']),
+            new Middleware('permission:leave.view', only: ['employee', 'admin']),
             new Middleware('permission:leave.create', only: ['store']),
-            new Middleware('permission:leave.manage', only: ['update', 'destroy']), // Assuming these methods might exist or be added
+            new Middleware('permission:leave.manage', only: ['admin', 'update']),
         ];
     }
 
-    public function index()
+    public function employee()
     {
         $user = Auth::user();
-        $query = LeaveRequest::query()->with('user')->orderBy('created_at', 'desc');
-
-        if (! $user->hasPermission('leave.manage') && ! $user->hasRole('admin')) {
-            $query->where('user_id', $user->id);
-        }
+        $query = LeaveRequest::query()->where('user_id', $user->id)->orderBy('created_at', 'desc');
 
         if (request()->filled('reason_keyword')) {
             $kw = strtolower(request('reason_keyword'));
@@ -43,34 +39,44 @@ class LeaveRequestController extends Controller implements HasMiddleware
 
         $requests = $query->paginate(10)->withQueryString();
 
-        // Calculate used quota for current month for the current user
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
+        $monthRequests = LeaveRequest::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
+                    ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth]);
+            })
+            ->get();
+
         $usedDays = 0;
-        if (! $user->hasPermission('leave.manage') && ! $user->hasRole('admin')) {
-            $monthRequests = LeaveRequest::where('user_id', $user->id)
-                ->where('status', 'approved')
-                ->where(function ($q) use ($startOfMonth, $endOfMonth) {
-                    $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
-                        ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth]);
-                })
-                ->get();
+        foreach ($monthRequests as $req) {
+            $start = $req->start_date < $startOfMonth ? $startOfMonth : $req->start_date;
+            $end = $req->end_date > $endOfMonth ? $endOfMonth : $req->end_date;
 
-            foreach ($monthRequests as $req) {
-                // Calculate days overlap with current month
-                $start = $req->start_date < $startOfMonth ? $startOfMonth : $req->start_date;
-                $end = $req->end_date > $endOfMonth ? $endOfMonth : $req->end_date;
-
-                if ($end >= $start) {
-                    $usedDays += $start->diffInDays($end) + 1;
-                }
+            if ($end >= $start) {
+                $usedDays += $start->diffInDays($end) + 1;
             }
         }
 
         $quota = Setting::getValue('technician_leave_quota', 3);
 
-        return view('leave_requests.index', compact('requests', 'usedDays', 'quota'));
+        return view('leave_requests.my-leave', compact('requests', 'usedDays', 'quota'));
+    }
+
+    public function admin()
+    {
+        $query = LeaveRequest::query()->with('user')->orderBy('created_at', 'desc');
+
+        if (request()->filled('reason_keyword')) {
+            $kw = strtolower(request('reason_keyword'));
+            $query->whereRaw('LOWER(reason) LIKE ?', ['%'.$kw.'%']);
+        }
+
+        $requests = $query->paginate(10)->withQueryString();
+
+        return view('leave_requests.manage-leave', compact('requests'));
     }
 
     public function store(Request $request)

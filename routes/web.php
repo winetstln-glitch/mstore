@@ -55,6 +55,8 @@ Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::cl
 Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
 
 Route::middleware('auth')->group(function () {
+        Route::get('admin/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('admin/audit-trail', [\App\Http\Controllers\AdminDashboardController::class, 'auditTrail'])->name('admin.audit-trail');
     Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
     Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
     
@@ -93,6 +95,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
         Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
     });
+
+    // WhatsApp Webhook
+    Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsApp\WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
+    Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsApp\WhatsAppWebhookController::class, 'handle'])
+        ->middleware(\App\Http\Middleware\VerifyWhatsAppWebhook::class)
+        ->name('webhooks.whatsapp.handle');
 
     // Payment Webhook
     Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
@@ -161,6 +169,7 @@ Route::middleware('auth')->group(function () {
     Route::permanentRedirect('technicians', 'employees');
     Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
         ->where('any', '.*');
+    Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);
     Route::get('attendance/daily', [TechnicianAttendanceController::class, 'daily'])->name('attendance.daily');
     Route::get('attendance/payslip', [TechnicianAttendanceController::class, 'payslip'])->name('attendance.payslip');
     Route::get('attendance/excel', [TechnicianAttendanceController::class, 'exportExcel'])->name('attendance.excel');
@@ -172,7 +181,6 @@ Route::middleware('auth')->group(function () {
     Route::post('attendance/kiosk/scan', [TechnicianAttendanceController::class, 'kioskScan'])->name('attendance.kiosk.scan');
     Route::post('landing/attendance/clock-in', [TechnicianAttendanceController::class, 'store'])->name('landing.attendance.store');
     Route::put('landing/attendance/{attendance}/clock-out', [TechnicianAttendanceController::class, 'update'])->name('landing.attendance.update');
-    Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);
 
     // Schedules & Leaves
     Route::post('schedules/period', [\App\Http\Controllers\TechnicianScheduleController::class, 'updatePeriod'])->name('schedules.updatePeriod');
@@ -185,7 +193,9 @@ Route::middleware('auth')->group(function () {
     Route::get('schedules/export/pdf', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportPdf'])->name('schedules.export.pdf');
     Route::get('schedules/export/excel', [\App\Http\Controllers\TechnicianScheduleController::class, 'exportExcel'])->name('schedules.export.excel');
     Route::resource('schedules', \App\Http\Controllers\TechnicianScheduleController::class)->only(['index', 'store', 'destroy']);
-    Route::resource('leave-requests', \App\Http\Controllers\LeaveRequestController::class)->except(['create', 'show', 'edit', 'destroy']);
+    Route::get('employee/leave-requests', [\App\Http\Controllers\LeaveRequestController::class, 'employee'])->name('employee.leave-requests');
+    Route::get('admin/leave-requests', [\App\Http\Controllers\LeaveRequestController::class, 'admin'])->name('admin.leave-requests');
+    Route::resource('leave-requests', \App\Http\Controllers\LeaveRequestController::class)->except(['create', 'show', 'edit', 'destroy', 'index']);
 
     // Network & Infrastructure
    Route::prefix('olt')->name('olt.')->group(function () {
@@ -344,6 +354,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
     Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
     Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check-status');
+
+    // WhatsApp Bot Builder
+    Route::resource('whatsapp-builder', \App\Http\Controllers\WhatsAppBotBuilderController::class)->names([
+        'index' => 'whatsapp.builder.index',
+        'create' => 'whatsapp.builder.create',
+        'store' => 'whatsapp.builder.store',
+        'edit' => 'whatsapp.builder.edit',
+        'update' => 'whatsapp.builder.update',
+        'destroy' => 'whatsapp.builder.destroy',
+    ]);
 
     Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
     Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');

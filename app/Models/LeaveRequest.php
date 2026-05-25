@@ -9,9 +9,12 @@ class LeaveRequest extends Model
 {
     protected $fillable = [
         'user_id',
+        'type',
         'start_date',
         'end_date',
         'reason',
+        'leave_days_used',
+        'document_path',
         'status',
         'approved_by',
         'rejection_reason',
@@ -20,6 +23,7 @@ class LeaveRequest extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'leave_days_used' => 'integer',
     ];
 
     public function user(): BelongsTo

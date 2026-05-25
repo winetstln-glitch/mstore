@@ -60,7 +60,7 @@
                                                         @foreach($perms as $permission)
                                                             <div class="col">
                                                                 <div class="form-check">
-                                                                    <input id="perm_{{ $permission->id }}" name="permissions[]" type="checkbox" value="{{ $permission->id }}" class="form-check-input permission-checkbox" @if(in_array($permission->id, old('permissions', $rolePermissions))) checked @endif>
+                                                                    <input id="perm_{{ $permission->id }}" name="permissions[]" type="checkbox" value="{{ $permission->id }}" class="form-check-input permission-checkbox" @if(in_array($permission->id, old('permissions', $visiblePermissions))) checked @endif>
                                                                     <label for="perm_{{ $permission->id }}" class="form-check-label small">{{ $permission->label }}</label>
                                                                 </div>
                                                             </div>
@@ -74,12 +74,12 @@
                             </div>
                         @endif
 
-                        @if($role->permissions->count() > count($rolePermissions))
+                        @if($role->permissions->count() > count($visiblePermissions))
                             <div class="alert alert-warning mt-3">
                                 <i class="fa-solid fa-exclamation-triangle me-1"></i>
                                 {{ __('This role has :total permissions, but you can only manage :visible of them. The remaining permissions are kept unchanged.', [
                                     'total' => $role->permissions->count(),
-                                    'visible' => count($rolePermissions),
+                                    'visible' => count($visiblePermissions),
                                 ]) }}
                             </div>
                         @endif

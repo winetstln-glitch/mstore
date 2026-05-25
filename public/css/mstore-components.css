@@ -1,6 +1,440 @@
+/* =============================================
+   MSTORE GT WASH - GLOBAL CSS DESIGN TOKEN & STYLE GUIDE
+   =============================================
+   Version: 1.0
+   Last Updated: 2026-05-25
+   Maintainer: Senior Frontend Engineer
+   =============================================
+*/
+
+/* =============================================
+   1. GLOBAL CSS VARIABLES (LIGHT & DARK MODE)
+   =============================================
+*/
 :root {
+  /* Colors - Primary */
+  --color-primary: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-primary-dark: #1d4ed8;
+  
+  /* Colors - Secondary */
+  --color-secondary: #64748b;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #06b6d4;
+  
+  /* Colors - Neutral (Light Mode) */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+  
+  /* Typography */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  
+  /* Line Height */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* In/Out Colors (Existing) */
   --in-color: #3b82f6;
   --out-color: #ef4444;
+}
+
+/* Dark Mode Overrides */
+[data-bs-theme="dark"] {
+  /* Colors - Neutral (Dark Mode) */
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-border: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+}
+
+/* =============================================
+   2. GLOBAL TYPOGRAPHY
+   =============================================
+*/
+* {
+  font-family: var(--font-family-base);
+}
+
+body {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-xs { font-size: var(--font-size-xs); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+.text-3xl { font-size: var(--font-size-3xl); }
+
+/* =============================================
+   3. GLOBAL SPACING & LAYOUT
+   =============================================
+*/
+.container-fluid {
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+}
+
+@media (min-width: 992px) {
+  .container-fluid {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+  }
+}
+
+/* =============================================
+   4. CORE COMPONENTS - CARDS
+   =============================================
+*/
+.card {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: 600;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+.card-footer {
+  background-color: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+}
+
+/* =============================================
+   5. CORE COMPONENTS - STAT CARDS
+   =============================================
+*/
+.stat-card {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+}
+
+.stat-card-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-card-value {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.stat-card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+/* Stat Card Variants */
+.stat-card.primary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.stat-card.primary .stat-card-value {
+  color: var(--color-primary-dark);
+}
+
+.stat-card.success {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.stat-card.success .stat-card-value {
+  color: var(--color-success);
+}
+
+.stat-card.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.stat-card.warning .stat-card-value {
+  color: var(--color-warning);
+}
+
+.stat-card.danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.stat-card.danger .stat-card-value {
+  color: var(--color-danger);
+}
+
+/* Dark Mode Stat Cards */
+[data-bs-theme="dark"] .stat-card.primary .stat-card-value { color: var(--color-primary-light); }
+[data-bs-theme="dark"] .stat-card.success .stat-card-value { color: #6ee7b7; }
+[data-bs-theme="dark"] .stat-card.warning .stat-card-value { color: #fcd34d; }
+[data-bs-theme="dark"] .stat-card.danger .stat-card-value { color: #fca5a5; }
+
+/* =============================================
+   6. CORE COMPONENTS - DATA TABLES
+   =============================================
+*/
+.table {
+  color: var(--color-text-primary);
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table tbody td {
+  padding: var(--spacing-md);
+  vertical-align: middle;
+  border-top: 1px solid var(--color-border);
+}
+
+.table tbody tr {
+  transition: all 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.table-responsive {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+/* =============================================
+   7. CORE COMPONENTS - FORMS
+   =============================================
+*/
+.form-control,
+.form-select {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--color-bg-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+  color: var(--color-text-primary);
+}
+
+.form-control::placeholder {
+  color: var(--color-text-muted);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+}
+
+/* =============================================
+   8. CORE COMPONENTS - BUTTONS
+   =============================================
+*/
+.btn {
+  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.btn-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-lg);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+/* =============================================
+   9. CORE COMPONENTS - BADGES
+   =============================================
+*/
+.badge {
+  font-weight: 600;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+}
+
+.badge.bg-success { background-color: rgba(22, 163, 74, 0.15) !important; color: var(--color-success) !important; }
+.badge.bg-warning { background-color: rgba(245, 158, 11, 0.15) !important; color: var(--color-warning) !important; }
+.badge.bg-danger { background-color: rgba(239, 68, 68, 0.15) !important; color: var(--color-danger) !important; }
+.badge.bg-info { background-color: rgba(6, 182, 212, 0.15) !important; color: var(--color-info) !important; }
+.badge.bg-secondary { background-color: var(--color-bg-tertiary) !important; color: var(--color-text-secondary) !important; }
+
+/* =============================================
+   10. MOBILE-FIRST RESPONSIVE OPTIMIZATION
+   =============================================
+*/
+@media (max-width: 767.98px) {
+  /* Table Mobile */
+  .table-responsive-mobile table,
+  .table-responsive-mobile thead,
+  .table-responsive-mobile tbody,
+  .table-responsive-mobile th,
+  .table-responsive-mobile td,
+  .table-responsive-mobile tr {
+    display: block;
+  }
+  
+  .table-responsive-mobile thead {
+    display: none;
+  }
+  
+  .table-responsive-mobile tbody tr {
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-primary);
+    padding: var(--spacing-md);
+  }
+  
+  .table-responsive-mobile tbody td {
+    padding: var(--spacing-xs) 0;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .table-responsive-mobile tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+  
+  /* Sidebar Mobile */
+  .sb-sidenav-toggled .sb-sidenav {
+    transform: translateX(0);
+  }
+  
+  /* Form Input Mobile */
+  .form-control,
+  .form-select {
+    font-size: 16px !important;
+  }
 }
 
 .mstore-swal-popup {

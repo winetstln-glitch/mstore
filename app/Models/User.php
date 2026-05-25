@@ -46,6 +46,10 @@ class User extends Authenticatable
         'last_seen_user_agent',
         'attendance_device_hash',
         'attendance_device_locked_at',
+        'annual_leave_quota',
+        'annual_leave_used',
+        'sick_leave_quota',
+        'sick_leave_used',
     ];
 
     /**
@@ -71,6 +75,10 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'last_seen_at' => 'datetime',
             'attendance_device_locked_at' => 'datetime',
+            'annual_leave_quota' => 'integer',
+            'annual_leave_used' => 'integer',
+            'sick_leave_quota' => 'integer',
+            'sick_leave_used' => 'integer',
         ];
     }
 

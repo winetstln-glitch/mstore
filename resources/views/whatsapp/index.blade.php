@@ -27,6 +27,11 @@
                 </button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#autoreply">
+                    Auto Reply & Webhook
+                </button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#isp">
                     ISP Automation
                 </button>
@@ -224,6 +229,45 @@
                 </form>
 
             </div>
+
+
+            <div class="tab-pane fade" id="autoreply">
+                <form method="POST" action="{{ route('whatsapp.update') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <div class="fw-semibold mb-2">Webhook Configuration</div>
+                                <div>URL Webhook: <code>{{ route('webhooks.whatsapp.handle') }}</code></div>
+                                <div>Verify Token: <code>{{ config('services.whatsapp.verify_token', 'your-verify-token-change-me') }}</code></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Enable Auto Reply</label>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_autoreply_enabled" name="whatsapp_autoreply_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_autoreply_enabled', '1') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="whatsapp_autoreply_enabled">Aktifkan Auto Reply</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-light border">
+                                <div class="fw-semibold mb-2">Perintah Auto Reply</div>
+                                <div><code>halo/hi/hello/hey</code> - Sapa bot</div>
+                                <div><code>absen/clock in/masuk</code> - Info absensi masuk</div>
+                                <div><code>pulang/clock out/keluar</code> - Info absensi pulang</div>
+                                <div><code>jam kerja/jadwal/shift</code> - Info jadwal kerja</div>
+                                <div><code>bantuan/help/menu</code> - Menampilkan menu</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-save"></i> Simpan Konfigurasi Auto Reply
+                        </button>
+                    </div>
+                </form>
+            </div>
+
 
             <div class="tab-pane fade" id="isp">
                 <form method="POST" action="{{ route('whatsapp.update') }}">

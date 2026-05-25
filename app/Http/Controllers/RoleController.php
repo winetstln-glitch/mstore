@@ -30,8 +30,19 @@ class RoleController extends Controller implements HasMiddleware
         $roles = Role::where('name', '!=', 'customer')
             ->withCount('users')
             ->withCount('permissions')
-            ->latest()
-            ->paginate(10);
+            ->when(request('sort'), function ($query) {
+                $sortColumn = request('sort', 'created_at');
+                $sortDirection = request('direction', 'desc');
+                $allowedColumns = ['name', 'label', 'created_at', 'users_count', 'permissions_count'];
+                
+                if (in_array($sortColumn, $allowedColumns)) {
+                    $query->orderBy($sortColumn, $sortDirection);
+                }
+            }, function ($query) {
+                $query->latest();
+            })
+            ->paginate(10)
+            ->appends(request()->query());
 
         return view('roles.index', compact('roles'));
     }
@@ -43,13 +54,35 @@ class RoleController extends Controller implements HasMiddleware
     {
         $user = auth()->user();
 
-        // Super admin / full access users can assign any permission
         if ($user->hasRole('admin')) {
             return Permission::all();
         }
 
-        // Regular users can only assign permissions they personally have
         return $user->role?->permissions ?? collect();
+    }
+
+    /**
+     * Filter grouped permissions to only show allowed ones (DRY Helper).
+     */
+    private function filterGroupedPermissions($allowedPermissions)
+    {
+        $permissions = Permission::getGroupedPermissions();
+        $filteredPermissions = [];
+        $allowedIds = $allowedPermissions->pluck('id')->toArray();
+
+        foreach ($permissions as $tab => $groups) {
+            foreach ($groups as $group => $perms) {
+                $filteredPerms = $perms->filter(function ($permission) use ($allowedIds) {
+                    return in_array($permission->id, $allowedIds);
+                });
+                
+                if ($filteredPerms->isNotEmpty()) {
+                    $filteredPermissions[$tab][$group] = $filteredPerms;
+                }
+            }
+        }
+
+        return $filteredPermissions;
     }
 
     /**
@@ -60,7 +93,7 @@ class RoleController extends Controller implements HasMiddleware
         $allowedPermissions = $this->getAllowedPermissions();
         $allowedIds = $allowedPermissions->pluck('id')->toArray();
 
-        $allPermissions = Permission::all();
+        $allPermissions = Permission::whereIn('id', $allowedIds)->lazy()->collect();
 
         $technicianNames = [
             'dashboard.view', 'ticket.view', 'ticket.complete', 'installation.view', 'installation.edit',
@@ -68,7 +101,7 @@ class RoleController extends Controller implements HasMiddleware
             'odp.view', 'odp.edit', 'odc.view', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view',
             'profile.view', 'profile.update', 'notification.view', 'notification.manage',
             'inventory.view', 'inventory.pickup', 'modem-data.view', 'modem-data.create',
-            'olt.view', 'ont.view', 'customer.view',
+            'olt.view', 'ont.view', 'customer.view', 'calculator.view',
         ];
 
         $coordinatorNames = [
@@ -142,7 +175,7 @@ class RoleController extends Controller implements HasMiddleware
             'installation.view', 'installation.create', 'installation.edit', 'installation.delete',
             'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.delete', 'attendance.report',
             'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.delete',
-            'leave.view', 'leave.create', 'leave.edit', 'leave.delete',
+            'leave.view', 'leave.create', 'leave.edit', 'leave.delete', 'leave.manage',
             'map.view',
             'profile.view', 'profile.update',
             'notification.view', 'notification.manage',
@@ -164,6 +197,7 @@ class RoleController extends Controller implements HasMiddleware
             'region.view', 'region.create', 'region.edit', 'region.delete',
             'package.view', 'package.create', 'package.edit', 'package.delete',
             'setting.view', 'setting.create', 'setting.edit', 'setting.delete',
+            'chat.view', 'telegram.view', 'apikey.view', 'calculator.view', 'genieacs_server.view',
         ])));
 
         $templates = [
@@ -182,7 +216,6 @@ class RoleController extends Controller implements HasMiddleware
             'Customer' => [],
         ];
 
-        // Filter each template to only include permissions the user can assign
         foreach ($templates as $key => $ids) {
             $templates[$key] = array_values(array_intersect($ids, $allowedIds));
         }
@@ -195,22 +228,8 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        $permissions = Permission::getGroupedPermissions();
         $allowedPermissions = $this->getAllowedPermissions();
-
-        // Filter grouped permissions to only show allowed ones
-        $filteredPermissions = [];
-        foreach ($permissions as $tab => $groups) {
-            foreach ($groups as $group => $perms) {
-                $filteredPerms = $perms->filter(function ($permission) use ($allowedPermissions) {
-                    return $allowedPermissions->contains('id', $permission->id);
-                });
-                if ($filteredPerms->isNotEmpty()) {
-                    $filteredPermissions[$tab][$group] = $filteredPerms;
-                }
-            }
-        }
-
+        $filteredPermissions = $this->filterGroupedPermissions($allowedPermissions);
         $standardPermissions = $this->getStandardPermissions();
 
         return view('roles.create', compact('filteredPermissions', 'standardPermissions'));
@@ -262,31 +281,18 @@ class RoleController extends Controller implements HasMiddleware
     public function edit(Role $role)
     {
         $allowedPermissions = $this->getAllowedPermissions();
-
-        // Get full grouped permissions
-        $permissions = Permission::getGroupedPermissions();
-
-        // Filter grouped permissions
-        $filteredPermissions = [];
-        foreach ($permissions as $tab => $groups) {
-            foreach ($groups as $group => $perms) {
-                $filteredPerms = $perms->filter(function ($permission) use ($allowedPermissions) {
-                    return $allowedPermissions->contains('id', $permission->id);
-                });
-                if ($filteredPerms->isNotEmpty()) {
-                    $filteredPermissions[$tab][$group] = $filteredPerms;
-                }
-            }
-        }
-
-        $rolePermissions = $role->permissions->pluck('id')->toArray();
-
-        // Only keep permissions that the user is allowed to see/assign
-        $rolePermissions = array_intersect($rolePermissions, $allowedPermissions->pluck('id')->toArray());
-
+        $filteredPermissions = $this->filterGroupedPermissions($allowedPermissions);
         $standardPermissions = $this->getStandardPermissions();
 
-        return view('roles.edit', compact('role', 'filteredPermissions', 'rolePermissions', 'standardPermissions'));
+        $rolePermissions = $role->permissions->pluck('id')->toArray();
+        $allowedIds = $allowedPermissions->pluck('id')->toArray();
+        
+        $visiblePermissions = array_intersect($rolePermissions, $allowedIds);
+        $hiddenPermissions = array_diff($rolePermissions, $allowedIds);
+        
+        session()->put('role_hidden_permissions_' . $role->id, $hiddenPermissions);
+
+        return view('roles.edit', compact('role', 'filteredPermissions', 'visiblePermissions', 'standardPermissions'));
     }
 
     /**
@@ -307,7 +313,6 @@ class RoleController extends Controller implements HasMiddleware
             ],
         ]);
 
-        // Check slug uniqueness (excluding current role)
         $newSlug = Str::slug($validated['label']);
         $existingRole = Role::where('name', $newSlug)
             ->where('id', '!=', $role->id)
@@ -320,7 +325,6 @@ class RoleController extends Controller implements HasMiddleware
                 ->withInput();
         }
 
-        // Protect critical roles from having their name/slug changed
         $protectedRoles = ['admin', 'customer'];
         if (in_array($role->name, $protectedRoles)) {
             $role->update([
@@ -333,8 +337,12 @@ class RoleController extends Controller implements HasMiddleware
             ]);
         }
 
-        if (!empty($validated['permissions'])) {
-            $role->permissions()->sync($validated['permissions']);
+        $hiddenPermissions = session()->pull('role_hidden_permissions_' . $role->id, []);
+        $newPermissions = $validated['permissions'] ?? [];
+        $finalPermissions = array_unique(array_merge($newPermissions, $hiddenPermissions));
+
+        if (!empty($finalPermissions)) {
+            $role->permissions()->sync($finalPermissions);
         } else {
             $role->permissions()->detach();
         }
