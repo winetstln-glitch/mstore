@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\WhatsAppMenu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class WhatsAppBotBuilderController extends Controller
+class WhatsAppBotBuilderController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware(['permission:setting.view']);
+        return [
+            new Middleware('permission:setting.view'),
+        ];
     }
 
     public function index()

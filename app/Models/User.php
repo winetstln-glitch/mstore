@@ -175,23 +175,64 @@ class User extends Authenticatable
         return null;
     }
 
-    public function hasRole(string $roleName): bool
+    public static function normalizeRoleName(string $roleName): string
     {
-        if (! $this->role) {
-            return false;
-        }
-        $roleNameLower = strtolower(trim($roleName));
+        $normalized = strtolower(trim($roleName));
+        $normalized = preg_replace('/[\s\-_]+/', ' ', $normalized);
+        $normalized = trim($normalized);
+        
         $roleMapping = [
             'administrator' => 'admin',
             'director' => 'direktur',
             'network operations center' => 'noc',
             'coordinator' => 'koordinator',
-            'finance' => 'staf-keuangan',
-            'hrd manager' => 'manager-hrd',
-            'operator wash' => 'karyawan-wash',
+            'finance' => 'staf keuangan',
+            'staf keuangan' => 'staf keuangan',
+            'hrd manager' => 'manager hrd',
+            'hrd' => 'manager hrd',
+            'manager hrd' => 'manager hrd',
+            'operator wash' => 'karyawan wash',
+            'karyawan wash' => 'karyawan wash',
         ];
-        $normalizedRoleName = $roleMapping[$roleNameLower] ?? $roleNameLower;
-        return $this->role->name === $normalizedRoleName;
+        
+        return $roleMapping[$normalized] ?? $normalized;
+    }
+
+    public function getNormalizedRoleNameAttribute(): ?string
+    {
+        if (! $this->role) {
+            return null;
+        }
+        return self::normalizeRoleName($this->role->name);
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        if (! $this->role) {
+            return false;
+        }
+        
+        $normalizedCheckRole = self::normalizeRoleName($roleName);
+        $normalizedUserRole = $this->normalized_role_name;
+        
+        return $normalizedCheckRole === $normalizedUserRole;
+    }
+
+    public function hasAnyRole(array $roleNames): bool
+    {
+        if (! $this->role) {
+            return false;
+        }
+        
+        $normalizedUserRole = $this->normalized_role_name;
+        
+        foreach ($roleNames as $roleName) {
+            if (self::normalizeRoleName($roleName) === $normalizedUserRole) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     public function hasPermission(string $permission): bool

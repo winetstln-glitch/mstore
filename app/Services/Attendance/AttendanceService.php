@@ -164,9 +164,13 @@ class AttendanceService
         if (! $user->role) {
             return false;
         }
-        $roleName = strtolower($user->role->name);
-        $excludedRoles = ['customer', 'admin', 'finance', 'direktur', 'hrd manager', 'owner', 'owner-pendiri', 'leader', 'koordinator', 'coordinator'];
-        return ! in_array($roleName, $excludedRoles, true);
+        
+        if ($this->isUserCoordinator($user)) {
+            return false;
+        }
+        
+        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'leader'];
+        return ! $user->hasAnyRole($excludedRoles);
     }
 
     public function isUserCoordinator(User $user): bool
@@ -174,8 +178,7 @@ class AttendanceService
         if (! $user->role) {
             return false;
         }
-        $roleName = strtolower($user->role->name);
-        return in_array($roleName, ['koordinator', 'coordinator'], true);
+        return $user->hasRole('koordinator');
     }
 
     public function canViewAllAttendanceData(User $user): bool
@@ -183,8 +186,8 @@ class AttendanceService
         if (!$user || !$user->role) {
             return false;
         }
-        $role = strtolower($user->role->name);
-        return in_array($role, ['admin', 'finance', 'direktur', 'hrd manager', 'owner', 'owner-pendiri', 'leader'], true);
+        
+        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'manager hrd', 'owner', 'owner pendiri', 'leader']);
     }
 
     public function resolveAttendanceDeviceFingerprint($request): string

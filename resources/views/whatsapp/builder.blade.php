@@ -3,9 +3,14 @@
 @section('content')
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">
-            <i class="fab fa-whatsapp text-success"></i> WhatsApp Bot Builder
-        </h1>
+        <div class="d-flex gap-2 align-items-center">
+            <a href="{{ route('whatsapp.index') }}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Kembali
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="fab fa-whatsapp text-success"></i> WhatsApp Bot Builder
+            </h1>
+        </div>
         <a href="{{ route('whatsapp.builder.create') }}" class="btn btn-success">
             <i class="fa-solid fa-plus"></i> Tambah Menu
         </a>

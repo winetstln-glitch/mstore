@@ -80,7 +80,7 @@
                         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
                             @php
                                 $user = Auth::user();
-                                $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+                                $isAdmin = $user->hasAnyRole(['admin', 'manager hrd']);
                             @endphp
                             @if($isAdmin)
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal">

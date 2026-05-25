@@ -9,6 +9,8 @@ class WhatsAppMenu extends Model
 {
     use HasFactory;
 
+    protected $table = 'whatsapp_menus';
+
     protected $fillable = [
         'keyword',
         'type',

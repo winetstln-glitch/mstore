@@ -111,12 +111,10 @@ class AttendanceReportController extends Controller
     private function canViewAllAttendanceData(): bool
     {
         $user = Auth::user();
-        if (!$user || !$user->role) {
+        if (!$user) {
             return false;
         }
-
-        $role = strtolower($user->role->name);
-
-        return in_array($role, ['admin', 'finance', 'direktur', 'hrd manager', 'owner', 'owner-pendiri', 'leader'], true);
+        
+        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'manager hrd', 'owner', 'owner pendiri', 'leader']);
     }
 }

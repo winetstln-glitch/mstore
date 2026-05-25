@@ -41,6 +41,11 @@
                     Testing
                 </button>
             </li>
+            <li class="nav-item ms-auto">
+                <a href="{{ route('whatsapp.builder.index') }}" class="nav-link text-success">
+                    <i class="fa-solid fa-robot"></i> Bot Builder
+                </a>
+            </li>
         </ul>
 
         <div class="tab-content">

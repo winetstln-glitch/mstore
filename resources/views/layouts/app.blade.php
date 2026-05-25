@@ -92,9 +92,10 @@
                 $routeIs = static fn (...$patterns): bool => request()->routeIs(...$patterns);
             @endphp
 
-            {{-- User Panel (Simplified) --}}
-           
-            <div class="sidebar-header mt-2">{{ __('Menu Utama') }}</div>
+            {{-- DASBOR --}}
+            <div class="sidebar-header mt-2">
+                <i class="fa-solid fa-gauge-high me-2"></i>{{ __('Dasbor') }}
+            </div>
 
             {{-- Dashboard --}}
             @if($hasPermission('dashboard.view'))
@@ -109,17 +110,21 @@
             </a>
             @endif
 
-            {{-- AI Center --}}
+            {{-- AI & KOMUNIKASI --}}
+            @if($hasPermission('ai.view') || $hasPermission('chat.view'))
+            <div class="sidebar-header mt-3">
+                <i class="fa-solid fa-robot me-2"></i>{{ __('AI & Komunikasi') }}
+            </div>
             @if($hasPermission('ai.view'))
             <a href="{{ route('ai.index') }}" class="sidebar-item {{ $routeIs('ai.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-robot"></i> {{ __('Pusat AI') }} <span class="badge bg-primary ms-auto" style="font-size: 0.6rem;">BETA</span>
             </a>
             @endif
-
             @if($hasPermission('chat.view'))
             <a href="{{ route('chat.index') }}" class="sidebar-item {{ $routeIs('chat.*') ? 'active' : '' }}">
                 <i class="fa-regular fa-comments"></i> {{ __('Messenger Internal') }}
             </a>
+            @endif
             @endif
 
             {{-- Client Portal (Grouped) --}}
@@ -161,7 +166,7 @@
             </div>
             @endif
 
-            {{-- Pelanggan & Layanan Group --}}
+            {{-- NETWORK & PELANGGAN --}}
             @if(
                 $hasPermission('customer.view') ||
                 $hasPermission('installation.view') ||
@@ -170,7 +175,9 @@
                 $hasPermission('pppoe.view') ||
                 $hasPermission('package.view')
             )
-            <div class="sidebar-header mt-2">{{ __('Pelanggan & Layanan') }}</div>
+            <div class="sidebar-header mt-3">
+                <i class="fa-solid fa-network-wired me-2"></i>{{ __('Network & Pelanggan') }}
+            </div>
             @php
                 $customerDataActive = $routeIs('customers.*') || $routeIs('installations.*');
                 $customerServiceActive = $routeIs('hotspot.index') || $routeIs('pppoe.index') || $routeIs('packages.*');
@@ -595,7 +602,7 @@
             </div>
             @endif
 
-            {{-- Operasional Group (guarded by permissions) --}}
+            {{-- MANAJEMEN HRD & ASET --}}
             @if(
                 $hasPermission('ticket.view') ||
                 $hasPermission('inventory.view') ||
@@ -605,7 +612,9 @@
                 $hasPermission('schedule.view') ||
                 $hasPermission('leave.view')
             )
-                <div class="sidebar-header mt-2">{{ __('Operasional') }}</div>
+                <div class="sidebar-header mt-3">
+                    <i class="fa-solid fa-users-gear me-2"></i>{{ __('Manajemen HRD & Aset') }}
+                </div>
 
                 @if($hasPermission('ticket.view'))
                 <a href="{{ route('tickets.index') }}" class="sidebar-item {{ $routeIs('tickets.*') ? 'active' : '' }}">
@@ -682,16 +691,18 @@
                 @endif
             @endif
 
-            {{-- Sistem Group --}}
+            {{-- KONFIGURASI SISTEM --}}
             @if($hasPermission('setting.view') || $hasPermission('user.view'))
-            <div class="sidebar-header mt-2">{{ __('Sistem') }}</div>
+            <div class="sidebar-header mt-3">
+                <i class="fa-solid fa-sliders me-2"></i>{{ __('Konfigurasi Sistem') }}
+            </div>
 
             @php
                 $attendanceSettingsRoute = $routeIs('settings.attendance.*');
-                $systemAnyActive = ($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('users.*') || $routeIs('roles.*') || $routeIs('regions.*') || $routeIs('coordinators.*') || $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
+                $systemAnyActive = ($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('users.*') || $routeIs('roles.*') || $routeIs('regions.*') || $routeIs('coordinators.*') || $routeIs('whatsapp.*') || $routeIs('whatsapp-builder.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
                 $settingsAreaActive = (($routeIs('settings.*') && ! $attendanceSettingsRoute) || $routeIs('regions.*') || $routeIs('coordinators.*'));
                 $userAreaActive = $routeIs('users.*') || $routeIs('roles.*');
-                $integrationAreaActive = $routeIs('whatsapp.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
+                $integrationAreaActive = $routeIs('whatsapp.*') || $routeIs('whatsapp-builder.*') || $routeIs('telegram.*') || $routeIs('apikeys.*');
             @endphp
 
             <a class="sidebar-item {{ $systemAnyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemCollapse" role="button" aria-expanded="{{ $systemAnyActive ? 'true' : 'false' }}" aria-controls="systemCollapse">
@@ -754,6 +765,9 @@
                             @if($hasPermission('chat.view'))
                             <a href="{{ route('whatsapp.index') }}" class="sidebar-item {{ $routeIs('whatsapp.*') ? 'active' : '' }}">
                                 <i class="fa-brands fa-whatsapp"></i> {{ __('API WhatsApp') }}
+                            </a>
+                            <a href="{{ route('whatsapp.builder.index') }}" class="sidebar-item {{ $routeIs('whatsapp-builder.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-robot"></i> {{ __('WhatsApp Bot Builder') }}
                             </a>
                             @endif
                             @if($hasPermission('telegram.view'))

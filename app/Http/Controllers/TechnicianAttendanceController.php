@@ -34,13 +34,21 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     protected function canViewAllAttendanceData(): bool
     {
         $user = Auth::user();
-        if (!$user || !$user->role) {
+        if (!$user) {
             return false;
         }
+        
+        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'manager hrd', 'owner', 'owner pendiri', 'leader']);
+    }
 
-        $role = strtolower($user->role->name);
-
-        return in_array($role, ['admin', 'finance', 'direktur', 'hrd manager', 'owner', 'owner-pendiri', 'leader'], true);
+    protected function isAdminOrHrdManager(): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+        
+        return $user->hasAnyRole(['admin', 'manager hrd']);
     }
 
     public static function middleware(): array
@@ -367,7 +375,7 @@ Route::resource('attendance', AttendanceRefactoredController::class);
     public function recapToFinance(Request $request)
     {
         $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        $isAdmin = $this->isAdminOrHrdManager();
         
         if (!$isAdmin) {
             abort(403, 'Unauthorized');
@@ -439,7 +447,7 @@ Route::resource('attendance', AttendanceRefactoredController::class);
     public function sendNotification(TechnicianAttendance $attendance)
     {
         $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        $isAdmin = $this->isAdminOrHrdManager();
         
         if (!$isAdmin) {
             abort(403, 'Unauthorized');
@@ -494,7 +502,7 @@ Route::resource('attendance', AttendanceRefactoredController::class);
     public function storeManual(Request $request)
     {
         $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || strtolower($user->role?->name ?? '') === 'hrd manager';
+        $isAdmin = $this->isAdminOrHrdManager();
         
         if (!$isAdmin) {
             abort(403, 'Unauthorized');
@@ -1160,34 +1168,32 @@ Route::resource('attendance', AttendanceRefactoredController::class);
     private function attendanceEligibleRoleNames(): array
     {
         return [
-            'admin', 'administrator',
-            'leader',
-            'finance', 'staf-keuangan', 'finance-staft', 'staf finance',
-            'hrd manager', 'hrd',
-            'noc', 'network-operations-center',
-            'technician',
-            'kasir-atk',
-            'kasir-wash',
-            'karyawan-wash', 'operator-wash',
+            'admin', 'leader', 'staf keuangan', 'manager hrd', 'noc', 'technician',
+            'kasir atk', 'kasir wash', 'karyawan wash',
         ];
     }
 
     private function isUserCoordinator(?User $user): bool
     {
-        if (!$user || !$user->role) {
+        if (!$user) {
             return false;
         }
-        $roleName = strtolower($user->role->name);
-        return $roleName === 'coordinator' || $roleName === 'koordinator';
+        
+        return $user->hasRole('koordinator');
     }
 
     private function isAttendanceEligibleUser(?User $user): bool
     {
-        if (! $user || ! $user->role) {
+        if (! $user) {
             return false;
         }
-
-        return in_array($user->role->name, $this->attendanceEligibleRoleNames(), true);
+        
+        if ($this->isUserCoordinator($user)) {
+            return false;
+        }
+        
+        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'leader'];
+        return ! $user->hasAnyRole($excludedRoles);
     }
 
     private function isWithinClockInWindow(): bool
