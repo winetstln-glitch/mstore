@@ -5,7 +5,7 @@ echo "=== Memulai deploy aplikasi MStore ==="
 
 # 0. Backup database & file (WAJIB!)
 echo "0. Creating backup of database and files..."
-if [ -x "artisan" ]; then
+if [ -f "artisan" ]; then
     php artisan db:backup
     echo "   Backup selesai!"
 else
