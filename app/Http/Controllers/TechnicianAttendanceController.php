@@ -147,7 +147,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $q->where('name', '!=', 'customer')
               ->where('name', '!=', 'koordinator')
               ->where('name', '!=', 'coordinator');
-        });
+        })->where('is_active', true)
+          ->with('role');
 
         if (! $this->canViewAllAttendanceData()) {
             $techniciansQuery->where('id', Auth::id());
