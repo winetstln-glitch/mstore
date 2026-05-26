@@ -23,6 +23,6 @@ class Onu extends Model
 
     public function olt(): BelongsTo
     {
-        return $this->belongsTo(Olt::class);
+        return $this->belongsTo(OLT::class);
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Models\Router;
 use App\Services\MikrotikService; // Assuming Router model exists for Mikrotik
 use App\Services\Olt\OltService;
@@ -51,7 +51,7 @@ class IntegrationController extends Controller
 
     protected function getDevices()
     {
-        $olts = Olt::select('id', 'name', 'host', 'port', 'type', 'brand')->get();
+        $olts = OLT::select('id', 'name', 'host', 'port', 'type', 'brand')->get();
         $mikrotiks = Router::select('id', 'name', 'host', 'port')->get();
 
         return response()->json([
@@ -69,7 +69,7 @@ class IntegrationController extends Controller
             return response()->json(['error' => 'device_id required'], 400);
         }
 
-        $olt = Olt::find($deviceId);
+        $olt = OLT::find($deviceId);
         if (! $olt) {
             return response()->json(['error' => 'OLT not found'], 404);
         }

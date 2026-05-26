@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Models\Onu;
 use App\Services\Olt\OltService;
 use Illuminate\Http\Request;
@@ -27,7 +27,7 @@ class OnuController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(Olt $olt)
+    public function index(OLT $olt)
     {
         return redirect()->route('olt.show', $olt);
     }
@@ -86,7 +86,7 @@ class OnuController extends Controller implements HasMiddleware
         }
     }
 
-    public function sync(Olt $olt, Request $request)
+    public function sync(OLT $olt, Request $request)
     {
         $startTime = microtime(true);
         

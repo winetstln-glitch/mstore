@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Services\Olt\OltService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +16,7 @@ class SyncAllOltsCommand extends Command
     {
         Log::info("[OLT SYNC] Starting sync all OLTs...");
 
-        $olts = Olt::where('is_active', true)->get();
+        $olts = OLT::where('is_active', true)->get();
         $this->info("Found " . $olts->count() . " active OLTs");
 
         $service = new OltService();

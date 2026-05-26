@@ -13,7 +13,7 @@ class CDataDriver implements OLTDriverInterface
     protected string $ip;
     protected string $readCommunity;
     protected ?string $writeCommunity;
-    protected ?\App\Models\Olt $oltInstance = null;
+    protected ?\App\Models\OLT $oltInstance = null;
     protected array $cachedPorts = [];
 
     /*

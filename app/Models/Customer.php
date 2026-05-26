@@ -101,7 +101,7 @@ class Customer extends Model
 
     public function olt()
     {
-        return $this->belongsTo(Olt::class);
+        return $this->belongsTo(OLT::class);
     }
 
     public function invoices()

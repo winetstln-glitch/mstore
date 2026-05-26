@@ -13,7 +13,7 @@ class HSGQDriver implements OLTDriverInterface
     protected string $ip;
     protected string $readCommunity;
     protected ?string $writeCommunity;
-    protected ?\App\Models\Olt $oltInstance = null;
+    protected ?\App\Models\OLT $oltInstance = null;
 
     const OID_SYS = [
         'mac'          => '.1.3.6.1.4.1.50224.3.1.1.1.0',

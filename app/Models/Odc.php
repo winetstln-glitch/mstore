@@ -37,7 +37,7 @@ class Odc extends Model
 
     public function olt(): BelongsTo
     {
-        return $this->belongsTo(Olt::class);
+        return $this->belongsTo(OLT::class);
     }
 
     public function odps(): HasMany

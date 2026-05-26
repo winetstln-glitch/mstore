@@ -596,7 +596,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         ];
         $odps = \App\Models\Odp::all();
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
-        $olts = \App\Models\Olt::where('is_active', true)->get();
+        $olts = \App\Models\OLT::where('is_active', true)->get();
         $closures = \App\Models\Closure::with('odc')->get();
 
         // Fetch GenieACS devices
@@ -851,7 +851,7 @@ class CustomerWebController extends Controller implements HasMiddleware
     {
         $odps = \App\Models\Odp::all();
         $htbs = \App\Models\Htb::with(['parent', 'odp'])->get();
-        $olts = \App\Models\Olt::where('is_active', true)->get();
+        $olts = \App\Models\OLT::where('is_active', true)->get();
         $closures = \App\Models\Closure::with('odc')->get();
 
         // Fetch GenieACS devices

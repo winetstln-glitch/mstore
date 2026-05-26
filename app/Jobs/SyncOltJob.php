@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Services\Olt\OltService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +19,7 @@ class SyncOltJob implements ShouldQueue
     public $timeout = 300;
     public $tries = 1;
 
-    public function __construct(Olt $olt)
+    public function __construct(OLT $olt)
     {
         $this->olt = $olt;
     }

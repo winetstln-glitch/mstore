@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Odc;
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -54,7 +54,7 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        $olts = Olt::all();
+        $olts = OLT::all();
         $regions = Region::orderBy('name')->get();
 
         return view('odcs.create', compact('olts', 'regions'));
@@ -111,7 +111,7 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function edit(Odc $odc)
     {
-        $olts = Olt::all();
+        $olts = OLT::all();
         $regions = Region::orderBy('name')->get();
 
         return view('odcs.edit', compact('odc', 'olts', 'regions'));

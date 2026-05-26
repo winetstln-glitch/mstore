@@ -9,7 +9,7 @@ use App\Models\GenieDeviceStatus;
 use App\Models\Htb;
 use App\Models\Odc;
 use App\Models\Odp;
-use App\Models\Olt;
+use App\Models\OLT;
 use App\Models\Region;
 use App\Services\GenieACSService;
 use Illuminate\Http\Request;
@@ -57,7 +57,7 @@ class MapController extends Controller implements HasMiddleware
         }
 
         // Fetch OLTs
-        $olts = Olt::all();
+        $olts = OLT::all();
 
         // Fetch ODCs
         $odcQuery = Odc::query();
@@ -188,7 +188,7 @@ class MapController extends Controller implements HasMiddleware
             }
         }
 
-        $olts = Olt::whereNotNull('latitude')->whereNotNull('longitude')->get();
+        $olts = OLT::whereNotNull('latitude')->whereNotNull('longitude')->get();
 
         $odcQuery = Odc::query()->whereNotNull('latitude')->whereNotNull('longitude');
         if ($regionId) {
@@ -323,7 +323,7 @@ class MapController extends Controller implements HasMiddleware
 
         $model = null;
         switch ($type) {
-            case 'olt': $model = Olt::find($id);
+            case 'olt': $model = OLT::find($id);
                 break;
             case 'odc': $model = Odc::find($id);
                 break;
@@ -361,7 +361,7 @@ class MapController extends Controller implements HasMiddleware
 
         $model = null;
         switch ($type) {
-            case 'olt': $model = Olt::find($id);
+            case 'olt': $model = OLT::find($id);
                 break;
             case 'odc': $model = Odc::find($id);
                 break;
