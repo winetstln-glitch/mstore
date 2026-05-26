@@ -12,6 +12,15 @@ Artisan::command('inspire', function () {
 // Schedule GenieACS Network Monitor
 Schedule::command('app:monitor-genie-devices')->everyFiveMinutes()->withoutOverlapping(10);
 
+// Schedule Attendance: Mark Absent as Alpha (run at 13:05 and 17:05 daily)
+Schedule::command('attendance:mark-alpha')
+    ->dailyAt('13:05')
+    ->withoutOverlapping(10);
+
+Schedule::command('attendance:mark-alpha')
+    ->dailyAt('17:05')
+    ->withoutOverlapping(10);
+
 Artisan::command('vpn:monitor', function () {
     $count = VpnServer::count();
     $bar = $this->output->createProgressBar($count);
