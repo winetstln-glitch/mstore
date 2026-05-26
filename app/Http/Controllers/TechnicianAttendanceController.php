@@ -518,7 +518,10 @@ Route::resource('attendance', AttendanceRefactoredController::class);
         ]);
 
         $exists = TechnicianAttendance::where('user_id', $request->user_id)
-            ->whereDate('clock_in', $request->date)
+            ->where(function ($query) use ($request) {
+                $query->whereDate('clock_in', $request->date)
+                      ->orWhereDate('work_date', $request->date);
+            })
             ->exists();
 
         if ($exists) {
