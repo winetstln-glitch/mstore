@@ -41,8 +41,28 @@ class MarkAbsentAsAlphaAction
             return null;
         }
 
-        $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'owner', 'owner-pendiri', 'coordinator'], true);
+        $roleNameRaw = strtolower((string) ($user->role?->name ?? ''));
+        $roleName = strtolower(str_replace(['-', '_'], ' ', $roleNameRaw));
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'owner', 'owner pendiri', 'coordinator', 'koordinator'], true);
+
+        $eligibleRoles = [
+            'admin',
+            'leader',
+            'finance',
+            'hrd manager',
+            'noc',
+            'technician',
+            'kasir atk',
+            'kasir wash',
+            'operator wash',
+            'staf keuangan',
+            'karyawan wash',
+            'administrator',
+        ];
+
+        if (! in_array($roleName, $eligibleRoles, true)) {
+            return null;
+        }
 
         if ($isExcludedFromSchedule) {
             return null;

@@ -44,6 +44,9 @@ class MarkAbsentAsAlpha extends Command
             'kasir atk',
             'kasir wash',
             'operator wash',
+            'staf keuangan',
+            'karyawan wash',
+            'administrator',
         ];
 
         // OPTIMASI: Menggunakan lazy() untuk menghemat RAM Server saat data karyawan berjumlah banyak
