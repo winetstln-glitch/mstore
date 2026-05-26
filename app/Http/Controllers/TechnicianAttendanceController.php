@@ -180,12 +180,12 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
         }
 
-        // If scope is daily, export date range attendance
+        // If scope is daily, export date range attendance (same format as details)
         if ($request->query('scope') === 'daily') {
             $month = $request->query('month');
             if ($month) {
-                $startDate = Carbon::parse($month)->startOfMonth()->toDateString();
-                $endDate = Carbon::parse($month)->endOfMonth()->toDateString();
+                $startDate = Carbon::parse($month)->startOfMonth();
+                $endDate = Carbon::parse($month)->endOfMonth();
             } else {
                 $startDate = $request->query('start_date', date('Y-m-d'));
                 $endDate = $request->query('end_date', date('Y-m-d'));
@@ -195,81 +195,43 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 [$startDate, $endDate] = [$endDate, $startDate];
             }
 
-            // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
-            $users = User::whereHas('role', function ($q) {
-                $q->where('name', '!=', 'customer')
-                  ->where('name', '!=', 'koordinator')
-                  ->where('name', '!=', 'coordinator');
-            })->where('is_active', true)
-              ->with('role')
-              ->orderBy('name')
-              ->get();
-
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                 ->orWhereBetween('work_date', [$startDate, $endDate])
-                ->with('user');
+                ->with('user')
+                ->oldest('clock_in');
 
-            $allAttendances = $attendancesQuery->get();
+            $attendances = $attendancesQuery->get();
 
-            $attendancesByDate = $allAttendances
-                ->groupBy(fn($a) => $a->work_date ? $a->work_date->toDateString() : $a->clock_in->toDateString())
-                ->map(fn($items) => $items->keyBy('user_id'));
-
-            $dates = [];
-            $current = Carbon::parse($startDate);
-            $end = Carbon::parse($endDate);
-            while ($current->lte($end)) {
-                $dates[] = $current->toDateString();
-                $current->addDay();
-            }
-
-            return response()->streamDownload(function () use ($users, $attendancesByDate, $dates, $startDate, $endDate) {
+            return response()->streamDownload(function () use ($attendances, $startDate, $endDate) {
                 $writer = new Writer;
                 $writer->openToFile('php://output');
 
-                $writer->addRow(Row::fromValues(['KEHADIRAN KARYAWAN HARIAN']));
+                $writer->addRow(Row::fromValues(['RINCIAN KEHADIRAN KARYAWAN']));
                 $writer->addRow(Row::fromValues(['Periode: ' . Carbon::parse($startDate)->translatedFormat('d F Y') . ' - ' . Carbon::parse($endDate)->translatedFormat('d F Y')]));
                 $writer->addRow(Row::fromValues(['Tanggal Cetak: ' . now()->translatedFormat('d F Y H:i')]));
                 $writer->addRow(Row::fromValues([]));
+                $writer->addRow(Row::fromValues([
+                    'Nama Karyawan',
+                    'Tanggal',
+                    'Jam Masuk',
+                    'Jam Pulang',
+                    'Status',
+                    'Catatan',
+                ]));
 
-                foreach ($dates as $dateStr) {
-                    $writer->addRow(Row::fromValues(['Tanggal: ' . Carbon::parse($dateStr)->translatedFormat('l, d F Y')]));
+                foreach ($attendances as $attendance) {
                     $writer->addRow(Row::fromValues([
-                        'No',
-                        'Nama Karyawan',
-                        'Peran',
-                        'Jam Masuk',
-                        'Jam Keluar',
-                        'Status',
-                        'Catatan',
+                        $attendance->user->name,
+                        ($attendance->work_date ?? $attendance->clock_in)->translatedFormat('d F Y'),
+                        $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-',
+                        $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
+                        __(ucfirst($attendance->status)),
+                        $attendance->notes ?? '-',
                     ]));
-
-                    $attendances = $attendancesByDate->get($dateStr, collect());
-                    $i = 1;
-                    foreach ($users as $user) {
-                        $attendance = $attendances->get($user->id);
-                        $isOff = $this->isUserOffOnDate($user, $dateStr);
-                        if ($isOff) {
-                            $status = 'OFF';
-                        } else {
-                            $status = $attendance ? __(ucfirst($attendance->status)) : 'Belum Absen';
-                        }
-                        $writer->addRow(Row::fromValues([
-                            $i++,
-                            $user->name,
-                            $user->role->name ?? '-',
-                            $isOff ? '-' : ($attendance && $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-'),
-                            $isOff ? '-' : ($attendance && $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-'),
-                            $status,
-                            // PERBAIKAN: Gunakan null safe operator untuk menghindari error
-                            $attendance?->notes ?? '-',
-                        ]));
-                    }
-                    $writer->addRow(Row::fromValues([]));
                 }
 
                 $writer->close();
-            }, 'kehadiran_karyawan_harian_'.$startDate.'_'.$endDate.'.xlsx');
+            }, 'rincian_kehadiran_harian_'.now()->format('Y-m-d_His').'.xlsx');
         }
 
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
