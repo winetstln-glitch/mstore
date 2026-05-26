@@ -7,9 +7,9 @@ use App\Models\TechnicianAttendance;
 use App\Models\TechnicianDailySchedule;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
-use App\Models\WashEmployee;
 use App\Services\Attendance\AttendanceService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class MarkAbsentAsAlphaAction
@@ -20,6 +20,13 @@ class MarkAbsentAsAlphaAction
 
     public function execute(User $user, Carbon $date): ?TechnicianAttendance
     {
+        Log::info('MarkAbsentAsAlphaAction: Checking user', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'role_name' => $user->role?->name ?? 'N/A',
+            'date' => $date->toDateString(),
+        ]);
+
         $existingAttendance = TechnicianAttendance::where('user_id', $user->id)
             ->where(function ($query) use ($date) {
                 $query->whereDate('clock_in', $date->toDateString())
@@ -28,6 +35,10 @@ class MarkAbsentAsAlphaAction
             ->first();
 
         if ($existingAttendance) {
+            Log::info('MarkAbsentAsAlphaAction: Existing attendance found, skipping', [
+                'user_id' => $user->id,
+                'attendance_id' => $existingAttendance->id,
+            ]);
             return null;
         }
 
@@ -38,6 +49,10 @@ class MarkAbsentAsAlphaAction
             ->first();
 
         if ($approvedLeave) {
+            Log::info('MarkAbsentAsAlphaAction: Approved leave found, skipping', [
+                'user_id' => $user->id,
+                'leave_id' => $approvedLeave->id,
+            ]);
             return null;
         }
 
@@ -60,11 +75,27 @@ class MarkAbsentAsAlphaAction
             'administrator',
         ];
 
+        Log::info('MarkAbsentAsAlphaAction: Role check', [
+            'user_id' => $user->id,
+            'role_name_raw' => $roleNameRaw,
+            'role_name_normalized' => $roleName,
+            'is_eligible' => in_array($roleName, $eligibleRoles, true),
+            'is_excluded' => $isExcludedFromSchedule,
+        ]);
+
         if (! in_array($roleName, $eligibleRoles, true)) {
+            Log::info('MarkAbsentAsAlphaAction: Role not eligible, skipping', [
+                'user_id' => $user->id,
+                'role_name' => $roleName,
+            ]);
             return null;
         }
 
         if ($isExcludedFromSchedule) {
+            Log::info('MarkAbsentAsAlphaAction: Role excluded from schedule, skipping', [
+                'user_id' => $user->id,
+                'role_name' => $roleName,
+            ]);
             return null;
         }
 
@@ -84,9 +115,24 @@ class MarkAbsentAsAlphaAction
             $status = $weekly?->status;
         }
 
+        Log::info('MarkAbsentAsAlphaAction: Schedule status check', [
+            'user_id' => $user->id,
+            'daily_status' => $daily?->status,
+            'weekly_status' => $weekly?->status ?? null,
+            'final_status' => $status,
+        ]);
+
         if (! in_array($status, ['piket', 'backup', 'longshift'], true)) {
+            Log::info('MarkAbsentAsAlphaAction: Schedule status not eligible, skipping', [
+                'user_id' => $user->id,
+                'status' => $status,
+            ]);
             return null;
         }
+
+        Log::info('MarkAbsentAsAlphaAction: Creating alpha attendance', [
+            'user_id' => $user->id,
+        ]);
 
         return TechnicianAttendance::create([
             'user_id' => $user->id,
