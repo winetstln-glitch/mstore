@@ -96,12 +96,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
           ->get();
 
         $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->orWhereBetween('work_date', [$startDate, $endDate])
             ->with('user');
 
         $allAttendances = $attendancesQuery->get();
 
         $attendancesByDate = $allAttendances
-            ->groupBy(fn($a) => $a->clock_in->toDateString())
+            ->groupBy(fn($a) => $a->work_date ? $a->work_date->toDateString() : $a->clock_in->toDateString())
             ->map(fn($items) => $items->keyBy('user_id'));
 
         $dates = [];
@@ -210,12 +211,13 @@ Route::resource('attendance', AttendanceRefactoredController::class);
               ->get();
 
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->orWhereBetween('work_date', [$startDate, $endDate])
                 ->with('user');
 
             $allAttendances = $attendancesQuery->get();
 
             $attendancesByDate = $allAttendances
-                ->groupBy(fn($a) => $a->clock_in->toDateString())
+                ->groupBy(fn($a) => $a->work_date ? $a->work_date->toDateString() : $a->clock_in->toDateString())
                 ->map(fn($items) => $items->keyBy('user_id'));
 
             $dates = [];
@@ -525,11 +527,20 @@ Route::resource('attendance', AttendanceRefactoredController::class);
 
         $attendance = TechnicianAttendance::create([
             'user_id' => $request->user_id,
+            'work_date' => $request->date,
             'clock_in' => $request->date.' 08:00:00',
             'clock_out' => $request->date.' 17:00:00',
             'status' => $request->status,
             'notes' => $request->notes,
         ]);
+
+        \App\Models\AuditLog::log(
+            'create',
+            $attendance,
+            [],
+            $attendance->toArray(),
+            'Menambah absensi manual untuk ' . $attendance->user->name
+        );
 
         try {
             $user = $attendance->user;
