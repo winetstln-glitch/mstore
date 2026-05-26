@@ -1041,7 +1041,7 @@ class SettingController extends Controller implements HasMiddleware
             // Teknisi Shift Cutoffs
             [
                 'key' => 'schedule_teknisi_shift_1_cutoff',
-                'value' => '10:00',
+                'value' => '13:00',
                 'group' => 'schedule',
                 'type' => 'time',
                 'label' => 'Batas Absen Shift 1 Teknisi',
@@ -1055,7 +1055,7 @@ class SettingController extends Controller implements HasMiddleware
             ],
             [
                 'key' => 'schedule_teknisi_longshift_cutoff',
-                'value' => '10:00',
+                'value' => '13:00',
                 'group' => 'schedule',
                 'type' => 'time',
                 'label' => 'Batas Absen Longshift Teknisi',
@@ -1063,21 +1063,21 @@ class SettingController extends Controller implements HasMiddleware
             // Wash Shift Cutoffs
             [
                 'key' => 'schedule_wash_shift_1_cutoff',
-                'value' => '10:00',
+                'value' => '13:00',
                 'group' => 'schedule',
                 'type' => 'time',
                 'label' => 'Batas Absen Shift 1 Wash',
             ],
             [
                 'key' => 'schedule_wash_shift_2_cutoff',
-                'value' => '15:00',
+                'value' => '17:00',
                 'group' => 'schedule',
                 'type' => 'time',
                 'label' => 'Batas Absen Shift 2 Wash',
             ],
             [
                 'key' => 'schedule_wash_longshift_cutoff',
-                'value' => '10:00',
+                'value' => '13:00',
                 'group' => 'schedule',
                 'type' => 'time',
                 'label' => 'Batas Absen Longshift Wash',
