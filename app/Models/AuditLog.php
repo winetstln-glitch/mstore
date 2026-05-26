@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class AuditLog extends Model
 {
@@ -22,6 +23,8 @@ class AuditLog extends Model
     protected $casts = [
         'old_values' => 'array',
         'new_values' => 'array',
+        'before' => 'array',
+        'after' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -29,18 +32,37 @@ class AuditLog extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function log(string $action, ?Model $model = null, array $oldValues = [], array $newValues = [], ?string $description = null): self
+    public static function log(string $action, ?Model $model = null, array $oldValues = [], array $newValues = [], ?string $description = null): ?self
     {
-        return self::create([
-            'user_id' => auth()->id(),
-            'action' => $action,
-            'model_type' => $model ? get_class($model) : null,
-            'model_id' => $model?->id,
-            'old_values' => $oldValues ?: null,
-            'new_values' => $newValues ?: null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'description' => $description,
-        ]);
+        try {
+            if (! Schema::hasTable('audit_logs')) {
+                return null;
+            }
+
+            $data = [
+                'user_id' => auth()->id(),
+                'action' => $action,
+            ];
+
+            if (Schema::hasColumn('audit_logs', 'model_type')) {
+                $data['model_type'] = $model ? get_class($model) : null;
+                $data['model_id'] = $model?->id;
+                $data['old_values'] = $oldValues ?: null;
+                $data['new_values'] = $newValues ?: null;
+                $data['ip_address'] = request()->ip();
+                $data['user_agent'] = request()->userAgent();
+                $data['description'] = $description;
+            } else {
+                $data['auditable_type'] = $model ? get_class($model) : null;
+                $data['auditable_id'] = $model?->id;
+                $data['before'] = $oldValues ?: null;
+                $data['after'] = $newValues ?: null;
+            }
+
+            return self::create($data);
+        } catch (\Exception $e) {
+            report($e);
+            return null;
+        }
     }
 }

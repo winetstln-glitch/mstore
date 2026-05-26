@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('public_holidays', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->date('date')->unique();
-            $table->text('description')->nullable();
-            $table->boolean('is_national')->default(true);
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('public_holidays')) {
+            Schema::create('public_holidays', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->date('date')->unique();
+                $table->text('description')->nullable();
+                $table->boolean('is_national')->default(true);
+                $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
