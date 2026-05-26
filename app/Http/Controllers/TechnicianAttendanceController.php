@@ -586,7 +586,10 @@ Route::resource('attendance', AttendanceRefactoredController::class);
         }
 
         $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
-            ->whereDate('clock_in', today())
+            ->where(function ($query) {
+                $query->whereDate('clock_in', today()->toDateString())
+                      ->orWhereDate('work_date', today()->toDateString());
+            })
             ->first();
 
         $monthAttendances = TechnicianAttendance::where('user_id', Auth::id())
@@ -616,7 +619,10 @@ Route::resource('attendance', AttendanceRefactoredController::class);
     public function kiosk()
     {
         $todayLogs = TechnicianAttendance::with('user')
-            ->where('clock_in', '>=', today())
+            ->where(function ($query) {
+                $query->whereDate('clock_in', today()->toDateString())
+                      ->orWhereDate('work_date', today()->toDateString());
+            })
             ->latest('clock_in')
             ->limit(50)
             ->get();
@@ -641,7 +647,10 @@ Route::resource('attendance', AttendanceRefactoredController::class);
         }
 
         $todayAttendance = TechnicianAttendance::where('user_id', $user->id)
-            ->where('clock_in', '>=', today())
+            ->where(function ($query) {
+                $query->whereDate('clock_in', today()->toDateString())
+                      ->orWhereDate('work_date', today()->toDateString());
+            })
             ->first();
 
         if (! $todayAttendance) {
@@ -673,6 +682,7 @@ Route::resource('attendance', AttendanceRefactoredController::class);
 
             $attendance = TechnicianAttendance::create([
                 'user_id' => $user->id,
+                'work_date' => today()->toDateString(),
                 'clock_in' => now(),
                 'status' => $status,
                 'notes' => 'Kiosk scan ID Card otomatis. Admin: '.Auth::user()->name,
@@ -801,11 +811,12 @@ Route::resource('attendance', AttendanceRefactoredController::class);
             }
 
             $today = today();
-            $tomorrow = today()->addDay();
 
             $alreadyClockedInToday = TechnicianAttendance::where('user_id', Auth::id())
-                ->where('clock_in', '>=', $today)
-                ->where('clock_in', '<', $tomorrow)
+                ->where(function ($query) use ($today) {
+                    $query->whereDate('clock_in', $today->toDateString())
+                          ->orWhereDate('work_date', $today->toDateString());
+                })
                 ->exists();
 
             if ($alreadyClockedInToday) {
