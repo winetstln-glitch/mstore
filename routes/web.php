@@ -169,18 +169,20 @@ Route::middleware('auth')->group(function () {
     Route::permanentRedirect('technicians', 'employees');
     Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))
         ->where('any', '.*');
-    Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'store', 'update', 'destroy']);
+    Route::resource('attendance', TechnicianAttendanceController::class)->only(['index', 'create', 'destroy']);
+    Route::post('attendance', [TechnicianAttendanceController::class, 'store'])->name('attendance.store')->middleware('throttle:10,1');
+    Route::put('attendance/{attendance}', [TechnicianAttendanceController::class, 'update'])->name('attendance.update')->middleware('throttle:10,1');
     Route::get('attendance/daily', [TechnicianAttendanceController::class, 'daily'])->name('attendance.daily');
     Route::get('attendance/payslip', [TechnicianAttendanceController::class, 'payslip'])->name('attendance.payslip');
     Route::get('attendance/excel', [TechnicianAttendanceController::class, 'exportExcel'])->name('attendance.excel');
     Route::post('attendance/recap-finance', [TechnicianAttendanceController::class, 'recapToFinance'])->name('attendance.recap_finance');
-    Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual');
+    Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual')->middleware('throttle:5,1');
     Route::delete('attendance/bulk-destroy', [TechnicianAttendanceController::class, 'bulkDestroy'])->name('attendance.bulkDestroy');
     Route::post('attendance/{attendance}/notify', [TechnicianAttendanceController::class, 'sendNotification'])->name('attendance.notify');
     Route::get('attendance/kiosk', [TechnicianAttendanceController::class, 'kiosk'])->name('attendance.kiosk');
-    Route::post('attendance/kiosk/scan', [TechnicianAttendanceController::class, 'kioskScan'])->name('attendance.kiosk.scan');
-    Route::post('landing/attendance/clock-in', [TechnicianAttendanceController::class, 'store'])->name('landing.attendance.store');
-    Route::put('landing/attendance/{attendance}/clock-out', [TechnicianAttendanceController::class, 'update'])->name('landing.attendance.update');
+    Route::post('attendance/kiosk/scan', [TechnicianAttendanceController::class, 'kioskScan'])->name('attendance.kiosk.scan')->middleware('throttle:30,1');
+    Route::post('landing/attendance/clock-in', [TechnicianAttendanceController::class, 'store'])->name('landing.attendance.store')->middleware('throttle:10,1');
+    Route::put('landing/attendance/{attendance}/clock-out', [TechnicianAttendanceController::class, 'update'])->name('landing.attendance.update')->middleware('throttle:10,1');
 
     // Schedules & Leaves
     Route::post('schedules/period', [\App\Http\Controllers\TechnicianScheduleController::class, 'updatePeriod'])->name('schedules.updatePeriod');
