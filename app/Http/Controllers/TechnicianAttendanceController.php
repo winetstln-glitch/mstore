@@ -165,12 +165,6 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($this->isUserCoordinator($user)) {
             abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
         }
-// routes/web.php
-// Ganti dari:
-Route::resource('attendance', TechnicianAttendanceController::class);
-
-// Menjadi:
-Route::resource('attendance', AttendanceRefactoredController::class);
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
