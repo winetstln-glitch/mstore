@@ -59,8 +59,8 @@ class MarkAbsentAsAlpha extends Command
             ->each(function ($user) use ($markAbsentAsAlphaAction, $today, &$markedCount, $eligibleRoles, $excludedRoles) {
             
                 // Normalisasi nama role
-                $userRole = strtolower(str_replace(['-', '_'], ' ', $user->role->name ?? ''));
-                $this->info("Checking user: {$user->name} (Role: {$user->role->name ?? 'N/A'} -> Normalized: {$userRole})");
+                $userRole = strtolower(str_replace(['-', '_'], ' ', optional($user->role)->name ?? ''));
+                $this->info("Checking user: {$user->name} (Role: " . (optional($user->role)->name ?? 'N/A') . " -> Normalized: {$userRole})");
 
                 // Skip jika role termasuk yang dikecualikan
                 if (in_array($userRole, $excludedRoles, true)) {
@@ -79,7 +79,7 @@ class MarkAbsentAsAlpha extends Command
                 
                 if ($attendance) {
                     $markedCount++;
-                    $this->info("✓ Marked {$user->name} ({$user->role->name}) as alpha for today!");
+                    $this->info("✓ Marked {$user->name} (" . (optional($user->role)->name ?? 'N/A') . ") as alpha for today!");
                 } else {
                     $this->info("→ No action taken for {$user->name}");
                 }
