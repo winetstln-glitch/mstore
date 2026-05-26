@@ -72,8 +72,6 @@ class MarkAbsentAsAlphaAction
             'user_id' => $user->id,
             'work_date' => $date->toDateString(),
             'status' => 'alpha',
-            'clock_in' => null,
-            'clock_out' => null,
             'generated_type' => 'system_alpha',
             'notes' => 'Auto-marked as alpha - no check-in after cut-off time',
         ]);
