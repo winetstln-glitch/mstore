@@ -285,11 +285,11 @@
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
+                        <label class="form-label fw-medium">{{ __('Pengguna') }} (Total: {{ $technicians->count() }})</label>
                         <select name="user_id" class="form-select js-search-select-modal" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
-                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                <option value="{{ $tech->id }}">{{ $tech->name }} ({{ $tech->role->name ?? 'N/A' }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -334,11 +334,11 @@
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-medium">{{ __('Pengguna') }}</label>
+                        <label class="form-label fw-medium">{{ __('Pengguna') }} (Total: {{ $technicians->count() }})</label>
                         <select name="user_id" class="form-select js-search-select-modal" required>
                             <option value="">{{ __('Pilih Pengguna') }}</option>
                             @foreach($technicians as $tech)
-                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                <option value="{{ $tech->id }}">{{ $tech->name }} ({{ $tech->role->name ?? 'N/A' }})</option>
                             @endforeach
                         </select>
                     </div>
