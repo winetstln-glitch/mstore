@@ -39,6 +39,7 @@ class MarkAbsentAsAlpha extends Command
             'leader',
             'finance',
             'hrd manager',
+            'manager hrd',
             'noc',
             'technician',
             'kasir atk',
