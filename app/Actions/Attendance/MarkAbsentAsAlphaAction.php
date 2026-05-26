@@ -42,7 +42,7 @@ class MarkAbsentAsAlphaAction
         }
 
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'owner', 'owner-pendiri', 'coordinator'], true);
 
         if ($isExcludedFromSchedule) {
             return null;
