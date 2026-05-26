@@ -49,31 +49,41 @@ class MarkAbsentAsAlpha extends Command
             'administrator',
         ];
 
-        // OPTIMASI: Menggunakan lazy() untuk menghemat RAM Server saat data karyawan berjumlah banyak
-        User::whereHas('role', function ($q) use ($eligibleRoles) {
-            // Memfilter menggunakan helper hasRole atau pembersihan string nama role
-            // Jika database Anda menggunakan format hrd-manager / operator-wash, 
-            // query ini akan otomatis mencocokkan variasi dengan aman menggunakan WHERE IN
-            $q->whereIn(\DB::raw("LOWER(REPLACE(REPLACE(name, '-', ' '), '_', ' '))"), $eligibleRoles);
-        })
-        ->where('is_active', true)
-        ->with('role')
-        ->lazy() // Diproses secara streaming sepotong-sepotong di memori RAM
-        ->each(function ($user) use ($markAbsentAsAlphaAction, $today, &$markedCount) {
-            
-            // Jaring pengaman ekstra: pastikan pimpinan / koordinator tidak tidak sengaja kena alpha
-            $userRole = strtolower(str_replace(['-', '_'], ' ', $user->role->name ?? ''));
-            if (in_array($userRole, ['customer', 'direktur', 'owner', 'coordinator', 'koordinator'], true)) {
-                return;
-            }
+        // Daftar role yang DIKEÇUALIKAN
+        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'coordinator', 'koordinator'];
 
-            $attendance = $markAbsentAsAlphaAction->execute($user, $today);
+        // Query semua user aktif beserta role
+        User::where('is_active', true)
+            ->with('role')
+            ->lazy()
+            ->each(function ($user) use ($markAbsentAsAlphaAction, $today, &$markedCount, $eligibleRoles, $excludedRoles) {
             
-            if ($attendance) {
-                $markedCount++;
-                $this->info("Marked user {$user->name} ({$user->role->name}) as alpha for today.");
-            }
-        });
+                // Normalisasi nama role
+                $userRole = strtolower(str_replace(['-', '_'], ' ', $user->role->name ?? ''));
+                $this->info("Checking user: {$user->name} (Role: {$user->role->name ?? 'N/A'} -> Normalized: {$userRole})");
+
+                // Skip jika role termasuk yang dikecualikan
+                if (in_array($userRole, $excludedRoles, true)) {
+                    $this->info("→ Skipping (excluded role)");
+                    return;
+                }
+
+                // Skip jika role tidak termasuk eligible
+                if (! in_array($userRole, $eligibleRoles, true)) {
+                    $this->info("→ Skipping (not eligible role)");
+                    return;
+                }
+
+                $this->info("→ Processing...");
+                $attendance = $markAbsentAsAlphaAction->execute($user, $today);
+                
+                if ($attendance) {
+                    $markedCount++;
+                    $this->info("✓ Marked {$user->name} ({$user->role->name}) as alpha for today!");
+                } else {
+                    $this->info("→ No action taken for {$user->name}");
+                }
+            });
 
         $this->info("Process completed! Marked {$markedCount} users as alpha.");
         return 0;

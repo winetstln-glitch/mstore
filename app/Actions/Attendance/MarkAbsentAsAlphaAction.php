@@ -122,7 +122,7 @@ class MarkAbsentAsAlphaAction
             'final_status' => $status,
         ]);
 
-        if (! in_array($status, ['piket', 'backup', 'longshift'], true)) {
+        if ($status !== null && ! in_array($status, ['piket', 'backup', 'longshift'], true)) {
             Log::info('MarkAbsentAsAlphaAction: Schedule status not eligible, skipping', [
                 'user_id' => $user->id,
                 'status' => $status,
@@ -132,6 +132,7 @@ class MarkAbsentAsAlphaAction
 
         Log::info('MarkAbsentAsAlphaAction: Creating alpha attendance', [
             'user_id' => $user->id,
+            'schedule_status' => $status ?? 'no_schedule',
         ]);
 
         return TechnicianAttendance::create([
