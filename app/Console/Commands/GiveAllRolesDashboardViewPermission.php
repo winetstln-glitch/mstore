@@ -1,5 +1,4 @@
-
-&lt;?php
+<?php
 
 namespace App\Console\Commands;
 
@@ -14,24 +13,24 @@ class GiveAllRolesDashboardViewPermission extends Command
 
     public function handle()
     {
-        $this-&gt;info('Memulai memberikan izin dashboard.view ke semua role...');
+        $this->info('Memulai memberikan izin dashboard.view ke semua role...');
 
         $dashboardPermission = Permission::firstOrCreate(
-            ['name' =&gt; 'dashboard.view'],
-            ['label' =&gt; 'Lihat Dashboard', 'group' =&gt; 'Dashboard']
+            ['name' => 'dashboard.view'],
+            ['label' => 'Lihat Dashboard', 'group' => 'Dashboard']
         );
 
         $roles = Role::all();
         $countUpdated = 0;
 
         foreach ($roles as $role) {
-            if (! $role-&gt;permissions()-&gt;where('name', 'dashboard.view')-&gt;exists()) {
-                $role-&gt;permissions()-&gt;attach($dashboardPermission);
-                $this-&gt;info("✓ Memberikan izin dashboard.view ke role: {$role-&gt;name}");
+            if (! $role->permissions()->where('name', 'dashboard.view')->exists()) {
+                $role->permissions()->attach($dashboardPermission);
+                $this->info("✓ Memberikan izin dashboard.view ke role: {$role->name}");
                 $countUpdated++;
             }
         }
 
-        $this-&gt;info("Selesai! Total {$countUpdated} role telah diperbarui!");
+        $this->info("Selesai! Total {$countUpdated} role telah diperbarui!");
     }
 }

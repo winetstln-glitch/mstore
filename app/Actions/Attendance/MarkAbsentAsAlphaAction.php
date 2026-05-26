@@ -65,6 +65,7 @@ class MarkAbsentAsAlphaAction
             'leader',
             'finance',
             'hrd manager',
+            'manager hrd',
             'noc',
             'technician',
             'kasir atk',

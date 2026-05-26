@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\MarkAbsentAsAlpha;
 use App\Models\VpnServer;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -20,6 +21,9 @@ Schedule::command('attendance:mark-alpha')
 Schedule::command('attendance:mark-alpha')
     ->dailyAt('17:05')
     ->withoutOverlapping(10);
+
+// Register command manually
+Artisan::registerCommand(new MarkAbsentAsAlpha());
 
 Artisan::command('vpn:monitor', function () {
     $count = VpnServer::count();
