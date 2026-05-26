@@ -33,7 +33,10 @@ class SalaryAdjustmentController extends Controller
 
         $users = User::whereHas('role', function ($q) {
             $q->whereIn('name', ['technician', 'admin']);
-        })->orderBy('name')->get();
+        })->where('is_active', true)
+          ->with('role')
+          ->orderBy('name')
+          ->get();
 
         return view('technicians.kasbon.index', compact('adjustments', 'users'));
     }
