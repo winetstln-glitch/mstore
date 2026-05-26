@@ -1,19 +1,5 @@
 @extends('layouts.app')
 
-{{-- Push TomSelect Styles ke Head Layout --}}
-@if(Auth::user()->hasRole('admin'))
-    @push('styles')
-        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-        <style>
-            /* Memperbaiki tinggi baris & keselarasan visual TomSelect */
-            .ts-wrapper.single .ts-control {
-                padding: .375rem .75rem !important;
-                font-size: .875rem !important;
-            }
-        </style>
-    @endpush
-@endif
-
 @section('content')
 <div class="row">
     <div class="col-12">
@@ -393,31 +379,39 @@
 </form>
 @endsection
 
-{{-- Push TomSelect & Custom Scripts ke Bottom Layout --}}
+{{-- Push Select2 & Custom Scripts ke Bottom Layout --}}
 @if(Auth::user()->hasRole('admin'))
     @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // 1. Inisialisasi TomSelect untuk Input Filter normal
-            document.querySelectorAll('.js-search-select').forEach(function (el) {
-                if (!el.tomselect) {
-                    new TomSelect(el, {
-                        create: false,
-                        sortField: { field: 'text', direction: 'asc' },
-                    });
-                }
+            // 1. Inisialisasi Select2 untuk Input Filter normal
+            $('.js-search-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
             });
 
-            // 2. Inisialisasi TomSelect di dalam Modal (Menggunakan dropdownParent agar tidak tertutup modal)
-            document.querySelectorAll('.js-search-select-modal').forEach(function (el) {
-                if (!el.tomselect) {
-                    new TomSelect(el, {
-                        create: false,
-                        dropdownParent: 'body', // Melempar dropdown ke body root, aman dari overflow:hidden modal
-                        sortField: { field: 'text', direction: 'asc' },
-                    });
-                }
+            // 2. Inisialisasi Select2 di dalam Modal
+            $('.js-search-select-modal').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: $('.modal.show')
+            });
+
+            // Re-initialize Select2 when modal opens
+            $('#manualAttendanceModal').on('shown.bs.modal', function () {
+                $('.js-search-select-modal').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    dropdownParent: $('#manualAttendanceModal')
+                });
+            });
+            $('#salaryAdjustmentModal').on('shown.bs.modal', function () {
+                $('.js-search-select-modal').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    dropdownParent: $('#salaryAdjustmentModal')
+                });
             });
             
             // 3. Tangani Interupsi Hapus Single dengan SweetAlert
