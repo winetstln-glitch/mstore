@@ -161,11 +161,11 @@
                                         </div>
                                     </td>
                                     <td class="small text-muted">
-                                        {{ $attendance->clock_in->translatedFormat('d M Y') }}
+                                        {{ ($attendance->work_date ?? $attendance->clock_in)?->translatedFormat('d M Y') }}
                                     </td>
                                     <td class="small">
                                         <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle py-1" style="font-size: 0.85rem; width: fit-content;">
-                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>{{ $attendance->clock_in->format('H:i') }}
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>{{ $attendance->clock_in?->format('H:i') ?? '--:--' }}
                                         </span>
                                     </td>
                                     <td class="small">
@@ -179,10 +179,12 @@
                                     </td>
                                     <td class="small">
                                         <div class="vstack gap-1">
-                                            <a href="https://maps.google.com/?q={{ $attendance->lat_clock_in }},{{ $attendance->lng_clock_in }}" target="_blank" class="btn btn-outline-primary btn-xs py-0 px-2" style="font-size: 0.7rem;" title="{{ __('Lokasi Masuk') }}">
-                                                <i class="fa-solid fa-location-dot me-1"></i>{{ __('Masuk') }}
-                                            </a>
-                                            @if($attendance->clock_out)
+                                            @if($attendance->lat_clock_in && $attendance->lng_clock_in)
+                                                <a href="https://maps.google.com/?q={{ $attendance->lat_clock_in }},{{ $attendance->lng_clock_in }}" target="_blank" class="btn btn-outline-primary btn-xs py-0 px-2" style="font-size: 0.7rem;" title="{{ __('Lokasi Masuk') }}">
+                                                    <i class="fa-solid fa-location-dot me-1"></i>{{ __('Masuk') }}
+                                                </a>
+                                            @endif
+                                            @if($attendance->clock_out && $attendance->lat_clock_out && $attendance->lng_clock_out)
                                                 <a href="https://maps.google.com/?q={{ $attendance->lat_clock_out }},{{ $attendance->lng_clock_out }}" target="_blank" class="btn btn-outline-info btn-xs py-0 px-2" style="font-size: 0.7rem;" title="{{ __('Lokasi Pulang') }}">
                                                     <i class="fa-solid fa-location-dot me-1"></i>{{ __('Pulang') }}
                                                 </a>

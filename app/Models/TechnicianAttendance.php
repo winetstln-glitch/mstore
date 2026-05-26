@@ -58,7 +58,7 @@ class TechnicianAttendance extends Model
     public function getShiftInfoAttribute()
     {
         $user = $this->user;
-        $date = $this->work_date ?? $this->clock_in;
+        $date = $this->work_date ?? $this->clock_in ?? now();
         
         $group = 'teknisi';
         $roleName = strtolower((string) ($user->role?->name ?? ''));

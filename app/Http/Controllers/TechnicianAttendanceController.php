@@ -195,14 +195,35 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 [$startDate, $endDate] = [$endDate, $startDate];
             }
 
+            // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
+            $users = User::whereHas('role', function ($q) {
+                $q->where('name', '!=', 'customer')
+                  ->where('name', '!=', 'koordinator')
+                  ->where('name', '!=', 'coordinator');
+            })->where('is_active', true)
+              ->with('role')
+              ->orderBy('name')
+              ->get();
+
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                 ->orWhereBetween('work_date', [$startDate, $endDate])
-                ->with('user')
-                ->oldest('clock_in');
+                ->with('user');
 
-            $attendances = $attendancesQuery->get();
+            $allAttendances = $attendancesQuery->get();
 
-            return response()->streamDownload(function () use ($attendances, $startDate, $endDate) {
+            $attendancesByDate = $allAttendances
+                ->groupBy(fn($a) => $a->work_date ? $a->work_date->toDateString() : $a->clock_in->toDateString())
+                ->map(fn($items) => $items->keyBy('user_id'));
+
+            $dates = [];
+            $current = Carbon::parse($startDate);
+            $end = Carbon::parse($endDate);
+            while ($current->lte($end)) {
+                $dates[] = $current->toDateString();
+                $current->addDay();
+            }
+
+            return response()->streamDownload(function () use ($users, $attendancesByDate, $dates, $startDate, $endDate) {
                 $writer = new Writer;
                 $writer->openToFile('php://output');
 
@@ -219,15 +240,38 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                     'Catatan',
                 ]));
 
-                foreach ($attendances as $attendance) {
-                    $writer->addRow(Row::fromValues([
-                        $attendance->user->name,
-                        ($attendance->work_date ?? $attendance->clock_in)->translatedFormat('d F Y'),
-                        $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-',
-                        $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
-                        __(ucfirst($attendance->status)),
-                        $attendance->notes ?? '-',
-                    ]));
+                foreach ($dates as $currentDate) {
+                    foreach ($users as $user) {
+                        $isOff = $this->isUserOffOnDate($user, $currentDate);
+                        $attendances = $attendancesByDate->get($currentDate, collect());
+                        $attendance = $attendances->get($user->id);
+
+                        if ($isOff) {
+                            $status = __('OFF');
+                            $clockIn = '-';
+                            $clockOut = '-';
+                            $notes = '-';
+                        } elseif ($attendance) {
+                            $status = __(ucfirst($attendance->status));
+                            $clockIn = $attendance->clock_in ? $attendance->clock_in->format('H:i') : '-';
+                            $clockOut = $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-';
+                            $notes = $attendance->notes ?? '-';
+                        } else {
+                            $status = __('Belum Absen');
+                            $clockIn = '-';
+                            $clockOut = '-';
+                            $notes = '-';
+                        }
+
+                        $writer->addRow(Row::fromValues([
+                            $user->name,
+                            Carbon::parse($currentDate)->translatedFormat('d F Y'),
+                            $clockIn,
+                            $clockOut,
+                            $status,
+                            $notes,
+                        ]));
+                    }
                 }
 
                 $writer->close();
@@ -256,9 +300,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 foreach ($attendances as $attendance) {
                     $writer->addRow(Row::fromValues([
                         $attendance->user->name,
-                        $attendance->clock_in->translatedFormat('d F Y'),
-                        $attendance->clock_in->format('H:i'),
-                        $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
+                        ($attendance->work_date ?? $attendance->clock_in)?->translatedFormat('d F Y') ?? '-',
+                        $attendance->clock_in?->format('H:i') ?? '-',
+                        $attendance->clock_out?->format('H:i') ?? '-',
                         __(ucfirst($attendance->status)),
                         $attendance->notes ?? '-',
                     ]));
@@ -318,9 +362,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 foreach ($data['dates'] as $attendance) {
                     $writer->addRow(Row::fromValues([
                         $data['user']->name,
-                        $attendance->clock_in->translatedFormat('d F Y'),
-                        $attendance->clock_in->format('H:i'),
-                        $attendance->clock_out ? $attendance->clock_out->format('H:i') : '-',
+                        ($attendance->work_date ?? $attendance->clock_in)?->translatedFormat('d F Y') ?? '-',
+                        $attendance->clock_in?->format('H:i') ?? '-',
+                        $attendance->clock_out?->format('H:i') ?? '-',
                         __(ucfirst($attendance->status)),
                         $attendance->notes ?? '-',
                     ]));
