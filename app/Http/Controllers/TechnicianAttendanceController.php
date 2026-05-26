@@ -869,6 +869,7 @@ Route::resource('attendance', AttendanceRefactoredController::class);
 
             $attendance = TechnicianAttendance::create([
                 'user_id' => Auth::id(),
+                'work_date' => today()->toDateString(),
                 'clock_in' => now(),
                 'photo_clock_in' => $path,
                 'lat_clock_in' => $request->latitude ?: null,
@@ -879,6 +880,14 @@ Route::resource('attendance', AttendanceRefactoredController::class);
                 'status' => $this->determineClockInStatus((string) ($clockInWindow['official_start'] ?? $clockInStart), (string) ($clockInWindow['shift_cutoff'] ?? $clockInEnd), $now),
                 'notes' => $request->notes,
             ]);
+
+            \App\Models\AuditLog::log(
+                'clock_in',
+                $attendance,
+                [],
+                $attendance->toArray(),
+                'Check-in absensi untuk ' . Auth::user()->name
+            );
 
             dispatch(function () use ($currentUser, $attendance) {
                 try {
@@ -1012,6 +1021,8 @@ Route::resource('attendance', AttendanceRefactoredController::class);
                 ? $request->file('photo')->store('attendance-photos', 'public')
                 : null;
 
+            $oldValues = $attendance->toArray();
+            
             $attendance->update([
                 'clock_out' => now(),
                 'photo_clock_out' => $path,
@@ -1022,6 +1033,14 @@ Route::resource('attendance', AttendanceRefactoredController::class);
                 'user_agent_clock_out' => $currentUserAgent,
                 'notes' => $attendance->notes."\nClock Out Note: ".$request->notes,
             ]);
+
+            \App\Models\AuditLog::log(
+                'clock_out',
+                $attendance,
+                $oldValues,
+                $attendance->toArray(),
+                'Check-out absensi untuk ' . Auth::user()->name
+            );
 
             // Notify Group via WhatsApp (Non-blocking using anonymous function)
             dispatch(function () use ($currentUser, $attendance) {
@@ -1065,6 +1084,10 @@ Route::resource('attendance', AttendanceRefactoredController::class);
         if (! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized');
         }
+        
+        $oldValues = $attendance->toArray();
+        $userName = $attendance->user?->name ?? 'Unknown User';
+        
         if ($attendance->photo_clock_in) {
             Storage::disk('public')->delete($attendance->photo_clock_in);
         }
@@ -1072,6 +1095,14 @@ Route::resource('attendance', AttendanceRefactoredController::class);
             Storage::disk('public')->delete($attendance->photo_clock_out);
         }
         $attendance->delete();
+
+        \App\Models\AuditLog::log(
+            'delete',
+            null,
+            $oldValues,
+            [],
+            'Menghapus absensi untuk ' . $userName . ' oleh ' . Auth::user()->name
+        );
 
         return back()->with('success', __('Attendance record deleted.'));
     }
