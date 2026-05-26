@@ -8,7 +8,7 @@
                 <div class="d-flex flex-column gap-3">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                         <h5 class="mb-0 fw-bold">
-                            <i class="fa-solid fa-clipboard-user me-2 text-primary"></i>{{ __('Rekap Absensi Teknisi') }}
+                            <i class="fa-solid fa-clipboard-user me-2 text-primary"></i>{{ __('Rekap Absensi Karyawan') }}
                         </h5>
                         <div class="d-flex gap-2">
                             <a href="{{ route('attendance.daily') }}" class="btn btn-info text-white btn-sm">
@@ -102,7 +102,15 @@
                 <!-- Panduan -->
                 <div class="alert alert-info py-2 mb-4">
                     <i class="fa-solid fa-circle-info me-2"></i>
-                    <strong>Panduan:</strong> Halaman ini menampilkan <strong>riwayat absensi yang sudah ada</strong>. Untuk melihat <strong>SEMUA karyawan (termasuk yang belum absen)</strong>, klik tombol <strong>"Absensi Harian"</strong> di atas!
+                    <strong>Panduan Penggunaan:</strong> 
+                    <ul class="mb-0 mt-2">
+                        <li>Halaman ini menampilkan <strong>riwayat absensi yang sudah ada</strong>.</li>
+                        <li>Untuk melihat <strong>SEMUA karyawan (termasuk yang belum absen)</strong>, klik tombol <strong>"Absensi Harian"</strong>.</li>
+                        <li>Gunakan filter di atas untuk mencari data absensi berdasarkan pengguna, status, bulan, atau tanggal.</li>
+                        <li>Klik <strong>"Download Rincian"</strong> untuk mengunduh data absensi dalam format Excel.</li>
+                        <li>Klik <strong>"Slip Gaji"</strong> untuk melihat rekap gaji berdasarkan absensi.</li>
+                        <li>Admin dapat menambah absensi manual, menambah bonus/kasbon, mencatat gaji ke keuangan, dan menghapus data absensi.</li>
+                    </ul>
                 </div>
 
                 <!-- Ringkasan Statistik -->

@@ -51,6 +51,19 @@
             </div>
 
             <div class="card-body">
+                <!-- Panduan Penggunaan -->
+                <div class="alert alert-info py-2 mb-4">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>Panduan Penggunaan:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Halaman ini menampilkan <strong>status kehadiran SELURUH karyawan</strong> untuk periode yang dipilih, termasuk yang belum absen dan yang OFF.</li>
+                        <li>Gunakan filter di atas untuk memilih bulan, rentang tanggal, atau status kehadiran tertentu.</li>
+                        <li>Klik <strong>"Excel"</strong> untuk mengunduh seluruh data kehadiran dalam format Excel.</li>
+                        <li>Klik accordion untuk membuka/menutup detail kehadiran per tanggal.</li>
+                        <li>Klik <strong>"Kembali ke Rekap"</strong> untuk kembali ke halaman riwayat absensi.</li>
+                    </ul>
+                </div>
+
                 <div class="alert alert-info py-2 mb-4 d-flex align-items-center">
                     <i class="fa-solid fa-circle-info me-2 fs-5"></i>
                     <div>

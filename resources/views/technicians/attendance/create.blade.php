@@ -194,6 +194,18 @@
 
 <div class="row justify-content-center">
     <div class="col-lg-6 col-md-8 px-0 px-md-3">
+        <!-- Panduan Penggunaan -->
+        <div class="alert alert-info py-2 mb-4">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <strong>Panduan Penggunaan:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Izinkan akses lokasi di browser Anda agar sistem dapat mendeteksi keberadaan Anda di kantor.</li>
+                <li>Tombol absen akan aktif otomatis setelah lokasi Anda terdeteksi.</li>
+                <li>Anda dapat mengambil foto selfie sebagai bukti kehadiran (opsional).</li>
+                <li>Setelah absen masuk, Anda dapat melakukan absen pulang pada waktu yang ditentukan.</li>
+                <li>Riwayat absensi Anda bulan ini akan ditampilkan di bagian bawah.</li>
+            </ul>
+        </div>
         <div class="card main-attendance-card mb-4">
             <!-- Header Section -->
             <div class="attendance-header">
@@ -224,13 +236,13 @@
                         <div class="col-6">
                             <div class="p-2 rounded-4 bg-primary-subtle border border-primary-subtle">
                                 <p class="xx-small text-uppercase fw-bold text-primary mb-0" style="font-size: 0.6rem;">Jam Masuk</p>
-                                <p class="small fw-bold text-dark mb-0">{{ $todayAttendance->clock_in->format('H:i') }}</p>
+                                <p class="small fw-bold text-dark mb-0">{{ $todayAttendance->clock_in?->format('H:i') ?? '--:--' }}</p>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-2 rounded-4 {{ $todayAttendance->clock_out ? 'bg-info-subtle border-info-subtle' : 'bg-light border-light' }}">
                                 <p class="xx-small text-uppercase fw-bold {{ $todayAttendance->clock_out ? 'text-info' : 'text-muted' }} mb-0" style="font-size: 0.6rem;">Jam Pulang</p>
-                                <p class="small fw-bold {{ $todayAttendance->clock_out ? 'text-dark' : 'text-muted' }} mb-0">{{ $todayAttendance->clock_out ? $todayAttendance->clock_out->format('H:i') : '--:--' }}</p>
+                                <p class="small fw-bold {{ $todayAttendance->clock_out ? 'text-dark' : 'text-muted' }} mb-0">{{ $todayAttendance->clock_out?->format('H:i') ?? '--:--' }}</p>
                             </div>
                         </div>
                     </div>
@@ -341,8 +353,8 @@
                         @forelse($monthAttendances->take(5) as $history)
                             <div class="history-item d-flex justify-content-between align-items-center">
                                 <div class="small">
-                                    <div class="fw-bold text-dark">{{ $history->clock_in->translatedFormat('d M Y') }}</div>
-                                    <div class="text-muted x-small">Hadir: {{ $history->clock_in->format('H:i') }} @if($history->clock_out) - {{ $history->clock_out->format('H:i') }} @endif</div>
+                                    <div class="fw-bold text-dark">{{ ($history->work_date ?? $history->clock_in)?->translatedFormat('d M Y') }}</div>
+                                    <div class="text-muted x-small">Hadir: {{ $history->clock_in?->format('H:i') ?? '--:--' }} @if($history->clock_out) - {{ $history->clock_out->format('H:i') }} @endif</div>
                                 </div>
                                 <span class="badge badge-status small {{ match($history->status) {'present'=>'bg-success-subtle text-success','late'=>'bg-warning-subtle text-warning','permit','leave'=>'bg-info-subtle text-info','sick'=>'bg-danger-subtle text-danger',default=>'bg-secondary-subtle text-secondary'} }}">
                                     {{ __($history->status) }}

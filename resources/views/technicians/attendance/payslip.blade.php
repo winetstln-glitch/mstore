@@ -4,6 +4,18 @@
 <div class="payslip-container py-3">
     <div class="container-fluid max-w-5xl mx-auto">
         
+        <!-- Panduan Penggunaan -->
+        <div class="alert alert-info py-2 mb-4 print-none">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <strong>Panduan Penggunaan:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Halaman ini menampilkan rekap slip gaji karyawan berdasarkan absensi pada periode yang dipilih.</li>
+                <li>Gunakan filter di halaman Rekap Absensi untuk memilih bulan atau karyawan tertentu.</li>
+                <li>Klik <strong>"Cetak PDF (A4)"</strong> untuk mencetak slip gaji dalam format PDF.</li>
+                <li>Klik tombol <strong>"Kirim Image"</strong> pada setiap slip untuk mengirim slip gaji ke WhatsApp karyawan.</li>
+            </ul>
+        </div>
+        
         <!-- Kontrol Aksi (Sembunyi saat Cetak) -->
         <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mb-4 print-none">
             <div>

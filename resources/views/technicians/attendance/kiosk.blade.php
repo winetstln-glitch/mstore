@@ -11,6 +11,17 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-lg-10">
+        <!-- Panduan Penggunaan -->
+        <div class="alert alert-info py-2 mb-4">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <strong>Panduan Penggunaan Kiosk:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Tempelkan ID Card karyawan ke scanner, atau masukkan kode ID secara manual.</li>
+                <li>Sistem akan otomatis mendeteksi apakah ini <strong>absensi masuk</strong> atau <strong>absensi pulang</strong>.</li>
+                <li>Jika menggunakan kamera, pilih kamera yang ingin digunakan dan arahkan ke QR Code/Barcode ID Card.</li>
+                <li>Riwayat absensi hari ini akan muncul di tabel di bawah.</li>
+            </ul>
+        </div>
         <div class="card shadow-sm border-0 border-top border-4 border-success mb-4">
             <div class="card-body">
                 <div class="row g-4">
