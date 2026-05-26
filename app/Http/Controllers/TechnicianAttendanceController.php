@@ -1514,26 +1514,26 @@ Route::resource('attendance', AttendanceRefactoredController::class);
             return [
                 'shift_1_start' => Setting::getValue('schedule_wash_shift_1_start', '08:00'),
                 'shift_1_end' => Setting::getValue('schedule_wash_shift_1_end', '17:00'),
-                'shift_1_cutoff' => Setting::getValue('schedule_wash_shift_1_cutoff', '10:00'),
+                'shift_1_cutoff' => Setting::getValue('schedule_wash_shift_1_cutoff', '13:00'),
                 'shift_2_start' => Setting::getValue('schedule_wash_shift_2_start', '13:00'),
                 'shift_2_end' => Setting::getValue('schedule_wash_shift_2_end', '22:00'),
-                'shift_2_cutoff' => Setting::getValue('schedule_wash_shift_2_cutoff', '15:00'),
+                'shift_2_cutoff' => Setting::getValue('schedule_wash_shift_2_cutoff', '17:00'),
                 'longshift_start' => Setting::getValue('schedule_wash_longshift_start', '08:00'),
                 'longshift_end' => Setting::getValue('schedule_wash_longshift_end', '20:00'),
-                'longshift_cutoff' => Setting::getValue('schedule_wash_longshift_cutoff', '10:00'),
+                'longshift_cutoff' => Setting::getValue('schedule_wash_longshift_cutoff', '13:00'),
             ];
         }
 
         return [
             'shift_1_start' => Setting::getValue('schedule_teknisi_shift_1_start', '08:00'),
             'shift_1_end' => Setting::getValue('schedule_teknisi_shift_1_end', '17:00'),
-            'shift_1_cutoff' => Setting::getValue('schedule_teknisi_shift_1_cutoff', '10:00'),
+            'shift_1_cutoff' => Setting::getValue('schedule_teknisi_shift_1_cutoff', '13:00'),
             'shift_2_start' => Setting::getValue('schedule_teknisi_shift_2_start', '15:00'),
             'shift_2_end' => Setting::getValue('schedule_teknisi_shift_2_end', '00:00'),
             'shift_2_cutoff' => Setting::getValue('schedule_teknisi_shift_2_cutoff', '17:00'),
             'longshift_start' => Setting::getValue('schedule_teknisi_longshift_start', '08:00'),
             'longshift_end' => Setting::getValue('schedule_teknisi_longshift_end', '20:00'),
-            'longshift_cutoff' => Setting::getValue('schedule_teknisi_longshift_cutoff', '10:00'),
+            'longshift_cutoff' => Setting::getValue('schedule_teknisi_longshift_cutoff', '13:00'),
         ];
     }
 
