@@ -9,3 +9,47 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Responsive Table for Mobile */
+@media (max-width: 767.98px) {
+    .table-responsive-mobile table {
+        border: 0;
+    }
+
+    .table-responsive-mobile table thead {
+        display: none;
+    }
+
+    .table-responsive-mobile table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+
+    .table-responsive-mobile table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--bs-border-color);
+        text-align: right;
+    }
+
+    .table-responsive-mobile table td:last-child {
+        border-bottom: 0;
+    }
+
+    .table-responsive-mobile table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.05em;
+        color: var(--bs-secondary-color);
+        margin-right: 1rem;
+        text-align: left;
+        flex-shrink: 0;
+    }
+}

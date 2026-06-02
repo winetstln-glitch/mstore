@@ -38,17 +38,17 @@
                     <tbody>
                         @forelse($employees as $employee)
                             <tr>
-                                <td>{{ $employee->name }}</td>
-                                <td>{{ $employee->phone ?? '-' }}</td>
-                                <td>{{ $employee->user?->name ?? '—' }}</td>
-                                <td>
+                                <td data-label="Nama">{{ $employee->name }}</td>
+                                <td data-label="Telepon">{{ $employee->phone ?? '-' }}</td>
+                                <td data-label="Akun">{{ $employee->user?->name ?? '—' }}</td>
+                                <td data-label="Status">
                                     @if($employee->status == 'active')
                                         <span class="badge bg-success">Aktif</span>
                                     @else
                                         <span class="badge bg-secondary">{{ ucfirst($employee->status) }}</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <a href="{{ route('wash.employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>

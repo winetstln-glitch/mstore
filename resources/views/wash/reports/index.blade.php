@@ -136,24 +136,24 @@
                     <tbody>
                         @forelse($dailyIncomeRows as $index => $r)
                         <tr @if(($r->notes ?? null) === 'bonus_cuci_10x') class="table-success" @endif>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td>{{ $r->created_at->format('Y-m-d') }}</td>
-                            <td>{{ $r->created_at->format('H:i') }}</td>
-                            <td>
+                            <td class="text-center" data-label="No">{{ $index + 1 }}</td>
+                            <td data-label="Tanggal">{{ $r->created_at->format('Y-m-d') }}</td>
+                            <td data-label="Waktu">{{ $r->created_at->format('H:i') }}</td>
+                            <td data-label="No. Antri">
                                 {{ $r->queue_number ?? '-' }}
                                 @if(($r->notes ?? null) === 'bonus_cuci_10x')
                                     <br><span class="badge bg-success ms-1 mt-1"><i class="fa-solid fa-gift me-1"></i>Bonus Gratis</span>
                                 @endif
                             </td>
-                            <td class="font-monospace">{{ $r->transaction_number }}</td>
-                            <td>{{ $r->user->name ?? '-' }}</td>
-                            <td>
+                            <td class="font-monospace" data-label="No. Transaksi">{{ $r->transaction_number }}</td>
+                            <td data-label="Kasir">{{ $r->user->name ?? '-' }}</td>
+                            <td data-label="Metode Pembayaran">
                                 @if(($r->notes ?? null) === 'bonus_cuci_10x')
                                     <span class="badge bg-success mb-1"><i class="fa-solid fa-gift me-1"></i>BONUS</span><br>
                                 @endif
                                 <span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span>
                             </td>
-                            <td class="text-end">
+                            <td class="text-end" data-label="Nominal (Rp)">
                                 {{ number_format($r->total_amount,0,',','.') }}
                                 @if(($r->notes ?? null) === 'bonus_cuci_10x' && ($r->discount_amount ?? 0) > 0)
                                     <br><small class="text-success fw-bold"><i class="fa-solid fa-percent me-1"></i>Diskon Bonus: Rp {{ number_format($r->discount_amount,0,',','.') }}</small>
@@ -188,10 +188,10 @@
                     <tbody>
                         @forelse($dailyExpenseRows as $index => $r)
                         <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td>{{ \Carbon\Carbon::parse($r->transaction_date)->format('Y-m-d') }}</td>
-                            <td>{{ $r->description }}</td>
-                            <td class="text-end text-danger">{{ number_format($r->amount,0,',','.') }}</td>
+                            <td class="text-center" data-label="No">{{ $index + 1 }}</td>
+                            <td data-label="Tanggal">{{ \Carbon\Carbon::parse($r->transaction_date)->format('Y-m-d') }}</td>
+                            <td data-label="Deskripsi / Keterangan">{{ $r->description }}</td>
+                            <td class="text-end text-danger" data-label="Nominal (Rp)">Rp {{ number_format($r->amount,0,',','.') }}</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="text-center py-3">Tidak ada data pengeluaran</td></tr>
@@ -214,7 +214,7 @@
                         <thead><tr><th>Layanan</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
                             @forelse($dailyByService as $r)
-                            <tr><td>{{ $r->service_name }}</td><td class="text-end">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td data-label="Layanan">{{ $r->service_name }}</td><td class="text-end" data-label="Qty">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end" data-label="Total">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="3" class="text-center">-</td></tr>
                             @endforelse
@@ -234,7 +234,7 @@
                                 $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => ($r->notes ?? null) === 'bonus_cuci_10x')->count();
                             @endphp
                             @forelse($dailyByPayment as $r)
-                            <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td data-label="Metode">{{ strtoupper($r->payment_method) }}</td><td class="text-end" data-label="Total">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="2" class="text-center">-</td></tr>
                             @endforelse
@@ -362,10 +362,10 @@
                                     $exp = (float)($expenseMap[$d]->total ?? 0);
                                 @endphp
                                 <tr>
-                                    <td>{{ $d }}</td>
-                                    <td class="text-end">Rp {{ number_format($inc,0,',','.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($exp,0,',','.') }}</td>
-                                    <td class="text-end fw-semibold">Rp {{ number_format($inc - $exp,0,',','.') }}</td>
+                                    <td data-label="Tanggal">{{ $d }}</td>
+                                    <td class="text-end" data-label="Pemasukan">Rp {{ number_format($inc,0,',','.') }}</td>
+                                    <td class="text-end" data-label="Pengeluaran">Rp {{ number_format($exp,0,',','.') }}</td>
+                                    <td class="text-end fw-semibold" data-label="Laba / Rugi">Rp {{ number_format($inc - $exp,0,',','.') }}</td>
                                 </tr>
                                 @empty
                                 <tr><td colspan="4" class="text-center">Tidak ada data</td></tr>
@@ -380,7 +380,7 @@
                         <thead><tr><th>Layanan</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
                         <tbody>
                             @forelse($monthlyByService as $r)
-                            <tr><td>{{ $r->service_name }}</td><td class="text-end">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td data-label="Layanan">{{ $r->service_name }}</td><td class="text-end" data-label="Qty">{{ number_format($r->total_qty,0,',','.') }}</td><td class="text-end" data-label="Total">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="3" class="text-center">-</td></tr>
                             @endforelse
@@ -399,7 +399,7 @@
                                 $monthlySetoranCash = $monthlyCash - (float) $monthlyExpense;
                             @endphp
                             @forelse($monthlyByPayment as $r)
-                            <tr><td>{{ strtoupper($r->payment_method) }}</td><td class="text-end">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
+                            <tr><td data-label="Metode">{{ strtoupper($r->payment_method) }}</td><td class="text-end" data-label="Total">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
                             @empty
                             <tr><td colspan="2" class="text-center">-</td></tr>
                             @endforelse

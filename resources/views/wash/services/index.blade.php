@@ -68,7 +68,7 @@
                                 $filterType = in_array($categoryRaw, ['addon', 'skincare'], true) ? 'addon' : $normalizedType;
                             @endphp
                             <tr data-filter="{{ $filterType }}">
-                                <td>
+                                <td data-label="Gambar">
                                     @if($service->image)
                                         <img src="{{ Storage::url($service->image) }}" alt="{{ $service->name }}" width="50" height="50" class="img-thumbnail object-fit-cover">
                                     @else
@@ -77,8 +77,8 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>{{ $service->name }}</td>
-                                <td>
+                                <td data-label="Nama">{{ $service->name }}</td>
+                                <td data-label="Jenis Kendaraan">
                                     @if($service->vehicle_type === 'car')
                                         <span class="badge bg-primary">Mobil</span>
                                     @elseif($service->vehicle_type === 'coffee')
@@ -87,12 +87,12 @@
                                         <span class="badge bg-success">Motor</span>
                                     @endif
                                 </td>
-                                <td><span class="badge bg-secondary">{{ $service->category_label }}</span></td>
-                                <td><span class="badge bg-light text-dark border">{{ $service->size_tier_label }}</span></td>
-                                <td><span class="badge bg-dark">{{ $service->package_type_label }}</span></td>
-                                <td>{{ $service->sort_order ?? 0 }}</td>
-                                <td>Rp {{ number_format($service->price, 0, ',', '.') }}</td>
-                                <td>
+                                <td data-label="Kategori"><span class="badge bg-secondary">{{ $service->category_label }}</span></td>
+                                <td data-label="Ukuran"><span class="badge bg-light text-dark border">{{ $service->size_tier_label }}</span></td>
+                                <td data-label="Paket"><span class="badge bg-dark">{{ $service->package_type_label }}</span></td>
+                                <td data-label="Urutan">{{ $service->sort_order ?? 0 }}</td>
+                                <td data-label="Harga">Rp {{ number_format($service->price, 0, ',', '.') }}</td>
+                                <td data-label="Penyesuaian Hari Raya">
                                     @if(!is_null($service->holiday_price))
                                         @php
                                             $adjustmentValue = (float) $service->holiday_price;
@@ -103,7 +103,7 @@
                                         <span class="text-muted">-</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="Deskripsi">
                                     @if(!empty($service->description))
                                         @php
                                             $descriptionItems = array_values(array_filter(
@@ -136,14 +136,14 @@
                                         <span class="wash-description-chip wash-description-chip-empty">-</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     @if($service->is_active)
                                         <span class="badge bg-success">Aktif</span>
                                     @else
                                         <span class="badge bg-danger">Nonaktif</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <a href="{{ route('wash.services.edit', $service->id) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>

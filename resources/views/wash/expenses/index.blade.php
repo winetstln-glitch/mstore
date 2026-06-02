@@ -152,16 +152,16 @@
                 <tbody>
                     @forelse($expenses as $e)
                     <tr>
-                        <td>{{ $e->transaction_date->format('Y-m-d') }}</td>
+                        <td data-label="Tanggal">{{ $e->transaction_date->format('Y-m-d') }}</td>
                         @if($hasStockTables ?? false)
-                            <td>{{ $e->category }}</td>
-                            <td>{{ $e->washStockMovement?->stockItem?->name ?? '-' }}</td>
-                            <td>{{ $e->washStockMovement ? ((float)$e->washStockMovement->quantity.' '.$e->washStockMovement->stockItem?->unit) : '-' }}</td>
+                            <td data-label="Kategori">{{ $e->category }}</td>
+                            <td data-label="Item">{{ $e->washStockMovement?->stockItem?->name ?? '-' }}</td>
+                            <td data-label="Qty">{{ $e->washStockMovement ? ((float)$e->washStockMovement->quantity.' '.$e->washStockMovement->stockItem?->unit) : '-' }}</td>
                         @endif
-                        <td>{{ $e->description }}</td>
-                        <td>Rp {{ number_format($e->amount,0,',','.') }}</td>
-                        <td><span class="badge bg-secondary">{{ $e->reference_number }}</span></td>
-                        <td>
+                        <td data-label="Deskripsi">{{ $e->description }}</td>
+                        <td data-label="Nominal">Rp {{ number_format($e->amount,0,',','.') }}</td>
+                        <td data-label="Ref"><span class="badge bg-secondary">{{ $e->reference_number }}</span></td>
+                        <td data-label="Aksi">
                             <div class="d-flex gap-1">
                                 <a href="{{ route('wash.expenses.edit', $e->id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i>

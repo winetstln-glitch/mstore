@@ -116,32 +116,32 @@
                         @forelse($transactions as $transaction)
                             <tr>
                                 @if(Auth::user()->hasPermission('wash.manage'))
-                                <td>
+                                <td data-label="Pilih">
                                     <div class="form-check m-0">
                                         <input class="form-check-input transaction-checkbox" type="checkbox" value="{{ $transaction->id }}">
                                     </div>
                                 </td>
                                 @endif
-                                <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                                <td>
+                                <td data-label="Tanggal">{{ $transaction->created_at->format('d M Y H:i') }}</td>
+                                <td data-label="No. Antri">
                                     {{ $transaction->queue_number ?? '-' }}
                                     @if(($transaction->notes ?? null) === 'bonus_cuci_10x')
                                         <span class="badge bg-success ms-1">Bonus Gratis</span>
                                     @endif
                                 </td>
-                                <td>{{ $transaction->transaction_number }}</td>
-                                <td>{{ $transaction->customer_name ?? '-' }}</td>
-                                <td>{{ $transaction->washCustomer->phone ?? '-' }}</td>
-                                <td>{{ $transaction->vehicle_plate ?? '-' }}</td>
-                                <td>
+                                <td data-label="No. Transaksi">{{ $transaction->transaction_number }}</td>
+                                <td data-label="Pelanggan">{{ $transaction->customer_name ?? '-' }}</td>
+                                <td data-label="No. WhatsApp">{{ $transaction->washCustomer->phone ?? '-' }}</td>
+                                <td data-label="No. Plat">{{ $transaction->vehicle_plate ?? '-' }}</td>
+                                <td data-label="Total">
                                     Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}
                                     @if(($transaction->notes ?? null) === 'bonus_cuci_10x' && ($transaction->discount_amount ?? 0) > 0)
                                         <br><small class="text-success">(Diskon bonus: Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }})</small>
                                     @endif
                                 </td>
-                                <td>{{ ucfirst($transaction->payment_method) }}</td>
-                                <td>{{ $transaction->user->name ?? 'Tidak Diketahui' }}</td>
-                                <td>
+                                <td data-label="Pembayaran">{{ ucfirst($transaction->payment_method) }}</td>
+                                <td data-label="Kasir">{{ $transaction->user->name ?? 'Tidak Diketahui' }}</td>
+                                <td data-label="Aksi">
                                     <div class="d-flex flex-wrap gap-1 justify-content-end transaction-actions">
                                         <a href="{{ route('wash.transactions.show', $transaction->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Lihat') }}">
                                             <i class="fas fa-eye"></i>
