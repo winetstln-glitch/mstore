@@ -367,6 +367,52 @@
             margin-bottom: 0.1rem;
         }
 
+        /* MOBILE TABLE - FORCE STYLES */
+        .wash-transactions-page .table-responsive-mobile table {
+            border: 0 !important;
+        }
+
+        .wash-transactions-page .table-responsive-mobile table thead {
+            display: none !important;
+        }
+
+        .wash-transactions-page .table-responsive-mobile table tbody tr {
+            display: block !important;
+            margin-bottom: 1.25rem !important;
+            border: 1px solid var(--bs-border-color) !important;
+            border-radius: 0.9rem !important;
+            overflow: hidden !important;
+            background-color: var(--bs-body-bg) !important;
+        }
+
+        .wash-transactions-page .table-responsive-mobile table tbody td {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 0.85rem 1rem !important;
+            border-bottom: 1px solid var(--bs-border-color) !important;
+            text-align: right !important;
+            width: 100% !important;
+        }
+
+        .wash-transactions-page .table-responsive-mobile table tbody td:last-child {
+            border-bottom: 0 !important;
+        }
+
+        .wash-transactions-page .table-responsive-mobile table tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: var(--bs-primary);
+            margin-right: 0.5rem;
+            text-align: left;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+
         .wash-transactions-page .wash-filter-form .col-form-label {
             margin-bottom: 0;
             font-size: 0.85rem;

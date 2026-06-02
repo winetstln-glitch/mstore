@@ -527,16 +527,50 @@
             padding: 0.25rem;
         }
 
-        .wash-reports-page .table-responsive-mobile td {
-            align-items: flex-start;
-            gap: 0.55rem;
-            padding-top: 0.6rem;
-            padding-bottom: 0.6rem;
+        /* MOBILE TABLE - FORCE STYLES */
+        .wash-reports-page .table-responsive-mobile table {
+            border: 0 !important;
         }
 
-        .wash-reports-page .table-responsive-mobile td::before {
-            font-size: 0.68rem;
-            letter-spacing: 0.25px;
+        .wash-reports-page .table-responsive-mobile table thead {
+            display: none !important;
+        }
+
+        .wash-reports-page .table-responsive-mobile table tbody tr {
+            display: block !important;
+            margin-bottom: 1.25rem !important;
+            border: 1px solid var(--bs-border-color) !important;
+            border-radius: 0.9rem !important;
+            overflow: hidden !important;
+            background-color: var(--bs-body-bg) !important;
+        }
+
+        .wash-reports-page .table-responsive-mobile table tbody td {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 0.85rem 1rem !important;
+            border-bottom: 1px solid var(--bs-border-color) !important;
+            text-align: right !important;
+            width: 100% !important;
+        }
+
+        .wash-reports-page .table-responsive-mobile table tbody td:last-child {
+            border-bottom: 0 !important;
+        }
+
+        .wash-reports-page .table-responsive-mobile table tbody td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: var(--bs-primary);
+            margin-right: 0.5rem;
+            text-align: left;
+            flex-shrink: 0;
+            display: inline-block;
         }
     }
 </style>
