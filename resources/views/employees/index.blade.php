@@ -104,6 +104,8 @@
                         <th>NIK</th>
                         <th>Posisi / Dept</th>
                         <th>No HP</th>
+                        <th>Gaji Bulanan</th>
+                        <th>Gaji Harian</th>
                         <th>Status</th>
                         <th>Integrasi</th>
                         <th class="text-end pe-3">Aksi</th>
@@ -136,6 +138,8 @@
                                 <div class="x-small text-muted">{{ $employee->department }}</div>
                             </td>
                             <td class="small">{{ $employee->phone }}</td>
+                            <td class="small fw-medium text-end">{{ number_format($employee->monthly_salary ?? 0, 0, ',', '.') }}</td>
+                            <td class="small fw-medium text-end">{{ number_format($employee->daily_salary ?? 0, 0, ',', '.') }}</td>
                             <td>
                                 <span class="badge {{ $employee->employment_status === 'Tetap' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }} x-small px-2">
                                     {{ $employee->employment_status }}
@@ -179,7 +183,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-5">
+                            <td colspan="10" class="text-center text-muted py-5">
                                 <i class="fa-solid fa-user-slash fa-2x opacity-25 d-block mb-2"></i>
                                 Belum ada data karyawan.
                             </td>

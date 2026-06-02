@@ -20,6 +20,48 @@
                         </div>
                     </div>
                     
+                    <!-- Panduan Penggunaan -->
+                    <div class="accordion" id="guideAccordion">
+                        <div class="accordion-item border border-secondary-subtle">
+                            <h2 class="accordion-header" id="guideHeading">
+                                <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#guideCollapse" aria-expanded="false" aria-controls="guideCollapse">
+                                    <i class="fa-solid fa-circle-info me-2 text-info"></i>
+                                    <span class="fw-bold small">Panduan Penggunaan Absensi & Penggajian</span>
+                                </button>
+                            </h2>
+                            <div id="guideCollapse" class="accordion-collapse collapse" aria-labelledby="guideHeading" data-bs-parent="#guideAccordion">
+                                <div class="accordion-body px-3 py-2">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <p class="small fw-bold mb-1 text-primary"><i class="fa-solid fa-calendar-check me-1"></i> Filter Tanggal</p>
+                                            <p class="x-small text-muted mb-0">
+                                                - Pilih <strong>"Dari Tanggal"</strong> dan <strong>"Sampai Tanggal"</strong> untuk hitung gaji rentang tanggal (misal: 6 Mei - 5 Juni)
+                                                - Atau pilih <strong>"Bulan"</strong> untuk hitung gaji per bulan
+                                                - Atau pilih <strong>"Tanggal"</strong> untuk melihat absensi per hari
+                                            </p>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <p class="small fw-bold mb-1 text-success"><i class="fa-solid fa-receipt me-1"></i> Slip Gaji</p>
+                                            <p class="x-small text-muted mb-0">
+                                                - Klik <strong>"Slip Gaji"</strong> untuk melihat rincian gaji
+                                                - Slip gaji menampilkan keterangan perhitungan gaji
+                                                - Perhitungan otomatis: gaji bulanan dibagi hari kerja
+                                            </p>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <p class="small fw-bold mb-1 text-warning"><i class="fa-solid fa-money-bill-transfer me-1"></i> Bonus & Kasbon</p>
+                                            <p class="x-small text-muted mb-0">
+                                                - Tambahkan <strong>Bonus/Kasbon</strong> via tombol menu
+                                                - Gunakan kata kunci: <em>"disiplin"</em>, <em>"tanggung"</em>, <em>"absensi"</em> untuk bonus
+                                                - Gunakan kata kunci: <em>"kantor"</em>, <em>"warung"</em> untuk kasbon
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <form action="{{ route('attendance.index') }}" method="GET" class="w-100 border-top pt-3">
                         <div class="row g-2 align-items-end">
                             <div class="col-12 col-md-3">
@@ -53,6 +95,14 @@
                                 <label class="form-label small fw-bold text-muted mb-1">{{ __('Tanggal') }}</label>
                                 <input type="date" name="date" value="{{ request('date') }}" class="form-control form-control-sm">
                             </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Dari Tanggal') }}</label>
+                                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-bold text-muted mb-1">{{ __('Sampai Tanggal') }}</label>
+                                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+                            </div>
                             <div class="col-6 col-md-auto d-flex gap-2">
                                 <button type="submit" class="btn btn-primary btn-sm px-3">
                                     <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
@@ -62,6 +112,41 @@
                                 </a>
                             </div>
                         </div>
+
+                        <!-- Ringkasan Filter Aktif -->
+                        @php
+                            $activeFilters = [];
+                            if(request('user_id')) {
+                                $user = $technicians->where('id', request('user_id'))->first();
+                                $activeFilters[] = 'Pengguna: ' . ($user->name ?? '-');
+                            }
+                            if(request('status')) {
+                                $statusLabels = [
+                                    'present' => 'Hadir',
+                                    'late' => 'Terlambat',
+                                    'leave' => 'Cuti',
+                                    'permit' => 'Izin',
+                                    'sick' => 'Sakit',
+                                    'alpha' => 'Alpha'
+                                ];
+                                $activeFilters[] = 'Status: ' . ($statusLabels[request('status')] ?? request('status'));
+                            }
+                            if(request('start_date') && request('end_date')) {
+                                $activeFilters[] = 'Periode: ' . \Carbon\Carbon::parse(request('start_date'))->translatedFormat('d M Y') . ' - ' . \Carbon\Carbon::parse(request('end_date'))->translatedFormat('d M Y');
+                            } elseif(request('month')) {
+                                $activeFilters[] = 'Bulan: ' . \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y');
+                            } elseif(request('date')) {
+                                $activeFilters[] = 'Tanggal: ' . \Carbon\Carbon::parse(request('date'))->translatedFormat('d M Y');
+                            }
+                        @endphp
+                        @if(count($activeFilters) > 0)
+                        <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
+                            <span class="x-small fw-bold text-muted"><i class="fa-solid fa-filter-circle me-1"></i> Filter Aktif:</span>
+                            @foreach($activeFilters as $filter)
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis x-small px-2 py-1">{{ $filter }}</span>
+                            @endforeach
+                        </div>
+                        @endif
 
                         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
                             @php
@@ -381,6 +466,8 @@
     <input type="hidden" name="user_id" value="{{ request('user_id') }}">
     <input type="hidden" name="month" value="{{ request('month') }}">
     <input type="hidden" name="date" value="{{ request('date') }}">
+    <input type="hidden" name="start_date" value="{{ request('start_date') }}">
+    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
 </form>
 
 <form id="bulkDeleteForm" action="{{ route('attendance.bulkDestroy') }}" method="POST" style="display:none;">

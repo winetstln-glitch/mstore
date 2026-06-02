@@ -50,6 +50,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Struk #{{ $transaction->transaction_number }}</title>
+    @vite(['resources/js/app.js'])
     <style>
         * { box-sizing: border-box; }
         body {
@@ -300,6 +301,10 @@
     <button class="btn btn-blue" onclick="printBluetoothDirect()">Hubungkan & Cetak Bluetooth</button>
     <button class="btn" onclick="window.print()">Cetak via Peramban (PDF/Sistem)</button>
     <button class="btn btn-green" onclick="shareWashReceiptNow(this)">Bagikan Struk (PNG)</button>
+    
+    <!-- New Print Buttons Container -->
+    <div id="print-buttons-container" style="margin-top: 10px;"></div>
+    
     <div id="status" style="font-size: 10px; color: #666; text-align: center;">Status: Siap</div>
 </div>
 
@@ -568,7 +573,24 @@ function resolveBluetoothBridge(){
         for(const method of methodNames){if(typeof bridge[method]==='function'){return data=>invokeBridgePrinter(d=>bridge[method](d),data);}}
         if(typeof bridge.postMessage==='function'){return data=>invokeBridgePrinter(d=>bridge.postMessage({action:'printBluetooth',payload:d}),data);}
     }
-    if(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.printBluetooth && typeof window.webkit.messageHandlers.printBluetooth.postMessage==='function'){return data=>invokeBridgePrinter(d=>window.webkit.messageHandlers.printBluetooth.postMessage(d),data);}
+    // Fix for iPhone/iOS webkit message handlers - try multiple handler names
+    if(window.webkit && window.webkit.messageHandlers){
+        const iosHandlerNames=['printBluetooth','bluetoothPrint','printReceipt','printStruk','cetakBluetooth','handlePrint','print'];
+        for(const handlerName of iosHandlerNames){
+            if(window.webkit.messageHandlers[handlerName] && typeof window.webkit.messageHandlers[handlerName].postMessage==='function'){
+                return data=>{
+                    try{
+                        // iOS webkit handlers often prefer stringified JSON
+                        window.webkit.messageHandlers[handlerName].postMessage(typeof data === 'string' ? data : JSON.stringify(data));
+                        return true;
+                    }catch(e){
+                        console.error('iOS bridge error:', e);
+                        return false;
+                    }
+                };
+            }
+        }
+    }
     if(window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage==='function'){return data=>invokeBridgePrinter(d=>window.ReactNativeWebView.postMessage(JSON.stringify({action:'printBluetooth',payload:d})),data);}
     return null;
 }
@@ -594,7 +616,7 @@ function buildEscPosText(data){
     if(data.is_loyalty_bonus){txt+="[C]<b>*** BONUS CUCI " + data.loyalty_target + "X ***</b>\n";}
     txt+="[L]TOTAL [R]"+data.total+"\n";
     txt+="[L]Metode: "+data.method+"\n";
-    if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[K]Kembali [R]"+data.change+"\n";}
+    if(data.cash>0){txt+="[L]Bayar [R]"+data.cash+"\n[L]Kembali [R]"+data.change+"\n";}
     txt+="\n[C]"+(data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n";
     if(data.has_holiday_adjustment){txt+="[C]"+data.holiday_greeting+"\n";}
     if(data.receipt_footer_message){txt+="[C]"+String(data.receipt_footer_message).replace(/\n/g,"\n[C]")+"\n";}
@@ -653,14 +675,32 @@ function downloadWashReceiptFile(file) {
     window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 }
 
-// === PRINT FUNCTION ===
-async function printBluetoothDirect(){
+// === PRINT FUNCTION (LEGACY - WORKING) ===
+async function printBluetoothDirectLegacy(){
     const status=document.getElementById('status');
     const paperSize=parseInt(document.querySelector('input[name="paper_size"]:checked').value);
     const printerType=document.querySelector('input[name="printer_type"]:checked').value;
-    const bridgePayload=Object.assign({},data,{paper_size:paperSize, printer_type:printerType});
+    const bridgePayload=Object.assign({},data,{
+        paper_size:paperSize,
+        printer_type:printerType,
+        escpos_text: buildEscPosText(data)
+    });
     const bridgePrinter=resolveBluetoothBridge();
+    
+    // Check if it's an iOS device first
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
     try{
+        // Prioritize bridge printing for iOS devices (since WebBluetooth on iOS is limited)
+        if(isIOS && bridgePrinter){
+            status.innerText="Mengirim ke printer via iOS App...";
+            if(bridgePrinter(bridgePayload)){
+                status.innerText="Cetak berhasil!";
+                setTimeout(()=>status.innerText="Status: Siap",3000);
+                return;
+            }
+        }
+        
         if(!(navigator.bluetooth && typeof navigator.bluetooth.requestDevice==='function')){
             if(!bridgePrinter) throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android/iOS.');
             status.innerText="Mengirim via App Bridge...";
@@ -668,12 +708,46 @@ async function printBluetoothDirect(){
             status.innerText="Cetak berhasil melalui Bridge!";
             setTimeout(()=>status.innerText="Status: Siap",3000);return;
         }
+        
         status.innerText="Meminta printer...";
-        const device=await navigator.bluetooth.requestDevice({filters:[{services:['000018f0-0000-1000-8000-00805f9b34fb']}],optionalServices:['000018f0-0000-1000-8000-00805f9b34fb']});
+        // More compatible filter for Bluetooth printers on all devices
+        const device=await navigator.bluetooth.requestDevice({
+            filters: [
+                {services:['000018f0-0000-1000-8000-00805f9b34fb']},
+                {namePrefix: 'Printer'},
+                {namePrefix: 'XP'},
+                {namePrefix: 'Mprint'}
+            ],
+            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb']
+        });
+        
         status.innerText="Menghubungkan...";
         const server=await device.gatt.connect();
-        const service=await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        const characteristic=await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        
+        // Try multiple common printer services
+        let service = null;
+        let characteristic = null;
+        
+        const possibleServices = ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb'];
+        const possibleCharacteristics = ['00002af1-0000-1000-8000-00805f9b34fb', '0000ffe1-0000-1000-8000-00805f9b34fb'];
+        
+        for(const serviceId of possibleServices){
+            try{
+                service = await server.getPrimaryService(serviceId);
+                for(const charId of possibleCharacteristics){
+                    try{
+                        characteristic = await service.getCharacteristic(charId);
+                        break;
+                    }catch(e){}
+                }
+                if(characteristic) break;
+            }catch(e){}
+        }
+        
+        if(!service || !characteristic){
+            throw new Error('Printer tidak mendukung layanan Bluetooth standar');
+        }
+        
         status.innerText=`Memproses (${printerType.toUpperCase()}, ${paperSize===32?'58mm':'80mm'})...`;
         
         let receiptData;
@@ -765,17 +839,114 @@ async function printBluetoothDirect(){
         }
         
         status.innerText="Mengirim data...";
-        const chunkSize=20;
-        for(let i=0;i<receiptData.length;i+=chunkSize){await characteristic.writeValue(receiptData.slice(i,i+chunkSize));}
+        // Use smaller chunk size for better iOS compatibility
+        const chunkSize = isIOS ? 10 : 20;
+        for(let i=0;i<receiptData.length;i+=chunkSize){
+            await characteristic.writeValue(receiptData.slice(i,i+chunkSize));
+        }
+        
         status.innerText="Cetak berhasil!";
         setTimeout(()=>status.innerText="Status: Siap",3000);
     }catch(error){
-        if(bridgePrinter && bridgePrinter(bridgePayload)){status.innerText="Cetak berhasil melalui Bridge!";setTimeout(()=>status.innerText="Status: Siap",3000);return;}
+        console.error('Print error:', error);
+        if(bridgePrinter && bridgePrinter(bridgePayload)){
+            status.innerText="Cetak berhasil melalui Bridge!";
+            setTimeout(()=>status.innerText="Status: Siap",3000);
+            return;
+        }
         status.innerText="Kesalahan: "+error.message;
     }
 }
 
 initReceiptPreview();
+
+// === NEW PRINT MANAGER ===
+let printManager = null;
+
+function initPrintManager() {
+    // Expose buildEscPosText globally for PrintManager
+    window.buildEscPosText = buildEscPosText;
+    
+    // Initialize PrintManager with our data
+    if (window.PrintManager) {
+        printManager = new window.PrintManager(data, {
+            receiptWrapperId: 'receipt-wrapper',
+            receiptFilename: washReceiptPngName.replace('.png', '')
+        });
+        
+        // Expose globally
+        window.printManager = printManager;
+        
+        // Update UI buttons based on available methods
+        updatePrintButtons();
+        
+        // Check if we need to show iOS fallback dialog
+        if (printManager.isIOSWithoutBridge()) {
+            // Auto-show iOS dialog or let user trigger it
+        }
+    }
+}
+
+function updatePrintButtons() {
+    if (!printManager) return;
+    const availableMethods = printManager.getAvailableMethods();
+    const printButtonsContainer = document.getElementById('print-buttons-container');
+    
+    if (printButtonsContainer) {
+        // Update buttons
+        printButtonsContainer.innerHTML = '';
+        
+        availableMethods.forEach(method => {
+            const btn = document.createElement('button');
+            btn.className = 'btn ' + (method.name === 'PDF' || method.name === 'PNGShare' ? 'btn-outline-secondary' : 'btn-primary') + ' w-100 mb-2';
+            btn.innerHTML = `<i class="fas ${method.icon} me-2"></i>${method.label}`;
+            btn.onclick = () => printManager.printViaMethod(method.name);
+            printButtonsContainer.appendChild(btn);
+        });
+    }
+}
+
+// Print function with fallback
+async function printBluetoothDirect() {
+    try {
+        if (window.PrintManager) {
+            if (!printManager) {
+                initPrintManager();
+            }
+            
+            // For iOS without bridge, show dialog instead of auto-print
+            if (printManager && printManager.isIOSWithoutBridge()) {
+                printManager.showIOSFallbackDialog();
+                return;
+            }
+            
+            // Otherwise try new PrintManager
+            const result = await printManager.print();
+            if (result && result.success) {
+                return;
+            }
+        }
+    } catch (e) {
+        console.error('New PrintManager failed, falling back to legacy:', e);
+    }
+    
+    // Fallback to legacy
+    await printBluetoothDirectLegacy();
+}
+
+// Initialize PrintManager when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wait for modules to load
+        setTimeout(() => {
+            initPrintManager();
+        }, 200);
+    });
+} else {
+    setTimeout(() => {
+        initPrintManager();
+    }, 200);
+}
 </script>
 
 </body>

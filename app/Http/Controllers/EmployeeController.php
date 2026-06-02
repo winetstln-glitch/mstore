@@ -114,6 +114,8 @@ class EmployeeController extends Controller implements HasMiddleware
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
                     'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
+                    'monthly_salary' => $validated['monthly_salary'] ?? 0,
+                    'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
 
                 // Then sync to ensure other fields are correct
@@ -179,6 +181,8 @@ class EmployeeController extends Controller implements HasMiddleware
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
                     'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
+                    'monthly_salary' => $validated['monthly_salary'] ?? 0,
+                    'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
             }
         }
@@ -456,6 +460,8 @@ class EmployeeController extends Controller implements HasMiddleware
             'department' => ['required', 'string', 'max:255'],
             'join_date' => ['required', 'date'],
             'employment_status' => ['required', Rule::in(['Tetap', 'Training'])],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
+            'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
             'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'id_card_photo_base64' => ['nullable', 'string'],

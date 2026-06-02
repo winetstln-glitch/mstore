@@ -296,6 +296,13 @@
         .wash-expenses-page .table-responsive-mobile td {
             align-items: flex-start;
             gap: 0.55rem;
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+        }
+
+        .wash-expenses-page .table-responsive-mobile td::before {
+            font-size: 0.68rem;
+            letter-spacing: 0.25px;
         }
     }
 

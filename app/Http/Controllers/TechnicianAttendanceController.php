@@ -402,10 +402,28 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $attendanceSalary = 0;
             if ($userItems->isNotEmpty()) {
                 $user = $userItems->first()->user;
+                $employee = $user->employee;
                 $presentCount = $userItems->whereIn('status', ['present', 'late'])->count();
                 $leaveCount = $userItems->whereIn('status', ['leave', 'permit', 'sick'])->count();
                 $paidDays = $presentCount + $leaveCount;
-                $dailySalary = $user->daily_salary > 0 ? $user->daily_salary : 0;
+                
+                // Resolve daily salary - Employee first, then User for backward compatibility
+                $workingDays = (int) Setting::getValue('attendance_working_days', 28);
+                $employeeDailySalary = $employee?->daily_salary ?? 0;
+                $employeeMonthlySalary = $employee?->monthly_salary ?? 0;
+                
+                if ($employeeDailySalary > 0) {
+                    $dailySalary = $employeeDailySalary;
+                } elseif ($employeeMonthlySalary > 0) {
+                    $dailySalary = $employeeMonthlySalary / $workingDays;
+                } elseif ($user->daily_salary > 0) {
+                    $dailySalary = $user->daily_salary;
+                } elseif ($user->monthly_salary > 0) {
+                    $dailySalary = $user->monthly_salary / $workingDays;
+                } else {
+                    $dailySalary = 0;
+                }
+                
                 $attendanceSalary = $paidDays * $dailySalary;
             }
 
@@ -419,9 +437,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return back()->with('error', __('Total salary amount is zero or negative. No transaction created.'));
         }
 
-        $period = $request->filled('month') 
-            ? Carbon::parse($request->month)->translatedFormat('F Y')
-            : ($request->filled('date') ? Carbon::parse($request->date)->translatedFormat('d F Y') : __('All Time'));
+        $period = '';
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $period = Carbon::parse($request->start_date)->translatedFormat('d F Y') . ' - ' . Carbon::parse($request->end_date)->translatedFormat('d F Y');
+        } elseif ($request->filled('month')) {
+            $period = Carbon::parse($request->month)->translatedFormat('F Y');
+        } elseif ($request->filled('date')) {
+            $period = Carbon::parse($request->date)->translatedFormat('d F Y');
+        } else {
+            $period = __('All Time');
+        }
 
         $description = "Pembayaran Gaji Teknisi Periode $period";
         if ($request->filled('user_id')) {
@@ -1249,7 +1274,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return false;
         }
         
-        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'leader'];
+        $excludedRoles = ['customer', 'direktur', 'owner', 'koordinator'];
         return ! $user->hasAnyRole($excludedRoles);
     }
 

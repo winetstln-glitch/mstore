@@ -26,7 +26,7 @@ class TechnicianController extends Controller implements HasMiddleware
     {
         $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
-        })->latest()->paginate(10);
+        })->with('employee')->latest()->paginate(10);
 
         return view('technicians.index', compact('technicians'));
     }
@@ -44,6 +44,7 @@ class TechnicianController extends Controller implements HasMiddleware
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => ['nullable', 'string', 'max:20'],
             'telegram_chat_id' => ['nullable', 'string', 'max:100'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
         ]);
 
@@ -59,16 +60,37 @@ class TechnicianController extends Controller implements HasMiddleware
 
         $role = Role::where('name', 'technician')->firstOrFail();
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
             'role_id' => $role->id,
             'phone' => $request->phone,
             'telegram_chat_id' => $request->telegram_chat_id,
+            'monthly_salary' => $request->monthly_salary ?? 0,
             'daily_salary' => $request->daily_salary ?? 0,
             'is_active' => true,
         ]);
+
+        // Create or update Employee record for this technician
+        if (! $user->employee) {
+            $user->employee()->create([
+                'full_name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'monthly_salary' => $request->monthly_salary ?? 0,
+                'daily_salary' => $request->daily_salary ?? 0,
+                'position' => 'Teknisi',
+                'department' => 'Teknis',
+                'join_date' => now(),
+                'employment_status' => 'Tetap',
+            ]);
+        } else {
+            $user->employee()->update([
+                'monthly_salary' => $request->monthly_salary ?? 0,
+                'daily_salary' => $request->daily_salary ?? 0,
+            ]);
+        }
 
         return redirect()->route('technicians.index')
             ->with('success', __('Technician created successfully.'));
@@ -76,11 +98,13 @@ class TechnicianController extends Controller implements HasMiddleware
 
     public function show(User $technician)
     {
+        $technician->load('employee');
         return view('technicians.show', compact('technician'));
     }
 
     public function edit(User $technician)
     {
+        $technician->load('employee');
         return view('technicians.edit', compact('technician'));
     }
 
@@ -91,6 +115,7 @@ class TechnicianController extends Controller implements HasMiddleware
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$technician->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'telegram_chat_id' => ['nullable', 'string', 'max:100'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
@@ -100,6 +125,7 @@ class TechnicianController extends Controller implements HasMiddleware
             'email' => $request->email,
             'phone' => $request->phone,
             'telegram_chat_id' => $request->telegram_chat_id,
+            'monthly_salary' => $request->monthly_salary ?? 0,
             'daily_salary' => $request->daily_salary ?? 0,
             'is_active' => $request->has('is_active'),
         ]);
@@ -111,6 +137,26 @@ class TechnicianController extends Controller implements HasMiddleware
 
             $technician->update([
                 'password' => Hash::make($request->password),
+            ]);
+        }
+
+        // Create or update Employee record for this technician
+        if (! $technician->employee) {
+            $technician->employee()->create([
+                'full_name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'monthly_salary' => $request->monthly_salary ?? 0,
+                'daily_salary' => $request->daily_salary ?? 0,
+                'position' => 'Teknisi',
+                'department' => 'Teknis',
+                'join_date' => $technician->created_at,
+                'employment_status' => 'Tetap',
+            ]);
+        } else {
+            $technician->employee()->update([
+                'monthly_salary' => $request->monthly_salary ?? 0,
+                'daily_salary' => $request->daily_salary ?? 0,
             ]);
         }
 

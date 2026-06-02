@@ -55,11 +55,21 @@
                         @enderror
                     </div>
 
+                    <!-- Monthly Salary -->
+                    <div class="mb-3">
+                        <label for="monthly_salary" class="form-label fw-bold">{{ __('Gaji Pokok Bulanan (IDR)') }}</label>
+                        <input type="number" name="monthly_salary" id="monthly_salary" value="{{ old('monthly_salary', $technician->employee->monthly_salary ?? $technician->monthly_salary ?? 0) }}" class="form-control @error('monthly_salary') is-invalid @enderror">
+                        <div class="form-text">{{ __('Gaji pokok satu bulan.') }}</div>
+                        @error('monthly_salary')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <!-- Daily Salary -->
                     <div class="mb-3">
-                        <label for="daily_salary" class="form-label fw-bold">{{ __('Gaji Harian (IDR)') }}</label>
-                        <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', $technician->daily_salary ?? 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
-                        <div class="form-text">{{ __('Gaji per hari kehadiran.') }}</div>
+                        <label for="daily_salary" class="form-label fw-bold">{{ __('Gaji Harian Manual (IDR)') }}</label>
+                        <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', $technician->employee->daily_salary ?? $technician->daily_salary ?? 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
+                        <div class="form-text">{{ __('Isi jika ingin menggunakan nilai tetap per hari.') }}</div>
                         @error('daily_salary')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -103,4 +113,19 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const monthlySalaryInput = document.getElementById('monthly_salary');
+    const dailySalaryInput = document.getElementById('daily_salary');
+    const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
+
+    if (monthlySalaryInput && dailySalaryInput) {
+        monthlySalaryInput.addEventListener('input', function() {
+            const monthly = parseFloat(this.value) || 0;
+            const daily = Math.round(monthly / workingDays);
+            dailySalaryInput.value = daily;
+        });
+    }
+});
+</script>
 @endsection

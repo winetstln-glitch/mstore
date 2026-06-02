@@ -3,7 +3,7 @@
 @section('title', 'Kelola Karyawan')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid wash-employees-page">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Karyawan Wash</h1>
         <a href="{{ route('wash.employees.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" title="Tambah Karyawan Baru">
@@ -24,7 +24,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Daftar Karyawan</h6>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-responsive-mobile">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
@@ -72,4 +72,59 @@
         </div>
     </div>
 </div>
+@push('styles')
+<style>
+    .wash-employees-page {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-employees-page .h3 {
+            font-size: 1.15rem;
+        }
+
+        .wash-employees-page .card-header,
+        .wash-employees-page .card-body {
+            padding-left: 0.85rem;
+            padding-right: 0.85rem;
+        }
+
+        .wash-employees-page .table-responsive {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.9rem;
+            padding: 0.25rem;
+        }
+
+        .wash-employees-page .table-responsive-mobile td {
+            align-items: flex-start;
+            gap: 0.55rem;
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+        }
+
+        .wash-employees-page .table-responsive-mobile td::before {
+            font-size: 0.68rem;
+            letter-spacing: 0.25px;
+        }
+
+        .wash-employees-page .table-responsive-mobile td[data-label="Aksi"] {
+            display: block;
+            text-align: left;
+        }
+
+        .wash-employees-page .table-responsive-mobile td[data-label="Aksi"]::before {
+            display: block;
+            margin-bottom: 0.45rem;
+        }
+
+        .wash-employees-page .table-responsive-mobile td[data-label="Aksi"] .btn {
+            min-height: 34px;
+            min-width: 34px;
+            border-radius: 0.65rem;
+            padding: 0.32rem 0.48rem;
+        }
+    }
+</style>
+@endpush
 @endsection

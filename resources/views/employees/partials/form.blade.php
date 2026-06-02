@@ -156,6 +156,16 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label for="monthly_salary" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Gaji Pokok Bulanan (IDR)') }}</label>
+                        <input type="number" name="monthly_salary" id="monthly_salary" value="{{ old('monthly_salary', $employee->monthly_salary ?? 0) }}" class="form-control @error('monthly_salary') is-invalid @enderror">
+                        <div class="form-text x-small">{{ __('Gaji pokok satu bulan.') }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="daily_salary" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Gaji Harian Manual (IDR)') }}</label>
+                        <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', $employee->daily_salary ?? 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
+                        <div class="form-text x-small">{{ __('Isi jika ingin menggunakan nilai tetap per hari.') }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -249,6 +259,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const userSelect = document.getElementById('user_id');
     const posSelect = document.getElementById('position');
     const depSelect = document.getElementById('department');
+    const monthlySalaryInput = document.getElementById('monthly_salary');
+    const dailySalaryInput = document.getElementById('daily_salary');
+    const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
 
     // Toggle user account fields
     if (createUserCheck) {
@@ -490,7 +503,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 hideCropModal();
-            }, 'image/jpeg', 0.95);
+            }, 'image/jpeg', 0.95);}
+        });
+    }
+
+    if (monthlySalaryInput && dailySalaryInput) {
+        monthlySalaryInput.addEventListener('input', function() {
+            const monthly = parseFloat(this.value) || 0;
+            const daily = Math.round(monthly / workingDays);
+            dailySalaryInput.value = daily;
         });
     }
 });

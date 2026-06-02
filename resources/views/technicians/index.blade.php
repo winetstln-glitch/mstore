@@ -20,6 +20,7 @@
                             <tr>
                                 <th scope="col" class="ps-3">{{ __('Nama') }}</th>
                                 <th scope="col">{{ __('Kontak') }}</th>
+                                <th scope="col">{{ __('Gaji Bulanan') }}</th>
                                 <th scope="col">{{ __('Status') }}</th>
                                 <th scope="col">{{ __('Bergabung') }}</th>
                                 <th scope="col" class="text-end pe-3">{{ __('Aksi') }}</th>
@@ -43,6 +44,16 @@
                                         @if($technician->telegram_chat_id)
                                             <div class="small text-info mt-1">
                                                 <i class="fa-brands fa-telegram me-1"></i>{{ $technician->telegram_chat_id }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium text-dark">
+                                            {{ 'Rp ' . number_format(($technician->employee->monthly_salary ?? $technician->monthly_salary) ?? 0, 0, ',', '.') }}
+                                        </div>
+                                        @if(($technician->employee->daily_salary ?? $technician->daily_salary) > 0)
+                                            <div class="text-muted small">
+                                                {{ 'Rp ' . number_format(($technician->employee->daily_salary ?? $technician->daily_salary) ?? 0, 0, ',', '.') . '/hari' }}
                                             </div>
                                         @endif
                                     </td>
@@ -76,7 +87,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
+                                    <td colspan="6" class="text-center py-5 text-muted">
                                         <i class="fa-regular fa-folder-open d-block fs-2 mb-2 text-secondary"></i>
                                         {{ __('Tidak ada teknisi.') }}
                                     </td>

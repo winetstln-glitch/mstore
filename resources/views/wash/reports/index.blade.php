@@ -479,4 +479,66 @@
         }
     })();
 </script>
+@push('styles')
+<style>
+    .wash-reports-page {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .wash-reports-page .report-toolbar {
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .wash-reports-page .wash-report-export {
+            width: 100%;
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .wash-reports-page .wash-report-export .btn {
+            flex: 1;
+            min-height: 42px;
+            border-radius: 0.75rem;
+        }
+
+        .wash-reports-page .daily-filter-form,
+        .wash-reports-page .monthly-filter-form {
+            justify-content: stretch !important;
+            gap: 0.4rem;
+        }
+
+        .wash-reports-page .daily-filter-form .col-auto,
+        .wash-reports-page .monthly-filter-form .col-auto {
+            width: 100%;
+        }
+
+        .wash-reports-page .daily-filter-form .btn,
+        .wash-reports-page .monthly-filter-form .btn {
+            width: 100%;
+            min-height: 42px;
+        }
+
+        .wash-reports-page .table-responsive {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.9rem;
+            padding: 0.25rem;
+        }
+
+        .wash-reports-page .table-responsive-mobile td {
+            align-items: flex-start;
+            gap: 0.55rem;
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+        }
+
+        .wash-reports-page .table-responsive-mobile td::before {
+            font-size: 0.68rem;
+            letter-spacing: 0.25px;
+        }
+    }
+</style>
+@endpush
 @endsection

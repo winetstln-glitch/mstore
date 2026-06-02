@@ -18,11 +18,21 @@ trait HasAttendanceFilters
     {
         $query = TechnicianAttendance::with('user');
 
-        if ($request->filled('date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = $request->start_date;
+            $end = $request->end_date;
+            // Jika start date > end date, swap
+            if (strtotime($start) > strtotime($end)) {
+                [$start, $end] = [$end, $start];
+            }
+            // Gunakan work_date jika ada, jika tidak clock_in
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('work_date', [$start, $end])
+                    ->orWhereBetween('clock_in', [$start . ' 00:00:00', $end . ' 23:59:59']);
+            });
+        } elseif ($request->filled('date')) {
             $query->whereDate('clock_in', $request->date);
-        }
-
-        if ($request->filled('month')) {
+        } elseif ($request->filled('month')) {
             $query->whereMonth('clock_in', date('m', strtotime($request->month)))
                 ->whereYear('clock_in', date('Y', strtotime($request->month)));
         }
@@ -51,11 +61,16 @@ trait HasAttendanceFilters
             $query->where('status', $status);
         }
 
-        if ($request->filled('date')) {
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = $request->start_date;
+            $end = $request->end_date;
+            if (strtotime($start) > strtotime($end)) {
+                [$start, $end] = [$end, $start];
+            }
+            $query->whereBetween('date', [$start, $end]);
+        } elseif ($request->filled('date')) {
             $query->whereDate('date', $request->date);
-        }
-
-        if ($request->filled('month')) {
+        } elseif ($request->filled('month')) {
             $query->whereMonth('date', date('m', strtotime($request->month)))
                 ->whereYear('date', date('Y', strtotime($request->month)));
         }
@@ -76,24 +91,52 @@ trait HasAttendanceFilters
     {
         return $attendances->groupBy('user_id')->map(function ($items) use ($allAdjustments, $request) {
             $user = $items->first()->user;
+            $employee = $user->employee;
 
-            $presentCount = $items->whereIn('status', ['present', 'late'])->count();
+            // Hitung semua status absensi
+            $presentCount = $items->where('status', 'present')->count();
+            $lateCount = $items->where('status', 'late')->count();
             $leaveCount = $items->where('status', 'leave')->count();
             $permitCount = $items->where('status', 'permit')->count();
             $sickCount = $items->where('status', 'sick')->count();
             $alphaCount = $items->where('status', 'alpha')->count();
+            $offCount = $items->where('status', 'off')->count();
 
-            // Total hari yang dibayar (Hadir + Izin + Cuti + Sakit)
-            $paidDays = $presentCount + $leaveCount + $permitCount + $sickCount;
-            
-            // Resolve Daily Salary
+            // Resolve Daily Salary - first check Employee, then fall back to User for backward compatibility
             $workingDays = (int) Setting::getValue('attendance_working_days', 28);
-            if ($user->daily_salary > 0) {
+            $employeeDailySalary = $employee?->daily_salary ?? 0;
+            $employeeMonthlySalary = $employee?->monthly_salary ?? 0;
+            
+            $salaryCalculationNote = '';
+            if ($employeeDailySalary > 0) {
+                $dailySalary = $employeeDailySalary;
+                $salaryCalculationNote = 'Gaji harian diisi manual';
+            } elseif ($employeeMonthlySalary > 0) {
+                $dailySalary = $employeeMonthlySalary / $workingDays;
+                $salaryCalculationNote = 'Gaji harian dihitung dari gaji bulanan (' . number_format($employeeMonthlySalary, 0, ',', '.') . ' / ' . $workingDays . ' hari)';
+            } elseif ($user->daily_salary > 0) {
                 $dailySalary = $user->daily_salary;
+                $salaryCalculationNote = 'Gaji harian diisi manual (legacy)';
             } elseif ($user->monthly_salary > 0) {
                 $dailySalary = $user->monthly_salary / $workingDays;
+                $salaryCalculationNote = 'Gaji harian dihitung dari gaji bulanan (legacy) (' . number_format($user->monthly_salary, 0, ',', '.') . ' / ' . $workingDays . ' hari)';
             } else {
                 $dailySalary = 0;
+                $salaryCalculationNote = 'Gaji belum diatur';
+            }
+            
+            // Get monthly salary from Employee first, then User for backward compatibility
+            $monthlySalary = $employee?->monthly_salary ?? $user->monthly_salary ?? 0;
+
+            // Hitung total hari yang dibayar sesuai kebijakan
+            $paidDays = $presentCount + $lateCount + $leaveCount + $sickCount;
+            
+            // Hitung potongan keterlambatan (jika ada)
+            $lateDeduction = 0;
+            $totalLateMinutes = $items->where('status', 'late')->sum('late_minutes');
+            $lateDeductionPerMinute = (int) Setting::getValue('attendance_late_deduction_per_minute', 0);
+            if ($lateDeductionPerMinute > 0 && $totalLateMinutes > 0) {
+                $lateDeduction = $totalLateMinutes * $lateDeductionPerMinute;
             }
 
             $userAdjustments = $allAdjustments->get($user->id, collect());
@@ -126,15 +169,28 @@ trait HasAttendanceFilters
             // Kasbon Lainnya (Total Kasbon - Specific Kasbons)
             $kasbonLainnya = $totalKasbon - ($kasbonKantor + $kasbonWarung);
 
+            $totalDailySalary = $paidDays * $dailySalary;
+            $totalDeductions = $lateDeduction + $totalKasbon;
+            $totalSalary = $totalDailySalary + $totalBonus - $totalDeductions;
+
             return [
                 'user' => $user,
+                'monthly_salary' => $monthlySalary,
                 'present_count' => $presentCount,
+                'late_count' => $lateCount,
+                'total_late_minutes' => $totalLateMinutes,
                 'leave_count' => $leaveCount,
                 'permit_count' => $permitCount,
                 'sick_count' => $sickCount,
                 'alpha_count' => $alphaCount,
+                'off_count' => $offCount,
                 'paid_days' => $paidDays,
+                'working_days' => $workingDays,
                 'daily_salary' => $dailySalary,
+                'total_daily_salary' => $totalDailySalary,
+                'late_deduction' => $lateDeduction,
+                'total_deductions' => $totalDeductions,
+                'salary_calculation_note' => $salaryCalculationNote,
                 'bonus_disiplin' => $bonusDisiplin,
                 'bonus_tanggung_jawab' => $bonusTanggungJawab,
                 'bonus_absensi' => $bonusAbsensi,
@@ -144,7 +200,7 @@ trait HasAttendanceFilters
                 'kasbon_warung' => $kasbonWarung,
                 'kasbon_lainnya' => $kasbonLainnya,
                 'total_kasbon' => $totalKasbon,
-                'total_salary' => ($paidDays * $dailySalary) + $totalBonus - $totalKasbon,
+                'total_salary' => $totalSalary,
                 'dates' => $items,
                 'adjustments' => $userAdjustments,
             ];

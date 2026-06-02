@@ -1748,6 +1748,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    @media (max-width: 767.98px) {
+        .wash-filter-group {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.2rem;
+        }
+
+        .wash-filter-group .filter-btn {
+            width: 100%;
+            padding: 0.3rem 0.15rem;
+            min-height: 34px;
+            font-size: 0.7rem;
+        }
+    }
+
     @media (max-width: 575.98px) {
         .wash-card {
             border-radius: 0.85rem;
@@ -1817,6 +1833,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         #cartItems {
             max-height: 220px;
+        }
+        
+        .wash-filter-group {
+            grid-template-columns: repeat(5, 1fr);
+        }
+        
+        .wash-filter-group .filter-btn {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.1rem;
         }
     }
 

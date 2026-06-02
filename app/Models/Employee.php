@@ -26,6 +26,8 @@ class Employee extends Model
         'department',
         'join_date',
         'employment_status',
+        'monthly_salary',
+        'daily_salary',
         'document_path',
         'id_card_photo_path',
         'id_card_expires_at',

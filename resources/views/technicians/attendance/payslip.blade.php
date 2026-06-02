@@ -35,7 +35,15 @@
         <div class="row g-3 print-row">
             @forelse($summary as $data)
             @php
-                $period = request('month') ? \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y') : now()->translatedFormat('F Y');
+                if (request('start_date') && request('end_date')) {
+                    $period = \Carbon\Carbon::parse(request('start_date'))->translatedFormat('d F Y') . ' - ' . \Carbon\Carbon::parse(request('end_date'))->translatedFormat('d F Y');
+                } elseif (request('month')) {
+                    $period = \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y');
+                } elseif (request('date')) {
+                    $period = \Carbon\Carbon::parse(request('date'))->translatedFormat('d F Y');
+                } else {
+                    $period = now()->translatedFormat('F Y');
+                }
                 $waLink = "https://wa.me/" . preg_replace('/[^0-9]/', '', $data['user']->phone);
                 
                 // Brand Resolution (similar to ID Card logic)
@@ -111,17 +119,30 @@
                                         <p class="small fw-bold text-success mb-0">{{ $data['present_count'] }}</p>
                                     </div>
                                     <div class="text-center">
+                                        <p class="xx-small fw-bold text-muted text-uppercase mb-0">Terlambat</p>
+                                        <p class="small fw-bold text-warning mb-0">{{ $data['late_count'] }}</p>
+                                        @if($data['total_late_minutes'] > 0)
+                                        <p class="xx-small text-muted mb-0">({{ $data['total_late_minutes'] }} menit)</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-center">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Izin</p>
                                         <p class="small fw-bold text-info mb-0">{{ $data['leave_count'] + $data['permit_count'] }}</p>
                                     </div>
                                     <div class="text-center">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Sakit</p>
-                                        <p class="small fw-bold text-warning mb-0">{{ $data['sick_count'] }}</p>
+                                        <p class="small fw-bold text-info mb-0">{{ $data['sick_count'] }}</p>
                                     </div>
                                     <div class="text-center">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Alpa</p>
                                         <p class="small fw-bold text-danger mb-0">{{ $data['alpha_count'] }}</p>
                                     </div>
+                                    @if($data['off_count'] > 0)
+                                    <div class="text-center">
+                                        <p class="xx-small fw-bold text-muted text-uppercase mb-0">Off</p>
+                                        <p class="small fw-bold text-muted mb-0">{{ $data['off_count'] }}</p>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
 
@@ -131,11 +152,15 @@
                                 <div class="vstack gap-1">
                                     <div class="d-flex justify-content-between x-small fw-bold">
                                         <span class="text-muted">Gaji Pokok Bulanan</span>
-                                        <span class="text-dark">{{ number_format($data['user']->monthly_salary ?? 0, 0, ',', '.') }}</span>
+                                        <span class="text-dark">{{ number_format($data['monthly_salary'] ?? 0, 0, ',', '.') }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between x-small fw-bold">
-                                        <span class="text-muted">Gaji Harian</span>
-                                        <span class="text-dark">{{ number_format($data['daily_salary'] * $data['paid_days'], 0, ',', '.') }}</span>
+                                        <span class="text-muted">Gaji Harian (per hari)</span>
+                                        <span class="text-dark">{{ number_format($data['daily_salary'], 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between x-small fw-bold">
+                                        <span class="text-muted">Total Gaji Harian ({{ $data['paid_days'] }} hari)</span>
+                                        <span class="text-dark">{{ number_format($data['total_daily_salary'], 0, ',', '.') }}</span>
                                     </div>
                                     @if($data['total_bonus'] > 0)
                                         @if($data['bonus_disiplin'] > 0)
@@ -164,8 +189,8 @@
                                         @endif
                                     @endif
                                     <div class="d-flex justify-content-between x-small mt-1 text-primary border-top border-1 pt-1 fw-bold">
-                                        <span>Total</span>
-                                        <span>{{ number_format(($data['daily_salary'] * $data['paid_days']) + $data['total_bonus'], 0, ',', '.') }}</span>
+                                        <span>Total Pendapatan</span>
+                                        <span>{{ number_format($data['total_daily_salary'] + $data['total_bonus'], 0, ',', '.') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -173,6 +198,12 @@
                             <div class="col-6 border-start border-2 ps-3">
                                 <p class="x-small fw-bold text-danger text-uppercase mb-2 border-bottom border-2 border-danger-subtle pb-1">Potongan</p>
                                 <div class="vstack gap-1">
+                                    @if($data['late_deduction'] > 0)
+                                        <div class="d-flex justify-content-between x-small fw-bold text-danger">
+                                            <span>Potongan Terlambat</span>
+                                            <span>-{{ number_format($data['late_deduction'], 0, ',', '.') }}</span>
+                                        </div>
+                                    @endif
                                     @if($data['kasbon_kantor'] > 0)
                                         <div class="d-flex justify-content-between x-small fw-bold text-danger">
                                             <span>Bon Kantor</span>
@@ -192,13 +223,26 @@
                                         </div>
                                     @endif
                                     <div class="d-flex justify-content-between x-small mt-1 text-danger border-top border-1 pt-1 fw-bold">
-                                        <span>Total</span>
-                                        <span>-{{ number_format($data['total_kasbon'], 0, ',', '.') }}</span>
+                                        <span>Total Potongan</span>
+                                        <span>-{{ number_format($data['total_deductions'], 0, ',', '.') }}</span>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between x-small mt-2 text-muted fw-bold">
-                                    <span>Total Hari</span>
-                                    <span class="text-dark">{{ $data['paid_days'] }} Hari</span>
+                                <div class="d-flex flex-column gap-1 mt-2">
+                                    <div class="d-flex justify-content-between x-small text-muted fw-bold">
+                                        <span>Hari Kerja / Bulan</span>
+                                        <span class="text-dark">{{ $data['working_days'] }} Hari</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between x-small text-muted fw-bold">
+                                        <span>Total Hari Dibayar</span>
+                                        <span class="text-dark">{{ $data['paid_days'] }} Hari</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Keterangan Perhitungan -->
+                            <div class="col-12">
+                                <div class="p-2 bg-info-subtle border border-info rounded-3">
+                                    <p class="x-small fw-bold text-info mb-0">Keterangan Perhitungan:</p>
+                                    <p class="xx-small text-info-emphasis mb-0">{{ $data['salary_calculation_note'] }}</p>
                                 </div>
                             </div>
                         </div>

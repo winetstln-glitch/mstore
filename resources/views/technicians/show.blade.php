@@ -55,18 +55,30 @@
                     <div class="col-md-6">
                         <div class="card h-100 border ">
                             <div class="card-body">
-                                <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('Ringkasan Kinerja') }}</h6>
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">{{ __('Ringkasan Gaji & Kinerja') }}</h6>
                                 <div class="row g-3">
                                     <div class="col-6">
                                         <div class="p-3 bg-body rounded border text-center">
+                                            <small class="text-muted d-block mb-1">{{ __('Gaji Pokok Bulanan') }}</small>
+                                            <span class="h5 fw-bold text-primary mb-0">{{ 'Rp ' . number_format(($technician->employee->monthly_salary ?? $technician->monthly_salary ?? 0), 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-3 bg-body rounded border text-center">
+                                            <small class="text-muted d-block mb-1">{{ __('Gaji Harian') }}</small>
+                                            <span class="h5 fw-bold text-success mb-0">{{ 'Rp ' . number_format(($technician->employee->daily_salary ?? $technician->daily_salary ?? 0), 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-3 bg-body rounded border text-center">
                                             <small class="text-muted d-block mb-1">{{ __('Total Tiket') }}</small>
-                                            <span class="h4 fw-bold text-primary mb-0">{{ $technician->tickets()->count() }}</span>
+                                            <span class="h5 fw-bold text-primary mb-0">{{ $technician->tickets()->count() }}</span>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="p-3 bg-body rounded border text-center">
                                             <small class="text-muted d-block mb-1">{{ __('Total Instalasi') }}</small>
-                                            <span class="h4 fw-bold text-success mb-0">{{ $technician->installations()->count() }}</span>
+                                            <span class="h5 fw-bold text-success mb-0">{{ $technician->installations()->count() }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -84,7 +96,7 @@
                             <!-- Tiket aktif -->
                             <div class="col-lg-6">
                                 <div class="card border">
-                                    <div class="card-header  py-2">
+                                    <div class="card-header py-2">
                                         <h6 class="mb-0 fw-bold">{{ __('Tiket Aktif') }}</h6>
                                     </div>
                                     <div class="list-group list-group-flush">
@@ -108,7 +120,7 @@
                             <!-- Instalasi aktif -->
                             <div class="col-lg-6">
                                 <div class="card border">
-                                    <div class="card-header  py-2">
+                                    <div class="card-header py-2">
                                         <h6 class="mb-0 fw-bold">{{ __('Instalasi Aktif') }}</h6>
                                     </div>
                                     <div class="list-group list-group-flush">
