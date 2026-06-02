@@ -57,3 +57,8 @@ Route::prefix('v1')->group(function () {
     Route::get('olts/{olt}/onts', [OLTController::class, 'ontList']);
     Route::get('olts/{olt}/onts/{ont}', [OLTController::class, 'ontShow']);
 });
+
+// WhatsApp Webhook
+Route::prefix('whatsapp')->group(function () {
+    Route::post('/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('api.whatsapp.webhook');
+});

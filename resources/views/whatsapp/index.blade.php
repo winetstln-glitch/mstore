@@ -242,9 +242,25 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="alert alert-info">
-                                <div class="fw-semibold mb-2">Webhook Configuration</div>
-                                <div>URL Webhook: <code>{{ route('webhooks.whatsapp.handle') }}</code></div>
-                                <div>Verify Token: <code>{{ config('services.whatsapp.verify_token', 'your-verify-token-change-me') }}</code></div>
+                                <div class="fw-semibold mb-2">
+                                    <i class="fas fa-plug me-2"></i>
+                                    Webhook Configuration
+                                </div>
+                                <div class="mb-2">
+                                    <strong>URL Webhook:</strong>
+                                    <div class="input-group mt-1">
+                                        <input type="text" class="form-control font-monospace" 
+                                               value="{{ route('api.whatsapp.webhook') }}" 
+                                               id="webhookUrl" readonly>
+                                        <button class="btn btn-outline-primary" type="button" onclick="copyWebhookUrl()">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong>Verify Token:</strong>
+                                    <span class="badge bg-info">{{ config('services.whatsapp.verify_token', 'your-verify-token-change-me') }}</span>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Enable Auto Reply</label>
@@ -256,12 +272,16 @@
                         </div>
                         <div class="col-md-6">
                             <div class="alert alert-light border">
-                                <div class="fw-semibold mb-2">Perintah Auto Reply</div>
-                                <div><code>halo/hi/hello/hey</code> - Sapa bot</div>
-                                <div><code>absen/clock in/masuk</code> - Info absensi masuk</div>
-                                <div><code>pulang/clock out/keluar</code> - Info absensi pulang</div>
-                                <div><code>jam kerja/jadwal/shift</code> - Info jadwal kerja</div>
-                                <div><code>bantuan/help/menu</code> - Menampilkan menu</div>
+                                <div class="fw-semibold mb-2">
+                                    <i class="fas fa-robot me-2"></i>
+                                    Perintah Auto Reply (dibuat di Bot Builder)
+                                </div>
+                                <div class="text-muted">Semua menu yang Anda buat di Bot Builder akan otomatis aktif sebagai auto reply!</div>
+                                <hr>
+                                <div class="fw-semibold mb-2">Contoh Perintah:</div>
+                                <div><code>menu/help</code> - Tampilkan menu</div>
+                                <div><code>harga/jasa</code> - Info harga jasa</div>
+                                <div><code>kontak/cs</code> - Hubungi CS</div>
                             </div>
                         </div>
                     </div>
@@ -389,6 +409,16 @@
             { nama_layanan: 'Cuci Interior', harga: '10.000' }
         ]
     };
+    function copyWebhookUrl() {
+        const webhookUrl = document.getElementById('webhookUrl');
+        if (webhookUrl) {
+            webhookUrl.select();
+            webhookUrl.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(webhookUrl.value).then(() => {
+                alert('Webhook URL berhasil disalin!');
+            });
+        }
+    }
     function updatePreview(idTpl, idPrev, vars, renderer = renderSimple) {
         const elTpl = document.getElementById(idTpl);
         const elPrev = document.getElementById(idPrev);
