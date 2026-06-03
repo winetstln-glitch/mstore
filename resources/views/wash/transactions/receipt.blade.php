@@ -281,6 +281,14 @@
 <body>
 
 <div class="no-print-area">
+    <div class="panel-title">Pilih Jenis Printer:</div>
+    <div class="paper-selector">
+        <input type="radio" name="printer_type" id="typeEscpos" value="escpos" checked onchange="updatePrinterType()">
+        <label for="typeEscpos">Receipt (ESC/POS)</label>
+        
+        <input type="radio" name="printer_type" id="typeTspl" value="tspl" onchange="updatePrinterType()">
+        <label for="typeTspl">Label (TSPL)</label>
+    </div>
     <div class="panel-title">Pilih Ukuran Kertas:</div>
     <div class="paper-selector">
         <input type="radio" name="paper_size" id="size58" value="32" onchange="updatePreviewSize('58')">
@@ -670,8 +678,12 @@ function downloadWashReceiptFile(file) {
 // === PRINT FUNCTION (LEGACY - WORKING) ===
 async function printBluetoothDirectLegacy(){
     const status=document.getElementById('status');
-    const paperSize=parseInt(document.querySelector('input[name="paper_size"]:checked').value);
-    const printerType=document.querySelector('input[name="printer_type"]:checked').value;
+    // Get paper size with default
+    const paperSizeInput = document.querySelector('input[name="paper_size"]:checked');
+    const paperSize = paperSizeInput ? parseInt(paperSizeInput.value) : 48; // Default 80mm (48 columns)
+    // Get printer type with default
+    const printerTypeInput = document.querySelector('input[name="printer_type"]:checked');
+    const printerType = printerTypeInput ? printerTypeInput.value : 'escpos'; // Default ESC/POS
     const bridgePayload=Object.assign({},data,{
         paper_size:paperSize,
         printer_type:printerType,

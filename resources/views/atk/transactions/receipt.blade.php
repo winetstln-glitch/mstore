@@ -555,8 +555,12 @@ function downloadAtkReceiptFile(file) {
 
 async function printBluetooth() {
     const status = document.getElementById('print-status');
-    const cols = parseInt(document.querySelector('input[name="paper_size"]:checked').value);
-    const printerType = document.querySelector('input[name="printer_type"]:checked').value;
+    // Get paper size with default
+    const colsInput = document.querySelector('input[name="paper_size"]:checked');
+    const cols = colsInput ? parseInt(colsInput.value) : 32; // Default 58mm (32 columns)
+    // Get printer type with default
+    const printerTypeInput = document.querySelector('input[name="printer_type"]:checked');
+    const printerType = printerTypeInput ? printerTypeInput.value : 'escpos'; // Default ESC/POS
     
     // Create bridge payload
     const bridgePayload = Object.assign({}, txnData, {
