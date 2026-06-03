@@ -687,13 +687,14 @@ async function printBluetoothDirectLegacy(){
     });
     const bridgePrinter=resolveBluetoothBridge();
     
-    // Check if it's an iOS device first
+    // Check if it's an iOS device or Android device
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
     
     try{
-        // Prioritize bridge printing for iOS devices (since WebBluetooth on iOS is limited)
-        if(isIOS && bridgePrinter){
-            status.innerText="Mengirim ke printer via iOS App...";
+        // PRIORITIZE BRIDGE PRINTING FIRST for Android (native bridge is more reliable) and iOS
+        if(bridgePrinter){
+            status.innerText="Mengirim ke printer via App...";
             if(bridgePrinter(bridgePayload)){
                 status.innerText="Cetak berhasil!";
                 setTimeout(()=>status.innerText="Status: Siap",3000);
@@ -701,12 +702,9 @@ async function printBluetoothDirectLegacy(){
             }
         }
         
+        // If bridge fails or not available, try WebBluetooth
         if(!(navigator.bluetooth && typeof navigator.bluetooth.requestDevice==='function')){
-            if(!bridgePrinter) throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android/iOS.');
-            status.innerText="Mengirim via App Bridge...";
-            if(!bridgePrinter(bridgePayload)) throw new Error('Bridge Bluetooth tersedia, tetapi gagal mengirim data.');
-            status.innerText="Cetak berhasil melalui Bridge!";
-            setTimeout(()=>status.innerText="Status: Siap",3000);return;
+            throw new Error('Bluetooth tidak didukung browser ini. Gunakan Chrome (HTTPS) atau aplikasi Android/iOS.');
         }
         
         status.innerText="Meminta printer...";

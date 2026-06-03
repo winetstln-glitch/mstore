@@ -321,6 +321,64 @@ const txnData = {{ Js::from([
     'change' => (float)$transaction->change_amount
 ]) }};
 
+// === UNIVERSAL BLUETOOTH BRIDGE (same as wash receipt)
+function invokeBridgePrinter(invoker,payload){try{invoker(payload);return true;}catch(_){try{invoker(JSON.stringify(payload));return true;}catch(_){return false;}}}
+function resolveBluetoothBridge(){
+    const methodNames=['printBluetoothAction','printBluetooth','printReceipt','printStruk','printBluetoothReceipt','cetakBluetooth','handleBluetoothPrint','printViaBluetooth','sendPrintJob','bluetoothPrint'];
+    for(const method of methodNames){if(typeof window[method]==='function'){return data=>invokeBridgePrinter(window[method],data);}}
+    if(window.AndroidPrinter && typeof window.AndroidPrinter.printText==='function'){return data=>{try{window.AndroidPrinter.printText(buildEscPosText(data));return true;}catch(e){return false;}};}
+    const bridgeCandidates=[window.Android,window.android,window.MstoreAndroid,window.NativeAndroid,window.JsBridge].filter(Boolean);
+    for(const bridge of bridgeCandidates){
+        for(const method of methodNames){if(typeof bridge[method]==='function'){return data=>invokeBridgePrinter(d=>bridge[method](d),data);}}
+        if(typeof bridge.postMessage==='function'){return data=>invokeBridgePrinter(d=>bridge.postMessage({action:'printBluetooth',payload:d}),data);}
+    }
+    // Fix for iPhone/iOS webkit message handlers - try multiple handler names
+    if(window.webkit && window.webkit.messageHandlers){
+        const iosHandlerNames=['printBluetooth','bluetoothPrint','printReceipt','printStruk','cetakBluetooth','handlePrint','print'];
+        for(const handlerName of iosHandlerNames){
+            if(window.webkit.messageHandlers[handlerName] && typeof window.webkit.messageHandlers[handlerName].postMessage==='function'){
+                return data=>{
+                    try{
+                        // iOS webkit handlers often prefer stringified JSON
+                        window.webkit.messageHandlers[handlerName].postMessage(typeof data === 'string' ? data : JSON.stringify(data));
+                        return true;
+                    }catch(e){
+                        console.error('iOS bridge error:', e);
+                        return false;
+                    }
+                };
+            }
+        }
+    }
+    if(window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage==='function'){return data=>invokeBridgePrinter(d=>window.ReactNativeWebView.postMessage(JSON.stringify({action:'printBluetooth',payload:d})),data);}
+    return null;
+}
+
+// === BUILD ESC/POS TEXT (simple version for ATK)
+function buildEscPosText(data){
+    let txt="[C]<b>"+data.store+"</b>\n";
+    txt+="[C]"+data.addr+"\n";
+    txt+="[C]"+data.phone+"\n";
+    txt+="[L]--------------------------------\n";
+    if(data.receipt_title){txt+="[C]<b>"+data.receipt_title+"</b>\n";}
+    txt+="[L]NOTA : #"+data.nota+"\n";
+    txt+="[L]TGL  : "+data.time+"\n";
+    txt+="[L]KASIR: "+data.cashier+"\n";
+    if(data.queue){txt+="\n[C]<b>ANTRIAN: #"+data.queue+"</b>\n\n";}
+    txt+="[L]--------------------------------\n";
+    data.items.forEach(item=>{txt+="[L]"+item.name+"\n[L]"+item.qty+" x "+item.prc.toLocaleString('id-ID')+" = "+item.sub.toLocaleString('id-ID')+"\n";});
+    txt+="[L]--------------------------------\n";
+    txt+="[L]TOTAL AKHIR : Rp "+data.total.toLocaleString('id-ID')+"\n";
+    txt+="[L]METODE: "+data.method+"\n";
+    if(data.cash > 0){txt+="[L]TUNAI : Rp "+data.cash.toLocaleString('id-ID')+"\n[L]KEMBALI: Rp "+data.change.toLocaleString('id-ID')+"\n";}
+    txt+="\n[C]"+(data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n";
+    if(data.receipt_footer_message){txt+="[C]"+String(data.receipt_footer_message).replace(/\n/g,"\n[C]")+"\n";}
+    if(data.receipt_footer_note){txt+="[C]"+String(data.receipt_footer_note).replace(/\n/g,"\n[C]")+"\n";}
+    if(data.receipt_powered_by){txt+="[C]"+data.receipt_powered_by+"\n";}
+    txt+="\n\n";
+    return txt;
+}
+
 function updateView(size) {
     const el = document.getElementById('receipt-wrapper');
     el.classList.remove('size-58', 'size-80');
@@ -500,17 +558,54 @@ async function printBluetooth() {
     const cols = parseInt(document.querySelector('input[name="paper_size"]:checked').value);
     const printerType = document.querySelector('input[name="printer_type"]:checked').value;
     
+    // Create bridge payload
+    const bridgePayload = Object.assign({}, txnData, {
+        paper_size: cols,
+        printer_type: printerType,
+        escpos_text: buildEscPosText(txnData)
+    });
+    const bridgePrinter = resolveBluetoothBridge();
+    
+    // PRIORITIZE BRIDGE FIRST!
+    if (bridgePrinter) {
+        status.innerText = "Mengirim ke printer via App...";
+        if (bridgePrinter(bridgePayload)) {
+            status.innerText = "Selesai!";
+            setTimeout(() => status.innerText = "Siap Mencetak", 3000);
+            return;
+        }
+    }
+    
     try {
         status.innerText = "Mencari Perangkat...";
         const device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+            filters: [
+                { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
+                { services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] },
+                { namePrefix: 'Printer' },
+                { namePrefix: 'XP' },
+                { namePrefix: 'Mprint' }
+            ],
+            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb']
         });
 
         status.innerText = "Menghubungkan...";
         const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        const char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        
+        // Try multiple services/characteristics
+        let service = null;
+        let char = null;
+        try {
+            service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+            char = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        } catch (e) {
+            try {
+                service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                char = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+            } catch (e2) {
+                throw new Error('Printer tidak mendukung layanan standar');
+            }
+        }
 
         let payload;
             if(printerType === 'tspl') {
