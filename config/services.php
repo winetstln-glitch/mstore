@@ -60,4 +60,10 @@ return [
         'invoice_html_url' => env('MIXRADIUS_INVOICE_HTML_URL'),
     ],
 
+    'duitku' => [
+        'merchant_code' => env('DUITKU_MERCHANT_CODE'),
+        'api_key' => env('DUITKU_API_KEY'),
+        'sandbox' => env('DUITKU_SANDBOX', true),
+    ],
+
 ];

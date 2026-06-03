@@ -45,6 +45,11 @@ Route::get('locale/{lang}', function ($lang) {
     return redirect()->back();
 })->name('locale.switch');
 
+// Voucher Payment Routes (Public)
+Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPaymentController::class, 'show'])->name('voucher.payment.show');
+Route::post('/voucher-payment/callback', [\App\Http\Controllers\VoucherPaymentController::class, 'callback'])->name('voucher.payment.callback');
+Route::get('/voucher-payment/return', [\App\Http\Controllers\VoucherPaymentController::class, 'return'])->name('voucher.payment.return');
+
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
