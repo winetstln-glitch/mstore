@@ -168,7 +168,7 @@ class WhatsAppController extends Controller implements HasMiddleware
         $duitkuSandbox = Setting::firstOrCreate(
             ['key' => 'duitku_sandbox'],
             [
-                'value' => env('DUITKU_SANDBOX', '1'),
+                'value' => env('DUITKU_SANDBOX') === false || env('DUITKU_SANDBOX') === 'false' ? '0' : '1',
                 'group' => 'duitku',
                 'type' => 'boolean',
                 'label' => 'Gunakan Duitku Sandbox',
@@ -292,14 +292,14 @@ class WhatsAppController extends Controller implements HasMiddleware
             if ($request->has($k)) {
                 $type = $k === 'duitku_sandbox' ? 'boolean' : ($k === 'duitku_api_key' ? 'password' : 'text');
                 Setting::updateOrCreate(
-                    ['key' => $k],
-                    [
-                        'value' => $request->input($k) ?? '',
-                        'group' => 'duitku',
-                        'type' => $type,
-                        'label' => $label,
-                    ]
-                );
+                                ['key' => $k],
+                                [
+                                    'value' => $k === 'duitku_sandbox' ? ($request->input($k) ? '1' : '0') : ($request->input($k) ?? ''),
+                                    'group' => 'duitku',
+                                    'type' => $type,
+                                    'label' => $label,
+                                ]
+                            );
             }
         }
 

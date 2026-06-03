@@ -192,25 +192,27 @@
                         </div>
                         <div class="card-body">
                             @php
-                                $savedMerchantCode = \App\Models\Setting::getValue('duitku_merchant_code', env('DUITKU_MERCHANT_CODE'));
-                                $savedDuitkuApiKey = \App\Models\Setting::getValue('duitku_api_key', env('DUITKU_API_KEY'));
-                                $maskedDuitkuApiKey = is_string($savedDuitkuApiKey) && $savedDuitkuApiKey !== ''
-                                    ? str_repeat('*', max(strlen($savedDuitkuApiKey) - 4, 0)).substr($savedDuitkuApiKey, -4)
+                                // Get values directly with fallback
+                                $merchantCode = \App\Models\Setting::getValue('duitku_merchant_code', env('DUITKU_MERCHANT_CODE', ''));
+                                $apiKey = \App\Models\Setting::getValue('duitku_api_key', env('DUITKU_API_KEY', ''));
+                                $maskedApiKey = is_string($apiKey) && $apiKey !== ''
+                                    ? str_repeat('*', max(strlen($apiKey) - 4, 0)).substr($apiKey, -4)
                                     : null;
+                                $isSandbox = \App\Models\Setting::getValue('duitku_sandbox', env('DUITKU_SANDBOX', '1')) == '1';
                             @endphp
                             
                             <div class="alert alert-info mb-3">
                                 <div class="fw-semibold mb-1">Status Konfigurasi QRIS Duitku</div>
-                                <div>Merchant Code: <code>{{ $savedMerchantCode ?: '-' }}</code></div>
-                                <div>API Key: <code>{{ $maskedDuitkuApiKey ?: 'Belum diatur' }}</code></div>
-                                <div>Mode: <code>{{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'Sandbox (Testing)' : 'Production' }}</code></div>
+                                <div>Merchant Code: <code>{{ $merchantCode ?: '-' }}</code></div>
+                                <div>API Key: <code>{{ $maskedApiKey ?: 'Belum diatur' }}</code></div>
+                                <div>Mode: <code>{{ $isSandbox ? 'Sandbox (Testing)' : 'Production' }}</code></div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label>Duitku Merchant Code</label>
-                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ $savedMerchantCode }}">
+                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ $merchantCode }}">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -224,7 +226,7 @@
 
                             <div class="mb-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'checked' : '' }}>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ $isSandbox ? 'checked' : '' }}>
                                     <label class="form-check-label" for="duitku_sandbox">Gunakan Duitku Sandbox (Untuk Testing)</label>
                                 </div>
                             </div>
