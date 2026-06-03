@@ -158,7 +158,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="text-center">Tidak ada layanan ditemukan.</td>
+                                <td colspan="13" class="text-center">Tidak ada layanan ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -233,6 +233,22 @@
         background: #1e293b;
         border-color: #334155;
         color: #94a3b8;
+    }
+
+    /* Ensure table is scrollable horizontally */
+    .wash-services-page .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Make "Aksi" column sticky */
+    .wash-services-page table th:last-child,
+    .wash-services-page table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 10;
+        background: var(--bs-body-bg);
+        white-space: nowrap;
     }
 
     @media (max-width: 767.98px) {

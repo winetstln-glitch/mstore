@@ -10,6 +10,8 @@ use App\Models\TechnicianDailySchedule;
 use App\Models\WashCustomer;
 use App\Models\WashService;
 use App\Models\WashServicePriceRule;
+use App\Models\WashStockItem;
+use App\Models\WashStockMovement;
 use App\Models\WashTransaction;
 use App\Models\WashTransactionItem;
 use App\Services\AccountingPoster;
@@ -449,6 +451,34 @@ class WashTransactionController extends Controller implements HasMiddleware
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
+                
+                // Handle stock deduction if service linked to stock item
+                $service = WashService::find($item['wash_service_id']);
+                if ($service && $service->wash_stock_item_id) {
+                    $stockItem = WashStockItem::find($service->wash_stock_item_id);
+                    if ($stockItem) {
+                        // Check stock availability
+                        if ($stockItem->current_stock < $item['quantity']) {
+                            throw new \RuntimeException("Stok {$stockItem->name} tidak mencukupi! Stok tersedia: {$stockItem->current_stock}, dibutuhkan: {$item['quantity']}");
+                        }
+                        
+                        // Deduct stock
+                        $stockItem->decrement('current_stock', $item['quantity']);
+                        
+                        // Create stock movement record
+                        WashStockMovement::create([
+                            'wash_stock_item_id' => $stockItem->id,
+                            'transaction_id' => $transaction->id,
+                            'movement_type' => 'out',
+                            'quantity' => $item['quantity'],
+                            'unit_price' => $stockItem->last_buy_price,
+                            'total_amount' => $stockItem->last_buy_price ? $stockItem->last_buy_price * $item['quantity'] : 0,
+                            'movement_date' => now()->toDateString(),
+                            'notes' => 'Penjualan: ' . $item['service_name'],
+                            'user_id' => Auth::id(),
+                        ]);
+                    }
+                }
             }
 
             // Update default cash balance only if payment is not kasbon

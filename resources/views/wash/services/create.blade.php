@@ -25,19 +25,35 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="vehicle_type" class="form-label" id="vehicleTypeLabel">Jenis Kendaraan</label>
-                    <select class="form-select @error('vehicle_type') is-invalid @enderror" id="vehicle_type" name="vehicle_type" required>
-                        <option value="car" {{ old('vehicle_type') == 'car' ? 'selected' : '' }}>Mobil</option>
-                        <option value="motor" {{ old('vehicle_type') == 'motor' ? 'selected' : '' }}>Motor</option>
-                        <option value="coffee" {{ old('vehicle_type') == 'coffee' ? 'selected' : '' }}>Caffe</option>
-                    </select>
-                    @error('vehicle_type')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                    <div class="form-text text-primary d-none" id="coffeeModeHint">
-                        Mode Caffe aktif: form disederhanakan seperti produk ATK.
-                    </div>
-                </div>
+            <label for="vehicle_type" class="form-label" id="vehicleTypeLabel">Jenis Kendaraan</label>
+            <select class="form-select @error('vehicle_type') is-invalid @enderror" id="vehicle_type" name="vehicle_type" required>
+                <option value="car" {{ old('vehicle_type') == 'car' ? 'selected' : '' }}>Mobil</option>
+                <option value="motor" {{ old('vehicle_type') == 'motor' ? 'selected' : '' }}>Motor</option>
+                <option value="coffee" {{ old('vehicle_type') == 'coffee' ? 'selected' : '' }}>Caffe</option>
+            </select>
+            @error('vehicle_type')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+            <div class="form-text text-primary d-none" id="coffeeModeHint">
+                Mode Caffe aktif: form disederhanakan seperti produk ATK.
+            </div>
+        </div>
+
+        <div class="mb-3" id="stockItemField">
+            <label for="wash_stock_item_id" class="form-label">Produk Stok (Opsional)</label>
+            <select class="form-select @error('wash_stock_item_id') is-invalid @enderror" id="wash_stock_item_id" name="wash_stock_item_id">
+                <option value="">Pilih Produk Stok</option>
+                @foreach($stockItems as $item)
+                    <option value="{{ $item->id }}" {{ old('wash_stock_item_id') == $item->id ? 'selected' : '' }}>
+                        {{ $item->name }} (Stok: {{ number_format($item->current_stock, 2, ',', '.') }} {{ $item->unit }})
+                    </option>
+                @endforeach
+            </select>
+            @error('wash_stock_item_id')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+            <div class="form-text text-muted">Hubungkan produk Caffe dengan stok barang.</div>
+        </div>
 
                 <div class="row g-3 mb-3" id="washAttributeGroup">
                     <div class="col-12 col-md-4">

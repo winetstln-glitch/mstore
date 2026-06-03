@@ -529,7 +529,7 @@
 
             @php
                 $washDashboardActive = $routeIs('wash.dashboard');
-                $washMasterActive = $routeIs('wash.services.*');
+                $washMasterActive = $routeIs('wash.services.*') || $routeIs('wash.stock.*');
                 $washTransactionActive = $routeIs('wash.pos') || $routeIs('wash.transactions.*');
                 $washFinanceActive = $routeIs('wash.expenses.*') || $routeIs('wash.reports.*');
                 $washAnyActive = $washDashboardActive || $washMasterActive || $washTransactionActive || $washFinanceActive;
@@ -554,6 +554,9 @@
                         <div class="ps-3">
                             <a href="{{ route('wash.services.index') }}" class="sidebar-item {{ $routeIs('wash.services.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-tags"></i> {{ __('Layanan & Harga') }}
+                            </a>
+                            <a href="{{ route('wash.stock.index') }}" class="sidebar-item {{ $routeIs('wash.stock.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-boxes-stacked"></i> {{ __('Stok Barang') }}
                             </a>
                         </div>
                     </div>

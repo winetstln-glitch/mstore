@@ -478,6 +478,19 @@ Route::middleware('auth')->group(function () {
         'update' => 'wash.services.update',
         'destroy' => 'wash.services.destroy',
     ])->except(['show']);
+    
+    // Wash Stock
+    Route::prefix('wash/stock')->name('wash.stock.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashStockController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashStockController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashStockController::class, 'store'])->name('store');
+        Route::get('/{stockItem}', [\App\Http\Controllers\WashStockController::class, 'show'])->name('show');
+        Route::get('/{stockItem}/edit', [\App\Http\Controllers\WashStockController::class, 'edit'])->name('edit');
+        Route::put('/{stockItem}', [\App\Http\Controllers\WashStockController::class, 'update'])->name('update');
+        Route::delete('/{stockItem}', [\App\Http\Controllers\WashStockController::class, 'destroy'])->name('destroy');
+        Route::get('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'stockIn'])->name('stock-in');
+        Route::post('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'storeStockIn'])->name('stock-in.store');
+    });
     Route::permanentRedirect('wash/employees', 'employees');
     Route::any('wash/employees/{any}', fn () => redirect()->route('employees.index', [], 301))
         ->where('any', '.*');

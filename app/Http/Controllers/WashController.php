@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WashService;
+use App\Models\WashStockItem;
 use Illuminate\Http\Request;
 
 class WashController extends Controller
@@ -184,7 +185,8 @@ class WashController extends Controller
      */
     public function create()
     {
-        return view('wash.services.create');
+        $stockItems = WashStockItem::where('is_active', true)->orderBy('name')->get();
+        return view('wash.services.create', compact('stockItems'));
     }
 
     /**
@@ -205,6 +207,7 @@ class WashController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:2048',
+            'wash_stock_item_id' => 'nullable|exists:wash_stock_items,id',
             'rule_size_tier' => 'nullable|array',
             'rule_size_tier.*' => 'nullable|in:none,kecil,sedang,besar,extra_besar',
             'rule_package_type' => 'nullable|array',
@@ -240,8 +243,9 @@ class WashController extends Controller
     public function edit(WashService $service)
     {
         $service->load('priceRules');
+        $stockItems = WashStockItem::where('is_active', true)->orderBy('name')->get();
 
-        return view('wash.services.edit', compact('service'));
+        return view('wash.services.edit', compact('service', 'stockItems'));
     }
 
     /**
@@ -262,6 +266,7 @@ class WashController extends Controller
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:2048',
+            'wash_stock_item_id' => 'nullable|exists:wash_stock_items,id',
             'rule_size_tier' => 'nullable|array',
             'rule_size_tier.*' => 'nullable|in:none,kecil,sedang,besar,extra_besar',
             'rule_package_type' => 'nullable|array',

@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WashService extends Model
 {
     protected $fillable = [
-        'name', 'vehicle_type', 'service_category', 'size_tier', 'package_type', 'sort_order', 'price', 'cost_price', 'holiday_price', 'description', 'image', 'is_active',
+        'name', 'vehicle_type', 'service_category', 'size_tier', 'package_type', 'sort_order', 'price', 'cost_price', 'holiday_price', 'description', 'image', 'is_active', 'wash_stock_item_id',
     ];
 
     public const CATEGORY_OPTIONS = [
@@ -52,5 +53,10 @@ class WashService extends Model
     public function priceRules(): HasMany
     {
         return $this->hasMany(WashServicePriceRule::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function stockItem(): BelongsTo
+    {
+        return $this->belongsTo(WashStockItem::class);
     }
 }
