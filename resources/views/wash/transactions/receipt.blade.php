@@ -453,11 +453,6 @@ function updatePreviewSize(size){
     document.getElementById('receipt-wrapper').className = 'size-'+size+'mm';
 }
 
-function updatePrinterType() {
-    const type = document.querySelector('input[name="printer_type"]:checked').value;
-    // You can add preview changes here if needed
-}
-
 function initReceiptPreview(){
     const isMobile = window.matchMedia('(max-width: 575.98px)').matches;
     if (isMobile) {
@@ -467,11 +462,6 @@ function initReceiptPreview(){
             updatePreviewSize('58');
         }
     }
-    // Initialize printer type from settings if available
-    @if(\App\Models\Setting::getValue('pos_printer_type', 'escpos') === 'tspl')
-        document.getElementById('typeTspl').checked = true;
-        updatePrinterType();
-    @endif
 }
 
 // === FORMAT IDR ===
