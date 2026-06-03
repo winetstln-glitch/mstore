@@ -338,7 +338,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('typeTspl').checked = true;
         updatePrinterType();
     @endif
+    
+    checkAutoprint();
 });
+
+// Check for autoprint parameter
+function checkAutoprint() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoprint = urlParams.get('autoprint');
+    if (autoprint === '1') {
+        // Trigger Bluetooth print
+        setTimeout(() => {
+            printBluetooth();
+        }, 500);
+    }
+}
 
 /** * ESC/POS PRINT ENGINE
  */

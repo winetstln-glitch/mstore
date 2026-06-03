@@ -906,8 +906,17 @@ function updatePrintButtons() {
     }
 }
 
-// Print function with fallback
+// Print function with fallback (prioritize legacy which works)
 async function printBluetoothDirect() {
+    try {
+        // First try legacy function which is proven to work
+        await printBluetoothDirectLegacy();
+        return;
+    } catch (e) {
+        console.error('Legacy print failed, trying PrintManager:', e);
+    }
+    
+    // Fallback to PrintManager if legacy fails
     try {
         if (window.PrintManager) {
             if (!printManager) {
@@ -927,11 +936,8 @@ async function printBluetoothDirect() {
             }
         }
     } catch (e) {
-        console.error('New PrintManager failed, falling back to legacy:', e);
+        console.error('New PrintManager also failed:', e);
     }
-    
-    // Fallback to legacy
-    await printBluetoothDirectLegacy();
 }
 
 // Initialize PrintManager when DOM is ready
@@ -940,12 +946,26 @@ if (document.readyState === 'loading') {
         // Wait for modules to load
         setTimeout(() => {
             initPrintManager();
+            checkAutoprint();
         }, 200);
     });
 } else {
     setTimeout(() => {
         initPrintManager();
+        checkAutoprint();
     }, 200);
+}
+
+// Check for autoprint parameter
+function checkAutoprint() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoprint = urlParams.get('autoprint');
+    if (autoprint === '1') {
+        // Trigger Bluetooth print
+        setTimeout(() => {
+            printBluetoothDirect();
+        }, 500);
+    }
 }
 </script>
 

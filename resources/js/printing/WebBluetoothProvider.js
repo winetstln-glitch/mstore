@@ -20,7 +20,7 @@ export class WebBluetoothProvider {
         let characteristic = null;
         
         try {
-            const device = await navigator.bluetooth.requestDevice({
+            device = await navigator.bluetooth.requestDevice({
                 filters: [
                     { services: [this.SERVICE_UUID] },
                     { services: [this.ALTERNATE_SERVICE_UUID] },
