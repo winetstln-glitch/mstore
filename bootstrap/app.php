@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\LogRequestPerformance::class,
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
+        
+        $middleware->validateCsrfTokens(except: [
+            '/voucher-payment/callback',
+            '/webhooks/*',
+        ]);
 
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
