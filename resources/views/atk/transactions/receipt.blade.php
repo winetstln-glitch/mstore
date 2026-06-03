@@ -570,8 +570,10 @@ async function printBluetooth() {
     if (bridgePrinter) {
         status.innerText = "Mengirim ke printer via App...";
         if (bridgePrinter(bridgePayload)) {
-            status.innerText = "Selesai!";
-            setTimeout(() => status.innerText = "Siap Mencetak", 3000);
+            status.innerText = "Selesai! Mengalihkan ke POS...";
+            setTimeout(() => {
+                window.location.href = "{{ route('atk.pos') }}";
+            }, 1500);
             return;
         }
     }
@@ -743,8 +745,10 @@ async function printBluetooth() {
             await char.writeValue(payload.slice(i, i + chunkSize));
         }
 
-        status.innerText = "Selesai!";
-        setTimeout(() => status.innerText = "Siap Mencetak", 3000);
+        status.innerText = "Selesai! Mengalihkan ke POS...";
+        setTimeout(() => {
+            window.location.href = "{{ route('atk.pos') }}";
+        }, 1500);
 
     } catch (e) {
         status.innerText = "Error: " + e.message;

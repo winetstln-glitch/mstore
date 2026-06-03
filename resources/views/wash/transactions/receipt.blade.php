@@ -281,14 +281,6 @@
 <body>
 
 <div class="no-print-area">
-    <div class="panel-title">Pilih Jenis Printer:</div>
-    <div class="paper-selector">
-        <input type="radio" name="printer_type" id="typeEscpos" value="escpos" checked onchange="updatePrinterType()">
-        <label for="typeEscpos">Receipt (ESC/POS)</label>
-        
-        <input type="radio" name="printer_type" id="typeTspl" value="tspl" onchange="updatePrinterType()">
-        <label for="typeTspl">Label (TSPL)</label>
-    </div>
     <div class="panel-title">Pilih Ukuran Kertas:</div>
     <div class="paper-selector">
         <input type="radio" name="paper_size" id="size58" value="32" onchange="updatePreviewSize('58')">
@@ -696,8 +688,10 @@ async function printBluetoothDirectLegacy(){
         if(bridgePrinter){
             status.innerText="Mengirim ke printer via App...";
             if(bridgePrinter(bridgePayload)){
-                status.innerText="Cetak berhasil!";
-                setTimeout(()=>status.innerText="Status: Siap",3000);
+                status.innerText="Cetak berhasil! Mengalihkan ke POS...";
+                setTimeout(() => {
+                    window.location.href = "{{ route('wash.pos') }}";
+                }, 1500);
                 return;
             }
         }
@@ -843,8 +837,10 @@ async function printBluetoothDirectLegacy(){
             await characteristic.writeValue(receiptData.slice(i,i+chunkSize));
         }
         
-        status.innerText="Cetak berhasil!";
-        setTimeout(()=>status.innerText="Status: Siap",3000);
+        status.innerText="Cetak berhasil! Mengalihkan ke POS...";
+        setTimeout(() => {
+            window.location.href = "{{ route('wash.pos') }}";
+        }, 1500);
     }catch(error){
         console.error('Print error:', error);
         if(bridgePrinter && bridgePrinter(bridgePayload)){
