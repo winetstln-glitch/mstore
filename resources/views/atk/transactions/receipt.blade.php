@@ -751,6 +751,17 @@ async function printBluetooth() {
         }, 1500);
 
     } catch (e) {
+        console.error('Print error:', e);
+        if (bridgePrinter) {
+            status.innerText = "Mencoba via App...";
+            if (bridgePrinter(bridgePayload)) {
+                status.innerText = "Selesai via App! Mengalihkan ke POS...";
+                setTimeout(() => {
+                    window.location.href = "{{ route('atk.pos') }}";
+                }, 1500);
+                return;
+            }
+        }
         status.innerText = "Error: " + e.message;
         console.error(e);
     }

@@ -844,8 +844,10 @@ async function printBluetoothDirectLegacy(){
     }catch(error){
         console.error('Print error:', error);
         if(bridgePrinter && bridgePrinter(bridgePayload)){
-            status.innerText="Cetak berhasil melalui Bridge!";
-            setTimeout(()=>status.innerText="Status: Siap",3000);
+            status.innerText="Cetak berhasil melalui Bridge! Mengalihkan ke POS...";
+            setTimeout(() => {
+                window.location.href = "{{ route('wash.pos') }}";
+            }, 1500);
             return;
         }
         status.innerText="Kesalahan: "+error.message;
@@ -900,37 +902,13 @@ function updatePrintButtons() {
     }
 }
 
-// Print function with fallback (prioritize legacy which works)
+// Print function (only use legacy, no PrintManager fallback to prevent browser print)
 async function printBluetoothDirect() {
     try {
-        // First try legacy function which is proven to work
         await printBluetoothDirectLegacy();
-        return;
     } catch (e) {
-        console.error('Legacy print failed, trying PrintManager:', e);
-    }
-    
-    // Fallback to PrintManager if legacy fails
-    try {
-        if (window.PrintManager) {
-            if (!printManager) {
-                initPrintManager();
-            }
-            
-            // For iOS without bridge, show dialog instead of auto-print
-            if (printManager && printManager.isIOSWithoutBridge()) {
-                printManager.showIOSFallbackDialog();
-                return;
-            }
-            
-            // Otherwise try new PrintManager
-            const result = await printManager.print();
-            if (result && result.success) {
-                return;
-            }
-        }
-    } catch (e) {
-        console.error('New PrintManager also failed:', e);
+        console.error('Print failed:', e);
+        document.getElementById('status').innerText = "Gagal mencetak: " + e.message;
     }
 }
 
