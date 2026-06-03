@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Models\WhatsAppMenu;
 use App\Models\WhatsAppLog;
+use App\Services\AiService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,10 +14,12 @@ use Illuminate\Support\Str;
 class WhatsAppWebhookController extends Controller
 {
     protected $whatsappService;
+    protected $aiService;
 
-    public function __construct(WhatsAppService $whatsappService)
+    public function __construct(WhatsAppService $whatsappService, AiService $aiService)
     {
         $this->whatsappService = $whatsappService;
+        $this->aiService = $aiService;
     }
 
     /**
@@ -112,7 +115,7 @@ class WhatsAppWebhookController extends Controller
             return null;
         }
 
-        // Find matching menu
+        // First, check WhatsAppMenu for matching keywords
         $menus = WhatsAppMenu::active()
             ->orderBy('priority', 'desc')
             ->orderBy('created_at', 'desc')
@@ -137,8 +140,44 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        // Default fallback reply if no menu matches
-        return $this->getDefaultFallbackReply();
+        // If no menu matches, try AI service for general queries
+        $aiResponse = $this->aiService->processChat($message);
+        return $this->renderAiResponse($aiResponse);
+    }
+
+    /**
+     * Render AI response to WhatsApp-friendly format
+     */
+    private function renderAiResponse($aiResponse): string
+    {
+        if (is_string($aiResponse)) {
+            // Strip HTML tags for WhatsApp
+            return strip_tags($aiResponse, '<b><i><u><br><ol><ul><li>');
+        }
+
+        if (is_array($aiResponse)) {
+            $output = '';
+            
+            if (isset($aiResponse['title'])) {
+                $output .= "*{$aiResponse['title']}*\n";
+            }
+
+            if (isset($aiResponse['items']) && is_array($aiResponse['items'])) {
+                foreach ($aiResponse['items'] as $index => $item) {
+                    // Strip HTML from items
+                    $cleanItem = strip_tags($item, '<b><i><u>');
+                    $output .= ($index + 1).". {$cleanItem}\n";
+                }
+            }
+
+            if (isset($aiResponse['footer'])) {
+                $output .= "\n".strip_tags($aiResponse['footer']);
+            }
+
+            return $output;
+        }
+
+        return (string) $aiResponse;
     }
 
     /**
@@ -152,26 +191,6 @@ class WhatsAppWebhookController extends Controller
         $reply = str_replace('{nama_user}', 'Teman', $reply);
         $reply = str_replace('{jam_sekarang}', now()->format('H:i'), $reply);
         $reply = str_replace('{tanggal_sekarang}', now()->format('d M Y'), $reply);
-
-        return $reply;
-    }
-
-    /**
-     * Get default fallback reply
-     */
-    private function getDefaultFallbackReply(): string
-    {
-        $menus = WhatsAppMenu::active()->orderBy('priority', 'desc')->limit(5)->get();
-        
-        if ($menus->isEmpty()) {
-            return "Halo! Terima kasih sudah menghubungi kami. Silakan tunggu balasan dari tim kami ya!";
-        }
-
-        $reply = "Halo! Berikut menu yang tersedia:\n";
-        foreach ($menus as $index => $menu) {
-            $reply .= ($index + 1) . ". " . $menu->keyword . "\n";
-        }
-        $reply .= "\nKetik keyword di atas untuk memilih menu!";
 
         return $reply;
     }
