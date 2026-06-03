@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class WhatsAppLog extends Model
 {
+    protected $table = 'whatsapp_logs';
+
     protected $fillable = [
         'type',
         'phone_number',
