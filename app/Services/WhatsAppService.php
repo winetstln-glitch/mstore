@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Setting;
+use App\Models\WhatsAppLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -73,7 +74,7 @@ class WhatsAppService
      */
     public function sendMessage($phone, $message, $category = 'general', $customerId = null)
     {
-        // 1. Log to DB first
+        // 1. Log to DB first - both notification_logs and whatsapp_logs
         $logId = DB::table('notification_logs')->insertGetId([
             'customer_id' => $customerId,
             'target_phone' => $phone,
@@ -84,6 +85,9 @@ class WhatsAppService
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Log to WhatsAppLog as well
+        $whatsappLog = WhatsAppLog::logMessage('outgoing', $phone, $message, 'pending');
 
         // 2. Send to API
         if ($this->baseUrl && $this->apiKey) {
@@ -114,9 +118,17 @@ class WhatsAppService
 
                 $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
                 $isSent = $response->successful() && $providerValidation['ok'];
+                
+                // Update both logs
                 DB::table('notification_logs')->where('id', $logId)->update([
                     'status' => $isSent ? 'sent' : 'failed',
                     'response' => $response->body(),
+                ]);
+                
+                $whatsappLog->update([
+                    'status' => $isSent ? 'sent' : 'failed',
+                    'payload' => $response->json(),
+                    'error_message' => !$isSent ? ($providerValidation['error'] ?? $response->body()) : null,
                 ]);
 
                 if (! $isSent) {
@@ -132,6 +144,12 @@ class WhatsAppService
                     'status' => 'failed',
                     'response' => $e->getMessage(),
                 ]);
+                
+                $whatsappLog->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                ]);
+                
                 throw $e; // Re-throw to let caller know
             }
         } else {
@@ -141,6 +159,12 @@ class WhatsAppService
                 'status' => 'failed',
                 'response' => $errorMsg,
             ]);
+            
+            $whatsappLog->update([
+                'status' => 'failed',
+                'error_message' => $errorMsg,
+            ]);
+            
             throw new \Exception($errorMsg);
         }
     }

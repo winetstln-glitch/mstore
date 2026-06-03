@@ -353,6 +353,7 @@ Route::middleware('auth')->group(function () {
 
     // WhatsApp Settings
     Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
+    Route::get('/whatsapp/logs', [\App\Http\Controllers\WhatsAppController::class, 'logs'])->name('whatsapp.logs');
     Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
     Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
     Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check-status');

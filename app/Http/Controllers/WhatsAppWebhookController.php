@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\WhatsAppMenu;
+use App\Models\WhatsAppLog;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -44,6 +45,9 @@ class WhatsAppWebhookController extends Controller
             $message = $messageData['message'];
             $isGroup = $messageData['is_group'];
 
+            // Log incoming message
+            WhatsAppLog::logMessage('incoming', $phone, $message, 'delivered', $payload);
+
             // Process the message
             $response = $this->processIncomingMessage($phone, $message, $isGroup);
 
@@ -55,6 +59,12 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             Log::error('WhatsApp Webhook Error: ' . $e->getMessage(), ['exception' => $e]);
+            
+            // Log error to WhatsAppLog
+            if (isset($phone)) {
+                WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload, $e->getMessage());
+            }
+            
             return response()->json(['error' => 'Server error'], 500);
         }
     }

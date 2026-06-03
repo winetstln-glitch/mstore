@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\WhatsAppLog;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -16,7 +17,7 @@ class WhatsAppController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:setting.view', only: ['index']),
+            new Middleware('permission:setting.view', only: ['index', 'logs']),
             new Middleware('permission:setting.view', only: ['checkStatus']),
             new Middleware('permission:setting.update', only: ['update', 'test']),
         ];
@@ -357,6 +358,29 @@ class WhatsAppController extends Controller implements HasMiddleware
         $type = $status['ok'] && $status['connected'] ? 'success' : 'error';
 
         return back()->with($type, $status['message'])->with('wa_gateway_status', $status);
+    }
+
+    /**
+     * Display WhatsApp logs.
+     */
+    public function logs(Request $request)
+    {
+        $type = $request->input('type', 'all');
+        $status = $request->input('status', 'all');
+        
+        $logs = WhatsAppLog::orderBy('created_at', 'desc');
+        
+        if ($type !== 'all') {
+            $logs->where('type', $type);
+        }
+        
+        if ($status !== 'all') {
+            $logs->where('status', $status);
+        }
+        
+        $logs = $logs->paginate(50);
+        
+        return view('whatsapp.logs', compact('logs', 'type', 'status'));
     }
 
     private function upsertWhatsappSetting(string $key, ?string $value, string $type, string $label): void

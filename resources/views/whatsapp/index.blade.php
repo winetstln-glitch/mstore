@@ -42,6 +42,11 @@
                 </button>
             </li>
             <li class="nav-item ms-auto">
+                <a href="{{ route('whatsapp.logs') }}" class="nav-link text-secondary">
+                    <i class="fa-solid fa-list"></i> Logs
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('whatsapp.builder.index') }}" class="nav-link text-success">
                     <i class="fa-solid fa-robot"></i> Bot Builder
                 </a>
