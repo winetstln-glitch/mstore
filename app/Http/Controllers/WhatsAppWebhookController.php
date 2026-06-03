@@ -39,11 +39,18 @@ class WhatsAppWebhookController extends Controller
         // Handle WhatsApp webhook verification (GET request)
         if ($request->isMethod('GET')) {
             $verifyToken = config('services.whatsapp.verify_token');
-            $hubVerifyToken = $request->input('hub.verify_token');
-            $hubChallenge = $request->input('hub.challenge');
             
-            if ($verifyToken && $hubVerifyToken === $verifyToken && $hubChallenge) {
-                return response($hubChallenge, 200);
+            // Cek berbagai format verifikasi
+            $receivedToken = $request->input('hub.verify_token') ?? $request->input('verify_token');
+            $challenge = $request->input('hub.challenge') ?? $request->input('challenge');
+            
+            // Jika tidak ada verify token di config, skip verifikasi (untuk development)
+            if (empty($verifyToken)) {
+                return response($challenge ?? 'OK', 200);
+            }
+            
+            if ($receivedToken === $verifyToken) {
+                return response($challenge ?? 'OK', 200);
             }
             
             return response()->json(['error' => 'Invalid verification'], 403);
@@ -51,8 +58,11 @@ class WhatsAppWebhookController extends Controller
 
         // Verify token first (optional, for security - for POST requests)
         $verifyToken = config('services.whatsapp.verify_token');
-        if ($verifyToken && $request->input('verify_token') !== $verifyToken) {
-            return response()->json(['error' => 'Invalid verify token'], 403);
+        if ($verifyToken) {
+            $receivedToken = $request->input('verify_token');
+            if ($receivedToken !== $verifyToken) {
+                return response()->json(['error' => 'Invalid verify token'], 403);
+            }
         }
 
         try {
