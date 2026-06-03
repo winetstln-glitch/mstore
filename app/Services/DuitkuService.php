@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,9 +16,10 @@ class DuitkuService
 
     public function __construct()
     {
-        $this->merchantCode = config('services.duitku.merchant_code');
-        $this->apiKey = config('services.duitku.api_key');
-        $this->baseUrl = config('services.duitku.sandbox') ? 'https://sandbox.duitku.com' : 'https://passport.duitku.com';
+        $this->merchantCode = Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+        $this->apiKey = Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
+        $sandbox = Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
+        $this->baseUrl = $sandbox ? 'https://sandbox.duitku.com' : 'https://passport.duitku.com';
         $this->callbackUrl = route('voucher.payment.callback');
         $this->returnUrl = route('voucher.payment.return');
     }

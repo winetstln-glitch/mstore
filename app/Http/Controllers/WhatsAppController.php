@@ -146,6 +146,35 @@ class WhatsAppController extends Controller implements HasMiddleware
             ]
         );
 
+        // Duitku Settings
+        $duitkuMerchantCode = Setting::firstOrCreate(
+            ['key' => 'duitku_merchant_code'],
+            [
+                'value' => env('DUITKU_MERCHANT_CODE'),
+                'group' => 'duitku',
+                'type' => 'text',
+                'label' => 'Duitku Merchant Code',
+            ]
+        );
+        $duitkuApiKey = Setting::firstOrCreate(
+            ['key' => 'duitku_api_key'],
+            [
+                'value' => env('DUITKU_API_KEY'),
+                'group' => 'duitku',
+                'type' => 'password',
+                'label' => 'Duitku API Key',
+            ]
+        );
+        $duitkuSandbox = Setting::firstOrCreate(
+            ['key' => 'duitku_sandbox'],
+            [
+                'value' => env('DUITKU_SANDBOX', '1'),
+                'group' => 'duitku',
+                'type' => 'boolean',
+                'label' => 'Gunakan Duitku Sandbox',
+            ]
+        );
+
         // New Group Notification Settings
         Setting::firstOrCreate(['key' => 'whatsapp_ticket_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Ticket Notification Enabled']);
         Setting::firstOrCreate(['key' => 'whatsapp_attendance_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Attendance Notification Enabled']);
@@ -160,7 +189,7 @@ class WhatsAppController extends Controller implements HasMiddleware
         Setting::firstOrCreate(['key' => 'whatsapp_modem_down_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem DOWN Group ID']);
         Setting::firstOrCreate(['key' => 'whatsapp_modem_recap_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem RECAP Group ID']);
 
-        return view('whatsapp.index', compact('template', 'atkReceiptTemplate', 'washReceiptTemplate', 'atkInvoicePdfTemplate', 'washReadyTemplate', 'ispBillTemplate', 'ispReminderTemplate', 'ispPaidTemplate', 'ispSuspendTemplate', 'waApiUrl', 'waApiKey'));
+        return view('whatsapp.index', compact('template', 'atkReceiptTemplate', 'washReceiptTemplate', 'atkInvoicePdfTemplate', 'washReadyTemplate', 'ispBillTemplate', 'ispReminderTemplate', 'ispPaidTemplate', 'ispSuspendTemplate', 'waApiUrl', 'waApiKey', 'duitkuMerchantCode', 'duitkuApiKey', 'duitkuSandbox'));
     }
 
     /**
@@ -191,6 +220,9 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_modem_down_notification_enabled' => 'nullable|in:0,1',
             'whatsapp_modem_recap_notification_enabled' => 'nullable|in:0,1',
             'whatsapp_autoreply_enabled' => 'nullable|in:0,1',
+            'duitku_merchant_code' => 'nullable|string',
+            'duitku_api_key' => 'nullable|string',
+            'duitku_sandbox' => 'nullable|in:0,1',
         ]);
 
         $groupSettings = [
@@ -248,6 +280,27 @@ class WhatsAppController extends Controller implements HasMiddleware
         if ($request->has('whatsapp_api_key') && $request->whatsapp_api_key !== '') {
             $key = trim((string) $request->whatsapp_api_key);
             $this->upsertWhatsappSetting('whatsapp_api_key', $key, 'password', 'WhatsApp API Key');
+        }
+
+        // Save Duitku Settings
+        $duitkuSettings = [
+            'duitku_merchant_code' => 'Duitku Merchant Code',
+            'duitku_api_key' => 'Duitku API Key',
+            'duitku_sandbox' => 'Gunakan Duitku Sandbox',
+        ];
+        foreach ($duitkuSettings as $k => $label) {
+            if ($request->has($k)) {
+                $type = $k === 'duitku_sandbox' ? 'boolean' : ($k === 'duitku_api_key' ? 'password' : 'text');
+                Setting::updateOrCreate(
+                    ['key' => $k],
+                    [
+                        'value' => $request->input($k) ?? '',
+                        'group' => 'duitku',
+                        'type' => $type,
+                        'label' => $label,
+                    ]
+                );
+            }
         }
 
         // Query builder updates do not trigger model events; force refresh cached settings.

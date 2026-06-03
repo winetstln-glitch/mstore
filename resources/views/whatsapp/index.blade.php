@@ -180,14 +180,78 @@
                     </div>
                 </form>
 
-                <div class="alert alert-light border mt-3 mb-0">
-                    <div class="fw-semibold mb-2">Panduan Singkat Pengaturan API WhatsApp</div>
-                    <div>1. Isi <strong>API URL</strong> dan <strong>API Key Baru</strong>, lalu klik <strong>Simpan Konfigurasi</strong>.</div>
-                    <div>2. Klik <strong>Cek Status Gateway</strong> untuk memastikan device status <strong>Terhubung</strong>.</div>
-                    <div>3. Jika status belum terhubung, login ke panel provider (Fonnte) dan scan QR perangkat WA.</div>
-                    <div>4. Setelah terhubung, buka tab <strong>Testing</strong> lalu kirim <strong>Send Test</strong> ke nomor tujuan.</div>
+                <hr class="my-4">
+                    
+                    {{-- Duitku QRIS Settings --}}
+                    <div class="card bg-light border-0 mb-3">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="fw-bold mb-0">
+                                <i class="fas fa-qrcode me-2"></i>
+                                QRIS Duitku (Pembayaran Voucher Hotspot)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @php
+                                $savedMerchantCode = \App\Models\Setting::getValue('duitku_merchant_code', env('DUITKU_MERCHANT_CODE'));
+                                $savedDuitkuApiKey = \App\Models\Setting::getValue('duitku_api_key', env('DUITKU_API_KEY'));
+                                $maskedDuitkuApiKey = is_string($savedDuitkuApiKey) && $savedDuitkuApiKey !== ''
+                                    ? str_repeat('*', max(strlen($savedDuitkuApiKey) - 4, 0)).substr($savedDuitkuApiKey, -4)
+                                    : null;
+                            @endphp
+                            
+                            <div class="alert alert-info mb-3">
+                                <div class="fw-semibold mb-1">Status Konfigurasi QRIS Duitku</div>
+                                <div>Merchant Code: <code>{{ $savedMerchantCode ?: '-' }}</code></div>
+                                <div>API Key: <code>{{ $maskedDuitkuApiKey ?: 'Belum diatur' }}</code></div>
+                                <div>Mode: <code>{{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'Sandbox (Testing)' : 'Production' }}</code></div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label>Duitku Merchant Code</label>
+                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ $savedMerchantCode }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label>Duitku API Key Baru</label>
+                                        <input type="password" class="form-control" name="duitku_api_key" placeholder="Isi hanya jika ingin mengganti API key">
+                                        <div class="form-text">Kosongkan jika tidak ingin mengubah API key yang sudah tersimpan.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="duitku_sandbox">Gunakan Duitku Sandbox (Untuk Testing)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-secondary">
+                                <div class="fw-semibold mb-2">URL Callback untuk Duitku</div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace" value="{{ route('voucher.payment.callback') }}" id="duitkuCallbackUrl" readonly>
+                                    <button class="btn btn-outline-primary" type="button" onclick="copyDuitkuCallbackUrl()">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Salin URL ini dan masukkan ke panel pengaturan webhook Duitku Anda.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border mt-3 mb-0">
+                        <div class="fw-semibold mb-2">Panduan Singkat Pengaturan API WhatsApp & QRIS</div>
+                        <div>1. Isi <strong>API URL</strong> dan <strong>API Key Baru</strong> (WhatsApp), lalu klik <strong>Simpan Konfigurasi</strong>.</div>
+                        <div>2. Klik <strong>Cek Status Gateway</strong> untuk memastikan device status <strong>Terhubung</strong>.</div>
+                        <div>3. Jika status belum terhubung, login ke panel provider (Fonnte) dan scan QR perangkat WA.</div>
+                        <div>4. Untuk QRIS: Isi <strong>Duitku Merchant Code</strong> dan <strong>Duitku API Key Baru</strong>, lalu simpan.</div>
+                        <div>5. Salin <strong>URL Callback Duitku</strong> dan masukkan ke panel pengaturan webhook Duitku Anda.</div>
+                        <div>6. Setelah terhubung, buka tab <strong>Testing</strong> lalu kirim <strong>Send Test</strong> ke nomor tujuan.</div>
+                    </div>
                 </div>
-            </div>
 
 
             <div class="tab-pane fade" id="template">
@@ -421,6 +485,16 @@
             webhookUrl.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(webhookUrl.value).then(() => {
                 alert('Webhook URL berhasil disalin!');
+            });
+        }
+    }
+    function copyDuitkuCallbackUrl() {
+        const callbackUrl = document.getElementById('duitkuCallbackUrl');
+        if (callbackUrl) {
+            callbackUrl.select();
+            callbackUrl.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(callbackUrl.value).then(() => {
+                alert('URL Callback Duitku berhasil disalin!');
             });
         }
     }
