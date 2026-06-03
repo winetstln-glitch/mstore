@@ -60,5 +60,5 @@ Route::prefix('v1')->group(function () {
 
 // WhatsApp Webhook
 Route::prefix('whatsapp')->group(function () {
-    Route::post('/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('api.whatsapp.webhook');
+    Route::match(['GET', 'POST'], '/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('api.whatsapp.webhook');
 });

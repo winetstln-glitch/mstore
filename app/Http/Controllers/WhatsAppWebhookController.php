@@ -36,7 +36,20 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        // Verify token first (optional, for security)
+        // Handle WhatsApp webhook verification (GET request)
+        if ($request->isMethod('GET')) {
+            $verifyToken = config('services.whatsapp.verify_token');
+            $hubVerifyToken = $request->input('hub.verify_token');
+            $hubChallenge = $request->input('hub.challenge');
+            
+            if ($verifyToken && $hubVerifyToken === $verifyToken && $hubChallenge) {
+                return response($hubChallenge, 200);
+            }
+            
+            return response()->json(['error' => 'Invalid verification'], 403);
+        }
+
+        // Verify token first (optional, for security - for POST requests)
         $verifyToken = config('services.whatsapp.verify_token');
         if ($verifyToken && $request->input('verify_token') !== $verifyToken) {
             return response()->json(['error' => 'Invalid verify token'], 403);
