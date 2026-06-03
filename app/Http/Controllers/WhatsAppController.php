@@ -189,7 +189,32 @@ class WhatsAppController extends Controller implements HasMiddleware
         Setting::firstOrCreate(['key' => 'whatsapp_modem_down_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem DOWN Group ID']);
         Setting::firstOrCreate(['key' => 'whatsapp_modem_recap_group_id'], ['value' => Setting::getValue('whatsapp_group_notification_id', ''), 'group' => 'whatsapp', 'type' => 'text', 'label' => 'WhatsApp Modem RECAP Group ID']);
 
-        return view('whatsapp.index', compact('template', 'atkReceiptTemplate', 'washReceiptTemplate', 'atkInvoicePdfTemplate', 'washReadyTemplate', 'ispBillTemplate', 'ispReminderTemplate', 'ispPaidTemplate', 'ispSuspendTemplate', 'waApiUrl', 'waApiKey', 'duitkuMerchantCode', 'duitkuApiKey', 'duitkuSandbox'));
+        // Pass masked API keys
+        $maskedWaApiKey = is_string($waApiKey->value) && $waApiKey->value !== ''
+            ? str_repeat('*', max(strlen($waApiKey->value) - 4, 0)) . substr($waApiKey->value, -4)
+            : null;
+        $maskedDuitkuApiKey = is_string($duitkuApiKey->value) && $duitkuApiKey->value !== ''
+            ? str_repeat('*', max(strlen($duitkuApiKey->value) - 4, 0)) . substr($duitkuApiKey->value, -4)
+            : null;
+        
+        return view('whatsapp.index', compact(
+            'template',
+            'atkReceiptTemplate',
+            'washReceiptTemplate',
+            'atkInvoicePdfTemplate',
+            'washReadyTemplate',
+            'ispBillTemplate',
+            'ispReminderTemplate',
+            'ispPaidTemplate',
+            'ispSuspendTemplate',
+            'waApiUrl',
+            'waApiKey',
+            'maskedWaApiKey',
+            'duitkuMerchantCode',
+            'duitkuApiKey',
+            'maskedDuitkuApiKey',
+            'duitkuSandbox'
+        ));
     }
 
     /**

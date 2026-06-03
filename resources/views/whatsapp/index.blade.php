@@ -56,13 +56,6 @@
         <div class="tab-content">
 
             <div class="tab-pane fade show active" id="api">
-                @php
-                    $savedApiUrl = \App\Models\Setting::getValue('whatsapp_api_url', env('WHATSAPP_API_URL'));
-                    $savedApiKey = \App\Models\Setting::getValue('whatsapp_api_key', env('WHATSAPP_API_KEY'));
-                    $maskedApiKey = is_string($savedApiKey) && $savedApiKey !== ''
-                        ? str_repeat('*', max(strlen($savedApiKey) - 4, 0)).substr($savedApiKey, -4)
-                        : null;
-                @endphp
                 @php($gatewayStatus = session('wa_gateway_status'))
                 @if(is_array($gatewayStatus))
                     <div class="alert {{ ($gatewayStatus['ok'] ?? false) && ($gatewayStatus['connected'] ?? false) ? 'alert-success' : 'alert-warning' }}">
@@ -78,8 +71,8 @@
 
                 <div class="alert alert-info">
                     <div class="fw-semibold mb-1">Status Konfigurasi Tersimpan</div>
-                    <div>API URL: <code>{{ $savedApiUrl ?: '-' }}</code></div>
-                    <div>API Key: <code>{{ $maskedApiKey ?: 'Belum diatur' }}</code></div>
+                    <div>API URL: <code>{{ $waApiUrl->value ?: '-' }}</code></div>
+                    <div>API Key: <code>{{ $maskedWaApiKey ?: 'Belum diatur' }}</code></div>
                 </div>
 
                 <form method="POST" action="{{ route('whatsapp.check-status') }}" class="mb-3">
@@ -97,7 +90,7 @@
                     </div>
                     <div class="mb-3">
                         <label>API URL</label>
-                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ $savedApiUrl }}">
+                        <input type="text" class="form-control" name="whatsapp_api_url" value="{{ $waApiUrl->value }}">
                     </div>
                     <div class="mb-3">
                         <label>API Key Baru</label>
@@ -193,21 +186,16 @@
                         <div class="card-body">
                             <div class="alert alert-info mb-3">
                                 <div class="fw-semibold mb-1">Status Konfigurasi QRIS Duitku</div>
-                                <div>Merchant Code: <code>{{ \App\Models\Setting::getValue('duitku_merchant_code', '') ?: '-' }}</code></div>
-                                <div>API Key: <code>
-                                    @php
-                                        $k = \App\Models\Setting::getValue('duitku_api_key', '');
-                                        echo is_string($k) && $k !== '' ? str_repeat('*', max(strlen($k) - 4, 0)).substr($k, -4) : 'Belum diatur';
-                                    @endphp
-                                </code></div>
-                                <div>Mode: <code>{{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'Sandbox (Testing)' : 'Production' }}</code></div>
+                                <div>Merchant Code: <code>{{ $duitkuMerchantCode->value ?: '-' }}</code></div>
+                                <div>API Key: <code>{{ $maskedDuitkuApiKey ?: 'Belum diatur' }}</code></div>
+                                <div>Mode: <code>{{ $duitkuSandbox->value == '1' ? 'Sandbox (Testing)' : 'Production' }}</code></div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label>Duitku Merchant Code</label>
-                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ \App\Models\Setting::getValue('duitku_merchant_code', '') }}">
+                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ $duitkuMerchantCode->value }}">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -221,7 +209,7 @@
 
                             <div class="mb-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ \App\Models\Setting::getValue('duitku_sandbox', '1') == '1' ? 'checked' : '' }}>
+                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ $duitkuSandbox->value == '1' ? 'checked' : '' }}>
                                     <label class="form-check-label" for="duitku_sandbox">Gunakan Duitku Sandbox (Untuk Testing)</label>
                                 </div>
                             </div>
