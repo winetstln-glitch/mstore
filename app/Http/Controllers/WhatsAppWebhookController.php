@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\Voucher;
+use App\Models\VoucherTemplate;
 use App\Models\WhatsAppMenu;
 use App\Models\WhatsAppLog;
 use App\Services\AiService;
+use App\Services\VoucherService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,11 +18,13 @@ class WhatsAppWebhookController extends Controller
 {
     protected $whatsappService;
     protected $aiService;
+    protected $voucherService;
 
-    public function __construct(WhatsAppService $whatsappService, AiService $aiService)
+    public function __construct(WhatsAppService $whatsappService, AiService $aiService, VoucherService $voucherService)
     {
         $this->whatsappService = $whatsappService;
         $this->aiService = $aiService;
+        $this->voucherService = $voucherService;
     }
 
     /**
@@ -40,7 +45,7 @@ class WhatsAppWebhookController extends Controller
             // Try to extract message from different provider formats (Fonnte, etc.)
             $messageData = $this->extractMessage($payload);
             
-            if (!$messageData) {
+            if (! $messageData) {
                 return response()->json(['status' => 'no_message']);
             }
 
@@ -84,7 +89,7 @@ class WhatsAppWebhookController extends Controller
                     return [
                         'phone' => $msg['phone'] ?? $msg['sender'] ?? null,
                         'message' => $msg['message'],
-                        'is_group' => isset($msg['is_group']) ? (bool)$msg['is_group'] : false,
+                        'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : false,
                     ];
                 }
             }
@@ -95,7 +100,7 @@ class WhatsAppWebhookController extends Controller
             return [
                 'phone' => $payload['phone'],
                 'message' => $payload['message'],
-                'is_group' => isset($payload['is_group']) ? (bool)$payload['is_group'] : false,
+                'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : false,
             ];
         }
 
@@ -111,8 +116,13 @@ class WhatsAppWebhookController extends Controller
 
         // Check if autoreply is enabled
         $autoreplyEnabled = Setting::getValue('whatsapp_autoreply_enabled', '1') == '1';
-        if (!$autoreplyEnabled) {
+        if (! $autoreplyEnabled) {
             return null;
+        }
+
+        // Handle Voucher Purchases
+        if (Str::contains($message, 'voucher') || Str::contains($message, 'wifi') || Str::contains($message, 'internet')) {
+            return $this->handleVoucherRequest($message);
         }
 
         // First, check WhatsAppMenu for matching keywords
@@ -146,6 +156,107 @@ class WhatsAppWebhookController extends Controller
     }
 
     /**
+     * Handle voucher purchase requests
+     */
+    private function handleVoucherRequest(string $message): string
+    {
+        $templates = VoucherTemplate::where('is_active', true)->orderBy('price')->get();
+
+        if ($templates->isEmpty()) {
+            return "Maaf, saat ini tidak ada paket voucher yang tersedia.";
+        }
+
+        // Check if user selected a template
+        foreach ($templates as $template) {
+            if (Str::contains($message, (string) $template->id)) {
+                return $this->generateVoucherForTemplate($template);
+            }
+        }
+
+        // Show list of templates
+        $response = "*Daftar Paket Voucher Hotspot:*\n\n";
+        foreach ($templates as $index => $template) {
+            $response .= ($index + 1) . ". *{$template->name}*\n";
+            $response .= "   💰 Harga: Rp " . number_format($template->price, 0, ',', '.') . "\n";
+            if ($template->duration_seconds) {
+                $response .= "   ⏱ Durasi: " . $this->formatDuration($template->duration_seconds) . "\n";
+            }
+            if ($template->quota_mb) {
+                $response .= "   📊 Kuota: " . number_format($template->quota_mb, 0, ',', '.') . " MB\n";
+            }
+            if ($template->rate_limit) {
+                $response .= "   🚀 Kecepatan: {$template->rate_limit}\n";
+            }
+            $response .= "   👉 Balas dengan *{$template->id}* untuk beli paket ini!\n\n";
+        }
+
+        return $response;
+    }
+
+    /**
+     * Generate a single voucher from a template
+     */
+    private function generateVoucherForTemplate(VoucherTemplate $template): string
+    {
+        try {
+            // Generate 1 voucher
+            $batch = $this->voucherService->generateBatch(
+                $template->rate_limit,
+                $template->duration_seconds,
+                $template->quota_mb,
+                1,
+                true
+            );
+
+            $voucher = Voucher::where('batch_id', $batch->id)->first();
+
+            if (! $voucher) {
+                return "Maaf, gagal membuat voucher. Silakan coba lagi nanti.";
+            }
+
+            // Format the response
+            $response = "*🎉 Voucher Hotspot Berhasil Dibuat!*\n\n";
+            $response .= "*Paket:* {$template->name}\n";
+            if ($template->duration_seconds) {
+                $response .= "*Durasi:* " . $this->formatDuration($template->duration_seconds) . "\n";
+            }
+            if ($template->quota_mb) {
+                $response .= "*Kuota:* " . number_format($template->quota_mb, 0, ',', '.') . " MB\n";
+            }
+            $response .= "\n";
+            $response .= "*Username:* `{$voucher->username}`\n";
+            $response .= "*Password:* `{$voucher->password}`\n";
+            $response .= "\n";
+            $response .= "Gunakan username dan password di atas untuk login ke hotspot!";
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::error('Voucher generation error: ' . $e->getMessage());
+            return "Maaf, terjadi kesalahan saat membuat voucher. Silakan coba lagi nanti.";
+        }
+    }
+
+    /**
+     * Format duration seconds to human-readable format
+     */
+    private function formatDuration(int $seconds): string
+    {
+        if ($seconds >= 86400) {
+            $days = floor($seconds / 86400);
+            return $days . ' ' . ($days > 1 ? 'hari' : 'hari');
+        }
+        if ($seconds >= 3600) {
+            $hours = floor($seconds / 3600);
+            return $hours . ' ' . ($hours > 1 ? 'jam' : 'jam');
+        }
+        if ($seconds >= 60) {
+            $minutes = floor($seconds / 60);
+            return $minutes . ' ' . ($minutes > 1 ? 'menit' : 'menit');
+        }
+        return $seconds . ' detik';
+    }
+
+    /**
      * Render AI response to WhatsApp-friendly format
      */
     private function renderAiResponse($aiResponse): string
@@ -166,12 +277,12 @@ class WhatsAppWebhookController extends Controller
                 foreach ($aiResponse['items'] as $index => $item) {
                     // Strip HTML from items
                     $cleanItem = strip_tags($item, '<b><i><u>');
-                    $output .= ($index + 1).". {$cleanItem}\n";
+                    $output .= ($index + 1) . ". {$cleanItem}\n";
                 }
             }
 
             if (isset($aiResponse['footer'])) {
-                $output .= "\n".strip_tags($aiResponse['footer']);
+                $output .= "\n" . strip_tags($aiResponse['footer']);
             }
 
             return $output;
