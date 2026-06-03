@@ -281,14 +281,6 @@
 <body>
 
 <div class="no-print-area">
-    <div class="panel-title">Pilih Jenis Printer:</div>
-    <div class="paper-selector">
-        <input type="radio" name="printer_type" id="typeEscpos" value="escpos" checked onchange="updatePrinterType()">
-        <label for="typeEscpos">Receipt (ESC/POS)</label>
-        
-        <input type="radio" name="printer_type" id="typeTspl" value="tspl" onchange="updatePrinterType()">
-        <label for="typeTspl">Label (TSPL)</label>
-    </div>
     <div class="panel-title">Pilih Ukuran Kertas:</div>
     <div class="paper-selector">
         <input type="radio" name="paper_size" id="size58" value="32" onchange="updatePreviewSize('58')">
@@ -681,9 +673,8 @@ async function printBluetoothDirectLegacy(){
     // Get paper size with default
     const paperSizeInput = document.querySelector('input[name="paper_size"]:checked');
     const paperSize = paperSizeInput ? parseInt(paperSizeInput.value) : 48; // Default 80mm (48 columns)
-    // Get printer type with default
-    const printerTypeInput = document.querySelector('input[name="printer_type"]:checked');
-    const printerType = printerTypeInput ? printerTypeInput.value : 'escpos'; // Default ESC/POS
+    // Permanently use ESC/POS only
+    const printerType = 'escpos';
     const bridgePayload=Object.assign({},data,{
         paper_size:paperSize,
         printer_type:printerType,
@@ -752,95 +743,35 @@ async function printBluetoothDirectLegacy(){
             throw new Error('Printer tidak mendukung layanan Bluetooth standar');
         }
         
-        status.innerText=`Memproses (${printerType.toUpperCase()}, ${paperSize===32?'58mm':'80mm'})...`;
+        status.innerText=`Memproses (ESC/POS, ${paperSize===32?'58mm':'80mm'})...`;
         
-        let receiptData;
-        if(printerType === 'tspl') {
-            // Build TSPL label
-            const tsplWidth = paperSize === 32 ? 58 : 80;
-            const tspl = new TsplBuilder(tsplWidth, 150); // height 150mm to fit receipt
-            tspl.init();
-            
-            // Draw content
-            let yPos = 20;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, data.store);
-            yPos += 40;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, data.address);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, data.phone);
-            yPos += 30;
-            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
-            yPos += 20;
-            
-            if(data.receipt_title) {
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, data.receipt_title);
-                yPos += 30;
-            }
-            
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Nota: " + data.number);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Waktu: " + data.date);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Kasir: " + data.cashier);
-            yPos += 30;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Pelanggan: " + data.customer);
-            yPos += 30;
-            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
-            yPos += 20;
-            
-            data.items.forEach(item => {
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, item.n);
-                yPos += 30;
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, item.q + " x " + formatIdr(item.p) + " = " + formatIdr(item.s));
-                yPos += 30;
-            });
-            
-            tspl.line(20, yPos, tsplWidth*8 - 20, yPos, 2);
-            yPos += 20;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 2, "TOTAL: " + formatIdr(data.total));
-            yPos += 50;
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Metode: " + data.method);
-            yPos += 30;
-            
-            if(data.cash > 0) {
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Bayar: " + formatIdr(data.cash));
-                yPos += 30;
-                tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, "Kembali: " + formatIdr(data.change));
-                yPos += 30;
-            }
-            
-            tspl.text(20, yPos, "TSS24.BF2", 0, 1, 1, data.receipt_footer_title || "*** TERIMA KASIH ***");
-            tspl.print(1);
-            receiptData = tspl.generate();
-        } else {
-            // Build ESC/POS receipt
-            const esc=new EscPosBuilder(paperSize);
-            esc.init();
-            const logoImg=document.getElementById('logo-img');
-            if(logoImg && logoImg.complete){esc.center();await esc.addImage(logoImg);}
-            esc.center();esc.bold(true);esc.add(data.store+"\n");esc.bold(false);
-            esc.add(data.address+"\n"+data.phone+"\n");esc.line();
-            if(data.receipt_title){esc.center();esc.bold(true);esc.add(data.receipt_title+"\n");esc.bold(false);}
-            esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nPelanggan: "+data.customer+"\n");
-            if(data.queue){esc.center();esc.big(true);esc.add("\nANTRIAN #"+data.queue+"\n\n");esc.big(false);}
-            esc.line();
-            data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
-            esc.line();
-            if(data.discount>0) esc.justify(data.discount_label,"-"+formatIdr(data.discount));
-            if(data.has_holiday_adjustment) esc.justify("Penyesuaian Hari Raya",(data.holiday_adjustment_total>=0?"+":"-")+formatIdr(Math.abs(data.holiday_adjustment_total)));
-            if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI " + data.loyalty_target + "X ***\n");esc.bold(false);esc.left();}
-            esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
-            esc.add("Metode: "+data.method+"\n");
-            if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}
-            esc.feed(1);esc.center();
-            esc.add((data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n");
-            if(data.has_holiday_adjustment){esc.add(data.holiday_greeting+"\n");}
-            if(data.receipt_footer_message){esc.add(String(data.receipt_footer_message)+"\n");}
-            if(data.receipt_footer_note){esc.add(String(data.receipt_footer_note)+"\n");}
-            if(data.receipt_powered_by){esc.add(String(data.receipt_powered_by)+"\n");}
-            esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
-            receiptData=esc.generate();
-        }
+        // Build ESC/POS receipt only
+        const esc=new EscPosBuilder(paperSize);
+        esc.init();
+        const logoImg=document.getElementById('logo-img');
+        if(logoImg && logoImg.complete){esc.center();await esc.addImage(logoImg);}
+        esc.center();esc.bold(true);esc.add(data.store+"\n");esc.bold(false);
+        esc.add(data.address+"\n"+data.phone+"\n");esc.line();
+        if(data.receipt_title){esc.center();esc.bold(true);esc.add(data.receipt_title+"\n");esc.bold(false);}
+        esc.left();esc.add("Nota : "+data.number+"\nWaktu: "+data.date+"\nKasir: "+data.cashier+"\nPelanggan: "+data.customer+"\n");
+        if(data.queue){esc.center();esc.big(true);esc.add("\nANTRIAN #"+data.queue+"\n\n");esc.big(false);}
+        esc.line();
+        data.items.forEach(item=>{esc.left();esc.add(item.n+"\n");esc.justify(item.q+" x "+formatIdr(item.p),formatIdr(item.s));});
+        esc.line();
+        if(data.discount>0) esc.justify(data.discount_label,"-"+formatIdr(data.discount));
+        if(data.has_holiday_adjustment) esc.justify("Penyesuaian Hari Raya",(data.holiday_adjustment_total>=0?"+":"-")+formatIdr(Math.abs(data.holiday_adjustment_total)));
+        if(data.is_loyalty_bonus){esc.center();esc.bold(true);esc.add("*** BONUS CUCI " + data.loyalty_target + "X ***\n");esc.bold(false);esc.left();}
+        esc.bold(true);esc.justify("TOTAL",formatIdr(data.total));esc.bold(false);
+        esc.add("Metode: "+data.method+"\n");
+        if(data.cash>0){esc.justify("Bayar",formatIdr(data.cash));esc.justify("Kembali",formatIdr(data.change));}
+        esc.feed(1);esc.center();
+        esc.add((data.receipt_footer_title || "*** TERIMA KASIH ***")+"\n");
+        if(data.has_holiday_adjustment){esc.add(data.holiday_greeting+"\n");}
+        if(data.receipt_footer_message){esc.add(String(data.receipt_footer_message)+"\n");}
+        if(data.receipt_footer_note){esc.add(String(data.receipt_footer_note)+"\n");}
+        if(data.receipt_powered_by){esc.add(String(data.receipt_powered_by)+"\n");}
+        esc.add("Dicetak pada: "+data.printed_at+"\n");esc.feed(3);
+        const receiptData=esc.generate();
         
         status.innerText="Mengirim data...";
         // Use smaller chunk size for better iOS compatibility
