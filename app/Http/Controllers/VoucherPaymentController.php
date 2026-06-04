@@ -24,6 +24,61 @@ class VoucherPaymentController extends Controller
         $this->whatsappService = $whatsappService;
     }
 
+    public function index()
+    {
+        $templates = VoucherTemplate::where('is_active', true)->get();
+        
+        return view('voucher-payment.index', compact('templates'));
+    }
+
+    public function createPayment(Request $request)
+    {
+        $request->validate([
+            'voucher_template_id' => 'required|exists:voucher_templates,id',
+            'customer_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+        ]);
+
+        $template = VoucherTemplate::findOrFail($request->voucher_template_id);
+        
+        // Generate reference ID
+        $referenceId = 'VOUCHER-' . time() . '-' . strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 5));
+        
+        // Create payment record
+        $payment = VoucherPayment::create([
+            'reference_id' => $referenceId,
+            'voucher_template_id' => $template->id,
+            'customer_name' => $request->customer_name,
+            'phone_number' => $request->phone_number,
+            'amount' => $template->price,
+            'status' => 'pending',
+        ]);
+
+        // Create transaction with Duitku (using QRIS as default)
+        $transaction = $this->duitkuService->createTransaction(
+            $referenceId,
+            $template->price,
+            'QR', // QRIS payment method code
+            $template->name,
+            $request->customer_name,
+            'customer@example.com',
+            $request->phone_number
+        );
+
+        // Update payment with QR URL if available
+        if (isset($transaction['paymentUrl'])) {
+            $payment->update([
+                'qr_url' => $transaction['paymentUrl'],
+            ]);
+        }
+
+        if (isset($transaction['success']) && $transaction['success'] === false) {
+            return back()->with('error', 'Gagal membuat transaksi: ' . ($transaction['message'] ?? 'Terjadi kesalahan'));
+        }
+
+        return redirect()->route('voucher.payment.show', $referenceId);
+    }
+
     public function show($referenceId)
     {
         $payment = VoucherPayment::where('reference_id', $referenceId)->firstOrFail();

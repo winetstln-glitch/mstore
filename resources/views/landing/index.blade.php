@@ -471,7 +471,7 @@
                                     <li><i class="fas fa-check-circle text-primary"></i> Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</li>
                                     <li><i class="fas fa-check-circle text-primary"></i> Profile: {{ $profile->rate_limit ?: '-' }}</li>
                                 </ul>
-                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                <a href="{{ route('voucher.payment.index') }}" class="btn btn-primary w-100 mt-auto">
                                     Pilih Voucher
                                 </a>
                             </div>
@@ -501,7 +501,7 @@
                                 </div>
                                 <div class="small text-muted mb-2">Durasi: {{ $formatVoucherDuration($profile->duration_seconds) }}</div>
                                 <div class="small text-muted mb-3">Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</div>
-                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                <a href="{{ route('voucher.payment.index') }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
                                     Beli Online
                                 </a>
                             </div>
@@ -516,7 +516,7 @@
                             </div>
                             <div class="pricing-body d-flex flex-column">
                                 <p class="text-muted mb-3">Voucher hotspot tersedia dan bisa dibeli langsung via portal online.</p>
-                                <a href="https://buymstore.online/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
+                                <a href="{{ route('voucher.payment.index') }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
                                     Beli Online
                                 </a>
                             </div>

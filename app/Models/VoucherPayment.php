@@ -9,6 +9,7 @@ class VoucherPayment extends Model
 {
     protected $fillable = [
         'reference_id',
+        'customer_name',
         'phone_number',
         'voucher_template_id',
         'amount',
