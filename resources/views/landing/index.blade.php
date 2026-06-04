@@ -439,39 +439,6 @@
             </div>
 
             <div class="fade-up mt-4">
-                <h5 class="fw-bold mb-2">Profile Voucher Hotspot</h5>
-                <div class="scroll-container">
-                    @forelse($voucherProfiles as $profile)
-                    <div class="scroll-item">
-                        <div class="card">
-                            <div class="pricing-header">
-                                <div class="speed">{{ $profile->name }}</div>
-                                <div class="text-muted">{{ $profile->rate_limit ?: 'Rate menyesuaikan' }}</div>
-                            </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <div class="price text-primary">
-                                    Rp {{ number_format((float) $profile->price, 0, ',', '.') }}
-                                </div>
-                                <ul class="features">
-                                    <li><i class="fas fa-check-circle text-primary"></i> Durasi: {{ $formatVoucherDuration($profile->duration_seconds) }}</li>
-                                    <li><i class="fas fa-check-circle text-primary"></i> Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</li>
-                                    <li><i class="fas fa-check-circle text-primary"></i> Profile: {{ $profile->rate_limit ?: '-' }}</li>
-                                </ul>
-                                <a href="{{ route('voucher.payment.index') }}" class="btn btn-primary w-100 mt-auto">
-                                    Pilih Voucher
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    @empty
-                    <div class="text-center w-100 py-2">
-                        <p class="text-muted">Profile voucher belum tersedia.</p>
-                    </div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div class="fade-up mt-4">
                 <h5 class="fw-bold mb-2">Beli Voucher Hotspot Online</h5>
                 <div class="scroll-container">
                     @forelse($voucherProfiles->take(6) as $profile)
