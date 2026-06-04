@@ -50,6 +50,61 @@ Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPayme
 Route::post('/voucher-payment/callback', [\App\Http\Controllers\VoucherPaymentController::class, 'callback'])->name('voucher.payment.callback');
 Route::get('/voucher-payment/return', [\App\Http\Controllers\VoucherPaymentController::class, 'return'])->name('voucher.payment.return');
 
+// Test Route for Duitku (Hanya untuk development!)
+if (app()->environment('local')) {
+    Route::get('/test-duitku', function () {
+        // Cek apakah sudah ada template voucher
+        $template = \App\Models\VoucherTemplate::first();
+        if (! $template) {
+            return 'Silakan buat template voucher terlebih dahulu di halaman voucher!';
+        }
+
+        // Buat test payment
+        $referenceId = 'TEST-' . time();
+        $payment = \App\Models\VoucherPayment::create([
+            'reference_id' => $referenceId,
+            'voucher_template_id' => $template->id,
+            'amount' => 10000,
+            'phone_number' => '6281234567890', // Ganti dengan nomor WhatsApp Anda untuk testing
+            'customer_name' => 'Test Customer',
+            'status' => 'pending',
+        ]);
+
+        // Hitung signature (mirip Duitku)
+        $merchantCode = \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+        $apiKey = \App\Models\Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
+        $signature = md5($merchantCode . $referenceId . '00' . $apiKey);
+
+        // Simulasikan callback success
+        $callbackData = [
+            'merchantCode' => $merchantCode,
+            'merchantOrderId' => $referenceId,
+            'statusCode' => '00',
+            'statusMessage' => 'Success',
+            'amount' => '10000',
+            'paymentCode' => 'QRIS',
+            'reference' => 'D1234567890',
+            'signature' => $signature,
+        ];
+
+        // Panggil method callback secara manual
+        $controller = new \App\Http\Controllers\VoucherPaymentController(
+            app(\App\Services\DuitkuService::class),
+            app(\App\Services\VoucherService::class),
+            app(\App\Services\WhatsAppService::class)
+        );
+
+        $request = new \Illuminate\Http\Request($callbackData);
+        $response = $controller->callback($request);
+
+        return response()->json([
+            'message' => 'Test callback berhasil dijalankan!',
+            'payment' => $payment->refresh(),
+            'response' => $response->getContent(),
+        ]);
+    });
+}
+
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
