@@ -11,9 +11,17 @@
                 <i class="fab fa-whatsapp text-success"></i> WhatsApp Bot Builder
             </h1>
         </div>
-        <a href="{{ route('whatsapp.builder.create') }}" class="btn btn-success">
-            <i class="fa-solid fa-plus"></i> Tambah Menu
-        </a>
+        <div class="d-flex gap-2">
+            <form method="POST" action="{{ route('whatsapp.builder.import-templates') }}">
+                @csrf
+                <button type="submit" class="btn btn-info">
+                    <i class="fa-solid fa-download"></i> Import Templates
+                </button>
+            </form>
+            <a href="{{ route('whatsapp.builder.create') }}" class="btn btn-success">
+                <i class="fa-solid fa-plus"></i> Tambah Menu
+            </a>
+        </div>
     </div>
 
     @if(session('success'))

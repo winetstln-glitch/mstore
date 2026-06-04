@@ -419,6 +419,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check-status');
 
     // WhatsApp Bot Builder
+    Route::post('whatsapp-builder/import-templates', [\App\Http\Controllers\WhatsAppBotBuilderController::class, 'importTemplates'])->name('whatsapp.builder.import-templates');
     Route::resource('whatsapp-builder', \App\Http\Controllers\WhatsAppBotBuilderController::class)->names([
         'index' => 'whatsapp.builder.index',
         'create' => 'whatsapp.builder.create',
@@ -426,7 +427,7 @@ Route::middleware('auth')->group(function () {
         'edit' => 'whatsapp.builder.edit',
         'update' => 'whatsapp.builder.update',
         'destroy' => 'whatsapp.builder.destroy',
-    ]);
+    ])->parameters(['whatsapp-builder' => 'menu']);
 
     Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
     Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');

@@ -121,4 +121,16 @@ class WhatsAppBotBuilderController extends Controller implements HasMiddleware
         return redirect()->route('whatsapp.builder.index')
             ->with('success', 'Menu WhatsApp berhasil dihapus!');
     }
+
+    public function importTemplates()
+    {
+        // Re-run the seeder to import all templates
+        \Artisan::call('db:seed', [
+            '--class' => 'WhatsAppMenuSeeder',
+            '--force' => true // Force in production (use cautiously)
+        ]);
+
+        return redirect()->route('whatsapp.builder.index')
+            ->with('success', 'Semua template berhasil diimpor!');
+    }
 }
