@@ -87,7 +87,7 @@ class VoucherController extends Controller implements HasMiddleware
             'duration_value' => ['nullable', 'integer', 'min:0'],
             'duration_unit' => ['nullable', 'in:menit,jam,hari,bulan'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
-            'price' => ['nullable', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
