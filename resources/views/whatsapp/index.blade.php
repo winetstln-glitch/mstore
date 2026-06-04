@@ -163,17 +163,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fa-solid fa-save"></i> Simpan Konfigurasi
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tab" data-bs-target="#test">
-                            <i class="fa-solid fa-paper-plane"></i> Buka Form Send Test
-                        </button>
-                    </div>
-                </form>
-
-                <hr class="my-4">
+                    <hr class="my-4">
                     
                     {{-- Duitku QRIS Settings --}}
                     <div class="card bg-light border-0 mb-3">
@@ -226,6 +216,16 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa-solid fa-save"></i> Simpan Konfigurasi
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tab" data-bs-target="#test">
+                            <i class="fa-solid fa-paper-plane"></i> Buka Form Send Test
+                        </button>
+                    </div>
+                </form>
 
                     <div class="alert alert-light border mt-3 mb-0">
                         <div class="fw-semibold mb-2">Panduan Singkat Pengaturan API WhatsApp & QRIS</div>
