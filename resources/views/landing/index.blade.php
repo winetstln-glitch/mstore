@@ -312,21 +312,7 @@
             return $speedText;
         };
         $formatVoucherDuration = function ($secondsValue) {
-            $seconds = (int) $secondsValue;
-            if ($seconds <= 0) {
-                return '-';
-            }
-            if ($seconds % 86400 === 0) {
-                return ($seconds / 86400).' Hari';
-            }
-            if ($seconds % 3600 === 0) {
-                return ($seconds / 3600).' Jam';
-            }
-            if ($seconds % 60 === 0) {
-                return ($seconds / 60).' Menit';
-            }
-
-            return $seconds.' Detik';
+            return format_duration($secondsValue);
         };
     @endphp
     <section id="packages" class="py-2 bg-black bg-opacity-25 internet-packages-section">

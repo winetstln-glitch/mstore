@@ -57,7 +57,7 @@
                         <tr>
                             <td>{{ $template->name }}</td>
                             <td>{{ $template->rate_limit ?: '-' }}</td>
-                            <td>{{ $template->duration_seconds ? $template->duration_seconds.' detik' : '-' }}</td>
+                            <td>{{ $template->duration_seconds ? format_duration($template->duration_seconds) : '-' }}</td>
                             <td>{{ $template->quota_mb ? $template->quota_mb.' MB' : '-' }}</td>
                             <td>Rp {{ number_format((float) $template->price, 0, ',', '.') }}</td>
                             <td>{!! $template->is_active ? '<span class="badge bg-success-subtle text-success">Aktif</span>' : '<span class="badge bg-secondary-subtle text-secondary">Nonaktif</span>' !!}</td>
@@ -130,7 +130,7 @@
                             <td>{{ $voucher->username }}</td>
                             <td>{{ $voucher->password }}</td>
                             <td>{{ $voucher->profile ?: '-' }}</td>
-                            <td>{{ $voucher->duration_seconds ? $voucher->duration_seconds.' detik' : '-' }}</td>
+                            <td>{{ $voucher->duration_seconds ? format_duration($voucher->duration_seconds) : '-' }}</td>
                             <td>{{ $voucher->quota_mb ? $voucher->quota_mb.' MB' : '-' }}</td>
                             <td><span class="badge bg-secondary-subtle text-secondary">{{ strtoupper($voucher->status) }}</span></td>
                             <td class="text-end">
@@ -170,9 +170,17 @@
                             <label class="form-label">Rate Limit</label>
                             <input type="text" name="rate_limit" class="form-control" placeholder="1M/1M">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Durasi (detik)</label>
-                            <input type="number" min="0" name="duration_seconds" class="form-control" placeholder="86400">
+                        <div class="col-md-4">
+                            <label class="form-label">Durasi</label>
+                            <div class="input-group">
+                                <input type="number" min="0" name="duration_value" class="form-control" placeholder="1">
+                                <select name="duration_unit" class="form-select">
+                                    <option value="menit">Menit</option>
+                                    <option value="jam" selected>Jam</option>
+                                    <option value="hari">Hari</option>
+                                    <option value="bulan">Bulan</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Quota (MB)</label>

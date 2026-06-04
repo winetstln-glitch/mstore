@@ -117,17 +117,7 @@
                                 @if($template->duration_seconds)
                                     <li class="feature-item">
                                         <i class="fas fa-clock"></i>
-                                        <span>
-                                            @if($template->duration_seconds % 86400 === 0)
-                                                {{ (int)($template->duration_seconds / 86400) }} Hari
-                                            @elseif($template->duration_seconds % 3600 === 0)
-                                                {{ (int)($template->duration_seconds / 3600) }} Jam
-                                            @elseif($template->duration_seconds % 60 === 0)
-                                                {{ (int)($template->duration_seconds / 60) }} Menit
-                                            @else
-                                                {{ $template->duration_seconds }} Detik
-                                            @endif
-                                        </span>
+                                        <span>{{ format_duration($template->duration_seconds) }}</span>
                                     </li>
                                 @endif
                                 @if($template->quota_mb)

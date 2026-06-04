@@ -84,12 +84,28 @@ class VoucherController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'rate_limit' => ['nullable', 'string', 'max:255'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'duration_value' => ['nullable', 'integer', 'min:0'],
+            'duration_unit' => ['nullable', 'in:menit,jam,hari,bulan'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
         ]);
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
+        
+        // Calculate duration in seconds
+        $durationSeconds = null;
+        if (isset($validated['duration_value']) && $validated['duration_value'] > 0) {
+            $unitMultipliers = [
+                'menit' => 60,
+                'jam' => 3600,
+                'hari' => 86400,
+                'bulan' => 2592000, // 30 days
+            ];
+            $durationSeconds = $validated['duration_value'] * $unitMultipliers[$validated['duration_unit'] ?? 'jam'];
+        }
+        
+        $validated['duration_seconds'] = $durationSeconds;
+        unset($validated['duration_value'], $validated['duration_unit']);
 
         VoucherTemplate::query()->create($validated);
 
