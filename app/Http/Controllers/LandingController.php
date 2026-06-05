@@ -81,11 +81,19 @@ class LandingController extends Controller
             $washAddonServices = collect([]);
         }
 
-        // Get WA Number from settings or default
+        // Get Store Identity from settings or default
         try {
             $waNumber = Setting::getValue('whatsapp_number', '6281234567890');
+            $storeName = Setting::getValue('store_name', config('app.name', 'MStore'));
+            $storeEmail = Setting::getValue('store_email', 'support@mstore.id');
+            $storePhone = Setting::getValue('store_phone', '081234567890');
+            $storeAddress = Setting::getValue('store_address', 'Jl. Raya Perjuangan No. 12a, Kebon Jeruk, Jakarta Barat');
         } catch (\Exception $e) {
             $waNumber = '6281234567890';
+            $storeName = config('app.name', 'MStore');
+            $storeEmail = 'support@mstore.id';
+            $storePhone = '081234567890';
+            $storeAddress = 'Jl. Raya Perjuangan No. 12a, Kebon Jeruk, Jakarta Barat';
         }
 
         // Safely fetch ODPs for Map
@@ -129,6 +137,6 @@ class LandingController extends Controller
             $clockOutEnd = '01:00';
         }
 
-        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'washMainServices', 'washAddonServices', 'waNumber', 'odps', 'voucherTemplates', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd'));
+        return view('landing.index', compact('packages', 'atkProducts', 'washServices', 'washMainServices', 'washAddonServices', 'waNumber', 'odps', 'voucherTemplates', 'canAttendanceFromLanding', 'todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'storeName', 'storeEmail', 'storePhone', 'storeAddress'));
     }
 }

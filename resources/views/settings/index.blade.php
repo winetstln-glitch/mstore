@@ -146,6 +146,10 @@
                                         <input type="text" class="form-control" id="store_phone" name="store_phone" value="{{ \App\Models\Setting::getValue('store_phone', '081234567890') }}">
                                     </div>
                                     <div class="col-md-6">
+                                        <label for="store_email" class="form-label fw-medium">Email Toko</label>
+                                        <input type="email" class="form-control" id="store_email" name="store_email" value="{{ \App\Models\Setting::getValue('store_email', 'support@mstore.id') }}">
+                                    </div>
+                                    <div class="col-md-6">
                                         <label for="whatsapp_number" class="form-label fw-medium">Nomor WhatsApp Landing</label>
                                         <input type="text" class="form-control" id="whatsapp_number" name="whatsapp_number" value="{{ \App\Models\Setting::getValue('whatsapp_number', '6281234567890') }}">
                                     </div>

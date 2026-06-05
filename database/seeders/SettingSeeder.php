@@ -120,6 +120,13 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Persentase Keperluan Alat (%)',
             ],
+            [
+                'key' => 'store_email',
+                'value' => 'support@mstore.id',
+                'group' => 'general',
+                'type' => 'text',
+                'label' => 'Email Toko',
+            ],
             // Accounting Settings
             [
                 'key' => 'accounting_retained_earnings_account_id',

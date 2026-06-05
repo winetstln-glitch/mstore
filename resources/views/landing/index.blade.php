@@ -690,7 +690,7 @@
                 <div class="col-lg-4 fade-up">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <img class="nav-logo" src="{{ asset('img/logo.png') }}" alt="Logo" style="filter: brightness(0) invert(1);">
-                        <span class="fw-bold fs-5">{{ config('app.name', 'MStore') }}</span>
+                        <span class="fw-bold fs-5">{{ $storeName }}</span>
                     </div>
                     <p class="text-secondary mb-3">MStore adalah penyedia layanan digital terlengkap mulai dari internet fiber optic, ATK store, layanan cuci kendaraan, instalasi CCTV, hingga layanan event dan wedding. Semua produk dan layanan dikelola langsung oleh perusahaan kami.</p>
                 </div>
@@ -699,19 +699,19 @@
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2 d-flex align-items-start gap-2">
                             <i class="fas fa-envelope mt-1 text-primary"></i>
-                            <span>support@mstore.id</span>
+                            <span>{{ $storeEmail }}</span>
                         </li>
                         <li class="mb-2 d-flex align-items-start gap-2">
                             <i class="fas fa-phone mt-1 text-primary"></i>
-                            <span>+62 812-3456-7890</span>
+                            <span>{{ $storePhone }}</span>
                         </li>
                         <li class="mb-2 d-flex align-items-start gap-2">
                             <i class="fab fa-whatsapp mt-1 text-primary"></i>
-                            <span>+62 812-3456-7890</span>
+                            <span>{{ $waNumber }}</span>
                         </li>
                         <li class="mb-2 d-flex align-items-start gap-2">
                             <i class="fas fa-location-dot mt-1 text-primary"></i>
-                            <span>Jl. Raya Perjuangan No. 12a, Kebon Jeruk, Jakarta Barat</span>
+                            <span>{{ $storeAddress }}</span>
                         </li>
                     </ul>
                 </div>
@@ -725,7 +725,7 @@
                 </div>
             </div>
             <div class="text-center mt-4 pt-4 border-top border-secondary border-opacity-25">
-                <p class="text-secondary small mb-0">© {{ date('Y') }} {{ config('app.name', 'MStore') }}. Semua hak cipta dilindungi.</p>
+                <p class="text-secondary small mb-0">© {{ date('Y') }} {{ $storeName }}. Semua hak cipta dilindungi.</p>
             </div>
         </div>
     </footer>
