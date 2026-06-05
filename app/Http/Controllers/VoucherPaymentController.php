@@ -52,6 +52,7 @@ class VoucherPaymentController extends Controller
             'phone_number' => $request->phone_number,
             'amount' => $template->price,
             'status' => 'pending',
+            'expires_at' => now()->addMinutes(1440), // 24 hours
         ]);
 
         // Create transaction with Duitku (using QRIS as default)
@@ -65,15 +66,16 @@ class VoucherPaymentController extends Controller
             $request->phone_number
         );
 
-        // Update payment with QR URL if available
-        if (isset($transaction['paymentUrl'])) {
+        // Check if Duitku response is successful
+        if (isset($transaction['statusCode']) && $transaction['statusCode'] === '00') {
+            // Update payment with QR URL if available
             $payment->update([
-                'qr_url' => $transaction['paymentUrl'],
+                'qr_url' => $transaction['paymentUrl'] ?? null,
             ]);
-        }
-
-        if (isset($transaction['success']) && $transaction['success'] === false) {
-            return back()->with('error', 'Gagal membuat transaksi: ' . ($transaction['message'] ?? 'Terjadi kesalahan'));
+        } else {
+            // Handle error
+            $payment->update(['status' => 'failed']);
+            return back()->with('error', 'Gagal membuat transaksi: ' . ($transaction['statusMessage'] ?? 'Terjadi kesalahan'));
         }
 
         return redirect()->route('voucher.payment.show', $referenceId);

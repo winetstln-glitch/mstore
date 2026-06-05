@@ -58,7 +58,16 @@
                                 Buka Halaman Pembayaran
                             </div>
                         </a>
-                        <p class="text-sm text-gray-500 mt-4">Kadaluarsa pada: {{ $payment->expires_at->format('d M Y H:i') }}</p>
+                        @if($payment->expires_at)
+                            <p class="text-sm text-gray-500 mt-4">Kadaluarsa pada: {{ $payment->expires_at->format('d M Y H:i') }}</p>
+                        @endif
+                    </div>
+                @else
+                    <div class="text-center">
+                        <p class="text-yellow-600 mb-4">QR Code sedang dipersiapkan, silakan refresh halaman dalam beberapa detik.</p>
+                        <button onclick="location.reload()" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold py-3 px-6 rounded-xl hover:from-yellow-600 hover:to-orange-600 transition shadow-lg">
+                            Refresh Halaman
+                        </button>
                     </div>
                 @endif
             @elseif($payment->status === 'paid')
