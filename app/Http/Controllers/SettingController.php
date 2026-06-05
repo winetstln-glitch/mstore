@@ -240,7 +240,7 @@ class SettingController extends Controller implements HasMiddleware
             if (is_array($value)) {
                 $value = json_encode($value);
             }
-            if ($key === 'mixradius_api_token' && ($value === null || $value === '')) {
+            if (in_array($key, ['mixradius_api_token', 'tr069_acs_password', 'tr069_connection_request_password']) && ($value === null || $value === '')) {
                 continue;
             }
 

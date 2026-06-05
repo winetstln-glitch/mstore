@@ -165,6 +165,49 @@ class SettingSeeder extends Seeder
                 'type' => 'boolean',
                 'label' => 'Gunakan RADIUS untuk Voucher (jika tidak, voucher dibuat di semua Mikrotik via API)',
             ],
+            // TR-069 (GenieACS) Settings
+            [
+                'key' => 'tr069_acs_url',
+                'value' => 'http://192.168.150.8:7547',
+                'group' => 'tr069',
+                'type' => 'text',
+                'label' => 'URL ACS (TR-069)',
+            ],
+            [
+                'key' => 'tr069_acs_username',
+                'value' => 'admin',
+                'group' => 'tr069',
+                'type' => 'text',
+                'label' => 'Username ACS (TR-069)',
+            ],
+            [
+                'key' => 'tr069_acs_password',
+                'value' => 'mstore01',
+                'group' => 'tr069',
+                'type' => 'password',
+                'label' => 'Password ACS (TR-069)',
+            ],
+            [
+                'key' => 'tr069_connection_request_username',
+                'value' => 'acs',
+                'group' => 'tr069',
+                'type' => 'text',
+                'label' => 'Username Connection Request (TR-069)',
+            ],
+            [
+                'key' => 'tr069_connection_request_password',
+                'value' => 'acsadmin12345',
+                'group' => 'tr069',
+                'type' => 'password',
+                'label' => 'Password Connection Request (TR-069)',
+            ],
+            [
+                'key' => 'tr069_inform_interval',
+                'value' => '200',
+                'group' => 'tr069',
+                'type' => 'number',
+                'label' => 'Interval Inform (Detik)',
+            ],
         ];
 
         foreach ($settings as $setting) {

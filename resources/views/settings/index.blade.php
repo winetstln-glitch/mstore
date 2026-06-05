@@ -119,6 +119,11 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-tr069" data-bs-toggle="tab" data-bs-target="#content-tr069" type="button" role="tab">
+                                <i class="fa-solid fa-ethernet me-1"></i> TR-069 (GenieACS)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tab-other" data-bs-toggle="tab" data-bs-target="#content-other" type="button" role="tab">
                                 <i class="fa-solid fa-layer-group me-1"></i> Lainnya
                             </button>
@@ -449,12 +454,47 @@
                             </div>
                         </div>
 
+                        <!-- TR-069 (GenieACS) -->
+                        <div class="tab-pane fade" id="content-tr069" role="tabpanel">
+                            <div class="mb-4 pb-3">
+                                <h6 class="fw-bold text-primary text-uppercase mb-3">Pengaturan Koneksi TR-069 (GenieACS)</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="tr069_acs_url" class="form-label fw-medium">URL ACS</label>
+                                        <input type="text" class="form-control" id="tr069_acs_url" name="tr069_acs_url" value="{{ \App\Models\Setting::getValue('tr069_acs_url', 'http://192.168.150.8:7547') }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tr069_acs_username" class="form-label fw-medium">Username ACS</label>
+                                        <input type="text" class="form-control" id="tr069_acs_username" name="tr069_acs_username" value="{{ \App\Models\Setting::getValue('tr069_acs_username', 'admin') }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tr069_acs_password" class="form-label fw-medium">Password ACS</label>
+                                        <input type="password" class="form-control" id="tr069_acs_password" name="tr069_acs_password" placeholder="••••••">
+                                        <div class="form-text">{{ __('Biarkan kosong jika tidak ingin mengubah password.') }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tr069_connection_request_username" class="form-label fw-medium">Username Connection Request</label>
+                                        <input type="text" class="form-control" id="tr069_connection_request_username" name="tr069_connection_request_username" value="{{ \App\Models\Setting::getValue('tr069_connection_request_username', 'acs') }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tr069_connection_request_password" class="form-label fw-medium">Password Connection Request</label>
+                                        <input type="password" class="form-control" id="tr069_connection_request_password" name="tr069_connection_request_password" placeholder="••••••">
+                                        <div class="form-text">{{ __('Biarkan kosong jika tidak ingin mengubah password.') }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tr069_inform_interval" class="form-label fw-medium">Interval Inform (Detik)</label>
+                                        <input type="number" class="form-control" id="tr069_inform_interval" name="tr069_inform_interval" value="{{ \App\Models\Setting::getValue('tr069_inform_interval', '200') }}" min="60">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Lainnya -->
                         <div class="tab-pane fade" id="content-other" role="tabpanel">
                             @foreach($settings as $group => $groupSettings)
                                 @php
                                     $normalizedGroup = strtolower((string) $group);
-                                    $isAttendanceGroup = in_array($normalizedGroup, ['attendance', 'schedule'], true);
+                                    $isAttendanceGroup = in_array($normalizedGroup, ['attendance', 'schedule', 'tr069'], true);
                                 @endphp
                                 @if($isAttendanceGroup)
                                     @continue
