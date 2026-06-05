@@ -48,9 +48,9 @@ Route::get('locale/{lang}', function ($lang) {
 // Voucher Payment Routes (Public)
 Route::get('/voucher-payment', [\App\Http\Controllers\VoucherPaymentController::class, 'index'])->name('voucher.payment.index');
 Route::post('/voucher-payment/create', [\App\Http\Controllers\VoucherPaymentController::class, 'createPayment'])->name('voucher.payment.create');
-Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPaymentController::class, 'show'])->name('voucher.payment.show');
 Route::post('/voucher-payment/callback', [\App\Http\Controllers\VoucherPaymentController::class, 'callback'])->name('voucher.payment.callback');
 Route::get('/voucher-payment/return', [\App\Http\Controllers\VoucherPaymentController::class, 'return'])->name('voucher.payment.return');
+Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPaymentController::class, 'show'])->name('voucher.payment.show');
 
 // Test Route for Duitku (Hanya untuk development!)
 if (app()->environment('local')) {
