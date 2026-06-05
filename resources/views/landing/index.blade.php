@@ -683,6 +683,53 @@
         </div>
     </section>
 
+    <!-- Footer / Contact Support Section -->
+    <footer class="bg-dark bg-opacity-90 text-white py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 fade-up">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <img class="nav-logo" src="{{ asset('img/logo.png') }}" alt="Logo" style="filter: brightness(0) invert(1);">
+                        <span class="fw-bold fs-5">{{ config('app.name', 'MStore') }}</span>
+                    </div>
+                    <p class="text-secondary mb-3">MStore adalah penyedia layanan digital terlengkap mulai dari internet fiber optic, ATK store, layanan cuci kendaraan, instalasi CCTV, hingga layanan event dan wedding. Semua produk dan layanan dikelola langsung oleh perusahaan kami.</p>
+                </div>
+                <div class="col-lg-4 fade-up">
+                    <h5 class="fw-bold mb-3">Kontak Support</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2 d-flex align-items-start gap-2">
+                            <i class="fas fa-envelope mt-1 text-primary"></i>
+                            <span>support@mstore.id</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-start gap-2">
+                            <i class="fas fa-phone mt-1 text-primary"></i>
+                            <span>+62 812-3456-7890</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-start gap-2">
+                            <i class="fab fa-whatsapp mt-1 text-primary"></i>
+                            <span>+62 812-3456-7890</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-start gap-2">
+                            <i class="fas fa-location-dot mt-1 text-primary"></i>
+                            <span>Jl. Raya Perjuangan No. 12a, Kebon Jeruk, Jakarta Barat</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 fade-up">
+                    <h5 class="fw-bold mb-3">Testing User</h5>
+                    <p class="text-secondary mb-2">Untuk keperluan testing oleh Duitku:</p>
+                    <div class="bg-black bg-opacity-25 p-3 rounded-3">
+                        <p class="mb-1"><i class="fas fa-user me-2 text-primary"></i><strong>Username:</strong> testuser@mstore.id</p>
+                        <p class="mb-0"><i class="fas fa-key me-2 text-primary"></i><strong>Password:</strong> Test12345!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4 pt-4 border-top border-secondary border-opacity-25">
+                <p class="text-secondary small mb-0">© {{ date('Y') }} {{ config('app.name', 'MStore') }}. Semua hak cipta dilindungi.</p>
+            </div>
+        </div>
+    </footer>
+
     <!-- Bottom Navigation Mobile -->
     <div class="bottom-bar fixed-bottom d-lg-none">
         <div class="container">
