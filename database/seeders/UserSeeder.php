@@ -49,5 +49,16 @@ class UserSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'testuser@mstore.id'],
+            [
+                'name' => 'Test User',
+                'username' => 'testuser',
+                'password' => 'Test12345!',
+                'role_id' => $adminRole->id,
+                'is_active' => true,
+            ]
+        );
     }
 }
