@@ -164,6 +164,69 @@ class MikrotikService
     }
 
     /**
+     * Create Hotspot User
+     */
+    public function createHotspotUser($username, $password, $profile = 'default', $limitUptime = null, $limitBytesTotal = null)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ip/hotspot/user/add');
+            $query->equal('name', $username);
+            $query->equal('password', $password);
+            $query->equal('profile', $profile);
+
+            if ($limitUptime) {
+                $query->equal('limit-uptime', $limitUptime);
+            }
+            if ($limitBytesTotal) {
+                $query->equal('limit-bytes-total', $limitBytesTotal);
+            }
+
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Add Hotspot User Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Remove Hotspot User
+     */
+    public function removeHotspotUser($username)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ip/hotspot/user/print');
+            $query->where('name', $username);
+            $users = $this->client->query($query)->read();
+
+            if (empty($users)) {
+                return false;
+            }
+            $id = $users[0]['.id'];
+
+            $query = new Query('/ip/hotspot/user/remove');
+            $query->equal('.id', $id);
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Remove Hotspot User Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
      * Kill Active Connection
      */
     public function killActive($name)

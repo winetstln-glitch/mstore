@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RadCheck;
 use App\Models\RadReply;
 use App\Models\Router;
+use App\Models\Setting;
 use App\Models\Voucher;
 use App\Models\VoucherBatch;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,11 @@ class VoucherService
 {
     public function generateBatch(string $profile, ?int $durationSeconds, ?int $quotaMb, int $count, bool $passwordSameAsUsername = true, ?int $userId = null): VoucherBatch
     {
+        $useRadius = Setting::getValue('use_radius_for_vouchers', '1') === '1';
+        
+        $limitUptime = $this->secondsToMikrotikUptime($durationSeconds);
+        $limitBytesTotal = $quotaMb ? $quotaMb * 1024 * 1024 : null; // MB to bytes
+
         $batch = VoucherBatch::create([
             'batch_code' => strtoupper(Str::random(10)),
             'profile' => $profile,
@@ -23,7 +29,9 @@ class VoucherService
             'created_by' => $userId,
         ]);
 
-        DB::transaction(function () use ($batch, $profile, $durationSeconds, $quotaMb, $count, $passwordSameAsUsername) {
+        DB::transaction(function () use ($batch, $profile, $durationSeconds, $quotaMb, $count, $passwordSameAsUsername, $useRadius, $limitUptime, $limitBytesTotal) {
+            $routers = Router::where('is_active', true)->get();
+            
             for ($i = 0; $i < $count; $i++) {
                 $username = strtoupper(Str::random(9));
                 $password = $passwordSameAsUsername ? $username : strtoupper(Str::random(9));
@@ -38,34 +46,91 @@ class VoucherService
                     'status' => 'unused',
                 ]);
 
-                RadCheck::create([
-                    'username' => $voucher->username,
-                    'attribute' => 'Cleartext-Password',
-                    'op' => ':=',
-                    'value' => $voucher->password ?? $voucher->username,
-                ]);
-
-                if ($profile) {
-                    RadReply::create([
+                if ($useRadius) {
+                    RadCheck::create([
                         'username' => $voucher->username,
-                        'attribute' => 'Mikrotik-Rate-Limit',
+                        'attribute' => 'Cleartext-Password',
                         'op' => ':=',
-                        'value' => $profile,
+                        'value' => $voucher->password ?? $voucher->username,
                     ]);
-                }
 
-                if ($durationSeconds) {
-                    RadReply::create([
-                        'username' => $voucher->username,
-                        'attribute' => 'Session-Timeout',
-                        'op' => ':=',
-                        'value' => (string) $durationSeconds,
-                    ]);
+                    if ($profile) {
+                        RadReply::create([
+                            'username' => $voucher->username,
+                            'attribute' => 'Mikrotik-Rate-Limit',
+                            'op' => ':=',
+                            'value' => $profile,
+                        ]);
+                    }
+
+                    if ($durationSeconds) {
+                        RadReply::create([
+                            'username' => $voucher->username,
+                            'attribute' => 'Session-Timeout',
+                            'op' => ':=',
+                            'value' => (string) $durationSeconds,
+                        ]);
+                    }
+                } else {
+                    // Add to all Mikrotik routers
+                    foreach ($routers as $router) {
+                        $mikrotikService = new MikrotikService($router);
+                        if ($mikrotikService->isConnected()) {
+                            $mikrotikService->createHotspotUser(
+                                $voucher->username,
+                                $voucher->password,
+                                $profile ?: 'default',
+                                $limitUptime,
+                                $limitBytesTotal
+                            );
+                        }
+                    }
                 }
             }
         });
 
         return $batch->fresh();
+    }
+    
+    protected function secondsToMikrotikUptime(?int $seconds): ?string
+    {
+        if (!$seconds) {
+            return null;
+        }
+        
+        if ($seconds >= 2592000) { // 30 days
+            $months = floor($seconds / 2592000);
+            $remaining = $seconds % 2592000;
+            if ($remaining == 0) {
+                return $months . 'mo';
+            }
+        }
+        
+        if ($seconds >= 86400) { // 1 day
+            $days = floor($seconds / 86400);
+            $remaining = $seconds % 86400;
+            if ($remaining == 0) {
+                return $days . 'd';
+            }
+        }
+        
+        if ($seconds >= 3600) { // 1 hour
+            $hours = floor($seconds / 3600);
+            $remaining = $seconds % 3600;
+            if ($remaining == 0) {
+                return $hours . 'h';
+            }
+        }
+        
+        if ($seconds >= 60) { // 1 minute
+            $minutes = floor($seconds / 60);
+            $remaining = $seconds % 60;
+            if ($remaining == 0) {
+                return $minutes . 'm';
+            }
+        }
+        
+        return $seconds . 's';
     }
 
     public function disconnectUser(string $username): bool

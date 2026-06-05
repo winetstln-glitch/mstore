@@ -157,6 +157,14 @@ class SettingSeeder extends Seeder
                 'type' => 'textarea',
                 'label' => 'Template Notifikasi Tiket Selesai',
             ],
+            // Voucher Settings
+            [
+                'key' => 'use_radius_for_vouchers',
+                'value' => '1',
+                'group' => 'voucher',
+                'type' => 'boolean',
+                'label' => 'Gunakan RADIUS untuk Voucher (jika tidak, voucher dibuat di semua Mikrotik via API)',
+            ],
         ];
 
         foreach ($settings as $setting) {
