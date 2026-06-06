@@ -113,15 +113,20 @@
                         <div class="row g-3" id="payment_methods">
                             @if(isset($paymentMethods['paymentFee']) && is_array($paymentMethods['paymentFee']))
                                 @foreach($paymentMethods['paymentFee'] as $method)
+                                    @php
+                                        $paymentMethod = $method['paymentMethod'] ?? '';
+                                        $paymentName = $method['paymentName'] ?? 'Unknown';
+                                        $paymentFee = $method['paymentFee'] ?? 0;
+                                    @endphp
                                     <div class="col-md-6">
-                                        <div class="payment-card p-3" data-method="{{ $method['paymentMethod'] }}">
+                                        <div class="payment-card p-3" data-method="{{ $paymentMethod }}">
                                             <div class="d-flex align-items-center">
                                                 <div class="me-3">
                                                     <i class="fas fa-wallet fa-2x text-success"></i>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <h6 class="fw-bold mb-0">{{ $method['paymentName'] }}</h6>
-                                                    <small class="text-muted">{{ $method['paymentFee'] > 0 ? 'Biaya: Rp ' . number_format($method['paymentFee'], 0, ',', '.') : 'Gratis' }}</small>
+                                                    <h6 class="fw-bold mb-0">{{ $paymentName }}</h6>
+                                                    <small class="text-muted">{{ $paymentFee > 0 ? 'Biaya: Rp ' . number_format($paymentFee, 0, ',', '.') : 'Gratis' }}</small>
                                                 </div>
                                                 <i class="fas fa-check-circle text-success d-none selected-icon"></i>
                                             </div>
