@@ -97,8 +97,8 @@ class WhatsAppService
                 if (trim($message) === '') {
                     throw new \Exception('Pesan WhatsApp kosong setelah render');
                 }
-                // Detect if using Fonnte (Popular Indonesian Provider)
-                if (str_contains($this->baseUrl, 'fonnte.com')) {
+                // Detect if using Fonnte or Wablas (Popular Indonesian Providers)
+                if (str_contains($this->baseUrl, 'fonnte.com') || str_contains($this->baseUrl, 'wablas.com')) {
                     $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->withHeaders([
                         'Authorization' => $this->apiKey,
                     ])->post($this->baseUrl.'/send', [
@@ -188,7 +188,7 @@ class WhatsAppService
                 if (trim($message) === '') {
                     throw new \Exception('Pesan WhatsApp kosong setelah render');
                 }
-                if (! str_contains($this->baseUrl, 'fonnte.com')) {
+                if (! str_contains($this->baseUrl, 'fonnte.com') && ! str_contains($this->baseUrl, 'wablas.com')) {
                     return $this->sendMessage($phone, $message, $category, $customerId);
                 }
 
@@ -315,7 +315,7 @@ class WhatsAppService
         }
 
         try {
-            if (str_contains($this->baseUrl, 'fonnte.com')) {
+            if (str_contains($this->baseUrl, 'fonnte.com') || str_contains($this->baseUrl, 'wablas.com')) {
                 $response = Http::timeout(8)
                     ->connectTimeout(3)
                     ->retry(1, 200)
