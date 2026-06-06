@@ -14,13 +14,17 @@ class WebhookRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'from' => ['required', 'string'],
-            'to' => ['required', 'string'],
+            // Support multiple formats (Fonnte, Wablas, generic)
+            'from' => ['nullable', 'string'],
+            'to' => ['nullable', 'string'],
+            'phone' => ['nullable', 'string'],
             'message' => ['nullable', 'string'],
             'media_url' => ['nullable', 'url'],
             'media_type' => ['nullable', 'string'],
-            'message_id' => ['required', 'string'],
-            'timestamp' => ['required', 'integer'],
+            'message_id' => ['nullable', 'string'],
+            'timestamp' => ['nullable', 'integer'],
+            'data' => ['nullable', 'array'],
+            'data.*' => ['nullable', 'array'],
         ];
     }
 }
