@@ -31,15 +31,42 @@ class VoucherPaymentController extends Controller
         return view('voucher-payment.index', compact('templates'));
     }
 
+    public function selectPaymentMethod(Request $request)
+    {
+        $request->validate([
+            'voucher_template_id' => 'required|exists:voucher_templates,id',
+            'customer_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $template = VoucherTemplate::findOrFail($request->voucher_template_id);
+        
+        // Get available payment methods
+        $paymentMethods = $this->duitkuService->getPaymentMethods($template->price);
+        
+        // Fallback if payment methods couldn't be retrieved
+        if (isset($paymentMethods['success']) && $paymentMethods['success'] === false) {
+            return back()->with('error', 'Gagal mendapatkan metode pembayaran: ' . ($paymentMethods['message'] ?? 'Unknown error'));
+        }
+        
+        return view('voucher-payment.select-payment', compact('template', 'paymentMethods', 'request'));
+    }
+
     public function createPayment(Request $request)
     {
         $request->validate([
             'voucher_template_id' => 'required|exists:voucher_templates,id',
             'customer_name' => 'required|string|max:255',
             'phone_number' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'payment_method' => 'nullable|string',
+            'use_pop' => 'boolean',
         ]);
 
         $template = VoucherTemplate::findOrFail($request->voucher_template_id);
+        $usePop = $request->boolean('use_pop', true);
+        $email = $request->email ?? 'customer@example.com';
         
         // Generate reference ID
         $referenceId = 'VOUCHER-' . time() . '-' . strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 5));
@@ -53,24 +80,39 @@ class VoucherPaymentController extends Controller
             'amount' => $template->price,
             'status' => 'pending',
             'expires_at' => now()->addMinutes(1440), // 24 hours
+            'use_pop' => $usePop,
         ]);
 
-        // Create transaction with Duitku (using QRIS as default)
-        $transaction = $this->duitkuService->createTransaction(
-            $referenceId,
-            $template->price,
-            'QR', // QRIS payment method code
-            $template->name,
-            $request->customer_name,
-            'customer@example.com',
-            $request->phone_number
-        );
+        // Create transaction with Duitku
+        if ($usePop) {
+            $transaction = $this->duitkuService->createPopTransaction(
+                $referenceId,
+                $template->price,
+                $template->name,
+                $request->customer_name,
+                $email,
+                $request->phone_number,
+                $request->payment_method
+            );
+        } else {
+            $transaction = $this->duitkuService->createApiTransaction(
+                $referenceId,
+                $template->price,
+                $request->payment_method ?? 'QR',
+                $template->name,
+                $request->customer_name,
+                $email,
+                $request->phone_number
+            );
+        }
 
         // Check if Duitku response is successful
         if (isset($transaction['statusCode']) && $transaction['statusCode'] === '00') {
-            // Update payment with QR URL if available
+            // Update payment with transaction data
             $payment->update([
                 'qr_url' => $transaction['paymentUrl'] ?? null,
+                'duitku_reference' => $transaction['reference'] ?? null,
+                'payment_method' => $request->payment_method,
             ]);
         } else {
             // Handle error
@@ -92,11 +134,14 @@ class VoucherPaymentController extends Controller
     {
         Log::info('Duitku Callback Received', $request->all());
 
-        if (! $this->duitkuService->verifyCallback($request->all())) {
+        // Verify callback using official library
+        $notif = $this->duitkuService->verifyCallback($request->all());
+        
+        if (! $notif) {
             return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
         }
 
-        $payment = VoucherPayment::where('reference_id', $request->merchantOrderId)->first();
+        $payment = VoucherPayment::where('reference_id', $notif['merchantOrderId'])->first();
         
         if (! $payment) {
             return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
@@ -106,18 +151,18 @@ class VoucherPaymentController extends Controller
             return response()->json(['success' => true, 'message' => 'Payment already processed']);
         }
 
-        if ($request->statusCode == '00') {
+        if ($notif['resultCode'] == '00') {
             // Payment success
             $payment->update([
                 'status' => 'paid',
                 'paid_at' => now(),
-                'payment_reference' => $request->reference,
-                'payment_method' => $request->paymentCode,
+                'payment_reference' => $notif['reference'],
+                'payment_method' => $notif['paymentCode'] ?? $payment->payment_method,
             ]);
 
             // Generate voucher
             $this->generateVoucherAndSendToUser($payment);
-        } elseif (in_array($request->statusCode, ['01', '02'])) {
+        } elseif (in_array($notif['resultCode'], ['01', '02'])) {
             // Payment failed or cancelled
             $payment->update([
                 'status' => 'failed',
@@ -132,6 +177,15 @@ class VoucherPaymentController extends Controller
         $payment = VoucherPayment::where('reference_id', $request->merchantOrderId)->firstOrFail();
         
         return view('voucher-payment.return', compact('payment'));
+    }
+
+    public function checkStatus($referenceId)
+    {
+        $payment = VoucherPayment::where('reference_id', $referenceId)->firstOrFail();
+        
+        $status = $this->duitkuService->checkTransaction($referenceId, !$payment->use_pop);
+        
+        return response()->json($status);
     }
 
     protected function generateVoucherAndSendToUser(VoucherPayment $payment)

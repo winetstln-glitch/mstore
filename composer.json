@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
+        "duitkupg/duitku-php": "dev-master",
         "evilfreelancer/routeros-api-php": "^1.6",
         "graze/telnet-client": "^2.3",
         "laravel/framework": "^12.0",

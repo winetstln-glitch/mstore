@@ -3,89 +3,195 @@
 namespace App\Services;
 
 use App\Models\Setting;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Duitku\Config;
+use Duitku\Pop;
+use Duitku\Api;
 
 class DuitkuService
 {
-    protected $merchantCode;
-    protected $apiKey;
-    protected $baseUrl;
+    protected $duitkuConfig;
     protected $callbackUrl;
     protected $returnUrl;
 
     public function __construct()
     {
-        $this->merchantCode = Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
-        $this->apiKey = Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
+        $merchantCode = Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+        $apiKey = Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
         $sandbox = Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
-        $this->baseUrl = $sandbox ? 'https://sandbox.duitku.com' : 'https://passport.duitku.com';
+        
+        $this->duitkuConfig = new Config($merchantCode, $apiKey);
+        $this->duitkuConfig->setSandboxMode($sandbox);
+        $this->duitkuConfig->setSanitizedMode(false);
+        $this->duitkuConfig->setDuitkuLogs(false);
+        
         $this->callbackUrl = route('voucher.payment.callback');
         $this->returnUrl = route('voucher.payment.return');
     }
 
-    public function createTransaction($referenceId, $amount, $paymentMethod, $productDetails, $customerName, $customerEmail, $customerPhone)
+    /**
+     * Create transaction using Duitku-POP
+     */
+    public function createPopTransaction($referenceId, $amount, $productDetails, $customerName, $customerEmail, $customerPhone, $paymentMethod = null)
     {
-        $timestamp = time();
-        $signature = md5($this->merchantCode . $amount . $referenceId . $this->apiKey);
-
-        $payload = [
-            'merchantCode' => $this->merchantCode,
-            'paymentAmount' => $amount,
-            'merchantOrderId' => $referenceId,
-            'productDetails' => $productDetails,
-            'customerName' => $customerName,
-            'customerEmail' => $customerEmail,
-            'customerPhone' => $customerPhone,
-            'merchantUserInfo' => $customerPhone,
-            'paymentMethod' => $paymentMethod,
-            'signature' => $signature,
-            'expiryPeriod' => 1440, // 24 hours in minutes
-            'callbackUrl' => $this->callbackUrl,
-            'returnUrl' => $this->returnUrl,
-        ];
-
         try {
-            $response = Http::timeout(30)->post($this->baseUrl . '/webapi/api/merchant/v2/inquiry', $payload);
-            $result = $response->json();
+            $params = [
+                'paymentAmount' => $amount,
+                'merchantOrderId' => $referenceId,
+                'productDetails' => $productDetails,
+                'additionalParam' => '',
+                'merchantUserInfo' => $customerPhone,
+                'customerVaName' => $customerName,
+                'email' => $customerEmail,
+                'phoneNumber' => $customerPhone,
+                'itemDetails' => [
+                    [
+                        'name' => $productDetails,
+                        'price' => $amount,
+                        'quantity' => 1
+                    ]
+                ],
+                'customerDetail' => [
+                    'firstName' => $customerName,
+                    'lastName' => '',
+                    'email' => $customerEmail,
+                    'phoneNumber' => $customerPhone
+                ],
+                'callbackUrl' => $this->callbackUrl,
+                'returnUrl' => $this->returnUrl,
+                'expiryPeriod' => 1440,
+            ];
+
+            if ($paymentMethod) {
+                $params['paymentMethod'] = $paymentMethod;
+            }
+
+            $response = Pop::createInvoice($params, $this->duitkuConfig);
             
-            Log::info('Duitku Create Transaction Response', ['payload' => $payload, 'response' => $result]);
+            Log::info('Duitku-POP Create Transaction Response', ['params' => $params, 'response' => $response]);
             
-            return $result;
+            return json_decode($response, true);
         } catch (\Exception $e) {
-            Log::error('Duitku Create Transaction Error', ['message' => $e->getMessage()]);
+            Log::error('Duitku-POP Create Transaction Error', ['message' => $e->getMessage()]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    public function checkTransaction($referenceId)
+    /**
+     * Create transaction using Duitku-API (direct)
+     */
+    public function createApiTransaction($referenceId, $amount, $paymentMethod, $productDetails, $customerName, $customerEmail, $customerPhone)
     {
-        $timestamp = time();
-        $signature = md5($this->merchantCode . $referenceId . $this->apiKey);
-
-        $payload = [
-            'merchantCode' => $this->merchantCode,
-            'merchantOrderId' => $referenceId,
-            'signature' => $signature,
-        ];
-
         try {
-            $response = Http::timeout(30)->post($this->baseUrl . '/webapi/api/merchant/transactionStatus', $payload);
-            $result = $response->json();
+            $params = [
+                'paymentAmount' => $amount,
+                'paymentMethod' => $paymentMethod,
+                'merchantOrderId' => $referenceId,
+                'productDetails' => $productDetails,
+                'additionalParam' => '',
+                'merchantUserInfo' => $customerPhone,
+                'customerVaName' => $customerName,
+                'email' => $customerEmail,
+                'phoneNumber' => $customerPhone,
+                'itemDetails' => [
+                    [
+                        'name' => $productDetails,
+                        'price' => $amount,
+                        'quantity' => 1
+                    ]
+                ],
+                'customerDetail' => [
+                    'firstName' => $customerName,
+                    'lastName' => '',
+                    'email' => $customerEmail,
+                    'phoneNumber' => $customerPhone
+                ],
+                'callbackUrl' => $this->callbackUrl,
+                'returnUrl' => $this->returnUrl,
+                'expiryPeriod' => 1440,
+            ];
+
+            $response = Api::createInvoice($params, $this->duitkuConfig);
             
-            Log::info('Duitku Check Transaction Response', ['payload' => $payload, 'response' => $result]);
+            Log::info('Duitku-API Create Transaction Response', ['params' => $params, 'response' => $response]);
             
-            return $result;
+            return json_decode($response, true);
+        } catch (\Exception $e) {
+            Log::error('Duitku-API Create Transaction Error', ['message' => $e->getMessage()]);
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Check transaction status (works for both POP and API)
+     */
+    public function checkTransaction($referenceId, $useApi = false)
+    {
+        try {
+            if ($useApi) {
+                $response = Api::transactionStatus($referenceId, $this->duitkuConfig);
+            } else {
+                $response = Pop::transactionStatus($referenceId, $this->duitkuConfig);
+            }
+            
+            Log::info('Duitku Check Transaction Response', ['referenceId' => $referenceId, 'response' => $response]);
+            
+            return json_decode($response, true);
         } catch (\Exception $e) {
             Log::error('Duitku Check Transaction Error', ['message' => $e->getMessage()]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    public function verifyCallback($data)
+    /**
+     * Get available payment methods
+     */
+    public function getPaymentMethods($amount, $useApi = false)
     {
-        $signature = md5($this->merchantCode . $data['merchantOrderId'] . $data['statusCode'] . $this->apiKey);
-        
-        return $signature === $data['signature'];
+        try {
+            if ($useApi) {
+                $response = Api::getPaymentMethod($amount, $this->duitkuConfig);
+            } else {
+                $response = Pop::getPaymentMethod($amount, $this->duitkuConfig);
+            }
+            
+            Log::info('Duitku Get Payment Methods Response', ['amount' => $amount, 'response' => $response]);
+            
+            return json_decode($response, true);
+        } catch (\Exception $e) {
+            Log::error('Duitku Get Payment Methods Error', ['message' => $e->getMessage()]);
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Verify callback (works for both POP and API)
+     */
+    public function verifyCallback($data, $useApi = false)
+    {
+        try {
+            if ($useApi) {
+                $callback = Api::callback($this->duitkuConfig);
+            } else {
+                $callback = Pop::callback($this->duitkuConfig);
+            }
+            
+            $notif = json_decode($callback, true);
+            
+            Log::info('Duitku Callback Verified', ['data' => $data, 'notif' => $notif]);
+            
+            return $notif;
+        } catch (\Exception $e) {
+            Log::error('Duitku Callback Verification Error', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Legacy method for backward compatibility
+     */
+    public function createTransaction($referenceId, $amount, $paymentMethod, $productDetails, $customerName, $customerEmail, $customerPhone)
+    {
+        return $this->createApiTransaction($referenceId, $amount, $paymentMethod, $productDetails, $customerName, $customerEmail, $customerPhone);
     }
 }

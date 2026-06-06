@@ -152,7 +152,7 @@
     <div class="modal fade" id="buyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: 16px; border: none;">
-                <form id="buyForm" action="{{ route('voucher.payment.create') }}" method="POST">
+                <form id="buyForm" action="{{ route('voucher.payment.select_payment') }}" method="POST">
                     @csrf
                     <input type="hidden" name="voucher_template_id" id="voucher_template_id">
                     <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border-top-left-radius: 16px; border-top-right-radius: 16px;">
@@ -183,6 +183,10 @@
                             </div>
                             <small class="text-muted">Voucher akan dikirim ke nomor ini</small>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="email">Email (Opsional)</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com">
+                        </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
@@ -210,6 +214,7 @@
                 document.getElementById('price_display').value = 'Rp ' + price.toLocaleString('id-ID');
                 document.getElementById('customer_name').value = '';
                 document.getElementById('phone_number').value = '';
+                document.getElementById('email').value = '';
                 
                 buyModal.show();
             });

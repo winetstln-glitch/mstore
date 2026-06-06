@@ -16,11 +16,13 @@ class VoucherPayment extends Model
         'status',
         'payment_method',
         'payment_reference',
+        'duitku_reference',
         'voucher_id',
         'expires_at',
         'paid_at',
         'qr_data',
         'qr_url',
+        'use_pop',
     ];
 
     protected $casts = [
