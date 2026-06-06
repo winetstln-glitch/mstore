@@ -34,7 +34,7 @@ class DuitkuService
             ]
         ]);
         
-        $this->duitkuConfig = new Config($merchantCode, $apiKey);
+        $this->duitkuConfig = new Config($apiKey, $merchantCode);
         $this->duitkuConfig->setSandboxMode($sandbox);
         $this->duitkuConfig->setSanitizedMode(false);
         $this->duitkuConfig->setDuitkuLogs(false);
