@@ -54,6 +54,45 @@ Route::get('/voucher-payment/return', [\App\Http\Controllers\VoucherPaymentContr
 Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPaymentController::class, 'show'])->name('voucher.payment.show');
 Route::get('/voucher-payment/{referenceId}/check-status', [\App\Http\Controllers\VoucherPaymentController::class, 'checkStatus'])->name('voucher.payment.check_status');
 
+// Debug Route for Duitku Credentials
+Route::get('/debug-duitku', function () {
+    echo "<h1>🔍 Duitku Debug</h1>";
+    
+    $merchantCode = \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+    $apiKey = \App\Models\Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
+    $sandbox = \App\Models\Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
+    
+    echo "<h2>1. Credentials:</h2>";
+    echo "<p><strong>Merchant Code:</strong> " . htmlspecialchars($merchantCode) . "</p>";
+    echo "<p><strong>API Key:</strong> " . htmlspecialchars(substr($apiKey, 0, 8) . "****") . "</p>";
+    echo "<p><strong>Sandbox Mode:</strong> " . ($sandbox ? "ON" : "OFF") . "</p>";
+    
+    echo "<h2>2. Config Class Parameters (swap check):</h2>";
+    try {
+        $config1 = new \Duitku\Config($apiKey, $merchantCode);
+        $config1->setSandboxMode($sandbox);
+        echo "<p><strong>Config 1 (correct order - apiKey first):</strong><br>";
+        echo "- getMerchantCode(): " . htmlspecialchars($config1->getMerchantCode()) . "<br>";
+        echo "- getApiKey(): " . htmlspecialchars(substr($config1->getApiKey(), 0, 8) . "****") . "</p>";
+        
+        // Test getPaymentMethod
+        echo "<h2>3. Test getPaymentMethod:</h2>";
+        try {
+            $result = \Duitku\Pop::getPaymentMethod(10000, $config1);
+            echo "<p style='color: green; font-weight: bold;'>✅ SUCCESS!</p>";
+            echo "<pre>" . htmlspecialchars(substr($result, 0, 2000)) . "</pre>";
+        } catch (Exception $e) {
+            echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
+        }
+    } catch (Exception $e) {
+        echo "<p style='color: red; font-weight: bold;'>❌ Config Error: " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+    
+    echo "<hr><p>Generated at: " . now() . "</p>";
+    echo "<p><a href='/voucher-payment'>Test Voucher Payment</a></p>";
+});
+
 // Test Route for Duitku (Hanya untuk development!)
 if (app()->environment('local')) {
     Route::get('/test-duitku', function () {
