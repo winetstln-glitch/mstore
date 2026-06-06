@@ -43,7 +43,7 @@ class VoucherPaymentController extends Controller
         $template = VoucherTemplate::findOrFail($request->voucher_template_id);
         
         // Get available payment methods
-        $paymentMethods = $this->duitkuService->getPaymentMethods($template->price);
+        $paymentMethods = $this->duitkuService->getPaymentMethod($template->price);
         
         // Fallback if payment methods couldn't be retrieved
         if (isset($paymentMethods['success']) && $paymentMethods['success'] === false) {

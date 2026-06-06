@@ -20,6 +20,20 @@ class DuitkuService
         $apiKey = Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
         $sandbox = Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
         
+        // Debug: log credential yang dipakai (masked untuk keamanan)
+        \Illuminate\Support\Facades\Log::debug('Duitku Configuration Debug', [
+            'merchant_code_provided' => !empty($merchantCode),
+            'merchant_code_length' => strlen($merchantCode),
+            'merchant_code_prefix' => substr($merchantCode, 0, 2) . '***',
+            'api_key_provided' => !empty($apiKey),
+            'api_key_length' => strlen($apiKey),
+            'sandbox_mode' => $sandbox,
+            'source' => [
+                'merchant_code_from_db' => Setting::getValue('duitku_merchant_code') ? 'db' : 'env',
+                'api_key_from_db' => Setting::getValue('duitku_api_key') ? 'db' : 'env',
+            ]
+        ]);
+        
         $this->duitkuConfig = new Config($merchantCode, $apiKey);
         $this->duitkuConfig->setSandboxMode($sandbox);
         $this->duitkuConfig->setSanitizedMode(false);
@@ -146,7 +160,7 @@ class DuitkuService
     /**
      * Get available payment methods
      */
-    public function getPaymentMethods($amount, $useApi = false)
+    public function getPaymentMethod($amount, $useApi = false)
     {
         try {
             if ($useApi) {
@@ -155,11 +169,11 @@ class DuitkuService
                 $response = Pop::getPaymentMethod($amount, $this->duitkuConfig);
             }
             
-            Log::info('Duitku Get Payment Methods Response', ['amount' => $amount, 'response' => $response]);
+            Log::info('Duitku Get Payment Method Response', ['amount' => $amount, 'response' => $response]);
             
             return json_decode($response, true);
         } catch (\Exception $e) {
-            Log::error('Duitku Get Payment Methods Error', ['message' => $e->getMessage()]);
+            Log::error('Duitku Get Payment Method Error', ['message' => $e->getMessage()]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
