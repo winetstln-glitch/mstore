@@ -42,12 +42,26 @@ class VoucherPaymentController extends Controller
 
         $template = VoucherTemplate::findOrFail($request->voucher_template_id);
         
-        // Get available payment methods
-        $paymentMethods = $this->duitkuService->getPaymentMethod($template->price);
+        // Initialize safe default structure
+        $paymentMethods = [
+            'paymentFee' => []
+        ];
         
-        // Fallback if payment methods couldn't be retrieved
-        if (isset($paymentMethods['success']) && $paymentMethods['success'] === false) {
-            return back()->with('error', 'Gagal mendapatkan metode pembayaran: ' . ($paymentMethods['message'] ?? 'Unknown error'));
+        try {
+            // Get available payment methods
+            $duitkuResponse = $this->duitkuService->getPaymentMethod($template->price);
+            
+            // Merge with safe default if response is valid
+            if (is_array($duitkuResponse)) {
+                $paymentMethods = array_merge($paymentMethods, $duitkuResponse);
+            }
+            
+            // Fallback if payment methods couldn't be retrieved
+            if (isset($paymentMethods['success']) && $paymentMethods['success'] === false) {
+                \Illuminate\Support\Facades\Log::warning('Duitku getPaymentMethod failed', ['response' => $paymentMethods]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in selectPaymentMethod', ['exception' => $e->getMessage()]);
         }
         
         return view('voucher-payment.select-payment', compact('template', 'paymentMethods', 'request'));
