@@ -122,6 +122,16 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
+        // Wablas format
+        if (isset($payload['data'][0]['message'])) {
+            $msg = $payload['data'][0];
+            return [
+                'phone' => $msg['phone'] ?? $msg['sender'] ?? null,
+                'message' => $msg['message'],
+                'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : false,
+            ];
+        }
+
         // Generic format
         if (isset($payload['message']) && isset($payload['phone'])) {
             return [
