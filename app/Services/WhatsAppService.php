@@ -132,9 +132,8 @@ class WhatsAppService
                 ]);
 
                 if (! $isSent) {
-                    $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
-                    $error = $this->humanizeProviderError($error);
-                    throw new \Exception('Gateway WhatsApp menolak pesan: '.$error);
+                    Log::error('WhatsApp failed to send: ' . ($providerValidation['error'] ?? $response->body()));
+                    return false;
                 }
 
                 return true;
@@ -150,7 +149,7 @@ class WhatsAppService
                     'error_message' => $e->getMessage(),
                 ]);
                 
-                throw $e; // Re-throw to let caller know
+                return false; // Do NOT re-throw - just return false
             }
         } else {
             $errorMsg = 'WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env';
@@ -165,7 +164,7 @@ class WhatsAppService
                 'error_message' => $errorMsg,
             ]);
             
-            throw new \Exception($errorMsg);
+            return false; // Do NOT throw - just return false
         }
     }
 
@@ -208,9 +207,8 @@ class WhatsAppService
                 ]);
 
                 if (! $isSent) {
-                    $error = $providerValidation['error'] ?: ('HTTP '.$response->status().' '.$response->body());
-                    $error = $this->humanizeProviderError($error);
-                    throw new \Exception('Gateway WhatsApp menolak pesan media: '.$error);
+                    Log::error('WhatsApp media failed to send: ' . ($providerValidation['error'] ?? $response->body()));
+                    return false;
                 }
 
                 return true;
@@ -220,7 +218,7 @@ class WhatsAppService
                     'status' => 'failed',
                     'response' => $e->getMessage(),
                 ]);
-                throw $e;
+                return false;
             }
         }
 
@@ -230,7 +228,7 @@ class WhatsAppService
             'status' => 'failed',
             'response' => $errorMsg,
         ]);
-        throw new \Exception($errorMsg);
+        return false;
     }
 
     public function sendInvoice(Customer $customer, $invoice)
