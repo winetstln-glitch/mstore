@@ -106,22 +106,47 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        // Wablas format
-        if (isset($payload['data'][0]['message'])) {
-            $msg = $payload['data'][0];
-            return [
-                'phone' => $msg['phone'] ?? $msg['sender'] ?? null,
-                'message' => $msg['message'],
-                'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : false,
-            ];
+        // Wablas format - various possibilities
+        if (isset($payload['data']) && is_array($payload['data'])) {
+            foreach ($payload['data'] as $msg) {
+                if (isset($msg['message'])) {
+                    // Extract phone number without @c.us suffix
+                    $phone = $msg['phone'] ?? $msg['sender'] ?? null;
+                    if ($phone && str_contains($phone, '@')) {
+                        $phone = explode('@', $phone)[0];
+                    }
+                    return [
+                        'phone' => $phone,
+                        'message' => $msg['message'],
+                        'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : (isset($msg['group_id']) && !empty($msg['group_id'])),
+                    ];
+                }
+            }
         }
 
-        // Generic format
+        // Generic format 1
         if (isset($payload['message']) && isset($payload['phone'])) {
+            $phone = $payload['phone'];
+            if ($phone && str_contains($phone, '@')) {
+                $phone = explode('@', $phone)[0];
+            }
             return [
-                'phone' => $payload['phone'],
+                'phone' => $phone,
                 'message' => $payload['message'],
-                'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : false,
+                'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
+            ];
+        }
+        
+        // Generic format 2 - maybe payload is single message object
+        if (isset($payload['message']) || isset($payload['text'])) {
+            $phone = $payload['phone'] ?? $payload['sender'] ?? $payload['from'] ?? null;
+            if ($phone && str_contains($phone, '@')) {
+                $phone = explode('@', $phone)[0];
+            }
+            return [
+                'phone' => $phone,
+                'message' => $payload['message'] ?? $payload['text'] ?? '',
+                'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
             ];
         }
 
