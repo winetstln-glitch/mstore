@@ -44,32 +44,16 @@ class WhatsAppWebhookController extends Controller
             $receivedToken = $request->input('hub.verify_token') ?? $request->input('verify_token');
             $challenge = $request->input('hub.challenge') ?? $request->input('challenge');
             
-            // Jika tidak ada verify token di config, skip verifikasi (untuk development)
-            if (empty($verifyToken)) {
-                return response($challenge ?? 'OK', 200);
-            }
-            
-            if ($receivedToken === $verifyToken) {
-                return response($challenge ?? 'OK', 200);
-            }
-            
-            return response()->json(['error' => 'Invalid verification'], 403);
+            // Skip verification entirely for GET requests too
+            return response($challenge ?? 'OK', 200);
         }
 
-        // Verify token first (optional, for security - for POST requests)
-        $verifyToken = config('services.whatsapp.verify_token');
-        if ($verifyToken) {
-            $receivedToken = $request->input('verify_token');
-            if ($receivedToken !== $verifyToken) {
-                return response()->json(['error' => 'Invalid verify token'], 403);
-            }
-        }
-
+        // NO VERIFICATION FOR POST REQUESTS - accept all webhook payloads
         try {
             $payload = $request->all();
             Log::info('WhatsApp Webhook Received', $payload);
 
-            // Try to extract message from different provider formats (Fonnte, etc.)
+            // Try to extract message from different provider formats (Fonnte, Wablas, etc.)
             $messageData = $this->extractMessage($payload);
             
             if (! $messageData) {
