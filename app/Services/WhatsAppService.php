@@ -183,10 +183,23 @@ class WhatsAppService
             if ($provider === 'wablas') {
                 // Wablas API
                 if ($isGroup) {
-                    // Coba dua cara untuk grup WABLAS:
-                    // 1. Cara pertama: POST /api/v2/group/text (Group Wablas)
-                    // 2. Cara kedua: GET /api/send-message (Group WhatsApp standar seperti di dokumentasi)
-                    try {
+                    // Cek apakah Group ID adalah Group WhatsApp standar (berisi @g.us)
+                    // Jika ya, langsung gunakan GET /api/send-message (seperti di dokumentasi)
+                    // Jika tidak, gunakan POST /api/v2/group/text (Group Wablas khusus)
+                    if (str_contains($phone, '@g.us')) {
+                        // Group WhatsApp standar
+                        Log::info('Using Wablas send-message GET method for WhatsApp group ID: ' . $phone);
+                        $response = Http::timeout(10)
+                            ->connectTimeout(5)
+                            ->retry(2, 300)
+                            ->get($this->baseUrl . '/api/send-message', [
+                                'phone' => $phone,
+                                'message' => $message,
+                                'token' => $this->apiKey
+                            ]);
+                    } else {
+                        // Group Wablas khusus
+                        Log::info('Using Wablas group/text POST method for Wablas group ID: ' . $phone);
                         $headers = [
                             'Content-Type' => 'application/json'
                         ];
@@ -207,30 +220,6 @@ class WhatsAppService
                                         'message' => $message
                                     ]
                                 ]
-                            ]);
-                        
-                        // Jika cara pertama gagal, coba cara kedua
-                        if (!$response->successful()) {
-                            Log::info('Wablas group/text failed, trying send-message GET method');
-                            $response = Http::timeout(10)
-                                ->connectTimeout(5)
-                                ->retry(2, 300)
-                                ->get($this->baseUrl . '/api/send-message', [
-                                    'phone' => $phone,
-                                    'message' => $message,
-                                    'token' => $this->apiKey
-                                ]);
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Wablas group message error, trying fallback method: ' . $e->getMessage());
-                        // Fallback ke cara kedua
-                        $response = Http::timeout(10)
-                            ->connectTimeout(5)
-                            ->retry(2, 300)
-                            ->get($this->baseUrl . '/api/send-message', [
-                                'phone' => $phone,
-                                'message' => $message,
-                                'token' => $this->apiKey
                             ]);
                     }
                 } else {
