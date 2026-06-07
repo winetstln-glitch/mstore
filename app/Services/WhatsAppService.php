@@ -223,22 +223,48 @@ class WhatsAppService
                             ]);
                     }
                 } else {
-                    // Wablas Individual Message
-                    $response = Http::timeout(10)
-                        ->connectTimeout(5)
-                        ->retry(2, 300)
-                        ->withHeaders([
-                            'Authorization' => $this->apiKey,
-                            'Content-Type' => 'application/json'
-                        ])
-                        ->post($this->baseUrl . '/api/v2/send-message', [
-                            'data' => [
-                                [
-                                    'phone' => $phone,
-                                    'message' => $message
+                    // Wablas Individual Message: coba dua cara
+                    try {
+                        // Cara pertama: POST /api/v2/send-message
+                        $response = Http::timeout(10)
+                            ->connectTimeout(5)
+                            ->retry(2, 300)
+                            ->withHeaders([
+                                'Authorization' => $this->apiKey,
+                                'Content-Type' => 'application/json'
+                            ])
+                            ->post($this->baseUrl . '/api/v2/send-message', [
+                                'data' => [
+                                    [
+                                        'phone' => $phone,
+                                        'message' => $message
+                                    ]
                                 ]
-                            ]
-                        ]);
+                            ]);
+                        
+                        // Jika cara pertama gagal, coba cara kedua: GET /api/send-message
+                        if (!$response->successful()) {
+                            Log::info('Wablas individual post failed, trying send-message GET method');
+                            $response = Http::timeout(10)
+                                ->connectTimeout(5)
+                                ->retry(2, 300)
+                                ->get($this->baseUrl . '/api/send-message', [
+                                    'phone' => $phone,
+                                    'message' => $message,
+                                    'token' => $this->apiKey
+                                ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Wablas individual message error, trying fallback method: ' . $e->getMessage());
+                        $response = Http::timeout(10)
+                            ->connectTimeout(5)
+                            ->retry(2, 300)
+                            ->get($this->baseUrl . '/api/send-message', [
+                                'phone' => $phone,
+                                'message' => $message,
+                                'token' => $this->apiKey
+                            ]);
+                    }
                 }
             } elseif ($provider === 'fonnte') {
                 // Fonnte API
