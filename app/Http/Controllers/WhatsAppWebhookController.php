@@ -169,20 +169,11 @@ class WhatsAppWebhookController extends Controller
             return null;
         }
 
-        // First, try WhatsAppAutoReplyService for default menus (halo, bantuan, absen, etc.)
+        // First, try WhatsAppAutoReplyService for default menus (halo, bantuan)
         $user = $this->autoReplyService->getUserByPhone($phone);
         $autoReply = $this->autoReplyService->getReply($message, $user);
         if ($autoReply) {
             return $autoReply;
-        }
-
-        // Check for pending payment
-        $pendingPayment = VoucherPayment::where('phone_number', $phone)->where('status', 'pending')->first();
-        if ($pendingPayment) {
-            // Maybe user wants to check status?
-            if (Str::contains($message, 'cek') || Str::contains($message, 'status')) {
-                return $this->checkPaymentStatus($pendingPayment);
-            }
         }
 
         // Next, check WhatsAppMenu (from builder) for matching keywords

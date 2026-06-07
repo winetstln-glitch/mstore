@@ -18,20 +18,8 @@ class WhatsAppAutoReplyService
             return $this->getGreetingReply($user);
         }
 
-        if ($this->matchKeyword($message, ['absen', 'clock in', 'masuk'])) {
-            return $this->getAttendanceReply($user);
-        }
-
-        if ($this->matchKeyword($message, ['pulang', 'clock out', 'keluar'])) {
-            return $this->getClockOutReply($user);
-        }
-
         if ($this->matchKeyword($message, ['bantuan', 'help', 'menu'])) {
             return $this->getHelpReply();
-        }
-
-        if ($this->matchKeyword($message, ['jam kerja', 'jadwal', 'shift'])) {
-            return $this->getScheduleReply();
         }
 
         return null;
@@ -76,11 +64,9 @@ class WhatsAppAutoReplyService
         $menuText = "📋 *Menu Bantuan WhatsApp Bot*\n\n";
         
         // Add default internal menus first
-        $menuText .= "🔹 *Menu Internal*\n";
+        $menuText .= "🔹 *Menu Utama*\n";
         $menuText .= "• *halo* - Sapa bot\n";
-        $menuText .= "• *absen* - Info cara absensi masuk\n";
-        $menuText .= "• *pulang* - Info cara absensi pulang\n";
-        $menuText .= "• *jam kerja* - Info jadwal kerja\n\n";
+        $menuText .= "• *bantuan* - Menampilkan menu ini\n\n";
         
         // Add menus from WhatsAppMenu (bot builder)
         $menus = WhatsAppMenu::active()
@@ -89,7 +75,7 @@ class WhatsAppAutoReplyService
             ->get();
 
         if ($menus->isNotEmpty()) {
-            $menuText .= "🔹 *Menu Utama*\n";
+            $menuText .= "🔹 *Layanan Kami*\n";
             foreach ($menus as $menu) {
                 $menuText .= "• *{$menu->keyword}*\n";
             }
