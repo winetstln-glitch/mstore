@@ -45,10 +45,11 @@ class WhatsAppLog extends Model
     public static function logMessage($type, $phoneNumber, $message, $status = 'pending', $payload = null, $errorMessage = null)
     {
         return self::create([
-            'type' => $type,
-            'phone_number' => $phoneNumber,
-            'message' => $message,
-            'status' => $status,
+            'type' => $type ?? 'unknown',
+            'phone_number' => $phoneNumber ?? 'unknown',
+            'message' => $message ?? '',
+            'status' => $status ?? 'pending',
+            'provider_message_id' => null, // Set to null explicitly
             'payload' => $payload,
             'error_message' => $errorMessage,
         ]);

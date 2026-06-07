@@ -91,10 +91,10 @@ class WhatsAppService
         // 1. Log to DB first - both notification_logs and whatsapp_logs
         $logId = DB::table('notification_logs')->insertGetId([
             'customer_id' => $customerId,
-            'target_phone' => $phone,
+            'target_phone' => $phone ?? '',
             'type' => 'whatsapp',
-            'category' => $category,
-            'message' => $message,
+            'category' => $category ?? 'general',
+            'message' => $message ?? '',
             'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),
@@ -273,10 +273,10 @@ class WhatsAppService
     {
         $logId = DB::table('notification_logs')->insertGetId([
             'customer_id' => $customerId,
-            'target_phone' => $phone,
+            'target_phone' => $phone ?? '',
             'type' => 'whatsapp',
-            'category' => $category,
-            'message' => $message,
+            'category' => $category ?? 'general',
+            'message' => $message ?? '',
             'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),
