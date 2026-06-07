@@ -216,29 +216,32 @@ class WhatsAppService
                     ]);
             }
 
-            $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+            $responseBody = $response->body();
+            $responseJson = $response->json();
+            
+            $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);
             $isSent = $response->successful() && $providerValidation['ok'];
 
             // Update both logs
             DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => $isSent ? 'sent' : 'failed',
-                'response' => $response->body(),
+                'response' => $responseBody,
             ]);
 
             $whatsappLog->update([
                 'status' => $isSent ? 'sent' : 'failed',
-                'payload' => $response->json(),
-                'error_message' => !$isSent ? ($providerValidation['error'] ?? $response->body()) : null,
+                'payload' => $responseJson,
+                'error_message' => !$isSent ? ($providerValidation['error'] ?? $responseBody) : null,
             ]);
 
             if (!$isSent) {
-                $errorMsg = 'WhatsApp gagal dikirim: ' . ($providerValidation['error'] ?? $response->body());
+                $errorMsg = 'WhatsApp gagal dikirim: ' . ($providerValidation['error'] ?? $responseBody);
                 Log::error($errorMsg);
                 return [
                     'success' => false,
                     'message' => $errorMsg,
                     'provider' => $provider,
-                    'response' => $response->json(),
+                    'response' => $responseJson,
                     'error' => $errorMsg
                 ];
             }
@@ -247,7 +250,7 @@ class WhatsAppService
                 'success' => true,
                 'message' => 'Message queued',
                 'provider' => $provider,
-                'response' => $response->json()
+                'response' => $responseJson
             ];
         } catch (\Exception $e) {
             $errorMsg = $e->getMessage();
@@ -327,21 +330,24 @@ class WhatsAppService
                     'countryCode' => '62'
                 ]);
 
-            $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+            $responseBody = $response->body();
+            $responseJson = $response->json();
+            
+            $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);
             $isSent = $response->successful() && $providerValidation['ok'];
             DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => $isSent ? 'sent' : 'failed',
-                'response' => $response->body(),
+                'response' => $responseBody,
             ]);
 
             if (!$isSent) {
-                $errorMsg = 'WhatsApp media gagal dikirim: ' . ($providerValidation['error'] ?? $response->body());
+                $errorMsg = 'WhatsApp media gagal dikirim: ' . ($providerValidation['error'] ?? $responseBody);
                 Log::error($errorMsg);
                 return [
                     'success' => false,
                     'message' => $errorMsg,
                     'provider' => $provider,
-                    'response' => $response->json(),
+                    'response' => $responseJson,
                     'error' => $errorMsg
                 ];
             }
@@ -350,7 +356,7 @@ class WhatsAppService
                 'success' => true,
                 'message' => 'Message queued',
                 'provider' => $provider,
-                'response' => $response->json()
+                'response' => $responseJson
             ];
         } catch (\Exception $e) {
             $errorMsg = $e->getMessage();
@@ -561,28 +567,20 @@ class WhatsAppService
 
     private function extractConnectionFlag(array $body): bool
     {
-        // Check for Wablas specific structure
-        if (isset($body['data']) && is_array($body['data'])) {
-            foreach ($body['data'] as $device) {
-                if (isset($device['status']) && $device['status'] === 'connected') {
-                    return true;
-                }
-            }
-        }
-        
-        // Check root status for Wablas
-        if (isset($body['status']) && $body['status'] === true) {
+        // Check for Wablas send success response {"status": true}
+        if (isset($body['status']) && is_bool($body['status']) && $body['status'] === true) {
             return true;
         }
 
-        // Check for status in root
-        if (isset($body['status'])) {
-            $status = $body['status'];
-            if (is_string($status) && in_array(strtolower($status), ['connected', 'online', 'true', '1'])) {
-                return true;
-            }
-            if (is_bool($status) && $status) {
-                return true;
+        // Check for Wablas device status with array
+        if (isset($body['data']) && is_array($body['data'])) {
+            foreach ($body['data'] as $device) {
+                if (is_array($device) && isset($device['status'])) {
+                    $deviceStatus = strtolower((string)$device['status']);
+                    if (in_array($deviceStatus, ['connected', 'online', 'aktif'])) {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -609,11 +607,7 @@ class WhatsAppService
             }
         }
 
-        if (isset($body['reason']) && is_string($body['reason']) && str_contains(strtolower($body['reason']), 'disconnected')) {
-            return false;
-        }
-
-        // Default: jika tidak ada indikasi disconnect, anggap terhubung
+        // Default: since send works, assume connected if no disconnect indication
         return true;
     }
 
