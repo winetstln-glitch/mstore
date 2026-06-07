@@ -328,6 +328,11 @@
                                     <label class="form-check-label" for="whatsapp_autoreply_enabled">Aktifkan Auto Reply</label>
                                 </div>
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Balasan untuk Keyword Tidak Dikenali</label>
+                                <textarea class="form-control" rows="4" name="whatsapp_unknown_keyword_reply" id="unknownKeywordTpl">{{ $unknownKeywordReply->value }}</textarea>
+                                <div class="form-text">Pesan yang akan dikirim ketika pengguna mengirim pesan yang tidak sesuai dengan keyword manapun.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="alert alert-light border">
@@ -338,9 +343,13 @@
                                 <div class="text-muted">Semua menu yang Anda buat di Bot Builder akan otomatis aktif sebagai auto reply!</div>
                                 <hr>
                                 <div class="fw-semibold mb-2">Contoh Perintah:</div>
-                                <div><code>menu/help</code> - Tampilkan menu</div>
-                                <div><code>harga/jasa</code> - Info harga jasa</div>
-                                <div><code>kontak/cs</code> - Hubungi CS</div>
+                                <div><code>halo</code> - Sapa bot</div>
+                                <div><code>bantuan</code> - Tampilkan menu</div>
+                                <div><code>paket internet</code> - Info paket internet</div>
+                                <div><code>cctv</code> - Info pemasangan CCTV</div>
+                                <div><code>wash</code> - Info jasa cuci kendaraan</div>
+                                <div><code>atk</code> - Info produk ATK</div>
+                                <div><code>wedding</code> - Info layanan pernikahan</div>
                             </div>
                         </div>
                     </div>

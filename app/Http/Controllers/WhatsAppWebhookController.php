@@ -185,11 +185,6 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        // Handle Voucher Purchases
-        if (Str::contains($message, 'voucher') || Str::contains($message, 'wifi') || Str::contains($message, 'internet')) {
-            return $this->handleVoucherRequest($phone, $message);
-        }
-
         // Next, check WhatsAppMenu (from builder) for matching keywords
         $menus = WhatsAppMenu::active()
             ->orderBy('priority', 'desc')
@@ -215,9 +210,14 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        // If no menu matches, try AI service for general queries
-        $aiResponse = $this->aiService->processChat($message);
-        return $this->renderAiResponse($aiResponse);
+        // If no menu matches, use custom reply from setting
+        $customReply = Setting::getValue('whatsapp_unknown_keyword_reply');
+        if ($customReply) {
+            return $customReply;
+        }
+
+        // Default fallback (if custom reply is not set)
+        return 'Maaf, saya tidak memahami pesan Anda. Silakan ketik "bantuan" untuk melihat daftar menu yang tersedia.';
     }
 
     /**

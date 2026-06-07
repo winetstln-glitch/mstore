@@ -126,6 +126,18 @@ class WhatsAppController extends Controller implements HasMiddleware
                 'label' => 'ISP Suspend Template',
             ]
         );
+        
+        // New setting: Unknown keyword reply
+        $defaultUnknownKeywordReply = "Maaf, saya tidak memahami pesan Anda. Silakan ketik \"bantuan\" untuk melihat daftar menu yang tersedia.";
+        $unknownKeywordReply = Setting::firstOrCreate(
+            ['key' => 'whatsapp_unknown_keyword_reply'],
+            [
+                'value' => $defaultUnknownKeywordReply,
+                'group' => 'whatsapp',
+                'type' => 'textarea',
+                'label' => 'Balasan untuk Keyword Tidak Dikenali',
+            ]
+        );
 
         $waApiUrl = Setting::firstOrCreate(
             ['key' => 'whatsapp_api_url'],
@@ -217,6 +229,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'ispReminderTemplate',
             'ispPaidTemplate',
             'ispSuspendTemplate',
+            'unknownKeywordReply',
             'waApiUrl',
             'waApiKey',
             'maskedWaApiKey',
@@ -242,6 +255,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_isp_reminder_template' => 'nullable|string',
             'whatsapp_isp_payment_success_template' => 'nullable|string',
             'whatsapp_isp_suspend_template' => 'nullable|string',
+            'whatsapp_unknown_keyword_reply' => 'nullable|string',
             'whatsapp_api_url' => 'nullable|string',
             'whatsapp_api_key' => 'nullable|string',
             'whatsapp_secret_key' => 'nullable|string',
@@ -298,6 +312,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_isp_reminder_template' => 'ISP Reminder Template',
             'whatsapp_isp_payment_success_template' => 'ISP Payment Success Template',
             'whatsapp_isp_suspend_template' => 'ISP Suspend Template',
+            'whatsapp_unknown_keyword_reply' => 'Balasan untuk Keyword Tidak Dikenali',
         ];
         foreach ($templateLabels as $k => $label) {
             if (! $request->has($k)) {
