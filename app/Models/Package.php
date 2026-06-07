@@ -15,4 +15,14 @@ class Package extends Model
         'is_active' => 'boolean',
         'is_promo_enabled' => 'boolean',
     ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function bandwidth()
+    {
+        return $this->belongsTo(Bandwidth::class);
+    }
 }

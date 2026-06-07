@@ -87,9 +87,17 @@ class WhatsAppService
     }
 
     /**
-     * Send Message with structured response
+     * Send Message with structured response (text only
      */
     public function sendMessage($phone, $message, $category = 'general', $customerId = null): array
+    {
+        return $this->sendMessageWithMediaUrl($phone, $message, null, null, $category, $customerId);
+    }
+
+    /**
+     * Send Message with optional media (image/document URL
+     */
+    public function sendMessageWithMediaUrl($phone, $message, $mediaUrl, $mediaType = 'image', $category = 'general', $customerId = null): array
     {
         // 1. Log to DB first - both notification_logs and whatsapp_logs
         $logId = DB::table('notification_logs')->insertGetId([
@@ -156,25 +164,8 @@ class WhatsAppService
         }
 
         $message = $this->normalizeMessage((string) $message);
-        if (trim($message) === '') {
-            $errorMsg = 'Pesan WhatsApp kosong setelah render.';
-            Log::error($errorMsg);
-            DB::table('notification_logs')->where('id', $logId)->update([
-                'status' => 'failed',
-                'response' => $errorMsg,
-            ]);
-            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
-            return [
-                'success' => false,
-                'message' => $errorMsg,
-                'provider' => $this->getProvider(),
-                'error' => $errorMsg
-            ];
-        }
-
-        // 3. Detect if target is group:
-        // - If contains @g.us → WhatsApp group
-        // - If does not contain @c.us AND length > 13 → likely Wablas group ID
+        
+        // 3. Detect if target is group
         $isGroup = str_contains($phone, '@g.us') || 
                    (!str_contains($phone, '@c.us') && strlen($phone) > 13);
         
@@ -183,126 +174,88 @@ class WhatsAppService
             $provider = $this->getProvider();
             $response = null;
 
-            if ($provider === 'wablas') {
-                // Wablas API
-                if ($isGroup) {
-                    // Cek apakah Group ID adalah Group WhatsApp standar (berisi @g.us)
-                    // Jika ya, langsung gunakan GET /api/send-message (seperti di dokumentasi)
-                    // Jika tidak, gunakan POST /api/v2/group/text (Group Wablas khusus)
-                    if (str_contains($phone, '@g.us')) {
-                        // Group WhatsApp standar
-                        Log::info('Using Wablas send-message GET method for WhatsApp group ID: ' . $phone);
-                        $response = Http::timeout(10)
-                            ->connectTimeout(5)
-                            ->retry(2, 300)
-                            ->get($this->baseUrl . '/api/send-message', [
-                                'phone' => $phone,
-                                'message' => $message,
-                                'token' => $this->apiKey
-                            ]);
-                    } else {
-                        // Group Wablas khusus
-                        Log::info('Using Wablas group/text POST method for Wablas group ID: ' . $phone);
-                        $headers = [
-                            'Content-Type' => 'application/json'
-                        ];
-                        if (!empty($this->secretKey)) {
-                            $headers['Authorization'] = $this->apiKey . '.' . $this->secretKey;
-                        } else {
-                            $headers['Authorization'] = $this->apiKey;
-                        }
-                        
-                        $response = Http::timeout(10)
-                            ->connectTimeout(5)
-                            ->retry(2, 300)
-                            ->withHeaders($headers)
-                            ->post($this->baseUrl . '/api/v2/group/text', [
-                                'data' => [
-                                    [
-                                        'group_id' => $phone,
-                                        'message' => $message
-                                    ]
-                                ]
-                            ]);
-                    }
-                } else {
-                    // Wablas Individual Message: coba dua cara
-                    try {
-                        // Cara pertama: POST /api/v2/send-message
-                        $response = Http::timeout(10)
-                            ->connectTimeout(5)
-                            ->retry(2, 300)
-                            ->withHeaders([
-                                'Authorization' => $this->apiKey,
-                                'Content-Type' => 'application/json'
-                            ])
-                            ->post($this->baseUrl . '/api/v2/send-message', [
-                                'data' => [
-                                    [
-                                        'phone' => $phone,
-                                        'message' => $message
-                                    ]
-                                ]
-                            ]);
-                        
-                        // Jika cara pertama gagal, coba cara kedua: GET /api/send-message
-                        if (!$response->successful()) {
-                            Log::info('Wablas individual post failed, trying send-message GET method');
-                            $response = Http::timeout(10)
-                                ->connectTimeout(5)
-                                ->retry(2, 300)
-                                ->get($this->baseUrl . '/api/send-message', [
-                                    'phone' => $phone,
-                                    'message' => $message,
-                                    'token' => $this->apiKey
-                                ]);
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Wablas individual message error, trying fallback method: ' . $e->getMessage());
-                        $response = Http::timeout(10)
-                            ->connectTimeout(5)
-                            ->retry(2, 300)
-                            ->get($this->baseUrl . '/api/send-message', [
-                                'phone' => $phone,
-                                'message' => $message,
-                                'token' => $this->apiKey
-                            ]);
+            if ($provider === 'fonnte') {
+                // Fonnte API
+                $payload = [
+                    'target' => $phone,
+                    'message' => $message,
+                    'countryCode' => '62'
+                ];
+                
+                if ($mediaUrl) {
+                    if ($mediaType === 'image') {
+                        $payload['url'] = $mediaUrl;
+                    } elseif ($mediaType === 'document') {
+                        $payload['file'] = $mediaUrl;
                     }
                 }
-            } elseif ($provider === 'fonnte') {
-                // Fonnte API
+                
                 $response = Http::timeout(10)
                     ->connectTimeout(5)
                     ->retry(2, 300)
                     ->withHeaders([
                         'Authorization' => $this->apiKey,
                     ])
-                    ->post($this->baseUrl . '/send', [
-                        'target' => $phone,
-                        'message' => $message,
-                        'countryCode' => '62'
-                    ]);
-            } else {
-                // Generic API
-                $response = Http::timeout(10)
-                    ->connectTimeout(5)
-                    ->retry(2, 300)
-                    ->post($this->baseUrl . '/send-message', [
-                        'api_key' => $this->apiKey,
+                    ->post($this->baseUrl . '/send', $payload);
+            } elseif ($provider === 'wablas') {
+                // Wablas API
+                if ($mediaUrl) {
+                    // Wablas with media
+                    $payload = [
                         'phone' => $phone,
                         'message' => $message,
-                    ]);
+                        'token' => $this->apiKey,
+                        'url' => $mediaUrl,
+                    ];
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->get($this->baseUrl . '/api/send-image', $payload);
+                } else {
+                    // Text only
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->get($this->baseUrl . '/api/send-message', [
+                            'phone' => $phone,
+                            'message' => $message,
+                            'token' => $this->apiKey
+                        ]);
+                }
+            } else {
+                // Generic API, fallback to text
+                if ($mediaUrl) {
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->post($this->baseUrl . '/send-message', [
+                            'api_key' => $this->apiKey,
+                            'phone' => $phone,
+                            'message' => $message,
+                            'media_url' => $mediaUrl,
+                            'media_type' => $mediaType,
+                        ]);
+                } else {
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->post($this->baseUrl . '/send-message', [
+                            'api_key' => $this->apiKey,
+                            'phone' => $phone,
+                            'message' => $message,
+                        ]);
+                }
             }
 
             $responseBody = $response->body();
             $responseJson = $response->json();
             
-            // Log detail request dan response untuk debugging
             Log::info('WhatsApp Request', [
                 'provider' => $this->getProvider(),
                 'url' => $response->effectiveUri(),
                 'phone' => $phone,
                 'is_group' => $isGroup,
+                'has_media' => !empty($mediaUrl),
                 'request_headers' => $response->transferStats?->getRequest()?->getHeaders(),
                 'response_status' => $response->status(),
                 'response_body' => $responseBody,
@@ -311,7 +264,6 @@ class WhatsAppService
             $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);
             $isSent = $response->successful() && $providerValidation['ok'];
 
-            // Update both logs
             DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => $isSent ? 'sent' : 'failed',
                 'response' => $responseBody,

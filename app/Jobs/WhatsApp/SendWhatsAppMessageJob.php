@@ -26,17 +26,18 @@ class SendWhatsAppMessageJob implements ShouldQueue
     public function handle(WhatsAppService $whatsAppService): void
     {
         try {
-            $success = $whatsAppService->sendMessage(
+            $result = $whatsAppService->sendMessageWithMediaUrl(
                 $this->phoneNumber,
                 $this->message,
                 $this->mediaUrl,
                 $this->mediaType
             );
 
-            if (!$success) {
+            if (!$result['success']) {
                 Log::error('Failed to send WhatsApp message', [
                     'phone' => $this->phoneNumber,
                     'message' => $this->message,
+                    'error' => $result['error'],
                 ]);
                 $this->release(60);
             }

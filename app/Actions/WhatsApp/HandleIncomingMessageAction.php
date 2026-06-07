@@ -37,22 +37,26 @@ class HandleIncomingMessageAction
 
         $from = $extracted['phone'];
         $message = $extracted['message'];
+        $mediaType = $extracted['media_type'] ?? null;
+        $mediaUrl = $extracted['media_url'] ?? null;
 
         Log::info('Received WhatsApp message', [
             'from' => $from,
             'message' => $message,
-            'payload' => $data,
+            'has_media' => !empty($mediaUrl),
+            'media_type' => $mediaType,
         ]);
 
         $user = $this->autoReplyService->getUserByPhone($from);
         $session = WhatsAppSession::getOrCreate($from);
 
+        // Pass media info to dynamic reply service for OCR/voice processing (Phase 3+)
         $reply = $this->integrationRouter->routeIncomingMessage($from, $message, $user);
 
         if (!$reply) {
-            $dynamicReply = $this->dynamicReplyService->getReply($message, $user, $session);
+            $dynamicReply = $this->dynamicReplyService->getReply($message, $user, $session, $mediaUrl, $mediaType);
 
-            if (!empty($dynamicReply['text'])) {
+            if (!empty($dynamicReply)) {
                 $this->processMultiFormatAction->execute($from, $dynamicReply);
                 return;
             }
@@ -73,11 +77,9 @@ class HandleIncomingMessageAction
         // Format 1: Fonnte
         if (isset($data['data']['messages']) && is_array($data['data']['messages'])) {
             foreach ($data['data']['messages'] as $msg) {
-                if (isset($msg['message'])) {
-                    return [
-                        'phone' => $msg['phone'] ?? $msg['sender'] ?? $msg['from'] ?? null,
-                        'message' => $msg['message'],
-                    ];
+                $extracted = $this->extractFromFonnteMessage($msg);
+                if ($extracted) {
+                    return $extracted;
                 }
             }
         }
@@ -85,11 +87,9 @@ class HandleIncomingMessageAction
         // Format 2: Wablas
         if (isset($data['data']) && is_array($data['data'])) {
             foreach ($data['data'] as $msg) {
-                if (isset($msg['message'])) {
-                    return [
-                        'phone' => $msg['phone'] ?? $msg['sender'] ?? $msg['from'] ?? null,
-                        'message' => $msg['message'],
-                    ];
+                $extracted = $this->extractFromWablasMessage($msg);
+                if ($extracted) {
+                    return $extracted;
                 }
             }
         }
@@ -98,10 +98,46 @@ class HandleIncomingMessageAction
         if (isset($data['message'])) {
             return [
                 'phone' => $data['phone'] ?? $data['sender'] ?? $data['from'] ?? null,
-                'message' => $data['message'],
+                'message' => $data['message'] ?? '',
+                'media_type' => $data['media_type'] ?? null,
+                'media_url' => $data['media_url'] ?? null,
             ];
         }
 
         return null;
+    }
+
+    private function extractFromFonnteMessage(array $msg): ?array
+    {
+        $phone = $msg['phone'] ?? $msg['sender'] ?? $msg['from'] ?? null;
+        if (!$phone) return null;
+
+        $text = $msg['message'] ?? $msg['caption'] ?? '';
+        $mediaType = $msg['type'] ?? null;
+        $mediaUrl = $msg['url'] ?? $msg['media_url'] ?? null;
+
+        return [
+            'phone' => $phone,
+            'message' => $text,
+            'media_type' => $mediaType,
+            'media_url' => $mediaUrl,
+        ];
+    }
+
+    private function extractFromWablasMessage(array $msg): ?array
+    {
+        $phone = $msg['phone'] ?? $msg['sender'] ?? $msg['from'] ?? null;
+        if (!$phone) return null;
+
+        $text = $msg['message'] ?? $msg['caption'] ?? '';
+        $mediaType = $msg['type'] ?? null;
+        $mediaUrl = $msg['url'] ?? $msg['media_url'] ?? null;
+
+        return [
+            'phone' => $phone,
+            'message' => $text,
+            'media_type' => $mediaType,
+            'media_url' => $mediaUrl,
+        ];
     }
 }
