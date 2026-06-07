@@ -561,7 +561,33 @@ class WhatsAppService
 
     private function extractConnectionFlag(array $body): bool
     {
-        foreach (['device_status', 'deviceStatus', 'connected', 'is_connected', 'isConnected'] as $key) {
+        // Check for Wablas specific structure
+        if (isset($body['data']) && is_array($body['data'])) {
+            foreach ($body['data'] as $device) {
+                if (isset($device['status']) && $device['status'] === 'connected') {
+                    return true;
+                }
+            }
+        }
+        
+        // Check root status for Wablas
+        if (isset($body['status']) && $body['status'] === true) {
+            return true;
+        }
+
+        // Check for status in root
+        if (isset($body['status'])) {
+            $status = $body['status'];
+            if (is_string($status) && in_array(strtolower($status), ['connected', 'online', 'true', '1'])) {
+                return true;
+            }
+            if (is_bool($status) && $status) {
+                return true;
+            }
+        }
+
+        // Check various flags
+        foreach (['device_status', 'deviceStatus', 'connected', 'is_connected', 'isConnected', 'active', 'status'] as $key) {
             if (! array_key_exists($key, $body)) {
                 continue;
             }
@@ -571,10 +597,10 @@ class WhatsAppService
             }
             if (is_string($value)) {
                 $normalized = strtolower(trim($value));
-                if (in_array($normalized, ['connected', 'connect', 'online', 'true', '1'], true)) {
+                if (in_array($normalized, ['connected', 'connect', 'online', 'true', '1', 'aktif'], true)) {
                     return true;
                 }
-                if (in_array($normalized, ['disconnected', 'disconnect', 'offline', 'false', '0'], true)) {
+                if (in_array($normalized, ['disconnected', 'disconnect', 'offline', 'false', '0', 'nonaktif'], true)) {
                     return false;
                 }
             }
@@ -587,6 +613,7 @@ class WhatsAppService
             return false;
         }
 
+        // Default: jika tidak ada indikasi disconnect, anggap terhubung
         return true;
     }
 
