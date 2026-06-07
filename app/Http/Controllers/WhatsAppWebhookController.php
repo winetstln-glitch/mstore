@@ -12,6 +12,7 @@ use App\Services\AiService;
 use App\Services\DuitkuService;
 use App\Services\VoucherService;
 use App\Services\WhatsAppService;
+use App\Services\WhatsApp\WhatsAppAutoReplyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -22,13 +23,15 @@ class WhatsAppWebhookController extends Controller
     protected $aiService;
     protected $voucherService;
     protected $duitkuService;
+    protected $autoReplyService;
 
-    public function __construct(WhatsAppService $whatsappService, AiService $aiService, VoucherService $voucherService, DuitkuService $duitkuService)
+    public function __construct(WhatsAppService $whatsappService, AiService $aiService, VoucherService $voucherService, DuitkuService $duitkuService, WhatsAppAutoReplyService $autoReplyService)
     {
         $this->whatsappService = $whatsappService;
         $this->aiService = $aiService;
         $this->voucherService = $voucherService;
         $this->duitkuService = $duitkuService;
+        $this->autoReplyService = $autoReplyService;
     }
 
     /**
@@ -166,6 +169,13 @@ class WhatsAppWebhookController extends Controller
             return null;
         }
 
+        // First, try WhatsAppAutoReplyService for default menus (halo, bantuan, absen, etc.)
+        $user = $this->autoReplyService->getUserByPhone($phone);
+        $autoReply = $this->autoReplyService->getReply($message, $user);
+        if ($autoReply) {
+            return $autoReply;
+        }
+
         // Check for pending payment
         $pendingPayment = VoucherPayment::where('phone_number', $phone)->where('status', 'pending')->first();
         if ($pendingPayment) {
@@ -180,7 +190,7 @@ class WhatsAppWebhookController extends Controller
             return $this->handleVoucherRequest($phone, $message);
         }
 
-        // First, check WhatsAppMenu for matching keywords
+        // Next, check WhatsAppMenu (from builder) for matching keywords
         $menus = WhatsAppMenu::active()
             ->orderBy('priority', 'desc')
             ->orderBy('created_at', 'desc')
