@@ -173,7 +173,7 @@ class WhatsAppService
         }
 
         // 3. Detect if target is group
-        $isGroup = str_contains($phone, '@g.us') || str_contains($phone, '@c.us') === false;
+        $isGroup = str_contains($phone, '@g.us');
         
         // 4. Send to API
         try {
