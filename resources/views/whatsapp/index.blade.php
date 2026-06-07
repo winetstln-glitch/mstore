@@ -97,6 +97,11 @@
                         <input type="password" class="form-control" name="whatsapp_api_key" placeholder="Isi hanya jika ingin mengganti API key">
                         <div class="form-text">Kosongkan jika tidak ingin mengubah API key yang sudah tersimpan.</div>
                     </div>
+                    <div class="mb-3">
+                        <label>WABLAS Secret Key (Opsional)</label>
+                        <input type="password" class="form-control" name="whatsapp_secret_key" placeholder="Isi Secret Key untuk WABLAS (jika dibutuhkan)">
+                        <div class="form-text">Kosongkan jika tidak menggunakan WABLAS atau secret key tidak dibutuhkan.</div>
+                    </div>
 
                     <div class="card bg-light border-0 mb-3">
                         <div class="card-header bg-transparent border-0 pb-0">

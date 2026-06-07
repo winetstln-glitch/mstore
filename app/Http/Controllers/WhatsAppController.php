@@ -145,6 +145,16 @@ class WhatsAppController extends Controller implements HasMiddleware
                 'label' => 'WhatsApp API Key',
             ]
         );
+        
+        $waSecretKey = Setting::firstOrCreate(
+            ['key' => 'whatsapp_secret_key'],
+            [
+                'value' => env('WHATSAPP_SECRET_KEY', ''),
+                'group' => 'whatsapp',
+                'type' => 'password',
+                'label' => 'WABLAS Secret Key',
+            ]
+        );
 
         // Duitku Settings
         $duitkuMerchantCode = Setting::firstOrCreate(
@@ -234,6 +244,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_isp_suspend_template' => 'nullable|string',
             'whatsapp_api_url' => 'nullable|string',
             'whatsapp_api_key' => 'nullable|string',
+            'whatsapp_secret_key' => 'nullable|string',
             'whatsapp_ticket_group_id' => 'nullable|string',
             'whatsapp_attendance_group_id' => 'nullable|string',
             'whatsapp_modem_up_group_id' => 'nullable|string',
@@ -305,6 +316,10 @@ class WhatsAppController extends Controller implements HasMiddleware
         if ($request->has('whatsapp_api_key') && $request->whatsapp_api_key !== '') {
             $key = trim((string) $request->whatsapp_api_key);
             $this->upsertWhatsappSetting('whatsapp_api_key', $key, 'password', 'WhatsApp API Key');
+        }
+        if ($request->has('whatsapp_secret_key')) {
+            $key = trim((string) $request->whatsapp_secret_key);
+            $this->upsertWhatsappSetting('whatsapp_secret_key', $key, 'password', 'WABLAS Secret Key');
         }
 
         // Save Duitku Settings

@@ -14,11 +14,14 @@ class WhatsAppService
     protected $apiKey;
 
     protected $baseUrl;
+    
+    protected $secretKey;
 
     public function __construct()
     {
         // Prefer DB settings, fallback to .env
         $this->apiKey = trim((string) Setting::getValue('whatsapp_api_key', config('services.whatsapp.key')));
+        $this->secretKey = trim((string) Setting::getValue('whatsapp_secret_key', config('services.whatsapp.secret_key', '')));
         $rawBaseUrl = trim((string) Setting::getValue('whatsapp_api_url', config('services.whatsapp.url')));
         if ($rawBaseUrl !== '' && ! preg_match('#^https?://#i', $rawBaseUrl)) {
             $rawBaseUrl = 'https://'.$rawBaseUrl;
@@ -169,28 +172,57 @@ class WhatsAppService
             ];
         }
 
-        // 3. Send to API
+        // 3. Detect if target is group
+        $isGroup = str_contains($phone, '@g.us') || str_contains($phone, '@c.us') === false;
+        
+        // 4. Send to API
         try {
             $provider = $this->getProvider();
             $response = null;
 
             if ($provider === 'wablas') {
-                // Wablas API v2
-                $response = Http::timeout(10)
-                    ->connectTimeout(5)
-                    ->retry(2, 300)
-                    ->withHeaders([
-                        'Authorization' => $this->apiKey,
+                // Wablas API
+                if ($isGroup) {
+                    // Wablas Group Message
+                    $headers = [
                         'Content-Type' => 'application/json'
-                    ])
-                    ->post($this->baseUrl . '/api/v2/send-message', [
-                        'data' => [
-                            [
-                                'phone' => $phone,
-                                'message' => $message
+                    ];
+                    if (!empty($this->secretKey)) {
+                        $headers['Authorization'] = $this->apiKey . '.' . $this->secretKey;
+                    } else {
+                        $headers['Authorization'] = $this->apiKey;
+                    }
+                    
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->withHeaders($headers)
+                        ->post($this->baseUrl . '/api/v2/group/text', [
+                            'data' => [
+                                [
+                                    'group_id' => $phone,
+                                    'message' => $message
+                                ]
                             ]
-                        ]
-                    ]);
+                        ]);
+                } else {
+                    // Wablas Individual Message
+                    $response = Http::timeout(10)
+                        ->connectTimeout(5)
+                        ->retry(2, 300)
+                        ->withHeaders([
+                            'Authorization' => $this->apiKey,
+                            'Content-Type' => 'application/json'
+                        ])
+                        ->post($this->baseUrl . '/api/v2/send-message', [
+                            'data' => [
+                                [
+                                    'phone' => $phone,
+                                    'message' => $message
+                                ]
+                            ]
+                        ]);
+                }
             } elseif ($provider === 'fonnte') {
                 // Fonnte API
                 $response = Http::timeout(10)
