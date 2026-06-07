@@ -183,28 +183,56 @@ class WhatsAppService
             if ($provider === 'wablas') {
                 // Wablas API
                 if ($isGroup) {
-                    // Wablas Group Message
-                    $headers = [
-                        'Content-Type' => 'application/json'
-                    ];
-                    if (!empty($this->secretKey)) {
-                        $headers['Authorization'] = $this->apiKey . '.' . $this->secretKey;
-                    } else {
-                        $headers['Authorization'] = $this->apiKey;
-                    }
-                    
-                    $response = Http::timeout(10)
-                        ->connectTimeout(5)
-                        ->retry(2, 300)
-                        ->withHeaders($headers)
-                        ->post($this->baseUrl . '/api/v2/group/text', [
-                            'data' => [
-                                [
-                                    'group_id' => $phone,
-                                    'message' => $message
+                    // Coba dua cara untuk grup WABLAS:
+                    // 1. Cara pertama: POST /api/v2/group/text (Group Wablas)
+                    // 2. Cara kedua: GET /api/send-message (Group WhatsApp standar seperti di dokumentasi)
+                    try {
+                        $headers = [
+                            'Content-Type' => 'application/json'
+                        ];
+                        if (!empty($this->secretKey)) {
+                            $headers['Authorization'] = $this->apiKey . '.' . $this->secretKey;
+                        } else {
+                            $headers['Authorization'] = $this->apiKey;
+                        }
+                        
+                        $response = Http::timeout(10)
+                            ->connectTimeout(5)
+                            ->retry(2, 300)
+                            ->withHeaders($headers)
+                            ->post($this->baseUrl . '/api/v2/group/text', [
+                                'data' => [
+                                    [
+                                        'group_id' => $phone,
+                                        'message' => $message
+                                    ]
                                 ]
-                            ]
-                        ]);
+                            ]);
+                        
+                        // Jika cara pertama gagal, coba cara kedua
+                        if (!$response->successful()) {
+                            Log::info('Wablas group/text failed, trying send-message GET method');
+                            $response = Http::timeout(10)
+                                ->connectTimeout(5)
+                                ->retry(2, 300)
+                                ->get($this->baseUrl . '/api/send-message', [
+                                    'phone' => $phone,
+                                    'message' => $message,
+                                    'token' => $this->apiKey
+                                ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Wablas group message error, trying fallback method: ' . $e->getMessage());
+                        // Fallback ke cara kedua
+                        $response = Http::timeout(10)
+                            ->connectTimeout(5)
+                            ->retry(2, 300)
+                            ->get($this->baseUrl . '/api/send-message', [
+                                'phone' => $phone,
+                                'message' => $message,
+                                'token' => $this->apiKey
+                            ]);
+                    }
                 } else {
                     // Wablas Individual Message
                     $response = Http::timeout(10)
@@ -250,6 +278,17 @@ class WhatsAppService
 
             $responseBody = $response->body();
             $responseJson = $response->json();
+            
+            // Log detail request dan response untuk debugging
+            Log::info('WhatsApp Request', [
+                'provider' => $this->getProvider(),
+                'url' => $response->effectiveUri(),
+                'phone' => $phone,
+                'is_group' => $isGroup,
+                'request_headers' => $response->transferStats?->getRequest()?->getHeaders(),
+                'response_status' => $response->status(),
+                'response_body' => $responseBody,
+            ]);
             
             $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);
             $isSent = $response->successful() && $providerValidation['ok'];
