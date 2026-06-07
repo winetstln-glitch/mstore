@@ -172,8 +172,11 @@ class WhatsAppService
             ];
         }
 
-        // 3. Detect if target is group
-        $isGroup = str_contains($phone, '@g.us');
+        // 3. Detect if target is group:
+        // - If contains @g.us → WhatsApp group
+        // - If does not contain @c.us AND length > 13 → likely Wablas group ID
+        $isGroup = str_contains($phone, '@g.us') || 
+                   (!str_contains($phone, '@c.us') && strlen($phone) > 13);
         
         // 4. Send to API
         try {
