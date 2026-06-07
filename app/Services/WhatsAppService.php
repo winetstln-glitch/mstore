@@ -391,15 +391,25 @@ class WhatsAppService
     public function sendPaymentSuccess(Customer $customer, $invoice): array
     {
         $tpl = Setting::where('key', 'whatsapp_isp_payment_success_template')->value('value');
+        $totalAmount = null;
+        
+        // Get total amount with safe checks
+        if (isset($invoice->total) && $invoice->total !== null) {
+            $totalAmount = $invoice->total;
+        } elseif (isset($invoice->amount) && $invoice->amount !== null) {
+            $totalAmount = $invoice->amount;
+        }
+        
         if ($tpl) {
             $vars = [
                 'nama_customer' => $customer->name,
                 'periode' => $invoice->period ?? '',
-                'total' => isset($invoice->amount) ? number_format($invoice->amount, 0, ',', '.') : (isset($invoice->total) ? number_format($invoice->total, 0, ',', '.') : ''),
+                'total' => $totalAmount !== null ? number_format($totalAmount, 0, ',', '.') : '',
             ];
             $message = $this->renderTemplate($tpl, $vars);
         } else {
-            $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".(isset($invoice->amount ?? $invoice->total) ? number_format($invoice->amount ?? $invoice->total, 0, ',', '.') : '0')." telah kami terima.\nLayanan internet Anda aktif.";
+            $formattedTotal = $totalAmount !== null ? number_format($totalAmount, 0, ',', '.') : '0';
+            $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp {$formattedTotal} telah kami terima.\nLayanan internet Anda aktif.";
         }
 
         return $this->sendMessage($customer->phone, $message, 'payment', $customer->id);
