@@ -4,6 +4,7 @@ namespace App\Services\WhatsApp;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\WhatsAppMenu;
 
 class WhatsAppAutoReplyService
 {
@@ -72,13 +73,32 @@ class WhatsAppAutoReplyService
 
     private function getHelpReply(): string
     {
-        return "📋 *Menu Bantuan WhatsApp Bot*\n\n" .
-               "• *halo* - Sapa bot\n" .
-               "• *absen* - Info cara absensi masuk\n" .
-               "• *pulang* - Info cara absensi pulang\n" .
-               "• *jam kerja* - Info jadwal kerja\n" .
-               "• *bantuan* - Menampilkan menu ini\n\n" .
-               "Terima kasih! 🙏";
+        $menuText = "📋 *Menu Bantuan WhatsApp Bot*\n\n";
+        
+        // Add default internal menus first
+        $menuText .= "🔹 *Menu Internal*\n";
+        $menuText .= "• *halo* - Sapa bot\n";
+        $menuText .= "• *absen* - Info cara absensi masuk\n";
+        $menuText .= "• *pulang* - Info cara absensi pulang\n";
+        $menuText .= "• *jam kerja* - Info jadwal kerja\n\n";
+        
+        // Add menus from WhatsAppMenu (bot builder)
+        $menus = WhatsAppMenu::active()
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($menus->isNotEmpty()) {
+            $menuText .= "🔹 *Menu Utama*\n";
+            foreach ($menus as $menu) {
+                $menuText .= "• *{$menu->keyword}*\n";
+            }
+            $menuText .= "\n";
+        }
+        
+        $menuText .= "Terima kasih! 🙏";
+        
+        return $menuText;
     }
 
     private function getScheduleReply(): string
