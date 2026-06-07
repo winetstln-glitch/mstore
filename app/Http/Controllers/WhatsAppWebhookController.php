@@ -170,8 +170,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         // First, try WhatsAppAutoReplyService for default menus (halo, bantuan)
-        $user = $this->autoReplyService->getUserByPhone($phone);
-        $autoReply = $this->autoReplyService->getReply($message, $user);
+        $autoReply = $this->autoReplyService->getReply($message);
         if ($autoReply) {
             return $autoReply;
         }
