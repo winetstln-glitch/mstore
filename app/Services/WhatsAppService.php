@@ -459,12 +459,29 @@ class WhatsAppService
 
         try {
             $provider = $this->getProvider();
+            $response = null;
+            
             if ($provider === 'wablas') {
-                $response = Http::timeout(8)
-                    ->connectTimeout(3)
-                    ->retry(1, 200)
-                    ->withHeaders(['Authorization' => $this->apiKey])
-                    ->post($this->baseUrl.'/api/v2/device');
+                // Try multiple endpoints for Wablas
+                $endpoints = ['/api/v2/device', '/device'];
+                foreach ($endpoints as $endpoint) {
+                    try {
+                        $response = Http::timeout(8)
+                            ->connectTimeout(3)
+                            ->withHeaders(['Authorization' => $this->apiKey])
+                            ->post($this->baseUrl . $endpoint);
+                        
+                        if ($response->successful()) {
+                            break;
+                        }
+                    } catch (\Exception $e) {
+                        // Continue to next endpoint
+                        Log::warning("Wablas endpoint {$endpoint} failed: " . $e->getMessage());
+                        continue;
+                    }
+                }
+                
+                // If all endpoints failed, still use last response
             } elseif ($provider === 'fonnte') {
                 $response = Http::timeout(8)
                     ->connectTimeout(3)
@@ -480,37 +497,32 @@ class WhatsAppService
                     ]);
             }
 
-            $body = $response->json();
+            $body = $response ? $response->json() : [];
             if (! is_array($body)) {
                 $body = [];
             }
 
-            $providerValidation = $this->validateProviderResponse($body, (string) $response->body());
-            if (! $response->successful() || ! $providerValidation['ok']) {
-                $error = $providerValidation['error'] ?: ('HTTP '.$response->status());
-                $error = $this->humanizeProviderError($error);
-                return [
-                    'ok' => false,
-                    'connected' => false,
-                    'message' => $error,
-                    'provider_response' => $response->body(),
-                ];
+            $connected = false;
+            $statusMessage = 'Device WhatsApp belum terhubung.';
+            
+            if ($response && $response->successful()) {
+                $connected = $this->extractConnectionFlag($body);
+                $statusMessage = $connected ? 'Device WhatsApp terhubung.' : 'Device WhatsApp belum terhubung.';
             }
 
-            $connected = $this->extractConnectionFlag($body);
-
             return [
-                'ok' => true,
+                'ok' => true, // Always ok for UI, just show connection status
                 'connected' => $connected,
-                'message' => $connected ? 'Device WhatsApp terhubung.' : 'Device WhatsApp belum terhubung.',
-                'provider_response' => $response->body(),
+                'message' => $statusMessage,
+                'provider_response' => $response ? $response->body() : null,
             ];
         } catch (\Throwable $e) {
+            Log::error('Check gateway status error: ' . $e->getMessage(), ['exception' => $e]);
             return [
-                'ok' => false,
+                'ok' => true,
                 'connected' => false,
-                'message' => $e->getMessage(),
-                'provider_response' => null,
+                'message' => 'Device WhatsApp belum terhubung.',
+                'provider_response' => $e->getMessage(),
             ];
         }
     }
