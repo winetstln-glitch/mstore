@@ -567,6 +567,27 @@ class SettingController extends Controller implements HasMiddleware
                 'label' => 'Ucapan Hari Raya Nota Wash',
             ],
             [
+                'key' => 'duitku_merchant_code',
+                'value' => '',
+                'group' => 'payment',
+                'type' => 'text',
+                'label' => 'Duitku Merchant Code',
+            ],
+            [
+                'key' => 'duitku_api_key',
+                'value' => '',
+                'group' => 'payment',
+                'type' => 'text',
+                'label' => 'Duitku API Key',
+            ],
+            [
+                'key' => 'duitku_sandbox',
+                'value' => '1',
+                'group' => 'payment',
+                'type' => 'boolean',
+                'label' => 'Duitku Sandbox Mode',
+            ],
+            [
                 'key' => 'wash_holiday_pricing_start_date',
                 'value' => '',
                 'group' => 'general',

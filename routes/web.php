@@ -71,16 +71,23 @@ Route::get('/debug-duitku', function () {
     try {
         $config1 = new \Duitku\Config($apiKey, $merchantCode);
         $config1->setSandboxMode($sandbox);
+        $config1->setDuitkuLogs(false); // Disable logs to avoid permission errors!
+        $config1->setSanitizedMode(false);
         echo "<p><strong>Config 1 (correct order - apiKey first):</strong><br>";
         echo "- getMerchantCode(): " . htmlspecialchars($config1->getMerchantCode()) . "<br>";
         echo "- getApiKey(): " . htmlspecialchars(substr($config1->getApiKey(), 0, 8) . "****") . "</p>";
         
-        // Test getPaymentMethod
-        echo "<h2>3. Test getPaymentMethod:</h2>";
+        // Test getPaymentMethod via our Service
+        echo "<h2>3. Test getPaymentMethod via Service:</h2>";
         try {
-            $result = \Duitku\Pop::getPaymentMethod(10000, $config1);
-            echo "<p style='color: green; font-weight: bold;'>✅ SUCCESS!</p>";
-            echo "<pre>" . htmlspecialchars(substr($result, 0, 2000)) . "</pre>";
+            $duitku = app()->make(\App\Services\DuitkuService::class);
+            $result = $duitku->getPaymentMethod(10000);
+            if (isset($result['success']) && !$result['success']) {
+                echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($result['message']) . "</p>";
+            } else {
+                echo "<p style='color: green; font-weight: bold;'>✅ SUCCESS!</p>";
+                echo "<pre>" . htmlspecialchars(json_encode($result, JSON_PRETTY_PRINT)) . "</pre>";
+            }
         } catch (Exception $e) {
             echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($e->getMessage()) . "</p>";
             echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";

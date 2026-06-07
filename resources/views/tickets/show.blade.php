@@ -135,11 +135,33 @@
                                 </button>
                             @endif
                         </div>
-                        <p class="text-body-secondary small mb-0">
+                        @if(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
+                        <form action="{{ route('tickets.updateLocation', $ticket) }}" method="POST" id="showTicketLocationForm">
+                            @csrf
+                            @method('PATCH')
+                            <div class="mb-2">
+                                <label for="show-location" class="form-label small">{{ __('Koordinat (Lintang, Bujur)') }}</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="show-location" name="location" value="{{ $ticket->location }}" placeholder="-6.200000, 106.816666">
+                                    <button class="btn btn-outline-secondary" type="button" id="show-getCurrentLocation">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text text-muted small">{{ __('Klik ikon bidik atau klik peta untuk menentukan lokasi.') }}</div>
+                            </div>
+                            <div id="ticket-show-map" class="mb-2" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary btn-sm">{{ __('Simpan Lokasi') }}</button>
+                            </div>
+                        </form>
+                        @else
+                        <p class="text-body-secondary small mb-2">
                             <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ticket->location) }}" target="_blank" class="text-decoration-none">
                                 <i class="fa-solid fa-map-location-dot me-1"></i> {{ Str::limit($ticket->location, 50) }} <i class="fa-solid fa-arrow-up-right-from-square ms-1 small"></i>
                             </a>
                         </p>
+                        <div id="ticket-show-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
+                        @endif
                     </div>
                 @elseif(!in_array($ticket->status, ['solved', 'closed']) && (Auth::user()->can('ticket.edit') || Auth::user()->can('ticket.complete') || $ticket->technicians->contains('id', Auth::id())))
                     <div class="mb-4">
@@ -699,7 +721,7 @@
 
 
 @push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
     .ticket-qr-reader video {
         width: 100% !important;
@@ -713,14 +735,222 @@
         min-height: 300px;
         border-radius: 8px;
     }
+    #ticket-show-map {
+        min-height: 300px;
+        border-radius: 8px;
+    }
+    /* Fix scroll di modal edit customer di mobile */
+    #editCustomerModal .modal-body {
+        overflow-y: auto;
+        max-height: 70vh;
+    }
+    /* Pastikan modal fullscreen di small devices berfungsi scroll */
+    @media (max-width: 575.98px) {
+        #editCustomerModal .modal-dialog {
+            margin: 0;
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+        }
+        #editCustomerModal .modal-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #editCustomerModal .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
 </style>
 @endpush
 
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
+    // Deklarasi variabel customer lat/lng dulu sebelum DOMContentLoaded
+    const ticketCustomerLat = {{ $ticket->customer && $ticket->customer->latitude !== null ? (float) $ticket->customer->latitude : 'null' }};
+    const ticketCustomerLng = {{ $ticket->customer && $ticket->customer->longitude !== null ? (float) $ticket->customer->longitude : 'null' }};
+    
+    // Pindahkan parseCoordinatePair ke luar DOMContentLoaded agar bisa diakses sebelum DOM ready
+    const parseCoordinatePair = (value) => {
+        const text = String(value || '').trim();
+        const match = text.match(/(-?\d{1,3}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
+        if (!match) return null;
+        const lat = Number(match[1]);
+        const lng = Number(match[2]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+        return { lat, lng };
+    };
+    
+    // Pindahkan getMostAccuratePosition juga
+    const getMostAccuratePosition = () => new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('{{ __('Geolocation tidak didukung.') }}'));
+            return;
+        }
+        let bestPosition = null;
+        let lastError = null;
+        let settled = false;
+        let watchId = null;
+        let timerId = null;
+        const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
+        const finalize = () => {
+            if (settled) return;
+            settled = true;
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (timerId) clearTimeout(timerId);
+            if (bestPosition) resolve(bestPosition);
+            else reject(lastError || new Error('{{ __('Lokasi tidak tersedia.') }}'));
+        };
+        const considerPosition = (position) => {
+            const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+            const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
+            if (!bestPosition || accuracy < bestAccuracy) {
+                bestPosition = position;
+            }
+            if (accuracy <= 20) finalize();
+        };
+        watchId = navigator.geolocation.watchPosition(
+            (position) => considerPosition(position),
+            (error) => { lastError = error; },
+            options
+        );
+        navigator.geolocation.getCurrentPosition(
+            (position) => considerPosition(position),
+            (error) => { lastError = error; },
+            options
+        );
+        timerId = setTimeout(finalize, 9000);
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi peta show ticket PERSIS SEPERTI odcs/create
+        let ticketShowMap;
+        let ticketShowMarker;
+        
+        console.log('=== TICKET SHOW MAP DEBUG ===');
+        console.log('document.getElementById("ticket-show-map") exists:', !!document.getElementById('ticket-show-map'));
+        console.log('typeof L:', typeof L);
+        console.log('ticketCustomerLat:', ticketCustomerLat);
+        console.log('ticketCustomerLng:', ticketCustomerLng);
+        console.log('$ticket->location:', '{{ $ticket->location }}');
+        
+        // Check jika div ticket-show-map ada (hanya jika ticket punya lokasi)
+        if (document.getElementById('ticket-show-map')) {
+            // Koordinat awal
+            let defaultLat = -6.2088;
+            let defaultLng = 106.8456;
+            let zoom = 17;
+            
+            // Coba parse dari $ticket->location
+            const ticketLocStr = '{{ $ticket->location }}';
+            const parsedCoords = parseCoordinatePair(ticketLocStr);
+            console.log('parsedCoords:', parsedCoords);
+            if (parsedCoords) {
+                defaultLat = parsedCoords.lat;
+                defaultLng = parsedCoords.lng;
+            } else if (typeof ticketCustomerLat !== 'undefined' && typeof ticketCustomerLng !== 'undefined' && Number.isFinite(ticketCustomerLat) && Number.isFinite(ticketCustomerLng)) {
+                defaultLat = ticketCustomerLat;
+                defaultLng = ticketCustomerLng;
+            }
+            console.log('Final default lat/lng/zoom:', defaultLat, defaultLng, zoom);
+
+            // Initialize map PERSIS seperti odcs
+            ticketShowMap = L.map('ticket-show-map').setView([defaultLat, defaultLng], zoom);
+            console.log('ticketShowMap initialized:', ticketShowMap);
+
+            const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            });
+
+            const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 22,
+                subdomains: ['mt0','mt1','mt2','mt3'],
+                attribution: '&copy; Google Maps'
+            });
+
+            const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            });
+
+            let currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            if (currentTheme === 'dark') {
+                darkLayer.addTo(ticketShowMap);
+            } else {
+                osm.addTo(ticketShowMap);
+            }
+
+            const baseMaps = {
+                "Dark Mode": darkLayer,
+                "Satellite (Google)": googleHybrid,
+                "Street (OSM)": osm
+            };
+            L.control.layers(baseMaps).addTo(ticketShowMap);
+
+            window.addEventListener('themeChanged', function(e) {
+                if (!ticketShowMap) return;
+                if (e.detail.theme === 'dark') {
+                    if (ticketShowMap.hasLayer(osm)) ticketShowMap.removeLayer(osm);
+                    if (ticketShowMap.hasLayer(googleHybrid)) ticketShowMap.removeLayer(googleHybrid);
+                    if (!ticketShowMap.hasLayer(darkLayer)) darkLayer.addTo(ticketShowMap);
+                } else {
+                    if (ticketShowMap.hasLayer(darkLayer)) ticketShowMap.removeLayer(darkLayer);
+                    if (!ticketShowMap.hasLayer(osm) && !ticketShowMap.hasLayer(googleHybrid)) osm.addTo(ticketShowMap);
+                }
+            });
+
+            // Marker
+            ticketShowMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(ticketShowMap);
+            
+            // Update input
+            const updateShowLoc = (lat, lng) => {
+                const showLocInput = document.getElementById('show-location');
+                if (showLocInput) {
+                    showLocInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                }
+            };
+
+            // Marker drag
+            ticketShowMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                updateShowLoc(pos.lat, pos.lng);
+                ticketShowMap.setView([pos.lat, pos.lng]);
+            });
+
+            // Map click
+            ticketShowMap.on('click', function(e) {
+                ticketShowMarker.setLatLng(e.latlng);
+                updateShowLoc(e.latlng.lat, e.latlng.lng);
+                ticketShowMap.setView([e.latlng.lat, e.latlng.lng]);
+            });
+
+            // Get current location button
+            const showGetLocBtn = document.getElementById('show-getCurrentLocation');
+            if (showGetLocBtn) {
+                showGetLocBtn.addEventListener('click', async function() {
+                    showGetLocBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    try {
+                        const pos = await getMostAccuratePosition();
+                        const lat = Number(pos.coords.latitude);
+                        const lng = Number(pos.coords.longitude);
+                        updateShowLoc(lat, lng);
+                        if (ticketShowMarker) ticketShowMarker.setLatLng([lat, lng]);
+                        ticketShowMap.setView([lat, lng], 17);
+                    } catch (err) {
+                        alert('{{ __('Kesalahan') }}: ' + (err?.message || '{{ __('Gagal mengambil lokasi.') }}'));
+                    } finally {
+                        showGetLocBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
+                    }
+                });
+            }
+        }
+        
         const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
         const openNetworkMapPickerBtn = document.getElementById('openNetworkMapPicker');
         const locationInput = document.getElementById('location');
@@ -743,7 +973,6 @@
         const custMacQrScannerWrapper = document.getElementById('custMacQrScannerWrapper');
         const custMacQrScanStatus = document.getElementById('custMacQrScanStatus');
         const custMacQrReaderElementId = 'ticket-cust-mac-qr-reader';
-        const custWanMacInput = document.getElementById('cust_wan_mac');
         const completionOnuInput = document.getElementById('completion_onu_serial');
         const completionWanMacInput = document.getElementById('completion_wan_mac');
         const startCompleteOnuQrScanBtn = document.getElementById('startCompleteOnuQrScan');
@@ -769,8 +998,6 @@
         let ticketLocationMap = null;
         let ticketLocationMarker = null;
         let mapPickerWindow = null;
-        const ticketCustomerLat = {{ $ticket->customer && $ticket->customer->latitude !== null ? (float) $ticket->customer->latitude : 'null' }};
-        const ticketCustomerLng = {{ $ticket->customer && $ticket->customer->longitude !== null ? (float) $ticket->customer->longitude : 'null' }};
         const scannerFormats = (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
             Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.CODE_128,
@@ -1121,17 +1348,6 @@
             completionMacQrScanStatus.textContent = message;
         };
 
-        const parseCoordinatePair = (value) => {
-            const text = String(value || '').trim();
-            const match = text.match(/(-?\d{1,3}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
-            if (!match) return null;
-            const lat = Number(match[1]);
-            const lng = Number(match[2]);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-            return { lat, lng };
-        };
-
         const setLocationValue = (lat, lng) => {
             if (!locationInput) return;
             locationInput.value = `${lat.toFixed(7)}, ${lng.toFixed(7)}`;
@@ -1157,63 +1373,13 @@
             }
         };
 
-        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('{{ __('Geolocation tidak didukung.') }}'));
-                return;
-            }
-
-            let bestPosition = null;
-            let lastError = null;
-            let settled = false;
-            let watchId = null;
-            let timerId = null;
-            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
-
-            const finalize = () => {
-                if (settled) return;
-                settled = true;
-                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-                if (timerId) clearTimeout(timerId);
-                if (bestPosition) {
-                    resolve(bestPosition);
-                    return;
-                }
-                reject(lastError || new Error('{{ __('Gagal mendapatkan lokasi.') }}'));
-            };
-
-            const considerPosition = (position) => {
-                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-                if (!bestPosition || accuracy < bestAccuracy) {
-                    bestPosition = position;
-                }
-                if (accuracy <= 20) {
-                    finalize();
-                }
-            };
-
-            watchId = navigator.geolocation.watchPosition(
-                (position) => considerPosition(position),
-                (error) => { lastError = error; },
-                options
-            );
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => considerPosition(position),
-                (error) => { lastError = error; },
-                options
-            );
-
-            timerId = setTimeout(finalize, 9000);
-        });
-
         const initTicketLocationMap = () => {
             const container = document.getElementById('ticket-map-picker');
             if (!container || typeof L === 'undefined') return;
+
+            // Hapus peta lama jika ada
             if (ticketLocationMap) {
-                setTimeout(() => ticketLocationMap.invalidateSize(), 120);
-                return;
+                ticketLocationMap.remove();
             }
 
             const inputCoords = parseCoordinatePair(locationInput ? locationInput.value : '');
@@ -1225,8 +1391,9 @@
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap'
             });
-            const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
                 maxZoom: 22,
+                subdomains: ['mt0','mt1','mt2','mt3'],
                 attribution: '&copy; Google Maps'
             });
             const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
