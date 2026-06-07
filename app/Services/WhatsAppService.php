@@ -30,6 +30,20 @@ class WhatsAppService
     }
 
     /**
+     * Detect provider type
+     */
+    protected function getProvider(): string
+    {
+        if (str_contains($this->baseUrl, 'wablas.com')) {
+            return 'wablas';
+        }
+        if (str_contains($this->baseUrl, 'fonnte.com')) {
+            return 'fonnte';
+        }
+        return 'generic';
+    }
+
+    /**
      * Simple template renderer supporting {{key}} and {{#each items}}...{{/each}}
      */
     public function renderTemplate(string $template, array $vars = []): string
@@ -70,9 +84,9 @@ class WhatsAppService
     }
 
     /**
-     * Send Message
+     * Send Message with structured response
      */
-    public function sendMessage($phone, $message, $category = 'general', $customerId = null)
+    public function sendMessage($phone, $message, $category = 'general', $customerId = null): array
     {
         // 1. Log to DB first - both notification_logs and whatsapp_logs
         $logId = DB::table('notification_logs')->insertGetId([
@@ -89,86 +103,173 @@ class WhatsAppService
         // Log to WhatsAppLog as well
         $whatsappLog = WhatsAppLog::logMessage('outgoing', $phone, $message, 'pending');
 
-        // 2. Send to API
-        if ($this->baseUrl && $this->apiKey) {
-            try {
-                // Format message neatly
-                $message = $this->normalizeMessage((string) $message);
-                if (trim($message) === '') {
-                    throw new \Exception('Pesan WhatsApp kosong setelah render');
-                }
-                // Detect if using Fonnte or Wablas (Popular Indonesian Providers)
-                if (str_contains($this->baseUrl, 'fonnte.com') || str_contains($this->baseUrl, 'wablas.com')) {
-                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->withHeaders([
-                        'Authorization' => $this->apiKey,
-                    ])->post($this->baseUrl.'/send', [
-                        'target' => $phone,
-                        'message' => $message,
-                        'countryCode' => '62', // Optional, default to Indonesia
-                    ]);
-                }
-                // Default / Generic API
-                else {
-                    $response = Http::timeout(8)->connectTimeout(3)->retry(2, 200)->post($this->baseUrl.'/send-message', [
-                        'api_key' => $this->apiKey,
-                        'phone' => $phone,
-                        'message' => $message,
-                    ]);
-                }
-
-                $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
-                $isSent = $response->successful() && $providerValidation['ok'];
-                
-                // Update both logs
-                DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => $isSent ? 'sent' : 'failed',
-                    'response' => $response->body(),
-                ]);
-                
-                $whatsappLog->update([
-                    'status' => $isSent ? 'sent' : 'failed',
-                    'payload' => $response->json(),
-                    'error_message' => !$isSent ? ($providerValidation['error'] ?? $response->body()) : null,
-                ]);
-
-                if (! $isSent) {
-                    Log::error('WhatsApp failed to send: ' . ($providerValidation['error'] ?? $response->body()));
-                    return false;
-                }
-
-                return true;
-            } catch (\Exception $e) {
-                Log::error('WhatsApp Error: '.$e->getMessage());
-                DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => 'failed',
-                    'response' => $e->getMessage(),
-                ]);
-                
-                $whatsappLog->update([
-                    'status' => 'failed',
-                    'error_message' => $e->getMessage(),
-                ]);
-                
-                return false; // Do NOT re-throw - just return false
-            }
-        } else {
-            $errorMsg = 'WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env';
+        // 2. Validation
+        if (empty($this->baseUrl)) {
+            $errorMsg = 'Konfigurasi WhatsApp URL tidak ditemukan.';
             Log::error($errorMsg);
             DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => 'failed',
                 'response' => $errorMsg,
             ]);
-            
-            $whatsappLog->update([
+            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
+
+        if (empty($this->apiKey)) {
+            $errorMsg = 'Konfigurasi WhatsApp API Key tidak ditemukan.';
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update([
                 'status' => 'failed',
-                'error_message' => $errorMsg,
+                'response' => $errorMsg,
             ]);
-            
-            return false; // Do NOT throw - just return false
+            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
+
+        if (empty(trim((string) $phone))) {
+            $errorMsg = 'Nomor WhatsApp kosong.';
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => 'failed',
+                'response' => $errorMsg,
+            ]);
+            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
+
+        $message = $this->normalizeMessage((string) $message);
+        if (trim($message) === '') {
+            $errorMsg = 'Pesan WhatsApp kosong setelah render.';
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => 'failed',
+                'response' => $errorMsg,
+            ]);
+            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
+
+        // 3. Send to API
+        try {
+            $provider = $this->getProvider();
+            $response = null;
+
+            if ($provider === 'wablas') {
+                // Wablas API v2
+                $response = Http::timeout(10)
+                    ->connectTimeout(5)
+                    ->retry(2, 300)
+                    ->withHeaders([
+                        'Authorization' => $this->apiKey,
+                        'Content-Type' => 'application/json'
+                    ])
+                    ->post($this->baseUrl . '/api/v2/send-message', [
+                        'data' => [
+                            [
+                                'phone' => $phone,
+                                'message' => $message
+                            ]
+                        ]
+                    ]);
+            } elseif ($provider === 'fonnte') {
+                // Fonnte API
+                $response = Http::timeout(10)
+                    ->connectTimeout(5)
+                    ->retry(2, 300)
+                    ->withHeaders([
+                        'Authorization' => $this->apiKey,
+                    ])
+                    ->post($this->baseUrl . '/send', [
+                        'target' => $phone,
+                        'message' => $message,
+                        'countryCode' => '62'
+                    ]);
+            } else {
+                // Generic API
+                $response = Http::timeout(10)
+                    ->connectTimeout(5)
+                    ->retry(2, 300)
+                    ->post($this->baseUrl . '/send-message', [
+                        'api_key' => $this->apiKey,
+                        'phone' => $phone,
+                        'message' => $message,
+                    ]);
+            }
+
+            $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+            $isSent = $response->successful() && $providerValidation['ok'];
+
+            // Update both logs
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => $isSent ? 'sent' : 'failed',
+                'response' => $response->body(),
+            ]);
+
+            $whatsappLog->update([
+                'status' => $isSent ? 'sent' : 'failed',
+                'payload' => $response->json(),
+                'error_message' => !$isSent ? ($providerValidation['error'] ?? $response->body()) : null,
+            ]);
+
+            if (!$isSent) {
+                $errorMsg = 'WhatsApp gagal dikirim: ' . ($providerValidation['error'] ?? $response->body());
+                Log::error($errorMsg);
+                return [
+                    'success' => false,
+                    'message' => $errorMsg,
+                    'provider' => $provider,
+                    'response' => $response->json(),
+                    'error' => $errorMsg
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Message queued',
+                'provider' => $provider,
+                'response' => $response->json()
+            ];
+        } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
+            Log::error('WhatsApp Error: ' . $errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => 'failed',
+                'response' => $errorMsg,
+            ]);
+            $whatsappLog->update(['status' => 'failed', 'error_message' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => 'API Error',
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
         }
     }
 
-    public function sendMessageWithMedia($phone, $message, $mediaBinary, $mediaFilename = 'receipt.png', $category = 'general', $customerId = null)
+    /**
+     * Send media message (backward compatible)
+     */
+    public function sendMessageWithMedia($phone, $message, $mediaBinary, $mediaFilename = 'receipt.png', $category = 'general', $customerId = null): array
     {
         $logId = DB::table('notification_logs')->insertGetId([
             'customer_id' => $customerId,
@@ -181,57 +282,90 @@ class WhatsAppService
             'updated_at' => now(),
         ]);
 
-        if ($this->baseUrl && $this->apiKey) {
-            try {
-                $message = $this->normalizeMessage((string) $message);
-                if (trim($message) === '') {
-                    throw new \Exception('Pesan WhatsApp kosong setelah render');
-                }
-                if (! str_contains($this->baseUrl, 'fonnte.com') && ! str_contains($this->baseUrl, 'wablas.com')) {
-                    return $this->sendMessage($phone, $message, $category, $customerId);
-                }
-
-                $response = Http::timeout(12)->connectTimeout(5)->retry(2, 200)->withHeaders([
-                    'Authorization' => $this->apiKey,
-                ])->attach('file', $mediaBinary, $mediaFilename)->post($this->baseUrl.'/send', [
-                    'target' => $phone,
-                    'message' => $message,
-                    'countryCode' => '62',
-                ]);
-
-                $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
-                $isSent = $response->successful() && $providerValidation['ok'];
-                DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => $isSent ? 'sent' : 'failed',
-                    'response' => $response->body(),
-                ]);
-
-                if (! $isSent) {
-                    Log::error('WhatsApp media failed to send: ' . ($providerValidation['error'] ?? $response->body()));
-                    return false;
-                }
-
-                return true;
-            } catch (\Exception $e) {
-                Log::error('WhatsApp Media Error: '.$e->getMessage());
-                DB::table('notification_logs')->where('id', $logId)->update([
-                    'status' => 'failed',
-                    'response' => $e->getMessage(),
-                ]);
-                return false;
-            }
+        // Validation
+        if (empty($this->baseUrl) || empty($this->apiKey) || empty(trim((string) $phone))) {
+            $errorMsg = 'Konfigurasi atau nomor WhatsApp tidak lengkap.';
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update(['status' => 'failed', 'response' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
         }
 
-        $errorMsg = 'WhatsApp Configuration missing. Set WHATSAPP_API_URL and WHATSAPP_API_KEY in .env';
-        Log::error($errorMsg);
-        DB::table('notification_logs')->where('id', $logId)->update([
-            'status' => 'failed',
-            'response' => $errorMsg,
-        ]);
-        return false;
+        $message = $this->normalizeMessage((string) $message);
+        if (trim($message) === '') {
+            $errorMsg = 'Pesan WhatsApp kosong.';
+            Log::error($errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update(['status' => 'failed', 'response' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => $errorMsg,
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
+
+        // For now, fallback to text message if not Fonnte
+        $provider = $this->getProvider();
+        if ($provider !== 'fonnte') {
+            Log::warning('sendMessageWithMedia not fully supported for ' . $provider . ', falling back to text');
+            return $this->sendMessage($phone, $message, $category, $customerId);
+        }
+
+        try {
+            $response = Http::timeout(15)
+                ->connectTimeout(5)
+                ->retry(2, 300)
+                ->withHeaders(['Authorization' => $this->apiKey])
+                ->attach('file', $mediaBinary, $mediaFilename)
+                ->post($this->baseUrl . '/send', [
+                    'target' => $phone,
+                    'message' => $message,
+                    'countryCode' => '62'
+                ]);
+
+            $providerValidation = $this->validateProviderResponse($response->json(), $response->body());
+            $isSent = $response->successful() && $providerValidation['ok'];
+            DB::table('notification_logs')->where('id', $logId)->update([
+                'status' => $isSent ? 'sent' : 'failed',
+                'response' => $response->body(),
+            ]);
+
+            if (!$isSent) {
+                $errorMsg = 'WhatsApp media gagal dikirim: ' . ($providerValidation['error'] ?? $response->body());
+                Log::error($errorMsg);
+                return [
+                    'success' => false,
+                    'message' => $errorMsg,
+                    'provider' => $provider,
+                    'response' => $response->json(),
+                    'error' => $errorMsg
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Message queued',
+                'provider' => $provider,
+                'response' => $response->json()
+            ];
+        } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
+            Log::error('WhatsApp Media Error: ' . $errorMsg);
+            DB::table('notification_logs')->where('id', $logId)->update(['status' => 'failed', 'response' => $errorMsg]);
+            return [
+                'success' => false,
+                'message' => 'API Error',
+                'provider' => $this->getProvider(),
+                'error' => $errorMsg
+            ];
+        }
     }
 
-    public function sendInvoice(Customer $customer, $invoice)
+    public function sendInvoice(Customer $customer, $invoice): array
     {
         $tpl = Setting::where('key', 'whatsapp_isp_bill_template')->value('value');
         if ($tpl) {
@@ -248,13 +382,13 @@ class WhatsAppService
             ];
             $message = $this->renderTemplate($tpl, $vars);
         } else {
-            $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp ".number_format($invoice->amount, 0, ',', '.')." telah terbit.\nJatuh tempo: ".(method_exists($invoice->due_date ?? null, 'format') ? $invoice->due_date->format('d-m-Y') : $invoice->due_date).".\n\nMohon segera lakukan pembayaran.";
+            $message = "Halo {$customer->name},\n\nTagihan internet Anda bulan ini sebesar Rp ".(isset($invoice->total) ? number_format($invoice->total, 0, ',', '.') : (isset($invoice->amount) ? number_format($invoice->amount, 0, ',', '.') : ''))." telah terbit.\nJatuh tempo: ".(method_exists($invoice->due_date ?? null, 'format') ? $invoice->due_date->format('d-m-Y') : $invoice->due_date).".\n\nMohon segera lakukan pembayaran.";
         }
 
         return $this->sendMessage($customer->phone, $message, 'invoice', $customer->id);
     }
 
-    public function sendPaymentSuccess(Customer $customer, $invoice)
+    public function sendPaymentSuccess(Customer $customer, $invoice): array
     {
         $tpl = Setting::where('key', 'whatsapp_isp_payment_success_template')->value('value');
         if ($tpl) {
@@ -265,13 +399,13 @@ class WhatsAppService
             ];
             $message = $this->renderTemplate($tpl, $vars);
         } else {
-            $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".number_format($invoice->amount ?? ($invoice->total ?? 0), 0, ',', '.')." telah kami terima.\nLayanan internet Anda aktif.";
+            $message = "Terima kasih {$customer->name},\nPembayaran tagihan sebesar Rp ".(isset($invoice->amount ?? $invoice->total) ? number_format($invoice->amount ?? $invoice->total, 0, ',', '.') : '0')." telah kami terima.\nLayanan internet Anda aktif.";
         }
 
         return $this->sendMessage($customer->phone, $message, 'payment', $customer->id);
     }
 
-    public function sendIsolationNotification(Customer $customer)
+    public function sendIsolationNotification(Customer $customer): array
     {
         $tpl = Setting::where('key', 'whatsapp_isp_suspend_template')->value('value');
         if ($tpl) {
@@ -287,13 +421,14 @@ class WhatsAppService
         return $this->sendMessage($customer->phone, $message, 'isolate', $customer->id);
     }
 
-    public function broadcastMessage($area, $message)
+    public function broadcastMessage($area, $message): int
     {
         // Logic to find customers in area/odp
         $customers = Customer::where('odp', 'LIKE', "%$area%")->get();
         $count = 0;
         foreach ($customers as $customer) {
-            if ($this->sendMessage($customer->phone, $message, 'broadcast', $customer->id)) {
+            $result = $this->sendMessage($customer->phone, $message, 'broadcast', $customer->id);
+            if ($result['success']) {
                 $count++;
             }
         }
@@ -313,7 +448,14 @@ class WhatsAppService
         }
 
         try {
-            if (str_contains($this->baseUrl, 'fonnte.com') || str_contains($this->baseUrl, 'wablas.com')) {
+            $provider = $this->getProvider();
+            if ($provider === 'wablas') {
+                $response = Http::timeout(8)
+                    ->connectTimeout(3)
+                    ->retry(1, 200)
+                    ->withHeaders(['Authorization' => $this->apiKey])
+                    ->post($this->baseUrl.'/api/v2/device');
+            } elseif ($provider === 'fonnte') {
                 $response = Http::timeout(8)
                     ->connectTimeout(3)
                     ->retry(1, 200)
@@ -373,8 +515,6 @@ class WhatsAppService
             if (preg_match('/^\s*<(?:!doctype|html)/i', $raw) === 1) {
                 return ['ok' => false, 'error' => 'Respon gateway WhatsApp tidak valid (HTML).'];
             }
-
-            // Avoid false "sent" when provider response cannot be parsed as expected JSON.
             return ['ok' => false, 'error' => 'Respon gateway WhatsApp tidak valid.'];
         }
 
@@ -450,7 +590,7 @@ class WhatsAppService
     /**
      * Send System Notification to Group (Attendance/Ticket)
      */
-    public function sendGroupNotification(string $message, string $category = 'ticket')
+    public function sendGroupNotification(string $message, string $category = 'ticket'): array|bool
     {
         $enabledKey = "whatsapp_{$category}_notification_enabled";
         $groupIdKey = "whatsapp_{$category}_group_id";
