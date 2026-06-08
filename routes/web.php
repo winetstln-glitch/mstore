@@ -212,8 +212,10 @@ Route::middleware('auth')->group(function () {
         ->middleware(\App\Http\Middleware\VerifyWhatsAppWebhook::class)
         ->name('webhooks.whatsapp.handle');
 
-    // Payment Webhook
-    Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+    // Payment Webhooks
+Route::post('/webhooks/midtrans', [\App\Http\Controllers\WebhookController::class, 'midtrans'])->name('webhooks.midtrans');
+Route::post('/webhooks/payment', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.payment.callback');
+Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController::class, 'return'])->name('webhooks.payment.return');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

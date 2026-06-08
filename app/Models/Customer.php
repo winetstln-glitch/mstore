@@ -99,6 +99,11 @@ class Customer extends Model
         return $this->belongsTo(Htb::class);
     }
 
+    public function networkDiagnostics()
+    {
+        return $this->hasMany(NetworkDiagnostic::class);
+    }
+
     public function olt()
     {
         return $this->belongsTo(OLT::class);

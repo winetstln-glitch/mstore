@@ -66,6 +66,16 @@ class Ticket extends Model
         return $this->hasMany(TicketLog::class);
     }
 
+    public function diagnostic(): BelongsTo
+    {
+        return $this->belongsTo(NetworkDiagnostic::class);
+    }
+
+    public function technicianAssignments(): HasMany
+    {
+        return $this->hasMany(TechnicianAssignment::class);
+    }
+
     public static function generateNumber(): string
     {
         do {
