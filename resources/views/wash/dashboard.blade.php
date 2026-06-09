@@ -125,6 +125,210 @@
     </div>
 
     <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Total Pelanggan Loyalty') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($loyaltyTotalCustomers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Voucher Aktif') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($loyaltyActiveVouchers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Voucher Digunakan') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($loyaltyUsedVouchers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Voucher Kadaluarsa') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($loyaltyExpiredVouchers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-dark shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">{{ __('Total Member') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($totalMembers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-id-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Bronze') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($bronzeMembers ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-medal fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Silver') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($silverMembers ?? 0, 0, ',', '.') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Gold') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($goldMembers ?? 0, 0, ',', '.') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Platinum') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($platinumMembers ?? 0, 0, ',', '.') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow mb-4 wash-panel">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Top Loyal Customer') }}</h6>
+                    <a href="{{ route('wash.loyalty.report') }}" class="btn btn-sm btn-outline-primary">{{ __('Laporan Loyalty') }}</a>
+                </div>
+                <div class="card-body">
+                    @if($loyaltyTopCustomer)
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ $loyaltyTopCustomer->customer?->name ?? '-' }}</div>
+                                <div class="text-muted small">{{ $loyaltyTopCustomer->customer?->phone ?? '' }}</div>
+                            </div>
+                            <div class="ms-auto">
+                                <span class="badge bg-primary">{{ $loyaltyTopCustomer->vehicle_plate }}</span>
+                                <span class="badge bg-success">{{ number_format((int) ($loyaltyTopCustomer->lifetime_paid_count ?? 0), 0, ',', '.') }}x</span>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-muted">{{ __('Belum ada data loyalty.') }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Membership Growth') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($membershipGrowth ?? 0, 0, ',', '.') }}</div>
+                    <div class="small text-muted mt-2">{{ __('Member baru bulan ini') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ __('Repeat Customer Rate') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format((float) ($repeatCustomerRate ?? 0), 2, ',', '.') }}%</div>
+                    <div class="small text-muted mt-2">{{ __('Pelanggan dengan kunjungan lebih dari 1x') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Reward Redemption') }}</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($rewardRedemptionCount ?? 0, 0, ',', '.') }}</div>
+                    <div class="small text-muted mt-2">{{ __('Total voucher reward yang sudah digunakan') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow mb-4 wash-panel">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('Top Member') }}</h6>
+                </div>
+                <div class="card-body">
+                    @if($topMember)
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ $topMember->name }}</div>
+                                <div class="text-muted small">{{ $topMember->member_number }} | {{ $topMember->whatsapp }}</div>
+                            </div>
+                            <div class="ms-auto d-flex flex-wrap gap-2">
+                                <span class="badge bg-primary">{{ $topMember->level?->name ?? 'Bronze Member' }}</span>
+                                <span class="badge bg-success">Rp {{ number_format((float) $topMember->total_spending, 0, ',', '.') }}</span>
+                                <span class="badge bg-dark">{{ number_format((int) $topMember->total_visits, 0, ',', '.') }} {{ __('kunjungan') }}</span>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-muted">{{ __('Belum ada data member.') }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2 wash-stat-card">
                 <div class="card-body">

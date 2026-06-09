@@ -26,7 +26,7 @@ class InventoryController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:inventory.view', only: ['index', 'exportPdf', 'exportExcel', 'exportMovementExcel', 'downloadTemplate']),
             new Middleware('permission:inventory.manage', only: ['storeItem', 'storeStockIn', 'updateItem', 'destroyItem', 'updatePickup', 'destroyPickup', 'importExcel']),
-            new Middleware('permission:inventory.pickup', only: ['createPickup', 'storePickup']),
+            new Middleware('permission:inventory.pickup|inventory.manage', only: ['createPickup', 'storePickup']),
         ];
     }
 
@@ -499,7 +499,38 @@ class InventoryController extends Controller implements HasMiddleware
             $validated['stock'] = $item->stock;
         }
 
-        $item->update($validated);
+        $oldStock = (int) $item->stock;
+        $newStock = (int) $validated['stock'];
+
+        DB::transaction(function () use ($item, $validated, $oldStock, $newStock) {
+            $item->update($validated);
+
+            if ($newStock > $oldStock && (float) $item->price > 0) {
+                $diff = $newStock - $oldStock;
+                $totalCost = $diff * (float) $item->price;
+
+                $inventoryIn = InventoryTransaction::create([
+                    'user_id' => Auth::id(),
+                    'inventory_item_id' => $item->id,
+                    'type' => 'in',
+                    'quantity' => $diff,
+                    'unit_cost' => (float) $item->price,
+                    'total_cost' => $totalCost,
+                    'source_type' => 'adjustment',
+                    'description' => 'Penyesuaian stok (tambah) '.$item->name.' ('.$diff.' '.$item->unit.')',
+                ]);
+
+                Transaction::create([
+                    'user_id' => Auth::id(),
+                    'type' => 'expense',
+                    'category' => 'Pembelian Alat',
+                    'amount' => $totalCost,
+                    'transaction_date' => now()->toDateString(),
+                    'description' => 'Pembelian stok tambahan '.$item->name.' ('.$diff.' '.$item->unit.')',
+                    'reference_number' => 'INV-IN-'.$inventoryIn->id,
+                ]);
+            }
+        });
 
         Cache::forget('inventory.purchase_stats');
         Cache::forget('inventory.categories');

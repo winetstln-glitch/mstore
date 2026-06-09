@@ -197,7 +197,7 @@ class AttendanceReportService
 
     public function getAllRoles(): Collection
     {
-        return Role::whereNotIn('name', ['customer', 'koordinator', 'coordinator'])->orderBy('name')->get();
+        return Role::whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR])->orderBy('name')->get();
     }
 
     public function getAvailableStatuses(): array

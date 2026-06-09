@@ -47,6 +47,10 @@ class LoginController extends Controller
             if (! $legacyEmailUser) {
                 throw ValidationException::withMessages(['login' => 'Email tidak ditemukan.']);
             }
+
+            if (trim((string) $legacyEmailUser->username) !== '') {
+                throw ValidationException::withMessages(['login' => 'Gunakan username untuk login.']);
+            }
         }
 
         $localUser = $this->resolveLocalUserByLogin($login, $isEmailInput, $legacyEmailUser);

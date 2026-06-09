@@ -19,9 +19,9 @@ class FinanceCascadeTest extends TestCase
     public function test_cascading_commission_calculation()
     {
         // 1. Setup Environment
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
 
         $user = User::factory()->create(['role_id' => $role->id]);
 
@@ -83,9 +83,9 @@ class FinanceCascadeTest extends TestCase
     public function test_update_recalculates_cascade()
     {
         // Setup (Same as above)
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
         $user = User::factory()->create(['role_id' => $role->id]);
         $region = Region::create(['name' => 'Test Region', 'code' => 'TR']);
         $coordinator = Coordinator::create([

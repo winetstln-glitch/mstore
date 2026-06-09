@@ -19,6 +19,10 @@ class VoucherController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('auth'),
+            new Middleware('permission:voucher.view', only: ['index', 'exportCsv', 'exportExcel', 'exportPdf']),
+            new Middleware('permission:voucher.create', only: ['generate']),
+            new Middleware('permission:voucher.edit', only: ['disconnect', 'storeTemplate']),
+            new Middleware('permission:voucher.delete', only: ['deleteTemplate']),
         ];
     }
 

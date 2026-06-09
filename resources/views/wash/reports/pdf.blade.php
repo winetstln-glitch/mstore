@@ -51,6 +51,111 @@
     </table>
 
     <table>
+        <tr>
+            <th>Membership & Loyalty</th>
+            <th class="right">Harian</th>
+            <th>Keterangan</th>
+            <th class="right">Bulanan</th>
+        </tr>
+        <tr>
+            <td>Member Aktif</td>
+            <td class="right">{{ number_format($memberActiveCount,0,',','.') }}</td>
+            <td>Member Baru</td>
+            <td class="right">{{ number_format($memberNewMonthlyCount,0,',','.') }}</td>
+        </tr>
+        <tr>
+            <td>Member Baru</td>
+            <td class="right">{{ number_format($memberNewDailyCount,0,',','.') }}</td>
+            <td>Reward Redemption</td>
+            <td class="right">{{ number_format($monthlyRewardRedemptionCount,0,',','.') }}</td>
+        </tr>
+        <tr>
+            <td>Reward Redemption</td>
+            <td class="right">{{ number_format($dailyRewardRedemptionCount,0,',','.') }}</td>
+            <td>Total Top Member Ditampilkan</td>
+            <td class="right">{{ number_format($topMembers->count(),0,',','.') }}</td>
+        </tr>
+    </table>
+
+    <table>
+        <thead>
+            <tr><th colspan="4">Level Distribution</th></tr>
+            <tr>
+                <th>Level</th>
+                <th class="right">Member</th>
+                <th class="right">Diskon</th>
+                <th class="right">Priority Rank</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($levelDistribution as $level)
+            <tr>
+                <td>{{ $level->name }}</td>
+                <td class="right">{{ number_format($level->members_count,0,',','.') }}</td>
+                <td class="right">{{ rtrim(rtrim(number_format((float) $level->discount_percent, 2, ',', '.'), '0'), ',') }}%</td>
+                <td class="right">{{ number_format((int) $level->priority_rank,0,',','.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr><th colspan="6">Top Member</th></tr>
+            <tr>
+                <th>Member</th>
+                <th>No Member</th>
+                <th>Level</th>
+                <th class="right">Trx</th>
+                <th class="right">Visit</th>
+                <th class="right">Spending</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($topMembers as $member)
+            <tr>
+                <td>{{ $member->name }}</td>
+                <td>{{ $member->member_number }}</td>
+                <td>{{ $member->level?->name ?? 'Bronze Member' }}</td>
+                <td class="right">{{ number_format((int) $member->total_transactions,0,',','.') }}</td>
+                <td class="right">{{ number_format((int) $member->total_visits,0,',','.') }}</td>
+                <td class="right">{{ number_format((float) $member->total_spending,0,',','.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr><th colspan="8">Loyalty Progress</th></tr>
+            <tr>
+                <th>Member</th>
+                <th>No Member</th>
+                <th>Level</th>
+                <th>Plat</th>
+                <th class="right">Progress</th>
+                <th class="right">Sisa</th>
+                <th class="right">Lifetime</th>
+                <th>Terakhir</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($loyaltyProgressRows as $row)
+            <tr>
+                <td>{{ $row->member_name }}</td>
+                <td>{{ $row->member_number }}</td>
+                <td>{{ $row->level_name }}</td>
+                <td>{{ $row->vehicle_plate }}</td>
+                <td class="right">{{ $row->progress }}/{{ $row->target }}</td>
+                <td class="right">{{ $row->remaining }}</td>
+                <td class="right">{{ number_format((int) $row->lifetime_paid_count,0,',','.') }}</td>
+                <td>{{ $row->last_paid_at?->format('d-m-Y H:i') ?? '-' }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <table>
         <thead>
             <tr><th colspan="7">Rincian Pemasukan Harian</th></tr>
             <tr>

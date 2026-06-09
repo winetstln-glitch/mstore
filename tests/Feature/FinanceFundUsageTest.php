@@ -24,12 +24,12 @@ class FinanceFundUsageTest extends TestCase
         parent::setUp();
 
         // Setup Role and Permission
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        Permission::create(['name' => 'finance.view', 'label' => 'View Finance']);
-        Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance']);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        Permission::firstOrCreate(['name' => 'finance.view'], ['label' => 'View Finance', 'group' => 'Finance']);
+        Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
 
         // Custom Role/Permission pivot if needed, but Role model has permissions() relation
-        $role->permissions()->attach(Permission::whereIn('name', ['finance.view', 'finance.manage'])->pluck('id'));
+        $role->permissions()->syncWithoutDetaching(Permission::whereIn('name', ['finance.view', 'finance.manage'])->pluck('id')->all());
 
         $this->user = User::factory()->create(['role_id' => $role->id]);
 

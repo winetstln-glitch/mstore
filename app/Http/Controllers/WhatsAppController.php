@@ -17,9 +17,8 @@ class WhatsAppController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:setting.view', only: ['index', 'logs']),
-            new Middleware('permission:setting.view', only: ['checkStatus']),
-            new Middleware('permission:setting.update', only: ['update', 'test']),
+            new Middleware('permission:chat.view', only: ['index', 'logs']),
+            new Middleware('permission:chat.manage', only: ['update', 'test', 'checkStatus']),
         ];
     }
 

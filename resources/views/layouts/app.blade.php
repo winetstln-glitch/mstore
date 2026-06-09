@@ -63,11 +63,13 @@
                 <i class="fa-solid fa-times fa-lg"></i>
             </button>
         </div>
+        <div class="px-3 pb-2">
+            <input type="text" class="form-control form-control-sm" id="sidebarSearch" placeholder="Cari menu..." autocomplete="off">
+        </div>
         <div class="list-group list-group-flush pb-2">
             @php
-                $permissionMap = $isAdmin || ! $authUser
-                    ? []
-                    : (($authUser->role?->permissions?->pluck('name')->flip()->all()) ?? []);
+                $permissionMap = $permissionMap ?? [];
+                $sidebarMenu = $sidebarMenu ?? [];
                 $hasPermission = static function (string $permission) use ($authUser, $isAdmin, $permissionMap): bool {
                     if (! $authUser) {
                         return false;
@@ -90,7 +92,132 @@
                 };
                 $hasRole = static fn (string $role): bool => $authUser ? $authUser->hasRole($role) : false;
                 $routeIs = static fn (...$patterns): bool => request()->routeIs(...$patterns);
+
+                $nodeVisible = static function (array $node) use ($hasAnyPermission, $hasRole, &$nodeVisible): bool {
+                    $roles = $node['roles'] ?? [];
+                    if (is_array($roles) && count($roles) > 0) {
+                        $ok = false;
+                        foreach ($roles as $r) {
+                            if ($hasRole((string) $r)) {
+                                $ok = true;
+                                break;
+                            }
+                        }
+                        if (! $ok) {
+                            return false;
+                        }
+                    }
+
+                    $permissions = $node['permissions'] ?? [];
+                    if (is_array($permissions) && count($permissions) > 0) {
+                        if (! $hasAnyPermission($permissions)) {
+                            return false;
+                        }
+                    }
+
+                    if (($node['type'] ?? null) === 'group') {
+                        foreach (($node['children'] ?? []) as $child) {
+                            if ($nodeVisible($child)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                $nodeActive = static function (array $node) use ($routeIs, &$nodeActive): bool {
+                    $patterns = $node['route_patterns'] ?? [];
+                    if (! is_array($patterns)) {
+                        $patterns = [];
+                    }
+
+                    $routeName = $node['route'] ?? null;
+                    if (is_string($routeName) && $routeName !== '') {
+                        $patterns[] = $routeName;
+                    }
+
+                    if (($node['type'] ?? null) === 'link') {
+                        return count($patterns) > 0 ? $routeIs(...$patterns) : false;
+                    }
+
+                    foreach (($node['children'] ?? []) as $child) {
+                        if ($nodeActive($child)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                };
+
+                $renderNodes = static function (array $nodes) use (&$renderNodes, $nodeVisible, $nodeActive): string {
+                    $html = '';
+
+                    foreach ($nodes as $node) {
+                        if (! is_array($node)) {
+                            continue;
+                        }
+                        if (! $nodeVisible($node)) {
+                            continue;
+                        }
+
+                        $type = $node['type'] ?? null;
+                        $label = (string) ($node['label'] ?? '');
+                        $active = $nodeActive($node);
+
+                        if ($type === 'link') {
+                            $routeName = (string) ($node['route'] ?? '');
+                            $href = \Illuminate\Support\Facades\Route::has($routeName) ? route($routeName) : '#';
+                            $html .= '<a href="'.e($href).'" class="sidebar-item'.($active ? ' active' : '').'">'.e($label).'</a>';
+                            continue;
+                        }
+
+                        if ($type === 'group') {
+                            $id = (string) ($node['id'] ?? uniqid('grp_', false));
+                            $collapseId = 'sidebarCollapse_'.$id;
+                            $html .= '<a class="sidebar-item'.($active ? ' active' : '').'" data-bs-toggle="collapse" href="#'.e($collapseId).'" role="button" aria-expanded="'.($active ? 'true' : 'false').'" aria-controls="'.e($collapseId).'">'.e($label).'<i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i></a>';
+                            $html .= '<div class="collapse'.($active ? ' show' : '').'" id="'.e($collapseId).'"><div class="ps-3">'.$renderNodes($node['children'] ?? []).'</div></div>';
+                        }
+                    }
+
+                    return $html;
+                };
             @endphp
+
+            @foreach($sidebarMenu as $section)
+                @php
+                    $sectionRoles = $section['roles'] ?? [];
+                    $sectionVisible = true;
+                    if (is_array($sectionRoles) && count($sectionRoles) > 0) {
+                        $sectionVisible = false;
+                        foreach ($sectionRoles as $r) {
+                            if ($hasRole((string) $r)) {
+                                $sectionVisible = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($sectionVisible) {
+                        $hasAnyItem = false;
+                        foreach (($section['items'] ?? []) as $it) {
+                            if ($nodeVisible($it)) {
+                                $hasAnyItem = true;
+                                break;
+                            }
+                        }
+                        $sectionVisible = $sectionVisible && $hasAnyItem;
+                    }
+                @endphp
+                @if($sectionVisible)
+                    <div class="sidebar-header mt-2">{{ __($section['label'] ?? '') }}</div>
+                    {!! $renderNodes($section['items'] ?? []) !!}
+                @endif
+            @endforeach
+
+            @if(false)
+            <div class="sidebar-header mt-2">{{ __('Menu Utama') }}</div>
 
             {{-- DASBOR --}}
             <div class="sidebar-header mt-2">
@@ -100,7 +227,7 @@
             {{-- Dashboard --}}
             @if($hasPermission('dashboard.view'))
             <a href="{{ route('dashboard') }}" class="sidebar-item {{ $routeIs('dashboard') ? 'active' : '' }}">
-                <i class="fa fa-tachometer-alt"></i> {{ __('Dasbor') }}
+                <i class="fa fa-tachometer-alt"></i> {{ __('Dashboard') }}
             </a>
             <a href="{{ route('admin.dashboard') }}" class="sidebar-item {{ $routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="fa-solid fa-chart-line"></i> Admin & HRD Dashboard
@@ -108,6 +235,38 @@
             <a href="{{ route('admin.audit-trail') }}" class="sidebar-item {{ $routeIs('admin.audit-trail') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-list"></i> Audit Trail
             </a>
+            @if($hasPermission('security.monitoring.view'))
+            <a href="{{ route('security.monitoring') }}" class="sidebar-item {{ $routeIs('security.monitoring') ? 'active' : '' }}">
+                <i class="fa-solid fa-shield-halved"></i> Security & Monitoring
+            </a>
+            @endif
+            @php
+                $reportingActive = $routeIs('reports.*');
+            @endphp
+            @if($hasAnyPermission(['report.noc.export','report.whatsapp.export','report.sla.export']))
+            <a class="sidebar-item {{ $reportingActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#reportingCollapse" role="button" aria-expanded="{{ $reportingActive ? 'true' : 'false' }}" aria-controls="reportingCollapse">
+                <i class="fa-solid fa-file-lines"></i> Reporting Center <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ $reportingActive ? 'show' : '' }}" id="reportingCollapse">
+                <div class="ps-3">
+                    @if($hasPermission('report.noc.export'))
+                    <a href="{{ route('reports.noc') }}" class="sidebar-item {{ $routeIs('reports.noc') ? 'active' : '' }}">
+                        <i class="fa-solid fa-headset"></i> NOC Report
+                    </a>
+                    @endif
+                    @if($hasPermission('report.whatsapp.export'))
+                    <a href="{{ route('reports.whatsapp') }}" class="sidebar-item {{ $routeIs('reports.whatsapp') ? 'active' : '' }}">
+                        <i class="fa-brands fa-whatsapp"></i> WhatsApp Report
+                    </a>
+                    @endif
+                    @if($hasPermission('report.sla.export'))
+                    <a href="{{ route('reports.sla') }}" class="sidebar-item {{ $routeIs('reports.sla') ? 'active' : '' }}">
+                        <i class="fa-solid fa-stopwatch"></i> SLA Report
+                    </a>
+                    @endif
+                </div>
+            </div>
+            @endif
             @endif
 
             {{-- AI & KOMUNIKASI --}}
@@ -125,6 +284,33 @@
                 <i class="fa-regular fa-comments"></i> {{ __('Messenger Internal') }}
             </a>
             @endif
+            @endif
+
+            {{-- WHATSAPP CENTER --}}
+            @if($hasPermission('whatsapp.analytics.view') || $hasPermission('whatsapp.kb.manage'))
+            <div class="sidebar-header mt-3">
+                <i class="fa-brands fa-whatsapp me-2"></i>WhatsApp Center
+            </div>
+            @php
+                $whatsappCenterActive = $routeIs('whatsapp.analytics') || $routeIs('whatsapp.kb.*');
+            @endphp
+            <a class="sidebar-item {{ $whatsappCenterActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#whatsappCenterCollapse" role="button" aria-expanded="{{ $whatsappCenterActive ? 'true' : 'false' }}" aria-controls="whatsappCenterCollapse">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp Center <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            </a>
+            <div class="collapse {{ $whatsappCenterActive ? 'show' : '' }}" id="whatsappCenterCollapse">
+                <div class="ps-3">
+                    @if($hasPermission('whatsapp.analytics.view'))
+                    <a href="{{ route('whatsapp.analytics') }}" class="sidebar-item {{ $routeIs('whatsapp.analytics') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-simple"></i> Analytics
+                    </a>
+                    @endif
+                    @if($hasPermission('whatsapp.kb.manage'))
+                    <a href="{{ route('whatsapp.kb.index') }}" class="sidebar-item {{ $routeIs('whatsapp.kb.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-book"></i> AI Knowledge Base
+                    </a>
+                    @endif
+                </div>
+            </div>
             @endif
 
             {{-- Client Portal (Grouped) --}}
@@ -176,7 +362,7 @@
                 $hasPermission('package.view')
             )
             <div class="sidebar-header mt-3">
-                <i class="fa-solid fa-network-wired me-2"></i>{{ __('Network & Pelanggan') }}
+                <i class="fa-solid fa-network-wired me-2"></i>{{ __('Pelanggan & Layanan') }}
             </div>
             @php
                 $customerDataActive = $routeIs('customers.*') || $routeIs('installations.*');
@@ -269,6 +455,43 @@
             </a>
             <div class="collapse {{ $networkAnyActive ? 'show' : '' }}" id="networkCenterCollapse">
                 <div class="ps-3">
+                    @if($hasPermission('noc.dashboard.view'))
+                    <a href="{{ route('noc.dashboard') }}" class="sidebar-item {{ $routeIs('noc.dashboard') ? 'active' : '' }}">
+                        <i class="fa-solid fa-headset"></i> Dashboard NOC
+                    </a>
+                    @endif
+
+                    @if($hasPermission('noc.operational.view'))
+                    @php
+                        $nocOperationalActive = $routeIs('noc.operational.*');
+                    @endphp
+                    <a class="sidebar-item {{ $nocOperationalActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#nocOperationalCollapse" role="button" aria-expanded="{{ $nocOperationalActive ? 'true' : 'false' }}" aria-controls="nocOperationalCollapse">
+                        <i class="fa-solid fa-tower-broadcast"></i> Operasional NOC <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $nocOperationalActive ? 'show' : '' }}" id="nocOperationalCollapse">
+                        <div class="ps-3">
+                            <a href="{{ route('noc.operational.area_outage') }}" class="sidebar-item {{ $routeIs('noc.operational.area_outage') ? 'active' : '' }}">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Area Outage
+                            </a>
+                            <a href="{{ route('noc.operational.network_incident') }}" class="sidebar-item {{ $routeIs('noc.operational.network_incident') ? 'active' : '' }}">
+                                <i class="fa-solid fa-bolt"></i> Network Incident
+                            </a>
+                            <a href="{{ route('noc.operational.network_diagnostic') }}" class="sidebar-item {{ $routeIs('noc.operational.network_diagnostic') ? 'active' : '' }}">
+                                <i class="fa-solid fa-stethoscope"></i> Network Diagnostic
+                            </a>
+                            <a href="{{ route('noc.operational.diagnostic_logs') }}" class="sidebar-item {{ $routeIs('noc.operational.diagnostic_logs') ? 'active' : '' }}">
+                                <i class="fa-solid fa-clipboard-list"></i> Diagnostic Logs
+                            </a>
+                            <a href="{{ route('noc.operational.olt_monitoring') }}" class="sidebar-item {{ $routeIs('noc.operational.olt_monitoring') ? 'active' : '' }}">
+                                <i class="fa-solid fa-server"></i> OLT Monitoring
+                            </a>
+                            <a href="{{ route('noc.operational.fiber_monitoring') }}" class="sidebar-item {{ $routeIs('noc.operational.fiber_monitoring') ? 'active' : '' }}">
+                                <i class="fa-solid fa-network-wired"></i> Fiber Monitoring
+                            </a>
+                        </div>
+                    </div>
+                    @endif
+
                     @if($hasPermission('map.view') || $hasPermission('genieacs.view') || $hasPermission('genieacs_server.view') || $hasPermission('calculator.view') || $hasPermission('router.view'))
                     <a class="sidebar-item {{ $networkMonitoringActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#networkMonitoringCollapse" role="button" aria-expanded="{{ $networkMonitoringActive ? 'true' : 'false' }}" aria-controls="networkMonitoringCollapse">
                         <i class="fa-solid fa-satellite-dish"></i> {{ __('Monitoring & Tools') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
@@ -616,13 +839,23 @@
                 $hasPermission('leave.view')
             )
                 <div class="sidebar-header mt-3">
-                    <i class="fa-solid fa-users-gear me-2"></i>{{ __('Manajemen HRD & Aset') }}
+                    <i class="fa-solid fa-users-gear me-2"></i>{{ __('Operasional') }}
                 </div>
 
                 @if($hasPermission('ticket.view'))
                 <a href="{{ route('tickets.index') }}" class="sidebar-item {{ $routeIs('tickets.*') ? 'active' : '' }}">
                     <i class="fa fa-ticket-alt"></i> {{ __('Tiket & Gangguan') }}
                 </a>
+                @if($hasPermission('sla.monitoring.view'))
+                <a href="{{ route('sla.monitoring') }}" class="sidebar-item {{ $routeIs('sla.monitoring') ? 'active' : '' }}">
+                    <i class="fa-solid fa-stopwatch"></i> SLA Monitoring
+                </a>
+                @endif
+                @if($hasPermission('sla.escalation.view'))
+                <a href="{{ route('sla.escalation-queue') }}" class="sidebar-item {{ $routeIs('sla.escalation-queue') ? 'active' : '' }}">
+                    <i class="fa-solid fa-bell"></i> Escalation Queue
+                </a>
+                @endif
                 <a href="{{ route('modem-data.index') }}" class="sidebar-item {{ $routeIs('modem-data.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-wifi"></i> {{ __('Pendataan Modem') }}
                 </a>
@@ -666,7 +899,7 @@
                                 <i class="fa-regular fa-envelope-open"></i> Cuti/Izin Saya
                             </a>
                         @endif
-                        @if($hasRole('admin') || $hasRole('finance') || $hasRole('hrd manager'))
+                        @if($hasRole(\App\Models\Role::ADMIN) || $hasRole(\App\Models\Role::FINANCE) || $hasRole(\App\Models\Role::HRD_MANAGER))
                         <a href="{{ route('technicians.kasbon.index') }}" class="sidebar-item {{ $routeIs('technicians.kasbon.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-coins"></i> {{ __('Rincian Kasbon') }}
                         </a>
@@ -697,7 +930,7 @@
             {{-- KONFIGURASI SISTEM --}}
             @if($hasPermission('setting.view') || $hasPermission('user.view'))
             <div class="sidebar-header mt-3">
-                <i class="fa-solid fa-sliders me-2"></i>{{ __('Konfigurasi Sistem') }}
+                <i class="fa-solid fa-sliders me-2"></i>{{ __('Sistem') }}
             </div>
 
             @php
@@ -787,6 +1020,8 @@
                     </div>
                 </div>
             </div>
+            @endif
+
             @endif
 
         </div>
@@ -940,6 +1175,132 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <!-- Feather Icons -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('sidebarSearch');
+        if (!input) {
+            return;
+        }
+
+        const sidebar = document.getElementById('sidebar-wrapper');
+        if (!sidebar) {
+            return;
+        }
+
+        const items = Array.from(sidebar.querySelectorAll('a.sidebar-item'));
+        const headers = Array.from(sidebar.querySelectorAll('.sidebar-header'));
+        const collapses = Array.from(sidebar.querySelectorAll('.collapse'));
+        collapses.forEach(function (el) {
+            el.dataset.initialShow = el.classList.contains('show') ? '1' : '0';
+        });
+
+        const normalize = function (text) {
+            return (text || '')
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        const collapseInstance = function (el) {
+            return bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+        };
+
+        const setCollapseState = function (el, show) {
+            const instance = collapseInstance(el);
+            if (show) {
+                instance.show();
+            } else {
+                instance.hide();
+            }
+        };
+
+        const leafMatchesQuery = function (el, q) {
+            const label = normalize(el.textContent);
+            return label.includes(q);
+        };
+
+        const updateHeaders = function () {
+            headers.forEach(function (header) {
+                let sibling = header.nextElementSibling;
+                let hasVisibleItem = false;
+                while (sibling && !sibling.classList.contains('sidebar-header')) {
+                    const visibleLink = sibling.querySelector && sibling.querySelector('a.sidebar-item:not(.d-none)');
+                    if (visibleLink) {
+                        hasVisibleItem = true;
+                        break;
+                    }
+                    if (sibling.matches && sibling.matches('a.sidebar-item') && !sibling.classList.contains('d-none')) {
+                        hasVisibleItem = true;
+                        break;
+                    }
+                    sibling = sibling.nextElementSibling;
+                }
+                header.classList.toggle('d-none', !hasVisibleItem);
+            });
+        };
+
+        const applyFilter = function () {
+            const q = normalize(input.value);
+            if (q === '') {
+                items.forEach(function (el) {
+                    el.classList.remove('d-none');
+                });
+                headers.forEach(function (el) {
+                    el.classList.remove('d-none');
+                });
+                collapses.forEach(function (el) {
+                    setCollapseState(el, el.dataset.initialShow === '1');
+                });
+                return;
+            }
+
+            collapses.forEach(function (el) {
+                setCollapseState(el, true);
+            });
+
+            const leafItems = items.filter(function (el) {
+                return !el.hasAttribute('data-bs-toggle');
+            });
+            const toggleItems = items.filter(function (el) {
+                return el.getAttribute('data-bs-toggle') === 'collapse';
+            });
+
+            const leafVisible = new Set();
+            leafItems.forEach(function (el) {
+                const match = leafMatchesQuery(el, q);
+                if (match) {
+                    leafVisible.add(el);
+                }
+                el.classList.toggle('d-none', !match);
+            });
+
+            toggleItems.forEach(function (toggle) {
+                const matchSelf = leafMatchesQuery(toggle, q);
+                let matchChild = false;
+
+                const href = toggle.getAttribute('href') || '';
+                if (href.startsWith('#')) {
+                    const target = sidebar.querySelector(href);
+                    if (target) {
+                        const descendant = Array.from(target.querySelectorAll('a.sidebar-item')).find(function (a) {
+                            return !a.hasAttribute('data-bs-toggle') && !a.classList.contains('d-none');
+                        });
+                        matchChild = Boolean(descendant);
+                    }
+                }
+
+                toggle.classList.toggle('d-none', !matchSelf && !matchChild);
+            });
+
+            updateHeaders();
+        };
+
+        input.addEventListener('input', applyFilter);
+        applyFilter();
+    });
+</script>
 
 {{-- ========================================== --}}
 {{-- SCRIPT 1: MOBILE MENU TOGGLE --}}
@@ -1429,4 +1790,3 @@
 
 </body>
 </html>
-

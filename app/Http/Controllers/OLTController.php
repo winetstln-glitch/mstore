@@ -57,21 +57,39 @@ class OLTController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'ip_address' => 'required|ip|unique:olts,ip_address,NULL,id,deleted_at,NULL',
-            'vendor' => 'required|string|max:50',
+            'ip_address' => 'nullable|ip|unique:olts,ip_address,NULL,id,deleted_at,NULL',
+            'vendor' => 'nullable|string|max:50',
             'model' => 'nullable|string|max:100',
             'location' => 'nullable|string|max:200',
-            'read_community' => 'required|string|max:100',
+            'read_community' => 'nullable|string|max:100',
             'write_community' => 'nullable|string|max:100',
             'snmp_version' => 'in:v1,v2c,v3',
             'poll_interval' => 'integer|min:30|max:86400',
             'snmp_timeout' => 'integer|min:1|max:60',
             'snmp_retries' => 'integer|min:0|max:10',
             'is_active' => 'boolean',
+            'host' => 'nullable|ip',
+            'port' => 'nullable|integer|min:1|max:65535',
+            'username' => 'nullable|string|max:100',
+            'password' => 'nullable|string|max:100',
+            'type' => 'nullable|string|max:50',
+            'brand' => 'nullable|string|max:50',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['status'] = 'offline';
+
+        if ((! isset($validated['ip_address']) || $validated['ip_address'] === null) && $request->filled('host')) {
+            $validated['ip_address'] = $request->input('host');
+        }
+        if ((! isset($validated['vendor']) || $validated['vendor'] === null) && $request->filled('brand')) {
+            $validated['vendor'] = $request->input('brand');
+        }
+        if ((! isset($validated['read_community']) || $validated['read_community'] === null) && $request->filled('snmp_community')) {
+            $validated['read_community'] = $request->input('snmp_community');
+        }
         
         $olt = OLT::create($validated);
         
@@ -131,22 +149,44 @@ class OLTController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'ip_address' => 'required|ip|unique:olts,ip_address,' . $olt->id . ',id,deleted_at,NULL',
-            'vendor' => 'required|string|max:50',
+            'ip_address' => 'nullable|ip|unique:olts,ip_address,' . $olt->id . ',id,deleted_at,NULL',
+            'vendor' => 'nullable|string|max:50',
             'model' => 'nullable|string|max:100',
             'location' => 'nullable|string|max:200',
-            'read_community' => 'required|string|max:100',
+            'read_community' => 'nullable|string|max:100',
             'write_community' => 'nullable|string|max:100',
             'snmp_version' => 'in:v1,v2c,v3',
             'poll_interval' => 'integer|min:30|max:86400',
             'snmp_timeout' => 'integer|min:1|max:60',
             'snmp_retries' => 'integer|min:0|max:10',
             'is_active' => 'boolean',
+            'host' => 'nullable|ip',
+            'port' => 'nullable|integer|min:1|max:65535',
+            'username' => 'nullable|string|max:100',
+            'password' => 'nullable|string|max:100',
+            'type' => 'nullable|string|max:50',
+            'brand' => 'nullable|string|max:50',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+
+        if ((! array_key_exists('ip_address', $validated) || $validated['ip_address'] === null) && $request->filled('host')) {
+            $validated['ip_address'] = $request->input('host');
+        }
+        if ((! array_key_exists('vendor', $validated) || $validated['vendor'] === null) && $request->filled('brand')) {
+            $validated['vendor'] = $request->input('brand');
+        }
+        if ((! array_key_exists('read_community', $validated) || $validated['read_community'] === null) && $request->filled('snmp_community')) {
+            $validated['read_community'] = $request->input('snmp_community');
+        }
         
         $olt->update($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
         
         return redirect()->route('olt.index')->with('success', 'OLT berhasil diupdate');
     }

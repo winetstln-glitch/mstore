@@ -230,6 +230,17 @@
                                 </div>
                                 <input type="text" class="form-control wash-input" id="customer_name" name="customer_name" placeholder="Nama Pelanggan">
                                 <small id="customerInfo" class="form-text mt-2 d-block"></small>
+                                <div id="memberInfoCard" class="card border-0 bg-light mt-2" style="display:none;">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="fw-semibold" id="memberInfoName">-</div>
+                                        <div class="small text-muted mb-2" id="memberInfoNumber">-</div>
+                                        <div class="d-flex flex-wrap gap-2 small">
+                                            <span class="badge bg-primary" id="memberInfoLevel">Bronze</span>
+                                            <span class="badge bg-success" id="memberInfoDiscount">Diskon 0%</span>
+                                            <span class="badge bg-dark" id="memberInfoVisits">Kunjungan 0</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-check mb-3 wash-inline-check">
@@ -243,8 +254,14 @@
                                         <i class="fas fa-ticket-alt me-1"></i> Bonus cuci tersedia
                                         (<span id="voucherCount">0</span>)
                                     </div>
-                                    <input type="checkbox" id="use_voucher" name="use_voucher">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select id="voucher_code" class="form-select form-select-sm wash-input" style="min-width: 160px;">
+                                            <option value="">Pilih voucher</option>
+                                        </select>
+                                        <input type="checkbox" id="use_voucher" name="use_voucher">
+                                    </div>
                                 </div>
+                                <div class="small text-muted mt-1">Gunakan voucher akan membuat total Rp0 (1 transaksi, 1 layanan, qty 1).</div>
                             </div>
 
                             <div id="cartItems" class="mb-3 custom-scrollbar">
@@ -254,6 +271,14 @@
                             <div class="wash-summary-row wash-summary-divider">
                                 <span>Subtotal</span>
                                 <span id="subtotalAmount">Rp 0</span>
+                            </div>
+                            <div class="wash-summary-row" id="memberDiscountRow" style="display:none;">
+                                <span>Diskon Member</span>
+                                <span id="memberDiscountAmount">Rp 0</span>
+                            </div>
+                            <div class="wash-summary-row" id="voucherDiscountRow" style="display:none;">
+                                <span>Diskon Voucher</span>
+                                <span id="voucherDiscountAmount">Rp 0</span>
                             </div>
                             <div class="wash-summary-row wash-summary-total">
                                 <span>Total Akhir</span>
@@ -323,11 +348,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Bonus Loyalty</h5>
+                <h5 class="modal-title">Info Loyalty</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
-                Selamat! anda sudah mencapai bonus cuci dan mendapatkan gratis 1 layanan.
+                Informasi loyalty.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="btnLoyaltyBonusOk">OK</button>
@@ -510,27 +535,54 @@ document.addEventListener('DOMContentLoaded', function () {
                 const voucherSection = document.getElementById('voucherSection');
                 const nameInput = document.getElementById('customer_name');
                 const voucherCount = document.getElementById('voucherCount');
+                const voucherSelect = document.getElementById('voucher_code');
                 const basisMap = {
                     plate: 'plat kendaraan'
                 };
                 const basis = basisMap[data.loyalty_basis] || 'data pelanggan';
+                setMemberInfo(data);
 
                 if (data.found) {
                     if (data.name && !nameInput.value) {
                         nameInput.value = data.name;
                     }
-                    info.innerHTML = `<span class="text-success">Riwayat ${basis}: ${data.visit_count}x cuci, bonus dalam ${data.next_bonus_in}x lagi.</span>`;
-                    
-                    if (data.free_wash_eligibility > 0) {
+                    let memberLine = '';
+                    if (data.member_found) {
+                        memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
+                    }
+                    info.innerHTML = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk dapat voucher gratis.</span>${memberLine}`;
+                    const codes = Array.isArray(data.voucher_codes) ? data.voucher_codes : [];
+                    if (voucherSelect) {
+                        voucherSelect.innerHTML = '<option value=\"\">Pilih voucher</option>';
+                        codes.forEach((code) => {
+                            const opt = document.createElement('option');
+                            opt.value = code;
+                            opt.textContent = code;
+                            voucherSelect.appendChild(opt);
+                        });
+                    }
+                    if ((data.voucher_count || 0) > 0) {
                         voucherSection.style.display = 'block';
-                        voucherCount.textContent = data.free_wash_eligibility;
+                        voucherCount.textContent = data.voucher_count;
                     } else {
                         voucherSection.style.display = 'none';
+                        const useVoucherEl = document.getElementById('use_voucher');
+                        if (useVoucherEl) useVoucherEl.checked = false;
                     }
                 } else {
-                    info.innerHTML = `<span class="text-warning">Belum ada riwayat, bonus akan didapat pada cuci ke-${data.loyalty_target}.</span>`;
+                    let memberLine = '';
+                    if (data.member_found) {
+                        memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
+                    } else {
+                        resetMemberInfo();
+                    }
+                    info.innerHTML = `<span class="text-warning">Belum ada riwayat ${basis}. Mulai kumpulkan ${data.target} transaksi berbayar untuk dapat voucher gratis.</span>${memberLine}`;
                     voucherSection.style.display = 'none';
+                    if (voucherSelect) {
+                        voucherSelect.innerHTML = '<option value=\"\">Pilih voucher</option>';
+                    }
                 }
+                updateCartUI();
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -589,6 +641,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     let cart = [];
+    let currentMember = null;
     const employees = @json($employees ?? []);
 
     function isMobileDevice() {
@@ -615,6 +668,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function formatRupiah(value) {
         return 'Rp ' + new Intl.NumberFormat('id-ID').format(value || 0);
+    }
+
+    function resetMemberInfo() {
+        currentMember = null;
+        const card = document.getElementById('memberInfoCard');
+        if (card) card.style.display = 'none';
+    }
+
+    function setMemberInfo(data) {
+        if (!data || !data.member_found) {
+            resetMemberInfo();
+            return;
+        }
+
+        currentMember = {
+            number: data.member_number || '',
+            name: data.member_name || data.name || '',
+            levelCode: data.member_level_code || 'bronze',
+            levelName: data.member_level_name || 'Bronze Member',
+            discountPercent: parseFloat(data.member_discount_percent || 0) || 0,
+            totalVisits: parseInt(data.member_total_visits || 0, 10) || 0,
+            totalTransactions: parseInt(data.member_total_transactions || 0, 10) || 0,
+            totalSpending: parseFloat(data.member_total_spending || 0) || 0,
+        };
+
+        const card = document.getElementById('memberInfoCard');
+        const nameEl = document.getElementById('memberInfoName');
+        const numberEl = document.getElementById('memberInfoNumber');
+        const levelEl = document.getElementById('memberInfoLevel');
+        const discountEl = document.getElementById('memberInfoDiscount');
+        const visitsEl = document.getElementById('memberInfoVisits');
+
+        if (nameEl) nameEl.textContent = currentMember.name || '-';
+        if (numberEl) numberEl.textContent = currentMember.number || '-';
+        if (levelEl) levelEl.textContent = currentMember.levelName;
+        if (discountEl) discountEl.textContent = 'Diskon ' + currentMember.discountPercent + '%';
+        if (visitsEl) visitsEl.textContent = 'Kunjungan ' + currentMember.totalVisits;
+        if (card) card.style.display = '';
     }
 
     function escapeHtml(value) {
@@ -829,6 +920,9 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('customerInfo').innerHTML = "";
         document.getElementById('voucherSection').style.display = 'none';
         document.getElementById('use_voucher').checked = false;
+        const voucherCodeEl = document.getElementById('voucher_code');
+        if (voucherCodeEl) voucherCodeEl.innerHTML = '<option value="">Pilih voucher</option>';
+        resetMemberInfo();
         
         resetServiceSelection();
 
@@ -842,11 +936,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const subtotalEl = document.getElementById('subtotalAmount');
         const btnCheckout = document.getElementById('btnCheckout');
         const voucherEl = document.getElementById('use_voucher');
+        const memberDiscountRow = document.getElementById('memberDiscountRow');
+        const memberDiscountAmountEl = document.getElementById('memberDiscountAmount');
+        const voucherDiscountRow = document.getElementById('voucherDiscountRow');
+        const voucherDiscountAmountEl = document.getElementById('voucherDiscountAmount');
         const useVoucher = voucherEl ? !!voucherEl.checked : false;
         
         cartContainer.innerHTML = '';
         let total = 0;
         let discount = 0;
+        let memberDiscount = 0;
+        let voucherDiscount = 0;
 
         if (cart.length === 0) {
             if (emptyMsg) emptyMsg.style.display = 'block';
@@ -891,13 +991,37 @@ document.addEventListener('DOMContentLoaded', function () {
                 cartContainer.appendChild(div);
             });
 
-            if (useVoucher && cart.length > 0) {
-                discount = cart[0].price;
+            if (currentMember && !useVoucher) {
+                const memberPct = parseFloat(currentMember.discountPercent || 0) || 0;
+                if (memberPct > 0) {
+                    memberDiscount = Math.round((total * memberPct) * 100 / 100) / 100;
+                    discount += memberDiscount;
+                }
+            }
+
+            if (useVoucher) {
+                const voucherSelect = document.getElementById('voucher_code');
+                const voucherCode = voucherSelect ? String(voucherSelect.value || '') : '';
+                if (voucherCode === '') {
+                    alert('Pilih kode voucher terlebih dahulu.');
+                    if (voucherEl) voucherEl.checked = false;
+                } else if (cart.length !== 1 || (cart[0]?.quantity || 0) !== 1) {
+                    alert('Voucher hanya berlaku untuk 1 transaksi dengan 1 layanan (qty 1).');
+                    if (voucherEl) voucherEl.checked = false;
+                } else {
+                    voucherDiscount = total;
+                    discount = total;
+                    memberDiscount = 0;
+                }
             }
         }
 
         const finalTotal = Math.max(0, total - discount);
         if (subtotalEl) subtotalEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        if (memberDiscountRow) memberDiscountRow.style.display = memberDiscount > 0 ? '' : 'none';
+        if (memberDiscountAmountEl) memberDiscountAmountEl.textContent = '- Rp ' + memberDiscount.toLocaleString('id-ID');
+        if (voucherDiscountRow) voucherDiscountRow.style.display = voucherDiscount > 0 ? '' : 'none';
+        if (voucherDiscountAmountEl) voucherDiscountAmountEl.textContent = '- Rp ' + voucherDiscount.toLocaleString('id-ID');
         
         if (discount > 0) {
              totalEl.innerHTML = `<small class="text-decoration-line-through text-muted">Rp ${total.toLocaleString('id-ID')}</small> <span class="text-success fw-bold">Rp ${finalTotal.toLocaleString('id-ID')}</span>`;
@@ -976,12 +1100,16 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initialize visibility
         calculateChange();
     }
-    function showLoyaltyBonusPopup() {
+    function showLoyaltyBonusPopup(message) {
         return new Promise((resolve) => {
             const modalEl = document.getElementById('loyaltyBonusModal');
             const okBtn = document.getElementById('btnLoyaltyBonusOk');
+            const bodyEl = modalEl ? modalEl.querySelector('.modal-body') : null;
+            if (bodyEl && message) {
+                bodyEl.textContent = message;
+            }
             if (!modalEl || !okBtn || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-                alert('Selamat! Bonus cuci ke-10 otomatis diterapkan pada transaksi ini.');
+                alert(message || 'Voucher reward berhasil diproses.');
                 resolve();
                 return;
             }
@@ -1027,6 +1155,7 @@ document.addEventListener('DOMContentLoaded', function () {
             customer_name: document.getElementById('customer_name').value,
             customer_phone: document.getElementById('customer_phone').value,
             use_voucher: document.getElementById('use_voucher').checked,
+            voucher_code: document.getElementById('voucher_code')?.value || null,
             vehicle_plate: document.getElementById('vehicle_plate').value,
             vehicle_brand: document.getElementById('vehicle_brand').value
         };
@@ -1089,8 +1218,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.open(url, '_blank', 'width=400,height=600');
                     }
                 };
-                if (data.discount_type === 'loyalty') {
-                    await showLoyaltyBonusPopup();
+                if (data.reward_voucher_created_code) {
+                    await showLoyaltyBonusPopup('Voucher reward dibuat: ' + data.reward_voucher_created_code);
+                } else if (data.discount_type === 'reward_voucher') {
+                    await showLoyaltyBonusPopup('Voucher reward berhasil digunakan. Total transaksi menjadi Rp0.');
                 }
                 openReceipt();
                 const resolvedPhone = data.customer_phone || phone;

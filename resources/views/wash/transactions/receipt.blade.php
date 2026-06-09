@@ -42,6 +42,9 @@
     });
     $hasHolidayAdjustment = abs($holidayAdjustmentTotal) > 0;
     $holidayGreeting = \App\Models\Setting::getValue('wash_receipt_holiday_greeting', 'Selamat Hari Raya  Idhul Fitri Mohon Maaf Lahir & Batin.');
+    $queueDisplay = $transaction->queue_display ?? (string) ($transaction->queue_number ?? $transaction->transaction_number);
+    $queuePriorityLabel = $transaction->queue_priority_label ?? 'Bronze Queue';
+    $queueServiceOrder = $transaction->queue_service_order_today ?? $transaction->queue_number;
 @endphp
 
 <!DOCTYPE html>
@@ -316,16 +319,18 @@
         <div class="divider"></div>
 
         <table class="info-table">
-            <tr><td class="label">Nota</td><td>: {{ $transaction->queue_number ?? $transaction->transaction_number }}</td></tr>
+            <tr><td class="label">Nota</td><td>: {{ $queueDisplay }}</td></tr>
             <tr><td class="label">Waktu</td><td>: {{ $transaction->created_at->format('d/m/y H:i') }}</td></tr>
             <tr><td class="label">Kasir</td><td>: {{ $cashierName }}</td></tr>
             <tr><td class="label">Pelanggan/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
+            <tr><td class="label">Priority</td><td>: {{ $queuePriorityLabel }}</td></tr>
+            <tr><td class="label">Urutan Layanan</td><td>: #{{ $queueServiceOrder }}</td></tr>
             <tr><td class="label">Cuci Ke</td><td>: {{ (int) ($washVisitCount ?? 0) > 0 ? ('ke-'.(int) ($washVisitCount ?? 0)) : '-' }}</td></tr>
             <tr><td class="label">Menuju Bonus</td><td>: {{ is_null($washVisitsToNextBonus ?? null) ? '-' : ((int) $washVisitsToNextBonus === 0 ? 'Bonus tercapai di transaksi ini' : ((int) $washVisitsToNextBonus.'x lagi')) }}</td></tr>
         </table>
 
         @if(!empty($transaction->queue_number))
-            <div class="queue-badge">ANTRIAN: #{{ $transaction->queue_number }}</div>
+            <div class="queue-badge">ANTRIAN: {{ $queueDisplay }} | ORDER #{{ $queueServiceOrder }}</div>
         @endif
 
         <div class="divider"></div>
@@ -416,13 +421,15 @@ const data = {{ Js::from([
     'store' => $receiptStoreName,
     'address' => $receiptStoreAddress,
     'phone' => $receiptStorePhoneLabel,
-    'number' => $transaction->queue_number ?? $transaction->transaction_number,
+    'number' => $queueDisplay,
     'date' => $transaction->created_at->format('d/m/y H:i'),
     'cashier' => $cashierName,
     'customer' => $customerName . " / " . $vehiclePlate,
     'visit_count' => (int) ($washVisitCount ?? 0),
     'visits_to_next_bonus' => is_null($washVisitsToNextBonus ?? null) ? null : (int) $washVisitsToNextBonus,
-    'queue' => $transaction->queue_number ?? null,
+    'queue' => $queueDisplay,
+    'queue_priority_label' => $queuePriorityLabel,
+    'queue_service_order' => $queueServiceOrder,
     'items' => $transaction->items->map(fn($i)=>[
         'n'=>strtoupper($i->service_name),
         'q'=>(float)$i->quantity,

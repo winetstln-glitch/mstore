@@ -5,9 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\WashService;
 use App\Models\WashStockItem;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class WashController extends Controller
+class WashController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:wash.manage'),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

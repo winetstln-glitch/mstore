@@ -124,7 +124,13 @@
                                 @endif
                                 <td data-label="Tanggal">{{ $transaction->created_at->format('d M Y H:i') }}</td>
                                 <td data-label="No. Antri">
-                                    {{ $transaction->queue_number ?? '-' }}
+                                    <div class="fw-semibold">{{ $transaction->queue_display ?? ($transaction->queue_number ?? '-') }}</div>
+                                    <div class="small text-muted">
+                                        {{ $transaction->queue_priority_label ?? 'Bronze Queue' }}
+                                        @if(!empty($transaction->queue_service_order_today))
+                                            | Urutan #{{ $transaction->queue_service_order_today }}
+                                        @endif
+                                    </div>
                                     @if(($transaction->notes ?? null) === 'bonus_cuci_10x')
                                         <span class="badge bg-success ms-1">Bonus Gratis</span>
                                     @endif

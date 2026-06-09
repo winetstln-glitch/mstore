@@ -24,21 +24,21 @@ class PiketAndLeaveTest extends TestCase
         parent::setUp();
 
         // Setup Roles and Permissions
-        $adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $techRole = Role::create(['name' => 'technician', 'label' => 'Technician']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $techRole = Role::firstOrCreate(['name' => 'technician'], ['label' => 'Technician']);
 
         // Create Permissions
         $perms = ['leave.manage', 'schedule.manage', 'schedule.view', 'setting.view'];
         foreach ($perms as $p) {
-            $perm = Permission::create(['name' => $p, 'label' => $p, 'group' => 'attendance']);
-            $adminRole->permissions()->attach($perm);
+            $perm = Permission::firstOrCreate(['name' => $p], ['label' => $p, 'group' => 'attendance']);
+            $adminRole->permissions()->syncWithoutDetaching([$perm->id]);
         }
 
         // Create Technician Permissions
         $techPerms = ['leave.view', 'leave.create', 'schedule.view'];
         foreach ($techPerms as $p) {
             $perm = Permission::firstOrCreate(['name' => $p], ['label' => $p, 'group' => 'attendance']);
-            $techRole->permissions()->attach($perm);
+            $techRole->permissions()->syncWithoutDetaching([$perm->id]);
         }
 
         $this->admin = User::factory()->create([

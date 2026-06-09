@@ -26,8 +26,8 @@ class DataVisibilityTest extends TestCase
         parent::setUp();
 
         // Create Roles
-        $adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $techRole = Role::create(['name' => 'technician', 'label' => 'Technician']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $techRole = Role::firstOrCreate(['name' => 'technician'], ['label' => 'Technician']);
 
         // Create Permissions
         $perms = ['ticket.view', 'attendance.view', 'schedule.view']; // schedule.view might not exist, checking logic
@@ -36,9 +36,9 @@ class DataVisibilityTest extends TestCase
         // Let's create generic permissions.
 
         foreach (['ticket.view', 'attendance.view', 'schedule.view'] as $pName) {
-            $p = Permission::create(['name' => $pName, 'label' => $pName, 'group' => 'test']);
-            $techRole->permissions()->attach($p);
-            $adminRole->permissions()->attach($p);
+            $p = Permission::firstOrCreate(['name' => $pName], ['label' => $pName, 'group' => 'test']);
+            $techRole->permissions()->syncWithoutDetaching([$p->id]);
+            $adminRole->permissions()->syncWithoutDetaching([$p->id]);
         }
 
         // Create Users

@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\LeaveRequest;
+use App\Models\Role;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\User;
@@ -178,7 +179,7 @@ class AttendanceService
         if (! $user->role) {
             return false;
         }
-        return $user->hasRole('koordinator');
+        return $user->hasRole(Role::COORDINATOR);
     }
 
     public function canViewAllAttendanceData(User $user): bool
@@ -231,7 +232,7 @@ class AttendanceService
     public function resolveAttendanceUser(string $cardCode): ?User
     {
         return User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['customer', 'koordinator', 'coordinator']);
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })
         ->where('is_active', true)
         ->where(function ($q) use ($cardCode) {

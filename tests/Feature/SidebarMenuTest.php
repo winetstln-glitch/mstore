@@ -14,7 +14,7 @@ class SidebarMenuTest extends TestCase
     public function test_sidebar_menu_order()
     {
         // Create Admin Role and User
-        $adminRole = Role::create(['name' => 'admin', 'label' => 'Administrator']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
         $admin = User::factory()->create(['role_id' => $adminRole->id]);
 
         // Act
@@ -23,20 +23,19 @@ class SidebarMenuTest extends TestCase
         // Assert
         $response->assertStatus(200);
 
-        // Check for "Main Menu" header
-        $response->assertSee(__('Menu Utama'));
-
         $response->assertSeeInOrder([
-            __('Dashboard'),
-            __('Pelanggan & Layanan'),
-            __('Jaringan'),
-            __('Operasional'),
-            __('Sistem'),
+            __('Dashboard Center'),
+            __('Customer Center'),
+            __('Network Operations'),
+            __('Ticketing'),
+            __('WhatsApp & AI'),
+            __('Finance Center'),
+            __('HR & Asset'),
+            __('Business Units'),
+            __('System Administration'),
         ]);
 
-        $response->assertSee(__('Monitor Jaringan'));
-        $response->assertSee(__('Router / NAS'));
-        $response->assertSee(__('OLT'));
-        $response->assertSee(__('Tiket & Gangguan'));
+        $response->assertSee(__('Dashboard NOC'));
+        $response->assertSee(__('Pendataan Modem'));
     }
 }

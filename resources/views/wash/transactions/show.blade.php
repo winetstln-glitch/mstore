@@ -102,6 +102,8 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
                 <div class="context-line"><span>{{ __('Pelanggan / Kendaraan') }}</span><span>{{ $customerName }} / {{ $vehiclePlate }}</span></div>
                 @if(!empty($transaction->queue_number))
                 <div class="context-line"><span>{{ __('Nomor Antrean') }}</span><span>#{{ $transaction->queue_number }}</span></div>
+                <div class="context-line"><span>{{ __('Queue Priority') }}</span><span>{{ $transaction->queue_priority_label }} ({{ $transaction->queue_display }})</span></div>
+                <div class="context-line"><span>{{ __('Urutan Layanan') }}</span><span>#{{ $transaction->queue_service_order_today }}</span></div>
                 @endif
                 @if($showDiscountType)
                 <div class="context-line"><span>Jenis Diskon</span><span>{{ $discountLabel }}</span></div>

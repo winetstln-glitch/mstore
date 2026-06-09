@@ -4,10 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\AtkTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class AtkReportController extends Controller
+class AtkReportController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:atk.report'),
+        ];
+    }
+
     private function buildData(Request $request)
     {
         $date = $request->input('date', now()->format('Y-m-d'));

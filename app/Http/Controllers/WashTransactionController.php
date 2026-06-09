@@ -14,7 +14,14 @@ use App\Models\WashStockItem;
 use App\Models\WashStockMovement;
 use App\Models\WashTransaction;
 use App\Models\WashTransactionItem;
+use App\Models\WashMember;
+use App\Models\WashMemberLevel;
+use App\Models\WashLoyaltyCounter;
+use App\Models\WashRewardVoucher;
 use App\Services\AccountingPoster;
+use App\Services\AuditLogService;
+use App\Services\Wash\WashLoyaltyService;
+use App\Services\Wash\WashMembershipService;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -23,6 +30,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 
@@ -138,6 +146,78 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->limit(5)
             ->get();
 
+        $loyaltyTotalCustomers = 0;
+        $loyaltyActiveVouchers = 0;
+        $loyaltyUsedVouchers = 0;
+        $loyaltyExpiredVouchers = 0;
+        $loyaltyTopCustomer = null;
+        $totalMembers = 0;
+        $bronzeMembers = 0;
+        $silverMembers = 0;
+        $goldMembers = 0;
+        $platinumMembers = 0;
+        $membershipGrowth = 0;
+        $rewardRedemptionCount = 0;
+        $repeatCustomerRate = 0;
+        $topMember = null;
+        if (Schema::hasTable('wash_loyalty_counters') && Schema::hasTable('wash_reward_vouchers')) {
+            $loyaltyTotalCustomers = WashLoyaltyCounter::query()->count();
+            $now = now();
+            $loyaltyActiveVouchers = WashRewardVoucher::query()
+                ->where('status', 'available')
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', $now);
+                })
+                ->count();
+            $loyaltyUsedVouchers = WashRewardVoucher::query()->where('status', 'used')->count();
+            $loyaltyExpiredVouchers = WashRewardVoucher::query()
+                ->where(function ($q) use ($now) {
+                    $q->where('status', 'expired')
+                        ->orWhere(function ($q2) use ($now) {
+                            $q2->where('status', 'available')->whereNotNull('expires_at')->where('expires_at', '<=', $now);
+                        });
+                })
+                ->count();
+            $loyaltyTopCustomer = WashLoyaltyCounter::query()
+                ->with('customer')
+                ->orderByDesc('lifetime_paid_count')
+                ->first();
+        }
+        if (Schema::hasTable('wash_members') && Schema::hasTable('wash_member_levels')) {
+            $totalMembers = WashMember::query()->count();
+            $bronzeLevelId = WashMemberLevel::query()->where('code', 'bronze')->value('id');
+            $silverLevelId = WashMemberLevel::query()->where('code', 'silver')->value('id');
+            $goldLevelId = WashMemberLevel::query()->where('code', 'gold')->value('id');
+            $platinumLevelId = WashMemberLevel::query()->where('code', 'platinum')->value('id');
+            $bronzeMembers = $bronzeLevelId ? WashMember::query()->where('wash_member_level_id', $bronzeLevelId)->count() : 0;
+            $silverMembers = $silverLevelId ? WashMember::query()->where('wash_member_level_id', $silverLevelId)->count() : 0;
+            $goldMembers = $goldLevelId ? WashMember::query()->where('wash_member_level_id', $goldLevelId)->count() : 0;
+            $platinumMembers = $platinumLevelId ? WashMember::query()->where('wash_member_level_id', $platinumLevelId)->count() : 0;
+            $membershipGrowth = WashMember::query()->whereDate('joined_at', '>=', now()->startOfMonth())->count();
+            $topMember = WashMember::query()->with('level')->orderByDesc('total_spending')->first();
+        }
+        if (Schema::hasTable('wash_reward_redemptions')) {
+            $rewardRedemptionCount = \App\Models\WashRewardRedemption::query()
+                ->whereDate('redeemed_at', '>=', now()->startOfMonth())
+                ->count();
+        }
+        if (Schema::hasTable('wash_transactions')) {
+            $uniqueCustomers = WashTransaction::query()
+                ->whereNotNull('vehicle_plate')
+                ->whereRaw("TRIM(COALESCE(vehicle_plate, '')) <> ''")
+                ->distinct('vehicle_plate')
+                ->count('vehicle_plate');
+            $repeatCustomers = WashTransaction::query()
+                ->selectRaw("UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) as normalized_plate")
+                ->whereNotNull('vehicle_plate')
+                ->whereRaw("TRIM(COALESCE(vehicle_plate, '')) <> ''")
+                ->groupBy('normalized_plate')
+                ->havingRaw('COUNT(*) >= 2')
+                ->get()
+                ->count();
+            $repeatCustomerRate = $uniqueCustomers > 0 ? round(($repeatCustomers / $uniqueCustomers) * 100, 2) : 0;
+        }
+
         return view('wash.dashboard', compact(
             'dailySales',
             'monthlySales',
@@ -149,7 +229,21 @@ class WashTransactionController extends Controller implements HasMiddleware
             'todayAttendance',
             'attendanceOverview',
             'shiftSchedule',
-            'presentEmployees'
+            'presentEmployees',
+            'loyaltyTotalCustomers',
+            'loyaltyActiveVouchers',
+            'loyaltyUsedVouchers',
+            'loyaltyExpiredVouchers',
+            'loyaltyTopCustomer',
+            'totalMembers',
+            'bronzeMembers',
+            'silverMembers',
+            'goldMembers',
+            'platinumMembers',
+            'membershipGrowth',
+            'rewardRedemptionCount',
+            'repeatCustomerRate',
+            'topMember'
         ));
     }
 
@@ -180,37 +274,74 @@ class WashTransactionController extends Controller implements HasMiddleware
         $phone = $request->query('phone');
         $vehiclePlate = $request->query('vehicle_plate');
         $customerName = $request->query('customer_name');
-        $customer = WashCustomer::where('phone', $phone)->first();
-        [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier($vehiclePlate);
-        $visitCount = 0;
-        if ($loyaltyType && $loyaltyValue) {
-            $visitCount = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->count();
-        }
-        $loyaltyTarget = $this->getLoyaltyTarget();
-        $nextBonusIn = $loyaltyTarget - ($visitCount % $loyaltyTarget);
-        if ($nextBonusIn === 0) {
-            $nextBonusIn = $loyaltyTarget;
+        $customer = null;
+        if (is_string($phone) && trim($phone) !== '') {
+            $customer = WashCustomer::where('phone', $phone)->first();
         }
 
-        if ($customer || $visitCount > 0) {
+        $loyalty = app(WashLoyaltyService::class);
+        $membership = app(WashMembershipService::class);
+        $plate = $loyalty->normalizePlate((string) $vehiclePlate);
+        $target = $loyalty->target();
+
+        $member = null;
+        if ($plate !== '') {
+            $member = $membership->findMemberByPlate($plate);
+        }
+        if (! $member && is_string($phone) && trim($phone) !== '') {
+            $member = $membership->findMemberByPhone((string) $phone);
+        }
+        $memberDiscountPercent = $membership->calculateDiscountPercent($member);
+
+        if ($plate === '' || ! Schema::hasTable('wash_loyalty_counters')) {
             return response()->json([
-                'found' => true,
-                'name' => $customer->name ?? $customerName,
-                'visit_count' => $visitCount,
-                'free_wash_eligibility' => $loyaltyType === 'plate' ? (int) ($customer->free_wash_eligibility ?? 0) : 0,
-                'next_bonus_in' => $nextBonusIn,
-                'loyalty_target' => $loyaltyTarget,
-                'loyalty_basis' => $loyaltyType,
+                'found' => (bool) $customer,
+                'name' => $customer?->name ?? $customerName,
+                'progress' => 0,
+                'target' => $target,
+                'remaining' => $target,
+                'voucher_count' => 0,
+                'voucher_codes' => [],
+                'loyalty_basis' => 'plate',
+                'member_found' => (bool) $member,
+                'member_number' => $member?->member_number,
+                'member_name' => $member?->name,
+                'member_status' => $member?->status,
+                'member_level_code' => $member?->level?->code,
+                'member_level_name' => $member?->level?->name,
+                'member_discount_percent' => $memberDiscountPercent,
             ]);
         }
 
+        $counter = $loyalty->getOrCreateCounter($customer, $plate);
+        $progress = $loyalty->progress($counter);
+        $vouchers = Schema::hasTable('wash_reward_vouchers')
+            ? $loyalty->availableVouchersForPlate($plate)
+            : collect();
+
+        $voucherCodes = $vouchers->pluck('code')->take(10)->values()->all();
+
+        $found = (bool) $customer || ((int) $counter->lifetime_paid_count) > 0;
+
         return response()->json([
-            'found' => false,
-            'visit_count' => 0,
-            'free_wash_eligibility' => 0,
-            'next_bonus_in' => $loyaltyTarget,
-            'loyalty_target' => $loyaltyTarget,
-            'loyalty_basis' => $loyaltyType,
+            'found' => $found,
+            'name' => $customer?->name ?? $customerName,
+            'progress' => (int) ($progress['progress'] ?? 0),
+            'target' => (int) ($progress['target'] ?? $target),
+            'remaining' => (int) ($progress['remaining'] ?? $target),
+            'voucher_count' => (int) $vouchers->count(),
+            'voucher_codes' => $voucherCodes,
+            'loyalty_basis' => 'plate',
+            'member_found' => (bool) $member,
+            'member_number' => $member?->member_number,
+            'member_name' => $member?->name,
+            'member_status' => $member?->status,
+            'member_level_code' => $member?->level?->code,
+            'member_level_name' => $member?->level?->name,
+            'member_discount_percent' => $memberDiscountPercent,
+            'member_total_transactions' => (int) ($member?->total_transactions ?? 0),
+            'member_total_visits' => (int) ($member?->total_visits ?? 0),
+            'member_total_spending' => (float) ($member?->total_spending ?? 0),
         ]);
     }
 
@@ -228,6 +359,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             'vehicle_plate' => 'nullable|string',
             'vehicle_brand' => 'nullable|string',
             'use_voucher' => 'nullable|boolean',
+            'voucher_code' => 'nullable|string',
             'kasbon_type' => 'nullable|string',
             'kasbon_user_id' => 'nullable|exists:users,id',
             'kasbon_name' => 'nullable|string',
@@ -253,6 +385,17 @@ class WashTransactionController extends Controller implements HasMiddleware
                 if ($request->customer_name && $customer->name === 'Guest') {
                     $customer->update(['name' => $request->customer_name]);
                 }
+            }
+
+            $member = null;
+            if (is_string($request->customer_phone) && trim((string) $request->customer_phone) !== '' && $vehiclePlateForStore !== '') {
+                $memberName = trim((string) ($request->customer_name ?? $customer?->name ?? ''));
+                $member = app(WashMembershipService::class)->ensureMember(
+                    $memberName,
+                    (string) $request->customer_phone,
+                    $vehiclePlateForStore,
+                    $request->vehicle_brand ? (string) $request->vehicle_brand : null
+                );
             }
 
             $total = 0;
@@ -308,47 +451,52 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             $discountAmount = 0;
+            $memberDiscountAmount = 0;
             $discountType = null;
-            [$loyaltyType, $loyaltyValue] = $this->resolveLoyaltyIdentifier(
-                $vehiclePlateForStore
-            );
-            $hasLoyaltyPlate = $loyaltyType === 'plate' && ! empty($loyaltyValue);
-            $visitCountBefore = 0;
-            $isLoyaltyBonusVisit = false;
-            $loyaltyTarget = $this->getLoyaltyTarget();
-            if ($hasLoyaltyPlate) {
-                $visitCountBefore = $this->buildLoyaltyQuery($loyaltyType, $loyaltyValue)->lockForUpdate()->count();
-                $isLoyaltyBonusVisit = (($visitCountBefore + 1) % $loyaltyTarget) === 0;
-            }
-
-            if ($hasLoyaltyPlate && $customer && $request->use_voucher && $customer->free_wash_eligibility > 0) {
-                if (count($items) > 0) {
-                    $discountAmount = $items[0]['price'];
-                    $discountType = 'voucher';
-                    $customer->decrement('free_wash_eligibility');
-                }
-            }
-
-            if ($discountAmount <= 0 && $isLoyaltyBonusVisit && count($items) > 0) {
-                $discountAmount = $items[0]['price'];
-                $discountType = 'loyalty';
-            }
+            $discountNote = null;
+            $voucherCode = trim((string) $request->input('voucher_code', ''));
+            $useRewardVoucher = (bool) $request->input('use_voucher') || $voucherCode !== '';
 
             if ($customer) {
-                $nextVisitCount = ((int) $customer->visit_count) + 1;
                 $customer->increment('visit_count');
-                if ($hasLoyaltyPlate && $nextVisitCount % $loyaltyTarget === 0 && $discountType !== 'loyalty') {
-                    $customer->increment('free_wash_eligibility');
+            }
+
+            $memberDiscountPercent = 0;
+            if (! $useRewardVoucher && $member) {
+                $membership = app(WashMembershipService::class);
+                // Membership level is upgraded after a successful paid transaction,
+                // so the discount applied here always reflects the member's level
+                // before this transaction. Any new level becomes effective on the
+                // next paid visit without changing the existing POS flow.
+                $memberDiscountPercent = $membership->calculateDiscountPercent($member);
+                $memberDiscountAmount = $membership->calculateDiscountAmount((float) $total, (float) $memberDiscountPercent);
+                if ($memberDiscountAmount > 0) {
+                    $discountAmount += $memberDiscountAmount;
+                    $discountType = 'member_discount';
+                    $discountNote = 'member_discount:'.rtrim(rtrim(number_format((float) $memberDiscountPercent, 2, '.', ''), '0'), '.').'%';
                 }
+            }
+
+            if ($useRewardVoucher) {
+                if ($request->payment_method === 'kasbon') {
+                    throw new \RuntimeException('Voucher tidak bisa digunakan untuk transaksi kasbon.');
+                }
+                if ($voucherCode === '') {
+                    throw new \RuntimeException('Pilih kode voucher terlebih dahulu.');
+                }
+                if (count($items) !== 1 || ((int) ($items[0]['quantity'] ?? 0)) !== 1) {
+                    throw new \RuntimeException('Voucher hanya berlaku untuk 1 transaksi dengan 1 layanan (qty 1).');
+                }
+                $service = WashService::find($items[0]['wash_service_id']);
+                if ($service && $service->vehicle_type === 'coffee') {
+                    throw new \RuntimeException('Voucher tidak berlaku untuk layanan caffe.');
+                }
+                $discountAmount = $total;
+                $discountType = 'reward_voucher';
+                $discountNote = 'reward_voucher:'.strtoupper($voucherCode);
             }
 
             $finalTotal = max(0, $total - $discountAmount);
-            $discountNote = null;
-            if ($discountType === 'loyalty') {
-                $discountNote = 'bonus_cuci_10x';
-            } elseif ($discountType === 'voucher') {
-                $discountNote = 'voucher_free_wash';
-            }
 
             // Determine if transaction is Caffe/Warkop or Wash
             $isCaffe = false;
@@ -383,18 +531,20 @@ class WashTransactionController extends Controller implements HasMiddleware
             $transaction = WashTransaction::create([
                 'user_id' => Auth::id(),
                 'wash_customer_id' => $customer ? $customer->id : null,
+                'wash_member_id' => $member?->id,
                 'transaction_number' => 'TEMP-' . uniqid(), // Temporary unique value
                 'queue_number' => $queueNumber,
                 'total_amount' => $finalTotal,
                 'discount_amount' => $discountAmount,
-                'payment_method' => $request->payment_method,
+                'member_discount_amount' => $memberDiscountAmount,
+                'payment_method' => $discountType === 'reward_voucher' ? 'voucher' : $request->payment_method,
                 'cash_amount' => $request->cash_amount,
                 'change_amount' => $request->cash_amount ? ($request->cash_amount - $finalTotal) : 0,
                 'customer_name' => $request->customer_name ?? ($customer ? $customer->name : null),
                 'vehicle_plate' => $vehiclePlateForStore,
                 'vehicle_brand' => $request->vehicle_brand,
                 'notes' => $discountNote,
-                'status' => $request->payment_method === 'kasbon' ? 'pending' : 'lunas',
+                'status' => ($discountType === 'reward_voucher' || $request->payment_method !== 'kasbon') ? 'lunas' : 'pending',
                 'kasbon_type' => $request->payment_method === 'kasbon' ? $request->kasbon_type : null,
                 'kasbon_user_id' => $request->payment_method === 'kasbon' && $request->kasbon_type === 'employee' ? $request->kasbon_user_id : null,
                 'kasbon_name' => $request->payment_method === 'kasbon' && $request->kasbon_type === 'outsider' ? $request->kasbon_name : null,
@@ -481,6 +631,11 @@ class WashTransactionController extends Controller implements HasMiddleware
                 }
             }
 
+            $redeemedVoucher = null;
+            if ($discountType === 'reward_voucher') {
+                $redeemedVoucher = app(WashLoyaltyService::class)->redeemVoucher($voucherCode, $transaction, $total);
+            }
+
             // Update default cash balance only if payment is not kasbon
             if ($request->payment_method !== 'kasbon') {
                 $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
@@ -524,14 +679,78 @@ class WashTransactionController extends Controller implements HasMiddleware
 
             DB::commit();
 
+            $rewardVoucherCreatedCode = null;
+            $loyaltyProgress = null;
+            $membershipLevelUpgraded = false;
+            $membershipOldLevel = null;
+            $membershipNewLevel = null;
+            $memberFresh = null;
+
+            if ($transaction->member_discount_amount > 0) {
+                try {
+                    app(AuditLogService::class)->logAction('wash_membership.discount_applied', $transaction, [
+                        'wash_member_id' => $transaction->wash_member_id,
+                        'amount' => (float) $transaction->member_discount_amount,
+                        'note' => $transaction->notes,
+                    ]);
+                } catch (\Throwable) {
+                }
+            }
+
+            if ($transaction->wash_member_id) {
+                try {
+                    $membership = app(WashMembershipService::class);
+                    $sync = $membership->syncAfterTransaction($transaction);
+                    $memberFresh = $sync['member'] ?? null;
+                    $membershipLevelUpgraded = (bool) ($sync['level_upgraded'] ?? false);
+                    $membershipOldLevel = $sync['old_level'] ?? null;
+                    $membershipNewLevel = $sync['new_level'] ?? null;
+                    if ($membershipLevelUpgraded && $memberFresh && $membershipNewLevel instanceof \App\Models\WashMemberLevel) {
+                        $membership->sendLevelUpWhatsApp($memberFresh, $membershipNewLevel);
+                    }
+                } catch (\Throwable) {
+                }
+            }
+
+            if ($discountType !== 'reward_voucher') {
+                try {
+                    $loyalty = app(WashLoyaltyService::class);
+                    $result = $loyalty->incrementOnPaidTransaction($transaction);
+                    $created = $result['created_voucher'] ?? null;
+                    $loyaltyProgress = $result['progress'] ?? null;
+                    if ($created instanceof \App\Models\WashRewardVoucher) {
+                        $rewardVoucherCreatedCode = $created->code;
+                    }
+
+                    if ($memberFresh) {
+                        $target = is_array($loyaltyProgress) ? (int) ($loyaltyProgress['target'] ?? 10) : 10;
+                        $progressValue = is_array($loyaltyProgress) ? (int) ($loyaltyProgress['progress'] ?? 0) : 0;
+                        $remaining = is_array($loyaltyProgress) ? (int) ($loyaltyProgress['remaining'] ?? $target) : $target;
+                        app(WashMembershipService::class)->sendAfterTransactionWhatsApp($memberFresh, [
+                            'loyalty_progress' => $progressValue,
+                            'loyalty_target' => $target,
+                            'loyalty_remaining' => $remaining,
+                            'reward_voucher_code' => $rewardVoucherCreatedCode,
+                        ]);
+                    }
+                } catch (\Throwable) {
+                }
+            }
+
             $itemsList = collect($items)->map(fn($item) => "- {$item['service_name']} x{$item['quantity']}")->join("\n");
-            $paymentMethodLabel = strtoupper($request->payment_method);
+            $paymentMethodLabel = $discountType === 'reward_voucher' ? 'VOUCHER' : strtoupper($request->payment_method);
             $cashierName = Auth::user()?->name ?? 'Sistem';
             $vehiclePlate = $vehiclePlateForStore ?: '-';
             $customerName = $request->customer_name ?? ($customer ? $customer->name : 'Tamu');
             
+            $queueDisplay = $transaction->queue_display;
+            $queuePriorityLabel = $transaction->queue_priority_label;
+            $queueServiceOrder = $transaction->queue_service_order_today;
+
             $message = "🧼 *TRANSAKSI WASH BARU*\n\n";
             $message .= "📋 *No. Antrian:* {$queueNumber}\n";
+            $message .= "🚦 *Queue Priority:* {$queuePriorityLabel} ({$queueDisplay})\n";
+            $message .= "🏁 *Urutan Layanan Hari Ini:* #{$queueServiceOrder}\n";
             $message .= "💰 *Total:* Rp " . number_format($finalTotal, 0, ',', '.') . "\n";
             $message .= "💳 *Metode:* {$paymentMethodLabel}\n";
             $message .= "👤 *Pelanggan:* {$customerName}\n";
@@ -545,9 +764,23 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'success' => true,
                 'transaction_id' => $transaction->id,
                 'queue_number' => $queueNumber,
-                'visit_count' => $visitCountBefore + 1,
+                'queue_display' => $transaction->queue_display,
+                'queue_priority_label' => $transaction->queue_priority_label,
+                'queue_priority_sort' => $transaction->queue_priority_sort,
+                'queue_service_order_today' => $transaction->queue_service_order_today,
                 'discount_type' => $discountType,
-                'message' => 'Transaction successful'.($discountAmount > 0 ? ' (Bonus Applied)' : ''),
+                'redeemed_voucher_code' => $redeemedVoucher?->code,
+                'reward_voucher_created_code' => $rewardVoucherCreatedCode,
+                'loyalty_progress' => $loyaltyProgress,
+                'member_number' => $memberFresh?->member_number ?? $member?->member_number,
+                'member_level' => $memberFresh?->level?->code ?? $member?->level?->code,
+                'member_discount_percent' => $memberDiscountPercent ?? 0,
+                'member_discount_amount' => (float) ($memberDiscountAmount ?? 0),
+                'membership_level_upgraded' => $membershipLevelUpgraded,
+                'membership_new_level' => $membershipNewLevel?->code,
+                'membership_new_level_effective_from' => $membershipLevelUpgraded ? 'next_transaction' : null,
+                'receipt_url' => route('wash.transactions.receipt', $transaction),
+                'message' => 'Transaction successful',
             ]);
 
         } catch (\Exception $e) {
@@ -559,7 +792,7 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = WashTransaction::with(['user', 'items', 'washCustomer']);
+        $query = WashTransaction::with(['user', 'items', 'washCustomer', 'member.level']);
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [
@@ -590,6 +823,8 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function show(WashTransaction $transaction)
     {
+        $transaction->loadMissing(['user', 'items', 'washCustomer', 'member.level']);
+
         return view('wash.transactions.show', compact('transaction'));
     }
 
@@ -603,7 +838,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             'customer_name' => 'nullable|string|max:255',
             'vehicle_plate' => 'nullable|string|max:50',
             'vehicle_brand' => 'nullable|string|max:100',
-            'payment_method' => 'required|in:cash,qris,transfer,edc,kasbon',
+            'payment_method' => 'required|in:cash,qris,transfer,edc,kasbon,voucher',
             'cash_amount' => 'nullable|numeric|min:0',
             'kasbon_type' => 'nullable|in:employee,outsider',
             'kasbon_user_id' => 'nullable|integer|exists:users,id',
@@ -805,7 +1040,7 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function receipt(WashTransaction $transaction)
     {
-        $transaction->loadMissing('user', 'items');
+        $transaction->loadMissing(['user', 'items', 'member.level']);
         [$washVisitCount, $washVisitsToNextBonus] = $this->calculateLoyaltyProgressUntilTransaction($transaction);
 
         return view('wash.transactions.receipt', compact('transaction', 'washVisitCount', 'washVisitsToNextBonus'));
@@ -981,28 +1216,22 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     private function calculateLoyaltyProgressUntilTransaction(WashTransaction $transaction): array
     {
-        [$type, $value] = $this->resolveLoyaltyIdentifier(
-            (string) ($transaction->vehicle_plate ?? '')
-        );
-
-        if (! $type || ! $value || ! $transaction->created_at) {
+        $loyalty = app(WashLoyaltyService::class);
+        $plate = $loyalty->normalizePlate((string) ($transaction->vehicle_plate ?? ''));
+        if ($plate === '' || ! Schema::hasTable('wash_loyalty_counters')) {
             return [0, null];
         }
 
-        $query = $this->buildLoyaltyQuery($type, $value);
-        $query->where(function ($q) use ($transaction) {
-            $q->where('created_at', '<', $transaction->created_at)
-                ->orWhere(function ($q2) use ($transaction) {
-                    $q2->where('created_at', $transaction->created_at)
-                        ->where('id', '<=', $transaction->id);
-                });
-        });
+        $counter = \App\Models\WashLoyaltyCounter::query()->where('vehicle_plate', $plate)->first();
+        if (! $counter) {
+            return [0, null];
+        }
 
-        $visitCount = (int) $query->count();
-        $loyaltyTarget = $this->getLoyaltyTarget();
-        $progressInCycle = $visitCount % $loyaltyTarget;
-        $visitsToNextBonus = $progressInCycle === 0 ? 0 : ($loyaltyTarget - $progressInCycle);
+        $progress = $loyalty->progress($counter);
 
-        return [$visitCount, $visitsToNextBonus];
+        return [
+            (int) ($progress['lifetime_paid_count'] ?? 0),
+            (int) ($progress['remaining'] ?? $loyalty->target()),
+        ];
     }
 }

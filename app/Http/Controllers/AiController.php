@@ -44,4 +44,18 @@ class AiController extends Controller
             'response' => $response,
         ]);
     }
+
+    public function publicChat(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string|max:255',
+        ]);
+
+        $reply = $this->aiService->processChat($request->input('message'));
+
+        return response()->json([
+            'reply' => $reply,
+            'response' => $reply,
+        ]);
+    }
 }

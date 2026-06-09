@@ -18,6 +18,55 @@
                 <form action="{{ route('settings.update') }}" method="POST">
                     @csrf
 
+                    @php
+                        $workScheduleValue = $settings['work_schedule'] ?? null;
+                        $workSchedule = is_array($workScheduleValue)
+                            ? $workScheduleValue
+                            : (is_string($workScheduleValue) ? (json_decode($workScheduleValue, true) ?: []) : []);
+                        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    @endphp
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-solid fa-calendar-week me-1"></i> {{ __('Jadwal Kerja Mingguan') }}
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th class="align-middle" style="width:30%">Hari</th>
+                                        <th class="align-middle" style="width:15%">Aktif</th>
+                                        <th class="align-middle" style="width:25%">Mulai</th>
+                                        <th class="align-middle" style="width:25%">Selesai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($days as $day)
+                                        @php
+                                            $dayData = $workSchedule[$day] ?? [];
+                                            $enabled = old("work_schedule.$day.enabled", $dayData['enabled'] ?? '1');
+                                            $start = old("work_schedule.$day.start", $dayData['start'] ?? '09:00');
+                                            $end = old("work_schedule.$day.end", $dayData['end'] ?? '18:00');
+                                        @endphp
+                                        <tr>
+                                            <td class="fw-medium align-middle ps-3">{{ $day }}</td>
+                                            <td class="text-center align-middle">
+                                                <input type="hidden" name="work_schedule[{{ $day }}][enabled]" value="0">
+                                                <input class="form-check-input" type="checkbox" value="1" name="work_schedule[{{ $day }}][enabled]" {{ (string) $enabled === '1' ? 'checked' : '' }}>
+                                            </td>
+                                            <td>
+                                                <input type="time" class="form-control form-control-sm" name="work_schedule[{{ $day }}][start]" value="{{ $start }}">
+                                            </td>
+                                            <td>
+                                                <input type="time" class="form-control form-control-sm" name="work_schedule[{{ $day }}][end]" value="{{ $end }}">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- ==================== PENGATURAN UMUM ==================== -->
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">

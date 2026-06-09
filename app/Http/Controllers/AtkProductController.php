@@ -4,12 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\AtkProduct;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader;
 use OpenSpout\Writer\XLSX\Writer;
 
-class AtkProductController extends Controller
+class AtkProductController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:atk.manage'),
+        ];
+    }
+
     public function barcodes(Request $request)
     {
         $query = AtkProduct::query();

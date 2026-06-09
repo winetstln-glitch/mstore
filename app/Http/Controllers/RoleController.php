@@ -7,6 +7,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -271,6 +272,7 @@ class RoleController extends Controller implements HasMiddleware
         if (!empty($validated['permissions'])) {
             $role->permissions()->sync($validated['permissions']);
         }
+        Cache::forget("sidebar.permission_map.role.{$role->id}");
 
         return redirect()->route('roles.index')->with('success', __('Role berhasil dibuat.'));
     }
@@ -346,6 +348,7 @@ class RoleController extends Controller implements HasMiddleware
         } else {
             $role->permissions()->detach();
         }
+        Cache::forget("sidebar.permission_map.role.{$role->id}");
 
         return redirect()->route('roles.index')->with('success', __('Role berhasil diperbarui.'));
     }

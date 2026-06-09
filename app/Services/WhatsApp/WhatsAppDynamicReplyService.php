@@ -9,10 +9,23 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Ticket;
 use App\Models\Package;
+use App\Models\WeddingPackage;
+use App\Models\WeddingBooking;
+use App\Models\CctvPackage;
+use App\Models\CctvBooking;
+use App\Models\CctvSurvey;
+use App\Models\WashCustomer as WashCustomerModel;
+use App\Models\WashLoyaltyCounter;
+use App\Models\WashMember;
+use App\Models\WashRewardVoucher;
+use App\Events\WhatsApp\WhatsAppAnalyticsObserved;
 use App\Services\AiService;
+use App\Services\KnowledgeBaseRetrievalService;
 use App\Services\PaymentService;
 use App\Services\NetworkDiagnosticService;
 use App\Services\TechnicianAssignmentService;
+use App\Services\Wash\WashLoyaltyService;
+use App\Services\Wash\WashMembershipService;
 use App\Actions\WhatsApp\RunDiagnosticAction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -25,14 +38,16 @@ class WhatsAppDynamicReplyService
     protected $networkDiagnosticService;
     protected $technicianAssignmentService;
     protected $runDiagnosticAction;
+    protected $knowledgeBaseRetrieval;
 
-    public function __construct(AiService $aiService, PaymentService $paymentService, NetworkDiagnosticService $networkDiagnosticService, TechnicianAssignmentService $technicianAssignmentService, RunDiagnosticAction $runDiagnosticAction)
+    public function __construct(AiService $aiService, PaymentService $paymentService, NetworkDiagnosticService $networkDiagnosticService, TechnicianAssignmentService $technicianAssignmentService, RunDiagnosticAction $runDiagnosticAction, KnowledgeBaseRetrievalService $knowledgeBaseRetrieval)
     {
         $this->aiService = $aiService;
         $this->paymentService = $paymentService;
         $this->networkDiagnosticService = $networkDiagnosticService;
         $this->technicianAssignmentService = $technicianAssignmentService;
         $this->runDiagnosticAction = $runDiagnosticAction;
+        $this->knowledgeBaseRetrieval = $knowledgeBaseRetrieval;
     }
 
     public function getReply(string $message, ?User $user = null, ?WhatsAppSession $session = null, ?string $mediaUrl = null, ?string $mediaType = null): array
@@ -122,6 +137,24 @@ class WhatsAppDynamicReplyService
 
     private function classifyIntent(string $message): string
     {
+        if (Str::contains($message, 'member wash')) {
+            return 'wash_member_help';
+        }
+        if (Str::contains($message, 'cek member') || Str::contains($message, 'status member')) {
+            return 'wash_member_status';
+        }
+        if (Str::contains($message, 'cek level') || Str::contains($message, 'level member')) {
+            return 'wash_member_level';
+        }
+        if (Str::contains($message, 'cek loyalty') || Str::contains($message, 'cek loyalti') || Str::contains($message, 'loyalty')) {
+            return 'wash_loyalty_status';
+        }
+        if (Str::contains($message, 'status reward') || Str::contains($message, 'cek voucher')) {
+            if (! Str::contains($message, 'hotspot') && ! Str::contains($message, 'internet')) {
+                return 'wash_reward_status';
+            }
+        }
+
         $keywords = [
             'check_bill' => ['tagihan', 'invoice', 'bayar', 'pembayaran', 'tunggakan'],
             'report_outage' => ['internet mati', 'wifi mati', 'lemot', 'putus-putus', 'gangguan', 'koneksi lambat'],
@@ -187,19 +220,34 @@ class WhatsAppDynamicReplyService
                 return $this->handleVoucher($message);
 
             case 'cctv':
-                return $this->handleCCTV();
+                return $this->handleCCTV($message, $session);
 
             case 'wash':
                 return $this->handleWash();
+
+            case 'wash_member_help':
+                return $this->handleWashMemberHelp();
+
+            case 'wash_member_status':
+                return $this->handleWashMemberStatus($session);
+
+            case 'wash_member_level':
+                return $this->handleWashMemberLevel($session);
+
+            case 'wash_loyalty_status':
+                return $this->handleWashLoyaltyStatus($session);
+
+            case 'wash_reward_status':
+                return $this->handleWashRewardStatus($session);
 
             case 'atk':
                 return $this->handleATK();
 
             case 'wedding':
-                return $this->handleWedding();
+                return $this->handleWedding($message, $session);
 
             case 'event':
-                return $this->handleEvent();
+                return $this->handleEvent($message, $session);
 
             case 'contact':
                 return $this->handleContact();
@@ -210,6 +258,181 @@ class WhatsAppDynamicReplyService
             default:
                 return $this->handleFallback($message, $user);
         }
+    }
+
+    private function handleWashMemberHelp(): array
+    {
+        return [
+            'type' => 'text',
+            'text' => "GT Wash Membership Digital tersedia gratis.\n\n"
+                ."Untuk menjadi member, cukup gunakan:\n"
+                ."• Nama\n"
+                ."• WhatsApp\n"
+                ."• Plat nomor\n\n"
+                ."Perintah yang bisa Anda pakai:\n"
+                ."• cek member\n"
+                ."• cek level\n"
+                ."• cek loyalty\n"
+                ."• cek voucher",
+        ];
+    }
+
+    private function handleWashMemberStatus(?WhatsAppSession $session): array
+    {
+        $member = $this->resolveWashMemberFromSession($session);
+        if (! $member) {
+            return [
+                'type' => 'text',
+                'text' => "Data member GT Wash belum ditemukan untuk nomor ini.\nPastikan Anda menggunakan nomor WhatsApp yang sama seperti saat transaksi di kasir.",
+            ];
+        }
+
+        $member->loadMissing(['level', 'vehicles']);
+        $primaryPlate = $member->vehicles->first()?->vehicle_plate ?? '-';
+
+        return [
+            'type' => 'text',
+            'text' => "Nama:\n{$member->name}\n\n"
+                ."Nomor Member:\n{$member->member_number}\n\n"
+                ."Level:\n".($member->level?->name ?? 'Bronze Member')."\n\n"
+                ."Total Kunjungan:\n".number_format((int) $member->total_visits, 0, ',', '.')."\n\n"
+                ."Plat:\n{$primaryPlate}",
+        ];
+    }
+
+    private function handleWashMemberLevel(?WhatsAppSession $session): array
+    {
+        $member = $this->resolveWashMemberFromSession($session);
+        if (! $member) {
+            return [
+                'type' => 'text',
+                'text' => "Level member belum bisa ditampilkan karena data membership untuk nomor ini belum ditemukan.",
+            ];
+        }
+
+        $member->loadMissing('level');
+        $level = $member->level;
+        $discount = (float) ($level?->discount_percent ?? 0);
+        $benefits = collect($level?->benefits ?? [])->map(fn ($item) => '• '.$item)->implode("\n");
+        if ($benefits === '') {
+            $benefits = '• Loyalty Program';
+        }
+
+        return [
+            'type' => 'text',
+            'text' => "Level Membership:\n".($level?->name ?? 'Bronze Member')."\n\n"
+                ."Diskon:\n".rtrim(rtrim(number_format($discount, 2, ',', '.'), '0'), ',')."%\n\n"
+                ."Total Transaksi:\n".number_format((int) $member->total_transactions, 0, ',', '.')."\n\n"
+                ."Benefit:\n{$benefits}",
+        ];
+    }
+
+    private function handleWashLoyaltyStatus(?WhatsAppSession $session): array
+    {
+        $phone = $session?->phone ?? '';
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+        $alt = $digits;
+        if (str_starts_with($digits, '62')) {
+            $alt = '0'.substr($digits, 2);
+        }
+
+        $customer = WashCustomerModel::query()
+            ->where('phone', $digits)
+            ->orWhere('phone', $alt)
+            ->orWhere('phone', '+'.$digits)
+            ->first();
+
+        if (! $customer) {
+            return [
+                'type' => 'text',
+                'text' => "Untuk cek loyalty GT Wash, pastikan nomor WhatsApp Anda sama dengan nomor yang digunakan saat transaksi di kasir.",
+            ];
+        }
+
+        $loyalty = app(WashLoyaltyService::class);
+        $target = $loyalty->target();
+
+        $counters = WashLoyaltyCounter::query()
+            ->where('wash_customer_id', $customer->id)
+            ->orderByDesc('last_paid_at')
+            ->limit(5)
+            ->get();
+
+        if ($counters->count() === 0) {
+            return [
+                'type' => 'text',
+                'text' => "Progress Loyalty: 0 / {$target}\nSisa: {$target} kali lagi\nReward: Gratis 1x Cuci",
+            ];
+        }
+
+        $lines = [];
+        foreach ($counters as $counter) {
+            $p = $loyalty->progress($counter);
+            $plate = $counter->vehicle_plate;
+            $lines[] = "• {$plate}: {$p['progress']} / {$p['target']} (sisa {$p['remaining']})";
+        }
+
+        $text = "Progress Loyalty (GT Wash):\n\n".implode("\n", $lines)."\n\nReward: Gratis 1x Cuci";
+        return ['type' => 'text', 'text' => $text];
+    }
+
+    private function handleWashRewardStatus(?WhatsAppSession $session): array
+    {
+        $phone = $session?->phone ?? '';
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+        $alt = $digits;
+        if (str_starts_with($digits, '62')) {
+            $alt = '0'.substr($digits, 2);
+        }
+
+        $customer = WashCustomerModel::query()
+            ->where('phone', $digits)
+            ->orWhere('phone', $alt)
+            ->orWhere('phone', '+'.$digits)
+            ->first();
+
+        if (! $customer) {
+            return [
+                'type' => 'text',
+                'text' => "Untuk cek voucher reward GT Wash, pastikan nomor WhatsApp Anda sama dengan nomor yang digunakan saat transaksi di kasir.",
+            ];
+        }
+
+        $now = now();
+        $vouchers = WashRewardVoucher::query()
+            ->where('wash_customer_id', $customer->id)
+            ->where('status', 'available')
+            ->where(function ($q) use ($now) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', $now);
+            })
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
+
+        if ($vouchers->count() === 0) {
+            return [
+                'type' => 'text',
+                'text' => "Voucher Reward: tidak ada voucher aktif.\nKetik \"cek loyalty\" untuk melihat progress.",
+            ];
+        }
+
+        $lines = $vouchers->map(function ($v) {
+            $exp = $v->expires_at ? $v->expires_at->format('d-m-Y') : '-';
+            return "• {$v->code} ({$v->vehicle_plate}) exp: {$exp}";
+        })->all();
+
+        $text = "Voucher Reward Aktif:\n\n".implode("\n", $lines)."\n\nGunakan voucher saat transaksi di kasir (total Rp0).";
+        return ['type' => 'text', 'text' => $text];
+    }
+
+    private function resolveWashMemberFromSession(?WhatsAppSession $session): ?WashMember
+    {
+        $phone = trim((string) ($session?->phone ?? ''));
+        if ($phone === '') {
+            return null;
+        }
+
+        return app(WashMembershipService::class)->findMemberByPhone($phone);
     }
 
     private function handleShowMenu(): array
@@ -632,6 +855,12 @@ class WhatsAppDynamicReplyService
             case 'lead_qualification':
                 return $this->handleLeadQualificationStep($message, $session);
 
+            case 'wedding_booking':
+                return $this->handleWeddingBookingStep($message, $session);
+
+            case 'cctv_booking':
+                return $this->handleCctvBookingStep($message, $session);
+
             default:
                 $session->reset();
                 return $this->handleFallback($message, $user);
@@ -811,6 +1040,22 @@ class WhatsAppDynamicReplyService
                         $diagnostic->update(['ticket_id' => $ticket->id]);
                     }
 
+                    event(new WhatsAppAnalyticsObserved([
+                        'occurred_at' => now(),
+                        'direction' => 'incoming',
+                        'phone_number' => (string) ($session->phone_number ?? ''),
+                        'whatsapp_session_id' => $session->id,
+                        'intent' => 'gangguan',
+                        'used_ai' => true,
+                        'is_fallback' => false,
+                        'ticket_id' => $ticket->id,
+                        'meta' => [
+                            'source' => 'whatsapp_dynamic_reply',
+                            'flow' => 'report_outage',
+                            'with_diagnostic' => (bool) $diagnosticId,
+                        ],
+                    ]));
+
                     // Auto assign technician
                     try {
                         $this->technicianAssignmentService->autoAssign($ticket);
@@ -849,6 +1094,22 @@ class WhatsAppDynamicReplyService
                 'status' => 'open',
                 'diagnostic_id' => $diagnosticId
             ]);
+
+            event(new WhatsAppAnalyticsObserved([
+                'occurred_at' => now(),
+                'direction' => 'incoming',
+                'phone_number' => (string) ($session->phone_number ?? ''),
+                'whatsapp_session_id' => $session->id,
+                'intent' => 'gangguan',
+                'used_ai' => true,
+                'is_fallback' => false,
+                'ticket_id' => $ticket->id,
+                'meta' => [
+                    'source' => 'whatsapp_dynamic_reply',
+                    'flow' => 'report_outage',
+                    'with_diagnostic' => (bool) $diagnosticId,
+                ],
+            ]));
 
             $session->reset();
 
@@ -952,8 +1213,16 @@ class WhatsAppDynamicReplyService
         return ['type' => 'text', 'text' => $text];
     }
 
-    private function handleCCTV(): array
+    private function handleCCTV(string $message, ?WhatsAppSession $session): array
     {
+        if ($session && (str_contains($message, 'booking') || str_contains($message, 'instalasi') || str_contains($message, 'pasang'))) {
+            return $this->handleCctvBookingStart($session);
+        }
+
+        if (str_contains($message, 'paket') || str_contains($message, 'harga')) {
+            return $this->handleCctvPackages();
+        }
+
         try {
             $response = $this->aiService->getCctvInfo();
             return $this->convertAiResponseToWhatsApp($response);
@@ -994,16 +1263,354 @@ class WhatsAppDynamicReplyService
         }
     }
 
-    private function handleWedding(): array
+    private function handleWedding(string $message, ?WhatsAppSession $session): array
     {
-        $text = "💍 *WEDDING ORGANIZER*\n\nWujudkan acara pernikahan impian Anda dengan kami!\nUntuk konsultasi dan pemesanan, silakan hubungi tim wedding organizer kami.";
+        if ($session && (str_contains($message, 'booking') || str_contains($message, 'pesan') || str_contains($message, 'jadwal'))) {
+            return $this->handleWeddingBookingStart($session);
+        }
+
+        if (str_contains($message, 'paket') || str_contains($message, 'harga')) {
+            return $this->handleWeddingPackages();
+        }
+
+        $text = "💍 *WEDDING & EVENT*\n\nKetik:\n• *paket wedding* / *harga wedding*\n• *booking wedding*";
         return ['type' => 'text', 'text' => $text];
     }
 
-    private function handleEvent(): array
+    private function handleEvent(string $message, ?WhatsAppSession $session): array
     {
-        $text = "🎉 *EVENT ORGANIZER*\n\nKami siap membantu menyelenggarakan acara Anda!\nUntuk konsultasi dan pemesanan, silakan hubungi tim EO kami.";
+        return $this->handleWedding($message, $session);
+    }
+
+    private function handleWeddingPackages(): array
+    {
+        $packages = WeddingPackage::query()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->limit(20)
+            ->get();
+
+        if ($packages->isEmpty()) {
+            return ['type' => 'text', 'text' => 'Paket wedding belum tersedia saat ini.'];
+        }
+
+        $text = "💍 *PAKET WEDDING & EVENT*\n\n";
+        foreach ($packages as $i => $p) {
+            $no = $i + 1;
+            $text .= "{$no}. {$p->name}\n";
+            $text .= "   Harga: Rp ".number_format((int) $p->price, 0, ',', '.')."\n";
+        }
+        $text .= "\nKetik *booking wedding* untuk melakukan booking.";
+
         return ['type' => 'text', 'text' => $text];
+    }
+
+    private function handleCctvPackages(): array
+    {
+        $packages = CctvPackage::query()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->limit(20)
+            ->get();
+
+        if ($packages->isEmpty()) {
+            return ['type' => 'text', 'text' => 'Paket CCTV belum tersedia saat ini.'];
+        }
+
+        $text = "📹 *PAKET CCTV INSTALLATION*\n\n";
+        foreach ($packages as $i => $p) {
+            $no = $i + 1;
+            $count = $p->camera_count ? "{$p->camera_count} Camera" : 'Custom';
+            $text .= "{$no}. {$p->name} ({$count})\n";
+            $text .= "   Harga: Rp ".number_format((int) $p->price, 0, ',', '.')."\n";
+        }
+        $text .= "\nKetik *booking cctv* untuk melakukan booking instalasi.";
+
+        return ['type' => 'text', 'text' => $text];
+    }
+
+    private function handleWeddingBookingStart(WhatsAppSession $session): array
+    {
+        $packages = WeddingPackage::query()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->limit(20)
+            ->get();
+
+        if ($packages->isEmpty()) {
+            return ['type' => 'text', 'text' => 'Paket wedding belum tersedia saat ini.'];
+        }
+
+        $map = [];
+        $text = "💍 *BOOKING WEDDING*\n\nPilih paket (kirim angka):\n";
+        foreach ($packages as $i => $p) {
+            $no = $i + 1;
+            $map[(string) $no] = $p->id;
+            $text .= "{$no}. {$p->name} - Rp ".number_format((int) $p->price, 0, ',', '.')."\n";
+        }
+
+        $session->update([
+            'current_node' => 'wedding_booking',
+            'step' => 1,
+            'payload' => ['package_map' => $map],
+        ]);
+
+        return ['type' => 'text', 'text' => $text];
+    }
+
+    private function handleWeddingBookingStep(string $message, WhatsAppSession $session): array
+    {
+        $step = (int) $session->step;
+        $payload = $session->payload ?? [];
+
+        if ($step === 1) {
+            $map = $payload['package_map'] ?? [];
+            $selectedId = $map[(string) $message] ?? null;
+            $package = $selectedId ? WeddingPackage::find($selectedId) : null;
+            if (! $package) {
+                return ['type' => 'text', 'text' => 'Pilihan paket tidak valid. Silakan kirim angka paket yang tersedia.'];
+            }
+
+            $session->update([
+                'step' => 2,
+                'payload' => array_merge($payload, [
+                    'wedding_package_id' => $package->id,
+                    'package_name' => $package->name,
+                    'package_price' => (int) $package->price,
+                ]),
+            ]);
+
+            return ['type' => 'text', 'text' => "Tanggal acara (contoh: 2026-12-31)?"];
+        }
+
+        if ($step === 2) {
+            try {
+                $date = \Carbon\Carbon::parse($message)->toDateString();
+            } catch (\Throwable) {
+                return ['type' => 'text', 'text' => 'Format tanggal tidak valid. Contoh: 2026-12-31'];
+            }
+
+            $session->update([
+                'step' => 3,
+                'payload' => array_merge($payload, ['event_date' => $date]),
+            ]);
+
+            return ['type' => 'text', 'text' => 'Lokasi acara?'];
+        }
+
+        if ($step === 3) {
+            $location = trim($message);
+            if ($location === '') {
+                return ['type' => 'text', 'text' => 'Lokasi tidak boleh kosong.'];
+            }
+
+            $session->update([
+                'step' => 4,
+                'payload' => array_merge($payload, ['location' => $location]),
+            ]);
+
+            return ['type' => 'text', 'text' => 'Nama pelanggan?'];
+        }
+
+        if ($step === 4) {
+            $name = trim($message);
+            if ($name === '') {
+                return ['type' => 'text', 'text' => 'Nama tidak boleh kosong.'];
+            }
+
+            $session->update([
+                'step' => 5,
+                'payload' => array_merge($payload, ['customer_name' => $name]),
+            ]);
+
+            return ['type' => 'text', 'text' => "Nomor WhatsApp (kirim *1* untuk pakai nomor ini: {$session->phone})"];
+        }
+
+        if ($step === 5) {
+            $wa = trim($message) === '1' ? (string) $session->phone : trim($message);
+            if ($wa === '') {
+                return ['type' => 'text', 'text' => 'Nomor WhatsApp tidak boleh kosong.'];
+            }
+
+            $payload = array_merge($payload, ['customer_whatsapp' => $wa]);
+
+            $booking = WeddingBooking::create([
+                'customer_name' => (string) ($payload['customer_name'] ?? ''),
+                'customer_whatsapp' => (string) ($payload['customer_whatsapp'] ?? ''),
+                'event_date' => (string) ($payload['event_date'] ?? now()->toDateString()),
+                'location' => (string) ($payload['location'] ?? '-'),
+                'wedding_package_id' => (int) ($payload['wedding_package_id'] ?? 0),
+                'status' => 'pending',
+            ]);
+
+            $base = (int) ($payload['package_price'] ?? 0);
+            $dp = (int) round($base * 0.3);
+
+            try {
+                $transaction = app(\App\Services\Wedding\WeddingPaymentService::class)->createQris(
+                    booking: $booking,
+                    type: 'dp',
+                    amount: $dp,
+                    customerName: $booking->customer_name,
+                    phoneNumber: $booking->customer_whatsapp,
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to create wedding QRIS from WhatsApp', ['error' => $e->getMessage()]);
+                $session->reset();
+                return [
+                    'type' => 'text',
+                    'text' => "Booking berhasil dibuat: {$booking->booking_number}\nNamun gagal membuat QRIS saat ini. Silakan hubungi admin.",
+                ];
+            }
+
+            $session->reset();
+
+            return [
+                'type' => 'image',
+                'text' => "✅ Booking dibuat!\n\nNo Booking: {$booking->booking_number}\nPaket: ".($payload['package_name'] ?? '-')."\nTanggal: {$booking->event_date->toDateString()}\nDP: Rp ".number_format($dp, 0, ',', '.')."\n\nSilakan scan QRIS berikut (berlaku 24 jam).",
+                'media_url' => $transaction->qr_url,
+            ];
+        }
+
+        $session->reset();
+        return $this->handleFallback($message, null);
+    }
+
+    private function handleCctvBookingStart(WhatsAppSession $session): array
+    {
+        $packages = CctvPackage::query()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->limit(20)
+            ->get();
+
+        if ($packages->isEmpty()) {
+            return ['type' => 'text', 'text' => 'Paket CCTV belum tersedia saat ini.'];
+        }
+
+        $map = [];
+        $text = "📹 *BOOKING INSTALLASI CCTV*\n\nPilih paket (kirim angka):\n";
+        foreach ($packages as $i => $p) {
+            $no = $i + 1;
+            $map[(string) $no] = $p->id;
+            $count = $p->camera_count ? "{$p->camera_count} Camera" : 'Custom';
+            $text .= "{$no}. {$p->name} ({$count}) - Rp ".number_format((int) $p->price, 0, ',', '.')."\n";
+        }
+
+        $session->update([
+            'current_node' => 'cctv_booking',
+            'step' => 1,
+            'payload' => ['package_map' => $map],
+        ]);
+
+        return ['type' => 'text', 'text' => $text];
+    }
+
+    private function handleCctvBookingStep(string $message, WhatsAppSession $session): array
+    {
+        $step = (int) $session->step;
+        $payload = $session->payload ?? [];
+
+        if ($step === 1) {
+            $map = $payload['package_map'] ?? [];
+            $selectedId = $map[(string) $message] ?? null;
+            $package = $selectedId ? CctvPackage::find($selectedId) : null;
+            if (! $package) {
+                return ['type' => 'text', 'text' => 'Pilihan paket tidak valid. Silakan kirim angka paket yang tersedia.'];
+            }
+
+            $session->update([
+                'step' => 2,
+                'payload' => array_merge($payload, [
+                    'cctv_package_id' => $package->id,
+                    'package_name' => $package->name,
+                ]),
+            ]);
+
+            return ['type' => 'text', 'text' => 'Alamat lengkap instalasi?'];
+        }
+
+        if ($step === 2) {
+            $address = trim($message);
+            if ($address === '') {
+                return ['type' => 'text', 'text' => 'Alamat tidak boleh kosong.'];
+            }
+
+            $session->update([
+                'step' => 3,
+                'payload' => array_merge($payload, ['address' => $address]),
+            ]);
+
+            return ['type' => 'text', 'text' => 'Nama pelanggan?'];
+        }
+
+        if ($step === 3) {
+            $name = trim($message);
+            if ($name === '') {
+                return ['type' => 'text', 'text' => 'Nama tidak boleh kosong.'];
+            }
+
+            $session->update([
+                'step' => 4,
+                'payload' => array_merge($payload, ['customer_name' => $name]),
+            ]);
+
+            return ['type' => 'text', 'text' => "Ingin jadwalkan survey sekarang? ketik *ya* / *tidak*"];
+        }
+
+        if ($step === 4) {
+            $want = strtolower(trim($message));
+            $session->update([
+                'payload' => array_merge($payload, ['want_survey' => $want === 'ya' || $want === 'y']),
+                'step' => ($want === 'ya' || $want === 'y') ? 5 : 6,
+            ]);
+
+            if ($want === 'ya' || $want === 'y') {
+                return ['type' => 'text', 'text' => 'Tanggal & jam survey (contoh: 2026-12-31 10:00)?'];
+            }
+        }
+
+        if ($step === 5 || $step === 6) {
+            $payload = $session->payload ?? [];
+
+            $surveyDate = null;
+            if (($payload['want_survey'] ?? false) && $step === 5) {
+                try {
+                    $surveyDate = \Carbon\Carbon::parse($message);
+                } catch (\Throwable) {
+                    return ['type' => 'text', 'text' => 'Format tanggal tidak valid. Contoh: 2026-12-31 10:00'];
+                }
+            }
+
+            $booking = CctvBooking::create([
+                'customer_name' => (string) ($payload['customer_name'] ?? ''),
+                'customer_whatsapp' => (string) ($session->phone ?? ''),
+                'address' => (string) ($payload['address'] ?? ''),
+                'cctv_package_id' => (int) ($payload['cctv_package_id'] ?? 0),
+                'status' => 'pending',
+            ]);
+
+            if ($surveyDate) {
+                CctvSurvey::create([
+                    'cctv_booking_id' => $booking->id,
+                    'survey_date' => $surveyDate,
+                    'location' => $booking->address,
+                    'status' => 'pending',
+                ]);
+            }
+
+            $session->reset();
+
+            $text = "✅ Booking instalasi CCTV dibuat!\n\nNo Booking: {$booking->booking_number}\nPaket: ".($payload['package_name'] ?? '-')."\nWhatsApp: {$booking->customer_whatsapp}\n\nTim kami akan menghubungi Anda untuk survey & quotation.";
+            if ($surveyDate) {
+                $text .= "\nSurvey: ".$surveyDate->translatedFormat('d M Y H:i');
+            }
+
+            return ['type' => 'text', 'text' => $text];
+        }
+
+        $session->reset();
+        return $this->handleFallback($message, null);
     }
 
     private function handleContact(): array
@@ -1151,6 +1758,11 @@ class WhatsAppDynamicReplyService
             'message' => $message,
             'user_id' => $user?->id,
         ]);
+
+        $kbAnswer = $this->knowledgeBaseRetrieval->buildAnswerFromTopDocs($message, 2);
+        if (is_string($kbAnswer) && trim($kbAnswer) !== '') {
+            return ['type' => 'text', 'text' => $kbAnswer];
+        }
 
         // Try to use AI Assistant
         try {

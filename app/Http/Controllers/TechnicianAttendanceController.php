@@ -11,6 +11,7 @@ use App\Models\TechnicianSchedule;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WashEmployee;
+use App\Models\Role;
 use App\Traits\HasAttendanceFilters;
 use App\Traits\SendsNotifications;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -87,9 +88,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
         $users = User::whereHas('role', function ($q) {
-            $q->where('name', '!=', 'customer')
-              ->where('name', '!=', 'koordinator')
-              ->where('name', '!=', 'coordinator');
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })->where('is_active', true)
           ->with('role')
           ->orderBy('name')
@@ -144,9 +143,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
         $techniciansQuery = User::whereHas('role', function ($q) {
-            $q->where('name', '!=', 'customer')
-              ->where('name', '!=', 'koordinator')
-              ->where('name', '!=', 'coordinator');
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })->where('is_active', true)
           ->with('role');
 
@@ -197,9 +194,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
             // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
             $users = User::whereHas('role', function ($q) {
-                $q->where('name', '!=', 'customer')
-                  ->where('name', '!=', 'koordinator')
-                  ->where('name', '!=', 'coordinator');
+                $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
             })->where('is_active', true)
               ->with('role')
               ->orderBy('name')
@@ -1250,8 +1245,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     private function attendanceEligibleRoleNames(): array
     {
         return [
-            'admin', 'leader', 'staf keuangan', 'manager hrd', 'noc', 'technician',
-            'kasir atk', 'kasir wash', 'karyawan wash',
+            Role::ADMIN,
+            Role::LEADER,
+            Role::FINANCE,
+            Role::HRD_MANAGER,
+            Role::NOC,
+            Role::TECHNICIAN,
+            Role::KASIR_ATK,
+            Role::KASIR_WASH,
+            Role::KARYAWAN_WASH,
         ];
     }
 
@@ -1261,7 +1263,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return false;
         }
         
-        return $user->hasRole('koordinator');
+        return $user->hasRole(Role::COORDINATOR);
     }
 
     private function isAttendanceEligibleUser(?User $user): bool
@@ -1274,7 +1276,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return false;
         }
         
-        $excludedRoles = ['customer', 'direktur', 'owner', 'koordinator'];
+        $excludedRoles = [Role::CUSTOMER, Role::DIREKTUR, 'owner', Role::COORDINATOR];
         return ! $user->hasAnyRole($excludedRoles);
     }
 
@@ -1403,7 +1405,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $today = now();
 
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'coordinator', 'koordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, [Role::DIREKTUR, Role::COORDINATOR], true);
 
         if (! $isExcludedFromSchedule) {
             if (Schema::hasTable('technician_daily_schedules')) {
@@ -1501,7 +1503,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
     {
         $date = Carbon::parse($dateStr);
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'coordinator', 'koordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, [Role::DIREKTUR, Role::COORDINATOR], true);
         
         if ($isExcludedFromSchedule) {
             return false;

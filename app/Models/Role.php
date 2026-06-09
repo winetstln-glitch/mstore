@@ -8,6 +8,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
+    public const ADMIN = 'admin';
+    public const DIREKTUR = 'direktur';
+    public const LEADER = 'leader';
+    public const NOC = 'noc';
+    public const NOC_LEGACY = 'network-operations-center';
+    public const TECHNICIAN = 'technician';
+    public const COORDINATOR = 'coordinator';
+    public const FINANCE = 'finance';
+    public const HRD = 'hrd';
+    public const HRD_MANAGER = 'hrd-manager';
+    public const CUSTOMER_SERVICE = 'customer-service';
+    public const CUSTOMER = 'customer';
+    public const RESELLER = 'reseller';
+    public const KASIR_ATK = 'kasir-atk';
+    public const KASIR_WASH = 'kasir-wash';
+    public const KARYAWAN_WASH = 'karyawan-wash';
+
     protected $fillable = ['name', 'label'];
 
     public function users(): HasMany

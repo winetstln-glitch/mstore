@@ -21,7 +21,7 @@ class LeaveRequestController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:leave.view', only: ['employee', 'admin']),
+            new Middleware('permission:leave.view', only: ['employee']),
             new Middleware('permission:leave.create', only: ['store']),
             new Middleware('permission:leave.manage', only: ['admin', 'update']),
         ];

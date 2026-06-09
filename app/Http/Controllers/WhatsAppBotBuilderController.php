@@ -13,7 +13,7 @@ class WhatsAppBotBuilderController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:setting.view'),
+            new Middleware('permission:chat.manage'),
         ];
     }
 

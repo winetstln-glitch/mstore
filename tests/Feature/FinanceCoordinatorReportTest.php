@@ -22,9 +22,9 @@ class FinanceCoordinatorReportTest extends TestCase
     {
         parent::setUp();
 
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $permission = Permission::create(['name' => 'finance.view', 'label' => 'View Finance', 'group' => 'Finance']);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'finance.view'], ['label' => 'View Finance', 'group' => 'Finance']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
 
         $this->user = User::factory()->create(['role_id' => $role->id]);
 

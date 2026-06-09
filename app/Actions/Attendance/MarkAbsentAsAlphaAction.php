@@ -3,6 +3,7 @@
 namespace App\Actions\Attendance;
 
 use App\Models\LeaveRequest;
+use App\Models\Role;
 use App\Models\TechnicianAttendance;
 use App\Models\TechnicianDailySchedule;
 use App\Models\TechnicianSchedule;
@@ -56,38 +57,31 @@ class MarkAbsentAsAlphaAction
             return null;
         }
 
-        $roleNameRaw = strtolower((string) ($user->role?->name ?? ''));
-        $roleName = strtolower(str_replace(['-', '_'], ' ', $roleNameRaw));
-        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'owner', 'owner pendiri', 'coordinator', 'koordinator'], true);
-
+        $isExcludedFromSchedule = $user->hasAnyRole([Role::DIREKTUR, Role::COORDINATOR, 'owner', 'owner pendiri', 'owner-pendiri']);
         $eligibleRoles = [
-            'admin',
-            'leader',
-            'finance',
-            'hrd manager',
-            'manager hrd',
-            'noc',
-            'technician',
-            'kasir atk',
-            'kasir wash',
-            'operator wash',
-            'staf keuangan',
-            'karyawan wash',
-            'administrator',
+            Role::ADMIN,
+            Role::LEADER,
+            Role::FINANCE,
+            Role::HRD_MANAGER,
+            Role::NOC,
+            Role::TECHNICIAN,
+            Role::KASIR_ATK,
+            Role::KASIR_WASH,
+            Role::KARYAWAN_WASH,
         ];
+        $isEligible = $user->hasAnyRole($eligibleRoles);
 
         Log::info('MarkAbsentAsAlphaAction: Role check', [
             'user_id' => $user->id,
-            'role_name_raw' => $roleNameRaw,
-            'role_name_normalized' => $roleName,
-            'is_eligible' => in_array($roleName, $eligibleRoles, true),
+            'role_name_raw' => $user->role?->name ?? 'N/A',
+            'is_eligible' => $isEligible,
             'is_excluded' => $isExcludedFromSchedule,
         ]);
 
-        if (! in_array($roleName, $eligibleRoles, true)) {
+        if (! $isEligible) {
             Log::info('MarkAbsentAsAlphaAction: Role not eligible, skipping', [
                 'user_id' => $user->id,
-                'role_name' => $roleName,
+                'role_name' => $user->role?->name ?? 'N/A',
             ]);
             return null;
         }

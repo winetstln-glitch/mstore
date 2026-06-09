@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\SalaryAdjustment;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ class SalaryAdjustmentController extends Controller
 {
     public function index(Request $request)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('hrd manager')) {
+        if (! Auth::user()->hasRole(Role::ADMIN) && ! Auth::user()->hasRole(Role::FINANCE) && ! Auth::user()->hasRole(Role::HRD_MANAGER)) {
             abort(403, 'Unauthorized');
         }
 
@@ -32,7 +33,7 @@ class SalaryAdjustmentController extends Controller
         $adjustments = $query->latest('date')->paginate(15)->withQueryString();
 
         $users = User::whereHas('role', function ($q) {
-            $q->whereIn('name', ['technician', 'admin']);
+            $q->whereIn('name', [Role::TECHNICIAN, Role::ADMIN]);
         })->where('is_active', true)
           ->with('role')
           ->orderBy('name')
@@ -43,7 +44,7 @@ class SalaryAdjustmentController extends Controller
 
     public function store(Request $request)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole(Role::ADMIN) && ! Auth::user()->hasRole(Role::FINANCE)) {
             abort(403, 'Unauthorized');
         }
 
@@ -62,7 +63,7 @@ class SalaryAdjustmentController extends Controller
 
     public function destroy(SalaryAdjustment $salaryAdjustment)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole(Role::ADMIN) && ! Auth::user()->hasRole(Role::FINANCE)) {
             abort(403, 'Unauthorized');
         }
 

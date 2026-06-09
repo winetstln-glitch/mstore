@@ -1,516 +1,135 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="layout-navbar-fixed layout-wide" dir="ltr" data-bs-theme="light">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'MStore') }} - Internet, ATK & Services</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Landing Lite CSS -->
-    <link href="{{ asset('css/landing-lite.css') }}?v={{ filemtime(public_path('css/landing-lite.css')) }}" rel="stylesheet">
-    <script>
-        (function () {
-            const storedTheme = localStorage.getItem('theme');
-            if (storedTheme) {
-                document.documentElement.setAttribute('data-bs-theme', storedTheme);
-            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.setAttribute('data-bs-theme', 'dark');
-            }
-        })();
-    </script>
-</head>
-<body>
+@extends('layouts.landing-public')
 
-    <!-- Navbar -->
-    <nav class="navbar sticky-top">
-        <div class="container">
-            <div class="d-flex align-items-center justify-content-between w-100">
-                <div class="d-flex align-items-center">
-                    <a class="navbar-brand d-flex align-items-center fw-bold gap-2" href="#">
-                        <img class="nav-logo" src="{{ asset('img/logo.png') }}" alt="Logo">
-                        <span class="d-none d-sm-inline">{{ config('app.name', 'MStore') }}</span>
-                    </a>
-                </div>
-
-                <div class="d-none d-lg-flex gap-4" id="navMenu">
-                    <a class="nav-link" href="#home">Beranda</a>
-                    @if(($canAttendanceFromLanding ?? false) === true)
-                        <a class="nav-link" href="#absensi-karyawan">Absensi</a>
-                    @endif
-                    <a class="nav-link" href="#packages">Internet</a>
-                    <a class="nav-link" href="#atk-promo">ATK Store</a>
-                   <a class="nav-link" href="#wash-services">Gt Wash Mstore</a>
-                    <a class="nav-link" href="#cctv">CCTV</a>
-                </div>
-
-                <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-icon rounded-circle bg-dark-subtle" id="themeToggle">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <a href="{{ route('customers.public.register.create') }}" class="btn btn-outline-success btn-sm">
-                        Register
-                    </a>
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm">Masuk</a>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="container">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-7 fade-up">
-                    <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3 rounded-pill">#1 Mitra Digital Terpercaya</span>
-                    <h1 class="hero-title">Solusi Digital & Layanan Terlengkap</h1>
-                    <p class="hero-desc text-secondary fs-5 mb-4">Mulai dari <b>Internet</b> fiber optic super cepat, perlengkapan kantor, hingga perawatan kendaraan profesional. Kami hadir untuk memudahkan hidup Anda.</p>
-                    
-                    <div class="d-flex flex-wrap gap-3">
-                        <a href="https://buymstore.online" class="btn btn-primary">
-                            <i class="fas fa-rocket me-2"></i> Area Pelanggan
-                        </a>
-                        <a href="{{ route('customers.public.register.create') }}" class="btn btn-outline-success">
-                            <i class="fas fa-user-plus me-2"></i> Register Pelanggan
-                        </a>
-                        <a href="{{ asset('apk/app-mstore.apk') }}" class="btn btn-primary" download>
-                            <i class="fa-brands fa-android me-2"></i> Unduh Aplikasi
-                        </a>
-                    </div>
-                </div>
-                <div class="col-lg-5 fade-up d-none d-lg-block text-center">
-                    <div class="position-relative">
-                        <div class="opacity-10 position-absolute top-50 start-50 translate-middle rounded-circle w-100 h-100 blur-3xl"></div>
-                        <img src="{{ asset('img/cctv-monitor.png') }}" class="img-fluid position-relative z-1" alt="Monitoring Center"
-                             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000';">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-
+@section('content')
     @php
-        $cctvPackages = [
-            [
-                'speed' => \App\Models\Setting::getValue('cctv_package_1_speed', 'Basic'),
-                'subtitle' => \App\Models\Setting::getValue('cctv_package_1_subtitle', '1 Kamera HD'),
-                'price' => \App\Models\Setting::getValue('cctv_package_1_price', 'Rp 600Rb'),
-                'features' => \App\Models\Setting::getValue('cctv_package_1_features', "Camera 1 Channel\nHDD 250GB\nFree Instalasi"),
-            ],
-            [
-                'speed' => \App\Models\Setting::getValue('cctv_package_2_speed', 'Basic'),
-                'subtitle' => \App\Models\Setting::getValue('cctv_package_2_subtitle', '2 Kamera HD'),
-                'price' => \App\Models\Setting::getValue('cctv_package_2_price', 'Rp 1.1jt'),
-                'features' => \App\Models\Setting::getValue('cctv_package_2_features', "Camera 2 Channel\nHDD 125GB\nFree Instalasi"),
-            ],
-            [
-                'speed' => \App\Models\Setting::getValue('cctv_package_3_speed', 'Basic'),
-                'subtitle' => \App\Models\Setting::getValue('cctv_package_3_subtitle', '2 Kamera HD'),
-                'price' => \App\Models\Setting::getValue('cctv_package_3_price', 'Rp 1.9jt'),
-                'features' => \App\Models\Setting::getValue('cctv_package_3_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi"),
-            ],
-            [
-                'speed' => \App\Models\Setting::getValue('cctv_package_4_speed', 'Basic'),
-                'subtitle' => \App\Models\Setting::getValue('cctv_package_4_subtitle', '4 Kamera HD'),
-                'price' => \App\Models\Setting::getValue('cctv_package_4_price', 'Rp 1.9jt'),
-                'features' => \App\Models\Setting::getValue('cctv_package_4_features', "DVR 4 Channel\nHDD 500GB\nFree Instalasi"),
-            ],
-        ];
-        $landingHolidayStart = \App\Models\Setting::getValue('wash_holiday_pricing_start_date', '');
-        $landingHolidayEnd = \App\Models\Setting::getValue('wash_holiday_pricing_end_date', '');
-        $landingHolidayActive = !empty($landingHolidayStart) && !empty($landingHolidayEnd)
-            && now()->toDateString() >= $landingHolidayStart
-            && now()->toDateString() <= $landingHolidayEnd;
+        $siteName = $storeName ?? config('app.name', 'MStore');
+        $waUrlBase = 'https://wa.me/'.$waNumber;
+        $services = collect($serviceCatalog ?? [])->values();
+        $featuredServices = $services->take(3);
+        $serviceCount = $services->count();
+        $coverageCount = collect($odps ?? [])->count();
     @endphp
-     <!-- Wash Services Section -->
-    <section id="wash-services" class="py-2 bg-black bg-opacity-25">
-        <div class="container py-2">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">GT WASH MSTORE</h6>
-                <h2 class="display-6 fw-800">Layanan Cuci Mobil & Motor </h2>
-                @if($landingHolidayActive)
-                    <div class="landing-holiday-banner mt-2">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Harga Hari Raya aktif ({{ \Carbon\Carbon::parse($landingHolidayStart)->translatedFormat('d M Y') }} - {{ \Carbon\Carbon::parse($landingHolidayEnd)->translatedFormat('d M Y') }})</span>
+
+    <section id="beranda" class="hero home-hero">
+        <div class="container">
+            <div class="row align-items-center g-5 home-hero-grid">
+                <div class="col-lg-6 fade-up">
+                    <span class="home-kicker">MStore Multi Service Ecosystem</span>
+                    <h1 class="hero-title home-hero-title">Solusi Multi-Layanan dengan Pengalaman yang Lebih Fokus di Setiap Halaman</h1>
+                    <p class="hero-desc home-hero-desc">Homepage ini sekarang menjadi gateway premium untuk semua unit usaha. Pengunjung cukup pilih layanan yang relevan, lalu masuk ke halaman khusus yang sudah disusun sesuai kebutuhan Internet, Wedding & Event, CCTV, GT Wash, atau ATK.</p>
+                    <div class="home-cta-row">
+                        <a href="#services" class="btn btn-primary track-service-action" data-track-service="umbrella" data-track-action="choose_service">
+                            <i class="fas fa-layer-group me-2"></i> Jelajahi Layanan
+                        </a>
+                        <a href="#quick-consult" class="btn btn-outline-primary track-service-action" data-track-service="umbrella" data-track-action="quick_consult">
+                            <i class="fas fa-clipboard-list me-2"></i> Konsultasi Cepat
+                        </a>
+                        <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi layanan MStore.') }}" class="btn btn-green track-service-action" data-track-service="umbrella" data-track-action="whatsapp">
+                            <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                        </a>
                     </div>
-                @endif
-            </div>
-            
-            @php
-                $landingWashGroups = collect($washServices ?? [])->groupBy(function ($service) {
-                    $vehicleType = strtolower((string) ($service->vehicle_type ?? ''));
-                    $category = strtolower((string) ($service->service_category ?? 'main'));
-                    if (in_array($category, ['addon', 'skincare'], true)) {
-                        return 'addon';
-                    }
-                    if ($vehicleType === 'car') {
-                        return 'mobil';
-                    }
-                    if ($vehicleType === 'motor') {
-                        return 'motor';
-                    }
-                    if ($vehicleType === 'coffee') {
-                        return 'kopi';
-                    }
-                    return 'umum';
-                });
-                $landingGroupLabels = [
-                    'mobil' => 'Layanan Mobil',
-                    'motor' => 'Layanan Motor',
-                    'addon' => 'Paket Tambahan',
-                    'kopi' => 'Layanan Kopi',
-                    'umum' => 'Layanan Lainnya',
-                ];
-            @endphp
-            @forelse(['mobil', 'motor', 'addon', 'kopi', 'umum'] as $groupKey)
-                @php $groupItems = $landingWashGroups->get($groupKey, collect()); @endphp
-                @if($groupItems->count() === 0)
-                    @continue
-                @endif
-                <div class="section-header text-center mt-4 mb-3 fade-up">
-                    <h4 class="fw-bold">{{ $landingGroupLabels[$groupKey] ?? 'Layanan' }}</h4>
+
+                    <div class="home-metric-grid">
+                        <div class="home-metric-card">
+                            <strong>{{ $serviceCount }}</strong>
+                            <span>Layanan Utama</span>
+                        </div>
+                        <div class="home-metric-card">
+                            <strong>{{ $coverageCount > 0 ? $coverageCount : 'Live' }}</strong>
+                            <span>{{ $coverageCount > 0 ? 'Titik Coverage' : 'Coverage Map' }}</span>
+                        </div>
+                        <div class="home-metric-card">
+                            <strong>Smart</strong>
+                            <span>Lead Routing</span>
+                        </div>
+                    </div>
+
+                    <div class="landing-trust mt-4 home-trust-row">
+                        <div class="landing-trust-item">
+                            <i class="fas fa-bullseye"></i>
+                            <span>CTA Lebih Fokus</span>
+                        </div>
+                        <div class="landing-trust-item">
+                            <i class="fas fa-filter-circle-dollar"></i>
+                            <span>Lead Lebih Relevan</span>
+                        </div>
+                        <div class="landing-trust-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>SEO Per Layanan</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="scroll-container fade-up">
-                    @foreach($groupItems as $serviceIndex => $service)
-                    <div class="scroll-item">
-                        <div class="card">
-                            @php
-                                $landingAdjustment = is_null($service->holiday_price) ? null : (float) $service->holiday_price;
-                                $landingEffectivePrice = $landingHolidayActive && !is_null($landingAdjustment)
-                                    ? max(0, ((float) $service->price) + $landingAdjustment)
-                                    : (float) $service->price;
-                            @endphp
-                            @if($service->image)
-                                <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img">
-                            @else
-                                <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
-                                    <i class="fas {{ $groupKey === 'mobil' ? 'fa-car' : ($groupKey === 'motor' ? 'fa-motorcycle' : ($groupKey === 'kopi' ? 'fa-mug-hot' : 'fa-plus-circle')) }} fa-3x text-secondary"></i>
-                                </div>
-                            @endif
-                            <div class="product-body d-flex flex-column h-100">
-                                <div class="mb-2">
-                                    <span class="chip">
-                                        <i class="fas {{ $groupKey === 'mobil' ? 'fa-car' : ($groupKey === 'motor' ? 'fa-motorcycle' : ($groupKey === 'kopi' ? 'fa-mug-hot' : 'fa-plus-circle')) }} me-1"></i>
-                                        {{ ucfirst($groupKey) }}
-                                    </span>
-                                    @if($serviceIndex < 3)
-                                        <span class="chip ms-1" style="background: rgba(16, 185, 129, 0.16); color: #065f46; border-color: rgba(16, 185, 129, 0.35);">
-                                            Terbaru
+
+                <div class="col-lg-6 fade-up">
+                    <div class="home-showcase-shell">
+                        <div class="home-showcase-main">
+                            <div class="home-showcase-badge">Ecosystem Overview</div>
+                            <h3>Satu umbrella brand, dengan halaman layanan yang lebih siap untuk konversi</h3>
+                            <p>Setiap unit usaha kini punya fokus visual, CTA, dan form yang lebih relevan. Visitor tidak lagi dipaksa membaca semua katalog dalam satu halaman panjang.</p>
+                            <div class="home-service-stack">
+                                @foreach($featuredServices as $service)
+                                    <a href="{{ $service['url'] }}" class="home-service-pill track-service-action" data-track-service="{{ $service['slug'] }}" data-track-action="hero_service_pill">
+                                        <span class="home-service-pill-icon"><i class="fas {{ $service['icon'] }}"></i></span>
+                                        <span>
+                                            <strong>{{ $service['name'] }}</strong>
+                                            <small>{{ $service['stat'] }}</small>
                                         </span>
-                                    @endif
-                                </div>
-                                <h4 class="product-title mb-1">{{ $service->name }}</h4>
-                                @if(($service->priceRules ?? collect())->count() > 0)
-                                    <div class="mb-2">
-                                        @foreach($service->priceRules as $rule)
-                                            @php
-                                                $rulePrice = (float) $rule->price;
-                                                if ($landingHolidayActive && !is_null($landingAdjustment)) {
-                                                    $rulePrice = max(0, $rulePrice + (float) $landingAdjustment);
-                                                }
-                                                $landingRuleLabel = (string) $rule->label;
-                                                if (! in_array((string) ($service->service_category ?? 'main'), ['addon', 'skincare'], true)) {
-                                                    $landingRuleLabel = preg_replace('/^(Kecil|Sedang|Besar|Extra Besar)\s*-\s*/i', '', $landingRuleLabel);
-                                                }
-                                                $landingRuleLabel = trim((string) $landingRuleLabel);
-                                                if ($landingRuleLabel === '') {
-                                                    $landingRuleLabel = (string) $rule->label;
-                                                }
-                                            @endphp
-                                            <div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
-                                                <span>{{ $landingRuleLabel }}</span>
-                                                <strong class="text-primary">Rp {{ number_format($rulePrice, 0, ',', '.') }}</strong>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <div class="product-price text-primary fw-bold mb-1">Rp {{ number_format($landingEffectivePrice, 0, ',', '.') }}</div>
-                                @endif
-                                @if(!is_null($landingAdjustment))
-                                    <div class="landing-holiday-chip mb-2">
-                                        <i class="fas fa-sparkles"></i>
-                                        <span>Hari Raya {{ $landingAdjustment >= 0 ? '+' : '-' }}Rp {{ number_format(abs($landingAdjustment), 0, ',', '.') }}</span>
-                                        @if($landingHolidayActive)
-                                            <strong class="ms-1">(aktif)</strong>
-                                        @else
-                                            <span class="ms-1">(jadwal belum aktif)</span>
-                                        @endif
-                                    </div>
-                                @endif
-                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20booking%20layanan%20wash:%20{{ urlencode($service->name) }}" class="btn btn-primary w-100 mt-auto">
-                                    <i class="fab fa-whatsapp me-2"></i> Booking
-                                </a>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="home-floating-card home-floating-card-dark">
+                            <div class="home-floating-icon"><i class="fas fa-diagram-project"></i></div>
+                            <div>
+                                <strong>UX Lebih Terarah</strong>
+                                <span>Setiap service punya flow sendiri</span>
+                            </div>
+                        </div>
+
+                        <div class="home-floating-card home-floating-card-green">
+                            <div class="home-floating-icon"><i class="fab fa-whatsapp"></i></div>
+                            <div>
+                                <strong>Fast Response</strong>
+                                <span>{{ $waNumber }}</span>
                             </div>
                         </div>
                     </div>
-                    @endforeach
-                </div>
-            @empty
-                <div class="text-center w-100 py-2">
-                    <p class="text-muted">Layanan belum tersedia.</p>
-                </div>
-            @endforelse
-        </div>
-   
-    </section>
-     <!-- Internet Section -->
-    @php
-        $inferInternetPackageType = function ($package) {
-            $explicitType = \Illuminate\Support\Str::lower((string) ($package->package_type ?? ''));
-            if (in_array($explicitType, ['pppoe', 'hotspot'], true)) {
-                return $explicitType;
-            }
-
-            $haystack = \Illuminate\Support\Str::lower(trim(
-                $package->name.' '.$package->speed.' '.($package->description ?? '')
-            ));
-
-            return \Illuminate\Support\Str::contains($haystack, ['hotspot', 'member', 'voucher'])
-                ? 'hotspot'
-                : 'pppoe';
-        };
-
-        $hotspotInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'hotspot')->values();
-        $pppoeInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'pppoe')->values();
-        $voucherProfiles = collect($voucherTemplates ?? [])->values();
-        $internetPromoEnabled = \App\Models\Setting::getValue('landing_internet_promo_enabled', '1') === '1';
-        $internetPromoPercent = (int) \App\Models\Setting::getValue('landing_internet_promo_percent', '10');
-        $internetPromoPercent = max(0, min($internetPromoPercent, 90));
-        $internetPromoLabel = trim((string) \App\Models\Setting::getValue('landing_internet_promo_label', 'Promo Paket Internet'));
-        $showInternetPromo = $internetPromoEnabled && $internetPromoPercent > 0;
-        $formatInternetSpeed = function ($speedValue) {
-            $speedText = trim((string) $speedValue);
-            if ($speedText === '') {
-                return '-';
-            }
-
-            if (preg_match('/^\d+$/', $speedText) === 1) {
-                return $speedText.' Mbps';
-            }
-
-            return $speedText;
-        };
-        $formatVoucherDuration = function ($secondsValue) {
-            return format_duration($secondsValue);
-        };
-    @endphp
-    <section id="packages" class="py-2 bg-black bg-opacity-25 internet-packages-section">
-        <div class="container py-2">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">MSTORE.NET</h6>
-                <h2 class="display-6 fw-bold fw-600">LAYANAN JARINGAN INTERNET 100% FIBER OPTIC</h2>
-                @if($showInternetPromo)
-                <div class="internet-promo-banner mt-3">
-                    <i class="fas fa-bolt"></i>
-                    <span>{{ $internetPromoLabel }} • Hemat {{ $internetPromoPercent }}%</span>
-                </div>
-                @endif
-            </div>
-
-            <div class="mb-3 fade-up">
-                <h5 class="fw-bold mb-2">Paket Rumahan</h5>
-                <div class="scroll-container">
-                    @forelse($pppoeInternetPackages as $package)
-                    @php
-                        $packageFeatures = collect(preg_split('/\r\n|\r|\n/', (string) $package->description))
-                            ->map(fn ($item) => trim($item))
-                            ->filter()
-                            ->values();
-                        $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
-                        $packageSpeedText = $formatInternetSpeed($package->speed);
-                        $normalPrice = (int) $package->price;
-                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
-                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
-                        if ($packageFeatures->isEmpty()) {
-                            $packageFeatures = collect(['100% Fiber Optic', 'Unlimited FUP']);
-                        }
-                    @endphp
-                    <div class="scroll-item">
-                        <div class="card">
-                            @if($packagePromoEnabled)
-                            <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
-                            @endif
-                            <div class="pricing-header">
-                                <div class="speed">{{ $package->name }}</div>
-                                <div class="fw-bold">{{ $packageDevicesText }}</div>
-                            </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <div class="price text-primary">
-                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
-                                    <span class="fs-6 text-muted">/ bln</span>
-                                </div>
-                                @if($packagePromoEnabled)
-                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
-                                @endif
-                                <h5 class="mb-3">{{ $packageSpeedText }}</h5>
-                                <ul class="features">
-                                    @foreach($packageFeatures as $feature)
-                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>
-                                    @endforeach
-                                </ul>
-                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                    {{ $packagePromoEnabled ? 'Ambil Promo' : 'Pilih Paket' }}
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    @empty
-                    <div class="text-center w-100 py-2">
-                        <p class="text-muted">Paket PPPoE / Rumahan belum tersedia.</p>
-                    </div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div class="fade-up">
-                <h5 class="fw-bold mb-2">Paket Hotspot / Member</h5>
-                <div class="scroll-container">
-                    @forelse($hotspotInternetPackages as $package)
-                    @php
-                        $packageFeatures = collect(preg_split('/\r\n|\r|\n/', (string) $package->description))
-                            ->map(fn ($item) => trim($item))
-                            ->filter()
-                            ->values();
-                        $packageDevicesText = is_null($package->devices_limit) ? 'Unlimited' : ((int) $package->devices_limit.' Devices');
-                        $packageSpeedText = $formatInternetSpeed($package->speed);
-                        $normalPrice = (int) $package->price;
-                        $packagePromoEnabled = $showInternetPromo && (($package->is_promo_enabled ?? true) === true);
-                        $promoPrice = $packagePromoEnabled ? (int) round($normalPrice * ((100 - $internetPromoPercent) / 100)) : $normalPrice;
-                        if ($packageFeatures->isEmpty()) {
-                            $packageFeatures = collect(['Akses Cepat', 'Cocok untuk Voucher / Member']);
-                        }
-                    @endphp
-                    <div class="scroll-item">
-                        <div class="card">
-                            @if($packagePromoEnabled)
-                            <div class="internet-promo-ribbon">PROMO {{ $internetPromoPercent }}%</div>
-                            @endif
-                            <div class="pricing-header">
-                                <div class="speed">{{ $package->name }}</div>
-                                <div class="fw-bold">{{ $packageDevicesText }}</div>
-                            </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <div class="price text-primary">
-                                    Rp {{ number_format($promoPrice, 0, ',', '.') }}
-                                    <span class="fs-6 text-muted">/ bln</span>
-                                </div>
-                                @if($packagePromoEnabled)
-                                <div class="internet-price-old mb-2">Normal Rp {{ number_format($normalPrice, 0, ',', '.') }}</div>
-                                @endif
-                                <h5 class="mb-3">{{ $packageSpeedText }}</h5>
-                                <ul class="features">
-                                    @foreach($packageFeatures as $feature)
-                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>
-                                    @endforeach
-                                </ul>
-                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20tertarik%20berlangganan%20paket%20{{ urlencode($package->name) }}" class="btn btn-primary w-100 mt-auto">
-                                    {{ $packagePromoEnabled ? 'Ambil Promo' : 'Pilih Paket' }}
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    @empty
-                    <div class="text-center w-100 py-2">
-                        <p class="text-muted">Paket Hotspot / Member belum tersedia.</p>
-                    </div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div class="fade-up mt-4">
-                <h5 class="fw-bold mb-2">Beli Voucher Hotspot Online</h5>
-                <div class="scroll-container">
-                    @forelse($voucherProfiles->take(6) as $profile)
-                    <div class="scroll-item">
-                        <div class="card">
-                            <div class="pricing-header">
-                                <div class="speed">{{ $profile->name }}</div>
-                                <div class="text-muted">{{ $profile->rate_limit ?: 'Voucher Hotspot' }}</div>
-                            </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <div class="price text-primary">
-                                    Rp {{ number_format((float) $profile->price, 0, ',', '.') }}
-                                </div>
-                                <div class="small text-muted mb-2">Durasi: {{ $formatVoucherDuration($profile->duration_seconds) }}</div>
-                                <div class="small text-muted mb-3">Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</div>
-                                <a href="{{ route('voucher.payment.index') }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
-                                    Beli Online
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    @empty
-                    <div class="scroll-item">
-                        <div class="card">
-                            <div class="pricing-header">
-                                <div class="speed">Voucher Hotspot</div>
-                                <div class="text-muted">Data profile belum tersedia</div>
-                            </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <p class="text-muted mb-3">Voucher hotspot tersedia dan bisa dibeli langsung via portal online.</p>
-                                <a href="{{ route('voucher.payment.index') }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto">
-                                    Beli Online
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    @endforelse
                 </div>
             </div>
         </div>
     </section>
-    <!--CCTV-->
-    <section id="cctv" class="py-2 bg-black bg-opacity-25">
+
+    <section id="services" class="py-2 home-section">
         <div class="container py-2">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('cctv_section_badge', 'Security Solutions') }}</h6>
-                <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('cctv_section_title', 'Paket Instalasi CCTV') }}</h2>
-                <div class="mx-auto bg-primary mt-2" style="width: 50px; height: 3px;"></div>
+            <div class="section-header text-center mb-5 fade-up home-section-header">
+                <h6 class="text-primary fw-bold text-uppercase">Pilih Layanan</h6>
+                <h2 class="display-6 fw-800">Setiap Layanan Punya Halaman, CTA, dan Form yang Lebih Tepat</h2>
+                <p class="text-muted mb-0">Homepage cukup menjadi pintu masuk. Detail penawaran, visual, dan lead form diarahkan ke halaman yang memang dibuat khusus per layanan.</p>
             </div>
-            
-            <div class="scroll-container fade-up">
-                @foreach($cctvPackages as $package)
-                    @php
-                        $features = collect(preg_split('/\r\n|\r|\n/', (string) $package['features']))
-                            ->map(fn ($item) => trim($item))
-                            ->filter()
-                            ->values();
-                    @endphp
-                    <div class="scroll-item">
-                        <div class="card">
-                            <div class="pricing-header">
-                                <div class="speed">{{ $package['speed'] }}</div>
-                                <div class="text-muted">{{ $package['subtitle'] }}</div>
+
+            <div class="row g-4">
+                @foreach($serviceCatalog as $service)
+                    <div class="col-lg-4 col-md-6 fade-up">
+                        <div class="landing-service-card home-service-card h-100">
+                            <div class="home-service-card-top">
+                                <div class="landing-service-icon home-service-card-icon">
+                                    <i class="fas {{ $service['icon'] }}"></i>
+                                </div>
+                                <div class="landing-service-stat home-service-stat">{{ $service['stat'] }}</div>
                             </div>
-                            <div class="pricing-body d-flex flex-column">
-                                <div class="price">{{ $package['price'] }}<small class="fs-6 text-muted">/paket</small></div>
-                                <ul class="features">
-                                    @foreach($features as $feature)
-                                        <li><i class="fas fa-check-circle"></i> {{ $feature }}</li>
-                                    @endforeach
-                                </ul>
-                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20paket%20CCTV%20{{ urlencode($package['speed']) }}" class="btn btn-primary mt-auto">Pesan Sekarang</a>
+                            <h3 class="landing-service-title">{{ $service['name'] }}</h3>
+                            <p class="landing-service-desc">{{ $service['summary'] }}</p>
+                            <ul class="landing-service-points">
+                                @foreach($service['highlights'] as $highlight)
+                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $highlight }}</li>
+                                @endforeach
+                            </ul>
+                            <div class="home-service-card-actions mt-auto">
+                                <a href="{{ $service['url'] }}" class="btn btn-primary w-100 track-service-action" data-track-service="{{ $service['slug'] }}" data-track-action="open_service_page" data-track-label="{{ $service['name'] }}">
+                                    Buka Halaman
+                                </a>
+                                <div class="home-service-note">{{ $service['secondary_note'] ?? 'Halaman khusus siap dipakai' }}</div>
                             </div>
                         </div>
                     </div>
@@ -518,471 +137,219 @@
             </div>
         </div>
     </section>
-    <!-- ATK Promo Section -->
-    <section id="atk-promo" class="py-2 bg-black bg-opacity-25">
+
+    <section class="py-2 home-benefit-band">
         <div class="container py-2">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">Stationery Store</h6>
-                <h2 class="display-6 fw-800">Promo Alat Tulis Kantor</h2>
+            <div class="row g-4">
+                <div class="col-lg-4 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card">
+                        <i class="fas fa-bolt"></i>
+                        <div>
+                            <div class="fw-bold">Homepage Lebih Ringkas</div>
+                            <div class="text-muted small">Struktur umbrella membuat visitor tidak harus membaca semua detail layanan di satu halaman panjang.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card">
+                        <i class="fas fa-clipboard-check"></i>
+                        <div>
+                            <div class="fw-bold">Form Lebih Spesifik</div>
+                            <div class="text-muted small">Setiap halaman layanan punya field yang lebih relevan, sehingga tim lebih cepat follow up.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card">
+                        <i class="fas fa-magnifying-glass-chart"></i>
+                        <div>
+                            <div class="fw-bold">Tracking Lebih Tajam</div>
+                            <div class="text-muted small">CTA, klik halaman, dan submit lead dapat dibedakan per layanan untuk analisa konversi yang lebih jelas.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="scroll-container fade-up">
-                @forelse($atkProducts as $product)
-                <div class="scroll-item">
-                    <div class="card">
-                        @if($product->image)
-                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="product-img">
-                        @else
-                            <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
-                                <i class="fas fa-image fa-3x text-muted"></i>
+        </div>
+    </section>
+
+    <section id="coverage-area" class="py-2 home-section">
+        <div class="container py-2">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6 fade-up">
+                    <div class="home-map-shell">
+                        <div id="coverageMap"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6 fade-up">
+                    <div class="home-coverage-copy">
+                        <span class="home-kicker">Coverage Internet</span>
+                        <h2 class="display-6 fw-800 mb-4">Peta Coverage Tetap Ditampilkan Karena Ini Intent Terkuat untuk Layanan Internet</h2>
+                        <p class="text-secondary mb-4">Homepage menyimpan peta coverage sebagai entry point paling penting untuk layanan internet. Setelah user merasa area memungkinkan, mereka diarahkan ke halaman Internet Fiber yang berisi paket, voucher, dan registrasi lebih spesifik.</p>
+
+                        <div class="home-coverage-list mb-4">
+                            <div class="home-coverage-item">
+                                <div class="home-coverage-icon">
+                                    <i class="fas fa-satellite-dish fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Peta ODP</h6>
+                                    <p class="small text-muted mb-0">Lihat titik ODP, status port, dan gambaran awal coverage di area Anda.</p>
+                                </div>
                             </div>
-                        @endif
-                        <div class="product-body d-flex flex-column h-100">
-                            <div class="chip mb-2 align-self-start">{{ $product->category->name ?? 'ATK' }}</div>
-                            <h5 class="product-title mb-1">{{ $product->name }}</h5>
-                            <div class="product-price text-primary fw-bold mb-2">Rp {{ number_format($product->sell_price_retail, 0, ',', '.') }}</div>
-                            <p class="small text-muted mb-3">{{ Str::limit($product->description ?? 'Tersedia di toko kami.', 60) }}</p>
-                            <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20mau%20pesan%20ATK:%20{{ urlencode($product->name) }}" class="btn btn-primary w-100 mt-auto">
-                                <i class="fab fa-whatsapp me-2"></i> Pesan
+                            <div class="home-coverage-item">
+                                <div class="home-coverage-icon">
+                                    <i class="fas fa-location-dot fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Lanjut ke Halaman Internet</h6>
+                                    <p class="small text-muted mb-0">Landing internet memuat paket, voucher, dan form registrasi yang lebih spesifik.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="home-coverage-actions">
+                            <a href="{{ route('landing.services.internet') }}" class="btn btn-primary track-service-action" data-track-service="internet" data-track-action="from_home_coverage">
+                                <i class="fas fa-wifi me-2"></i> Buka Halaman Internet
+                            </a>
+                            <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin cek coverage area internet.') }}" class="btn btn-green track-service-action" data-track-service="internet" data-track-action="coverage_whatsapp">
+                                <i class="fab fa-whatsapp me-2"></i> Kirim Alamat
                             </a>
                         </div>
                     </div>
                 </div>
-                @empty
-                <div class="text-center w-100 py-2">
-                    <p class="text-muted">Belum ada promo produk saat ini.</p>
-                </div>
-                @endforelse
             </div>
         </div>
     </section>
 
-   
-
-    @php
-        $weddingServices = [
-            [
-                'badge' => \App\Models\Setting::getValue('wedding_service_1_badge', 'Wedding'),
-                'name' => \App\Models\Setting::getValue('wedding_service_1_name', 'Hias Pengantin'),
-                'description' => \App\Models\Setting::getValue('wedding_service_1_desc', 'Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.'),
-                'image' => \App\Models\Setting::getValue('wedding_service_1_image', 'storage/wash-services/SWCzU7EyNG0o3NCUZRdSxMXEPR19TqlaSxgSP26k.jpg'),
-            ],
-            [
-                'badge' => \App\Models\Setting::getValue('wedding_service_2_badge', 'Photography'),
-                'name' => \App\Models\Setting::getValue('wedding_service_2_name', 'Poto Moment'),
-                'description' => \App\Models\Setting::getValue('wedding_service_2_desc', 'Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.'),
-                'image' => \App\Models\Setting::getValue('wedding_service_2_image', 'storage/wash-services/JNp0g77R9K9equSk3DaVUIvE5GZjsIMqUeb6OEVm.jpg'),
-            ],
-            [
-                'badge' => \App\Models\Setting::getValue('wedding_service_3_badge', 'Event Support'),
-                'name' => \App\Models\Setting::getValue('wedding_service_3_name', 'Sewa Auning'),
-                'description' => \App\Models\Setting::getValue('wedding_service_3_desc', 'Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.'),
-                'image' => \App\Models\Setting::getValue('wedding_service_3_image', 'storage/wash-services/fUlfmV40jz1rCp0CC2WTtXnazm1or6ANVVJs9SI8.jpg'),
-            ],
-        ];
-        $weddingOverlayStyles = [
-            'background: linear-gradient(160deg, rgba(8, 20, 43, 0.25) 0%, rgba(2, 10, 25, 0.85) 100%);',
-            'background: linear-gradient(160deg, rgba(43, 8, 32, 0.28) 0%, rgba(25, 2, 18, 0.86) 100%);',
-            'background: linear-gradient(160deg, rgba(9, 42, 40, 0.25) 0%, rgba(2, 24, 22, 0.84) 100%);',
-        ];
-    @endphp
-    <section id="wedding-services" class="py-2">
+    <section id="quick-consult" class="py-2 home-consult-section">
         <div class="container py-2">
-            <div class="section-header text-center mb-5 fade-up">
-                <h6 class="text-primary fw-bold text-uppercase">{{ \App\Models\Setting::getValue('wedding_section_badge', 'Event Services') }}</h6>
-                <h2 class="display-6 fw-800">{{ \App\Models\Setting::getValue('wedding_section_title', 'Layanan Wedding & Event') }}</h2>
-            </div>
+            <div class="row g-4 align-items-start home-consult-shell">
+                <div class="col-lg-5 fade-up">
+                    <div class="section-header mb-3 home-consult-copy">
+                        <h6 class="text-primary fw-bold text-uppercase">Quick Consult</h6>
+                        <h2 class="display-6 fw-800 mb-2">Belum Tahu Mau Pilih Layanan Yang Mana?</h2>
+                        <p class="text-muted mb-0">Kalau visitor masih bingung, form cepat ini tetap tersedia dari homepage untuk memudahkan follow up awal sebelum diarahkan ke halaman layanan yang paling sesuai.</p>
+                    </div>
 
-            <div class="scroll-container fade-up">
-                @foreach($weddingServices as $index => $service)
-                    @php
-                        $weddingDescriptionItems = array_values(array_filter(
-                            preg_split('/\s*[,;\n]+\s*/', trim((string) ($service['description'] ?? ''))),
-                            function ($item) {
-                                $item = trim((string) $item);
-                                if ($item === '') {
-                                    return false;
-                                }
-                                if (preg_match('/^dan\s+sejenis/i', $item)) {
-                                    return false;
-                                }
-                                if (preg_match('/^(cocok|perawatan|pembersihan|khusus)\b/i', $item)) {
-                                    return false;
-                                }
-                                return str_word_count($item) <= 5;
-                            }
-                        ));
-                    @endphp
-                    <div class="scroll-item">
-                        <div class="card position-relative overflow-hidden border-0">
-                            <img src="{{ str_starts_with($service['image'], 'http') ? $service['image'] : asset($service['image']) }}" alt="{{ $service['name'] }}" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover">
-                            <div class="position-absolute top-0 start-0 w-100 h-100" style="{{ $weddingOverlayStyles[$index] ?? $weddingOverlayStyles[0] }}"></div>
-                            <div class="product-body d-flex flex-column h-100 position-relative text-white" style="min-height: 250px;">
-                                <div class="chip mb-2 align-self-start" style="background: rgba(255, 255, 255, 0.92); color: #0f172a;">{{ $service['badge'] }}</div>
-                                <h4 class="product-title mb-1">{{ $service['name'] }}</h4>
-                                @if(!empty($weddingDescriptionItems))
-                                    <div class="landing-wash-description-chips mb-3">
-                                        @foreach($weddingDescriptionItems as $item)
-                                            <span class="landing-wash-description-chip">{{ $item }}</span>
+                    <div class="home-consult-points">
+                        <div class="home-consult-point">
+                            <i class="fas fa-route"></i>
+                            <span>Tim akan bantu arahkan ke layanan yang paling cocok</span>
+                        </div>
+                        <div class="home-consult-point">
+                            <i class="fas fa-comments"></i>
+                            <span>Bisa lanjut via WhatsApp setelah submit</span>
+                        </div>
+                        <div class="home-consult-point">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Context lead tetap tersimpan per sumber halaman</span>
+                        </div>
+                    </div>
+
+                    <div class="home-consult-service-tags">
+                        @foreach($services as $service)
+                            <span>{{ $service['name'] }}</span>
+                        @endforeach
+                    </div>
+
+                    @if(session('success'))
+                        <div class="alert alert-success">
+                            <div class="fw-bold">{{ session('success') }}</div>
+                            @if(session('lead_whatsapp_url'))
+                                <div class="mt-2">
+                                    <a class="btn btn-primary" href="{{ session('lead_whatsapp_url') }}">
+                                        <i class="fab fa-whatsapp me-2"></i> Lanjutkan via WhatsApp
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <div class="col-lg-7 fade-up">
+                    <div class="lead-card home-lead-card">
+                        <form method="POST" action="{{ route('landing.leads.store') }}" class="lead-form" data-track-service-form="umbrella" data-track-label="home quick consult">
+                            @csrf
+                            <input type="hidden" name="landing_page" value="home">
+                            <input type="hidden" name="utm_source" value="{{ request('utm_source') }}">
+                            <input type="hidden" name="utm_medium" value="{{ request('utm_medium') }}">
+                            <input type="hidden" name="utm_campaign" value="{{ request('utm_campaign') }}">
+                            <input type="hidden" name="utm_term" value="{{ request('utm_term') }}">
+                            <input type="hidden" name="utm_content" value="{{ request('utm_content', 'home') }}">
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama</label>
+                                    <input name="name" value="{{ old('name') }}" class="form-control home-form-control @error('name') is-invalid @enderror" required>
+                                    @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">WhatsApp</label>
+                                    <input name="phone" value="{{ old('phone') }}" class="form-control home-form-control @error('phone') is-invalid @enderror" required>
+                                    @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Minat Layanan</label>
+                                    <select name="service_interest" class="form-select home-form-control @error('service_interest') is-invalid @enderror">
+                                        <option value="">Pilih</option>
+                                        @foreach($serviceCatalog as $service)
+                                            <option value="{{ $service['form']['interest'] }}" @selected(old('service_interest') === $service['form']['interest'])>{{ $service['name'] }}</option>
                                         @endforeach
-                                    </div>
-                                @elseif(trim((string) ($service['description'] ?? '')) !== '')
-                                    <div class="landing-wash-description-chips mb-3">
-                                        <span class="landing-wash-description-chip">{{ \Illuminate\Support\Str::limit(trim((string) $service['description']), 46) }}</span>
-                                    </div>
-                                @else
-                                    <div class="landing-wash-description-chips mb-3">
-                                        <span class="landing-wash-description-chip landing-wash-description-chip-empty">-</span>
-                                    </div>
-                                @endif
-                                <a href="https://wa.me/{{ $waNumber }}?text=Halo%20saya%20minat%20layanan%20{{ urlencode($service['name']) }}" class="btn btn-light text-dark w-100 mt-auto">
-                                    <i class="fab fa-whatsapp me-2"></i> Konsultasi
-                                </a>
+                                    </select>
+                                    @error('service_interest')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Area / Lokasi</label>
+                                    <input name="coverage_area" value="{{ old('coverage_area') }}" class="form-control home-form-control @error('coverage_area') is-invalid @enderror" placeholder="Contoh: rumah, lokasi acara, cabang wash">
+                                    @error('coverage_area')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Kebutuhan Singkat</label>
+                                    <textarea name="message" rows="4" class="form-control home-form-control home-form-textarea @error('message') is-invalid @enderror" placeholder="Contoh: butuh internet rumah, wedding package, survey CCTV, atau booking GT Wash">{{ old('message') }}</textarea>
+                                    @error('message')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 d-flex flex-wrap gap-2">
+                                    <button class="btn btn-primary track-service-action" type="submit" data-track-service="umbrella" data-track-action="quick_consult_submit">
+                                        Kirim
+                                    </button>
+                                    <a class="btn btn-green track-service-action" data-track-service="umbrella" data-track-action="quick_consult_whatsapp" href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi memilih layanan MStore.') }}">
+                                        WhatsApp
+                                    </a>
+                                </div>
                             </div>
-                        </div>
+                        </form>
                     </div>
-                @endforeach
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Coverage Map Section -->
-    <section id="monitoring" class="py-2">
+    <section class="py-2 home-section">
         <div class="container py-2">
-            <div class="row align-items-center g-5">
+            <div class="row g-4 align-items-center">
                 <div class="col-lg-6 fade-up">
-                    <div id="coverageMap"></div>
+                    <span class="home-kicker">Tentang {{ $siteName }}</span>
+                    <h2 class="display-6 fw-800 mb-3">Ekosistem Multi-Bisnis yang Disusun Lebih Rapi untuk Visitor dan Tim Sales</h2>
+                    <p class="text-muted mb-3">Kami mengelola beberapa lini layanan dalam satu ekosistem, tetapi sekarang setiap lini punya halaman yang lebih fokus agar penawaran, katalog, CTA, dan capture lead tidak saling bercampur.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-primary" href="#services">Lihat Semua Layanan</a>
+                        <a class="btn btn-outline-primary" href="#kontak">Lihat Kontak</a>
+                    </div>
                 </div>
                 <div class="col-lg-6 fade-up">
-                    <h2 class="display-6 fw-800 mb-4">Pantau Jaringan Real-Time</h2>
-                    <p class="text-secondary mb-4">Kami mengelola ribuan ODP secara transparan. Anda bisa mengecek ketersediaan jaringan di area Anda melalui peta interaktif kami.</p>
-                    
-                    <div class="d-flex flex-column gap-3 mb-4">
-                        <div class="d-flex gap-3 align-items-start">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-3 text-primary">
-                                <i class="fas fa-satellite-dish fa-lg"></i>
+                    <div class="about-card home-about-card">
+                        @foreach($serviceCatalog as $service)
+                            <div class="about-item home-about-item">
+                                <i class="fas {{ $service['icon'] }}"></i>
+                                <div>
+                                    <div class="fw-bold">{{ $service['name'] }}</div>
+                                    <div class="text-muted small">{{ $service['summary'] }}</div>
+                                </div>
                             </div>
-                            <div>
-                                <h6 class="mb-1">Transparansi ODP</h6>
-                                <p class="small text-muted mb-0">Status ketersediaan port secara real-time di tiap titik.</p>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-3 align-items-start">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-3 text-primary">
-                                <i class="fas fa-shield-halved fa-lg"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">Respon Cepat 24/7</h6>
-                                <p class="small text-muted mb-0">Tim teknisi siaga memantau stabilitas koneksi Anda.</p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary">Buka Peta Lengkap</a>
                 </div>
             </div>
         </div>
     </section>
-
-    <!-- Footer / Contact Support Section -->
-    <footer class="bg-dark bg-opacity-90 text-white py-5">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-4 fade-up">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <img class="nav-logo" src="{{ asset('img/logo.png') }}" alt="Logo" style="filter: brightness(0) invert(1);">
-                        <span class="fw-bold fs-5">{{ $storeName }}</span>
-                    </div>
-                    <p class="text-secondary mb-3">MStore adalah penyedia layanan digital terlengkap mulai dari internet fiber optic, ATK store, layanan cuci kendaraan, instalasi CCTV, hingga layanan event dan wedding. Semua produk dan layanan dikelola langsung oleh perusahaan kami.</p>
-                </div>
-                <div class="col-lg-4 fade-up">
-                    <h5 class="fw-bold mb-3">Kontak Support</h5>
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <i class="fas fa-envelope mt-1 text-primary"></i>
-                            <span>{{ $storeEmail }}</span>
-                        </li>
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <i class="fas fa-phone mt-1 text-primary"></i>
-                            <span>{{ $storePhone }}</span>
-                        </li>
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <i class="fab fa-whatsapp mt-1 text-primary"></i>
-                            <span>{{ $waNumber }}</span>
-                        </li>
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <i class="fas fa-location-dot mt-1 text-primary"></i>
-                            <span>{{ $storeAddress }}</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-lg-4 fade-up">
-                    <h5 class="fw-bold mb-3">Testing User</h5>
-                    <p class="text-secondary mb-2">Untuk keperluan testing oleh Duitku:</p>
-                    <div class="bg-black bg-opacity-25 p-3 rounded-3">
-                        <p class="mb-1"><i class="fas fa-user me-2 text-primary"></i><strong>Username:</strong> testuser@mstore.id</p>
-                        <p class="mb-0"><i class="fas fa-key me-2 text-primary"></i><strong>Password:</strong> Test12345!</p>
-                    </div>
-                </div>
-            </div>
-            <div class="text-center mt-4 pt-4 border-top border-secondary border-opacity-25">
-                <p class="text-secondary small mb-0">© {{ date('Y') }} {{ $storeName }}. Semua hak cipta dilindungi.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Bottom Navigation Mobile -->
-    <div class="bottom-bar fixed-bottom d-lg-none">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center px-2">
-                <a href="#home" class="bottom-item active d-flex flex-column align-items-center text-decoration-none">
-                    <i class="fas fa-home mb-1"></i>
-                    <span>Beranda</span>
-                </a>
-                <a href="#packages" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
-                    <i class="fas fa-wifi mb-1"></i>
-                    <span>Internet</span>
-                </a>
-                <a href="#atk-promo" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
-                    <i class="fas fa-shopping-bag mb-1"></i>
-                    <span>ATK</span>
-                </a>
-                <a href="{{ route('customers.public.register.create') }}" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
-                    <i class="fas fa-user-plus mb-1"></i>
-                    <span>Daftar</span>
-                </a>
-                <a href="{{ route('login') }}" class="bottom-item d-flex flex-column align-items-center text-decoration-none">
-                    <i class="fas fa-user-circle mb-1"></i>
-                    <span>Akun</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- AI Chat Widget -->
-    <div id="ai-chat-widget" class="fixed-bottom m-4 d-flex justify-content-end" style="z-index: 1050; pointer-events: none;">
-        <div class="chat-container d-none" style="pointer-events: auto; width: 350px; height: 500px; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-            <div class="chat-header p-3 bg-primary text-white d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-robot"></i>
-                    <span class="fw-bold">Asisten AI MStore</span>
-                </div>
-                <button class="btn btn-sm text-white" onclick="toggleChat()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="chat-body p-3 flex-grow-1 overflow-auto" id="chat-messages" style="scroll-behavior: smooth;">
-                <div class="d-flex flex-column gap-2">
-                    <div class="bg-secondary bg-opacity-25 p-2 rounded-3 align-self-start" style="max-width: 80%;">
-                        Halo! Ada yang bisa saya bantu?
-                    </div>
-                </div>
-            </div>
-            <div class="chat-footer p-3 border-top border-secondary border-opacity-25">
-                <form id="chat-form" class="d-flex gap-2" onsubmit="handleChatSubmit(event)">
-                    <input type="text" id="chat-input" class="form-control form-control-sm bg-transparent text-body" placeholder="Tanya sesuatu..." required>
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i></button>
-                </form>
-            </div>
-        </div>
-        <button class="btn btn-primary rounded-circle shadow-lg p-3 ms-3" onclick="toggleChat()" style="width: 60px; height: 60px; pointer-events: auto;">
-            <i class="fas fa-comment-dots fa-lg"></i>
-        </button>
-    </div>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    <script>
-        // AI Chat Logic
-        function toggleChat() {
-            const container = document.querySelector('.chat-container');
-            container.classList.toggle('d-none');
-            if (!container.classList.contains('d-none')) {
-                document.getElementById('chat-input').focus();
-            }
-        }
-
-        async function handleChatSubmit(e) {
-            e.preventDefault();
-            const input = document.getElementById('chat-input');
-            const message = input.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addMessage(message, 'end');
-            input.value = '';
-            
-            // Show typing indicator
-            const loadingId = addMessage('Sedang mengetik...', 'start', true);
-
-            try {
-                const response = await fetch({{ Js::from(route('ai.chat')) }}, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                const data = await response.json();
-                
-                // Remove typing indicator
-                document.getElementById(loadingId).remove();
-                
-                // Add AI response
-                addMessage(data.reply || 'Maaf, saya tidak mengerti.', 'start');
-            } catch (error) {
-                document.getElementById(loadingId).remove();
-                addMessage('Maaf, terjadi kesalahan koneksi.', 'start');
-            }
-        }
-
-        function addMessage(text, align, isLoading = false) {
-            const messages = document.getElementById('chat-messages');
-            const id = 'msg-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = `p-2 rounded-3 align-self-${align} ${align === 'end' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25'}`;
-            div.style.maxWidth = '80%';
-            div.innerHTML = text; // Allow HTML in response
-            messages.appendChild(div);
-            
-            // Wrapper for spacing
-            const wrapper = document.createElement('div');
-            wrapper.className = 'd-flex flex-column gap-2 mb-2';
-            wrapper.appendChild(div);
-            messages.appendChild(wrapper);
-
-            messages.scrollTop = messages.scrollHeight;
-            return id;
-        }
-
-        // Map Initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            const mapContainer = document.getElementById('coverageMap');
-            if (mapContainer) {
-                const map = L.map('coverageMap').setView([-6.200000, 106.816666], 13); // Default Jakarta
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(map);
-
-                // Add ODP Markers
-                const odps = {{ Js::from($odps ?? []) }};
-                const markers = [];
-
-                odps.forEach(odp => {
-                    if (odp.latitude && odp.longitude) {
-                        const marker = L.marker([odp.latitude, odp.longitude])
-                            .bindPopup(`<b>${odp.name}</b><br>Status: ${odp.status}<br>Port Tersedia: ${odp.available_ports ?? 'N/A'}`);
-                        marker.addTo(map);
-                        markers.push(marker);
-                    }
-                });
-
-                // Fit bounds if markers exist
-                if (markers.length > 0) {
-                    const group = new L.featureGroup(markers);
-                    map.fitBounds(group.getBounds().pad(0.1));
-                }
-            }
-        });
-
-        // Logika JavaScript asli Anda tetap berfungsi di sini
-        // Tambahkan script inisialisasi AOS-like effect
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-
-        // Logic Theme Toggle
-        const themeToggle = document.getElementById('themeToggle');
-        const currentLandingTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
-        themeToggle.querySelector('i').className = currentLandingTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            themeToggle.querySelector('i').className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        });
-
-        const attendanceForms = document.querySelectorAll('.landing-attendance-form');
-        attendanceForms.forEach((form) => {
-            const photoInput = form.querySelector('.landing-photo-input');
-            const preview = form.querySelector('.landing-preview');
-            if (photoInput && preview) {
-                photoInput.addEventListener('change', (event) => {
-                    const [file] = event.target.files;
-                    if (!file) {
-                        preview.src = '#';
-                        preview.classList.add('d-none');
-                        return;
-                    }
-                    const objectUrl = URL.createObjectURL(file);
-                    preview.src = objectUrl;
-                    preview.classList.remove('d-none');
-                });
-            }
-        });
-
-        const getMostAccuratePosition = () => new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Geolocation not supported'));
-                return;
-            }
-            let bestPosition = null;
-            let lastError = null;
-            let settled = false;
-            let watchId = null;
-            let timerId = null;
-            const options = { enableHighAccuracy: true, timeout: 18000, maximumAge: 0 };
-
-            const finalize = () => {
-                if (settled) return;
-                settled = true;
-                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-                if (timerId) clearTimeout(timerId);
-                if (bestPosition) resolve(bestPosition);
-                else reject(lastError || new Error('Location unavailable'));
-            };
-
-            const considerPosition = (position) => {
-                const accuracy = Number(position?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-                const bestAccuracy = Number(bestPosition?.coords?.accuracy ?? Number.POSITIVE_INFINITY);
-                if (!bestPosition || accuracy < bestAccuracy) {
-                    bestPosition = position;
-                }
-                if (accuracy <= 20) finalize();
-            };
-
-            watchId = navigator.geolocation.watchPosition(
-                (position) => considerPosition(position),
-                (error) => { lastError = error; },
-                options
-            );
-            navigator.geolocation.getCurrentPosition(
-                (position) => considerPosition(position),
-                (error) => { lastError = error; },
-                options
-            );
-            timerId = setTimeout(finalize, 9000);
-        });
-
-        if ('geolocation' in navigator) {
-            getMostAccuratePosition().then((position) => {
-                document.querySelectorAll('.landing-latitude').forEach((input) => {
-                    input.value = position.coords.latitude;
-                });
-                document.querySelectorAll('.landing-longitude').forEach((input) => {
-                    input.value = position.coords.longitude;
-                });
-            }).catch(() => {});
-        }
-    </script>
-</body>
-</html>
+@endsection

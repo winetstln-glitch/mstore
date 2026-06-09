@@ -19,16 +19,9 @@ class OdpAutoNameTest extends TestCase
     public function test_odp_name_is_auto_generated()
     {
         // Setup permissions
-        $role = Role::create([
-            'name' => 'admin',
-            'label' => 'Administrator',
-        ]);
-        $permission = Permission::create([
-            'name' => 'odp.create',
-            'label' => 'Create ODP',
-            'group' => 'odp',
-        ]);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'odp.create'], ['label' => 'Create ODP', 'group' => 'odp']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
         $user = User::factory()->create();
         $user->assignRole($role);
 
@@ -93,16 +86,9 @@ class OdpAutoNameTest extends TestCase
     public function test_odp_name_generation_with_default_abbreviation()
     {
         // Setup permissions
-        $role = Role::create([
-            'name' => 'admin',
-            'label' => 'Administrator',
-        ]);
-        $permission = Permission::create([
-            'name' => 'odp.create',
-            'label' => 'Create ODP',
-            'group' => 'odp',
-        ]);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'odp.create'], ['label' => 'Create ODP', 'group' => 'odp']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
         $user = User::factory()->create();
         $user->assignRole($role);
 

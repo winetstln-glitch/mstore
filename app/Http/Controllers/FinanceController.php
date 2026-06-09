@@ -8,6 +8,7 @@ use App\Models\InventoryTransaction;
 use App\Models\Investor;
 use App\Models\Journal;
 use App\Models\JournalEntry;
+use App\Models\Role;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Services\AccountingPoster;
@@ -26,6 +27,7 @@ class FinanceController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:finance.view', only: ['index', 'show', 'coordinatorDetail', 'downloadCoordinatorPdf', 'profitLoss', 'downloadProfitLossPdf', 'downloadProfitLossExcel', 'managerReport', 'downloadManagerReportPdf', 'downloadManagerReportExcel', 'materialReport', 'exportAccounting', 'settings']),
+            new Middleware('permission:finance.view|investor.view', only: ['investorReport', 'downloadInvestorReportPdf']),
             new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
@@ -224,10 +226,6 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function investorReport(Request $request)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('investor')) {
-            abort(403, 'Unauthorized action.');
-        }
-
         // Filter by month if provided, default to current year-month
         $selectedMonth = $request->input('month', now()->format('Y-m'));
         $coordinatorId = $request->input('coordinator_id');
@@ -344,10 +342,6 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function downloadInvestorReportPdf(Request $request)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('investor')) {
-            abort(403, 'Unauthorized action.');
-        }
-
         $selectedMonth = $request->input('month', now()->format('Y-m'));
         $coordinatorId = $request->input('coordinator_id');
         $date = \Carbon\Carbon::parse($selectedMonth);

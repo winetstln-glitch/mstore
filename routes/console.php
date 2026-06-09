@@ -4,6 +4,7 @@ use App\Console\Commands\MarkAbsentAsAlpha;
 use App\Models\VpnServer;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -12,6 +13,14 @@ Artisan::command('inspire', function () {
 
 // Schedule GenieACS Network Monitor
 Schedule::command('app:monitor-genie-devices')->everyFiveMinutes()->withoutOverlapping(10);
+
+Schedule::command('noc:capture-metrics --queue')->everyMinute()->withoutOverlapping(2);
+
+Schedule::command('sla:evaluate --queue')->everyFifteenMinutes()->withoutOverlapping(10);
+
+Schedule::call(function () {
+    Cache::put('mstore.scheduler.heartbeat_at', now()->toDateTimeString(), now()->addMinutes(10));
+})->name('mstore:scheduler-heartbeat')->everyMinute()->withoutOverlapping(1);
 
 // Schedule Attendance: Mark Absent as Alpha (run at 13:05 and 17:05 daily)
 Schedule::command('attendance:mark-alpha')

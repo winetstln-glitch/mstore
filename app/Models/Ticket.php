@@ -20,12 +20,16 @@ class Ticket extends Model
         'estimated_duration_minutes',
         'status',
         'description',
+        'ai_summary',
+        'ai_category',
+        'ai_confidence',
         'photo_before',
         'photo_proof',
         'location',
         'odp_id',
         'coordinator_id',
         'sla_deadline',
+        'sla_status',
         'closed_at',
     ];
 
@@ -33,6 +37,7 @@ class Ticket extends Model
         'sla_deadline' => 'datetime',
         'closed_at' => 'datetime',
         'estimated_duration_minutes' => 'integer',
+        'ai_confidence' => 'decimal:2',
     ];
 
     public function customer(): BelongsTo

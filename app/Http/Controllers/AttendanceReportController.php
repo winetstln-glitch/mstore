@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Services\Attendance\AttendanceReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -97,7 +98,7 @@ class AttendanceReportController extends Controller
     private function getEligibleUsers()
     {
         $query = \App\Models\User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['customer', 'koordinator', 'coordinator']);
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })->where('is_active', true)
           ->with('role');
 

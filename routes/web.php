@@ -54,7 +54,8 @@ Route::get('/voucher-payment/return', [\App\Http\Controllers\VoucherPaymentContr
 Route::get('/voucher-payment/{referenceId}', [\App\Http\Controllers\VoucherPaymentController::class, 'show'])->name('voucher.payment.show');
 Route::get('/voucher-payment/{referenceId}/check-status', [\App\Http\Controllers\VoucherPaymentController::class, 'checkStatus'])->name('voucher.payment.check_status');
 
-// Debug Route for Duitku Credentials
+// Debug Route for Duitku Credentials (development only)
+if (app()->environment('local')) {
 Route::get('/debug-duitku', function () {
     echo "<h1>🔍 Duitku Debug</h1>";
     
@@ -63,8 +64,14 @@ Route::get('/debug-duitku', function () {
     $sandbox = \App\Models\Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
     
     echo "<h2>1. Credentials:</h2>";
-    echo "<p><strong>Merchant Code:</strong> " . htmlspecialchars($merchantCode) . "</p>";
-    echo "<p><strong>API Key:</strong> " . htmlspecialchars(substr($apiKey, 0, 8) . "****") . "</p>";
+    $maskedMerchant = is_string($merchantCode) && strlen($merchantCode) > 4
+        ? substr($merchantCode, 0, 2) . str_repeat('*', max(0, strlen($merchantCode) - 4)) . substr($merchantCode, -2)
+        : '****';
+    $maskedApiKey = is_string($apiKey) && strlen($apiKey) > 8
+        ? substr($apiKey, 0, 4) . '****' . substr($apiKey, -2)
+        : '****';
+    echo "<p><strong>Merchant Code:</strong> " . htmlspecialchars($maskedMerchant) . "</p>";
+    echo "<p><strong>API Key:</strong> " . htmlspecialchars($maskedApiKey) . "</p>";
     echo "<p><strong>Sandbox Mode:</strong> " . ($sandbox ? "ON" : "OFF") . "</p>";
     
     echo "<h2>2. Config Class Parameters (swap check):</h2>";
@@ -99,6 +106,7 @@ Route::get('/debug-duitku', function () {
     echo "<hr><p>Generated at: " . now() . "</p>";
     echo "<p><a href='/voucher-payment'>Test Voucher Payment</a></p>";
 });
+}
 
 // Test Route for Duitku (Hanya untuk development!)
 if (app()->environment('local')) {
@@ -156,6 +164,32 @@ if (app()->environment('local')) {
 }
 
 Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/internet', [LandingController::class, 'showService'])
+    ->defaults('service', 'internet')
+    ->name('landing.services.internet');
+Route::get('/wedding-event', [LandingController::class, 'showService'])
+    ->defaults('service', 'wedding-event')
+    ->name('landing.services.wedding');
+Route::get('/cctv', [LandingController::class, 'showService'])
+    ->defaults('service', 'cctv')
+    ->name('landing.services.cctv');
+Route::get('/gt-wash', [LandingController::class, 'showService'])
+    ->defaults('service', 'gt-wash')
+    ->name('landing.services.wash');
+Route::get('/atk-store', [LandingController::class, 'showService'])
+    ->defaults('service', 'atk-store')
+    ->name('landing.services.atk');
+Route::post('/leads', [LandingController::class, 'storeLead'])
+    ->middleware('throttle:20,1')
+    ->name('landing.leads.store');
+
+Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
+Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
+
+Route::post('/ai-public/chat', [\App\Http\Controllers\AiController::class, 'publicChat'])
+    ->middleware('throttle:30,1')
+    ->name('ai.public.chat');
+
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -165,26 +199,156 @@ Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::cl
 Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
 
 Route::middleware('auth')->group(function () {
-        Route::get('admin/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('admin.dashboard');
-        Route::get('admin/audit-trail', [\App\Http\Controllers\AdminDashboardController::class, 'auditTrail'])->name('admin.audit-trail');
-    Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
-    Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
+        Route::get('admin/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])
+            ->middleware('permission:dashboard.view')
+            ->name('admin.dashboard');
+        Route::get('admin/audit-trail', [\App\Http\Controllers\AdminDashboardController::class, 'auditTrail'])
+            ->middleware('permission:dashboard.view')
+            ->name('admin.audit-trail');
     
     Route::get('modem-data', [ModemDataController::class, 'index'])->name('modem-data.index')->middleware('permission:modem-data.view');
     Route::post('modem-data', [ModemDataController::class, 'store'])->name('modem-data.store')->middleware('permission:modem-data.create|modem-data.view');
     
     // AI Center
-    Route::get('/ai-center', [\App\Http\Controllers\AiController::class, 'index'])->name('ai.index');
+    Route::get('/ai-center', [\App\Http\Controllers\AiController::class, 'index'])
+        ->middleware('permission:ai.view')
+        ->name('ai.index');
     Route::post('/ai-center/chat', [\App\Http\Controllers\AiController::class, 'chat'])
+        ->middleware('permission:ai.view')
         ->middleware('throttle:30,1')
         ->name('ai.chat');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->middleware('permission:dashboard.view')
+        ->name('dashboard');
     Route::post('/presence/ping', [PresenceController::class, 'ping'])->name('presence.ping');
-    Route::get('/dashboard/monitor-logs', [DashboardController::class, 'monitorLogs'])->name('dashboard.monitor_logs');
+    Route::get('/dashboard/monitor-logs', [DashboardController::class, 'monitorLogs'])
+        ->middleware('permission:dashboard.view')
+        ->name('dashboard.monitor_logs');
     Route::get('/health/mixradius', function (\App\Services\MixRadiusService $mix) {
         return response()->json($mix->health());
     })->name('health.mixradius');
+
+    Route::get('/noc/dashboard', [\App\Http\Controllers\NocDashboardController::class, 'index'])
+        ->middleware('permission:noc.dashboard.view')
+        ->name('noc.dashboard');
+    Route::get('/noc/dashboard/data', [\App\Http\Controllers\NocDashboardController::class, 'data'])
+        ->middleware('permission:noc.dashboard.view')
+        ->name('noc.dashboard.data');
+    Route::prefix('noc/operasional')->name('noc.operational.')->group(function () {
+        Route::get('/area-outage', [\App\Http\Controllers\NocOperationalController::class, 'areaOutage'])
+            ->middleware('permission:noc.operational.view')
+            ->name('area_outage');
+        Route::get('/network-incident', [\App\Http\Controllers\NocOperationalController::class, 'incidents'])
+            ->middleware('permission:noc.operational.view')
+            ->name('network_incident');
+        Route::get('/network-diagnostic', [\App\Http\Controllers\NocOperationalController::class, 'diagnostics'])
+            ->middleware('permission:noc.operational.view')
+            ->name('network_diagnostic');
+        Route::get('/diagnostic-logs', [\App\Http\Controllers\NocOperationalController::class, 'diagnosticLogs'])
+            ->middleware('permission:noc.diagnostic_logs.view')
+            ->name('diagnostic_logs');
+        Route::get('/olt-monitoring', [\App\Http\Controllers\NocOperationalController::class, 'oltMonitoring'])
+            ->middleware('permission:noc.olt_monitoring.view')
+            ->name('olt_monitoring');
+        Route::get('/fiber-monitoring', [\App\Http\Controllers\NocOperationalController::class, 'fiberMonitoring'])
+            ->middleware('permission:noc.fiber_monitoring.view')
+            ->name('fiber_monitoring');
+    });
+
+    Route::get('/whatsapp/analytics', [\App\Http\Controllers\WhatsAppAnalyticsController::class, 'index'])
+        ->middleware('permission:whatsapp.analytics.view')
+        ->name('whatsapp.analytics');
+    Route::get('/whatsapp/analytics/data', [\App\Http\Controllers\WhatsAppAnalyticsController::class, 'data'])
+        ->middleware('permission:whatsapp.analytics.view')
+        ->name('whatsapp.analytics.data');
+
+    Route::prefix('whatsapp/ai-knowledge-base')->name('whatsapp.kb.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'index'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'create'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'store'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'edit'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'update'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\KnowledgeBaseAdminController::class, 'destroy'])
+            ->middleware('permission:whatsapp.kb.manage')
+            ->name('destroy');
+    });
+
+    Route::get('/tickets/sla-monitoring', [\App\Http\Controllers\SlaMonitoringController::class, 'index'])
+        ->middleware('permission:sla.monitoring.view')
+        ->name('sla.monitoring');
+    Route::get('/tickets/sla-monitoring/data', [\App\Http\Controllers\SlaMonitoringController::class, 'data'])
+        ->middleware('permission:sla.monitoring.view')
+        ->name('sla.monitoring.data');
+    Route::get('/tickets/escalation-queue', [\App\Http\Controllers\EscalationQueueController::class, 'index'])
+        ->middleware('permission:sla.escalation.view')
+        ->name('sla.escalation-queue');
+
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/noc', [\App\Http\Controllers\ReportingCenterController::class, 'noc'])
+            ->middleware('permission:report.noc.export')
+            ->name('noc');
+        Route::get('/noc/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'nocPdf'])
+            ->middleware('permission:report.noc.export')
+            ->name('noc.pdf');
+        Route::get('/noc/excel', [\App\Http\Controllers\ReportingCenterController::class, 'nocExcel'])
+            ->middleware('permission:report.noc.export')
+            ->name('noc.excel');
+
+        Route::get('/whatsapp', [\App\Http\Controllers\ReportingCenterController::class, 'whatsapp'])
+            ->middleware('permission:report.whatsapp.export')
+            ->name('whatsapp');
+        Route::get('/whatsapp/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'whatsappPdf'])
+            ->middleware('permission:report.whatsapp.export')
+            ->name('whatsapp.pdf');
+        Route::get('/whatsapp/excel', [\App\Http\Controllers\ReportingCenterController::class, 'whatsappExcel'])
+            ->middleware('permission:report.whatsapp.export')
+            ->name('whatsapp.excel');
+
+        Route::get('/sla', [\App\Http\Controllers\ReportingCenterController::class, 'sla'])
+            ->middleware('permission:report.sla.export')
+            ->name('sla');
+        Route::get('/sla/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'slaPdf'])
+            ->middleware('permission:report.sla.export')
+            ->name('sla.pdf');
+        Route::get('/sla/excel', [\App\Http\Controllers\ReportingCenterController::class, 'slaExcel'])
+            ->middleware('permission:report.sla.export')
+            ->name('sla.excel');
+
+        Route::get('/wedding', [\App\Http\Controllers\ReportingCenterController::class, 'wedding'])
+            ->middleware('permission:report.wedding.export')
+            ->name('wedding');
+        Route::get('/wedding/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'weddingPdf'])
+            ->middleware('permission:report.wedding.export')
+            ->name('wedding.pdf');
+        Route::get('/wedding/excel', [\App\Http\Controllers\ReportingCenterController::class, 'weddingExcel'])
+            ->middleware('permission:report.wedding.export')
+            ->name('wedding.excel');
+
+        Route::get('/cctv', [\App\Http\Controllers\ReportingCenterController::class, 'cctv'])
+            ->middleware('permission:report.cctv.export')
+            ->name('cctv');
+        Route::get('/cctv/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'cctvPdf'])
+            ->middleware('permission:report.cctv.export')
+            ->name('cctv.pdf');
+        Route::get('/cctv/excel', [\App\Http\Controllers\ReportingCenterController::class, 'cctvExcel'])
+            ->middleware('permission:report.cctv.export')
+            ->name('cctv.excel');
+    });
+
+    Route::get('/security/monitoring', [\App\Http\Controllers\SecurityMonitoringController::class, 'index'])
+        ->middleware('permission:security.monitoring.view')
+        ->name('security.monitoring');
 
     // Client Portal
     Route::prefix('client')->name('client.')->group(function () {
@@ -315,7 +479,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
    Route::prefix('olt')->name('olt.')->group(function () {
 
     // ===== CRUD =====
-    Route::get('/', [OLTController::class, 'index'])->name('index');
+    Route::get('/', [OLTController::class, 'index'])->middleware('permission:olt.view')->name('index');
     Route::get('/create', [OLTController::class, 'create'])->name('create');
     Route::post('/', [OLTController::class, 'store'])->name('store');
     Route::post('/{olt}/poll', [OltController::class, 'poll'])->name('poll');
@@ -363,13 +527,13 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
-    Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->name('pppoe.index');
+    Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->middleware('permission:pppoe.view')->name('pppoe.index');
     Route::resource('routers', RouterController::class);
 
     Route::prefix('vpn')->name('vpn.')->group(function () {
         Route::resource('servers', VpnServerController::class)->except(['show']);
     });
-    Route::view('/vpn/guide', 'vpn.guide')->name('vpn.guide');
+    Route::view('/vpn/guide', 'vpn.guide')->middleware('permission:router.view')->name('vpn.guide');
 
     Route::get('/routers/{router}/vpn/script', function (RouterModel $router) {
         abort_unless($router->vpn_account_id, 404);
@@ -401,22 +565,48 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::delete('finance/bulk-destroy', [FinanceController::class, 'bulkDestroy'])->name('finance.bulkDestroy');
     Route::resource('finance', FinanceController::class)->parameters(['finance' => 'transaction']);
 
-    Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])->name('map.update_location');
-    Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])->name('map.update_path');
-    Route::post('map/connections/save', [\App\Http\Controllers\MapConnectionController::class, 'save'])->name('map.connections.save');
-    Route::get('map/connections', [\App\Http\Controllers\MapConnectionController::class, 'index'])->name('map.connections.index');
-    Route::get('map/wlan-status/{customer}', [MapController::class, 'getCustomerWlanStatus'])->name('map.wlan_status');
-    Route::post('map/wlan-update/{customer}', [MapController::class, 'updateCustomerWlan'])->name('map.wlan_update');
-    Route::post('map/ping', [MapController::class, 'ping'])->name('map.ping');
+    Route::put('map/location/{type}/{id}', [MapController::class, 'updateLocation'])
+        ->middleware('permission:map.view')
+        ->name('map.update_location');
+    Route::put('map/path/{type}/{id}', [MapController::class, 'updatePath'])
+        ->middleware('permission:map.view')
+        ->name('map.update_path');
+    Route::post('map/connections/save', [\App\Http\Controllers\MapConnectionController::class, 'save'])
+        ->middleware('permission:map.view')
+        ->name('map.connections.save');
+    Route::get('map/connections', [\App\Http\Controllers\MapConnectionController::class, 'index'])
+        ->middleware('permission:map.view')
+        ->name('map.connections.index');
+    Route::get('map/wlan-status/{customer}', [MapController::class, 'getCustomerWlanStatus'])
+        ->middleware('permission:map.view')
+        ->name('map.wlan_status');
+    Route::post('map/wlan-update/{customer}', [MapController::class, 'updateCustomerWlan'])
+        ->middleware('permission:map.view')
+        ->name('map.wlan_update');
+    Route::post('map/ping', [MapController::class, 'ping'])
+        ->middleware('permission:map.view')
+        ->name('map.ping');
     Route::resource('map', MapController::class);
 
     // Tools
-    Route::get('/calculator/pon', [CalculatorController::class, 'index'])->name('calculator.pon');
-    Route::get('/network/analyzer', [NetworkAnalyzerController::class, 'index'])->name('network.analyzer');
-    Route::get('/network/analyzer/ping', [NetworkAnalyzerController::class, 'ping'])->name('network.analyzer.ping');
-    Route::get('/network/analyzer/info', [NetworkAnalyzerController::class, 'networkInfo'])->name('network.analyzer.info');
-    Route::get('/network/analyzer/speed/download', [NetworkAnalyzerController::class, 'speedDownload'])->name('network.analyzer.speed.download');
-    Route::post('/network/analyzer/speed/upload', [NetworkAnalyzerController::class, 'speedUpload'])->name('network.analyzer.speed.upload');
+    Route::get('/calculator/pon', [CalculatorController::class, 'index'])
+        ->middleware('permission:calculator.view')
+        ->name('calculator.pon');
+    Route::get('/network/analyzer', [NetworkAnalyzerController::class, 'index'])
+        ->middleware('permission:router.view')
+        ->name('network.analyzer');
+    Route::get('/network/analyzer/ping', [NetworkAnalyzerController::class, 'ping'])
+        ->middleware('permission:router.view')
+        ->name('network.analyzer.ping');
+    Route::get('/network/analyzer/info', [NetworkAnalyzerController::class, 'networkInfo'])
+        ->middleware('permission:router.view')
+        ->name('network.analyzer.info');
+    Route::get('/network/analyzer/speed/download', [NetworkAnalyzerController::class, 'speedDownload'])
+        ->middleware('permission:router.view')
+        ->name('network.analyzer.speed.download');
+    Route::post('/network/analyzer/speed/upload', [NetworkAnalyzerController::class, 'speedUpload'])
+        ->middleware('permission:router.view')
+        ->name('network.analyzer.speed.upload');
     Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::get('odps/export/excel', [\App\Http\Controllers\OdpController::class, 'exportExcel'])->name('odps.export.excel');
@@ -446,13 +636,27 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::get('investors/export/pdf', [InvestorController::class, 'exportPdf'])->name('investors.export.pdf');
     Route::get('investors/export/excel', [InvestorController::class, 'exportExcel'])->name('investors.export.excel');
     Route::resource('investors', InvestorController::class);
-    Route::post('chat/start', [ChatController::class, 'start'])->name('chat.start');
-    Route::get('chat/{chat}/messages', [ChatController::class, 'messages'])->name('chat.messages');
-    Route::get('chat/{chat}/presence', [ChatController::class, 'presence'])->name('chat.presence');
-    Route::post('chat/{chat}/typing', [ChatController::class, 'typing'])->name('chat.typing');
-    Route::post('chat/{chat}/read', [ChatController::class, 'markRead'])->name('chat.read');
-    Route::get('chat/messages/{message}/download', [ChatController::class, 'downloadAttachment'])->name('chat.attachments.download');
-    Route::resource('chat', ChatController::class)->only(['index', 'show', 'store']);
+    Route::post('chat/start', [ChatController::class, 'start'])
+        ->middleware('permission:chat.view')
+        ->name('chat.start');
+    Route::get('chat/{chat}/messages', [ChatController::class, 'messages'])
+        ->middleware('permission:chat.view')
+        ->name('chat.messages');
+    Route::get('chat/{chat}/presence', [ChatController::class, 'presence'])
+        ->middleware('permission:chat.view')
+        ->name('chat.presence');
+    Route::post('chat/{chat}/typing', [ChatController::class, 'typing'])
+        ->middleware('permission:chat.view')
+        ->name('chat.typing');
+    Route::post('chat/{chat}/read', [ChatController::class, 'markRead'])
+        ->middleware('permission:chat.view')
+        ->name('chat.read');
+    Route::get('chat/messages/{message}/download', [ChatController::class, 'downloadAttachment'])
+        ->middleware('permission:chat.view')
+        ->name('chat.attachments.download');
+    Route::resource('chat', ChatController::class)
+        ->middleware('permission:chat.view')
+        ->only(['index', 'show', 'store']);
 
     // Telegram Settings
     Route::get('/telegram', [\App\Http\Controllers\TelegramController::class, 'index'])->name('telegram.index');
@@ -464,15 +668,29 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('/telegram/preview-ip-up', [\App\Http\Controllers\TelegramController::class, 'previewIpUp'])->name('telegram.preview_ip_up');
 
     // WhatsApp Settings
-    Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
-    Route::get('/whatsapp/logs', [\App\Http\Controllers\WhatsAppController::class, 'logs'])->name('whatsapp.logs');
-    Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])->name('whatsapp.update');
-    Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])->name('whatsapp.test');
-    Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])->name('whatsapp.check-status');
+    Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])
+        ->middleware('permission:chat.view')
+        ->name('whatsapp.index');
+    Route::get('/whatsapp/logs', [\App\Http\Controllers\WhatsAppController::class, 'logs'])
+        ->middleware('permission:chat.view')
+        ->name('whatsapp.logs');
+    Route::post('/whatsapp/update', [\App\Http\Controllers\WhatsAppController::class, 'update'])
+        ->middleware('permission:chat.manage')
+        ->name('whatsapp.update');
+    Route::post('/whatsapp/test', [\App\Http\Controllers\WhatsAppController::class, 'test'])
+        ->middleware('permission:chat.manage')
+        ->name('whatsapp.test');
+    Route::post('/whatsapp/check-status', [\App\Http\Controllers\WhatsAppController::class, 'checkStatus'])
+        ->middleware('permission:chat.manage')
+        ->name('whatsapp.check-status');
 
     // WhatsApp Bot Builder
-    Route::post('whatsapp-builder/import-templates', [\App\Http\Controllers\WhatsAppBotBuilderController::class, 'importTemplates'])->name('whatsapp.builder.import-templates');
-    Route::resource('whatsapp-builder', \App\Http\Controllers\WhatsAppBotBuilderController::class)->names([
+    Route::post('whatsapp-builder/import-templates', [\App\Http\Controllers\WhatsAppBotBuilderController::class, 'importTemplates'])
+        ->middleware('permission:chat.manage')
+        ->name('whatsapp.builder.import-templates');
+    Route::resource('whatsapp-builder', \App\Http\Controllers\WhatsAppBotBuilderController::class)
+        ->middleware('permission:chat.manage')
+        ->names([
         'index' => 'whatsapp.builder.index',
         'create' => 'whatsapp.builder.create',
         'store' => 'whatsapp.builder.store',
@@ -481,7 +699,9 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         'destroy' => 'whatsapp.builder.destroy',
     ])->parameters(['whatsapp-builder' => 'menu']);
 
-    Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])->name('wash.transactions.whatsapp_receipt');
+    Route::post('wash/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\WashTransactionController::class, 'whatsappReceipt'])
+        ->middleware('permission:wash.report')
+        ->name('wash.transactions.whatsapp_receipt');
     Route::post('atk/transactions/{transaction}/whatsapp-receipt', [\App\Http\Controllers\AtkTransactionController::class, 'whatsappReceipt'])->name('atk.transactions.whatsapp_receipt');
 
     // Inventory
@@ -511,7 +731,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('/inventory/assets/{asset}/assign', [\App\Http\Controllers\AssetController::class, 'processAssignment'])->name('inventory.assets.process_assignment'); // POST for submit
     Route::post('/inventory/assets/{asset}/return', [\App\Http\Controllers\AssetController::class, 'returnAsset'])->name('inventory.assets.return');
 
-    Route::prefix('accounting')->name('accounting.')->group(function () {
+    Route::prefix('accounting')->name('accounting.')->middleware('permission:accounting.view')->group(function () {
         Route::get('/trial-balance', [\App\Http\Controllers\AccountingReportController::class, 'trialBalance'])->name('trial_balance');
         Route::get('/income-statement', [\App\Http\Controllers\AccountingReportController::class, 'incomeStatement'])->name('income_statement');
         Route::get('/balance-sheet', [\App\Http\Controllers\AccountingReportController::class, 'balanceSheet'])->name('balance_sheet');
@@ -556,29 +776,91 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
 
     // Wash Service Routes
     Route::prefix('wash')->name('wash.')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])->name('dashboard');
-        Route::get('/pos', [\App\Http\Controllers\WashTransactionController::class, 'pos'])->name('pos');
-        Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])->name('transactions.store');
-        Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\WashTransactionController::class, 'receipt'])->name('transactions.receipt');
-        Route::get('/reports', [\App\Http\Controllers\WashReportController::class, 'index'])->name('reports.index');
+        Route::get('/dashboard', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])
+            ->middleware('permission:wash.view')
+            ->name('dashboard');
+        Route::get('/pos', [\App\Http\Controllers\WashTransactionController::class, 'pos'])
+            ->middleware('permission:wash.pos')
+            ->name('pos');
+        Route::get('/members', [\App\Http\Controllers\WashMemberController::class, 'index'])
+            ->middleware('permission:wash.member.view')
+            ->name('members.index');
+        Route::get('/members/levels', [\App\Http\Controllers\WashMemberController::class, 'levels'])
+            ->middleware('permission:wash.member.view')
+            ->name('members.levels');
+        Route::get('/members/{member}', [\App\Http\Controllers\WashMemberController::class, 'show'])
+            ->middleware('permission:wash.member.view')
+            ->name('members.show');
+        Route::put('/members/{member}', [\App\Http\Controllers\WashMemberController::class, 'update'])
+            ->middleware('permission:wash.member.manage')
+            ->name('members.update');
+        Route::get('/members/{member}/card', [\App\Http\Controllers\WashMemberController::class, 'cardPdf'])
+            ->middleware('permission:wash.member.view')
+            ->name('members.card');
+        Route::get('/loyalty', [\App\Http\Controllers\WashLoyaltyController::class, 'index'])
+            ->middleware('permission:wash.loyalty.view')
+            ->name('loyalty.index');
+        Route::get('/loyalty/vouchers', [\App\Http\Controllers\WashLoyaltyController::class, 'vouchers'])
+            ->middleware('permission:wash.reward.view')
+            ->name('loyalty.vouchers');
+        Route::get('/loyalty/redemptions', [\App\Http\Controllers\WashLoyaltyController::class, 'redemptions'])
+            ->middleware('permission:wash.reward.view')
+            ->name('loyalty.redemptions');
+        Route::get('/loyalty/report', [\App\Http\Controllers\WashLoyaltyController::class, 'report'])
+            ->middleware('permission:wash.reward.view')
+            ->name('loyalty.report');
+        Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])
+            ->middleware('permission:wash.pos')
+            ->name('transactions.store');
+        Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\WashTransactionController::class, 'receipt'])
+            ->middleware('permission:wash.report')
+            ->name('transactions.receipt');
+        Route::get('/reports', [\App\Http\Controllers\WashReportController::class, 'index'])
+            ->middleware('permission:wash.report')
+            ->name('reports.index');
         Route::get('/reports/pdf', [\App\Http\Controllers\WashReportController::class, 'pdf'])->name('reports.pdf');
         Route::get('/reports/excel', [\App\Http\Controllers\WashReportController::class, 'excel'])->name('reports.excel');
-        Route::get('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'index'])->name('expenses.index');
-        Route::get('/expenses/create', [\App\Http\Controllers\WashExpenseController::class, 'create'])->name('expenses.create');
-        Route::post('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'store'])->name('expenses.store');
-        Route::post('/expenses/stock-out', [\App\Http\Controllers\WashExpenseController::class, 'stockOut'])->name('expenses.stock_out');
-        Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\WashExpenseController::class, 'edit'])->name('expenses.edit');
-        Route::put('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'update'])->name('expenses.update');
-        Route::delete('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'destroy'])->name('expenses.destroy');
-        Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])->name('customer.check');
-        Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])->name('transactions.export.pdf');
-        Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])->name('transactions.export.excel');
-        Route::delete('/transactions/bulk-destroy', [\App\Http\Controllers\WashTransactionController::class, 'bulkDestroy'])->name('transactions.bulkDestroy');
-        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)->only(['index', 'show', 'update', 'destroy']);
+        Route::get('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'index'])
+            ->middleware('permission:wash.report')
+            ->name('expenses.index');
+        Route::get('/expenses/create', [\App\Http\Controllers\WashExpenseController::class, 'create'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.create');
+        Route::post('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'store'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.store');
+        Route::post('/expenses/stock-out', [\App\Http\Controllers\WashExpenseController::class, 'stockOut'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.stock_out');
+        Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\WashExpenseController::class, 'edit'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.edit');
+        Route::put('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'update'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.update');
+        Route::delete('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'destroy'])
+            ->middleware('permission:wash.manage')
+            ->name('expenses.destroy');
+        Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])
+            ->middleware('permission:wash.pos')
+            ->name('customer.check');
+        Route::get('/transactions/export/pdf', [\App\Http\Controllers\WashTransactionController::class, 'exportPdf'])
+            ->middleware('permission:wash.report')
+            ->name('transactions.export.pdf');
+        Route::get('/transactions/export/excel', [\App\Http\Controllers\WashTransactionController::class, 'exportExcel'])
+            ->middleware('permission:wash.report')
+            ->name('transactions.export.excel');
+        Route::delete('/transactions/bulk-destroy', [\App\Http\Controllers\WashTransactionController::class, 'bulkDestroy'])
+            ->middleware('permission:wash.manage')
+            ->name('transactions.bulkDestroy');
+        Route::resource('transactions', \App\Http\Controllers\WashTransactionController::class)
+            ->only(['index', 'show', 'update', 'destroy'])
+            ->middleware('permission:wash.report');
     });
-
     // Wash Services (Auto Wash)
-    Route::resource('wash/services', \App\Http\Controllers\WashController::class)->names([
+    Route::resource('wash/services', \App\Http\Controllers\WashController::class)
+        ->middleware('permission:wash.manage')
+        ->names([
         'index' => 'wash.services.index',
         'create' => 'wash.services.create',
         'store' => 'wash.services.store',
@@ -589,7 +871,9 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     
     // Wash Stock
     Route::prefix('wash/stock')->name('wash.stock.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\WashStockController::class, 'index'])->name('index');
+        Route::get('/', [\App\Http\Controllers\WashStockController::class, 'index'])
+            ->middleware('permission:wash.view')
+            ->name('index');
         Route::get('/create', [\App\Http\Controllers\WashStockController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\WashStockController::class, 'store'])->name('store');
         Route::get('/{stockItem}', [\App\Http\Controllers\WashStockController::class, 'show'])->name('show');
@@ -629,4 +913,123 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show', 'destroy']);
     });
+
+    Route::prefix('wedding')->name('wedding.')->group(function () {
+        Route::get('/dashboard', \App\Http\Controllers\WeddingDashboardController::class)
+            ->middleware('permission:wedding.view')
+            ->name('dashboard');
+
+        Route::get('/packages', [\App\Http\Controllers\WeddingPackageController::class, 'index'])
+            ->middleware('permission:wedding.view')
+            ->name('packages.index');
+        Route::get('/packages/create', [\App\Http\Controllers\WeddingPackageController::class, 'create'])
+            ->middleware('permission:wedding.manage')
+            ->name('packages.create');
+        Route::post('/packages', [\App\Http\Controllers\WeddingPackageController::class, 'store'])
+            ->middleware('permission:wedding.manage')
+            ->name('packages.store');
+        Route::get('/packages/{package}/edit', [\App\Http\Controllers\WeddingPackageController::class, 'edit'])
+            ->middleware('permission:wedding.manage')
+            ->name('packages.edit');
+        Route::put('/packages/{package}', [\App\Http\Controllers\WeddingPackageController::class, 'update'])
+            ->middleware('permission:wedding.manage')
+            ->name('packages.update');
+        Route::delete('/packages/{package}', [\App\Http\Controllers\WeddingPackageController::class, 'destroy'])
+            ->middleware('permission:wedding.manage')
+            ->name('packages.destroy');
+
+        Route::resource('bookings', \App\Http\Controllers\WeddingBookingController::class)
+            ->middleware('permission:wedding.booking');
+
+        Route::get('/schedule', [\App\Http\Controllers\WeddingScheduleController::class, 'index'])
+            ->middleware('permission:wedding.view')
+            ->name('schedule.index');
+
+        Route::get('/payments', [\App\Http\Controllers\WeddingPaymentController::class, 'index'])
+            ->middleware('permission:wedding.payment')
+            ->name('payments.index');
+        Route::get('/bookings/{booking}/payments/create', [\App\Http\Controllers\WeddingPaymentController::class, 'create'])
+            ->middleware('permission:wedding.payment')
+            ->name('payments.create');
+        Route::post('/bookings/{booking}/payments', [\App\Http\Controllers\WeddingPaymentController::class, 'store'])
+            ->middleware('permission:wedding.payment')
+            ->name('payments.store');
+        Route::get('/payments/{payment}', [\App\Http\Controllers\WeddingPaymentController::class, 'show'])
+            ->middleware('permission:wedding.payment')
+            ->name('payments.show');
+    });
+
+    Route::prefix('cctv')->name('cctv.')->group(function () {
+        Route::get('/dashboard', \App\Http\Controllers\CctvDashboardController::class)
+            ->middleware('permission:cctv.view')
+            ->name('dashboard');
+
+        Route::get('/packages', [\App\Http\Controllers\CctvPackageController::class, 'index'])
+            ->middleware('permission:cctv.view')
+            ->name('packages.index');
+        Route::get('/packages/create', [\App\Http\Controllers\CctvPackageController::class, 'create'])
+            ->middleware('permission:cctv.manage')
+            ->name('packages.create');
+        Route::post('/packages', [\App\Http\Controllers\CctvPackageController::class, 'store'])
+            ->middleware('permission:cctv.manage')
+            ->name('packages.store');
+        Route::get('/packages/{package}/edit', [\App\Http\Controllers\CctvPackageController::class, 'edit'])
+            ->middleware('permission:cctv.manage')
+            ->name('packages.edit');
+        Route::put('/packages/{package}', [\App\Http\Controllers\CctvPackageController::class, 'update'])
+            ->middleware('permission:cctv.manage')
+            ->name('packages.update');
+        Route::delete('/packages/{package}', [\App\Http\Controllers\CctvPackageController::class, 'destroy'])
+            ->middleware('permission:cctv.manage')
+            ->name('packages.destroy');
+
+        Route::resource('bookings', \App\Http\Controllers\CctvBookingController::class)
+            ->middleware('permission:cctv.booking');
+
+        Route::get('/schedule', [\App\Http\Controllers\CctvScheduleController::class, 'index'])
+            ->middleware('permission:cctv.view')
+            ->name('schedule.index');
+
+        Route::get('/bookings/{booking}/surveys/create', [\App\Http\Controllers\CctvSurveyController::class, 'create'])
+            ->middleware('permission:cctv.booking')
+            ->name('surveys.create');
+        Route::post('/bookings/{booking}/surveys', [\App\Http\Controllers\CctvSurveyController::class, 'store'])
+            ->middleware('permission:cctv.booking')
+            ->name('surveys.store');
+        Route::get('/surveys/{survey}/edit', [\App\Http\Controllers\CctvSurveyController::class, 'edit'])
+            ->middleware('permission:cctv.booking')
+            ->name('surveys.edit');
+        Route::put('/surveys/{survey}', [\App\Http\Controllers\CctvSurveyController::class, 'update'])
+            ->middleware('permission:cctv.booking')
+            ->name('surveys.update');
+
+        Route::get('/bookings/{booking}/installations/create', [\App\Http\Controllers\CctvInstallationController::class, 'create'])
+            ->middleware('permission:cctv.booking')
+            ->name('installations.create');
+        Route::post('/bookings/{booking}/installations', [\App\Http\Controllers\CctvInstallationController::class, 'store'])
+            ->middleware('permission:cctv.booking')
+            ->name('installations.store');
+        Route::get('/installations/{installation}/edit', [\App\Http\Controllers\CctvInstallationController::class, 'edit'])
+            ->middleware('permission:cctv.booking')
+            ->name('installations.edit');
+        Route::put('/installations/{installation}', [\App\Http\Controllers\CctvInstallationController::class, 'update'])
+            ->middleware('permission:cctv.booking')
+            ->name('installations.update');
+
+        Route::get('/payments', [\App\Http\Controllers\CctvPaymentController::class, 'index'])
+            ->middleware('permission:cctv.payment')
+            ->name('payments.index');
+        Route::get('/bookings/{booking}/payments/create', [\App\Http\Controllers\CctvPaymentController::class, 'create'])
+            ->middleware('permission:cctv.payment')
+            ->name('payments.create');
+        Route::post('/bookings/{booking}/payments', [\App\Http\Controllers\CctvPaymentController::class, 'store'])
+            ->middleware('permission:cctv.payment')
+            ->name('payments.store');
+        Route::get('/payments/{payment}', [\App\Http\Controllers\CctvPaymentController::class, 'show'])
+            ->middleware('permission:cctv.payment')
+            ->name('payments.show');
+    });
 });
+
+Route::get('/wash/member/verify/{token}', [\App\Http\Controllers\WashMemberController::class, 'verify'])
+    ->name('wash.members.verify');

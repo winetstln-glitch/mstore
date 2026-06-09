@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\WhatsApp\WhatsAppAnalyticsObserved;
 use App\Models\Customer;
 use App\Models\Setting;
 use App\Models\WhatsAppLog;
@@ -276,6 +277,20 @@ class WhatsAppService
             ]);
 
             if (!$isSent) {
+                event(new WhatsAppAnalyticsObserved([
+                    'occurred_at' => now(),
+                    'direction' => 'outgoing',
+                    'phone_number' => (string) $phone,
+                    'intent' => null,
+                    'used_ai' => is_string($category) && str_contains(strtolower($category), 'ai'),
+                    'is_fallback' => false,
+                    'meta' => [
+                        'category' => $category,
+                        'has_media' => ! empty($mediaUrl),
+                        'provider' => $provider,
+                        'status' => 'failed',
+                    ],
+                ]));
                 $errorMsg = 'WhatsApp gagal dikirim: ' . ($providerValidation['error'] ?? $responseBody);
                 Log::error($errorMsg);
                 return [
@@ -286,6 +301,21 @@ class WhatsAppService
                     'error' => $errorMsg
                 ];
             }
+
+            event(new WhatsAppAnalyticsObserved([
+                'occurred_at' => now(),
+                'direction' => 'outgoing',
+                'phone_number' => (string) $phone,
+                'intent' => null,
+                'used_ai' => is_string($category) && str_contains(strtolower($category), 'ai'),
+                'is_fallback' => false,
+                'meta' => [
+                    'category' => $category,
+                    'has_media' => ! empty($mediaUrl),
+                    'provider' => $provider,
+                    'status' => 'sent',
+                ],
+            ]));
 
             return [
                 'success' => true,

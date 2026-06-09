@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Attendance\MarkAbsentAsAlphaAction;
+use App\Models\Role;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -32,45 +33,32 @@ class MarkAbsentAsAlpha extends Command
 
         $today = Carbon::today();
         $markedCount = 0;
-
-        // Daftar role standar yang DIWAJIBKAN absensi harian (Sudah dinormalisasi)
         $eligibleRoles = [
-            'admin',
-            'leader',
-            'finance',
-            'hrd manager',
-            'manager hrd',
-            'noc',
-            'technician',
-            'kasir atk',
-            'kasir wash',
-            'operator wash',
-            'staf keuangan',
-            'karyawan wash',
-            'administrator',
+            Role::ADMIN,
+            Role::LEADER,
+            Role::FINANCE,
+            Role::HRD_MANAGER,
+            Role::NOC,
+            Role::TECHNICIAN,
+            Role::KASIR_ATK,
+            Role::KASIR_WASH,
+            Role::KARYAWAN_WASH,
         ];
-
-        // Daftar role yang DIKEÇUALIKAN
-        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'coordinator', 'koordinator'];
+        $excludedRoles = [Role::CUSTOMER, Role::DIREKTUR, Role::COORDINATOR, 'owner', 'owner pendiri', 'owner-pendiri'];
 
         // Query semua user aktif beserta role
         User::where('is_active', true)
             ->with('role')
             ->lazy()
             ->each(function ($user) use ($markAbsentAsAlphaAction, $today, &$markedCount, $eligibleRoles, $excludedRoles) {
-            
-                // Normalisasi nama role
-                $userRole = strtolower(str_replace(['-', '_'], ' ', optional($user->role)->name ?? ''));
-                $this->info("Checking user: {$user->name} (Role: " . (optional($user->role)->name ?? 'N/A') . " -> Normalized: {$userRole})");
+                $this->info("Checking user: {$user->name} (Role: " . (optional($user->role)->name ?? 'N/A') . ")");
 
-                // Skip jika role termasuk yang dikecualikan
-                if (in_array($userRole, $excludedRoles, true)) {
+                if ($user->hasAnyRole($excludedRoles)) {
                     $this->info("→ Skipping (excluded role)");
                     return;
                 }
 
-                // Skip jika role tidak termasuk eligible
-                if (! in_array($userRole, $eligibleRoles, true)) {
+                if (! $user->hasAnyRole($eligibleRoles)) {
                     $this->info("→ Skipping (not eligible role)");
                     return;
                 }

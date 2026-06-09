@@ -18,9 +18,9 @@ class FinanceCoordinatorTest extends TestCase
     public function test_coordinator_income_generates_commission_expense()
     {
         // Setup permissions
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
 
         $user = User::factory()->create(['role_id' => $role->id]);
         // $user->roles()->attach($role);
@@ -67,9 +67,9 @@ class FinanceCoordinatorTest extends TestCase
     public function test_regular_income_does_not_generate_commission()
     {
         // Setup permissions
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        $permission = Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance', 'group' => 'Finance']);
-        $role->permissions()->attach($permission);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        $permission = Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
 
         $user = User::factory()->create(['role_id' => $role->id]);
         // $user->roles()->attach($role);

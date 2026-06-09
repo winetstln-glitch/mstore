@@ -14,7 +14,8 @@ class RouterController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:router.view', only: ['index', 'show', 'testConnection', 'sessions']),
+            new Middleware('permission:router.view', only: ['index', 'show', 'testConnection']),
+            new Middleware('permission:router.view|hotspot.view', only: ['sessions']),
             new Middleware('permission:router.create', only: ['create', 'store']),
             new Middleware('permission:router.edit', only: ['edit', 'update', 'disconnectPppoe', 'togglePppoeSecret', 'disconnectHotspot']),
             new Middleware('permission:router.delete', only: ['destroy']),

@@ -20,20 +20,6 @@ class DuitkuService
         $apiKey = Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
         $sandbox = Setting::getValue('duitku_sandbox', config('services.duitku.sandbox', true));
         
-        // Debug: log credential yang dipakai (masked untuk keamanan)
-        \Illuminate\Support\Facades\Log::debug('Duitku Configuration Debug', [
-            'merchant_code_provided' => !empty($merchantCode),
-            'merchant_code_length' => strlen($merchantCode),
-            'merchant_code_prefix' => substr($merchantCode, 0, 2) . '***',
-            'api_key_provided' => !empty($apiKey),
-            'api_key_length' => strlen($apiKey),
-            'sandbox_mode' => $sandbox,
-            'source' => [
-                'merchant_code_from_db' => Setting::getValue('duitku_merchant_code') ? 'db' : 'env',
-                'api_key_from_db' => Setting::getValue('duitku_api_key') ? 'db' : 'env',
-            ]
-        ]);
-        
         $this->duitkuConfig = new Config($apiKey, $merchantCode);
         $this->duitkuConfig->setSandboxMode($sandbox);
         $this->duitkuConfig->setSanitizedMode(false);

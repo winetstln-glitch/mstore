@@ -24,7 +24,7 @@ class OdcAutoNameTest extends TestCase
 
         // Create Admin User
         $this->user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
 
         // Assign all permissions
         $permissions = [
@@ -33,11 +33,11 @@ class OdcAutoNameTest extends TestCase
 
         $permissionIds = [];
         foreach ($permissions as $perm) {
-            $p = Permission::create(['name' => $perm, 'label' => $perm, 'group' => 'ODC']);
+            $p = Permission::firstOrCreate(['name' => $perm], ['label' => $perm, 'group' => 'ODC']);
             $permissionIds[] = $p->id;
         }
 
-        $role->permissions()->attach($permissionIds);
+        $role->permissions()->syncWithoutDetaching($permissionIds);
         $this->user->assignRole($role);
 
         // Create OLT

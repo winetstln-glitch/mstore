@@ -8,13 +8,23 @@ use App\Models\WashStockItem;
 use App\Models\WashStockMovement;
 use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class WashExpenseController extends Controller
+class WashExpenseController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:wash.report', only: ['index']),
+            new Middleware('permission:wash.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'stockOut']),
+        ];
+    }
+
     private function queryWashExpenses()
     {
         return Transaction::where('type', 'expense')

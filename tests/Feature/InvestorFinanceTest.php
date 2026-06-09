@@ -27,13 +27,13 @@ class InvestorFinanceTest extends TestCase
         parent::setUp();
 
         // Setup Role and Permission
-        $role = Role::create(['name' => 'admin', 'label' => 'Administrator']);
-        Permission::create(['name' => 'investor.view', 'label' => 'View Investor']);
-        Permission::create(['name' => 'investor.manage', 'label' => 'Manage Investor']);
-        Permission::create(['name' => 'finance.view', 'label' => 'View Finance']);
-        Permission::create(['name' => 'finance.manage', 'label' => 'Manage Finance']);
+        $role = Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+        Permission::firstOrCreate(['name' => 'investor.view'], ['label' => 'View Investor', 'group' => 'Investor']);
+        Permission::firstOrCreate(['name' => 'investor.manage'], ['label' => 'Manage Investor', 'group' => 'Investor']);
+        Permission::firstOrCreate(['name' => 'finance.view'], ['label' => 'View Finance', 'group' => 'Finance']);
+        Permission::firstOrCreate(['name' => 'finance.manage'], ['label' => 'Manage Finance', 'group' => 'Finance']);
 
-        $role->permissions()->attach(Permission::all()->pluck('id'));
+        $role->permissions()->syncWithoutDetaching(Permission::whereIn('name', ['investor.view', 'investor.manage', 'finance.view', 'finance.manage'])->pluck('id')->all());
 
         $this->user = User::factory()->create(['role_id' => $role->id]);
 

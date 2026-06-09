@@ -185,6 +185,26 @@ class PermissionSeeder extends Seeder
             ['name' => 'wash.pos', 'label' => 'Access Wash POS', 'group' => 'Car Wash'],
             ['name' => 'wash.manage', 'label' => 'Manage Wash Services', 'group' => 'Car Wash'],
             ['name' => 'wash.report', 'label' => 'View Wash Reports', 'group' => 'Car Wash'],
+            ['name' => 'wash.member.view', 'label' => 'View Wash Members', 'group' => 'Car Wash'],
+            ['name' => 'wash.member.manage', 'label' => 'Manage Wash Members', 'group' => 'Car Wash'],
+            ['name' => 'wash.loyalty.view', 'label' => 'View Wash Loyalty', 'group' => 'Car Wash'],
+            ['name' => 'wash.loyalty.manage', 'label' => 'Manage Wash Loyalty', 'group' => 'Car Wash'],
+            ['name' => 'wash.reward.view', 'label' => 'View Wash Reward Vouchers', 'group' => 'Car Wash'],
+            ['name' => 'wash.reward.manage', 'label' => 'Manage Wash Reward Vouchers', 'group' => 'Car Wash'],
+
+            // Wedding & Event
+            ['name' => 'wedding.view', 'label' => 'View Wedding & Event', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.manage', 'label' => 'Manage Wedding Packages', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.booking', 'label' => 'Manage Wedding Bookings', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.payment', 'label' => 'Manage Wedding Payments', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.report', 'label' => 'View Wedding Reports', 'group' => 'Wedding & Event'],
+
+            // CCTV Installation
+            ['name' => 'cctv.view', 'label' => 'View CCTV Installation', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.manage', 'label' => 'Manage CCTV Packages', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.booking', 'label' => 'Manage CCTV Bookings', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.payment', 'label' => 'Manage CCTV Payments', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.report', 'label' => 'View CCTV Reports', 'group' => 'CCTV Installation'],
 
             // Hotspot & PPPoE (Services)
             ['name' => 'hotspot.view', 'label' => 'View Hotspot', 'group' => 'Service Management'],
@@ -199,9 +219,32 @@ class PermissionSeeder extends Seeder
             ['name' => 'employee.delete', 'label' => 'Delete Employee', 'group' => 'Employee Management'],
             ['name' => 'employee.sync', 'label' => 'Sync Employees', 'group' => 'Employee Management'],
             ['name' => 'employee.export', 'label' => 'Export Employees', 'group' => 'Employee Management'],
-        ];
 
-        $permissionNames = collect($permissions)->pluck('name')->toArray();
+            // NOC Center (Phase 6)
+            ['name' => 'noc.dashboard.view', 'label' => 'View NOC Dashboard', 'group' => 'NOC Center'],
+            ['name' => 'noc.operational.view', 'label' => 'View NOC Operational Menu', 'group' => 'NOC Center'],
+            ['name' => 'noc.diagnostic_logs.view', 'label' => 'View Diagnostic Logs', 'group' => 'NOC Center'],
+            ['name' => 'noc.olt_monitoring.view', 'label' => 'View OLT Monitoring', 'group' => 'NOC Center'],
+            ['name' => 'noc.fiber_monitoring.view', 'label' => 'View Fiber Monitoring', 'group' => 'NOC Center'],
+
+            // WhatsApp Center (Phase 6)
+            ['name' => 'whatsapp.analytics.view', 'label' => 'View WhatsApp Analytics', 'group' => 'WhatsApp'],
+            ['name' => 'whatsapp.kb.manage', 'label' => 'Manage AI Knowledge Base', 'group' => 'WhatsApp'],
+
+            // SLA (Phase 6)
+            ['name' => 'sla.monitoring.view', 'label' => 'View SLA Monitoring', 'group' => 'Ticket Management'],
+            ['name' => 'sla.escalation.view', 'label' => 'View Escalation Queue', 'group' => 'Ticket Management'],
+
+            // Reporting (Phase 6)
+            ['name' => 'report.noc.export', 'label' => 'Export NOC Report', 'group' => 'Reporting'],
+            ['name' => 'report.whatsapp.export', 'label' => 'Export WhatsApp Report', 'group' => 'Reporting'],
+            ['name' => 'report.sla.export', 'label' => 'Export SLA Report', 'group' => 'Reporting'],
+            ['name' => 'report.wedding.export', 'label' => 'Export Wedding Report', 'group' => 'Reporting'],
+            ['name' => 'report.cctv.export', 'label' => 'Export CCTV Report', 'group' => 'Reporting'],
+
+            // Security & Monitoring (Phase 6)
+            ['name' => 'security.monitoring.view', 'label' => 'View Security & Monitoring', 'group' => 'Security'],
+        ];
 
         foreach ($permissions as $permission) {
             Permission::updateOrCreate(
@@ -209,8 +252,5 @@ class PermissionSeeder extends Seeder
                 $permission
             );
         }
-
-        // Delete permissions that are not in the list
-        Permission::whereNotIn('name', $permissionNames)->delete();
     }
 }

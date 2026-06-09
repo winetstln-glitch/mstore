@@ -2,12 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\WashLoyaltyCounter;
+use App\Models\WashMember;
+use App\Models\WashMemberLevel;
+use App\Models\WashRewardRedemption;
 use App\Models\WashTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class WashReportController extends Controller
+class WashReportController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:wash.report'),
+        ];
+    }
+
     private function buildData(Request $request)
     {
         $startDate = (string) $request->input('start_date', $request->input('date', now()->format('Y-m-d')));
@@ -196,6 +209,82 @@ class WashReportController extends Controller
         $this->applyVehiclePlateFilter($monthlyByPaymentQuery, $normalizedVehiclePlate);
         $monthlyByPayment = $monthlyByPaymentQuery->get();
 
+        $memberActiveCount = WashMember::query()->where('status', 'active')->count();
+        $memberNewDailyCount = WashMember::query()
+            ->whereBetween('joined_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->count();
+        $memberNewMonthlyCount = WashMember::query()
+            ->where('joined_at', 'like', "$month%")
+            ->count();
+        $topMembers = WashMember::query()
+            ->with('level')
+            ->orderByDesc('total_spending')
+            ->orderByDesc('total_transactions')
+            ->limit(10)
+            ->get();
+        $levelDistribution = WashMemberLevel::query()
+            ->where('is_active', true)
+            ->withCount('members')
+            ->orderBy('min_transactions')
+            ->get();
+
+        $dailyRewardRedemptionsQuery = WashRewardRedemption::query()
+            ->with(['voucher.member.level', 'voucher.customer'])
+            ->whereBetween('redeemed_at', [$startDate.' 00:00:00', $endDate.' 23:59:59'])
+            ->orderByDesc('redeemed_at');
+        if ($normalizedVehiclePlate !== '') {
+            $dailyRewardRedemptionsQuery->whereHas('voucher', function ($query) use ($normalizedVehiclePlate) {
+                $query->whereRaw(
+                    "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                    [$normalizedVehiclePlate]
+                );
+            });
+        }
+        $dailyRewardRedemptions = $dailyRewardRedemptionsQuery->limit(20)->get();
+        $dailyRewardRedemptionCount = (clone $dailyRewardRedemptionsQuery)->count();
+
+        $monthlyRewardRedemptionsQuery = WashRewardRedemption::query()
+            ->with(['voucher.member.level', 'voucher.customer'])
+            ->where('redeemed_at', 'like', "$month%")
+            ->orderByDesc('redeemed_at');
+        if ($normalizedVehiclePlate !== '') {
+            $monthlyRewardRedemptionsQuery->whereHas('voucher', function ($query) use ($normalizedVehiclePlate) {
+                $query->whereRaw(
+                    "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                    [$normalizedVehiclePlate]
+                );
+            });
+        }
+        $monthlyRewardRedemptions = $monthlyRewardRedemptionsQuery->limit(20)->get();
+        $monthlyRewardRedemptionCount = (clone $monthlyRewardRedemptionsQuery)->count();
+
+        $loyaltyProgressRowsQuery = WashLoyaltyCounter::query()
+            ->with(['member.level', 'customer'])
+            ->orderByDesc('last_paid_at')
+            ->orderByDesc('lifetime_paid_count');
+        if ($normalizedVehiclePlate !== '') {
+            $loyaltyProgressRowsQuery->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$normalizedVehiclePlate]
+            );
+        }
+        $loyaltyProgressRows = $loyaltyProgressRowsQuery->limit(20)->get()->map(function (WashLoyaltyCounter $counter) {
+            $progress = (int) ($counter->cycle_paid_count ?? 0);
+            $target = 10;
+
+            return (object) [
+                'member_name' => $counter->member?->name ?? $counter->customer?->name ?? '-',
+                'member_number' => $counter->member?->member_number ?? '-',
+                'level_name' => $counter->member?->level?->name ?? 'Bronze Member',
+                'vehicle_plate' => $counter->vehicle_plate,
+                'progress' => $progress,
+                'target' => $target,
+                'remaining' => max($target - $progress, 0),
+                'lifetime_paid_count' => (int) ($counter->lifetime_paid_count ?? 0),
+                'last_paid_at' => $counter->last_paid_at,
+            ];
+        });
+
         return compact(
             'startDate', 'endDate', 'month',
             'vehiclePlate', 'knownVehiclePlates',
@@ -204,7 +293,12 @@ class WashReportController extends Controller
             'dailyWashIncome', 'dailyWashExpense', 'monthlyWashIncome', 'monthlyWashExpense',
             'dailyIncomeRows', 'dailyExpenseRows',
             'monthlyDailyIncome', 'monthlyDailyExpense',
-            'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment'
+            'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment',
+            'memberActiveCount', 'memberNewDailyCount', 'memberNewMonthlyCount',
+            'topMembers', 'levelDistribution',
+            'dailyRewardRedemptions', 'dailyRewardRedemptionCount',
+            'monthlyRewardRedemptions', 'monthlyRewardRedemptionCount',
+            'loyaltyProgressRows'
         );
     }
 
@@ -299,6 +393,56 @@ class WashReportController extends Controller
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Deskripsi', 'Nominal']));
             foreach ($data['dailyExpenseRows'] as $r) {
                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([\Carbon\Carbon::parse($r->transaction_date)->format('Y-m-d'), $r->description, $r->amount]));
+            }
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Membership & Loyalty']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                'Member Aktif', $data['memberActiveCount'],
+                'Member Baru (Harian)', $data['memberNewDailyCount'],
+                'Member Baru (Bulanan)', $data['memberNewMonthlyCount'],
+            ]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                'Reward Redemption (Harian)', $data['dailyRewardRedemptionCount'],
+                'Reward Redemption (Bulanan)', $data['monthlyRewardRedemptionCount'],
+            ]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Distribusi Level']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Level', 'Member', 'Diskon', 'Priority Rank']));
+            foreach ($data['levelDistribution'] as $level) {
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                    $level->name,
+                    $level->members_count,
+                    $level->discount_percent,
+                    $level->priority_rank,
+                ]));
+            }
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Top Member']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Member', 'No Member', 'Level', 'Total Transaksi', 'Total Kunjungan', 'Total Spending']));
+            foreach ($data['topMembers'] as $member) {
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                    $member->name,
+                    $member->member_number,
+                    $member->level?->name ?? 'Bronze Member',
+                    $member->total_transactions,
+                    $member->total_visits,
+                    $member->total_spending,
+                ]));
+            }
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Loyalty Progress']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Member', 'No Member', 'Level', 'Plat', 'Progress', 'Sisa', 'Lifetime Paid', 'Transaksi Terakhir']));
+            foreach ($data['loyaltyProgressRows'] as $row) {
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                    $row->member_name,
+                    $row->member_number,
+                    $row->level_name,
+                    $row->vehicle_plate,
+                    $row->progress.'/'.$row->target,
+                    $row->remaining,
+                    $row->lifetime_paid_count,
+                    $row->last_paid_at?->format('Y-m-d H:i') ?? '-',
+                ]));
             }
             $writer->close();
         }, 'laporan_wash.xlsx');

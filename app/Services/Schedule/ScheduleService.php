@@ -41,7 +41,7 @@ class ScheduleService
     public function getScheduleUsersQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['customer', 'koordinator', 'coordinator']);
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })->where('is_active', true);
 
         return $query;
@@ -116,6 +116,6 @@ class ScheduleService
 
     public function getAllRoles(): Collection
     {
-        return Role::whereNotIn('name', ['customer', 'koordinator', 'coordinator'])->orderBy('name')->get();
+        return Role::whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR])->orderBy('name')->get();
     }
 }

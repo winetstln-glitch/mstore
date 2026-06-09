@@ -117,6 +117,36 @@
                 </table>
             </div>
 
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Member Aktif</div>
+                            <div class="display-6 fw-bold">{{ number_format($memberActiveCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Database member aktif GT Wash</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Member Baru</div>
+                            <div class="display-6 fw-bold">{{ number_format($memberNewDailyCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Member bergabung pada rentang harian terpilih</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Reward Redemption</div>
+                            <div class="display-6 fw-bold">{{ number_format($dailyRewardRedemptionCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Voucher reward yang dipakai pada rentang harian</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- TABEL 1: RINCIAN PEMASUKAN (Full Width) -->
             <h6 class="fw-bold mt-4 text-decoration-underline">A. Rincian Pemasukan (Harian)</h6>
             <div class="table-responsive table-responsive-mobile mb-4">
@@ -253,6 +283,124 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">E. Level Distribution</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th class="text-end">Member</th>
+                                <th class="text-end">Diskon</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($levelDistribution as $level)
+                                <tr>
+                                    <td data-label="Level">
+                                        <div class="fw-semibold">{{ $level->name }}</div>
+                                        <div class="small text-muted">Rank {{ $level->priority_rank }}</div>
+                                    </td>
+                                    <td class="text-end" data-label="Member">{{ number_format((int) $level->members_count, 0, ',', '.') }}</td>
+                                    <td class="text-end" data-label="Diskon">{{ rtrim(rtrim(number_format((float) $level->discount_percent, 2, ',', '.'), '0'), ',') }}%</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="text-center">Tidak ada data level member</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">F. Reward Redemption (Harian)</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Voucher</th>
+                                <th>Member</th>
+                                <th>Plat</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($dailyRewardRedemptions as $redemption)
+                                <tr>
+                                    <td data-label="Voucher">{{ $redemption->voucher?->code ?? '-' }}</td>
+                                    <td data-label="Member">{{ $redemption->voucher?->member?->name ?? $redemption->voucher?->customer?->name ?? '-' }}</td>
+                                    <td data-label="Plat">{{ $redemption->voucher?->vehicle_plate ?? '-' }}</td>
+                                    <td data-label="Tanggal">{{ $redemption->redeemed_at?->format('d-m-Y H:i') ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="text-center">Belum ada reward redemption</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h6 class="fw-bold text-decoration-underline">G. Top Member</h6>
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Member</th>
+                            <th>No Member</th>
+                            <th>Level</th>
+                            <th class="text-end">Total Transaksi</th>
+                            <th class="text-end">Kunjungan</th>
+                            <th class="text-end">Total Spending</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($topMembers as $member)
+                            <tr>
+                                <td data-label="Member">{{ $member->name }}</td>
+                                <td data-label="No Member">{{ $member->member_number }}</td>
+                                <td data-label="Level">{{ $member->level?->name ?? 'Bronze Member' }}</td>
+                                <td class="text-end" data-label="Total Transaksi">{{ number_format((int) $member->total_transactions, 0, ',', '.') }}</td>
+                                <td class="text-end" data-label="Kunjungan">{{ number_format((int) $member->total_visits, 0, ',', '.') }}</td>
+                                <td class="text-end" data-label="Total Spending">Rp {{ number_format((float) $member->total_spending, 0, ',', '.') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="text-center">Belum ada data top member</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <h6 class="fw-bold text-decoration-underline">H. Loyalty Progress</h6>
+            <div class="table-responsive table-responsive-mobile mb-4">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Member</th>
+                            <th>No Member</th>
+                            <th>Level</th>
+                            <th>Plat</th>
+                            <th class="text-end">Progress</th>
+                            <th class="text-end">Sisa</th>
+                            <th class="text-end">Lifetime Paid</th>
+                            <th>Tgl Terakhir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($loyaltyProgressRows as $row)
+                            <tr>
+                                <td data-label="Member">{{ $row->member_name }}</td>
+                                <td data-label="No Member">{{ $row->member_number }}</td>
+                                <td data-label="Level">{{ $row->level_name }}</td>
+                                <td data-label="Plat">{{ $row->vehicle_plate }}</td>
+                                <td class="text-end" data-label="Progress">{{ $row->progress }}/{{ $row->target }}</td>
+                                <td class="text-end" data-label="Sisa">{{ $row->remaining }}</td>
+                                <td class="text-end" data-label="Lifetime Paid">{{ number_format((int) $row->lifetime_paid_count, 0, ',', '.') }}</td>
+                                <td data-label="Tgl Terakhir">{{ $row->last_paid_at?->format('d-m-Y H:i') ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="text-center">Belum ada data loyalty progress</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
         </div> <!-- End Daily Tab -->
 
         <!-- =========================== -->
@@ -336,6 +484,36 @@
                 </table>
             </div>
 
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Member Aktif</div>
+                            <div class="display-6 fw-bold">{{ number_format($memberActiveCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Status aktif saat ini</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Member Baru Bulanan</div>
+                            <div class="display-6 fw-bold">{{ number_format($memberNewMonthlyCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Member baru pada bulan {{ $month }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted text-uppercase small fw-bold">Reward Redemption</div>
+                            <div class="display-6 fw-bold">{{ number_format($monthlyRewardRedemptionCount ?? 0, 0, ',', '.') }}</div>
+                            <div class="small text-muted">Voucher reward yang dipakai pada bulan berjalan</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- TABEL BULANAN -->
             <div class="row">
                 <div class="col-12 mb-4">
@@ -407,6 +585,60 @@
                                 <td>Setoran Cash (Cash - Pengeluaran)</td>
                                 <td class="text-end {{ $monthlySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlySetoranCash,0,',','.') }}</td>
                             </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">Reward Redemption (Bulanan)</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Voucher</th>
+                                <th>Member</th>
+                                <th>Plat</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($monthlyRewardRedemptions as $redemption)
+                                <tr>
+                                    <td data-label="Voucher">{{ $redemption->voucher?->code ?? '-' }}</td>
+                                    <td data-label="Member">{{ $redemption->voucher?->member?->name ?? $redemption->voucher?->customer?->name ?? '-' }}</td>
+                                    <td data-label="Plat">{{ $redemption->voucher?->vehicle_plate ?? '-' }}</td>
+                                    <td data-label="Tanggal">{{ $redemption->redeemed_at?->format('d-m-Y H:i') ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="text-center">Belum ada reward redemption</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6 class="fw-bold text-decoration-underline">Top Member Bulanan</h6>
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Level</th>
+                                <th class="text-end">Spending</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($topMembers->take(5) as $member)
+                                <tr>
+                                    <td data-label="Member">
+                                        <div class="fw-semibold">{{ $member->name }}</div>
+                                        <div class="small text-muted">{{ $member->member_number }}</div>
+                                    </td>
+                                    <td data-label="Level">{{ $member->level?->name ?? 'Bronze Member' }}</td>
+                                    <td class="text-end" data-label="Spending">Rp {{ number_format((float) $member->total_spending, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="text-center">Belum ada data top member</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

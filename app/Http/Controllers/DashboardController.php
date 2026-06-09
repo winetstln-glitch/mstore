@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\GenieDeviceStatus;
 use App\Models\Installation;
 use App\Models\InventoryItem;
+use App\Models\Role;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\TechnicianDailySchedule;
@@ -23,6 +24,7 @@ use App\Services\SystemMetricsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -31,46 +33,48 @@ class DashboardController extends Controller
 {
     protected function monitorLogsData(int $limit = 20): array
     {
-        $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
+        return Cache::remember('dashboard.monitor_logs.'.$limit, 15, function () use ($limit) {
+            $threshold = (int) Setting::getValue('genieacs_online_threshold_minutes', 15);
 
-        return GenieDeviceStatus::with('customer:id,name')
-            ->orderByDesc('updated_at')
-            ->take($limit)
-            ->get()
-            ->map(function (GenieDeviceStatus $log) use ($threshold) {
-                $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes($threshold));
-                $isOnline = (bool) $log->is_online && $isFresh;
-                $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
-                $notifyUp = $log->last_notified_up_at ? $log->last_notified_up_at->format('d M H:i') : null;
-                $notifyText = $notifyUp ? 'UP: '.$notifyUp : ($notifyDown ? 'DOWN: '.$notifyDown : '-');
-                $customerName = $log->customer->name ?? ('#'.$log->customer_id);
-                $statusText = $isOnline ? 'ONLINE' : 'OFFLINE';
-                $reasonText = (string) ($log->last_reason ?? '-');
-                if (! $isFresh) {
-                    $reasonText = 'Status stale (update terakhir lewat 15 menit)';
-                }
-                $searchText = strtolower(implode(' ', [
-                    $customerName,
-                    (string) ($log->onu_serial ?? ''),
-                    (string) ($log->tr069_ip ?? ''),
-                    $reasonText,
-                    $statusText,
-                ]));
+            return GenieDeviceStatus::with('customer:id,name')
+                ->orderByDesc('updated_at')
+                ->take($limit)
+                ->get()
+                ->map(function (GenieDeviceStatus $log) use ($threshold) {
+                    $isFresh = $log->updated_at && $log->updated_at->gte(now()->subMinutes($threshold));
+                    $isOnline = (bool) $log->is_online && $isFresh;
+                    $notifyDown = $log->last_notified_down_at ? $log->last_notified_down_at->format('d M H:i') : null;
+                    $notifyUp = $log->last_notified_up_at ? $log->last_notified_up_at->format('d M H:i') : null;
+                    $notifyText = $notifyUp ? 'UP: '.$notifyUp : ($notifyDown ? 'DOWN: '.$notifyDown : '-');
+                    $customerName = $log->customer->name ?? ('#'.$log->customer_id);
+                    $statusText = $isOnline ? 'ONLINE' : 'OFFLINE';
+                    $reasonText = (string) ($log->last_reason ?? '-');
+                    if (! $isFresh) {
+                        $reasonText = 'Status stale (update terakhir lewat 15 menit)';
+                    }
+                    $searchText = strtolower(implode(' ', [
+                        $customerName,
+                        (string) ($log->onu_serial ?? ''),
+                        (string) ($log->tr069_ip ?? ''),
+                        $reasonText,
+                        $statusText,
+                    ]));
 
-                return [
-                    'updated_at' => $log->updated_at?->format('d M Y H:i') ?? '-',
-                    'customer_name' => $customerName,
-                    'onu_serial' => $log->onu_serial ?: '-',
-                    'status' => $statusText,
-                    'status_key' => strtolower($statusText),
-                    'tr069_ip' => $log->tr069_ip ?: '-',
-                    'notify_text' => $notifyText,
-                    'reason_short' => Str::limit($reasonText, 70),
-                    'search_text' => $searchText,
-                ];
-            })
-            ->values()
-            ->all();
+                    return [
+                        'updated_at' => $log->updated_at?->format('d M Y H:i') ?? '-',
+                        'customer_name' => $customerName,
+                        'onu_serial' => $log->onu_serial ?: '-',
+                        'status' => $statusText,
+                        'status_key' => strtolower($statusText),
+                        'tr069_ip' => $log->tr069_ip ?: '-',
+                        'notify_text' => $notifyText,
+                        'reason_short' => Str::limit($reasonText, 70),
+                        'search_text' => $searchText,
+                    ];
+                })
+                ->values()
+                ->all();
+        });
     }
 
     public function index(Request $request)
@@ -142,7 +146,7 @@ class DashboardController extends Controller
         $prevMonthEnd = now()->copy()->subMonthNoOverflow()->endOfMonth();
 
         // Filter Logic: Exclude Admin and Finance Staff from filtering
-        if (! $user->hasRole('admin') && ! $user->hasRole('staf-keuangan')) {
+        if (! $user->hasRole(Role::ADMIN) && ! $user->hasRole(Role::FINANCE)) {
             $coordinator = Coordinator::select('id', 'region_id')->where('user_id', $user->id)->first();
             if ($coordinator && $coordinator->region_id) {
                 // Filter Customers by Region
@@ -162,18 +166,24 @@ class DashboardController extends Controller
             }
         }
 
-        $technicianIds = User::query()
-            ->where('is_active', true)
-            ->whereHas('role', function ($q) {
-                $q->where('name', 'technician');
-            })
-            ->pluck('id');
-        $washEmployeeIds = User::query()
-            ->where('is_active', true)
-            ->whereHas('role', function ($q) {
-                $q->where('name', 'karyawan-wash');
-            })
-            ->pluck('id');
+        $technicianIds = collect(Cache::remember('dashboard.technician_ids', 300, function () {
+            return User::query()
+                ->where('is_active', true)
+                ->whereHas('role', function ($q) {
+                    $q->where('name', Role::TECHNICIAN);
+                })
+                ->pluck('id')
+                ->all();
+        }));
+        $washEmployeeIds = collect(Cache::remember('dashboard.wash_employee_ids', 300, function () {
+            return User::query()
+                ->where('is_active', true)
+                ->whereHas('role', function ($q) {
+                    $q->where('name', Role::KARYAWAN_WASH);
+                })
+                ->pluck('id')
+                ->all();
+        }));
         $today = today();
         $tomorrow = today()->addDay();
 
@@ -296,39 +306,59 @@ class DashboardController extends Controller
             });
         }
 
-        $stats = [
-            'total_customers' => $customerQuery->count(),
-            'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', $currentMonthStart)->count(),
-            'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
-            'tickets_today' => $ticketQuery->clone()->where('created_at', '>=', $today)->count(),
-            'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
-            'atk_today' => AtkTransaction::where('created_at', '>=', $today)->count(),
-            'atk_month_revenue' => AtkTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
-            'wash_today' => WashTransaction::where('created_at', '>=', $today)->count(),
-            'wash_month_revenue' => WashTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
-            'technician_total' => $technicianIds->count(),
-            'technician_present_today' => $technicianPresentToday,
-            'technician_not_present_today' => max($technicianIds->count() - $technicianPresentToday, 0),
-            'wash_employee_total' => $washEmployeeIds->count(),
-            'wash_employee_present_today' => $washEmployeePresentToday,
-            'wash_employee_not_present_today' => max($washEmployeeIds->count() - $washEmployeePresentToday, 0),
-            'total_olts' => \App\Models\OLT::count(),
-            'online_olts' => \App\Models\OLT::where('status', 'online')->count(),
-            'total_onts' => \App\Models\ONT::withoutTrashed()->count(),
-            'online_onts' => \App\Models\ONT::withoutTrashed()->where('oper_status', 'online')->count(),
-        ];
+        $regionKey = 'all';
+        if (isset($coordinator) && $coordinator && $coordinator->region_id) {
+            $regionKey = 'region_'.$coordinator->region_id;
+        }
+        $dayKey = now()->toDateString();
+
+        $stats = Cache::remember('dashboard.stats.'.$regionKey.'.'.$dayKey, 60, function () use ($customerQuery, $ticketQuery, $installationQuery, $currentMonthStart, $today, $technicianIds, $technicianPresentToday, $washEmployeeIds, $washEmployeePresentToday) {
+            $technicianTotal = $technicianIds->count();
+            $washTotal = $washEmployeeIds->count();
+
+            return [
+                'total_customers' => $customerQuery->count(),
+                'new_customers_this_month' => $customerQuery->clone()->where('created_at', '>=', $currentMonthStart)->count(),
+                'open_tickets' => $ticketQuery->clone()->where('status', 'open')->count(),
+                'tickets_today' => $ticketQuery->clone()->where('created_at', '>=', $today)->count(),
+                'pending_installations' => $installationQuery->clone()->whereIn('status', ['registered', 'survey', 'approved'])->count(),
+                'atk_today' => AtkTransaction::where('created_at', '>=', $today)->count(),
+                'atk_month_revenue' => AtkTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
+                'wash_today' => WashTransaction::where('created_at', '>=', $today)->count(),
+                'wash_month_revenue' => WashTransaction::where('created_at', '>=', $currentMonthStart)->sum('total_amount'),
+                'technician_total' => $technicianTotal,
+                'technician_present_today' => $technicianPresentToday,
+                'technician_not_present_today' => max($technicianTotal - $technicianPresentToday, 0),
+                'wash_employee_total' => $washTotal,
+                'wash_employee_present_today' => $washEmployeePresentToday,
+                'wash_employee_not_present_today' => max($washTotal - $washEmployeePresentToday, 0),
+                'total_olts' => \App\Models\OLT::count(),
+                'online_olts' => \App\Models\OLT::where('status', 'online')->count(),
+                'total_onts' => \App\Models\ONT::withoutTrashed()->count(),
+                'online_onts' => \App\Models\ONT::withoutTrashed()->where('oper_status', 'online')->count(),
+            ];
+        });
 
         $presenceCutoff = now()->subSeconds(90);
-        $onlineTechnicians = User::query()
-            ->where('is_active', true)
-            ->where('last_seen_at', '>=', $presenceCutoff)
-            ->whereHas('role', fn ($query) => $query->where('name', 'technician'))
-            ->count();
-        $onlineWashEmployees = User::query()
-            ->where('is_active', true)
-            ->where('last_seen_at', '>=', $presenceCutoff)
-            ->whereHas('role', fn ($query) => $query->where('name', 'karyawan-wash'))
-            ->count();
+        $onlineCounts = Cache::remember('dashboard.online_counts.'.$presenceCutoff->format('YmdHi'), 30, function () use ($presenceCutoff) {
+            $onlineTechnicians = User::query()
+                ->where('is_active', true)
+                ->where('last_seen_at', '>=', $presenceCutoff)
+                ->whereHas('role', fn ($query) => $query->where('name', 'technician'))
+                ->count();
+            $onlineWashEmployees = User::query()
+                ->where('is_active', true)
+                ->where('last_seen_at', '>=', $presenceCutoff)
+                ->whereHas('role', fn ($query) => $query->where('name', 'karyawan-wash'))
+                ->count();
+
+            return [
+                'online_technicians' => $onlineTechnicians,
+                'online_wash_employees' => $onlineWashEmployees,
+            ];
+        });
+        $onlineTechnicians = (int) ($onlineCounts['online_technicians'] ?? 0);
+        $onlineWashEmployees = (int) ($onlineCounts['online_wash_employees'] ?? 0);
 
         // Traffic Data (Orders & Tickets per Month)
         $trafficData = [
