@@ -5,6 +5,7 @@ return [
         'max_runtime_seconds' => env('LOG_RETENTION_MAX_RUNTIME_SECONDS', 900),
         'sleep_ms_between_batches' => env('LOG_RETENTION_SLEEP_MS', 25),
         'max_batches_per_section' => env('LOG_RETENTION_MAX_BATCHES_PER_SECTION', 0),
+        'max_rows_per_section' => env('LOG_RETENTION_MAX_ROWS_PER_SECTION', 0),
     ],
 
     'whatsapp' => [
