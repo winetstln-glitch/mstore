@@ -938,6 +938,25 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
             ->middleware('permission:wedding.manage')
             ->name('packages.destroy');
 
+        Route::get('/gallery', [\App\Http\Controllers\WeddingGalleryController::class, 'index'])
+            ->middleware('permission:wedding.view')
+            ->name('gallery.index');
+        Route::get('/gallery/create', [\App\Http\Controllers\WeddingGalleryController::class, 'create'])
+            ->middleware('permission:wedding.manage')
+            ->name('gallery.create');
+        Route::post('/gallery', [\App\Http\Controllers\WeddingGalleryController::class, 'store'])
+            ->middleware('permission:wedding.manage')
+            ->name('gallery.store');
+        Route::get('/gallery/{item}/edit', [\App\Http\Controllers\WeddingGalleryController::class, 'edit'])
+            ->middleware('permission:wedding.manage')
+            ->name('gallery.edit');
+        Route::put('/gallery/{item}', [\App\Http\Controllers\WeddingGalleryController::class, 'update'])
+            ->middleware('permission:wedding.manage')
+            ->name('gallery.update');
+        Route::delete('/gallery/{item}', [\App\Http\Controllers\WeddingGalleryController::class, 'destroy'])
+            ->middleware('permission:wedding.manage')
+            ->name('gallery.destroy');
+
         Route::resource('bookings', \App\Http\Controllers\WeddingBookingController::class)
             ->middleware('permission:wedding.booking');
 

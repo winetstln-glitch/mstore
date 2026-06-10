@@ -165,18 +165,20 @@
                         $type = $node['type'] ?? null;
                         $label = (string) ($node['label'] ?? '');
                         $active = $nodeActive($node);
+                        $icon = trim((string) ($node['icon'] ?? ''));
+                        $iconHtml = $icon !== '' ? '<i class="'.e($icon).'"></i>' : '';
 
                         if ($type === 'link') {
                             $routeName = (string) ($node['route'] ?? '');
                             $href = \Illuminate\Support\Facades\Route::has($routeName) ? route($routeName) : '#';
-                            $html .= '<a href="'.e($href).'" class="sidebar-item'.($active ? ' active' : '').'">'.e($label).'</a>';
+                            $html .= '<a href="'.e($href).'" class="sidebar-item'.($active ? ' active' : '').'">'.$iconHtml.'<span>'.e($label).'</span></a>';
                             continue;
                         }
 
                         if ($type === 'group') {
                             $id = (string) ($node['id'] ?? uniqid('grp_', false));
                             $collapseId = 'sidebarCollapse_'.$id;
-                            $html .= '<a class="sidebar-item'.($active ? ' active' : '').'" data-bs-toggle="collapse" href="#'.e($collapseId).'" role="button" aria-expanded="'.($active ? 'true' : 'false').'" aria-controls="'.e($collapseId).'">'.e($label).'<i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i></a>';
+                            $html .= '<a class="sidebar-item'.($active ? ' active' : '').'" data-bs-toggle="collapse" href="#'.e($collapseId).'" role="button" aria-expanded="'.($active ? 'true' : 'false').'" aria-controls="'.e($collapseId).'">'.$iconHtml.'<span>'.e($label).'</span><i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i></a>';
                             $html .= '<div class="collapse'.($active ? ' show' : '').'" id="'.e($collapseId).'"><div class="ps-3">'.$renderNodes($node['children'] ?? []).'</div></div>';
                         }
                     }

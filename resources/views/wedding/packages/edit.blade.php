@@ -11,12 +11,22 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('wedding.packages.update', $package) }}">
+            <form method="POST" action="{{ route('wedding.packages.update', $package) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="mb-3">
                     <label class="form-label">Nama Paket</label>
                     <input name="name" class="form-control" value="{{ old('name', $package->name) }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Gambar Paket (opsional)</label>
+                    <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @if(!empty($package->image_path))
+                        <div class="mt-2">
+                            <img src="{{ asset('storage/'.$package->image_path) }}" alt="Gambar Paket Wedding" class="img-thumbnail" style="max-height: 90px;">
+                        </div>
+                    @endif
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Deskripsi</label>
@@ -50,4 +60,3 @@
     </div>
 </div>
 @endsection
-

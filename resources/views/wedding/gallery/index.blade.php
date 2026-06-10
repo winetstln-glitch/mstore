@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', __('Paket Wedding'))
+@section('title', __('Galeri Wedding'))
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Paket Wedding</h4>
-        <a href="{{ route('wedding.packages.create') }}" class="btn btn-primary">Tambah Paket</a>
+        <h4 class="mb-0">Galeri Wedding</h4>
+        <a href="{{ route('wedding.gallery.create') }}" class="btn btn-primary">Tambah Foto</a>
     </div>
 
     @if(session('success'))
@@ -19,50 +19,49 @@
                 <table class="table table-sm align-middle">
                     <thead>
                         <tr>
-                            <th style="width: 90px;">Gambar</th>
-                            <th>Nama</th>
-                            <th>Harga</th>
-                            <th>Kapasitas</th>
+                            <th style="width: 90px;">Foto</th>
+                            <th>Caption</th>
+                            <th>Urutan</th>
                             <th>Status</th>
                             <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($packages as $p)
+                        @forelse($items as $it)
                             <tr>
                                 <td>
-                                    @if(!empty($p->image_path))
-                                        <img src="{{ asset('storage/'.$p->image_path) }}" alt="Paket Wedding" class="img-thumbnail" style="max-height: 56px;">
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
+                                    <img src="{{ asset('storage/'.$it->image_path) }}" alt="Wedding Gallery" class="img-thumbnail" style="max-height: 64px;">
                                 </td>
-                                <td>{{ $p->name }}</td>
-                                <td>Rp {{ number_format((int) $p->price, 0, ',', '.') }}</td>
-                                <td>{{ $p->capacity ?? '-' }}</td>
+                                <td>{{ $it->caption ?: '-' }}</td>
+                                <td>{{ $it->sort_order }}</td>
                                 <td>
-                                    @if($p->is_active)
+                                    @if($it->is_active)
                                         <span class="badge bg-success">Aktif</span>
                                     @else
                                         <span class="badge bg-secondary">Nonaktif</span>
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('wedding.packages.edit', $p) }}">Edit</a>
-                                    <form action="{{ route('wedding.packages.destroy', $p) }}" method="POST" class="d-inline">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('wedding.gallery.edit', $it) }}">Edit</a>
+                                    <form action="{{ route('wedding.gallery.destroy', $it) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
                                     </form>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Belum ada foto galeri.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            {{ $packages->links() }}
+            {{ $items->links() }}
         </div>
     </div>
 </div>
 @endsection
+

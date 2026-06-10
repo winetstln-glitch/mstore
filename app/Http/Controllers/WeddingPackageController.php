@@ -41,12 +41,17 @@ class WeddingPackageController extends Controller implements HasMiddleware
             'price' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:0'],
             'facilities_text' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
         $validated['facilities'] = array_values(array_filter(array_map('trim', preg_split("/\r\n|\r|\n/", (string) ($validated['facilities_text'] ?? '')))));
         unset($validated['facilities_text']);
+
+        if ($request->hasFile('image')) {
+            $validated['image_path'] = $request->file('image')->store('wedding/packages', 'public');
+        }
 
         $package = WeddingPackage::create($validated);
         $this->auditLogService->logAction('wedding.package.created', $package, [], $package->toArray());
@@ -67,12 +72,17 @@ class WeddingPackageController extends Controller implements HasMiddleware
             'price' => ['required', 'integer', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:0'],
             'facilities_text' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $validated['facilities'] = array_values(array_filter(array_map('trim', preg_split("/\r\n|\r|\n/", (string) ($validated['facilities_text'] ?? '')))));
         unset($validated['facilities_text']);
+
+        if ($request->hasFile('image')) {
+            $validated['image_path'] = $request->file('image')->store('wedding/packages', 'public');
+        }
 
         $old = $package->toArray();
         $package->update($validated);

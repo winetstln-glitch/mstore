@@ -339,88 +339,14 @@
                                 </div>
                             </div>
 
-                            <div class="mb-4 pb-3 border-bottom">
-                                <h6 class="fw-bold text-primary text-uppercase mb-3">Landing Paket CCTV</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="cctv_section_badge" class="form-label fw-medium">Badge Section CCTV</label>
-                                        <input type="text" class="form-control" id="cctv_section_badge" name="cctv_section_badge" value="{{ \App\Models\Setting::getValue('cctv_section_badge', 'Security Solutions') }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="cctv_section_title" class="form-label fw-medium">Judul Section CCTV</label>
-                                        <input type="text" class="form-control" id="cctv_section_title" name="cctv_section_title" value="{{ \App\Models\Setting::getValue('cctv_section_title', 'Paket Instalasi CCTV') }}">
-                                    </div>
+                            <div class="alert alert-info mb-0">
+                                <div class="fw-bold">Pengelolaan Landing per Layanan</div>
+                                <div class="small text-muted">Paket Wedding, Paket CCTV, dan galeri foto Wedding dikelola di menu Business Units agar lebih rapi dan mudah dipahami.</div>
+                                <div class="mt-2 d-flex flex-wrap gap-2">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('wedding.packages.index') }}">Paket Wedding</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('wedding.gallery.index') }}">Galeri Wedding</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('cctv.packages.index') }}">Paket CCTV</a>
                                 </div>
-
-                                @for($pkgNum = 1; $pkgNum <= 4; $pkgNum++)
-                                    <div class="mt-4">
-                                        <h6 class="fw-bold text-secondary mb-2">Paket CCTV {{ $pkgNum }}</h6>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label for="cctv_package_{{ $pkgNum }}_speed" class="form-label fw-medium">Label Paket {{ $pkgNum }}</label>
-                                                <input type="text" class="form-control" id="cctv_package_{{ $pkgNum }}_speed" name="cctv_package_{{ $pkgNum }}_speed" value="{{ \App\Models\Setting::getValue('cctv_package_' . $pkgNum . '_speed', 'Basic') }}">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="cctv_package_{{ $pkgNum }}_subtitle" class="form-label fw-medium">Subjudul Paket {{ $pkgNum }}</label>
-                                                <input type="text" class="form-control" id="cctv_package_{{ $pkgNum }}_subtitle" name="cctv_package_{{ $pkgNum }}_subtitle" value="{{ \App\Models\Setting::getValue('cctv_package_' . $pkgNum . '_subtitle', $pkgNum . ' Kamera HD') }}">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="cctv_package_{{ $pkgNum }}_price" class="form-label fw-medium">Harga Paket {{ $pkgNum }}</label>
-                                                <input type="text" class="form-control" id="cctv_package_{{ $pkgNum }}_price" name="cctv_package_{{ $pkgNum }}_price" value="{{ \App\Models\Setting::getValue('cctv_package_' . $pkgNum . '_price', 'Rp 600Rb') }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <label for="cctv_package_{{ $pkgNum }}_features" class="form-label fw-medium">Fitur Paket {{ $pkgNum }}</label>
-                                                <textarea class="form-control" id="cctv_package_{{ $pkgNum }}_features" name="cctv_package_{{ $pkgNum }}_features" rows="3">{{ \App\Models\Setting::getValue('cctv_package_' . $pkgNum . '_features', "Camera " . ($pkgNum == 3 ? "4" : $pkgNum) . " Channel\nHDD 250GB\nFree Instalasi") }}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endfor
-                            </div>
-
-                            <div class="mb-4 pb-3">
-                                <h6 class="fw-bold text-primary text-uppercase mb-3">Landing Wedding & Event</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="wedding_section_badge" class="form-label fw-medium">Badge Section</label>
-                                        <input type="text" class="form-control" id="wedding_section_badge" name="wedding_section_badge" value="{{ \App\Models\Setting::getValue('wedding_section_badge', 'Event Services') }}">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="wedding_section_title" class="form-label fw-medium">Judul Section</label>
-                                        <input type="text" class="form-control" id="wedding_section_title" name="wedding_section_title" value="{{ \App\Models\Setting::getValue('wedding_section_title', 'Layanan Wedding & Event') }}">
-                                    </div>
-                                </div>
-
-                                @for($cardNum = 1; $cardNum <= 3; $cardNum++)
-                                    <div class="mt-4">
-                                        <h6 class="fw-bold text-secondary mb-2">Kartu {{ $cardNum }}</h6>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label for="wedding_service_{{ $cardNum }}_badge" class="form-label fw-medium">Badge Kartu {{ $cardNum }}</label>
-                                                <input type="text" class="form-control" id="wedding_service_{{ $cardNum }}_badge" name="wedding_service_{{ $cardNum }}_badge" value="{{ \App\Models\Setting::getValue('wedding_service_' . $cardNum . '_badge', $cardNum == 1 ? 'Wedding' : ($cardNum == 2 ? 'Photography' : 'Event Support')) }}">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="wedding_service_{{ $cardNum }}_name" class="form-label fw-medium">Nama Kartu {{ $cardNum }}</label>
-                                                <input type="text" class="form-control" id="wedding_service_{{ $cardNum }}_name" name="wedding_service_{{ $cardNum }}_name" value="{{ \App\Models\Setting::getValue('wedding_service_' . $cardNum . '_name', $cardNum == 1 ? 'Hias Pengantin' : ($cardNum == 2 ? 'Poto Moment' : 'Sewa Auning')) }}">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="wedding_service_{{ $cardNum }}_image_file" class="form-label fw-medium">Upload Gambar Kartu {{ $cardNum }}</label>
-                                                <input type="file" class="form-control" id="wedding_service_{{ $cardNum }}_image_file" name="wedding_service_{{ $cardNum }}_image_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                                                @if(\App\Models\Setting::getValue('wedding_service_' . $cardNum . '_image'))
-                                                    <img src="{{ str_starts_with(\App\Models\Setting::getValue('wedding_service_' . $cardNum . '_image'), 'http') ? \App\Models\Setting::getValue('wedding_service_' . $cardNum . '_image') : asset(\App\Models\Setting::getValue('wedding_service_' . $cardNum . '_image')) }}" alt="Wedding Service {{ $cardNum }}" class="img-thumbnail mt-2" style="max-height: 70px;">
-                                                    <div class="form-check mt-2">
-                                                        <input type="hidden" name="clear_wedding_service_{{ $cardNum }}_image" value="0">
-                                                        <input class="form-check-input" type="checkbox" value="1" id="clear_wedding_service_{{ $cardNum }}_image" name="clear_wedding_service_{{ $cardNum }}_image">
-                                                        <label class="form-check-label text-danger" for="clear_wedding_service_{{ $cardNum }}_image">Hapus gambar kartu {{ $cardNum }}</label>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                            <div class="col-12">
-                                                <label for="wedding_service_{{ $cardNum }}_desc" class="form-label fw-medium">Deskripsi Kartu {{ $cardNum }}</label>
-                                                <textarea class="form-control" id="wedding_service_{{ $cardNum }}_desc" name="wedding_service_{{ $cardNum }}_desc" rows="2">{{ \App\Models\Setting::getValue('wedding_service_' . $cardNum . '_desc', $cardNum == 1 ? 'Dekorasi pelaminan elegan untuk akad, resepsi, dan acara keluarga.' : ($cardNum == 2 ? 'Dokumentasi foto momen spesial agar setiap detik berharga tetap terabadikan.' : 'Penyewaan auning untuk area tamu, panggung, dan kebutuhan acara outdoor.')) }}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endfor
                             </div>
                         </div>
 

@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\VoucherTemplate;
 use App\Models\WashService;
+use App\Models\WeddingGalleryItem;
 use App\Models\WeddingPackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,8 +26,8 @@ class LandingController extends Controller
         return view('landing.index', array_merge($data, [
             'currentServiceSlug' => null,
             'servicePage' => null,
-            'pageTitle' => $data['storeName'].' - Solusi Internet, Event, Security, Wash, dan Retail',
-            'pageDescription' => 'MStore adalah umbrella brand untuk Internet Fiber, Wedding & Event, Instalasi CCTV, GT Wash, dan ATK Store. Pilih layanan sesuai kebutuhan Anda.',
+            'pageTitle' => $data['storeName'].' - Internet Fiber, Wedding & Event, CCTV, GT Wash, dan ATK',
+            'pageDescription' => 'Pilih layanan yang Anda butuhkan: Internet Fiber, Wedding & Event, Instalasi CCTV, GT Wash, dan ATK Store. Konsultasi cepat via WhatsApp.',
             'pageUrl' => route('landing'),
             'pageImage' => asset('img/cctv-monitor.png'),
         ]));
@@ -326,11 +327,33 @@ class LandingController extends Controller
         }
 
         try {
-            $weddingGallery = collect([
-                Setting::getValue('wedding_service_1_image', ''),
-                Setting::getValue('wedding_service_2_image', ''),
-                Setting::getValue('wedding_service_3_image', ''),
-            ])->filter(fn ($path) => trim((string) $path) !== '')->values();
+            if (class_exists(WeddingGalleryItem::class) && Schema::hasTable('wedding_gallery_items')) {
+                $weddingGallery = WeddingGalleryItem::query()
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->latest('id')
+                    ->limit(12)
+                    ->get()
+                    ->map(function (WeddingGalleryItem $item) {
+                        $path = trim((string) $item->image_path);
+                        return $path !== '' ? 'storage/'.$path : null;
+                    })
+                    ->filter()
+                    ->values();
+                if ($weddingGallery->isEmpty()) {
+                    $weddingGallery = collect([
+                        Setting::getValue('wedding_service_1_image', ''),
+                        Setting::getValue('wedding_service_2_image', ''),
+                        Setting::getValue('wedding_service_3_image', ''),
+                    ])->filter(fn ($path) => trim((string) $path) !== '')->values();
+                }
+            } else {
+                $weddingGallery = collect([
+                    Setting::getValue('wedding_service_1_image', ''),
+                    Setting::getValue('wedding_service_2_image', ''),
+                    Setting::getValue('wedding_service_3_image', ''),
+                ])->filter(fn ($path) => trim((string) $path) !== '')->values();
+            }
         } catch (\Exception $e) {
             $weddingGallery = collect([]);
         }
@@ -387,19 +410,19 @@ class LandingController extends Controller
                 'nav_label' => 'Internet',
                 'icon' => 'fa-wifi',
                 'url' => route('landing.services.internet'),
-                'meta_title' => 'Internet Fiber MStore - Paket Rumah, Hotspot, dan Voucher',
-                'meta_description' => 'Pilih paket internet fiber MStore untuk rumah, bisnis, hotspot, dan voucher online. Cek coverage area dan konsultasi via WhatsApp.',
+                'meta_title' => 'Internet Fiber - Paket Rumah & Bisnis, Hotspot, dan Voucher',
+                'meta_description' => 'Pilih paket internet fiber untuk rumah dan bisnis, cek coverage ODP, dan jadwalkan pemasangan. Voucher hotspot juga tersedia (QRIS).',
                 'image' => $defaultImage,
                 'kicker' => 'MSTORE.NET',
-                'hero_title' => 'Internet Fiber untuk Rumah, Bisnis, dan Hotspot',
-                'hero_desc' => 'Pilih paket internet, cek coverage ODP, beli voucher hotspot online, dan lanjut registrasi dengan proses yang cepat.',
-                'summary' => 'Paket rumahan, hotspot, voucher online, dan cek coverage area.',
+                'hero_title' => 'Internet Fiber Stabil untuk Rumah & Bisnis',
+                'hero_desc' => 'Cek coverage, pilih paket, lalu kami bantu proses registrasi dan jadwal pemasangan. Voucher hotspot juga tersedia untuk kebutuhan cepat.',
+                'summary' => 'Cek coverage, pilih paket, registrasi pemasangan, dan voucher hotspot.',
                 'stat' => $internetCount > 0 ? $internetCount.' paket aktif' : 'Paket siap ditampilkan',
-                'highlights' => ['Paket rumah & bisnis', 'Voucher hotspot QRIS', 'Cek coverage area'],
+                'highlights' => ['Cek coverage ODP', 'Paket rumah & bisnis', 'Voucher hotspot QRIS'],
                 'form' => [
                     'interest' => 'internet',
-                    'title' => 'Minta Penawaran Internet',
-                    'description' => 'Isi data singkat, tim kami bantu cek coverage dan paket yang paling cocok.',
+                    'title' => 'Cek Coverage & Daftar Pasang',
+                    'description' => 'Isi alamat dan kebutuhan Anda, tim kami bantu cek coverage ODP dan konfirmasi jadwal pemasangan.',
                     'coverage_label' => 'Alamat / Coverage Area',
                     'coverage_placeholder' => 'Contoh: Kampung X / RT/RW / patokan rumah',
                     'message_label' => 'Kebutuhan Internet',
@@ -420,19 +443,19 @@ class LandingController extends Controller
                 'nav_label' => 'Wedding & Event',
                 'icon' => 'fa-ring',
                 'url' => route('landing.services.wedding'),
-                'meta_title' => 'Wedding & Event MStore - Paket Acara, Konsultasi, dan Booking',
-                'meta_description' => 'Temukan paket wedding dan event yang fleksibel, konsultasi kebutuhan acara, dan booking cepat via WhatsApp.',
+                'meta_title' => 'Wedding & Event - Paket Wedding, Konsultasi, dan Booking',
+                'meta_description' => 'Temukan paket wedding yang fleksibel, konsultasi detail acara, dan booking cepat via WhatsApp. Bisa custom konsep sesuai kebutuhan.',
                 'image' => $defaultImage,
                 'kicker' => 'Wedding & Event',
-                'hero_title' => 'Paket Wedding & Event yang Fleksibel dan Mudah Dibooking',
-                'hero_desc' => 'Lihat paket wedding, konsultasikan detail acara, dan kirim kebutuhan Anda agar tim kami siapkan penawaran terbaik.',
-                'summary' => 'Wedding organizer, event support, konsultasi acara, dan galeri referensi.',
+                'hero_title' => 'Paket Wedding yang Fleksibel dan Mudah Dibooking',
+                'hero_desc' => 'Pilih paket, kirim detail tanggal dan lokasi acara, lalu tim kami bantu susun penawaran yang paling sesuai.',
+                'summary' => 'Paket wedding, konsultasi acara, dan galeri inspirasi.',
                 'stat' => $weddingCount > 0 ? $weddingCount.' paket wedding' : 'Konsultasi custom event',
-                'highlights' => ['Konsultasi konsep acara', 'Booking via WhatsApp', 'DP via QRIS'],
+                'highlights' => ['Paket siap pilih', 'Bisa custom konsep', 'Booking via WhatsApp'],
                 'form' => [
                     'interest' => 'wedding',
-                    'title' => 'Kirim Detail Acara',
-                    'description' => 'Isi tanggal dan kebutuhan acara, tim kami akan follow up untuk konsultasi paket.',
+                    'title' => 'Booking Konsultasi Wedding',
+                    'description' => 'Isi detail acara Anda, tim kami akan follow up via WhatsApp untuk rekomendasi paket dan penawaran.',
                     'coverage_label' => 'Lokasi Acara',
                     'coverage_placeholder' => 'Contoh: Gedung / rumah / kota acara',
                     'message_label' => 'Kebutuhan Acara',
@@ -443,29 +466,29 @@ class LandingController extends Controller
                         ['name' => 'detail_3', 'label' => 'Jenis Acara', 'placeholder' => 'Contoh: wedding / engagement / gathering'],
                     ],
                 ],
-                'secondary_label' => 'Chat WhatsApp',
-                'secondary_href' => 'wa:booking wedding',
-                'secondary_note' => 'Galeri dan paket bisa disesuaikan',
+                'secondary_label' => 'WhatsApp',
+                'secondary_href' => 'wa:Halo, saya ingin konsultasi wedding dan minta info paket yang cocok.',
+                'secondary_note' => 'Paket bisa disesuaikan dengan konsep acara',
             ],
             'cctv' => [
                 'slug' => 'cctv',
-                'name' => 'CCTV Installation',
+                'name' => 'Instalasi CCTV',
                 'nav_label' => 'CCTV',
                 'icon' => 'fa-video',
                 'url' => route('landing.services.cctv'),
-                'meta_title' => 'Instalasi CCTV MStore - Survey Gratis dan Paket Kamera',
-                'meta_description' => 'Survey titik CCTV, pilih paket kamera sesuai kebutuhan, dan booking instalasi dengan proses cepat.',
+                'meta_title' => 'Instalasi CCTV - Survey Gratis, Paket Kamera, dan Pemasangan Rapi',
+                'meta_description' => 'Survey titik CCTV, pilih paket kamera sesuai kebutuhan, lalu jadwalkan instalasi yang rapi. Cocok untuk rumah, toko, kantor, dan gudang.',
                 'image' => $defaultImage,
-                'kicker' => 'Security Solutions',
+                'kicker' => 'Solusi Keamanan',
                 'hero_title' => 'Instalasi CCTV untuk Rumah, Toko, dan Kantor',
-                'hero_desc' => 'Mulai dari survey gratis, pilih jumlah kamera, lalu jadwalkan pemasangan yang rapi dan terencana.',
+                'hero_desc' => 'Mulai dari survey titik kamera, kami bantu rekomendasi paket, lalu jadwalkan pemasangan yang rapi dan terencana.',
                 'summary' => 'Survey gratis, paket kamera, garansi, dan booking instalasi.',
                 'stat' => $cctvCount > 0 ? $cctvCount.' paket CCTV' : 'Survey gratis tersedia',
                 'highlights' => ['Survey gratis', 'Paket kamera siap pasang', 'DP via QRIS'],
                 'form' => [
                     'interest' => 'cctv',
-                    'title' => 'Booking Survey CCTV',
-                    'description' => 'Isi kebutuhan lokasi dan jumlah titik kamera, tim kami akan jadwalkan survey.',
+                    'title' => 'Jadwalkan Survey CCTV',
+                    'description' => 'Isi lokasi dan jumlah titik kamera, tim kami akan jadwalkan survey dan rekomendasikan paket.',
                     'coverage_label' => 'Lokasi Pemasangan',
                     'coverage_placeholder' => 'Contoh: ruko / rumah / kantor',
                     'message_label' => 'Kebutuhan CCTV',
@@ -476,8 +499,8 @@ class LandingController extends Controller
                         ['name' => 'detail_3', 'label' => 'Jadwal Survey', 'placeholder' => 'Contoh: besok siang'],
                     ],
                 ],
-                'secondary_label' => 'Booking Survey',
-                'secondary_href' => 'wa:survey cctv',
+                'secondary_label' => 'WhatsApp',
+                'secondary_href' => 'wa:Halo, saya ingin booking survey CCTV.',
                 'secondary_note' => 'Cocok untuk rumah, toko, dan kantor',
             ],
             'gt-wash' => [
@@ -490,15 +513,15 @@ class LandingController extends Controller
                 'meta_description' => 'Booking GT Wash untuk mobil dan motor. Nikmati membership digital gratis, loyalty 10x cuci gratis 1x, serta menu Kedai Ms GT Wash sambil menunggu kendaraan selesai.',
                 'image' => $defaultImage,
                 'kicker' => 'GT Wash',
-                'hero_title' => 'Cuci Mobil & Motor dengan Membership Digital dan Kedai yang Lebih Nyaman',
-                'hero_desc' => 'Lihat layanan wash, addon, membership digital gratis, loyalty 10x cuci gratis 1x, serta menu Kedai Ms GT Wash untuk menemani waktu tunggu Anda.',
+                'hero_title' => 'Booking GT Wash: Cuci Mobil & Motor + Membership Digital',
+                'hero_desc' => 'Pilih layanan wash dan addon, lalu booking antrean. Sambil menunggu, nikmati Kedai Ms GT Wash. Membership digital gratis dan loyalty 10x gratis 1x tersedia.',
                 'summary' => 'Wash mobil/motor, addon, membership digital, loyalty reward, dan Kedai Ms GT Wash.',
                 'stat' => $washCount > 0 ? $washCount.' layanan wash' : 'Booking wash tersedia',
-                'highlights' => ['Membership gratis', 'Loyalty 10x gratis 1x', 'Kedai Ms GT Wash tersedia'],
+                'highlights' => ['Membership digital gratis', 'Loyalty 10x gratis 1x', 'Kedai Ms GT Wash tersedia'],
                 'form' => [
                     'interest' => 'wash',
                     'title' => 'Booking GT Wash',
-                    'description' => 'Isi data kendaraan dan layanan yang diinginkan, tim kami akan konfirmasi jadwal dan antrean.',
+                    'description' => 'Isi data kendaraan dan layanan yang diinginkan, tim kami akan konfirmasi jadwal dan antrean via WhatsApp.',
                     'coverage_label' => 'Cabang / Lokasi Datang',
                     'coverage_placeholder' => 'Contoh: GT Wash cabang utama',
                     'message_label' => 'Layanan yang Diinginkan',
@@ -509,8 +532,8 @@ class LandingController extends Controller
                         ['name' => 'detail_3', 'label' => 'Jam Kedatangan', 'placeholder' => 'Contoh: jam 10 pagi'],
                     ],
                 ],
-                'secondary_label' => 'Booking Sekarang',
-                'secondary_href' => 'wa:booking GT Wash',
+                'secondary_label' => 'WhatsApp',
+                'secondary_href' => 'wa:Halo, saya ingin booking GT Wash.',
                 'secondary_note' => 'Wash, membership, dan menu kedai dalam satu tempat',
             ],
             'atk-store' => [
@@ -523,15 +546,15 @@ class LandingController extends Controller
                 'meta_description' => 'Belanja produk ATK populer, lihat promo produk, dan pesan cepat via WhatsApp.',
                 'image' => $defaultImage,
                 'kicker' => 'ATK Store',
-                'hero_title' => 'Produk ATK untuk Kantor, Sekolah, dan Kebutuhan Harian',
-                'hero_desc' => 'Lihat produk unggulan, kirim daftar kebutuhan, dan lanjutkan pemesanan dengan cepat melalui WhatsApp.',
+                'hero_title' => 'ATK untuk Kantor, Sekolah, dan UMKM',
+                'hero_desc' => 'Lihat produk unggulan, kirim daftar kebutuhan, dan kami bantu proses pesanan dengan cepat via WhatsApp.',
                 'summary' => 'Produk populer, promo, pemesanan cepat, dan pengadaan rutin.',
                 'stat' => $atkCount > 0 ? $atkCount.' produk unggulan' : 'Pemesanan produk ATK',
                 'highlights' => ['Produk populer siap pesan', 'Cocok untuk kantor & sekolah', 'Order via WhatsApp'],
                 'form' => [
                     'interest' => 'atk',
                     'title' => 'Kirim Kebutuhan ATK',
-                    'description' => 'Isi item atau kebutuhan rutin Anda, tim kami akan bantu siapkan penawaran dan stok.',
+                    'description' => 'Isi item yang dibutuhkan, tim kami akan cek stok dan bantu siapkan penawaran.',
                     'coverage_label' => 'Alamat / Area Pengiriman',
                     'coverage_placeholder' => 'Contoh: sekolah / kantor / rumah',
                     'message_label' => 'Daftar Kebutuhan',
@@ -542,8 +565,8 @@ class LandingController extends Controller
                         ['name' => 'detail_3', 'label' => 'Waktu Kirim', 'placeholder' => 'Contoh: besok sore'],
                     ],
                 ],
-                'secondary_label' => 'Pesan via WhatsApp',
-                'secondary_href' => 'wa:pesan ATK',
+                'secondary_label' => 'WhatsApp',
+                'secondary_href' => 'wa:Halo, saya ingin pesan ATK dan kirim daftar kebutuhan.',
                 'secondary_note' => 'Bisa untuk retail maupun kebutuhan rutin',
             ],
         ];

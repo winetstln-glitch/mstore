@@ -633,8 +633,25 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $leaveQuota = Setting::getValue('technician_leave_quota', 3);
         $faceVerificationEnabled = (string) Setting::getValue('attendance_face_verification_enabled', '0');
         $shiftInfo = $this->resolveTodayShiftInfo(Auth::user());
+        $attendanceOfficeLat = (float) Setting::getValue('attendance_office_lat', Setting::getValue('office_latitude', 0));
+        $attendanceOfficeLng = (float) Setting::getValue('attendance_office_lng', Setting::getValue('office_longitude', 0));
+        $attendanceRadius = (float) Setting::getValue('attendance_radius', Setting::getValue('attendance_max_distance_meters', 100));
 
-        return view('technicians.attendance.create', compact('todayAttendance', 'clockInStart', 'clockInEnd', 'clockOutStart', 'clockOutEnd', 'faceVerificationEnabled', 'attendanceSummary', 'leaveQuota', 'shiftInfo', 'monthAttendances'));
+        return view('technicians.attendance.create', compact(
+            'todayAttendance',
+            'clockInStart',
+            'clockInEnd',
+            'clockOutStart',
+            'clockOutEnd',
+            'faceVerificationEnabled',
+            'attendanceSummary',
+            'leaveQuota',
+            'shiftInfo',
+            'monthAttendances',
+            'attendanceOfficeLat',
+            'attendanceOfficeLng',
+            'attendanceRadius'
+        ));
     }
 
     public function kiosk()

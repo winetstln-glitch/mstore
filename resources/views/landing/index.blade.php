@@ -14,9 +14,9 @@
         <div class="container">
             <div class="row align-items-center g-5 home-hero-grid">
                 <div class="col-lg-6 fade-up">
-                    <span class="home-kicker">MStore Multi Service Ecosystem</span>
-                    <h1 class="hero-title home-hero-title">Solusi Multi-Layanan dengan Pengalaman yang Lebih Fokus di Setiap Halaman</h1>
-                    <p class="hero-desc home-hero-desc">Homepage ini sekarang menjadi gateway premium untuk semua unit usaha. Pengunjung cukup pilih layanan yang relevan, lalu masuk ke halaman khusus yang sudah disusun sesuai kebutuhan Internet, Wedding & Event, CCTV, GT Wash, atau ATK.</p>
+                    <span class="home-kicker">{{ $siteName }} • Multi Layanan Terintegrasi</span>
+                    <h1 class="hero-title home-hero-title">Satu Ekosistem untuk Internet, Event, Security, Wash, dan Retail</h1>
+                    <p class="hero-desc home-hero-desc">Pilih layanan yang Anda butuhkan. Setiap layanan memiliki halaman khusus dengan penawaran, informasi, dan form konsultasi yang lebih tepat agar prosesnya lebih cepat dan jelas.</p>
                     <div class="home-cta-row">
                         <a href="#services" class="btn btn-primary track-service-action" data-track-service="umbrella" data-track-action="choose_service">
                             <i class="fas fa-layer-group me-2"></i> Jelajahi Layanan
@@ -36,11 +36,11 @@
                         </div>
                         <div class="home-metric-card">
                             <strong>{{ $coverageCount > 0 ? $coverageCount : 'Live' }}</strong>
-                            <span>{{ $coverageCount > 0 ? 'Titik Coverage' : 'Coverage Map' }}</span>
+                            <span>{{ $coverageCount > 0 ? 'Titik Coverage' : 'Peta Coverage' }}</span>
                         </div>
                         <div class="home-metric-card">
-                            <strong>Smart</strong>
-                            <span>Lead Routing</span>
+                            <strong>Cepat</strong>
+                            <span>Respon Admin</span>
                         </div>
                     </div>
 
@@ -63,9 +63,9 @@
                 <div class="col-lg-6 fade-up">
                     <div class="home-showcase-shell">
                         <div class="home-showcase-main">
-                            <div class="home-showcase-badge">Ecosystem Overview</div>
-                            <h3>Satu umbrella brand, dengan halaman layanan yang lebih siap untuk konversi</h3>
-                            <p>Setiap unit usaha kini punya fokus visual, CTA, dan form yang lebih relevan. Visitor tidak lagi dipaksa membaca semua katalog dalam satu halaman panjang.</p>
+                            <div class="home-showcase-badge">Ringkasan Ekosistem</div>
+                            <h3>Lebih mudah memilih, lebih cepat diproses</h3>
+                            <p>Setiap unit layanan kami susun agar mudah dipahami: informasi ringkas, highlight benefit, dan jalur konsultasi yang jelas.</p>
                             <div class="home-service-stack">
                                 @foreach($featuredServices as $service)
                                     <a href="{{ $service['url'] }}" class="home-service-pill track-service-action" data-track-service="{{ $service['slug'] }}" data-track-action="hero_service_pill">
@@ -82,15 +82,15 @@
                         <div class="home-floating-card home-floating-card-dark">
                             <div class="home-floating-icon"><i class="fas fa-diagram-project"></i></div>
                             <div>
-                                <strong>UX Lebih Terarah</strong>
-                                <span>Setiap service punya flow sendiri</span>
+                                <strong>Alur Lebih Rapi</strong>
+                                <span>Setiap layanan punya flow yang jelas</span>
                             </div>
                         </div>
 
                         <div class="home-floating-card home-floating-card-green">
                             <div class="home-floating-icon"><i class="fab fa-whatsapp"></i></div>
                             <div>
-                                <strong>Fast Response</strong>
+                                <strong>Respon Cepat</strong>
                                 <span>{{ $waNumber }}</span>
                             </div>
                         </div>
@@ -104,8 +104,8 @@
         <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up home-section-header">
                 <h6 class="text-primary fw-bold text-uppercase">Pilih Layanan</h6>
-                <h2 class="display-6 fw-800">Setiap Layanan Punya Halaman, CTA, dan Form yang Lebih Tepat</h2>
-                <p class="text-muted mb-0">Homepage cukup menjadi pintu masuk. Detail penawaran, visual, dan lead form diarahkan ke halaman yang memang dibuat khusus per layanan.</p>
+                <h2 class="display-6 fw-800">Pilih layanan, lalu lanjutkan di halaman khusus</h2>
+                <p class="text-muted mb-0">Setiap halaman layanan dibuat lebih fokus agar penawaran, harga/paket, dan konsultasi lebih cepat ditangani.</p>
             </div>
 
             <div class="row g-4">
@@ -145,8 +145,8 @@
                     <div class="landing-mini-card h-100 home-mini-card">
                         <i class="fas fa-bolt"></i>
                         <div>
-                            <div class="fw-bold">Homepage Lebih Ringkas</div>
-                            <div class="text-muted small">Struktur umbrella membuat visitor tidak harus membaca semua detail layanan di satu halaman panjang.</div>
+                            <div class="fw-bold">Info Lebih Jelas</div>
+                            <div class="text-muted small">Anda langsung melihat poin penting dan tidak perlu menyaring informasi yang tidak relevan.</div>
                         </div>
                     </div>
                 </div>
@@ -154,8 +154,8 @@
                     <div class="landing-mini-card h-100 home-mini-card">
                         <i class="fas fa-clipboard-check"></i>
                         <div>
-                            <div class="fw-bold">Form Lebih Spesifik</div>
-                            <div class="text-muted small">Setiap halaman layanan punya field yang lebih relevan, sehingga tim lebih cepat follow up.</div>
+                            <div class="fw-bold">Konsultasi Lebih Cepat</div>
+                            <div class="text-muted small">Form disesuaikan dengan layanan agar tim kami lebih cepat memahami kebutuhan Anda.</div>
                         </div>
                     </div>
                 </div>
@@ -163,8 +163,8 @@
                     <div class="landing-mini-card h-100 home-mini-card">
                         <i class="fas fa-magnifying-glass-chart"></i>
                         <div>
-                            <div class="fw-bold">Tracking Lebih Tajam</div>
-                            <div class="text-muted small">CTA, klik halaman, dan submit lead dapat dibedakan per layanan untuk analisa konversi yang lebih jelas.</div>
+                            <div class="fw-bold">Respons Lebih Tepat</div>
+                            <div class="text-muted small">Setiap permintaan tercatat berdasarkan layanan sehingga follow up lebih terarah.</div>
                         </div>
                     </div>
                 </div>
@@ -183,8 +183,8 @@
                 <div class="col-lg-6 fade-up">
                     <div class="home-coverage-copy">
                         <span class="home-kicker">Coverage Internet</span>
-                        <h2 class="display-6 fw-800 mb-4">Peta Coverage Tetap Ditampilkan Karena Ini Intent Terkuat untuk Layanan Internet</h2>
-                        <p class="text-secondary mb-4">Homepage menyimpan peta coverage sebagai entry point paling penting untuk layanan internet. Setelah user merasa area memungkinkan, mereka diarahkan ke halaman Internet Fiber yang berisi paket, voucher, dan registrasi lebih spesifik.</p>
+                        <h2 class="display-6 fw-800 mb-4">Cek coverage dulu, baru pilih paket yang cocok</h2>
+                        <p class="text-secondary mb-4">Gunakan peta untuk melihat coverage di area Anda. Setelah itu, lanjutkan ke halaman Internet Fiber untuk memilih paket dan mengisi form registrasi.</p>
 
                         <div class="home-coverage-list mb-4">
                             <div class="home-coverage-item">
@@ -227,22 +227,22 @@
                 <div class="col-lg-5 fade-up">
                     <div class="section-header mb-3 home-consult-copy">
                         <h6 class="text-primary fw-bold text-uppercase">Quick Consult</h6>
-                        <h2 class="display-6 fw-800 mb-2">Belum Tahu Mau Pilih Layanan Yang Mana?</h2>
-                        <p class="text-muted mb-0">Kalau visitor masih bingung, form cepat ini tetap tersedia dari homepage untuk memudahkan follow up awal sebelum diarahkan ke halaman layanan yang paling sesuai.</p>
+                        <h2 class="display-6 fw-800 mb-2">Masih bingung mulai dari mana?</h2>
+                        <p class="text-muted mb-0">Isi form singkat. Tim kami akan bantu mengarahkan Anda ke layanan yang paling sesuai dan melanjutkan via WhatsApp bila diperlukan.</p>
                     </div>
 
                     <div class="home-consult-points">
                         <div class="home-consult-point">
                             <i class="fas fa-route"></i>
-                            <span>Tim akan bantu arahkan ke layanan yang paling cocok</span>
+                            <span>Dibantu pilih layanan yang paling cocok</span>
                         </div>
                         <div class="home-consult-point">
                             <i class="fas fa-comments"></i>
-                            <span>Bisa lanjut via WhatsApp setelah submit</span>
+                            <span>Langsung lanjut via WhatsApp setelah submit</span>
                         </div>
                         <div class="home-consult-point">
                             <i class="fas fa-layer-group"></i>
-                            <span>Context lead tetap tersimpan per sumber halaman</span>
+                            <span>Data kebutuhan tercatat rapi untuk follow up</span>
                         </div>
                     </div>
 
@@ -329,8 +329,8 @@
             <div class="row g-4 align-items-center">
                 <div class="col-lg-6 fade-up">
                     <span class="home-kicker">Tentang {{ $siteName }}</span>
-                    <h2 class="display-6 fw-800 mb-3">Ekosistem Multi-Bisnis yang Disusun Lebih Rapi untuk Visitor dan Tim Sales</h2>
-                    <p class="text-muted mb-3">Kami mengelola beberapa lini layanan dalam satu ekosistem, tetapi sekarang setiap lini punya halaman yang lebih fokus agar penawaran, katalog, CTA, dan capture lead tidak saling bercampur.</p>
+                    <h2 class="display-6 fw-800 mb-3">Multi-bisnis yang terintegrasi, tetapi tetap fokus per kebutuhan</h2>
+                    <p class="text-muted mb-3">{{ $siteName }} mengelola beberapa lini layanan dalam satu ekosistem. Karena kebutuhan tiap layanan berbeda, kami sediakan halaman khusus agar informasi dan konsultasi lebih cepat diproses.</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-primary" href="#services">Lihat Semua Layanan</a>
                         <a class="btn btn-outline-primary" href="#kontak">Lihat Kontak</a>

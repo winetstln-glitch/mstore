@@ -12,7 +12,7 @@
     <div class="section-header mb-3 {{ $isWeddingForm ? '' : 'service-lead-heading' }}">
         <h6 class="{{ $isWeddingForm ? 'wedding-lead-kicker' : 'service-lead-kicker' }}">{{ $servicePage['name'] ?? 'Layanan' }}</h6>
         <h2 class="display-6 fw-800 mb-2 {{ $isWeddingForm ? 'wedding-lead-title' : 'service-lead-title' }}">{{ $formConfig['title'] ?? 'Kirim Kebutuhan' }}</h2>
-        <p class="text-muted mb-0 {{ $isWeddingForm ? 'wedding-lead-subtitle' : 'service-lead-subtitle' }}">{{ $formConfig['description'] ?? 'Isi form, tim kami akan follow up via WhatsApp.' }}</p>
+        <p class="text-muted mb-0 {{ $isWeddingForm ? 'wedding-lead-subtitle' : 'service-lead-subtitle' }}">{{ $formConfig['description'] ?? 'Isi form singkat, tim kami akan follow up via WhatsApp.' }}</p>
     </div>
 
     @if(session('success'))
@@ -41,17 +41,17 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label {{ $genericLabelClass }}">Nama</label>
-                <input name="name" value="{{ old('name') }}" class="form-control {{ $genericControlClass }} @error('name') is-invalid @enderror" required>
+                <input name="name" value="{{ old('name') }}" class="form-control {{ $genericControlClass }} @error('name') is-invalid @enderror" placeholder="Nama Anda" required>
                 @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-6">
                 <label class="form-label {{ $genericLabelClass }}">WhatsApp</label>
-                <input name="phone" value="{{ old('phone') }}" class="form-control {{ $genericControlClass }} @error('phone') is-invalid @enderror" required>
+                <input name="phone" value="{{ old('phone') }}" class="form-control {{ $genericControlClass }} @error('phone') is-invalid @enderror" placeholder="Contoh: 08xxxxxxxxxx" required>
                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-6">
                 <label class="form-label {{ $genericLabelClass }}">Email (opsional)</label>
-                <input type="email" name="email" value="{{ old('email') }}" class="form-control {{ $genericControlClass }} @error('email') is-invalid @enderror">
+                <input type="email" name="email" value="{{ old('email') }}" class="form-control {{ $genericControlClass }} @error('email') is-invalid @enderror" placeholder="nama@email.com">
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-6">
@@ -80,10 +80,10 @@
             </div>
             <div class="col-12 d-flex flex-wrap gap-2">
                 <button class="btn {{ $isWeddingForm ? 'wedding-btn-dark' : 'btn-primary' }} track-service-action" type="submit" data-track-service="{{ $servicePage['slug'] ?? 'service' }}" data-track-action="submit_button">
-                    Kirim Permintaan
+                    Kirim
                 </button>
                 <a class="btn {{ $isWeddingForm ? 'wedding-btn-light' : 'btn-outline-primary' }}" href="{{ route('customers.public.register.create') }}">
-                    Customer Registration
+                    Daftar Customer
                 </a>
                 <a class="btn btn-green track-service-action" data-track-service="{{ $servicePage['slug'] ?? 'service' }}" data-track-action="whatsapp_cta" href="{{ 'https://wa.me/'.($waNumber ?? '6281234567890').'?text='.urlencode('Halo, saya ingin konsultasi '.($servicePage['name'] ?? 'layanan').'.') }}">
                     WhatsApp

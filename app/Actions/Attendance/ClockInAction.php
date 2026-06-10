@@ -55,16 +55,24 @@ class ClockInAction
                 throw new \RuntimeException('Anda sudah melakukan absensi masuk hari ini.');
             }
 
-            $maxDistance = (float) Setting::getValue('attendance_max_distance_meters', 200);
-            $enableLocationCheck = (bool) Setting::getValue('attendance_enable_location_check', true);
+            $maxDistance = (float) Setting::getValue(
+                'attendance_radius',
+                Setting::getValue('attendance_max_distance_meters', 100)
+            );
+            $officeLat = (float) Setting::getValue(
+                'attendance_office_lat',
+                Setting::getValue('office_latitude', 0)
+            );
+            $officeLng = (float) Setting::getValue(
+                'attendance_office_lng',
+                Setting::getValue('office_longitude', 0)
+            );
+            $enableLocationCheck = $officeLat !== 0.0 && $officeLng !== 0.0;
 
             $lat = (float) ($data['lat'] ?? 0);
             $lng = (float) ($data['lng'] ?? 0);
 
             if ($enableLocationCheck && ($lat !== 0.0 || $lng !== 0.0)) {
-                $officeLat = (float) Setting::getValue('office_latitude', -6.1753924);
-                $officeLng = (float) Setting::getValue('office_longitude', 106.8271528);
-
                 $distance = $this->attendanceService->calculateDistance(
                     $lat,
                     $lng,

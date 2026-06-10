@@ -16,6 +16,7 @@ class WeddingPackage extends Model
         'price',
         'capacity',
         'facilities',
+        'image_path',
         'is_active',
     ];
 
@@ -31,4 +32,3 @@ class WeddingPackage extends Model
         return $this->hasMany(WeddingBooking::class);
     }
 }
-

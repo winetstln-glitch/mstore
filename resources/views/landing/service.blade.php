@@ -24,7 +24,7 @@
     @if($servicePage['slug'] === 'wedding-event')
         <div class="wedding-topbar">
             <div class="container text-center">
-                Promo Spesial Tahun Ini - Bonus Handbouquet dan Undangan Digital untuk paket wedding tertentu.
+                Promo Spesial: Bonus handbouquet & undangan digital untuk paket wedding tertentu.
             </div>
         </div>
 
@@ -34,15 +34,15 @@
             <div class="container position-relative">
                 <div class="row align-items-center g-5">
                     <div class="col-lg-7 fade-up text-center text-lg-start">
-                        <span class="wedding-pill">Premium & Elegant Wedding Organizer</span>
-                        <h1 class="wedding-hero-title">Wujudkan Pernikahan Impian Anda dengan Dekorasi Elegan dan Biaya yang Lebih Terarah</h1>
+                        <span class="wedding-pill">Wedding Organizer Premium & Elegan</span>
+                        <h1 class="wedding-hero-title">Wujudkan Pernikahan Impian dengan Dekor Elegan dan Alur Booking yang Jelas</h1>
                         <p class="wedding-hero-desc">{{ $servicePage['hero_desc'] }}</p>
                         <div class="d-flex flex-column flex-sm-row align-items-center justify-content-center justify-content-lg-start gap-3">
                             <a href="#wedding-packages" class="btn wedding-btn-dark track-service-action" data-track-service="wedding-event" data-track-action="hero_packages">
                                 Lihat Pilihan Paket
                             </a>
                             <a href="#wedding-calculator" class="btn wedding-btn-light track-service-action" data-track-service="wedding-event" data-track-action="hero_calculator">
-                                Simulasi & Kalkulator
+                                Simulasi Budget
                             </a>
                         </div>
 
@@ -143,7 +143,7 @@
                             <div class="service-hero-floating service-hero-floating-green">
                                 <div class="service-hero-floating-icon"><i class="fab fa-whatsapp"></i></div>
                                 <div>
-                                    <strong>Fast Response</strong>
+                                    <strong>Respon Cepat</strong>
                                     <span>{{ $waNumber }}</span>
                                 </div>
                             </div>
@@ -328,7 +328,14 @@
                 if ($facilities->isEmpty()) {
                     $facilities = collect(['Dekorasi elegan', 'Rias pengantin', 'Dokumentasi acara', 'Bisa custom sesuai kebutuhan']);
                 }
-                $image = $weddingHeroGallery->get($index) ?? $weddingHeroGallery->first();
+                $packageImagePath = $pkg['image_path'] ?? $pkg->image_path ?? null;
+                $image = null;
+                if (is_string($packageImagePath) && trim($packageImagePath) !== '') {
+                    $image = asset('storage/'.ltrim($packageImagePath, '/'));
+                }
+                if (! $image) {
+                    $image = $weddingHeroGallery->get($index) ?? $weddingHeroGallery->first();
+                }
 
                 return [
                     'slug' => $pkg['slug'] ?? \Illuminate\Support\Str::slug((string) ($pkg['name'] ?? $pkg->name ?? 'paket-'.$index)),
@@ -358,28 +365,28 @@
                 <div class="wedding-section-heading text-center fade-up">
                     <span class="wedding-section-kicker">Mengapa Memilih Kami</span>
                     <h2 class="wedding-section-title">Keunggulan Layanan Wedding {{ $siteName }}</h2>
-                    <p class="wedding-section-subtitle">Tampilan dan alur dibuat lebih premium, konsultatif, dan mudah diarahkan ke booking.</p>
+                    <p class="wedding-section-subtitle">Konsultasi lebih rapi, detail kebutuhan tercatat, dan proses booking lebih cepat.</p>
                 </div>
                 <div class="row g-4">
                     <div class="col-md-4 fade-up">
                         <div class="wedding-feature-card">
                             <div class="wedding-feature-icon"><i class="fas fa-award"></i></div>
-                            <h3>Kualitas Terbaik</h3>
-                            <p>Paket lengkap dengan pendekatan elegan tanpa membuat customer bingung membaca banyak blok informasi campur.</p>
+                            <h3>Kualitas Terjaga</h3>
+                            <p>Standar dekor, rias, dan detail acara disusun rapi agar hasilnya terlihat premium di lokasi maupun di foto.</p>
                         </div>
                     </div>
                     <div class="col-md-4 fade-up">
                         <div class="wedding-feature-card">
                             <div class="wedding-feature-icon"><i class="fas fa-spa"></i></div>
                             <h3>Dekor Elegan</h3>
-                            <p>Nuansa warna lembut, serif display, dan visual yang lebih emosional membuat wedding tampil lebih premium.</p>
+                            <p>Pilihan konsep bisa disesuaikan: modern, minimalis, atau glam. Fokus pada detail yang membuat acara terasa berkelas.</p>
                         </div>
                     </div>
                     <div class="col-md-4 fade-up">
                         <div class="wedding-feature-card">
                             <div class="wedding-feature-icon"><i class="fas fa-users"></i></div>
                             <h3>Pelayanan Profesional</h3>
-                            <p>Lead form spesifik untuk tanggal acara, jumlah tamu, dan jenis acara mempermudah tim follow up.</p>
+                            <p>Kami bantu dari konsultasi hingga hari H. Detail tanggal, lokasi, dan jumlah tamu mempermudah penawaran yang tepat.</p>
                         </div>
                     </div>
                 </div>
@@ -391,7 +398,7 @@
                 <div class="wedding-section-heading text-center fade-up">
                     <span class="wedding-section-kicker">Paket Wedding Best Seller</span>
                     <h2 class="wedding-section-title">Temukan Paket Sesuai Kebutuhan Acara</h2>
-                    <p class="wedding-section-subtitle">Saya adaptasikan konsep tab paket dari referensi agar lebih fokus dan mudah dibanding scroll banyak kartu.</p>
+                    <p class="wedding-section-subtitle">Pilih paket lewat tab untuk melihat fasilitas dan harga lebih cepat, lalu lanjut booking.</p>
                 </div>
 
                 <div class="wedding-package-tabs fade-up">
@@ -432,7 +439,7 @@
                     <div class="col-lg-5 fade-up">
                         <span class="wedding-section-kicker wedding-section-kicker-light">Kalkulator Budget</span>
                         <h2 class="wedding-dark-title">Simulasikan Anggaran dan Dapatkan Rekomendasi Paket</h2>
-                        <p class="wedding-dark-desc">Bagian ini mengikuti ide referensi `weding.html`: calon customer bisa mulai dari paket dasar, tambah kebutuhan tambahan, lalu kirim ringkasan ke WhatsApp.</p>
+                        <p class="wedding-dark-desc">Pilih paket dasar, tambahkan kebutuhan, lalu kirim ringkasan simulasi untuk konsultasi dan cek ketersediaan jadwal.</p>
                         <div class="wedding-dark-checklist">
                             <div><i class="fas fa-check-circle"></i><span>Bebas custom sesuai request acara</span></div>
                             <div><i class="fas fa-check-circle"></i><span>Harga lebih transparan</span></div>
@@ -859,7 +866,7 @@
                             <i class="fas fa-mug-hot"></i>
                             <div>
                                 <div class="fw-bold">Kedai Ms GT Wash</div>
-                                <div class="text-muted small">Sambil menunggu wash selesai, customer bisa pesan boba, milkshake, dan coffee.</div>
+                                <div class="text-muted small">Sambil menunggu wash selesai, Anda bisa pesan boba, milkshake, dan coffee.</div>
                             </div>
                         </div>
                     </div>
@@ -934,8 +941,8 @@
                         <div class="kedai-hero">
                             <div class="kedai-hero-copy">
                                 <span class="kedai-kicker">Kedai Ms GT Wash</span>
-                                <h2 class="kedai-title">Menunggu kendaraan selesai sekarang bisa sambil ngopi dan ngemil yang lebih santai</h2>
-                                <p class="kedai-desc">Saya ganti blok `Layanan Lainnya` menjadi section kedai yang lebih jelas. Customer bisa lihat menu minuman secara terstruktur dan langsung lanjut order atau tanya stok via WhatsApp.</p>
+                    <h2 class="kedai-title">Menunggu kendaraan selesai jadi lebih nyaman</h2>
+                    <p class="kedai-desc">Sambil menunggu wash, Anda bisa pesan boba, milkshake, atau coffee. Lihat menu di bawah, lalu lanjut order atau tanya ketersediaan via WhatsApp.</p>
                                 <div class="kedai-hero-actions">
                                     <a href="#service-lead" class="btn btn-primary track-service-action" data-track-service="gt-wash" data-track-action="kedai_form_cta">
                                         Tanya Menu Kedai
@@ -988,7 +995,7 @@
             <div class="container py-2">
                 <div class="section-header text-center mb-4 fade-up">
                     <h2 class="display-6 fw-800">Produk Unggulan & Promo</h2>
-                    <p class="text-muted mb-0">Tampilan ATK dibuat lebih katalog-driven dan cepat untuk order.</p>
+                    <p class="text-muted mb-0">Pilih produk, kirim kebutuhan Anda, lalu kami bantu proses pemesanan dengan cepat.</p>
                 </div>
                 <div class="scroll-container fade-up">
                     @forelse($atkProducts as $product)
@@ -1026,36 +1033,36 @@
                 <div class="col-lg-5 fade-up">
                     <div class="section-header mb-3 {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-lead-copy' : 'service-lead-copy' }}">
                         <h6 class="{{ $servicePage['slug'] === 'wedding-event' ? 'wedding-section-kicker' : 'service-section-kicker' }}">{{ $servicePage['name'] }}</h6>
-                        <h2 class="display-6 fw-800 mb-2 {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-section-title' : 'service-section-title' }}">Lead Form yang Lebih Spesifik</h2>
-                        <p class="text-muted mb-0 {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-section-subtitle' : 'service-section-subtitle' }}">Form di halaman ini sudah mengikuti konteks layanan supaya tim lebih cepat membaca kebutuhan Anda.</p>
+                        <h2 class="display-6 fw-800 mb-2 {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-section-title' : 'service-section-title' }}">Konsultasi & Booking</h2>
+                        <p class="text-muted mb-0 {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-section-subtitle' : 'service-section-subtitle' }}">Isi form singkat, tim kami akan menghubungi Anda via WhatsApp untuk konfirmasi detail dan langkah berikutnya.</p>
                     </div>
                     <div class="landing-mini-card {{ $servicePage['slug'] === 'wedding-event' ? 'wedding-side-note' : 'service-side-note' }}">
                         <i class="fas fa-circle-info"></i>
                         <div>
-                            <div class="fw-bold">Tracking Per Layanan</div>
-                            <div class="text-muted small">Klik CTA dan submit form dari halaman ini dilacak dengan label layanan yang berbeda.</div>
+                            <div class="fw-bold">Respon Lebih Cepat</div>
+                            <div class="text-muted small">Data yang Anda kirim sudah sesuai kebutuhan layanan, jadi proses follow up lebih cepat dan tepat.</div>
                         </div>
                     </div>
                     @if($servicePage['slug'] === 'wedding-event')
                         <div class="wedding-side-stack">
                             <div class="wedding-side-card">
-                                <strong>Respon Lebih Cepat</strong>
-                                <span>Field tanggal acara, jumlah tamu, dan lokasi membantu tim langsung memahami konteks wedding Anda.</span>
+                                <strong>Detail Lebih Jelas</strong>
+                                <span>Tanggal acara, jumlah tamu, dan lokasi membantu kami menyiapkan penawaran yang lebih sesuai.</span>
                             </div>
                             <div class="wedding-side-card">
-                                <strong>Flow Lebih Profesional</strong>
-                                <span>Section bawah ini saya rapikan agar terasa seperti premium consultation panel, bukan form biasa.</span>
+                                <strong>Penawaran Lebih Tepat</strong>
+                                <span>Setelah data masuk, tim akan menghubungi untuk rekomendasi paket atau opsi custom sesuai kebutuhan Anda.</span>
                             </div>
                         </div>
                     @else
                         <div class="service-side-stack">
                             <div class="service-side-card">
                                 <strong>Lebih Cepat Dipahami</strong>
-                                <span>Field pada form sudah menyesuaikan konteks tiap layanan, jadi tim tidak perlu menebak-nebak kebutuhan utama customer.</span>
+                                <span>Field pada form menyesuaikan kebutuhan layanan, jadi tim tidak perlu menebak kebutuhan utama Anda.</span>
                             </div>
                             <div class="service-side-card">
                                 <strong>Lebih Mudah Ditindaklanjuti</strong>
-                                <span>Setelah submit, customer bisa langsung diteruskan ke WhatsApp untuk mempercepat closing dan konfirmasi detail.</span>
+                                <span>Setelah submit, Anda bisa langsung lanjut via WhatsApp untuk mempercepat konfirmasi detail.</span>
                             </div>
                         </div>
                     @endif

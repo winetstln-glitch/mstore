@@ -135,11 +135,12 @@ class SidebarMenu
                     self::group('hr', 'HR', [
                         self::link('employees', 'Karyawan', 'employees.index', permissions: ['employee.view']),
                         self::link('attendance', 'Absensi', 'attendance.index', permissions: ['attendance.view']),
+                        self::link('attendance-settings', 'Setting Absensi', 'settings.attendance.index', permissions: ['setting.view']),
                         self::link('schedule', 'Jadwal', 'schedules.index', permissions: ['schedule.view']),
                         self::link('leave', 'Cuti', 'admin.leave-requests', permissions: ['leave.manage']),
                         self::link('kasbon', 'Kasbon', 'technicians.kasbon.index', roles: [Role::ADMIN, Role::FINANCE, Role::HRD_MANAGER]),
                         self::link('payslip', 'Slip Gaji', 'attendance.payslip', permissions: ['attendance.view']),
-                    ], permissions: ['employee.view', 'attendance.view', 'schedule.view', 'leave.manage']),
+                    ], permissions: ['employee.view', 'attendance.view', 'setting.view', 'schedule.view', 'leave.manage']),
                     self::group('asset', 'Asset', [
                         self::link('inventory', 'Inventory', 'inventory.index', permissions: ['inventory.view']),
                         self::link('my-assets', 'Aset Saya', 'inventory.my_assets', permissions: ['inventory.view']),
@@ -174,6 +175,7 @@ class SidebarMenu
                     self::group('bu-wedding', 'Wedding & Event', [
                         self::link('wedding-dashboard', 'Dashboard', 'wedding.dashboard', permissions: ['wedding.view']),
                         self::link('wedding-packages', 'Paket', 'wedding.packages.index', permissions: ['wedding.view']),
+                        self::link('wedding-gallery', 'Galeri Landing', 'wedding.gallery.index', permissions: ['wedding.view']),
                         self::link('wedding-bookings', 'Booking', 'wedding.bookings.index', permissions: ['wedding.booking']),
                         self::link('wedding-schedule', 'Jadwal Acara', 'wedding.schedule.index', permissions: ['wedding.view']),
                         self::link('wedding-payments', 'Pembayaran', 'wedding.payments.index', permissions: ['wedding.payment']),
@@ -241,6 +243,7 @@ class SidebarMenu
             'id' => $id,
             'label' => $label,
             'route' => $route,
+            'icon' => self::inferIcon($id, $label, $route, 'link'),
             'route_patterns' => $routePatterns,
             'permissions' => $permissions,
             'roles' => $roles,
@@ -253,9 +256,96 @@ class SidebarMenu
             'type' => 'group',
             'id' => $id,
             'label' => $label,
+            'icon' => self::inferIcon($id, $label, null, 'group'),
             'children' => $children,
             'permissions' => $permissions,
             'roles' => $roles,
         ];
+    }
+
+    private static function inferIcon(string $id, string $label, ?string $route = null, string $type = 'link'): string
+    {
+        $haystack = strtolower(trim($id.' '.$label.' '.($route ?? '')));
+
+        $map = [
+            'dashboard' => 'fa-solid fa-gauge-high',
+            'audit' => 'fa-solid fa-clipboard-list',
+            'report' => 'fa-solid fa-chart-column',
+            'customer' => 'fa-solid fa-users',
+            'pelanggan' => 'fa-solid fa-users',
+            'installation' => 'fa-solid fa-screwdriver-wrench',
+            'instalasi' => 'fa-solid fa-screwdriver-wrench',
+            'package' => 'fa-solid fa-box-open',
+            'paket' => 'fa-solid fa-box-open',
+            'pppoe' => 'fa-solid fa-network-wired',
+            'hotspot' => 'fa-solid fa-wifi',
+            'voucher' => 'fa-solid fa-ticket',
+            'monitor' => 'fa-solid fa-desktop',
+            'outage' => 'fa-solid fa-triangle-exclamation',
+            'incident' => 'fa-solid fa-bolt',
+            'diagnostic' => 'fa-solid fa-stethoscope',
+            'infra' => 'fa-solid fa-diagram-project',
+            'olt' => 'fa-solid fa-server',
+            'odc' => 'fa-solid fa-vector-square',
+            'odp' => 'fa-solid fa-map-location-dot',
+            'closure' => 'fa-solid fa-circle-nodes',
+            'router' => 'fa-solid fa-router',
+            'vpn' => 'fa-solid fa-shield-halved',
+            'ticket' => 'fa-solid fa-headset',
+            'sla' => 'fa-solid fa-stopwatch',
+            'whatsapp' => 'fa-brands fa-whatsapp',
+            'chat' => 'fa-solid fa-comments',
+            'ai' => 'fa-solid fa-robot',
+            'finance' => 'fa-solid fa-wallet',
+            'accounting' => 'fa-solid fa-calculator',
+            'investor' => 'fa-solid fa-hand-holding-dollar',
+            'employee' => 'fa-solid fa-id-card',
+            'karyawan' => 'fa-solid fa-id-card',
+            'attendance' => 'fa-solid fa-fingerprint',
+            'absensi' => 'fa-solid fa-fingerprint',
+            'schedule' => 'fa-solid fa-calendar-days',
+            'jadwal' => 'fa-solid fa-calendar-days',
+            'leave' => 'fa-solid fa-plane-departure',
+            'cuti' => 'fa-solid fa-plane-departure',
+            'inventory' => 'fa-solid fa-boxes-stacked',
+            'asset' => 'fa-solid fa-toolbox',
+            'atk' => 'fa-solid fa-pen-ruler',
+            'wash' => 'fa-solid fa-car-side',
+            'member' => 'fa-solid fa-id-badge',
+            'loyalty' => 'fa-solid fa-gift',
+            'reward' => 'fa-solid fa-award',
+            'wedding' => 'fa-solid fa-ring',
+            'gallery' => 'fa-solid fa-images',
+            'galeri' => 'fa-solid fa-images',
+            'booking' => 'fa-solid fa-calendar-check',
+            'payment' => 'fa-solid fa-money-check-dollar',
+            'pembayaran' => 'fa-solid fa-money-check-dollar',
+            'cctv' => 'fa-solid fa-video',
+            'survey' => 'fa-solid fa-clipboard-check',
+            'setting' => 'fa-solid fa-gear',
+            'settings' => 'fa-solid fa-gear',
+            'region' => 'fa-solid fa-map',
+            'wilayah' => 'fa-solid fa-map',
+            'coordinator' => 'fa-solid fa-user-tie',
+            'pengurus' => 'fa-solid fa-user-tie',
+            'user' => 'fa-solid fa-user',
+            'role' => 'fa-solid fa-user-shield',
+            'telegram' => 'fa-brands fa-telegram',
+            'api' => 'fa-solid fa-key',
+            'security' => 'fa-solid fa-lock',
+            'portal' => 'fa-solid fa-globe',
+            'invoice' => 'fa-solid fa-file-invoice-dollar',
+            'profil' => 'fa-solid fa-address-card',
+            'profile' => 'fa-solid fa-address-card',
+            'network' => 'fa-solid fa-signal',
+        ];
+
+        foreach ($map as $keyword => $icon) {
+            if (str_contains($haystack, $keyword)) {
+                return $icon;
+            }
+        }
+
+        return $type === 'group' ? 'fa-solid fa-folder-tree' : 'fa-regular fa-circle';
     }
 }

@@ -392,10 +392,13 @@
                 });
 
                 const data = await response.json();
-                document.getElementById(loadingId)?.remove();
-                addMessage((data.reply ?? data.response) || 'Maaf, saya tidak mengerti.', 'start');
+                const loadingNode = document.getElementById(loadingId);
+                if (loadingNode) loadingNode.remove();
+                const replyText = (data && (data.reply || data.response)) ? (data.reply || data.response) : 'Maaf, saya tidak mengerti.';
+                addMessage(replyText, 'start');
             } catch (error) {
-                document.getElementById(loadingId)?.remove();
+                const loadingNode = document.getElementById(loadingId);
+                if (loadingNode) loadingNode.remove();
                 addMessage('Maaf, terjadi kesalahan koneksi.', 'start');
             }
         }
@@ -444,7 +447,9 @@
                 navToggle.addEventListener('click', () => {
                     syncNavState(!navMenu.classList.contains('active'));
                 });
-                navClose?.addEventListener('click', () => syncNavState(false));
+                if (navClose) {
+                    navClose.addEventListener('click', () => syncNavState(false));
+                }
                 document.addEventListener('click', (e) => {
                     if (!navMenu.classList.contains('active')) return;
                     if (navMenu.contains(e.target) || navToggle.contains(e.target)) return;
@@ -486,8 +491,11 @@
                 const markers = [];
                 odps.forEach((odp) => {
                     if (odp.latitude && odp.longitude) {
+                        const availablePorts = (odp.available_ports !== null && odp.available_ports !== undefined)
+                            ? odp.available_ports
+                            : 'N/A';
                         const marker = L.marker([odp.latitude, odp.longitude])
-                            .bindPopup(`<b>${odp.name}</b><br>Status: ${odp.status}<br>Port Tersedia: ${odp.available_ports ?? 'N/A'}`);
+                            .bindPopup(`<b>${odp.name}</b><br>Status: ${odp.status}<br>Port Tersedia: ${availablePorts}`);
                         marker.addTo(map);
                         markers.push(marker);
                     }
@@ -523,15 +531,19 @@
             }
         });
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
 
-        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+            document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+        } else {
+            document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
+        }
 
         const themeToggle = document.getElementById('themeToggle');
         const currentLandingTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';

@@ -11,11 +11,16 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('wedding.packages.store') }}">
+            <form method="POST" action="{{ route('wedding.packages.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
                     <label class="form-label">Nama Paket</label>
                     <input name="name" class="form-control" value="{{ old('name') }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Gambar Paket (opsional)</label>
+                    <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Deskripsi</label>
@@ -49,4 +54,3 @@
     </div>
 </div>
 @endsection
-
