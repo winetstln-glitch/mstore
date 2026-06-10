@@ -178,12 +178,21 @@ class ModemDataController extends Controller
             ],
             [
                 'technician_id' => auth()->id(),
-                'status' => 'registered',
+                'status' => 'completed',
                 'plan_date' => now()->toDateString(),
                 'notes' => $installationNotes,
                 'coordinates' => $validated['coordinates'] ?? null,
             ]
         );
+
+        if ($installation->status !== 'completed' && $installation->status !== 'cancelled') {
+            $installation->update([
+                'technician_id' => $installation->technician_id ?? auth()->id(),
+                'status' => 'completed',
+                'coordinates' => $validated['coordinates'] ?? $installation->coordinates,
+            ]);
+        }
+
         $installationMessage = $installation->wasRecentlyCreated
             ? ' Installation baru dibuat (ID '.$installation->id.').'
             : ' Data instalasi sudah ada (ID '.$installation->id.').';
