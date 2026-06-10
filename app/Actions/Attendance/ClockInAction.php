@@ -86,8 +86,16 @@ class ClockInAction
             }
 
             $deviceFingerprint = $this->attendanceService->resolveAttendanceDeviceFingerprint($data['request']);
-            $enablePhoto = (bool) Setting::getValue('attendance_enable_photo', true);
+            $photoRequiredValue = Setting::getValue(
+                'attendance_photo_required',
+                Setting::getValue('attendance_enable_photo', '1')
+            );
+            $enablePhoto = in_array(strtolower((string) $photoRequiredValue), ['1', 'true', 'yes', 'on'], true);
             $photoClockIn = null;
+
+            if ($enablePhoto && (! isset($data['photo']) || ! $data['photo'] instanceof UploadedFile)) {
+                throw new \RuntimeException('Foto selfie wajib diunggah untuk absensi.');
+            }
 
             if ($enablePhoto && isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
                 $maxKb = $this->attendanceService->resolveAttendancePhotoMaxKb($user);

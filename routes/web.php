@@ -191,12 +191,16 @@ Route::post('/ai-public/chat', [\App\Http\Controllers\AiController::class, 'publ
     ->name('ai.public.chat');
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
-Route::post('/login', [LoginController::class, 'store']);
+Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
-Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendOtp'])->name('password.send_otp');
+Route::post('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'sendOtp'])
+    ->middleware('throttle:5,1')
+    ->name('password.send_otp');
 Route::get('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
-Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])->name('password.reset');
+Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::class, 'reset'])
+    ->middleware('throttle:5,1')
+    ->name('password.reset');
 
 Route::middleware('auth')->group(function () {
         Route::get('admin/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])

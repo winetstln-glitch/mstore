@@ -636,6 +636,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendanceOfficeLat = (float) Setting::getValue('attendance_office_lat', Setting::getValue('office_latitude', 0));
         $attendanceOfficeLng = (float) Setting::getValue('attendance_office_lng', Setting::getValue('office_longitude', 0));
         $attendanceRadius = (float) Setting::getValue('attendance_radius', Setting::getValue('attendance_max_distance_meters', 100));
+        $attendancePhotoRequired = $this->isAttendancePhotoRequired();
 
         return view('technicians.attendance.create', compact(
             'todayAttendance',
@@ -650,7 +651,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'monthAttendances',
             'attendanceOfficeLat',
             'attendanceOfficeLng',
-            'attendanceRadius'
+            'attendanceRadius',
+            'attendancePhotoRequired'
         ));
     }
 
@@ -872,13 +874,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
+            $photoRule = $this->isAttendancePhotoRequired() ? 'required' : 'nullable';
             $request->validate([
-                'photo' => 'nullable|image|max:'.$photoMaxKb,
+                'photo' => $photoRule.'|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
                 'device_fingerprint' => 'nullable|string|min:8|max:128',
             ], [
                 'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
+                'photo.required' => __('Foto selfie wajib diunggah untuk absensi.'),
             ]);
 
             if (! $request->latitude || ! $request->longitude) {
@@ -1028,13 +1032,15 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
+            $photoRule = $this->isAttendancePhotoRequired() ? 'required' : 'nullable';
             $request->validate([
-                'photo' => 'nullable|image|max:'.$photoMaxKb,
+                'photo' => $photoRule.'|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
                 'longitude' => 'nullable',
                 'device_fingerprint' => 'nullable|string|min:8|max:128',
             ], [
                 'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
+                'photo.required' => __('Foto selfie wajib diunggah untuk absensi.'),
             ]);
 
             // If GPS is missing, photo MUST be present as a fallback
@@ -1222,6 +1228,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         return $maxKb;
+    }
+
+    private function isAttendancePhotoRequired(): bool
+    {
+        $value = Setting::getValue(
+            'attendance_photo_required',
+            Setting::getValue('attendance_enable_photo', '1')
+        );
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
     }
 
     private function resolveAttendanceDeviceFingerprint(Request $request): string

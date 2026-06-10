@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Process\Process;
 
 class SettingController extends Controller implements HasMiddleware
 {
@@ -171,7 +172,12 @@ class SettingController extends Controller implements HasMiddleware
             'whatsapp_attendance_group_id' => 'nullable|string|max:255',
             'telegram_attendance_notification_enabled' => 'nullable|in:0,1',
             'telegram_attendance_group_id' => 'nullable|string|max:255',
+            'attendance_photo_required' => 'nullable|in:0,1',
         ]);
+
+        if (array_key_exists('attendance_photo_required', $data)) {
+            $data['attendance_enable_photo'] = $data['attendance_photo_required'];
+        }
 
         $existingSettings = Setting::query()
             ->whereIn('key', array_values($logoUploads))
@@ -302,16 +308,28 @@ class SettingController extends Controller implements HasMiddleware
             $filename = 'backup-'.date('Y-m-d-His').'.sql';
             $tempPath = storage_path('app/'.$filename);
 
-            $command = "mysqldump --host={$host} --port={$port} --user={$username}";
-            if ($password) {
-                $command .= " --password={$password}";
-            }
-            $command .= " --single-transaction --quick --lock-tables=false {$database} > {$tempPath}";
+            $arguments = array_values(array_filter([
+                'mysqldump',
+                "--host={$host}",
+                "--port={$port}",
+                "--user={$username}",
+                $password ? "--password={$password}" : null,
+                '--single-transaction',
+                '--quick',
+                '--lock-tables=false',
+                $database,
+            ], static fn ($value) => $value !== null && $value !== ''));
 
-            exec($command, $output, $exitCode);
+            $process = new Process($arguments);
+            $process->setTimeout(300);
+            $process->run();
 
-            if ($exitCode !== 0) {
+            if (! $process->isSuccessful()) {
                 return redirect()->back()->with('error', 'Backup MySQL gagal. Pastikan mysqldump tersedia di server.');
+            }
+
+            if (file_put_contents($tempPath, $process->getOutput()) === false) {
+                return redirect()->back()->with('error', 'File backup tidak dapat dibuat.');
             }
 
             if (! file_exists($tempPath)) {
@@ -1002,6 +1020,13 @@ class SettingController extends Controller implements HasMiddleware
                 'group' => 'attendance',
                 'type' => 'number',
                 'label' => 'Boleh Absen Masuk Lebih Awal (Menit)',
+            ],
+            [
+                'key' => 'attendance_photo_required',
+                'value' => '1',
+                'group' => 'attendance',
+                'type' => 'boolean',
+                'label' => 'Wajib Foto Selfie',
             ],
             [
                 'key' => 'attendance_photo_max_kb',

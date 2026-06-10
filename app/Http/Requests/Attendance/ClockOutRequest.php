@@ -15,9 +15,10 @@ class ClockOutRequest extends FormRequest
     public function rules(): array
     {
         $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
+        $photoRule = $this->isAttendancePhotoRequired() ? 'required' : 'nullable';
 
         return [
-            'photo' => 'nullable|image|max:' . $photoMaxKb,
+            'photo' => $photoRule.'|image|max:' . $photoMaxKb,
             'latitude' => 'nullable',
             'longitude' => 'nullable',
             'device_fingerprint' => 'nullable|string|min:8|max:128',
@@ -31,6 +32,7 @@ class ClockOutRequest extends FormRequest
 
         return [
             'photo.max' => __('Ukuran foto terlalu besar. Maksimal :max KB.', ['max' => $photoMaxKb]),
+            'photo.required' => __('Foto selfie wajib diunggah untuk absensi.'),
         ];
     }
 
@@ -42,6 +44,16 @@ class ClockOutRequest extends FormRequest
             : 'attendance_photo_max_kb';
 
         return (int) Setting::getValue($settingKey, 2048);
+    }
+
+    private function isAttendancePhotoRequired(): bool
+    {
+        $value = Setting::getValue(
+            'attendance_photo_required',
+            Setting::getValue('attendance_enable_photo', '1')
+        );
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
     }
 
     private function resolveUserGroup($user): string

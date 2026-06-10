@@ -7,6 +7,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\MixRadiusService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use Tests\TestCase;
@@ -166,5 +168,17 @@ class LoginUsernameOnlyTest extends TestCase
         $customer->refresh();
         $this->assertNotNull($customer->user_id);
         $this->assertSame('customer', auth()->user()->role?->name);
+    }
+
+    public function test_public_auth_and_password_reset_routes_are_throttled(): void
+    {
+        $routes = Route::getRoutes();
+        $loginMiddleware = $routes->match(Request::create('/login', 'POST'))->gatherMiddleware();
+        $forgotMiddleware = $routes->match(Request::create('/forgot-password', 'POST'))->gatherMiddleware();
+        $resetMiddleware = $routes->match(Request::create('/reset-password', 'POST'))->gatherMiddleware();
+
+        $this->assertContains('throttle:10,1', $loginMiddleware);
+        $this->assertContains('throttle:5,1', $forgotMiddleware);
+        $this->assertContains('throttle:5,1', $resetMiddleware);
     }
 }

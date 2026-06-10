@@ -132,4 +132,26 @@ class AttendanceSettingsTest extends TestCase
             $service->determineClockInStatus('08:00', '10:00', Carbon::parse('2026-06-10 10:01:00', 'Asia/Jakarta'))
         );
     }
+
+    public function test_attendance_photo_setting_is_synced_to_runtime_key()
+    {
+        $response = $this->actingAs($this->admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('settings.update'), [
+                'attendance_photo_required' => '0',
+            ], ['X-CSRF-TOKEN' => 'test-token']);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'attendance_photo_required',
+            'value' => '0',
+        ]);
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'attendance_enable_photo',
+            'value' => '0',
+        ]);
+    }
 }

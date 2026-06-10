@@ -422,7 +422,9 @@
                             <label class="modern-camera-box shadow-sm" id="upload-area">
                                 <div id="upload-placeholder" class="d-flex flex-column align-items-center justify-content-center h-100">
                                     <i class="fa-solid fa-camera fs-2 text-muted mb-1"></i>
-                                    <span class="text-muted x-small fw-bold">{{ __('Selfie (Opsional)') }}</span>
+                                    <span class="text-muted x-small fw-bold">
+                                        {{ $attendancePhotoRequired ? __('Selfie (Wajib)') : __('Selfie (Opsional)') }}
+                                    </span>
                                 </div>
                                 <img id="image-preview" class="modern-preview-img" src="#">
                                 <input type="file" name="photo" id="photo" accept="image/*" capture="user" class="d-none">
