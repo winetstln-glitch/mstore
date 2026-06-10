@@ -28,6 +28,7 @@ class MstoreHealthCheckCommand extends Command
             $this->checkRedis(),
             $this->checkQueue(),
             $this->checkSchedulerHeartbeat(),
+            $this->checkLogRetention(),
             $this->checkStorage(),
             $this->checkMail(),
             $this->checkWhatsAppGateway(),
@@ -61,6 +62,36 @@ class MstoreHealthCheckCommand extends Command
         $this->info('Status akhir: '.$final);
 
         return $hasCritical ? 2 : ($hasWarning ? 1 : 0);
+    }
+
+    private function checkLogRetention(): array
+    {
+        $configured = config('log_retention') !== null;
+        if (! $configured) {
+            return ['name' => 'Log Retention', 'status' => 'warning', 'message' => 'config/log_retention.php tidak terdeteksi'];
+        }
+
+        try {
+            $lastRun = Cache::get('mstore.log_retention.last_run');
+            if (! is_array($lastRun)) {
+                return ['name' => 'Log Retention', 'status' => 'warning', 'message' => 'Belum ada last_run (jalankan logs:prune-sensitive)'];
+            }
+
+            $finishedAt = $lastRun['finished_at'] ?? null;
+            $finished = $finishedAt ? Carbon::parse($finishedAt) : null;
+            if (! $finished) {
+                return ['name' => 'Log Retention', 'status' => 'warning', 'message' => 'last_run invalid'];
+            }
+
+            $ageHours = $finished->diffInHours(now());
+            $status = $ageHours <= 36 ? 'ok' : 'warning';
+            $msg = 'Last run '.$finished->toDateTimeString().' ('.$ageHours.'h lalu)';
+            $msg .= isset($lastRun['duration_ms']) ? ' | '.$lastRun['duration_ms'].'ms' : '';
+
+            return ['name' => 'Log Retention', 'status' => $status, 'message' => $msg];
+        } catch (\Throwable $e) {
+            return ['name' => 'Log Retention', 'status' => 'warning', 'message' => $e->getMessage()];
+        }
     }
 
     private function checkDatabase(): array
@@ -265,4 +296,3 @@ class MstoreHealthCheckCommand extends Command
         return ['name' => 'Telegram', 'status' => 'ok', 'message' => 'configured'];
     }
 }
-

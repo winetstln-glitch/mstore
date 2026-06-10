@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class PruneSensitiveLogsCommand extends Command
@@ -15,6 +16,7 @@ class PruneSensitiveLogsCommand extends Command
     public function handle(ConnectionInterface $db): int
     {
         $startedAt = microtime(true);
+        $startedAtIso = now()->toIso8601String();
 
         $dryRun = (bool) $this->option('dry-run');
         $stats = [
@@ -79,12 +81,18 @@ class PruneSensitiveLogsCommand extends Command
         }
 
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-        Log::info('Log retention finished', array_merge($stats, [
+        $summary = array_merge($stats, [
             'dry_run' => $dryRun,
             'duration_ms' => $durationMs,
-        ]));
+            'started_at' => $startedAtIso,
+            'finished_at' => now()->toIso8601String(),
+        ]);
 
-        $this->line(json_encode(array_merge($stats, ['dry_run' => $dryRun, 'duration_ms' => $durationMs]), JSON_PRETTY_PRINT));
+        Log::info('Log retention finished', $summary);
+
+        Cache::put('mstore.log_retention.last_run', $summary, now()->addDays(8));
+
+        $this->line(json_encode($summary, JSON_PRETTY_PRINT));
 
         return $hasError ? 1 : 0;
     }
@@ -144,4 +152,3 @@ class PruneSensitiveLogsCommand extends Command
         return $total;
     }
 }
-
