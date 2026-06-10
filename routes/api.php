@@ -10,13 +10,13 @@ use App\Http\Controllers\Api\VpnController;
 use App\Http\Controllers\Api\OLTController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/payment/create', [HotspotPortalController::class, 'createPayment']);
-Route::get('/payment/status', [HotspotPortalController::class, 'paymentStatus']);
-Route::get('/voucher/status', [HotspotPortalController::class, 'voucherStatus']);
-Route::get('/billing/monthly', [HotspotPortalController::class, 'billingMonthly']);
-Route::get('/products/ads', [HotspotPortalController::class, 'productAds']);
-Route::get('/hotspot/health', [HotspotPortalController::class, 'health']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/payment/create', [HotspotPortalController::class, 'createPayment'])->middleware('throttle:10,1');
+Route::get('/payment/status', [HotspotPortalController::class, 'paymentStatus'])->middleware('throttle:30,1');
+Route::get('/voucher/status', [HotspotPortalController::class, 'voucherStatus'])->middleware('throttle:30,1');
+Route::get('/billing/monthly', [HotspotPortalController::class, 'billingMonthly'])->middleware('throttle:30,1');
+Route::get('/products/ads', [HotspotPortalController::class, 'productAds'])->middleware('throttle:60,1');
+Route::get('/hotspot/health', [HotspotPortalController::class, 'health'])->middleware('throttle:60,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -39,10 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // External Integration API (Protected by API Key in query param)
-Route::get('/integration', [\App\Http\Controllers\Api\IntegrationController::class, 'handle']);
+Route::get('/integration', [\App\Http\Controllers\Api\IntegrationController::class, 'handle'])->middleware('throttle:30,1');
 
-Route::match(['GET', 'POST'], '/vpn/report-ip', [VpnController::class, 'reportIp'])->name('api.vpn.report-ip');
-Route::prefix('v1')->group(function () {
+Route::match(['GET', 'POST'], '/vpn/report-ip', [VpnController::class, 'reportIp'])
+    ->middleware('throttle:60,1')
+    ->name('api.vpn.report-ip');
+
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     // Dashboard
     Route::get('dashboard', [OLTController::class, 'dashboard']);
     
@@ -60,5 +63,7 @@ Route::prefix('v1')->group(function () {
 
 // WhatsApp Webhook
 Route::prefix('whatsapp')->group(function () {
-    Route::match(['GET', 'POST'], '/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->name('api.whatsapp.webhook');
+    Route::match(['GET', 'POST'], '/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])
+        ->middleware('throttle:120,1')
+        ->name('api.whatsapp.webhook');
 });

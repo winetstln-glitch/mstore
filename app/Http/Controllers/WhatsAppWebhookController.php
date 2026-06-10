@@ -39,22 +39,30 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        // Handle WhatsApp webhook verification (GET request)
         if ($request->isMethod('GET')) {
             $verifyToken = config('services.whatsapp.verify_token');
-            
-            // Cek berbagai format verifikasi
             $receivedToken = $request->input('hub.verify_token') ?? $request->input('verify_token');
             $challenge = $request->input('hub.challenge') ?? $request->input('challenge');
-            
-            // Skip verification entirely for GET requests too
-            return response($challenge ?? 'OK', 200);
+
+            if (is_string($verifyToken) && $verifyToken !== '') {
+                if (! is_string($receivedToken) || $receivedToken === '' || ! hash_equals($verifyToken, $receivedToken)) {
+                    return response('Invalid verify token', 403);
+                }
+            }
+
+            return response((string) ($challenge ?? 'OK'), 200);
         }
 
-        // NO VERIFICATION FOR POST REQUESTS - accept all webhook payloads
+        if (! $this->isValidWebhookRequest($request)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $payload = null;
         try {
             $payload = $request->all();
-            Log::info('WhatsApp Webhook Received', $payload);
+            Log::info('WhatsApp Webhook Received', [
+                'keys' => array_slice(array_keys($payload), 0, 20),
+            ]);
 
             // Try to extract message from different provider formats (Fonnte, Wablas, etc.)
             $messageData = $this->extractMessage($payload);
@@ -84,11 +92,48 @@ class WhatsAppWebhookController extends Controller
             
             // Log error to WhatsAppLog
             if (isset($phone)) {
-                WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload, $e->getMessage());
+                WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload ?? [], $e->getMessage());
             }
             
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+
+    private function isValidWebhookRequest(Request $request): bool
+    {
+        $secret = config('services.whatsapp.secret');
+        if (! is_string($secret) || trim($secret) === '') {
+            return true;
+        }
+
+        $secret = trim($secret);
+
+        $signature256 = $request->header('X-Hub-Signature-256');
+        if (is_string($signature256) && $signature256 !== '') {
+            $rawBody = (string) $request->getContent();
+            $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $secret);
+            return hash_equals($expected, $signature256);
+        }
+
+        $authorization = $request->header('Authorization');
+        if (is_string($authorization) && $authorization !== '') {
+            if (str_starts_with($authorization, 'Bearer ')) {
+                $token = substr($authorization, strlen('Bearer '));
+                return is_string($token) && $token !== '' && hash_equals($secret, $token);
+            }
+        }
+
+        $headerSecret = $request->header('X-Webhook-Secret') ?? $request->header('X-Webhook-Token');
+        if (is_string($headerSecret) && $headerSecret !== '') {
+            return hash_equals($secret, $headerSecret);
+        }
+
+        $querySecret = $request->query('secret');
+        if (is_string($querySecret) && $querySecret !== '') {
+            return hash_equals($secret, $querySecret);
+        }
+
+        return false;
     }
 
     /**

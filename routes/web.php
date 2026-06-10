@@ -184,7 +184,9 @@ Route::post('/leads', [LandingController::class, 'storeLead'])
     ->name('landing.leads.store');
 
 Route::get('/customers/register', [CustomerPublicRegisterController::class, 'create'])->name('customers.public.register.create');
-Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])->name('customers.public.register.store');
+Route::post('/customers/register', [CustomerPublicRegisterController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('customers.public.register.store');
 
 Route::post('/ai-public/chat', [\App\Http\Controllers\AiController::class, 'publicChat'])
     ->middleware('throttle:30,1')
