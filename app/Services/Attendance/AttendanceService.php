@@ -105,6 +105,11 @@ class AttendanceService
         $clockInStartMinutes = $this->timeToMinutes($clockInStart, 8 * 60);
         $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
         $lateThreshold = min((23 * 60) + 59, $clockInStartMinutes + $lateTolerance);
+        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
+
+        if ($currentMinutes > $cutoffMinutes) {
+            return 'alpha';
+        }
 
         return $currentMinutes > $lateThreshold ? 'late' : 'present';
     }

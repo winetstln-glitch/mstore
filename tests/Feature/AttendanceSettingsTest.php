@@ -6,6 +6,8 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Attendance\AttendanceService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -104,5 +106,30 @@ class AttendanceSettingsTest extends TestCase
             'key' => 'attendance_radius',
             'value' => '200',
         ]);
+    }
+
+    public function test_late_tolerance_is_applied_before_late_and_cutoff_marks_alpha()
+    {
+        Setting::updateOrCreate(
+            ['key' => 'attendance_late_tolerance'],
+            ['value' => '15', 'group' => 'attendance', 'type' => 'number', 'label' => 'Toleransi Terlambat']
+        );
+
+        $service = app(AttendanceService::class);
+
+        $this->assertSame(
+            'present',
+            $service->determineClockInStatus('08:00', '10:00', Carbon::parse('2026-06-10 08:15:00', 'Asia/Jakarta'))
+        );
+
+        $this->assertSame(
+            'late',
+            $service->determineClockInStatus('08:00', '10:00', Carbon::parse('2026-06-10 08:16:00', 'Asia/Jakarta'))
+        );
+
+        $this->assertSame(
+            'alpha',
+            $service->determineClockInStatus('08:00', '10:00', Carbon::parse('2026-06-10 10:01:00', 'Asia/Jakarta'))
+        );
     }
 }
