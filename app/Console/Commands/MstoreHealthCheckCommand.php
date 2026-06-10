@@ -84,7 +84,8 @@ class MstoreHealthCheckCommand extends Command
             }
 
             $ageHours = $finished->diffInHours(now());
-            $status = $ageHours <= 36 ? 'ok' : 'warning';
+            $maxAgeHours = (int) config('log_retention.healthcheck.max_age_hours', 36);
+            $status = $ageHours <= $maxAgeHours ? 'ok' : 'warning';
             $msg = 'Last run '.$finished->toDateTimeString().' ('.$ageHours.'h lalu)';
             $msg .= isset($lastRun['duration_ms']) ? ' | '.$lastRun['duration_ms'].'ms' : '';
 

@@ -10,20 +10,24 @@ use Illuminate\Support\Facades\Log;
 
 class PruneSensitiveLogsCommand extends Command
 {
-    protected $signature = 'logs:prune-sensitive {--dry-run}';
+    protected $signature = 'logs:prune-sensitive {--dry-run} {--max-runtime=} {--sleep-ms=} {--max-batches=}';
     protected $description = 'Prune WhatsApp & Notification logs dengan batch aman dan monitoring';
 
     public function handle(ConnectionInterface $db): int
     {
-        $startedAt = microtime(true);
+        $processStartedAt = microtime(true);
         $startedAtIso = now()->toIso8601String();
 
         $dryRun = (bool) $this->option('dry-run');
         $stats = [
             'whatsapp_payload_cleared' => 0,
+            'whatsapp_payload_batches' => 0,
             'whatsapp_deleted' => 0,
+            'whatsapp_deleted_batches' => 0,
             'notification_response_cleared' => 0,
+            'notification_response_batches' => 0,
             'notification_deleted' => 0,
+            'notification_deleted_batches' => 0,
         ];
         $hasError = false;
 
@@ -31,15 +35,22 @@ class PruneSensitiveLogsCommand extends Command
             $waPayloadDays = (int) config('log_retention.whatsapp.payload_null_after_days', 7);
             $waDeleteDays = (int) config('log_retention.whatsapp.delete_after_days', 90);
             $waBatch = max(1, (int) config('log_retention.whatsapp.batch_size', 1000));
+            $waMaxBatches = $this->resolveMaxBatchesForSection((int) config('log_retention.whatsapp.max_batches', 0));
 
             $notifResponseDays = (int) config('log_retention.notification.response_null_after_days', 7);
             $notifDeleteDays = (int) config('log_retention.notification.delete_after_days', 180);
             $notifBatch = max(1, (int) config('log_retention.notification.batch_size', 1000));
+            $notifMaxBatches = $this->resolveMaxBatchesForSection((int) config('log_retention.notification.max_batches', 0));
+
+            $maxRuntimeSeconds = $this->resolvePositiveIntOption('max-runtime', (int) config('log_retention.limits.max_runtime_seconds', 900));
+            $sleepMs = $this->resolveNonNegativeIntOption('sleep-ms', (int) config('log_retention.limits.sleep_ms_between_batches', 25));
 
             if ($waPayloadDays > 0) {
                 try {
                     $cutoff = now()->subDays($waPayloadDays);
-                    $stats['whatsapp_payload_cleared'] = $this->nullColumnInBatches($db, 'whatsapp_logs', 'payload', $cutoff, $waBatch, $dryRun);
+                    $result = $this->nullColumnInBatches($db, 'whatsapp_logs', 'payload', $cutoff, $waBatch, $waMaxBatches, $sleepMs, $dryRun, $processStartedAt, $maxRuntimeSeconds);
+                    $stats['whatsapp_payload_cleared'] = $result['rows'];
+                    $stats['whatsapp_payload_batches'] = $result['batches'];
                 } catch (\Throwable $e) {
                     $hasError = true;
                     Log::error('Failed pruning whatsapp_logs.payload', ['error' => $e->getMessage(), 'exception' => $e]);
@@ -49,7 +60,9 @@ class PruneSensitiveLogsCommand extends Command
             if ($waDeleteDays > 0) {
                 try {
                     $cutoff = now()->subDays($waDeleteDays);
-                    $stats['whatsapp_deleted'] = $this->deleteInBatches($db, 'whatsapp_logs', $cutoff, $waBatch, $dryRun);
+                    $result = $this->deleteInBatches($db, 'whatsapp_logs', $cutoff, $waBatch, $waMaxBatches, $sleepMs, $dryRun, $processStartedAt, $maxRuntimeSeconds);
+                    $stats['whatsapp_deleted'] = $result['rows'];
+                    $stats['whatsapp_deleted_batches'] = $result['batches'];
                 } catch (\Throwable $e) {
                     $hasError = true;
                     Log::error('Failed deleting whatsapp_logs', ['error' => $e->getMessage(), 'exception' => $e]);
@@ -59,7 +72,9 @@ class PruneSensitiveLogsCommand extends Command
             if ($notifResponseDays > 0) {
                 try {
                     $cutoff = now()->subDays($notifResponseDays);
-                    $stats['notification_response_cleared'] = $this->nullColumnInBatches($db, 'notification_logs', 'response', $cutoff, $notifBatch, $dryRun);
+                    $result = $this->nullColumnInBatches($db, 'notification_logs', 'response', $cutoff, $notifBatch, $notifMaxBatches, $sleepMs, $dryRun, $processStartedAt, $maxRuntimeSeconds);
+                    $stats['notification_response_cleared'] = $result['rows'];
+                    $stats['notification_response_batches'] = $result['batches'];
                 } catch (\Throwable $e) {
                     $hasError = true;
                     Log::error('Failed pruning notification_logs.response', ['error' => $e->getMessage(), 'exception' => $e]);
@@ -69,7 +84,9 @@ class PruneSensitiveLogsCommand extends Command
             if ($notifDeleteDays > 0) {
                 try {
                     $cutoff = now()->subDays($notifDeleteDays);
-                    $stats['notification_deleted'] = $this->deleteInBatches($db, 'notification_logs', $cutoff, $notifBatch, $dryRun);
+                    $result = $this->deleteInBatches($db, 'notification_logs', $cutoff, $notifBatch, $notifMaxBatches, $sleepMs, $dryRun, $processStartedAt, $maxRuntimeSeconds);
+                    $stats['notification_deleted'] = $result['rows'];
+                    $stats['notification_deleted_batches'] = $result['batches'];
                 } catch (\Throwable $e) {
                     $hasError = true;
                     Log::error('Failed deleting notification_logs', ['error' => $e->getMessage(), 'exception' => $e]);
@@ -80,7 +97,7 @@ class PruneSensitiveLogsCommand extends Command
             Log::error('Retention command crashed', ['error' => $e->getMessage(), 'exception' => $e]);
         }
 
-        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+        $durationMs = (int) round((microtime(true) - $processStartedAt) * 1000);
         $summary = array_merge($stats, [
             'dry_run' => $dryRun,
             'duration_ms' => $durationMs,
@@ -97,15 +114,36 @@ class PruneSensitiveLogsCommand extends Command
         return $hasError ? 1 : 0;
     }
 
-    private function nullColumnInBatches(ConnectionInterface $db, string $table, string $column, Carbon $cutoff, int $batchSize, bool $dryRun): int
+    private function nullColumnInBatches(
+        ConnectionInterface $db,
+        string $table,
+        string $column,
+        Carbon $cutoff,
+        int $batchSize,
+        int $maxBatches,
+        int $sleepMs,
+        bool $dryRun,
+        float $processStartedAt,
+        int $maxRuntimeSeconds
+    ): array
     {
         $total = 0;
+        $batches = 0;
 
         while (true) {
+            if ($maxBatches > 0 && $batches >= $maxBatches) {
+                break;
+            }
+
+            if ($maxRuntimeSeconds > 0 && (microtime(true) - $processStartedAt) >= $maxRuntimeSeconds) {
+                break;
+            }
+
             $ids = $db->table($table)
                 ->select('id')
                 ->whereNotNull($column)
                 ->where('created_at', '<', $cutoff)
+                ->orderBy('created_at')
                 ->orderBy('id')
                 ->limit($batchSize)
                 ->pluck('id')
@@ -120,19 +158,44 @@ class PruneSensitiveLogsCommand extends Command
             }
 
             $total += count($ids);
+            $batches++;
+
+            if ($sleepMs > 0) {
+                usleep($sleepMs * 1000);
+            }
         }
 
-        return $total;
+        return ['rows' => $total, 'batches' => $batches];
     }
 
-    private function deleteInBatches(ConnectionInterface $db, string $table, Carbon $cutoff, int $batchSize, bool $dryRun): int
+    private function deleteInBatches(
+        ConnectionInterface $db,
+        string $table,
+        Carbon $cutoff,
+        int $batchSize,
+        int $maxBatches,
+        int $sleepMs,
+        bool $dryRun,
+        float $processStartedAt,
+        int $maxRuntimeSeconds
+    ): array
     {
         $total = 0;
+        $batches = 0;
 
         while (true) {
+            if ($maxBatches > 0 && $batches >= $maxBatches) {
+                break;
+            }
+
+            if ($maxRuntimeSeconds > 0 && (microtime(true) - $processStartedAt) >= $maxRuntimeSeconds) {
+                break;
+            }
+
             $ids = $db->table($table)
                 ->select('id')
                 ->where('created_at', '<', $cutoff)
+                ->orderBy('created_at')
                 ->orderBy('id')
                 ->limit($batchSize)
                 ->pluck('id')
@@ -147,8 +210,49 @@ class PruneSensitiveLogsCommand extends Command
             }
 
             $total += count($ids);
+            $batches++;
+
+            if ($sleepMs > 0) {
+                usleep($sleepMs * 1000);
+            }
         }
 
-        return $total;
+        return ['rows' => $total, 'batches' => $batches];
+    }
+
+    private function resolveMaxBatchesForSection(int $sectionMaxBatches): int
+    {
+        $cli = $this->resolveNonNegativeIntOption('max-batches', null);
+        if ($cli !== null) {
+            return $cli;
+        }
+
+        if ($sectionMaxBatches > 0) {
+            return $sectionMaxBatches;
+        }
+
+        return max(0, (int) config('log_retention.limits.max_batches_per_section', 0));
+    }
+
+    private function resolvePositiveIntOption(string $name, ?int $fallback): int
+    {
+        $value = $this->option($name);
+        if ($value === null || $value === '') {
+            return max(0, (int) ($fallback ?? 0));
+        }
+
+        $int = (int) $value;
+        return $int > 0 ? $int : max(0, (int) ($fallback ?? 0));
+    }
+
+    private function resolveNonNegativeIntOption(string $name, ?int $fallback): ?int
+    {
+        $value = $this->option($name);
+        if ($value === null || $value === '') {
+            return $fallback;
+        }
+
+        $int = (int) $value;
+        return $int >= 0 ? $int : $fallback;
     }
 }
