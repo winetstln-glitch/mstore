@@ -26,7 +26,7 @@ class ProcessIncomingWebhookJob implements ShouldQueue
             $action->execute($this->payload);
         } catch (\Throwable $e) {
             Log::error('Error processing WhatsApp webhook', [
-                'payload' => $this->payload,
+                'keys' => array_slice(array_keys($this->payload), 0, 25),
                 'error' => $e->getMessage(),
             ]);
         }

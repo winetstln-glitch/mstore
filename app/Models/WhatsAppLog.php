@@ -23,6 +23,22 @@ class WhatsAppLog extends Model
         'payload' => 'array',
     ];
 
+    protected function phoneMasked(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $p = preg_replace('/\s+/', '', (string) ($this->phone_number ?? ''));
+                if ($p === '') {
+                    return '';
+                }
+                if (strlen($p) <= 4) {
+                    return str_repeat('*', strlen($p));
+                }
+                return str_repeat('*', max(0, strlen($p) - 4)) . substr($p, -4);
+            }
+        );
+    }
+
     // Scope for incoming messages
     public function scopeIncoming($query)
     {
@@ -44,6 +60,12 @@ class WhatsAppLog extends Model
     // Helper method to create log
     public static function logMessage($type, $phoneNumber, $message, $status = 'pending', $payload = null, $errorMessage = null)
     {
+        if (is_array($payload) && ! app()->environment('local')) {
+            $payload = [
+                'keys' => array_slice(array_keys($payload), 0, 50),
+            ];
+        }
+
         return self::create([
             'type' => $type ?? 'unknown',
             'phone_number' => $phoneNumber ?? 'unknown',

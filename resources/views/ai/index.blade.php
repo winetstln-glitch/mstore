@@ -346,6 +346,60 @@
         scrollToBottom();
     }
 
+    function sanitizeAiHtml(input) {
+        const html = String(input ?? '');
+        const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'BR', 'UL', 'OL', 'LI', 'SMALL', 'A']);
+        const template = document.createElement('template');
+        template.innerHTML = html;
+
+        const walk = (node) => {
+            const children = Array.from(node.childNodes);
+            children.forEach((child) => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const tag = child.tagName;
+                    if (!allowedTags.has(tag)) {
+                        const text = document.createTextNode(child.textContent || '');
+                        child.replaceWith(text);
+                        return;
+                    }
+
+                    Array.from(child.attributes).forEach((attr) => {
+                        const name = attr.name.toLowerCase();
+                        if (tag === 'A' && (name === 'href' || name === 'target' || name === 'rel')) {
+                            return;
+                        }
+                        child.removeAttribute(attr.name);
+                    });
+
+                    if (tag === 'A') {
+                        const href = (child.getAttribute('href') || '').trim();
+                        const safe = /^https?:\/\//i.test(href) || href.startsWith('/') || href.startsWith('#');
+                        if (!safe) {
+                            child.removeAttribute('href');
+                        }
+                        if ((child.getAttribute('target') || '').trim() === '_blank') {
+                            const existingRel = (child.getAttribute('rel') || '').trim();
+                            const relParts = existingRel.length ? existingRel.split(/\s+/) : [];
+                            if (!relParts.includes('noopener')) relParts.push('noopener');
+                            if (!relParts.includes('noreferrer')) relParts.push('noreferrer');
+                            child.setAttribute('rel', relParts.join(' ').trim());
+                        } else {
+                            child.removeAttribute('target');
+                            child.removeAttribute('rel');
+                        }
+                    }
+
+                    walk(child);
+                } else if (child.nodeType === Node.COMMENT_NODE) {
+                    child.remove();
+                }
+            });
+        };
+
+        walk(template.content);
+        return template.innerHTML;
+    }
+
     function appendMessage(sender, messageData) {
         const container = document.getElementById('chat-messages');
         const isUser = sender === 'user';
@@ -355,45 +409,58 @@
         const radiusStyle = isUser ? 'border-bottom-right-radius: 0;' : 'border-bottom-left-radius: 0;';
         const name = isUser ? 'Anda' : 'Asisten AI';
 
-        let contentHtml = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = `d-flex flex-column ${wrapperClass} mb-3`;
 
-        if (typeof messageData === 'object' && messageData !== null && messageData.type === 'list') {
-            // Render List
-            contentHtml += `<h6 class="mb-2 fw-bold border-bottom pb-1">${messageData.title}</h6>`;
-            contentHtml += '<ul class="mb-0 ps-3 small">';
-            messageData.items.forEach(item => {
-                contentHtml += `<li>${item}</li>`;
+        const bubble = document.createElement('div');
+        bubble.className = `${bgClass} p-3 rounded shadow-sm`;
+        bubble.style.maxWidth = '85%';
+        bubble.style.cssText += radiusStyle;
+
+        if (isUser) {
+            bubble.textContent = String(messageData ?? '');
+        } else if (typeof messageData === 'object' && messageData !== null && messageData.type === 'list') {
+            const title = document.createElement('h6');
+            title.className = 'mb-2 fw-bold border-bottom pb-1';
+            title.textContent = String(messageData.title ?? '');
+            bubble.appendChild(title);
+
+            const ul = document.createElement('ul');
+            ul.className = 'mb-0 ps-3 small';
+            (messageData.items || []).forEach((item) => {
+                const li = document.createElement('li');
+                li.innerHTML = sanitizeAiHtml(item);
+                ul.appendChild(li);
             });
-            contentHtml += '</ul>';
+            bubble.appendChild(ul);
         } else {
-            // Render Text
-            contentHtml = messageData;
+            bubble.innerHTML = sanitizeAiHtml(messageData);
         }
 
-        const html = `
-            <div class="d-flex flex-column ${wrapperClass} mb-3">
-                <div class="${bgClass} p-3 rounded shadow-sm" style="max-width: 85%; ${radiusStyle}">
-                    ${contentHtml}
-                </div>
-                <small class="text-muted mt-1 mx-1" style="font-size: 0.7rem;">${name}</small>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', html);
+        const small = document.createElement('small');
+        small.className = 'text-muted mt-1 mx-1';
+        small.style.fontSize = '0.7rem';
+        small.textContent = name;
+
+        wrapper.appendChild(bubble);
+        wrapper.appendChild(small);
+        container.appendChild(wrapper);
     }
 
     function appendTyping(id) {
         const container = document.getElementById('chat-messages');
-        const html = `
-            <div id="${id}" class="d-flex flex-column align-items-start mb-3">
-                <div class="bg-white p-3 rounded shadow-sm text-muted fst-italic" style="max-width: 85%; border-bottom-left-radius: 0;">
-                    <i class="fa-solid fa-circle fa-xs fa-bounce me-1"></i>
-                    <i class="fa-solid fa-circle fa-xs fa-bounce me-1" style="animation-delay: 0.1s"></i>
-                    <i class="fa-solid fa-circle fa-xs fa-bounce" style="animation-delay: 0.2s"></i>
-                </div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
+        const wrapper = document.createElement('div');
+        wrapper.id = id;
+        wrapper.className = 'd-flex flex-column align-items-start mb-3';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bg-white p-3 rounded shadow-sm text-muted fst-italic';
+        bubble.style.maxWidth = '85%';
+        bubble.style.borderBottomLeftRadius = '0';
+        bubble.innerHTML = '<i class="fa-solid fa-circle fa-xs fa-bounce me-1"></i><i class="fa-solid fa-circle fa-xs fa-bounce me-1" style="animation-delay: 0.1s"></i><i class="fa-solid fa-circle fa-xs fa-bounce" style="animation-delay: 0.2s"></i>';
+
+        wrapper.appendChild(bubble);
+        container.appendChild(wrapper);
     }
 
     function removeMessage(id) {

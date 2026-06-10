@@ -77,4 +77,9 @@ class PaymentTransaction extends Model
     {
         $this->update(['status' => 'failed']);
     }
+
+    public function markAsExpired(): void
+    {
+        $this->update(['status' => 'expired']);
+    }
 }

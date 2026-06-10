@@ -33,7 +33,9 @@ class HandleIncomingMessageAction
         $extracted = $this->extractMessage($data);
 
         if (!$extracted) {
-            Log::warning('Could not extract message from webhook payload', ['payload' => $data]);
+            Log::warning('Could not extract message from webhook payload', [
+                'keys' => array_slice(array_keys($data), 0, 25),
+            ]);
             return;
         }
 
@@ -48,8 +50,7 @@ class HandleIncomingMessageAction
         ]);
 
         Log::info('Received WhatsApp message', [
-            'from' => $from,
-            'message' => $message,
+            'from' => $this->maskPhone($from),
             'has_media' => !empty($mediaUrl),
             'media_type' => $mediaType,
         ]);
@@ -215,5 +216,17 @@ class HandleIncomingMessageAction
             'media_type' => $mediaType,
             'media_url' => $mediaUrl,
         ];
+    }
+
+    private function maskPhone(?string $phone): string
+    {
+        $p = preg_replace('/\s+/', '', (string) $phone);
+        if ($p === '') {
+            return '';
+        }
+        if (strlen($p) <= 4) {
+            return str_repeat('*', strlen($p));
+        }
+        return str_repeat('*', max(0, strlen($p) - 4)) . substr($p, -4);
     }
 }

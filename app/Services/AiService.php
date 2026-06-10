@@ -138,16 +138,18 @@ class AiService
 
         if (str_contains($message, 'network') || str_contains($message, 'jaringan')) {
             $data = $this->getNetworkInsights();
-            $online = $data['devices_online'];
-            $total = $data['devices_total'];
-            $offline = $data['devices_offline'];
-            $cpu = $data['router_cpu'] !== null ? $data['router_cpu'].'%' : 'N/A';
-            $pppoe = $data['active_pppoe'] !== null ? $data['active_pppoe'] : 'N/A';
+            $online = e($data['devices_online']);
+            $total = e($data['devices_total']);
+            $offline = e($data['devices_offline']);
+            $cpu = $data['router_cpu'] !== null ? e($data['router_cpu']).'%' : 'N/A';
+            $pppoe = $data['active_pppoe'] !== null ? e($data['active_pppoe']) : 'N/A';
+            $status = e($data['status']);
+            $messageText = e($data['message']);
 
-            return "<b>Status Jaringan: {$data['status']}</b><br>"
+            return "<b>Status Jaringan: {$status}</b><br>"
                  ."Perangkat Online: {$online}/{$total} | Offline: {$offline}<br>"
                  ."Router CPU: {$cpu} | PPPoE Aktif: {$pppoe}<br>"
-                 ."<br><i>{$data['message']}</i>";
+                 ."<br><i>{$messageText}</i>";
         }
 
         return "Maaf, saya tidak mengerti. Anda bisa bertanya tentang 'Penjualan', 'Stok', 'Jaringan', 'Tagihan Belum Bayar', 'Modem Offline', atau 'Bantuan'.";
@@ -824,8 +826,11 @@ class AiService
 
             $list = [];
             foreach ($packages as $pkg) {
-                $price = number_format($pkg->price, 0, ',', '.');
-                $list[] = "<b>{$pkg->name} ({$pkg->speed} Mbps)</b><br>Rp {$price} / bulan<br><small>{$pkg->description}</small>";
+                $price = number_format((float) $pkg->price, 0, ',', '.');
+                $name = e($pkg->name);
+                $speed = e($pkg->speed);
+                $description = e($pkg->description);
+                $list[] = "<b>{$name} ({$speed} Mbps)</b><br>Rp {$price} / bulan<br><small>{$description}</small>";
             }
 
             return [
@@ -856,7 +861,7 @@ class AiService
             $list = [];
             foreach ($products as $item) {
                 $price = number_format($item->sell_price_retail, 0, ',', '.');
-                $list[] = "<b>{$item->name}</b> - Rp {$price}";
+                $list[] = "<b>".e($item->name)."</b> - Rp {$price}";
             }
 
             return [
@@ -887,8 +892,8 @@ class AiService
             $list = [];
             foreach ($services as $srv) {
                 $price = number_format($srv->price, 0, ',', '.');
-                $type = ucfirst($srv->vehicle_type ?? 'Kendaraan');
-                $list[] = "<b>{$srv->name} ({$type})</b> - Rp {$price}";
+                $type = e(ucfirst($srv->vehicle_type ?? 'Kendaraan'));
+                $list[] = "<b>".e($srv->name)." ({$type})</b> - Rp {$price}";
             }
 
             return [
@@ -919,7 +924,7 @@ class AiService
 
         $list = [];
         foreach ($stats as $label => $value) {
-            $list[] = "<b>{$label}</b>: {$value}";
+            $list[] = "<b>".e($label)."</b>: ".e($value);
         }
 
         // Add some "intelligence" analysis
@@ -956,10 +961,12 @@ class AiService
 
         $list = [];
         foreach ($tickets as $ticket) {
-            $customer = $ticket->customer ? $ticket->customer->name : 'Umum';
-            $priority = strtoupper($ticket->priority);
+            $customer = $ticket->customer ? e($ticket->customer->name) : 'Umum';
+            $priority = e(strtoupper((string) $ticket->priority));
             $color = $ticket->priority === 'urgent' ? 'danger' : ($ticket->priority === 'high' ? 'warning' : 'primary');
-            $list[] = "<b>[{$priority}]</b> {$ticket->subject} <br><small class='text-muted'>Pelanggan: {$customer} | Status: {$ticket->status}</small>";
+            $subject = e($ticket->subject);
+            $status = e($ticket->status);
+            $list[] = "<b>[{$priority}]</b> {$subject} <br><small class='text-muted'>Pelanggan: {$customer} | Status: {$status}</small>";
         }
 
         return [
@@ -987,7 +994,9 @@ class AiService
         $list = [];
         foreach ($installations as $ins) {
             $date = $ins->plan_date ? $ins->plan_date->format('d M') : 'Belum dijadwalkan';
-            $list[] = "<b>{$ins->customer->name}</b> <br><small class='text-muted'>Rencana: {$date} | Tahap: {$ins->status}</small>";
+            $customerName = $ins->customer ? e($ins->customer->name) : 'Umum';
+            $stage = e($ins->status);
+            $list[] = "<b>{$customerName}</b> <br><small class='text-muted'>Rencana: ".e($date)." | Tahap: {$stage}</small>";
         }
 
         return [
@@ -1061,13 +1070,13 @@ class AiService
          $now = Carbon::now();
 
          foreach ($devices as $device) {
-             $sn = $device['_deviceId']['_SerialNumber'] ?? 'Unknown';
+            $sn = e($device['_deviceId']['_SerialNumber'] ?? 'Unknown');
              $rxPower = data_get($device, 'VirtualParameters.RXPower._value');
              $lastInform = isset($device['_lastInform']) ? Carbon::parse($device['_lastInform']) : null;
              
              // 1. Check for Critical RX Power (Signal)
              if ($rxPower !== null && (float)$rxPower < -27) {
-                 $issues[] = "<b>Device {$sn}</b>: Sinyal sangat lemah ({$rxPower} dBm). <br><i>Saran: Periksa sambungan FO atau bersihkan konektor.</i>";
+                $issues[] = "<b>Device {$sn}</b>: Sinyal sangat lemah (".e($rxPower)." dBm). <br><i>Saran: Periksa sambungan FO atau bersihkan konektor.</i>";
              }
 
              // 2. Check for Frequent Disconnects (Mock logic based on inform patterns if available)

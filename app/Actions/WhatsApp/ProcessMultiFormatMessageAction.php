@@ -107,6 +107,10 @@ class ProcessMultiFormatMessageAction
             return $filePath;
         }
 
-        return Storage::disk('public')->url($filePath);
+        $relative = Storage::disk('public')->url($filePath);
+        if (app()->environment('production')) {
+            return secure_url($relative);
+        }
+        return url($relative);
     }
 }

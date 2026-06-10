@@ -13,15 +13,33 @@ class WhatsAppWebhookController extends Controller
     public function verify(Request $request)
     {
         $challenge = $request->input('hub.challenge') ?? $request->input('challenge');
-        // Skip verification entirely
-        return response($challenge ?? 'OK', 200);
+        $verifyToken = config('services.whatsapp.verify_token');
+        $receivedToken = $request->input('hub.verify_token') ?? $request->input('verify_token');
+
+        if (app()->environment('production')) {
+            if (! is_string($verifyToken) || trim($verifyToken) === '' || $verifyToken === 'your-verify-token-change-me') {
+                return response('Webhook verify token is not configured', 500);
+            }
+        }
+
+        if (is_string($verifyToken) && trim($verifyToken) !== '' && $verifyToken !== 'your-verify-token-change-me') {
+            if (! is_string($receivedToken) || $receivedToken === '' || ! hash_equals($verifyToken, $receivedToken)) {
+                return response('Invalid verify token', 403);
+            }
+        }
+
+        return response((string) ($challenge ?? 'OK'), 200);
     }
 
     public function handle(Request $request)
     {
         $payload = $request->all();
 
-        Log::info('Received WhatsApp webhook', $payload);
+        Log::info('Received WhatsApp webhook', [
+            'keys' => array_slice(array_keys($payload), 0, 25),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         ProcessIncomingWebhookJob::dispatch($payload);
 

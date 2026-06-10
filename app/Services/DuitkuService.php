@@ -68,7 +68,9 @@ class DuitkuService
 
             $response = Pop::createInvoice($params, $this->duitkuConfig);
             
-            Log::info('Duitku-POP Create Transaction Response', ['params' => $params, 'response' => $response]);
+            Log::info('Duitku-POP Create Transaction Response', [
+                'merchantOrderId' => $referenceId,
+            ]);
             
             return json_decode($response, true);
         } catch (\Exception $e) {
@@ -113,7 +115,9 @@ class DuitkuService
 
             $response = Api::createInvoice($params, $this->duitkuConfig);
             
-            Log::info('Duitku-API Create Transaction Response', ['params' => $params, 'response' => $response]);
+            Log::info('Duitku-API Create Transaction Response', [
+                'merchantOrderId' => $referenceId,
+            ]);
             
             return json_decode($response, true);
         } catch (\Exception $e) {
@@ -134,7 +138,7 @@ class DuitkuService
                 $response = Pop::transactionStatus($referenceId, $this->duitkuConfig);
             }
             
-            Log::info('Duitku Check Transaction Response', ['referenceId' => $referenceId, 'response' => $response]);
+            Log::info('Duitku Check Transaction Response', ['referenceId' => $referenceId]);
             
             return json_decode($response, true);
         } catch (\Exception $e) {
@@ -155,7 +159,7 @@ class DuitkuService
                 $response = Pop::getPaymentMethod($amount, $this->duitkuConfig);
             }
             
-            Log::info('Duitku Get Payment Method Response', ['amount' => $amount, 'response' => $response]);
+            Log::info('Duitku Get Payment Method Response', ['amount' => $amount]);
             
             return json_decode($response, true);
         } catch (\Exception $e) {
@@ -178,7 +182,10 @@ class DuitkuService
             
             $notif = json_decode($callback, true);
             
-            Log::info('Duitku Callback Verified', ['data' => $data, 'notif' => $notif]);
+            Log::info('Duitku Callback Verified', [
+                'merchantOrderId' => $notif['merchantOrderId'] ?? null,
+                'resultCode' => $notif['resultCode'] ?? null,
+            ]);
             
             return $notif;
         } catch (\Exception $e) {

@@ -14,7 +14,10 @@ class PaymentController extends Controller
 
     public function callback(Request $request)
     {
-        Log::info('Payment Callback Received', $request->all());
+        Log::info('Payment Callback Received', [
+            'merchantOrderId' => $request->input('merchantOrderId') ?? $request->input('reference_id'),
+            'resultCode' => $request->input('resultCode') ?? $request->input('statusCode') ?? $request->input('status'),
+        ]);
 
         try {
             $this->paymentService->processCallback($request->all());

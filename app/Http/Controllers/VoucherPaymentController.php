@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Voucher;
 use App\Models\VoucherPayment;
 use App\Models\VoucherTemplate;
+use App\Jobs\Vouchers\FulfillVoucherPaymentJob;
 use App\Services\DuitkuService;
 use App\Services\VoucherService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class VoucherPaymentController extends Controller
@@ -146,7 +148,11 @@ class VoucherPaymentController extends Controller
 
     public function callback(Request $request)
     {
-        Log::info('Duitku Callback Received', $request->all());
+        Log::info('Duitku Callback Received', [
+            'merchantOrderId' => $request->input('merchantOrderId'),
+            'resultCode' => $request->input('resultCode') ?? $request->input('statusCode'),
+            'reference' => $request->input('reference'),
+        ]);
 
         // Verify callback using official library
         $notif = $this->duitkuService->verifyCallback($request->all());
@@ -155,32 +161,64 @@ class VoucherPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
         }
 
-        $payment = VoucherPayment::where('reference_id', $notif['merchantOrderId'])->first();
-        
+        $referenceId = $notif['merchantOrderId'] ?? null;
+        if (! is_string($referenceId) || $referenceId === '') {
+            return response()->json(['success' => false, 'message' => 'Invalid reference'], 400);
+        }
+
+        $merchantCode = (string) ($notif['merchantCode'] ?? '');
+        $expectedMerchantCode = (string) \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+        if ($expectedMerchantCode !== '' && $merchantCode !== '' && ! hash_equals($expectedMerchantCode, $merchantCode)) {
+            return response()->json(['success' => false, 'message' => 'Invalid merchant'], 403);
+        }
+
+        $normalizeAmount = static function ($value): int {
+            $raw = preg_replace('/[^0-9]/', '', (string) $value);
+            return (int) ($raw === '' ? 0 : $raw);
+        };
+
+        $resultCode = (string) ($notif['resultCode'] ?? $notif['statusCode'] ?? '');
+
+        $payment = null;
+        DB::transaction(function () use ($referenceId, $notif, $resultCode, $normalizeAmount, &$payment) {
+            $payment = VoucherPayment::query()
+                ->where('reference_id', $referenceId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($payment->status === 'paid') {
+                return;
+            }
+
+            $notifAmount = $normalizeAmount($notif['amount'] ?? $notif['paymentAmount'] ?? 0);
+            $expectedAmount = $normalizeAmount($payment->amount);
+            if ($notifAmount > 0 && $expectedAmount > 0 && $notifAmount !== $expectedAmount) {
+                $payment->update(['status' => 'failed']);
+                return;
+            }
+
+            if ($resultCode === '00') {
+                $payment->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'payment_reference' => $notif['reference'] ?? null,
+                    'payment_method' => $notif['paymentCode'] ?? $payment->payment_method,
+                    'duitku_reference' => $notif['reference'] ?? $payment->duitku_reference,
+                ]);
+                return;
+            }
+
+            if (in_array($resultCode, ['01', '02'], true)) {
+                $payment->update(['status' => 'failed']);
+            }
+        });
+
         if (! $payment) {
             return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
         }
 
         if ($payment->status === 'paid') {
-            return response()->json(['success' => true, 'message' => 'Payment already processed']);
-        }
-
-        if ($notif['resultCode'] == '00') {
-            // Payment success
-            $payment->update([
-                'status' => 'paid',
-                'paid_at' => now(),
-                'payment_reference' => $notif['reference'],
-                'payment_method' => $notif['paymentCode'] ?? $payment->payment_method,
-            ]);
-
-            // Generate voucher
-            $this->generateVoucherAndSendToUser($payment);
-        } elseif (in_array($notif['resultCode'], ['01', '02'])) {
-            // Payment failed or cancelled
-            $payment->update([
-                'status' => 'failed',
-            ]);
+            FulfillVoucherPaymentJob::dispatch($payment->id);
         }
 
         return response()->json(['success' => true]);
@@ -260,4 +298,3 @@ class VoucherPaymentController extends Controller
         return $seconds . ' detik';
     }
 }
-

@@ -135,35 +135,35 @@ const templates = {
     attendance_in: {
         keyword: 'absen',
         type: 'text',
-        response_text: "⏰ *Informasi Absensi Masuk*\n\nUntuk melakukan absensi masuk:\n1. Buka aplikasi MStore\n2. Klik menu Absensi\n3. Tekan tombol \"Clock In\"\n\nAtau kunjungi: " + window.location.origin + "/attendance/create\n\nWaktu absensi masuk mulai pukul 07:00!",
+        response_text: "⏰ *Informasi Absensi Masuk*\n\nUntuk melakukan absensi masuk:\n1. Buka aplikasi MStore\n2. Klik menu Absensi\n3. Tekan tombol \"Clock In\"\n\nAtau kunjungi: {app_url}/attendance/create\n\nWaktu absensi masuk mulai pukul 07:00!",
         priority: 8,
         enable_fuzzy_match: true
     },
     attendance_out: {
         keyword: 'pulang',
         type: 'text',
-        response_text: "🏠 *Informasi Absensi Pulang*\n\nUntuk melakukan absensi pulang:\n1. Buka aplikasi MStore\n2. Klik menu Absensi\n3. Tekan tombol \"Clock Out\"\n\nAtau kunjungi: " + window.location.origin + "/attendance\n\nPastikan Anda sudah selesai bekerja!",
+        response_text: "🏠 *Informasi Absensi Pulang*\n\nUntuk melakukan absensi pulang:\n1. Buka aplikasi MStore\n2. Klik menu Absensi\n3. Tekan tombol \"Clock Out\"\n\nAtau kunjungi: {app_url}/attendance\n\nPastikan Anda sudah selesai bekerja!",
         priority: 8,
         enable_fuzzy_match: true
     },
     schedule: {
         keyword: 'jadwal',
         type: 'text',
-        response_text: "📅 *Jadwal Kerja*\n\n🕐 Shift 1: 08:00 - 17:00\n🕑 Shift 2: 15:00 - 00:00\n\nUntuk melihat jadwal pribadi Anda:\n" + window.location.origin + "/schedules\n\nHari libur sesuai kalender nasional!",
+        response_text: "📅 *Jadwal Kerja*\n\n🕐 Shift 1: 08:00 - 17:00\n🕑 Shift 2: 15:00 - 00:00\n\nUntuk melihat jadwal pribadi Anda:\n{app_url}/schedules\n\nHari libur sesuai kalender nasional!",
         priority: 8,
         enable_fuzzy_match: true
     },
     voucher: {
         keyword: 'voucher',
         type: 'text',
-        response_text: "💳 *Informasi Voucher Internet*\n\nUntuk membeli voucher internet:\n1. Buka halaman voucher di website\n2. Pilih paket yang diinginkan\n3. Lakukan pembayaran\n\nKunjungi: " + window.location.origin + "/voucher/list\n\nUntuk pertanyaan lebih lanjut, silakan hubungi support!",
+        response_text: "💳 *Informasi Voucher Internet*\n\nUntuk membeli voucher internet:\n1. Buka halaman voucher di website\n2. Pilih paket yang diinginkan\n3. Lakukan pembayaran\n\nKunjungi: {app_url}/voucher/list\n\nUntuk pertanyaan lebih lanjut, silakan hubungi support!",
         priority: 7,
         enable_fuzzy_match: true
     },
     ticket: {
         keyword: 'tiket',
         type: 'text',
-        response_text: "🎫 *Buat Tiket Support*\n\nUntuk membuat tiket support:\n1. Buka aplikasi MStore\n2. Klik menu Tiket\n3. Isi formulir dan kirim\n\nKunjungi: " + window.location.origin + "/tickets/create\n\nTim kami akan segera membantu Anda!",
+        response_text: "🎫 *Buat Tiket Support*\n\nUntuk membuat tiket support:\n1. Buka aplikasi MStore\n2. Klik menu Tiket\n3. Isi formulir dan kirim\n\nKunjungi: {app_url}/tickets/create\n\nTim kami akan segera membantu Anda!",
         priority: 7,
         enable_fuzzy_match: true
     },

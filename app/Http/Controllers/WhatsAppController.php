@@ -449,10 +449,12 @@ class WhatsAppController extends Controller implements HasMiddleware
         }
 
         try {
-            if ($whatsappService->sendMessage($phone, $message)) {
+            $result = $whatsappService->sendMessage($phone, $message);
+            if (is_array($result) && ($result['success'] ?? false)) {
                 return back()->with('success', 'Test message sent successfully!');
             } else {
-                return back()->with('error', 'Failed to send test message. Check your API Config in .env');
+                $msg = is_array($result) ? ($result['message'] ?? null) : null;
+                return back()->with('error', $msg ?: 'Failed to send test message. Check your API Config in .env');
             }
         } catch (\Exception $e) {
             return back()->with('error', 'Error: '.$e->getMessage());
@@ -485,7 +487,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             $logs->where('status', $status);
         }
         
-        $logs = $logs->paginate(50);
+        $logs = $logs->paginate(50)->withQueryString();
         
         return view('whatsapp.logs', compact('logs', 'type', 'status'));
     }

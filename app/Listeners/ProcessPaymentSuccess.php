@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\PaymentProcessed;
+use App\Jobs\WhatsApp\SendWhatsAppMessageJob;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
 use App\Models\Transaction;
@@ -11,10 +12,15 @@ use App\Models\WeddingPayment;
 use App\Models\CctvPayment;
 use App\Services\AuditLogService;
 use App\Services\WhatsAppService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
-class ProcessPaymentSuccess
+class ProcessPaymentSuccess implements ShouldQueue
 {
+    use InteractsWithQueue, Queueable;
+
     public function __construct(
         public readonly WhatsAppService $whatsappService,
         public readonly AuditLogService $auditLogService,
@@ -156,11 +162,6 @@ class ProcessPaymentSuccess
                    "Jumlah: Rp " . number_format($transaction->amount, 0, ',', '.') . "\n" .
                    "Terima kasih telah melakukan pembayaran!";
 
-        try {
-            $this->whatsappService->sendMessage($transaction->phone_number, $message, 'payment_success');
-            Log::info('WhatsApp notification sent for payment', ['transaction_id' => $transaction->id]);
-        } catch (\Exception $e) {
-            Log::error('Failed to send WhatsApp payment notification', ['error' => $e->getMessage()]);
-        }
+        SendWhatsAppMessageJob::dispatch($transaction->phone_number, $message, null, null);
     }
 }

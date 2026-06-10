@@ -254,12 +254,10 @@ class WhatsAppService
             Log::info('WhatsApp Request', [
                 'provider' => $this->getProvider(),
                 'url' => $response->effectiveUri(),
-                'phone' => $phone,
+                'phone' => $this->maskPhoneForLogs($phone),
                 'is_group' => $isGroup,
                 'has_media' => !empty($mediaUrl),
-                'request_headers' => $response->transferStats?->getRequest()?->getHeaders(),
                 'response_status' => $response->status(),
-                'response_body' => $responseBody,
             ]);
             
             $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);
@@ -553,7 +551,6 @@ class WhatsAppService
                         $responseBody = $response->body();
                         Log::info('Wablas ' . $endpoint . ' response', [
                             'status' => $response->status(),
-                            'body' => $responseBody
                         ]);
                         
                         if ($response->successful()) {
@@ -648,6 +645,18 @@ class WhatsAppService
         }
 
         return ['ok' => true, 'error' => null];
+    }
+
+    private function maskPhoneForLogs(?string $phone): string
+    {
+        $p = preg_replace('/\s+/', '', (string) $phone);
+        if ($p === '') {
+            return '';
+        }
+        if (strlen($p) <= 4) {
+            return str_repeat('*', strlen($p));
+        }
+        return str_repeat('*', max(0, strlen($p) - 4)) . substr($p, -4);
     }
 
     private function extractConnectionFlag(array $body): bool

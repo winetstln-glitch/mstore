@@ -2,15 +2,16 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="layout-navbar-fixed layout-wide" dir="ltr" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
+        $assetUrl = static fn (string $path): string => app()->environment('production') ? secure_asset($path) : asset($path);
         $siteName = $storeName ?? config('app.name', 'MStore');
         $pageTitle = $pageTitle ?? ($siteName.' - Multi Layanan');
         $pageDescription = $pageDescription ?? 'MStore menghadirkan Internet Fiber, Wedding & Event, CCTV, GT Wash, dan ATK Store.';
         $pageUrl = $pageUrl ?? url()->current();
-        $pageImage = $pageImage ?? asset('img/cctv-monitor.png');
-        $logoUrl = asset('img/logo.png');
+        $pageImage = $pageImage ?? $assetUrl('img/cctv-monitor.png');
+        $logoUrl = $assetUrl('img/logo.png');
         $waUrlBase = 'https://wa.me/'.($waNumber ?? '6281234567890');
         $jsonLdOffers = collect($serviceCatalog ?? [])->map(fn ($service) => [
             '@type' => 'Offer',
@@ -35,7 +36,7 @@
     <meta name="twitter:description" content="{{ $pageDescription }}">
     <meta name="twitter:image" content="{{ $pageImage }}">
 
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $assetUrl('favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -46,7 +47,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ asset('css/landing-lite.css') }}?v={{ filemtime(public_path('css/landing-lite.css')) }}" rel="stylesheet">
+    <link href="{{ $assetUrl('css/landing-lite.css') }}?v={{ filemtime(public_path('css/landing-lite.css')) }}" rel="stylesheet">
 
     <script type="application/ld+json">{!! json_encode([
         '@context' => 'https://schema.org',
@@ -77,7 +78,7 @@
         })();
     </script>
 </head>
-<body class="{{ ($currentServiceSlug ?? null) === 'wedding-event' ? 'wedding-page-body' : '' }}">
+<body class="landing-scope {{ ($currentServiceSlug ?? null) === 'wedding-event' ? 'wedding-page-body' : '' }}">
     @php
         $isWeddingPage = ($currentServiceSlug ?? null) === 'wedding-event';
         $primaryCtaHref = !empty($servicePage) ? '#service-lead' : '#services';
@@ -403,6 +404,59 @@
             }
         }
 
+        function sanitizeBasicHtml(input) {
+            const html = String(input ?? '');
+            const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'BR', 'UL', 'OL', 'LI', 'SMALL', 'A']);
+            const template = document.createElement('template');
+            template.innerHTML = html;
+
+            const walk = (node) => {
+                const children = Array.from(node.childNodes);
+                children.forEach((child) => {
+                    if (child.nodeType === Node.ELEMENT_NODE) {
+                        const tag = child.tagName;
+                        if (!allowedTags.has(tag)) {
+                            const text = document.createTextNode(child.textContent || '');
+                            child.replaceWith(text);
+                            return;
+                        }
+
+                        Array.from(child.attributes).forEach((attr) => {
+                            const name = attr.name.toLowerCase();
+                            if (tag === 'A' && (name === 'href' || name === 'target' || name === 'rel')) {
+                                return;
+                            }
+                            child.removeAttribute(attr.name);
+                        });
+
+                        if (tag === 'A') {
+                            const href = (child.getAttribute('href') || '').trim();
+                            if (!/^https?:\/\//i.test(href)) {
+                                child.removeAttribute('href');
+                            }
+                            if ((child.getAttribute('target') || '').trim() === '_blank') {
+                                const existingRel = (child.getAttribute('rel') || '').trim();
+                                const relParts = existingRel.length ? existingRel.split(/\s+/) : [];
+                                if (!relParts.includes('noopener')) relParts.push('noopener');
+                                if (!relParts.includes('noreferrer')) relParts.push('noreferrer');
+                                child.setAttribute('rel', relParts.join(' ').trim());
+                            } else {
+                                child.removeAttribute('target');
+                                child.removeAttribute('rel');
+                            }
+                        }
+
+                        walk(child);
+                    } else if (child.nodeType === Node.COMMENT_NODE) {
+                        child.remove();
+                    }
+                });
+            };
+
+            walk(template.content);
+            return template.innerHTML;
+        }
+
         function addMessage(text, align) {
             const messages = document.getElementById('chat-messages');
             const id = 'msg-' + Date.now();
@@ -412,7 +466,11 @@
             div.id = id;
             div.className = `p-2 rounded-3 align-self-${align} ${align === 'end' ? 'bg-primary text-white' : 'bg-secondary bg-opacity-25'}`;
             div.style.maxWidth = '80%';
-            div.innerHTML = text;
+            if (align === 'end') {
+                div.textContent = text;
+            } else {
+                div.innerHTML = sanitizeBasicHtml(text);
+            }
             wrapper.appendChild(div);
             messages.appendChild(wrapper);
             messages.scrollTop = messages.scrollHeight;
@@ -460,6 +518,14 @@
                 });
             }
 
+            document.querySelectorAll('a[target="_blank"]').forEach((link) => {
+                const existingRel = (link.getAttribute('rel') || '').trim();
+                const relParts = existingRel.length ? existingRel.split(/\s+/) : [];
+                if (!relParts.includes('noopener')) relParts.push('noopener');
+                if (!relParts.includes('noreferrer')) relParts.push('noreferrer');
+                link.setAttribute('rel', relParts.join(' ').trim());
+            });
+
             document.querySelectorAll('.track-service-action').forEach((element) => {
                 element.addEventListener('click', () => {
                     trackLandingEvent(
@@ -487,6 +553,15 @@
                     attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(map);
 
+                const escapeHtml = function (value) {
+                    return String(value ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                };
+
                 const odps = {{ Js::from($odps ?? []) }};
                 const markers = [];
                 odps.forEach((odp) => {
@@ -494,8 +569,9 @@
                         const availablePorts = (odp.available_ports !== null && odp.available_ports !== undefined)
                             ? odp.available_ports
                             : 'N/A';
+                        const popupHtml = `<b>${escapeHtml(odp.name)}</b><br>Status: ${escapeHtml(odp.status)}<br>Port Tersedia: ${escapeHtml(availablePorts)}`;
                         const marker = L.marker([odp.latitude, odp.longitude])
-                            .bindPopup(`<b>${odp.name}</b><br>Status: ${odp.status}<br>Port Tersedia: ${availablePorts}`);
+                            .bindPopup(popupHtml);
                         marker.addTo(map);
                         markers.push(marker);
                     }

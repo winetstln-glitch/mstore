@@ -100,8 +100,29 @@
         waEl.aiEscalation.textContent = (data.ai_analytics?.escalation_rate ?? 0) + '%';
         waEl.aiFallback.textContent = (data.ai_analytics?.fallback_rate ?? 0) + '%';
 
-        const rows = (data.intent_analytics ?? []).map(r => `<tr><td>${r.intent}</td><td class="text-end">${r.total}</td></tr>`).join('');
-        waEl.intents.innerHTML = rows || '<tr><td colspan="2" class="text-muted">Belum ada data</td></tr>';
+        const intentRows = Array.isArray(data.intent_analytics) ? data.intent_analytics : [];
+        waEl.intents.innerHTML = '';
+        if (!intentRows.length) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 2;
+            td.className = 'text-muted';
+            td.textContent = 'Belum ada data';
+            tr.appendChild(td);
+            waEl.intents.appendChild(tr);
+        } else {
+            intentRows.forEach((r) => {
+                const tr = document.createElement('tr');
+                const tdIntent = document.createElement('td');
+                tdIntent.textContent = String(r.intent ?? '');
+                const tdTotal = document.createElement('td');
+                tdTotal.className = 'text-end';
+                tdTotal.textContent = String(r.total ?? 0);
+                tr.appendChild(tdIntent);
+                tr.appendChild(tdTotal);
+                waEl.intents.appendChild(tr);
+            });
+        }
     }
 
     async function refresh() {
@@ -117,4 +138,3 @@
     refresh();
 </script>
 @endpush
-

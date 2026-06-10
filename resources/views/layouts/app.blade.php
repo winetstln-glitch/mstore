@@ -1788,6 +1788,18 @@
 </script>
 @endauth
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('a[target="_blank"]').forEach(function (link) {
+            const existingRel = (link.getAttribute('rel') || '').trim();
+            const relParts = existingRel.length ? existingRel.split(/\s+/) : [];
+            if (relParts.indexOf('noopener') === -1) relParts.push('noopener');
+            if (relParts.indexOf('noreferrer') === -1) relParts.push('noreferrer');
+            link.setAttribute('rel', relParts.join(' ').trim());
+        });
+    });
+</script>
+
 @stack('scripts')
 
 </body>

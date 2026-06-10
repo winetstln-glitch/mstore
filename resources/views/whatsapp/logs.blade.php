@@ -77,7 +77,7 @@
                             @endif
                         </td>
                         <td>
-                            <code class="font-monospace">{{ $log->phone_number }}</code>
+                            <code class="font-monospace">{{ $log->phone_masked }}</code>
                         </td>
                         <td style="max-width: 350px;">
                             <div class="text-truncate" title="{{ e($log->message) }}">

@@ -78,42 +78,69 @@ class PaymentService
      */
     public function processCallback(array $data): void
     {
-        Log::info('Processing payment callback', ['data' => $data]);
+        $notif = $this->duitkuService->verifyCallback($data, true) ?? $this->duitkuService->verifyCallback($data, false);
+        if (! is_array($notif)) {
+            throw new \Exception('Invalid signature');
+        }
 
-        $referenceId = $data['merchantOrderId'] ?? $data['reference_id'] ?? null;
-        if (!$referenceId) {
+        $referenceId = $notif['merchantOrderId'] ?? $notif['reference_id'] ?? null;
+        if (! is_string($referenceId) || $referenceId === '') {
             throw new \Exception('Missing reference_id');
         }
 
-        $transaction = PaymentTransaction::where('reference_id', $referenceId)->first();
-        if (!$transaction) {
-            throw new \Exception('Transaction not found: ' . $referenceId);
+        $merchantCode = (string) ($notif['merchantCode'] ?? '');
+        $expectedMerchantCode = (string) \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
+        if ($expectedMerchantCode !== '' && $merchantCode !== '' && ! hash_equals($expectedMerchantCode, $merchantCode)) {
+            throw new \Exception('Invalid merchant');
         }
 
-        if ($transaction->status === 'paid') {
-            Log::info('Transaction already paid', ['transaction_id' => $transaction->id]);
-            return;
-        }
+        Log::info('Processing payment callback', [
+            'merchantOrderId' => $referenceId,
+            'resultCode' => $notif['resultCode'] ?? $notif['statusCode'] ?? null,
+        ]);
 
-        $statusCode = $data['statusCode'] ?? $data['status'] ?? '00';
-        if ($statusCode === '00' || strtolower($statusCode) === 'success' || $data['success'] ?? false) {
-            DB::beginTransaction();
-            try {
-                $transaction->markAsPaid($data['reference'] ?? $data['transaction_id'] ?? null);
+        $normalizeAmount = static function ($value): int {
+            $raw = preg_replace('/[^0-9]/', '', (string) $value);
+            return (int) ($raw === '' ? 0 : $raw);
+        };
 
-                event(new PaymentProcessed($transaction));
+        DB::transaction(function () use ($referenceId, $notif, $normalizeAmount) {
+            $transaction = PaymentTransaction::query()
+                ->where('reference_id', $referenceId)
+                ->lockForUpdate()
+                ->first();
 
-                DB::commit();
-                Log::info('Payment processed successfully', ['transaction_id' => $transaction->id]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Failed to process payment', ['error' => $e->getMessage()]);
-                throw $e;
+            if (! $transaction) {
+                throw new \RuntimeException('Transaction not found: ' . $referenceId);
             }
-        } elseif ($statusCode === '01' || $statusCode === '02') {
-            $transaction->markAsFailed();
-            Log::info('Payment failed or expired', ['transaction_id' => $transaction->id, 'status_code' => $statusCode]);
-        }
+
+            if ($transaction->status === 'paid') {
+                return;
+            }
+
+            $notifAmount = $normalizeAmount($notif['amount'] ?? $notif['paymentAmount'] ?? 0);
+            $expectedAmount = $normalizeAmount($transaction->amount);
+            if ($notifAmount > 0 && $expectedAmount > 0 && $notifAmount !== $expectedAmount) {
+                $transaction->markAsFailed();
+                return;
+            }
+
+            $resultCode = (string) ($notif['resultCode'] ?? $notif['statusCode'] ?? $notif['status'] ?? '');
+            if ($resultCode === '00' || strtolower($resultCode) === 'success' || ($notif['success'] ?? false)) {
+                $transaction->markAsPaid($notif['reference'] ?? $notif['transaction_id'] ?? null);
+                event(new PaymentProcessed($transaction->fresh()));
+                return;
+            }
+
+            if ($resultCode === '02') {
+                $transaction->markAsExpired();
+                return;
+            }
+
+            if ($resultCode === '01') {
+                $transaction->markAsFailed();
+            }
+        });
     }
 
     private function getProductDetails(mixed $paymentable): string

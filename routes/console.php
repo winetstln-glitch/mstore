@@ -31,6 +31,17 @@ Schedule::command('attendance:mark-alpha')
     ->dailyAt('17:05')
     ->withoutOverlapping(10);
 
+tap(
+    Schedule::command('logs:prune-sensitive')
+        ->dailyAt((string) config('log_retention.scheduler.run_at', '02:25'))
+        ->withoutOverlapping((int) config('log_retention.scheduler.without_overlapping_minutes', 30)),
+    function ($event) {
+        if ((bool) config('log_retention.scheduler.on_one_server', true)) {
+            $event->onOneServer();
+        }
+    }
+);
+
 // Register command manually
 Artisan::registerCommand(new MarkAbsentAsAlpha());
 

@@ -1693,12 +1693,14 @@ class WhatsAppDynamicReplyService
 
     private function replaceVariables(string $text, ?User $user = null, ?WhatsAppSession $session = null): string
     {
+        $appUrl = rtrim((string) (config('app.url') ?: url('/')), '/');
         $variables = [
             '{nama_user}' => $user?->name ?? 'Teman',
             '{jam_sekarang}' => Carbon::now()->format('H:i'),
             '{tanggal_sekarang}' => Carbon::now()->translatedFormat('l, d F Y'),
             '{tahun}' => Carbon::now()->year,
             '{bulan}' => Carbon::now()->translatedFormat('F'),
+            '{app_url}' => $appUrl,
         ];
 
         if ($session && $session->payload) {

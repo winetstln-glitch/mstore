@@ -21,7 +21,12 @@ class WebhookController extends Controller
     {
         $payload = $request->all();
         if (! $midtrans->verifySignature($payload)) {
-            Log::warning('Midtrans signature invalid', $payload);
+            Log::warning('Midtrans signature invalid', [
+                'order_id' => $payload['order_id'] ?? null,
+                'keys' => array_slice(array_keys($payload), 0, 25),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
 
             return response()->json(['message' => 'invalid signature'], 400);
         }

@@ -3,6 +3,7 @@
 @section('content')
     @php
         $siteName = $storeName ?? config('app.name', 'MStore');
+        $assetUrl = static fn (string $path): string => app()->environment('production') ? secure_asset($path) : asset($path);
         $waUrlBase = 'https://wa.me/'.$waNumber;
         $secondaryHref = $servicePage['secondary_href'] ?? '#service-lead';
         if (str_starts_with($secondaryHref, 'wa:')) {
@@ -14,7 +15,7 @@
             'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&q=80&w=1200',
         ]);
         $weddingHeroGallery = collect($weddingGallery ?? [])->map(function ($img) {
-            return str_starts_with((string) $img, 'http') ? $img : asset($img);
+            return str_starts_with((string) $img, 'http') ? $img : $assetUrl($img);
         })->filter()->values();
         if ($weddingHeroGallery->isEmpty()) {
             $weddingHeroGallery = $weddingFallbackGallery;
@@ -331,7 +332,7 @@
                 $packageImagePath = $pkg['image_path'] ?? $pkg->image_path ?? null;
                 $image = null;
                 if (is_string($packageImagePath) && trim($packageImagePath) !== '') {
-                    $image = asset('storage/'.ltrim($packageImagePath, '/'));
+                    $image = $assetUrl('storage/'.ltrim($packageImagePath, '/'));
                 }
                 if (! $image) {
                     $image = $weddingHeroGallery->get($index) ?? $weddingHeroGallery->first();
@@ -550,6 +551,23 @@
             const weddingAddonOptions = @json($weddingAddonOptions);
             const weddingBrandName = @json($siteName);
 
+            function escapeWeddingHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function safeWeddingUrl(value) {
+                const url = String(value ?? '').trim();
+                if (!url) return '';
+                if (/^javascript:/i.test(url)) return '';
+                if (/^data:(?!image\/)/i.test(url)) return '';
+                return url;
+            }
+
             function formatWeddingIDR(amount) {
                 return new Intl.NumberFormat('id-ID', {
                     style: 'currency',
@@ -574,19 +592,19 @@
                     <div class="wedding-package-shell">
                         <div class="wedding-package-highlight">
                             <span class="wedding-package-chip">Paket Utama</span>
-                            <h3>${target.name}</h3>
+                            <h3>${escapeWeddingHtml(target.name)}</h3>
                             <div class="wedding-package-price">${formatWeddingIDR(target.price)}</div>
                             <div class="wedding-package-normal">Harga normal ${formatWeddingIDR(target.normal_price || target.price)}</div>
-                            <p>${target.description || ''}</p>
-                            <div class="wedding-package-meta">Kapasitas: ${target.capacity || 'Custom'}</div>
-                            <a href="#service-lead" class="btn wedding-btn-gold w-100 mt-3 track-service-action" data-track-service="wedding-event" data-track-action="dynamic_package_cta" data-track-label="${target.name}">
+                            <p>${escapeWeddingHtml(target.description || '')}</p>
+                            <div class="wedding-package-meta">Kapasitas: ${escapeWeddingHtml(target.capacity || 'Custom')}</div>
+                            <a href="#service-lead" class="btn wedding-btn-gold w-100 mt-3 track-service-action" data-track-service="wedding-event" data-track-action="dynamic_package_cta" data-track-label="${escapeWeddingHtml(target.name)}">
                                 Booking Paket Ini
                             </a>
                         </div>
                         <div class="wedding-package-detail">
                             <div class="row g-4 align-items-start">
                                 <div class="col-lg-5">
-                                    <img src="${target.image}" alt="${target.name}" class="wedding-package-image">
+                                    <img src="${escapeWeddingHtml(safeWeddingUrl(target.image))}" alt="${escapeWeddingHtml(target.name)}" class="wedding-package-image">
                                 </div>
                                 <div class="col-lg-7">
                                     <div class="row g-4">
@@ -594,7 +612,7 @@
                                             <div class="wedding-package-list">
                                                 <h4><i class="fas fa-tents me-2"></i>Fasilitas Utama</h4>
                                                 <ul>
-                                                    ${leftFacilities.map(item => `<li><span>✔</span><span>${item}</span></li>`).join('')}
+                                                    ${leftFacilities.map(item => `<li><span>✔</span><span>${escapeWeddingHtml(item)}</span></li>`).join('')}
                                                 </ul>
                                             </div>
                                         </div>
@@ -602,7 +620,7 @@
                                             <div class="wedding-package-list">
                                                 <h4><i class="fas fa-gift me-2"></i>Highlight Paket</h4>
                                                 <ul>
-                                                    ${(rightFacilities.length ? rightFacilities : leftFacilities.slice(0, 6)).map(item => `<li><span>✔</span><span>${item}</span></li>`).join('')}
+                                                    ${(rightFacilities.length ? rightFacilities : leftFacilities.slice(0, 6)).map(item => `<li><span>✔</span><span>${escapeWeddingHtml(item)}</span></li>`).join('')}
                                                 </ul>
                                             </div>
                                         </div>
@@ -891,7 +909,7 @@
                             <div class="scroll-item">
                                 <div class="card">
                                     @if($service->image)
-                                        <img src="{{ asset('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img" loading="lazy" decoding="async">
+                                        <img src="{{ $assetUrl('storage/' . $service->image) }}" alt="{{ $service->name }}" class="product-img" loading="lazy" decoding="async">
                                     @else
                                         <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
                                             <i class="fas {{ $groupKey === 'mobil' ? 'fa-car' : ($groupKey === 'motor' ? 'fa-motorcycle' : 'fa-sparkles') }} fa-3x text-secondary"></i>
@@ -1002,7 +1020,7 @@
                         <div class="scroll-item">
                             <div class="card">
                                 @if($product->image)
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="product-img">
+                                    <img src="{{ $assetUrl('storage/' . $product->image) }}" alt="{{ $product->name }}" class="product-img">
                                 @else
                                     <div class="product-img d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
                                         <i class="fas fa-image fa-3x text-muted"></i>
