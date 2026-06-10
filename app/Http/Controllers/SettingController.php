@@ -19,7 +19,7 @@ class SettingController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:setting.view', only: ['index', 'attendance', 'atk', 'wash']),
-            new Middleware('permission:setting.update', only: ['update']),
+            new Middleware('permission:setting.update', only: ['update', 'backupDatabase']),
         ];
     }
 

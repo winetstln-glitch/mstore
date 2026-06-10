@@ -6,10 +6,20 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\AccountingPoster;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class AtkExpenseController extends Controller
+class AtkExpenseController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:atk.report', only: ['index']),
+            new Middleware('permission:atk.manage', only: ['create', 'store', 'edit', 'update', 'destroy']),
+        ];
+    }
+
     private function queryAtkExpenses()
     {
         return Transaction::where('type', 'expense')

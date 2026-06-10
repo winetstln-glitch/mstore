@@ -43,8 +43,9 @@ class CustomerWebController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:customer.view', only: ['index', 'show', 'import', 'export']),
             new Middleware('permission:customer.create', only: ['create', 'store', 'importFile']),
-            new Middleware('permission:customer.edit', only: ['edit', 'update', 'notifyStatus']),
-            new Middleware('permission:customer.delete', only: ['destroy']),
+            new Middleware('permission:customer.edit', only: ['edit', 'update', 'notifyStatus', 'settings', 'updateWan', 'updateWlan']),
+            new Middleware('permission:customer.delete', only: ['destroy', 'bulkDestroy']),
+            new Middleware('permission:customer.view', only: ['getGenieDevice']),
         ];
     }
 

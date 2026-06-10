@@ -26,9 +26,9 @@ class FinanceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:finance.view', only: ['index', 'show', 'coordinatorDetail', 'downloadCoordinatorPdf', 'profitLoss', 'downloadProfitLossPdf', 'downloadProfitLossExcel', 'managerReport', 'downloadManagerReportPdf', 'downloadManagerReportExcel', 'materialReport', 'exportAccounting', 'settings']),
+            new Middleware('permission:finance.view', only: ['index', 'show', 'coordinatorDetail', 'downloadCoordinatorPdf', 'profitLoss', 'downloadProfitLossPdf', 'downloadProfitLossExcel', 'managerReport', 'downloadManagerReportPdf', 'downloadManagerReportExcel', 'materialReport', 'exportAccounting', 'settings', 'downloadIncomeBreakdownPdf', 'downloadInvestorSharePdf']),
             new Middleware('permission:finance.view|investor.view', only: ['investorReport', 'downloadInvestorReportPdf']),
-            new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy']),
+            new Middleware('permission:finance.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'bulkDestroy']),
         ];
     }
 
