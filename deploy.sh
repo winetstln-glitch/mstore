@@ -20,8 +20,12 @@ composer install --no-dev --optimize-autoloader
 echo "2. Running database migrations..."
 php artisan migrate --force
 
-# 3. Clear and cache config
-echo "3. Clearing and caching configuration..."
+# 3. Sync roles and permissions
+echo "3. Syncing roles and permissions..."
+php artisan roles:normalize
+
+# 4. Clear and cache config
+echo "4. Clearing and caching configuration..."
 php artisan cache:clear
 php artisan config:clear
 php artisan route:clear
@@ -30,17 +34,17 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 4. Build assets
-echo "4. Building frontend assets..."
+# 5. Build assets
+echo "5. Building frontend assets..."
 npm install
 npm run build
 
-# 5. Restart queue worker (optional)
-echo "5. Restarting queue worker..."
+# 6. Restart queue worker (optional)
+echo "6. Restarting queue worker..."
 php artisan queue:restart
 
-# 6. Set permissions
-echo "6. Setting file permissions..."
+# 7. Set permissions
+echo "7. Setting file permissions..."
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
