@@ -102,6 +102,7 @@ class PermissionSeeder extends Seeder
             // Leave Management
             ['name' => 'leave.view', 'label' => 'View Leave Requests', 'group' => 'Leave Management'],
             ['name' => 'leave.create', 'label' => 'Create Leave Request', 'group' => 'Leave Management'],
+            ['name' => 'leave.edit', 'label' => 'Edit Leave Request', 'group' => 'Leave Management'],
             ['name' => 'leave.manage', 'label' => 'Manage Leave Requests', 'group' => 'Leave Management'],
 
             // Schedule Management

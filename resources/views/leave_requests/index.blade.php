@@ -89,7 +89,7 @@
                             <th>{{ __('Duration') }}</th>
                             <th>{{ __('Reason') }}</th>
                             <th>{{ __('Status') }}</th>
-                            @if(Auth::user()->hasPermission('leave.manage'))
+                            @if(Auth::user()->hasPermission('leave.manage') || Auth::user()->id === $req->user_id)
                             <th class="text-center pe-3">{{ __('Action') }}</th>
                             @endif
                         </tr>
@@ -130,20 +130,24 @@
                                     <span class="badge text-bg-warning rounded-pill">{{ __('Pending') }}</span>
                                 @endif
                             </td>
-                            @if(Auth::user()->hasPermission('leave.manage'))
                             <td class="text-center pe-3">
-                                @if($req->status == 'pending')
                                 <div class="d-inline-flex gap-2">
+                                    @if(Auth::user()->hasPermission('leave.manage') || ($req->status == 'pending' && Auth::id() === $req->user_id))
+                                    <a href="{{ route('leave-requests.edit', $req->id) }}" class="btn btn-outline-primary btn-sm px-3">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    @endif
+                                    
+                                    @if(Auth::user()->hasPermission('leave.manage') && $req->status == 'pending')
                                     <button class="btn btn-success btn-sm px-3" onclick="approveLeave({{ $req->id }})" type="button">
                                         <i class="fa-solid fa-check"></i>
                                     </button>
                                     <button class="btn btn-danger btn-sm px-3" onclick="rejectLeave({{ $req->id }})" type="button">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
+                                    @endif
                                 </div>
-                                @endif
                             </td>
-                            @endif
                         </tr>
                         @empty
                         <tr>

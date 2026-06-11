@@ -24,7 +24,69 @@ class LeaveRequestController extends Controller implements HasMiddleware
             new Middleware('permission:leave.view', only: ['employee']),
             new Middleware('permission:leave.create', only: ['store']),
             new Middleware('permission:leave.manage', only: ['admin', 'update']),
+            new Middleware('permission:leave.edit', only: ['edit', 'updateRequest']),
         ];
+    }
+
+    public function edit(LeaveRequest $leaveRequest)
+    {
+        // Only owner can edit pending request, or admin
+        if (! Auth::user()->hasPermission('leave.manage') && ($leaveRequest->user_id !== Auth::id() || $leaveRequest->status !== 'pending')) {
+            abort(403, 'Unauthorized');
+        }
+
+        return view('leave_requests.edit', compact('leaveRequest'));
+    }
+
+    public function updateRequest(Request $request, LeaveRequest $leaveRequest)
+    {
+        if (! Auth::user()->hasPermission('leave.manage') && ($leaveRequest->user_id !== Auth::id() || $leaveRequest->status !== 'pending')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'required|string',
+            'category' => 'nullable|string|in:cuti,sakit,mendadak,keluarga,lainnya',
+        ]);
+
+        $start = Carbon::parse($request->start_date);
+        $end = Carbon::parse($request->end_date);
+        $daysRequested = $start->diffInDays($end) + 1;
+
+        $reasonText = $request->reason;
+        if ($request->filled('category')) {
+            $labels = [
+                'cuti' => 'Cuti',
+                'sakit' => 'Sakit',
+                'mendadak' => 'Keperluan Mendadak',
+                'keluarga' => 'Keperluan Keluarga',
+                'lainnya' => 'Izin Lainnya',
+            ];
+            $label = $labels[$request->category] ?? ucfirst($request->category);
+            $reasonText = '['.$label.'] '.$reasonText;
+        }
+
+        $type = 'leave';
+        if ($request->filled('category')) {
+            if ($request->category === 'sakit') {
+                $type = 'sick';
+            } elseif (in_array($request->category, ['mendadak', 'keluarga', 'lainnya'])) {
+                $type = 'permission';
+            }
+        }
+
+        $leaveRequest->update([
+            'type' => $type,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'reason' => $reasonText,
+            'leave_days_used' => $daysRequested,
+        ]);
+
+        return redirect()->route(Auth::user()->hasPermission('leave.manage') ? 'admin.leave-requests' : 'employee.leave-requests')
+            ->with('success', __('Leave request updated successfully.'));
     }
 
     public function employee()

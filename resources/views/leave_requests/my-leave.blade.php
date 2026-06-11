@@ -66,6 +66,7 @@
                             <th>Durasi</th>
                             <th>Alasan</th>
                             <th>Status</th>
+                            <th class="text-center pe-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,10 +104,17 @@
                                     <span class="badge text-bg-warning rounded-pill">Pending</span>
                                 @endif
                             </td>
+                            <td class="text-center pe-3">
+                                @if($req->status == 'pending' || Auth::user()->hasPermission('leave.manage'))
+                                <a href="{{ route('leave-requests.edit', $req->id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                    <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                </a>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-body-secondary">Belum ada pengajuan cuti/izin.</td>
+                            <td colspan="6" class="text-center py-5 text-body-secondary">Belum ada pengajuan cuti/izin.</td>
                         </tr>
                         @endforelse
                     </tbody>

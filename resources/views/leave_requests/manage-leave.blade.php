@@ -119,16 +119,21 @@
                                 @endif
                             </td>
                             <td class="text-center pe-3">
-                                @if($req->status == 'pending')
                                 <div class="d-inline-flex gap-2">
+                                    {{-- Admin can edit regardless of status --}}
+                                    <a href="{{ route('leave-requests.edit', $req->id) }}" class="btn btn-outline-primary btn-sm px-3">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+
+                                    @if($req->status == 'pending')
                                     <button class="btn btn-success btn-sm px-3" onclick="approveLeave({{ $req->id }})" type="button">
                                         <i class="fa-solid fa-check"></i>
                                     </button>
                                     <button class="btn btn-danger btn-sm px-3" onclick="rejectLeave({{ $req->id }})" type="button">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
+                                    @endif
                                 </div>
-                                @endif
                             </td>
                         </tr>
                         @empty

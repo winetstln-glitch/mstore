@@ -487,6 +487,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::resource('schedules', \App\Http\Controllers\TechnicianScheduleController::class)->only(['index', 'store', 'destroy']);
     Route::get('employee/leave-requests', [\App\Http\Controllers\LeaveRequestController::class, 'employee'])->name('employee.leave-requests');
     Route::get('admin/leave-requests', [\App\Http\Controllers\LeaveRequestController::class, 'admin'])->name('admin.leave-requests');
+    Route::get('leave-requests/{leaveRequest}/edit', [\App\Http\Controllers\LeaveRequestController::class, 'edit'])->name('leave-requests.edit');
+    Route::put('leave-requests/{leaveRequest}/update-request', [\App\Http\Controllers\LeaveRequestController::class, 'updateRequest'])->name('leave-requests.update-request');
     Route::resource('leave-requests', \App\Http\Controllers\LeaveRequestController::class)->except(['create', 'show', 'edit', 'destroy', 'index']);
 
     // Network & Infrastructure
