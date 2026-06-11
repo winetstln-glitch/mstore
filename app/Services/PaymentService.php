@@ -7,13 +7,14 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
 use App\Models\User;
+use App\Services\Payment\PaymentManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
     public function __construct(
-        public readonly DuitkuService $duitkuService,
+        public readonly PaymentManager $paymentManager,
     ) {}
 
     /**
@@ -42,16 +43,17 @@ class PaymentService
                 'status' => 'pending',
             ]);
 
-            // Generate QRIS using Duitku
-            $qrisResponse = $this->duitkuService->createApiTransaction(
-                referenceId: $transaction->reference_id,
-                amount: $transaction->amount,
-                paymentMethod: 'QR',
-                productDetails: $this->getProductDetails($paymentable),
-                customerName: $customerName,
-                customerEmail: $email ?? 'default@example.com',
-                customerPhone: $phoneNumber,
-            );
+            // Generate QRIS using Duitku Gateway
+            $duitku = $this->paymentManager->gateway('duitku');
+            $qrisResponse = $duitku->createTransaction([
+                'reference_id' => $transaction->reference_id,
+                'amount' => $transaction->amount,
+                'payment_method' => 'QR',
+                'description' => $this->getProductDetails($paymentable),
+                'customer_name' => $customerName,
+                'customer_email' => $email ?? 'default@example.com',
+                'customer_phone' => $phoneNumber,
+            ]);
 
             if (isset($qrisResponse['success']) && !$qrisResponse['success']) {
                 throw new \Exception('Failed to generate QRIS: ' . ($qrisResponse['message'] ?? 'Unknown error'));
@@ -78,7 +80,9 @@ class PaymentService
      */
     public function processCallback(array $data): void
     {
-        $notif = $this->duitkuService->verifyCallback($data, true) ?? $this->duitkuService->verifyCallback($data, false);
+        $duitku = $this->paymentManager->gateway('duitku');
+        $notif = $duitku->handleNotification($data);
+
         if (! is_array($notif)) {
             throw new \Exception('Invalid signature');
         }
@@ -86,12 +90,6 @@ class PaymentService
         $referenceId = $notif['merchantOrderId'] ?? $notif['reference_id'] ?? null;
         if (! is_string($referenceId) || $referenceId === '') {
             throw new \Exception('Missing reference_id');
-        }
-
-        $merchantCode = (string) ($notif['merchantCode'] ?? '');
-        $expectedMerchantCode = (string) \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
-        if ($expectedMerchantCode !== '' && $merchantCode !== '' && ! hash_equals($expectedMerchantCode, $merchantCode)) {
-            throw new \Exception('Invalid merchant');
         }
 
         Log::info('Processing payment callback', [

@@ -4,24 +4,35 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
-use App\Services\MidtransService;
+use App\Models\Setting;
+use App\Services\Payment\PaymentManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
+    protected $paymentManager;
+
+    public function __construct(PaymentManager $paymentManager)
+    {
+        $this->paymentManager = $paymentManager;
+    }
+
     public function index()
     {
         $user = Auth::user();
         app(\App\Services\BillingService::class)->syncFromMixRadius($user, app(\App\Services\MixRadiusService::class));
         $invoices = $user->invoices()->latest()->get();
-        $clientKey = app(MidtransService::class)->getClientKey();
-        $snapJs = config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION')) ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        
+        $midtrans = $this->paymentManager->gateway('midtrans');
+        $clientKey = Setting::getValue('midtrans_client_key');
+        $isProd = Setting::getValue('midtrans_sandbox') == '0';
+        $snapJs = $isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
 
         return view('client.invoices.index', compact('invoices', 'clientKey', 'snapJs'));
     }
 
-    public function pay(Invoice $invoice, MidtransService $midtrans)
+    public function pay(Invoice $invoice)
     {
         $this->authorizeInvoice($invoice);
         if ($invoice->status === 'paid') {
@@ -31,9 +42,28 @@ class InvoiceController extends Controller
             $invoice->code = 'INV-'.str_pad($invoice->id, 6, '0', STR_PAD_LEFT).'-'.Str::random(4);
             $invoice->save();
         }
-        $token = $midtrans->createSnapToken($invoice);
-        $clientKey = $midtrans->getClientKey();
-        $snapJs = config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION')) ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+        $midtrans = $this->paymentManager->gateway('midtrans');
+        $payload = [
+            'amount' => $invoice->amount,
+            'reference_id' => $invoice->code,
+            'description' => 'Invoice ' . $invoice->code,
+            'customer_name' => Auth::user()->name,
+            'customer_email' => Auth::user()->email,
+            'customer_phone' => Auth::user()->phone,
+        ];
+
+        $transaction = $midtrans->createTransaction($payload);
+        $token = $transaction['token'] ?? '';
+        
+        $clientKey = Setting::getValue('midtrans_client_key');
+        $isProd = Setting::getValue('midtrans_sandbox') == '0';
+        $snapJs = $isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+        $invoice->update([
+            'midtrans_order_id' => $invoice->code,
+            'snap_token' => $token,
+        ]);
 
         return view('client.invoices.pay', compact('invoice', 'token', 'clientKey', 'snapJs'));
     }

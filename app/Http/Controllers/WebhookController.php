@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\RenewUserJob;
 use App\Models\Invoice;
-use App\Services\MidtransService;
+use App\Services\Payment\PaymentManager;
 use App\Services\MixRadiusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,15 +12,23 @@ use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
-    public function midtrans(Request $request, MidtransService $midtrans, MixRadiusService $mix)
+    protected $paymentManager;
+
+    public function __construct(PaymentManager $paymentManager)
     {
-        return $this->handleNotification($request, $midtrans, $mix);
+        $this->paymentManager = $paymentManager;
     }
 
-    public function handleNotification(Request $request, MidtransService $midtrans, MixRadiusService $mix)
+    public function midtrans(Request $request, MixRadiusService $mix)
     {
+        return $this->handleNotification($request, $mix);
+    }
+
+    public function handleNotification(Request $request, MixRadiusService $mix)
+    {
+        $midtrans = $this->paymentManager->gateway('midtrans');
         $payload = $request->all();
-        if (! $midtrans->verifySignature($payload)) {
+        if (! $midtrans->verifySignature($payload, $payload['signature_key'] ?? '')) {
             Log::warning('Midtrans signature invalid', [
                 'order_id' => $payload['order_id'] ?? null,
                 'keys' => array_slice(array_keys($payload), 0, 25),

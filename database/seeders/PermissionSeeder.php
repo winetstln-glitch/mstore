@@ -113,6 +113,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'setting.view', 'label' => 'View Settings', 'group' => 'Settings'],
             ['name' => 'setting.update', 'label' => 'Update Settings', 'group' => 'Settings'],
 
+            // Payment Gateway
+            ['name' => 'payment.view', 'label' => 'View Payment Gateway', 'group' => 'Settings'],
+            ['name' => 'payment.edit', 'label' => 'Edit Payment Gateway', 'group' => 'Settings'],
+            ['name' => 'payment.test', 'label' => 'Test Payment Gateway', 'group' => 'Settings'],
+            ['name' => 'payment.delete', 'label' => 'Delete Payment Gateway', 'group' => 'Settings'],
+
             // API Keys
             ['name' => 'apikey.view', 'label' => 'View API Keys', 'group' => 'Settings'],
             ['name' => 'apikey.manage', 'label' => 'Manage API Keys', 'group' => 'Settings'],

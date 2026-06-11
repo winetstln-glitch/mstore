@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Voucher;
 use App\Models\VoucherPayment;
 use App\Models\VoucherTemplate;
-use App\Jobs\Vouchers\FulfillVoucherPaymentJob;
-use App\Services\DuitkuService;
+use App\Services\Payment\PaymentManager;
 use App\Services\VoucherService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
@@ -15,13 +14,13 @@ use Illuminate\Support\Facades\Log;
 
 class VoucherPaymentController extends Controller
 {
-    protected $duitkuService;
+    protected $paymentManager;
     protected $voucherService;
     protected $whatsappService;
 
-    public function __construct(DuitkuService $duitkuService, VoucherService $voucherService, WhatsAppService $whatsappService)
+    public function __construct(PaymentManager $paymentManager, VoucherService $voucherService, WhatsAppService $whatsappService)
     {
-        $this->duitkuService = $duitkuService;
+        $this->paymentManager = $paymentManager;
         $this->voucherService = $voucherService;
         $this->whatsappService = $whatsappService;
     }
@@ -50,20 +49,15 @@ class VoucherPaymentController extends Controller
         ];
         
         try {
-            // Get available payment methods
-            $duitkuResponse = $this->duitkuService->getPaymentMethod($template->price);
+            // Get available payment methods using DuitkuGateway
+            $duitku = $this->paymentManager->gateway('duitku');
+            $duitkuResponse = $duitku->getPaymentMethods();
             
-            // Merge with safe default if response is valid
             if (is_array($duitkuResponse)) {
-                $paymentMethods = array_merge($paymentMethods, $duitkuResponse);
-            }
-            
-            // Fallback if payment methods couldn't be retrieved
-            if (isset($paymentMethods['success']) && $paymentMethods['success'] === false) {
-                \Illuminate\Support\Facades\Log::warning('Duitku getPaymentMethod failed', ['response' => $paymentMethods]);
+                $paymentMethods['paymentFee'] = $duitkuResponse;
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error in selectPaymentMethod', ['exception' => $e->getMessage()]);
+            Log::error('Error in selectPaymentMethod', ['exception' => $e->getMessage()]);
         }
         
         return view('voucher-payment.select-payment', compact('template', 'paymentMethods', 'request'));
@@ -99,41 +93,39 @@ class VoucherPaymentController extends Controller
             'use_pop' => $usePop,
         ]);
 
-        // Create transaction with Duitku
-        if ($usePop) {
-            $transaction = $this->duitkuService->createPopTransaction(
-                $referenceId,
-                $template->price,
-                $template->name,
-                $request->customer_name,
-                $email,
-                $request->phone_number,
-                $request->payment_method
-            );
-        } else {
-            $transaction = $this->duitkuService->createApiTransaction(
-                $referenceId,
-                $template->price,
-                $request->payment_method ?? 'QR',
-                $template->name,
-                $request->customer_name,
-                $email,
-                $request->phone_number
-            );
-        }
+        try {
+            $duitku = $this->paymentManager->gateway('duitku');
+            $payload = [
+                'amount' => $template->price,
+                'reference_id' => $referenceId,
+                'description' => $template->name,
+                'customer_name' => $request->customer_name,
+                'customer_email' => $email,
+                'customer_phone' => $request->phone_number,
+            ];
 
-        // Check if Duitku response is successful
-        if (isset($transaction['statusCode']) && $transaction['statusCode'] === '00') {
-            // Update payment with transaction data
-            $payment->update([
-                'qr_url' => $transaction['paymentUrl'] ?? null,
-                'duitku_reference' => $transaction['reference'] ?? null,
-                'payment_method' => $request->payment_method,
-            ]);
-        } else {
-            // Handle error
+            if (!$usePop && $request->filled('payment_method')) {
+                $payload['payment_method'] = $request->payment_method;
+            }
+
+            $transaction = $duitku->createTransaction($payload);
+
+            // Check if Duitku response is successful
+            if (isset($transaction['statusCode']) && $transaction['statusCode'] === '00') {
+                // Update payment with transaction data
+                $payment->update([
+                    'qr_url' => $transaction['paymentUrl'] ?? null,
+                    'duitku_reference' => $transaction['reference'] ?? null,
+                    'payment_method' => $request->payment_method,
+                ]);
+            } else {
+                // Handle error
+                $payment->update(['status' => 'failed']);
+                return back()->with('error', 'Gagal membuat transaksi: ' . ($transaction['statusMessage'] ?? 'Terjadi kesalahan'));
+            }
+        } catch (\Exception $e) {
             $payment->update(['status' => 'failed']);
-            return back()->with('error', 'Gagal membuat transaksi: ' . ($transaction['statusMessage'] ?? 'Terjadi kesalahan'));
+            return back()->with('error', 'Gagal membuat transaksi: ' . $e->getMessage());
         }
 
         return redirect()->route('voucher.payment.show', $referenceId);
@@ -154,50 +146,33 @@ class VoucherPaymentController extends Controller
             'reference' => $request->input('reference'),
         ]);
 
-        // Verify callback using official library
-        $notif = $this->duitkuService->verifyCallback($request->all());
-        
-        if (! $notif) {
-            return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
-        }
-
-        $referenceId = $notif['merchantOrderId'] ?? null;
-        if (! is_string($referenceId) || $referenceId === '') {
-            return response()->json(['success' => false, 'message' => 'Invalid reference'], 400);
-        }
-
-        $merchantCode = (string) ($notif['merchantCode'] ?? '');
-        $expectedMerchantCode = (string) \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
-        if ($expectedMerchantCode !== '' && $merchantCode !== '' && ! hash_equals($expectedMerchantCode, $merchantCode)) {
-            return response()->json(['success' => false, 'message' => 'Invalid merchant'], 403);
-        }
-
-        $normalizeAmount = static function ($value): int {
-            $raw = preg_replace('/[^0-9]/', '', (string) $value);
-            return (int) ($raw === '' ? 0 : $raw);
-        };
-
-        $resultCode = (string) ($notif['resultCode'] ?? $notif['statusCode'] ?? '');
-
-        $payment = null;
-        DB::transaction(function () use ($referenceId, $notif, $resultCode, $normalizeAmount, &$payment) {
-            $payment = VoucherPayment::query()
-                ->where('reference_id', $referenceId)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($payment->status === 'paid') {
-                return;
+        try {
+            $duitku = $this->paymentManager->gateway('duitku');
+            $notif = $duitku->handleNotification($request->all());
+            
+            if (!$notif) {
+                return response()->json(['success' => false, 'message' => 'Invalid notification'], 400);
             }
 
-            $notifAmount = $normalizeAmount($notif['amount'] ?? $notif['paymentAmount'] ?? 0);
-            $expectedAmount = $normalizeAmount($payment->amount);
-            if ($notifAmount > 0 && $expectedAmount > 0 && $notifAmount !== $expectedAmount) {
-                $payment->update(['status' => 'failed']);
-                return;
+            $referenceId = $notif['merchantOrderId'] ?? null;
+            if (!is_string($referenceId) || $referenceId === '') {
+                return response()->json(['success' => false, 'message' => 'Invalid reference'], 400);
             }
 
-            if ($resultCode === '00') {
+            $resultCode = (string) ($notif['resultCode'] ?? $notif['statusCode'] ?? '');
+
+            $payment = null;
+            DB::transaction(function () use ($referenceId, $notif, $resultCode, &$payment) {
+                $payment = VoucherPayment::query()
+                    ->where('reference_id', $referenceId)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($payment->status === 'paid') {
+                    return;
+                }
+
+                if ($resultCode === '00') {
                 $payment->update([
                     'status' => 'paid',
                     'paid_at' => now(),
@@ -222,6 +197,10 @@ class VoucherPaymentController extends Controller
         }
 
         return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Duitku Callback Error', ['message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function return(Request $request)
@@ -235,7 +214,8 @@ class VoucherPaymentController extends Controller
     {
         $payment = VoucherPayment::where('reference_id', $referenceId)->firstOrFail();
         
-        $status = $this->duitkuService->checkTransaction($referenceId, !$payment->use_pop);
+        $duitku = $this->paymentManager->gateway('duitku');
+        $status = $duitku->checkStatus($referenceId);
         
         return response()->json($status);
     }

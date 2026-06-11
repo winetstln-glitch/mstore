@@ -170,7 +170,8 @@
 
                         if ($type === 'link') {
                             $routeName = (string) ($node['route'] ?? '');
-                            $href = \Illuminate\Support\Facades\Route::has($routeName) ? route($routeName) : '#';
+                            $routeParams = $node['route_params'] ?? [];
+                            $href = \Illuminate\Support\Facades\Route::has($routeName) ? route($routeName, $routeParams) : '#';
                             $html .= '<a href="'.e($href).'" class="sidebar-item'.($active ? ' active' : '').'">'.$iconHtml.'<span>'.e($label).'</span></a>';
                             continue;
                         }

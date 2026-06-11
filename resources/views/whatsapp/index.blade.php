@@ -170,58 +170,6 @@
 
                     <hr class="my-4">
                     
-                    {{-- Duitku QRIS Settings --}}
-                    <div class="card bg-light border-0 mb-3">
-                        <div class="card-header bg-transparent border-0 pb-0">
-                            <h6 class="fw-bold mb-0">
-                                <i class="fas fa-qrcode me-2"></i>
-                                QRIS Duitku (Pembayaran Voucher Hotspot)
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info mb-3">
-                                <div class="fw-semibold mb-1">Status Konfigurasi QRIS Duitku</div>
-                                <div>Merchant Code: <code>{{ $duitkuMerchantCode->value ?: '-' }}</code></div>
-                                <div>API Key: <code>{{ $maskedDuitkuApiKey ?: 'Belum diatur' }}</code></div>
-                                <div>Mode: <code>{{ $duitkuSandbox->value == '1' ? 'Sandbox (Testing)' : 'Production' }}</code></div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label>Duitku Merchant Code</label>
-                                        <input type="text" class="form-control" name="duitku_merchant_code" value="{{ $duitkuMerchantCode->value }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label>Duitku API Key Baru</label>
-                                        <input type="password" class="form-control" name="duitku_api_key" placeholder="Isi hanya jika ingin mengganti API key">
-                                        <div class="form-text">Kosongkan jika tidak ingin mengubah API key yang sudah tersimpan.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="duitku_sandbox" name="duitku_sandbox" value="1" {{ $duitkuSandbox->value == '1' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="duitku_sandbox">Gunakan Duitku Sandbox (Untuk Testing)</label>
-                                </div>
-                            </div>
-                            
-                            <div class="alert alert-secondary">
-                                <div class="fw-semibold mb-2">URL Callback untuk Duitku</div>
-                                <div class="input-group">
-                                    <input type="text" class="form-control font-monospace" value="{{ route('voucher.payment.callback') }}" id="duitkuCallbackUrl" readonly>
-                                    <button class="btn btn-outline-primary" type="button" onclick="copyDuitkuCallbackUrl()">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <div class="form-text">Salin URL ini dan masukkan ke panel pengaturan webhook Duitku Anda.</div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success">
                             <i class="fa-solid fa-save"></i> Simpan Konfigurasi

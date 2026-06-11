@@ -167,35 +167,6 @@ class WhatsAppController extends Controller implements HasMiddleware
             ]
         );
 
-        // Duitku Settings
-        $duitkuMerchantCode = Setting::firstOrCreate(
-            ['key' => 'duitku_merchant_code'],
-            [
-                'value' => env('DUITKU_MERCHANT_CODE'),
-                'group' => 'duitku',
-                'type' => 'text',
-                'label' => 'Duitku Merchant Code',
-            ]
-        );
-        $duitkuApiKey = Setting::firstOrCreate(
-            ['key' => 'duitku_api_key'],
-            [
-                'value' => env('DUITKU_API_KEY'),
-                'group' => 'duitku',
-                'type' => 'password',
-                'label' => 'Duitku API Key',
-            ]
-        );
-        $duitkuSandbox = Setting::firstOrCreate(
-            ['key' => 'duitku_sandbox'],
-            [
-                'value' => env('DUITKU_SANDBOX') === false || env('DUITKU_SANDBOX') === 'false' ? '0' : '1',
-                'group' => 'duitku',
-                'type' => 'boolean',
-                'label' => 'Gunakan Duitku Sandbox',
-            ]
-        );
-
         // New Group Notification Settings
         Setting::firstOrCreate(['key' => 'whatsapp_ticket_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Ticket Notification Enabled']);
         Setting::firstOrCreate(['key' => 'whatsapp_attendance_notification_enabled'], ['value' => '1', 'group' => 'whatsapp', 'type' => 'boolean', 'label' => 'WhatsApp Attendance Notification Enabled']);
@@ -214,9 +185,6 @@ class WhatsAppController extends Controller implements HasMiddleware
         $maskedWaApiKey = is_string($waApiKey->value) && $waApiKey->value !== ''
             ? str_repeat('*', max(strlen($waApiKey->value) - 4, 0)) . substr($waApiKey->value, -4)
             : null;
-        $maskedDuitkuApiKey = is_string($duitkuApiKey->value) && $duitkuApiKey->value !== ''
-            ? str_repeat('*', max(strlen($duitkuApiKey->value) - 4, 0)) . substr($duitkuApiKey->value, -4)
-            : null;
         
         return view('whatsapp.index', compact(
             'template',
@@ -231,11 +199,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             'unknownKeywordReply',
             'waApiUrl',
             'waApiKey',
-            'maskedWaApiKey',
-            'duitkuMerchantCode',
-            'duitkuApiKey',
-            'maskedDuitkuApiKey',
-            'duitkuSandbox'
+            'maskedWaApiKey'
         ));
     }
 

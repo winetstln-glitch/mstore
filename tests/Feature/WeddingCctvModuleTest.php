@@ -62,14 +62,17 @@ class WeddingCctvModuleTest extends TestCase
 
         $this->actingAs($admin);
         
-        // Mock DuitkuService to return valid notification
-        $this->mock(\App\Services\DuitkuService::class, function ($mock) use ($transaction) {
-            $mock->shouldReceive('verifyCallback')
-                ->andReturn([
-                    'merchantOrderId' => $transaction->reference_id,
-                    'resultCode' => '00',
-                    'merchantCode' => config('services.duitku.merchant_code'),
-                ]);
+        // Mock PaymentManager and DuitkuGateway
+        $mockGateway = $this->mock(\App\Services\Payment\DuitkuGateway::class);
+        $mockGateway->shouldReceive('handleNotification')
+            ->andReturn([
+                'merchantOrderId' => $transaction->reference_id,
+                'resultCode' => '00',
+                'merchantCode' => config('services.duitku.merchant_code'),
+            ]);
+            
+        $this->mock(\App\Services\Payment\PaymentManager::class, function ($mock) use ($mockGateway) {
+            $mock->shouldReceive('gateway')->with('duitku')->andReturn($mockGateway);
         });
 
         app(PaymentService::class)->processCallback([
@@ -134,14 +137,17 @@ class WeddingCctvModuleTest extends TestCase
 
         $this->actingAs($admin);
 
-        // Mock DuitkuService to return valid notification
-        $this->mock(\App\Services\DuitkuService::class, function ($mock) use ($transaction) {
-            $mock->shouldReceive('verifyCallback')
-                ->andReturn([
-                    'merchantOrderId' => $transaction->reference_id,
-                    'resultCode' => '00',
-                    'merchantCode' => config('services.duitku.merchant_code'),
-                ]);
+        // Mock PaymentManager and DuitkuGateway
+        $mockGateway = $this->mock(\App\Services\Payment\DuitkuGateway::class);
+        $mockGateway->shouldReceive('handleNotification')
+            ->andReturn([
+                'merchantOrderId' => $transaction->reference_id,
+                'resultCode' => '00',
+                'merchantCode' => config('services.duitku.merchant_code'),
+            ]);
+            
+        $this->mock(\App\Services\Payment\PaymentManager::class, function ($mock) use ($mockGateway) {
+            $mock->shouldReceive('gateway')->with('duitku')->andReturn($mockGateway);
         });
 
         app(PaymentService::class)->processCallback([

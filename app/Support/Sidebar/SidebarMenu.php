@@ -90,10 +90,10 @@ class SidebarMenu
                 'id' => 'whatsapp-ai',
                 'label' => 'WhatsApp & AI',
                 'items' => [
-                    self::group('wa', 'WhatsApp', [
-                        self::link('wa-dashboard', 'Dashboard WhatsApp', 'whatsapp.index', permissions: ['chat.view']),
+                    self::group('wa', 'WhatsApp Gateway', [
+                        self::link('wa-dashboard', 'Dashboard WA', 'whatsapp.index', permissions: ['chat.view']),
                         self::link('wa-bot-builder', 'Bot Builder', 'whatsapp.builder.index', permissions: ['chat.manage']),
-                        self::link('wa-logs', 'WhatsApp Logs', 'whatsapp.logs', permissions: ['chat.view']),
+                        self::link('wa-logs', 'Pesan Terkirim', 'whatsapp.logs', permissions: ['chat.view']),
                         self::link('wa-analytics', 'Analytics', 'whatsapp.analytics', permissions: ['whatsapp.analytics.view']),
                     ]),
                     self::group('ai', 'AI', [
@@ -202,21 +202,27 @@ class SidebarMenu
                 'id' => 'system-administration',
                 'label' => 'System Administration',
                 'items' => [
-                    self::group('sys-settings', 'Settings', [
-                        self::link('settings', 'Pengaturan', 'settings.index', permissions: ['setting.view']),
+                    self::group('sys-settings', 'General Settings', [
+                        self::link('settings', 'Pengaturan Umum', 'settings.index', permissions: ['setting.view']),
                         self::link('regions', 'Wilayah', 'regions.index', permissions: ['region.view']),
                         self::link('coordinators', 'Pengurus', 'coordinators.index', permissions: ['coordinator.view']),
                     ], permissions: ['setting.view', 'region.view', 'coordinator.view']),
+                    self::group('sys-payment', 'Payment Gateway', [
+                        self::link('payment-dashboard', 'Dashboard Payment', 'payment.dashboard', permissions: ['payment.view']),
+                        self::link('payment-duitku', 'Duitku', 'payment.gateway', ['gateway' => 'duitku'], permissions: ['payment.view']),
+                        self::link('payment-midtrans', 'Midtrans', 'payment.gateway', ['gateway' => 'midtrans'], permissions: ['payment.view']),
+                    ], permissions: ['payment.view']),
                     self::group('sys-users', 'Users & Roles', [
                         self::link('users', 'Users', 'users.index', permissions: ['user.view']),
                         self::link('roles', 'Roles', 'roles.index', permissions: ['role.view']),
                     ], permissions: ['user.view', 'role.view']),
                     self::group('sys-integrations', 'Integrations', [
-                        self::link('telegram', 'Telegram', 'telegram.index', permissions: ['telegram.view']),
+                        self::link('wa-gateway', 'WhatsApp Gateway', 'whatsapp.index', permissions: ['chat.view']),
+                        self::link('telegram', 'Telegram Bot', 'telegram.index', permissions: ['telegram.view']),
                         self::link('api-keys', 'API Keys', 'apikeys.index', permissions: ['apikey.view']),
-                    ], permissions: ['telegram.view', 'apikey.view']),
-                    self::group('sys-maintenance', 'Maintenance', [
-                        self::link('security-monitor', 'Security & Monitoring', 'security.monitoring', permissions: ['security.monitoring.view']),
+                    ], permissions: ['chat.view', 'telegram.view', 'apikey.view']),
+                    self::group('sys-maintenance', 'Maintenance & Security', [
+                        self::link('security-monitor', 'Security Monitoring', 'security.monitoring', permissions: ['security.monitoring.view']),
                     ], permissions: ['security.monitoring.view']),
                 ],
             ],
@@ -240,6 +246,7 @@ class SidebarMenu
         string $id,
         string $label,
         string $route,
+        array $params = [],
         array $permissions = [],
         array $roles = [],
         array $routePatterns = [],
@@ -249,6 +256,7 @@ class SidebarMenu
             'id' => $id,
             'label' => $label,
             'route' => $route,
+            'route_params' => $params,
             'icon' => self::inferIcon($id, $label, $route, 'link'),
             'route_patterns' => $routePatterns,
             'permissions' => $permissions,

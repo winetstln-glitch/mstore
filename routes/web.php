@@ -87,8 +87,9 @@ Route::get('/debug-duitku', function () {
         // Test getPaymentMethod via our Service
         echo "<h2>3. Test getPaymentMethod via Service:</h2>";
         try {
-            $duitku = app()->make(\App\Services\DuitkuService::class);
-            $result = $duitku->getPaymentMethod(10000);
+            $paymentManager = app(\App\Services\Payment\PaymentManager::class);
+            $duitku = $paymentManager->gateway('duitku');
+            $result = $duitku->getPaymentMethods();
             if (isset($result['success']) && !$result['success']) {
                 echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($result['message']) . "</p>";
             } else {
@@ -147,7 +148,7 @@ if (app()->environment('local')) {
 
         // Panggil method callback secara manual
         $controller = new \App\Http\Controllers\VoucherPaymentController(
-            app(\App\Services\DuitkuService::class),
+            app(\App\Services\Payment\PaymentManager::class),
             app(\App\Services\VoucherService::class),
             app(\App\Services\WhatsAppService::class)
         );
@@ -416,6 +417,18 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('/settings/atk', [SettingController::class, 'update'])->name('settings.atk.update');
     Route::get('/settings/wash', [SettingController::class, 'wash'])->name('settings.wash.index');
     Route::post('/settings/wash', [SettingController::class, 'update'])->name('settings.wash.update');
+
+    // Payment Gateway Management
+    Route::middleware(['permission:payment.view'])->prefix('payment-gateway')->group(function () {
+        Route::get('/', [\App\Http\Controllers\PaymentGatewayController::class, 'dashboard'])->name('payment.dashboard');
+        Route::get('/{gateway}', [\App\Http\Controllers\PaymentGatewayController::class, 'gateway'])->name('payment.gateway');
+        Route::post('/{gateway}/update', [\App\Http\Controllers\PaymentGatewayController::class, 'update'])
+            ->middleware('permission:payment.edit')
+            ->name('payment.gateway.update');
+        Route::post('/{gateway}/test', [\App\Http\Controllers\PaymentGatewayController::class, 'testConnection'])
+            ->middleware('permission:payment.test')
+            ->name('payment.gateway.test');
+    });
 
     // API Keys Management
     Route::get('settings/apikeys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('apikeys.index');

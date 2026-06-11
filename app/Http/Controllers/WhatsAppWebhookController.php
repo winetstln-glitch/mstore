@@ -8,8 +8,7 @@ use App\Models\VoucherPayment;
 use App\Models\VoucherTemplate;
 use App\Models\WhatsAppMenu;
 use App\Models\WhatsAppLog;
-use App\Services\AiService;
-use App\Services\DuitkuService;
+use App\Services\Payment\PaymentManager;
 use App\Services\VoucherService;
 use App\Services\WhatsAppService;
 use App\Services\WhatsApp\WhatsAppAutoReplyService;
@@ -22,15 +21,15 @@ class WhatsAppWebhookController extends Controller
     protected $whatsappService;
     protected $aiService;
     protected $voucherService;
-    protected $duitkuService;
+    protected $paymentManager;
     protected $autoReplyService;
 
-    public function __construct(WhatsAppService $whatsappService, AiService $aiService, VoucherService $voucherService, DuitkuService $duitkuService, WhatsAppAutoReplyService $autoReplyService)
+    public function __construct(WhatsAppService $whatsappService, AiService $aiService, VoucherService $voucherService, PaymentManager $paymentManager, WhatsAppAutoReplyService $autoReplyService)
     {
         $this->whatsappService = $whatsappService;
         $this->aiService = $aiService;
         $this->voucherService = $voucherService;
-        $this->duitkuService = $duitkuService;
+        $this->paymentManager = $paymentManager;
         $this->autoReplyService = $autoReplyService;
     }
 
@@ -315,15 +314,16 @@ class WhatsAppWebhookController extends Controller
         ]);
 
         // Create transaction with Duitku
-        $duitkuResponse = $this->duitkuService->createTransaction(
-            $payment->reference_id,
-            $template->price,
-            'QR', // QRIS payment method
-            "Voucher Hotspot - {$template->name}",
-            "Customer {$phone}",
-            "customer@example.com",
-            $phone
-        );
+        $duitku = $this->paymentManager->gateway('duitku');
+        $duitkuResponse = $duitku->createTransaction([
+            'reference_id' => $payment->reference_id,
+            'amount' => $template->price,
+            'payment_method' => 'QR',
+            'description' => 'Voucher Hotspot: '.$template->name,
+            'customer_name' => 'WA-'.$phone,
+            'customer_email' => 'customer@mstore.id',
+            'customer_phone' => $phone,
+        ]);
 
         if (isset($duitkuResponse['statusCode']) && $duitkuResponse['statusCode'] == '00') {
             // Success
@@ -360,7 +360,8 @@ class WhatsAppWebhookController extends Controller
     private function checkPaymentStatus(VoucherPayment $payment): string
     {
         // Check with Duitku
-        $duitkuResponse = $this->duitkuService->checkTransaction($payment->reference_id);
+        $duitku = $this->paymentManager->gateway('duitku');
+        $duitkuResponse = $duitku->checkStatus($payment->reference_id);
 
         if (isset($duitkuResponse['statusCode']) && $duitkuResponse['statusCode'] == '00') {
             // Already paid
