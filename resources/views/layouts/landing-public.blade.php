@@ -323,6 +323,10 @@
                 <i class="fas fa-address-book"></i>
                 <span>Kontak</span>
             </a>
+            <a href="{{ $authHref }}" class="bottom-item">
+                <i class="fas fa-user"></i>
+                <span>{{ $authLabel }}</span>
+            </a>
             <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi layanan.') }}" class="bottom-item">
                 <i class="fab fa-whatsapp"></i>
                 <span>WA</span>

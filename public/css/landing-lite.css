@@ -578,7 +578,7 @@ body.landing-scope .bottom-bar-inner {
     margin: 0 auto;
     padding: 0 var(--container-padding);
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 0.5rem;
 }
 
