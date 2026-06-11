@@ -271,6 +271,15 @@
                 <li>Riwayat absensi Anda bulan ini akan ditampilkan di bagian bawah.</li>
             </ul>
         </div>
+        
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mb-4">
+            <button type="button" class="btn btn-outline-primary flex-grow-1" data-bs-toggle="modal" data-bs-target="#createLeaveModal">
+                <i class="fa-solid fa-file-lines me-2"></i>
+                Ajukan Cuti/Izin
+            </button>
+        </div>
+
         <div class="card main-attendance-card mb-4">
             <!-- Header Section -->
             <div class="attendance-header">
@@ -796,4 +805,49 @@
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     });
 </script>
+
+<div class="modal fade" id="createLeaveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ route('leave-requests.store') }}" method="POST">
+            @csrf
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title">Ajukan Cuti/Izin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Jenis</label>
+                        <select name="category" class="form-select" required>
+                            <option value="cuti">Cuti</option>
+                            <option value="sakit">Izin Sakit</option>
+                            <option value="keluarga">Izin Keperluan Keluarga</option>
+                            <option value="mendadak">Izin Keperluan Mendadak</option>
+                            <option value="lainnya">Izin Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" class="form-control" required min="{{ date('Y-m-d') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal Selesai</label>
+                        <input type="date" name="end_date" class="form-control" required min="{{ date('Y-m-d') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alasan</label>
+                        <textarea name="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="alert alert-info rounded-4 border-0 mb-0">
+                        Maximum {{ $leaveQuota }} hari diperbolehkan per bulan.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
