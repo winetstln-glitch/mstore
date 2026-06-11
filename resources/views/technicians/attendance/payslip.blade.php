@@ -16,18 +16,82 @@
             </ul>
         </div>
         
-        <!-- Kontrol Aksi (Sembunyi saat Cetak) -->
-        <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mb-4 print-none">
-            <div>
-                <h5 class="fw-bold text-dark mb-0">Manajemen Slip Gaji</h5>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('attendance.index') }}" class="btn btn-sm btn-light border">
-                    <i class="fa-solid fa-arrow-left me-1"></i>Kembali
-                </a>
-                <button onclick="window.print()" class="btn btn-sm btn-primary px-3 shadow-sm">
-                    <i class="fa-solid fa-print me-1"></i>Cetak PDF (A4)
-                </button>
+        <!-- Filter & Kontrol Aksi (Sembunyi saat Cetak) -->
+        <div class="bg-white p-3 rounded-4 shadow-sm border mb-4 print-none">
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">Manajemen Slip Gaji</h5>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('attendance.index') }}" class="btn btn-sm btn-light border">
+                            <i class="fa-solid fa-arrow-left me-1"></i>Kembali
+                        </a>
+                        <button onclick="window.print()" class="btn btn-sm btn-primary px-3 shadow-sm">
+                            <i class="fa-solid fa-print me-1"></i>Cetak PDF (A4)
+                        </button>
+                    </div>
+                </div>
+                
+                <form action="{{ route('attendance.payslip') }}" method="GET" class="w-100 border-top pt-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-muted mb-1">{{ __('Filter Pengguna') }}</label>
+                            <select name="user_id" class="form-select form-select-sm js-search-select">
+                                <option value="">{{ __('Semua Staf') }}</option>
+                                @foreach($technicians as $tech)
+                                    <option value="{{ $tech->id }}" {{ request('user_id') == $tech->id ? 'selected' : '' }}>
+                                        {{ $tech->name }} ({{ $tech->role->name ?? __('User') }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small fw-bold text-muted mb-1">{{ __('Bulan') }}</label>
+                            <input type="month" name="month" value="{{ request('month') }}" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small fw-bold text-muted mb-1">{{ __('Dari Tanggal') }}</label>
+                            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small fw-bold text-muted mb-1">{{ __('Sampai Tanggal') }}</label>
+                            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6 col-md-auto d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm px-3">
+                                <i class="fa-solid fa-filter me-1"></i>{{ __('Filter') }}
+                            </button>
+                            <a href="{{ route('attendance.payslip') }}" class="btn btn-outline-secondary btn-sm" title="Reset">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Ringkasan Filter Aktif -->
+                    @php
+                        $activeFilters = [];
+                        if(request('user_id')) {
+                            $user = $technicians->where('id', request('user_id'))->first();
+                            $activeFilters[] = 'Pengguna: ' . ($user->name ?? '-');
+                        }
+                        if(request('start_date') && request('end_date')) {
+                            $activeFilters[] = 'Periode: ' . \Carbon\Carbon::parse(request('start_date'))->translatedFormat('d M Y') . ' - ' . \Carbon\Carbon::parse(request('end_date'))->translatedFormat('d M Y');
+                        } elseif(request('month')) {
+                            $activeFilters[] = 'Bulan: ' . \Carbon\Carbon::parse(request('month'))->translatedFormat('F Y');
+                        } elseif(request('date')) {
+                            $activeFilters[] = 'Tanggal: ' . \Carbon\Carbon::parse(request('date'))->translatedFormat('d M Y');
+                        }
+                    @endphp
+                    @if(count($activeFilters) > 0)
+                    <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
+                        <span class="x-small fw-bold text-muted"><i class="fa-solid fa-filter-circle me-1"></i> Filter Aktif:</span>
+                        @foreach($activeFilters as $filter)
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis x-small px-2 py-1">{{ $filter }}</span>
+                        @endforeach
+                    </div>
+                    @endif
+                </form>
             </div>
         </div>
 
@@ -126,8 +190,12 @@
                                         @endif
                                     </div>
                                     <div class="text-center">
+                                        <p class="xx-small fw-bold text-muted text-uppercase mb-0">Cuti</p>
+                                        <p class="small fw-bold text-info mb-0">{{ $data['leave_count'] }}</p>
+                                    </div>
+                                    <div class="text-center">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Izin</p>
-                                        <p class="small fw-bold text-info mb-0">{{ $data['leave_count'] + $data['permit_count'] }}</p>
+                                        <p class="small fw-bold text-info mb-0">{{ $data['permit_count'] }}</p>
                                     </div>
                                     <div class="text-center">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Sakit</p>
@@ -143,6 +211,17 @@
                                         <p class="small fw-bold text-muted mb-0">{{ $data['off_count'] }}</p>
                                     </div>
                                     @endif
+                                </div>
+                                <!-- Paid/Unpaid Days -->
+                                <div class="d-flex justify-content-between p-2 px-3 mt-2 bg-light rounded-3 border border-secondary-subtle">
+                                    <div class="text-center">
+                                        <p class="xx-small fw-bold text-muted text-uppercase mb-0">Hari Dibayar</p>
+                                        <p class="small fw-bold text-primary mb-0">{{ $data['paid_days'] }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="xx-small fw-bold text-muted text-uppercase mb-0">Hari Tidak Dibayar</p>
+                                        <p class="small fw-bold text-danger mb-0">{{ $data['unpaid_days'] }}</p>
+                                    </div>
                                 </div>
                             </div>
 

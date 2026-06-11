@@ -131,11 +131,23 @@ class LeaveRequestController extends Controller implements HasMiddleware
             $reasonText = '['.$label.'] '.$reasonText;
         }
 
+        // Determine type based on category or reason
+        $type = 'leave';
+        if ($request->filled('category')) {
+            if ($request->category === 'sakit') {
+                $type = 'sick';
+            } elseif (in_array($request->category, ['mendadak', 'keluarga', 'lainnya'])) {
+                $type = 'permission';
+            }
+        }
+
         $leave = LeaveRequest::create([
             'user_id' => Auth::id(),
+            'type' => $type,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'reason' => $reasonText,
+            'leave_days_used' => $daysRequested,
             'status' => 'pending',
         ]);
 
@@ -186,6 +198,67 @@ class LeaveRequestController extends Controller implements HasMiddleware
             'approved_by' => Auth::id(),
             'rejection_reason' => $request->rejection_reason,
         ]);
+
+        $start = $leaveRequest->start_date;
+        $end = $leaveRequest->end_date;
+
+        // Handle APPROVED or REJECTED status
+        if ($leaveRequest->status === 'approved') {
+            // Determine attendance status based on leave type
+            $attendanceStatus = match($leaveRequest->type) {
+                'sick' => 'sick',
+                'permission' => 'permit',
+                default => 'leave',
+            };
+
+            // Loop through each date from start to end
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                // Check if attendance already exists for this user and date
+                $exists = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                    ->where(function ($q) use ($date) {
+                        $q->whereDate('clock_in', $date->toDateString())
+                          ->orWhereDate('work_date', $date->toDateString());
+                    })
+                    ->exists();
+
+                if (! $exists) {
+                    // Create attendance entry
+                    \App\Models\TechnicianAttendance::create([
+                        'user_id' => $leaveRequest->user_id,
+                        'work_date' => $date->toDateString(),
+                        'clock_in' => $date->toDateString() . ' 08:00:00',
+                        'clock_out' => $date->toDateString() . ' 17:00:00',
+                        'status' => $attendanceStatus,
+                        'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id,
+                        'generated_type' => 'leave_request',
+                    ]);
+                }
+            }
+        } elseif ($leaveRequest->status === 'rejected') {
+            // Loop through each date from start to end
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                // Check if attendance already exists for this user and date
+                $exists = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                    ->where(function ($q) use ($date) {
+                        $q->whereDate('clock_in', $date->toDateString())
+                          ->orWhereDate('work_date', $date->toDateString());
+                    })
+                    ->exists();
+
+                if (! $exists) {
+                    // Create alpha attendance entry
+                    \App\Models\TechnicianAttendance::create([
+                        'user_id' => $leaveRequest->user_id,
+                        'work_date' => $date->toDateString(),
+                        'clock_in' => $date->toDateString() . ' 08:00:00',
+                        'clock_out' => $date->toDateString() . ' 17:00:00',
+                        'status' => 'alpha',
+                        'notes' => 'Alpha otomatis karena pengajuan cuti #' . $leaveRequest->id . ' ditolak',
+                        'generated_type' => 'leave_request_rejected',
+                    ]);
+                }
+            }
+        }
 
         // Notify Group via WhatsApp & Telegram
         $user = $leaveRequest->user;

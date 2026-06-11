@@ -446,7 +446,15 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     // Technician Attendance & Kasbon (PLACE BEFORE CATCH-ALL)
     Route::get('kasbon', [\App\Http\Controllers\SalaryAdjustmentController::class, 'index'])->name('technicians.kasbon.index');
     Route::post('salary-adjustments', [\App\Http\Controllers\SalaryAdjustmentController::class, 'store'])->name('salary-adjustments.store');
+    Route::put('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'update'])->name('salary-adjustments.update');
     Route::delete('salary-adjustments/{salaryAdjustment}', [\App\Http\Controllers\SalaryAdjustmentController::class, 'destroy'])->name('salary-adjustments.destroy');
+    
+    // Kasbon Loans
+    Route::post('kasbon-loans', [\App\Http\Controllers\KasbonLoanController::class, 'store'])->name('kasbon-loans.store');
+    Route::put('kasbon-loans/{kasbonLoan}', [\App\Http\Controllers\KasbonLoanController::class, 'update'])->name('kasbon-loans.update');
+    Route::delete('kasbon-loans/{kasbonLoan}', [\App\Http\Controllers\KasbonLoanController::class, 'destroy'])->name('kasbon-loans.destroy');
+    Route::post('kasbon-loans/{kasbonLoan}/installments', [\App\Http\Controllers\KasbonLoanController::class, 'storeInstallment'])->name('kasbon-loans.installments.store');
+    Route::delete('kasbon-loans/{kasbonLoan}/installments/{installment}', [\App\Http\Controllers\KasbonLoanController::class, 'destroyInstallment'])->name('kasbon-loans.installments.destroy');
     
     Route::permanentRedirect('technicians', 'employees');
     Route::any('technicians/{any}', fn () => redirect()->route('employees.index', [], 301))

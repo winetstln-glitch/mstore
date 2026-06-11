@@ -129,7 +129,8 @@ trait HasAttendanceFilters
             $monthlySalary = $employee?->monthly_salary ?? $user->monthly_salary ?? 0;
 
             // Hitung total hari yang dibayar sesuai kebijakan
-            $paidDays = $presentCount + $lateCount + $leaveCount + $sickCount;
+            $paidDays = $presentCount + $lateCount + $leaveCount + $permitCount + $sickCount;
+            $unpaidDays = $alphaCount;
             
             // Hitung potongan keterlambatan (jika ada)
             $lateDeduction = 0;
@@ -185,6 +186,7 @@ trait HasAttendanceFilters
                 'alpha_count' => $alphaCount,
                 'off_count' => $offCount,
                 'paid_days' => $paidDays,
+                'unpaid_days' => $unpaidDays,
                 'working_days' => $workingDays,
                 'daily_salary' => $dailySalary,
                 'total_daily_salary' => $totalDailySalary,

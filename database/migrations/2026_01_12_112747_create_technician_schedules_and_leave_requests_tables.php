@@ -40,7 +40,7 @@ return new class extends Migration
         // Add default setting for leave quota
         Setting::create([
             'key' => 'technician_leave_quota',
-            'value' => '3',
+            'value' => '2',
             'group' => 'attendance',
             'type' => 'number',
             'label' => 'Monthly Leave Quota (Days)',

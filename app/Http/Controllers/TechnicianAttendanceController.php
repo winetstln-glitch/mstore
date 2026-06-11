@@ -162,12 +162,24 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         if ($this->isUserCoordinator($user)) {
             abort(403, 'Anda tidak diizinkan mengakses halaman ini.');
         }
+        
+        $techniciansQuery = User::whereHas('role', function ($q) {
+            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
+        })->where('is_active', true)
+          ->with('role');
+
+        if (! $this->canViewAllAttendanceData()) {
+            $techniciansQuery->where('id', Auth::id());
+        }
+
+        $technicians = $techniciansQuery->orderBy('name')->get();
+        
         $attendances = $this->getFilteredAttendanceQuery($request)->oldest('clock_in')->get();
         $allAdjustments = $this->getFilteredAdjustmentsQuery($request)->get()->groupBy('user_id');
 
         $summary = $this->calculateAttendanceSummary($attendances, $allAdjustments, $request);
 
-        return view('technicians.attendance.payslip', compact('summary', 'request'));
+        return view('technicians.attendance.payslip', compact('summary', 'request', 'technicians'));
     }
 
     public function exportExcel(Request $request)

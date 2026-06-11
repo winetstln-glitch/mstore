@@ -53,5 +53,43 @@ class SidebarRoleVisibilityTest extends TestCase
         $response->assertSee('Ticketing');
         $response->assertDontSee('Finance Center');
     }
-}
 
+    public function test_technician_sees_leave_submission_menu_but_not_leave_management_menu()
+    {
+        $role = Role::firstOrCreate(['name' => Role::TECHNICIAN], ['label' => 'Technician']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $dashboardView = Permission::firstOrCreate(['name' => 'dashboard.view'], ['label' => 'Dashboard View']);
+        $leaveView = Permission::firstOrCreate(['name' => 'leave.view'], ['label' => 'Leave View']);
+
+        $role->permissions()->syncWithoutDetaching([
+            $dashboardView->id,
+            $leaveView->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response->assertStatus(200);
+
+        $response->assertSee('Pengajuan Cuti/Izin Saya');
+        $response->assertDontSee('Kelola Cuti/Izin');
+    }
+
+    public function test_custom_employee_role_with_leave_view_still_sees_leave_submission_menu()
+    {
+        $role = Role::firstOrCreate(['name' => 'karyawan'], ['label' => 'Karyawan']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $dashboardView = Permission::firstOrCreate(['name' => 'dashboard.view'], ['label' => 'Dashboard View']);
+        $leaveView = Permission::firstOrCreate(['name' => 'leave.view'], ['label' => 'Leave View']);
+
+        $role->permissions()->syncWithoutDetaching([
+            $dashboardView->id,
+            $leaveView->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response->assertStatus(200);
+
+        $response->assertSee('Pengajuan Cuti/Izin Saya');
+    }
+}

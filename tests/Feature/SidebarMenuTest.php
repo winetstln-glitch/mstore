@@ -37,5 +37,6 @@ class SidebarMenuTest extends TestCase
 
         $response->assertSee(__('Dashboard NOC'));
         $response->assertSee(__('Pendataan Modem'));
+        $response->assertSee(__('Kelola Cuti/Izin'));
     }
 }

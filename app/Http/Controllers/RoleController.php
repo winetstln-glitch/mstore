@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Permission;
 use App\Models\Role;
+use App\Support\DefaultRolePermissions;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -92,136 +92,7 @@ class RoleController extends Controller implements HasMiddleware
     private function getStandardPermissions()
     {
         $allowedPermissions = $this->getAllowedPermissions();
-        $allowedIds = $allowedPermissions->pluck('id')->toArray();
-
-        $allPermissions = Permission::whereIn('id', $allowedIds)->lazy()->collect();
-
-        $technicianNames = [
-            'dashboard.view', 'ticket.view', 'ticket.complete', 'installation.view', 'installation.edit',
-            'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.report', 'map.view',
-            'odp.view', 'odp.edit', 'odc.view', 'odc.edit', 'leave.view', 'leave.create', 'schedule.view',
-            'profile.view', 'profile.update', 'notification.view', 'notification.manage',
-            'inventory.view', 'inventory.pickup', 'modem-data.view', 'modem-data.create',
-            'olt.view', 'ont.view', 'customer.view', 'calculator.view',
-        ];
-
-        $coordinatorNames = [
-            'dashboard.view', 'inventory.view', 'inventory.pickup', 'inventory.manage', 'map.view',
-            'profile.view', 'profile.update', 'notification.view', 'notification.manage',
-            'finance.view', 'finance.report', 'customer.view', 'odc.view', 'odp.view',
-        ];
-
-        $leaderNames = [
-            'dashboard.view',
-            'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.delete', 'ticket.complete',
-            'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.report',
-            'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.delete',
-            'leave.view', 'leave.create', 'leave.edit',
-            'map.view',
-            'profile.view', 'profile.update',
-            'notification.view', 'notification.manage',
-            'technician.view', 'technician.create', 'technician.edit', 'technician.delete',
-        ];
-
-        $resellerNames = [
-            'dashboard.view', 'customer.view', 'customer.create', 'customer.edit', 'customer.export',
-            'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.complete',
-            'installation.view', 'installation.create', 'installation.edit',
-            'router.view', 'hotspot.view', 'pppoe.view', 'map.view',
-            'finance.view', 'profile.view', 'profile.update',
-            'notification.view', 'notification.manage',
-            'package.view', 'region.view',
-        ];
-
-        $cashierAtkNames = [
-            'atk.view', 'atk.pos', 'atk.report',
-            'attendance.view', 'attendance.create', 'attendance.edit',
-            'profile.view', 'profile.update',
-        ];
-
-        $washNames = ['wash.view', 'wash.pos', 'wash.manage', 'wash.report'];
-        $cashierWashNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
-        $washEmployeeNames = array_values(array_unique(array_merge($technicianNames, $washNames)));
-        $financeStaffNames = array_values(array_unique(array_merge([
-            'dashboard.view', 'finance.view', 'finance.create', 'finance.edit', 'finance.delete', 'finance.report',
-            'inventory.view', 'inventory.manage', 'customer.view', 'customer.create', 'customer.edit',
-            'profile.view', 'profile.update', 'notification.view', 'notification.manage',
-            'attendance.view', 'attendance.report',
-        ])));
-        $hrdManagerNames = array_values(array_unique(array_merge([
-            'dashboard.view',
-            'employee.view', 'employee.create', 'employee.edit', 'employee.delete',
-            'user.view', 'user.create', 'user.edit', 'user.delete',
-            'role.view', 'role.create', 'role.edit', 'role.delete',
-            'inventory.view', 'inventory.manage', 'inventory.pickup',
-            'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.report',
-            'leave.view', 'leave.create', 'leave.edit',
-            'schedule.view', 'schedule.create', 'schedule.edit',
-            'profile.view', 'profile.update',
-            'notification.view', 'notification.manage',
-        ])));
-
-        $nocGroups = [
-            'Dashboard', 'Customer Management', 'Ticket Management', 'Installation Management',
-            'Router Management', 'OLT Management', 'ODC Management', 'ODP Management',
-            'Closure Management', 'HTB Management', 'PPPoE Management', 'Hotspot Management',
-            'Radius', 'Map', 'Network Monitor', 'Profile', 'Notification',
-            'Region Management', 'Package Management',
-        ];
-
-        $directorNames = array_values(array_unique(array_merge([
-            'dashboard.view',
-            'customer.view', 'customer.create', 'customer.edit', 'customer.delete', 'customer.export',
-            'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.delete', 'ticket.complete',
-            'installation.view', 'installation.create', 'installation.edit', 'installation.delete',
-            'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.delete', 'attendance.report',
-            'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.delete',
-            'leave.view', 'leave.create', 'leave.edit', 'leave.delete', 'leave.manage',
-            'map.view',
-            'profile.view', 'profile.update',
-            'notification.view', 'notification.manage',
-            'technician.view', 'technician.create', 'technician.edit', 'technician.delete',
-            'user.view', 'user.create', 'user.edit', 'user.delete',
-            'role.view', 'role.create', 'role.edit', 'role.delete',
-            'inventory.view', 'inventory.manage', 'inventory.pickup',
-            'finance.view', 'finance.create', 'finance.edit', 'finance.delete', 'finance.report',
-            'atk.view', 'atk.pos', 'atk.manage', 'atk.report',
-            'wash.view', 'wash.pos', 'wash.manage', 'wash.report',
-            'router.view', 'router.create', 'router.edit', 'router.delete',
-            'hotspot.view', 'hotspot.create', 'hotspot.edit', 'hotspot.delete',
-            'pppoe.view', 'pppoe.create', 'pppoe.edit', 'pppoe.delete',
-            'olt.view', 'olt.create', 'olt.edit', 'olt.delete',
-            'ont.view', 'ont.create', 'ont.edit', 'ont.delete',
-            'odp.view', 'odp.create', 'odp.edit', 'odp.delete',
-            'odc.view', 'odc.create', 'odc.edit', 'odc.delete',
-            'closure.view', 'closure.create', 'closure.edit', 'closure.delete',
-            'region.view', 'region.create', 'region.edit', 'region.delete',
-            'package.view', 'package.create', 'package.edit', 'package.delete',
-            'setting.view', 'setting.create', 'setting.edit', 'setting.delete',
-            'chat.view', 'telegram.view', 'apikey.view', 'calculator.view', 'genieacs_server.view',
-        ])));
-
-        $templates = [
-            'Admin' => $allPermissions->pluck('id')->values()->toArray(),
-            'Direktur' => $allPermissions->whereIn('name', $directorNames)->pluck('id')->values()->toArray(),
-            'NOC' => $allPermissions->whereIn('group', $nocGroups)->pluck('id')->values()->toArray(),
-            'Teknisi' => $allPermissions->whereIn('name', $technicianNames)->pluck('id')->values()->toArray(),
-            'Leader' => $allPermissions->whereIn('name', $leaderNames)->pluck('id')->values()->toArray(),
-            'Koordinator' => $allPermissions->whereIn('name', $coordinatorNames)->pluck('id')->values()->toArray(),
-            'Reseller' => $allPermissions->whereIn('name', $resellerNames)->pluck('id')->values()->toArray(),
-            'Staf Keuangan' => $allPermissions->whereIn('name', $financeStaffNames)->pluck('id')->values()->toArray(),
-            'Kasir ATK' => $allPermissions->whereIn('name', $cashierAtkNames)->pluck('id')->values()->toArray(),
-            'Kasir Wash' => $allPermissions->whereIn('name', $cashierWashNames)->pluck('id')->values()->toArray(),
-            'Karyawan Wash' => $allPermissions->whereIn('name', $washEmployeeNames)->pluck('id')->values()->toArray(),
-            'Manager HRD' => $allPermissions->whereIn('name', $hrdManagerNames)->pluck('id')->values()->toArray(),
-            'Customer' => [],
-        ];
-
-        foreach ($templates as $key => $ids) {
-            $templates[$key] = array_values(array_intersect($ids, $allowedIds));
-        }
-
-        return $templates;
+        return DefaultRolePermissions::standardTemplatePermissionIds($allowedPermissions);
     }
 
     /**

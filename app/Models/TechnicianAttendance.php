@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Rules\Enum;
 
 class TechnicianAttendance extends Model
 {
@@ -41,6 +42,19 @@ class TechnicianAttendance extends Model
         'clock_in' => 'datetime',
         'clock_out' => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($attendance) {
+            // Validate status
+            $validStatuses = ['present', 'late', 'leave', 'permit', 'sick', 'alpha', 'off'];
+            if (!in_array($attendance->status, $validStatuses)) {
+                throw new \InvalidArgumentException("Invalid status: {$attendance->status}. Must be one of: " . implode(', ', $validStatuses));
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

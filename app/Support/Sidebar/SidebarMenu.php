@@ -137,10 +137,16 @@ class SidebarMenu
                         self::link('attendance', 'Absensi', 'attendance.index', permissions: ['attendance.view']),
                         self::link('attendance-settings', 'Setting Absensi', 'settings.attendance.index', permissions: ['setting.view']),
                         self::link('schedule', 'Jadwal', 'schedules.index', permissions: ['schedule.view']),
-                        self::link('leave', 'Cuti', 'admin.leave-requests', permissions: ['leave.manage']),
+                        self::link(
+                            'leave-my',
+                            'Pengajuan Cuti/Izin Saya',
+                            'employee.leave-requests',
+                            permissions: ['leave.view']
+                        ),
+                        self::link('leave-manage', 'Kelola Cuti/Izin', 'admin.leave-requests', permissions: ['leave.manage']),
                         self::link('kasbon', 'Kasbon', 'technicians.kasbon.index', roles: [Role::ADMIN, Role::FINANCE, Role::HRD_MANAGER]),
                         self::link('payslip', 'Slip Gaji', 'attendance.payslip', permissions: ['attendance.view']),
-                    ], permissions: ['employee.view', 'attendance.view', 'setting.view', 'schedule.view', 'leave.manage']),
+                    ], permissions: ['employee.view', 'attendance.view', 'setting.view', 'schedule.view', 'leave.view', 'leave.manage']),
                     self::group('asset', 'Asset', [
                         self::link('inventory', 'Inventory', 'inventory.index', permissions: ['inventory.view']),
                         self::link('my-assets', 'Aset Saya', 'inventory.my_assets', permissions: ['inventory.view']),

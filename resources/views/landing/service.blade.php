@@ -14,7 +14,7 @@
             'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1200',
             'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&q=80&w=1200',
         ]);
-        $weddingHeroGallery = collect($weddingGallery ?? [])->map(function ($img) {
+        $weddingHeroGallery = collect($weddingGallery ?? [])->map(function ($img) use ($assetUrl) {
             return str_starts_with((string) $img, 'http') ? $img : $assetUrl($img);
         })->filter()->values();
         if ($weddingHeroGallery->isEmpty()) {
@@ -317,7 +317,7 @@
                 ],
             ]);
             $weddingPackageSource = ($weddingPackages ?? collect())->values();
-            $weddingPackageCards = ($weddingPackageSource->count() > 0 ? $weddingPackageSource : $defaultWeddingPackages)->values()->take(4)->map(function ($pkg, $index) use ($weddingHeroGallery) {
+            $weddingPackageCards = ($weddingPackageSource->count() > 0 ? $weddingPackageSource : $defaultWeddingPackages)->values()->take(4)->map(function ($pkg, $index) use ($weddingHeroGallery, $assetUrl) {
                 $facilities = collect($pkg['facilities'] ?? $pkg->facilities ?? [])
                     ->map(fn ($item) => trim((string) $item))
                     ->filter()
