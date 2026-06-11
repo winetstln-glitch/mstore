@@ -266,7 +266,7 @@
             <ul class="mb-0 mt-2">
                 <li>Izinkan akses lokasi di browser Anda agar sistem dapat mendeteksi keberadaan Anda di kantor.</li>
                 <li>Tombol absen akan aktif otomatis setelah lokasi Anda terdeteksi.</li>
-                <li>Anda dapat mengambil foto selfie sebagai bukti kehadiran (opsional).</li>
+                <li>{{ $attendancePhotoRequired ? __('Anda wajib mengambil foto selfie sebagai bukti kehadiran.') : __('Anda dapat mengambil foto selfie sebagai bukti kehadiran (opsional).') }}</li>
                 <li>Setelah absen masuk, Anda dapat melakukan absen pulang pada waktu yang ditentukan.</li>
                 <li>Riwayat absensi Anda bulan ini akan ditampilkan di bagian bawah.</li>
             </ul>
@@ -423,7 +423,11 @@
                                 <div id="upload-placeholder" class="d-flex flex-column align-items-center justify-content-center h-100">
                                     <i class="fa-solid fa-camera fs-2 text-muted mb-1"></i>
                                     <span class="text-muted x-small fw-bold">
-                                        {{ $attendancePhotoRequired ? __('Selfie (Wajib)') : __('Selfie (Opsional)') }}
+                                        @if($faceVerificationEnabled == '1')
+                                            {{ __('Verifikasi Wajah') }}
+                                        @else
+                                            {{ $attendancePhotoRequired ? __('Selfie (Wajib)') : __('Selfie (Opsional)') }}
+                                        @endif
                                     </span>
                                 </div>
                                 <img id="image-preview" class="modern-preview-img" src="#">

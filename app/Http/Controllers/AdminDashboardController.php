@@ -19,7 +19,7 @@ class AdminDashboardController extends Controller
 
     public function index()
     {
-        Gate::authorize('dashboard.view');
+        Gate::authorize('admin.dashboard.view');
 
         $today = Carbon::today();
 

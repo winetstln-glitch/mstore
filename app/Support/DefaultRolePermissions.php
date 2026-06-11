@@ -124,6 +124,7 @@ class DefaultRolePermissions
                 'label' => 'HRD',
                 'permissions' => [
                     'dashboard.view',
+                    'admin.dashboard.view',
                     'employee.view', 'employee.create', 'employee.edit',
                     'attendance.view', 'attendance.report',
                     'setting.view',
@@ -168,6 +169,7 @@ class DefaultRolePermissions
                 'label' => 'HRD Manager',
                 'permissions' => [
                     'dashboard.view',
+                    'admin.dashboard.view',
                     'employee.view', 'employee.create', 'employee.edit', 'employee.delete',
                     'user.view', 'user.create', 'user.edit',
                     'role.view',

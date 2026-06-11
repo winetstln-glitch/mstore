@@ -17,6 +17,11 @@ interface PaymentGatewayInterface
     public function getIdentifier(): string;
 
     /**
+     * Get keys for this gateway's configuration.
+     */
+    public function getConfigKeys(): array;
+
+    /**
      * Test connection to the gateway provider.
      */
     public function testConnection(): array;

@@ -43,7 +43,7 @@ abstract class BaseGateway implements PaymentGatewayInterface
     /**
      * Get keys for this gateway's configuration.
      */
-    abstract protected function getConfigKeys(): array;
+    abstract public function getConfigKeys(): array;
 
     /**
      * Determine if a key is sensitive and should be encrypted.

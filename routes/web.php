@@ -207,7 +207,7 @@ Route::post('/reset-password', [\App\Http\Controllers\PasswordResetController::c
 
 Route::middleware('auth')->group(function () {
         Route::get('admin/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])
-            ->middleware('permission:dashboard.view')
+            ->middleware('permission:admin.dashboard.view')
             ->name('admin.dashboard');
         Route::get('admin/audit-trail', [\App\Http\Controllers\AdminDashboardController::class, 'auditTrail'])
             ->middleware('permission:dashboard.view')

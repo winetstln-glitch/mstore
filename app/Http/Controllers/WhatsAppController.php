@@ -300,27 +300,6 @@ class WhatsAppController extends Controller implements HasMiddleware
             $this->upsertWhatsappSetting('whatsapp_secret_key', $key, 'password', 'WABLAS Secret Key');
         }
 
-        // Save Duitku Settings
-        $duitkuSettings = [
-            'duitku_merchant_code' => 'Duitku Merchant Code',
-            'duitku_api_key' => 'Duitku API Key',
-            'duitku_sandbox' => 'Gunakan Duitku Sandbox',
-        ];
-        foreach ($duitkuSettings as $k => $label) {
-            if ($request->has($k)) {
-                $type = $k === 'duitku_sandbox' ? 'boolean' : ($k === 'duitku_api_key' ? 'password' : 'text');
-                Setting::updateOrCreate(
-                                ['key' => $k],
-                                [
-                                    'value' => $k === 'duitku_sandbox' ? ($request->input($k) ? '1' : '0') : ($request->input($k) ?? ''),
-                                    'group' => 'duitku',
-                                    'type' => $type,
-                                    'label' => $label,
-                                ]
-                            );
-            }
-        }
-
         // Query builder updates do not trigger model events; force refresh cached settings.
         Setting::forgetCache();
 

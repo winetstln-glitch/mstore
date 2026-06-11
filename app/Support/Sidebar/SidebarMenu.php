@@ -17,8 +17,7 @@ class SidebarMenu
                     self::link('dashboard', 'Dashboard Utama', 'dashboard', permissions: ['dashboard.view']),
                     self::link('dashboard-noc', 'Dashboard NOC', 'noc.dashboard', permissions: ['noc.dashboard.view']),
                     self::link('dashboard-finance', 'Dashboard Finance', 'finance.index', permissions: ['finance.view']),
-                    self::link('dashboard-hrd', 'Dashboard HRD', 'admin.dashboard', permissions: ['dashboard.view']),
-                    self::link('audit-trail', 'Audit Trail', 'admin.audit-trail', permissions: ['dashboard.view']),
+                    self::link('dashboard-hrd', 'Dashboard HRD', 'admin.dashboard', permissions: ['admin.dashboard.view']),
                     self::group('reporting-center', 'Reporting Center', [
                         self::link('report-noc', 'NOC Report', 'reports.noc', permissions: ['report.noc.export']),
                         self::link('report-whatsapp', 'WhatsApp Report', 'reports.whatsapp', permissions: ['report.whatsapp.export']),
@@ -87,20 +86,14 @@ class SidebarMenu
             ],
             [
                 'type' => 'section',
-                'id' => 'whatsapp-ai',
-                'label' => 'WhatsApp & AI',
+                'id' => 'communication-ai',
+                'label' => 'Messenger & AI',
                 'items' => [
-                    self::group('wa', 'WhatsApp Gateway', [
-                        self::link('wa-dashboard', 'Dashboard WA', 'whatsapp.index', permissions: ['chat.view']),
-                        self::link('wa-bot-builder', 'Bot Builder', 'whatsapp.builder.index', permissions: ['chat.manage']),
-                        self::link('wa-logs', 'Pesan Terkirim', 'whatsapp.logs', permissions: ['chat.view']),
-                        self::link('wa-analytics', 'Analytics', 'whatsapp.analytics', permissions: ['whatsapp.analytics.view']),
-                    ]),
-                    self::group('ai', 'AI', [
+                    self::link('internal-chat', 'Messenger Internal', 'chat.index', permissions: ['chat.view']),
+                    self::group('ai', 'AI Assistant', [
                         self::link('ai-center', 'AI Center', 'ai.index', permissions: ['ai.view']),
                         self::link('ai-kb', 'AI Knowledge Base', 'whatsapp.kb.index', permissions: ['whatsapp.kb.manage']),
-                    ]),
-                    self::link('internal-chat', 'Messenger Internal', 'chat.index', permissions: ['chat.view']),
+                    ], permissions: ['ai.view', 'whatsapp.kb.manage']),
                 ],
             ],
             [
@@ -135,7 +128,6 @@ class SidebarMenu
                     self::group('hr', 'HR', [
                         self::link('employees', 'Karyawan', 'employees.index', permissions: ['employee.view']),
                         self::link('attendance', 'Absensi', 'attendance.index', permissions: ['attendance.view']),
-                        self::link('attendance-settings', 'Setting Absensi', 'settings.attendance.index', permissions: ['setting.view']),
                         self::link('schedule', 'Jadwal', 'schedules.index', permissions: ['schedule.view']),
                         self::link(
                             'leave-my',
@@ -146,7 +138,7 @@ class SidebarMenu
                         self::link('leave-manage', 'Kelola Cuti/Izin', 'admin.leave-requests', permissions: ['leave.manage']),
                         self::link('kasbon', 'Kasbon', 'technicians.kasbon.index', roles: [Role::ADMIN, Role::FINANCE, Role::HRD_MANAGER]),
                         self::link('payslip', 'Slip Gaji', 'attendance.payslip', permissions: ['attendance.view']),
-                    ], permissions: ['employee.view', 'attendance.view', 'setting.view', 'schedule.view', 'leave.view', 'leave.manage']),
+                    ], permissions: ['employee.view', 'attendance.view', 'schedule.view', 'leave.view', 'leave.manage']),
                     self::group('asset', 'Asset', [
                         self::link('inventory', 'Inventory', 'inventory.index', permissions: ['inventory.view']),
                         self::link('my-assets', 'Aset Saya', 'inventory.my_assets', permissions: ['inventory.view']),
@@ -203,27 +195,38 @@ class SidebarMenu
                 'label' => 'System Administration',
                 'items' => [
                     self::group('sys-settings', 'General Settings', [
-                        self::link('settings', 'Pengaturan Umum', 'settings.index', permissions: ['setting.view']),
-                        self::link('regions', 'Wilayah', 'regions.index', permissions: ['region.view']),
+                        self::link('settings', 'Pengaturan Toko', 'settings.index', permissions: ['setting.view']),
+                        self::link('attendance-settings', 'Pengaturan Absensi', 'settings.attendance.index', permissions: ['setting.view']),
+                        self::link('regions', 'Wilayah & Cabang', 'regions.index', permissions: ['region.view']),
                         self::link('coordinators', 'Pengurus', 'coordinators.index', permissions: ['coordinator.view']),
                     ], permissions: ['setting.view', 'region.view', 'coordinator.view']),
                     self::group('sys-payment', 'Payment Gateway', [
                         self::link('payment-dashboard', 'Dashboard Payment', 'payment.dashboard', permissions: ['payment.view']),
-                        self::link('payment-duitku', 'Duitku', 'payment.gateway', ['gateway' => 'duitku'], permissions: ['payment.view']),
-                        self::link('payment-midtrans', 'Midtrans', 'payment.gateway', ['gateway' => 'midtrans'], permissions: ['payment.view']),
+                        self::link('payment-duitku', 'Duitku Config', 'payment.gateway', ['gateway' => 'duitku'], permissions: ['payment.view']),
+                        self::link('payment-midtrans', 'Midtrans Config', 'payment.gateway', ['gateway' => 'midtrans'], permissions: ['payment.view']),
                     ], permissions: ['payment.view']),
-                    self::group('sys-users', 'Users & Roles', [
-                        self::link('users', 'Users', 'users.index', permissions: ['user.view']),
-                        self::link('roles', 'Roles', 'roles.index', permissions: ['role.view']),
-                    ], permissions: ['user.view', 'role.view']),
-                    self::group('sys-integrations', 'Integrations', [
-                        self::link('wa-gateway', 'WhatsApp Gateway', 'whatsapp.index', permissions: ['chat.view']),
-                        self::link('telegram', 'Telegram Bot', 'telegram.index', permissions: ['telegram.view']),
+                    self::group('sys-whatsapp', 'WhatsApp Gateway', [
+                        self::link('wa-dashboard', 'Status & Koneksi', 'whatsapp.index', permissions: ['chat.view']),
+                        self::link('wa-bot-builder', 'AI Bot Builder', 'whatsapp.builder.index', permissions: ['chat.manage']),
+                        self::link('wa-logs', 'Pesan Terkirim', 'whatsapp.logs', permissions: ['chat.view']),
+                        self::link('wa-analytics', 'Statistik WA', 'whatsapp.analytics', permissions: ['whatsapp.analytics.view']),
+                    ], permissions: ['chat.view']),
+                    self::group('sys-telegram', 'Telegram Bot', [
+                        self::link('telegram-config', 'Pengaturan Bot', 'telegram.index', permissions: ['telegram.view']),
+                    ], permissions: ['telegram.view']),
+                    self::group('sys-integrations', 'Integrations & API', [
                         self::link('api-keys', 'API Keys', 'apikeys.index', permissions: ['apikey.view']),
-                    ], permissions: ['chat.view', 'telegram.view', 'apikey.view']),
-                    self::group('sys-maintenance', 'Maintenance & Security', [
+                        self::link('mixradius', 'MixRADIUS Config', 'mixradius.index', permissions: ['setting.view']),
+                        self::link('genieacs', 'GenieACS Config', 'genieacs.servers.index', permissions: ['genieacs.view']),
+                    ], permissions: ['apikey.view', 'setting.view', 'genieacs.view']),
+                    self::group('sys-users', 'Access Control', [
+                        self::link('users', 'User Management', 'users.index', permissions: ['user.view']),
+                        self::link('roles', 'Role & Permission', 'roles.index', permissions: ['role.view']),
+                    ], permissions: ['user.view', 'role.view']),
+                    self::group('sys-maintenance', 'Security & Logs', [
+                        self::link('audit-trail', 'Audit Trail', 'admin.audit-trail', permissions: ['audit.view']),
                         self::link('security-monitor', 'Security Monitoring', 'security.monitoring', permissions: ['security.monitoring.view']),
-                    ], permissions: ['security.monitoring.view']),
+                    ], permissions: ['audit.view', 'security.monitoring.view']),
                 ],
             ],
             [

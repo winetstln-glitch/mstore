@@ -34,7 +34,7 @@ class DuitkuGateway extends BaseGateway
         return 'duitku';
     }
 
-    protected function getConfigKeys(): array
+    public function getConfigKeys(): array
     {
         return ['merchant_code', 'api_key', 'sandbox'];
     }

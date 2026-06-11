@@ -32,10 +32,11 @@ class SettingController extends Controller implements HasMiddleware
         $this->ensureAttendanceSettings();
 
         $settings = Setting::query()
-            ->whereNotIn('group', ['telegram', 'whatsapp'])
+            ->whereNotIn('group', ['telegram', 'whatsapp', 'payment_gateway', 'duitku', 'midtrans'])
             ->where('key', '!=', 'subscription_packages')
             ->where('key', 'not like', 'atk_%')
             ->where('key', 'not like', 'wash_%')
+            ->where('key', 'not like', 'payment_%')
             ->orderBy('group')
             ->orderBy('id')
             ->get()

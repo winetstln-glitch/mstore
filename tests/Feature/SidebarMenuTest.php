@@ -28,7 +28,7 @@ class SidebarMenuTest extends TestCase
             __('Customer Center'),
             __('Network Operations'),
             __('Ticketing'),
-            __('WhatsApp & AI'),
+            __('Messenger & AI'),
             __('Finance Center'),
             __('HR & Asset'),
             __('Business Units'),

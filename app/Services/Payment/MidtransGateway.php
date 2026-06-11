@@ -17,7 +17,7 @@ class MidtransGateway extends BaseGateway
         return 'midtrans';
     }
 
-    protected function getConfigKeys(): array
+    public function getConfigKeys(): array
     {
         return ['server_key', 'client_key', 'sandbox'];
     }

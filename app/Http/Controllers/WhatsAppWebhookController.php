@@ -231,7 +231,7 @@ class WhatsAppWebhookController extends Controller
             // Exact match
             if ($message === $keyword) {
                 $menu->incrementHitCount();
-                return $this->renderMenuReply($menu);
+                return $this->sendMenuReply($phone, $menu);
             }
 
             // Fuzzy match (if enabled)
@@ -239,12 +239,27 @@ class WhatsAppWebhookController extends Controller
                 similar_text($message, $keyword, $percent);
                 if ($percent >= 70 || Str::contains($message, $keyword)) {
                     $menu->incrementHitCount();
-                    return $this->renderMenuReply($menu);
+                    return $this->sendMenuReply($phone, $menu);
                 }
             }
         }
 
-        // If no menu matches, use custom reply from setting
+        // Check for voucher purchase flow
+        if ($message === 'voucher' || $message === 'beli' || $message === 'paket' || is_numeric($message)) {
+            return $this->handleVoucherRequest($phone, $message);
+        }
+
+        // Try AI Assistant if no keyword matches
+        try {
+            $aiResponse = $this->aiService->processChat($message);
+            if ($aiResponse && !str_contains($aiResponse, 'Saya adalah Asisten AI')) {
+                return $this->renderAiResponse($aiResponse);
+            }
+        } catch (\Exception $e) {
+            Log::warning('AI Service Error in WhatsApp: ' . $e->getMessage());
+        }
+
+        // If no menu matches and AI didn't give specific answer, use custom reply from setting
         $customReply = Setting::getValue('whatsapp_unknown_keyword_reply');
         if ($customReply) {
             return $customReply;
@@ -252,6 +267,31 @@ class WhatsAppWebhookController extends Controller
 
         // Default fallback (if custom reply is not set)
         return 'Maaf, saya tidak memahami pesan Anda. Silakan ketik "bantuan" untuk melihat daftar menu yang tersedia.';
+    }
+
+    /**
+     * Send menu reply and handle media
+     */
+    private function sendMenuReply(string $phone, WhatsAppMenu $menu): ?string
+    {
+        $replyText = $this->renderMenuReply($menu);
+        
+        if ($menu->file_path && in_array($menu->type, ['image', 'document'])) {
+            $mediaUrl = asset('storage/' . $menu->file_path);
+            $mediaType = $menu->type === 'document' ? 'document' : 'image';
+            
+            $this->whatsappService->sendMessageWithMediaUrl(
+                $phone, 
+                $replyText, 
+                $mediaUrl, 
+                $mediaType
+            );
+            
+            // Return null because we already sent the message with media
+            return null;
+        }
+
+        return $replyText;
     }
 
     /**

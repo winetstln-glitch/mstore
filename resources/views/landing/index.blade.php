@@ -15,24 +15,24 @@
             <div class="row align-items-center g-5 home-hero-grid">
                 <div class="col-lg-6 fade-up">
                     <span class="home-kicker">{{ $siteName }} • Multi Layanan Terintegrasi</span>
-                    <h1 class="hero-title home-hero-title">Satu Ekosistem untuk Internet, Event, Security, Wash, dan Retail</h1>
-                    <p class="hero-desc home-hero-desc">Pilih layanan yang Anda butuhkan. Setiap layanan memiliki halaman khusus dengan penawaran, informasi, dan form konsultasi yang lebih tepat agar prosesnya lebih cepat dan jelas.</p>
+                    <h1 class="hero-title home-hero-title">Solusi Internet, CCTV, Event, Car Wash, dan Retail dalam Satu Layanan Terpercaya</h1>
+                    <p class="hero-desc home-hero-desc">Kami menyediakan berbagai solusi untuk kebutuhan rumah, bisnis, dan event. Dapatkan informasi lengkap, konsultasi gratis, dan pelayanan profesional dalam satu platform terintegrasi.</p>
                     <div class="home-cta-row">
                         <a href="#services" class="btn btn-primary track-service-action" data-track-service="umbrella" data-track-action="choose_service">
-                            <i class="fas fa-layer-group me-2"></i> Jelajahi Layanan
+                            <i class="fas fa-layer-group me-2"></i> Lihat Semua Layanan
                         </a>
                         <a href="#quick-consult" class="btn btn-outline-primary track-service-action" data-track-service="umbrella" data-track-action="quick_consult">
-                            <i class="fas fa-clipboard-list me-2"></i> Konsultasi Cepat
+                            <i class="fas fa-clipboard-list me-2"></i> Konsultasi Gratis
                         </a>
                         <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi layanan MStore.') }}" class="btn btn-green track-service-action" data-track-service="umbrella" data-track-action="whatsapp">
-                            <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                            <i class="fab fa-whatsapp me-2"></i> Chat WhatsApp Sekarang
                         </a>
                     </div>
 
                     <div class="home-metric-grid">
                         <div class="home-metric-card">
                             <strong>{{ $serviceCount }}</strong>
-                            <span>Layanan Utama</span>
+                            <span>Unit Layanan</span>
                         </div>
                         <div class="home-metric-card">
                             <strong>{{ $coverageCount > 0 ? $coverageCount : 'Live' }}</strong>
@@ -40,22 +40,22 @@
                         </div>
                         <div class="home-metric-card">
                             <strong>Cepat</strong>
-                            <span>Respon Admin</span>
+                            <span>Respon Cepat</span>
                         </div>
                     </div>
 
                     <div class="landing-trust mt-4 home-trust-row">
                         <div class="landing-trust-item">
-                            <i class="fas fa-bullseye"></i>
-                            <span>CTA Lebih Fokus</span>
+                            <i class="fas fa-check-circle"></i>
+                            <span>Pelayanan Profesional</span>
                         </div>
                         <div class="landing-trust-item">
-                            <i class="fas fa-filter-circle-dollar"></i>
-                            <span>Lead Lebih Relevan</span>
+                            <i class="fas fa-clock"></i>
+                            <span>Respon Cepat WhatsApp</span>
                         </div>
                         <div class="landing-trust-item">
-                            <i class="fas fa-chart-line"></i>
-                            <span>SEO Per Layanan</span>
+                            <i class="fas fa-target"></i>
+                            <span>Solusi Sesuai Kebutuhan</span>
                         </div>
                     </div>
                 </div>
@@ -104,15 +104,22 @@
         <div class="container py-2">
             <div class="section-header text-center mb-5 fade-up home-section-header">
                 <h6 class="text-primary fw-bold text-uppercase">Pilih Layanan</h6>
-                <h2 class="display-6 fw-800">Pilih layanan, lalu lanjutkan di halaman khusus</h2>
-                <p class="text-muted mb-0">Setiap halaman layanan dibuat lebih fokus agar penawaran, harga/paket, dan konsultasi lebih cepat ditangani.</p>
+                <h2 class="display-6 fw-800">Pilih Solusi yang Sesuai dengan Kebutuhan Anda</h2>
+                <p class="text-muted mb-0">Temukan layanan terbaik untuk rumah, bisnis, dan event Anda. Setiap layanan dilengkapi informasi lengkap dan konsultasi langsung dengan tim kami.</p>
             </div>
 
             <div class="row g-4">
-                @foreach($serviceCatalog as $service)
+                @foreach($serviceCatalog as $index => $service)
                     <div class="col-lg-4 col-md-6 fade-up">
                         <div class="landing-service-card home-service-card h-100">
                             <div class="home-service-card-top">
+                                @if($index === 0)
+                                    <span class="badge bg-success text-white position-absolute top-0 start-0 m-2">Best Seller</span>
+                                @elseif($index === 1)
+                                    <span class="badge bg-primary text-white position-absolute top-0 start-0 m-2">Recommended</span>
+                                @elseif($index === 2)
+                                    <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2">Popular</span>
+                                @endif
                                 <div class="landing-service-icon home-service-card-icon">
                                     <i class="fas {{ $service['icon'] }}"></i>
                                 </div>
@@ -143,28 +150,28 @@
             <div class="row g-4">
                 <div class="col-lg-4 fade-up">
                     <div class="landing-mini-card h-100 home-mini-card">
-                        <i class="fas fa-bolt"></i>
+                        <i class="fas fa-info-circle"></i>
                         <div>
-                            <div class="fw-bold">Info Lebih Jelas</div>
-                            <div class="text-muted small">Anda langsung melihat poin penting dan tidak perlu menyaring informasi yang tidak relevan.</div>
+                            <div class="fw-bold">Informasi Lengkap</div>
+                            <div class="text-muted small">Semua informasi layanan disajikan secara jelas dan mudah dipahami.</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-4 fade-up">
                     <div class="landing-mini-card h-100 home-mini-card">
-                        <i class="fas fa-clipboard-check"></i>
+                        <i class="fas fa-comments"></i>
                         <div>
-                            <div class="fw-bold">Konsultasi Lebih Cepat</div>
-                            <div class="text-muted small">Form disesuaikan dengan layanan agar tim kami lebih cepat memahami kebutuhan Anda.</div>
+                            <div class="fw-bold">Konsultasi Gratis</div>
+                            <div class="text-muted small">Tim kami siap membantu memberikan rekomendasi terbaik sesuai kebutuhan Anda.</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-4 fade-up">
                     <div class="landing-mini-card h-100 home-mini-card">
-                        <i class="fas fa-magnifying-glass-chart"></i>
+                        <i class="fas fa-briefcase"></i>
                         <div>
-                            <div class="fw-bold">Respons Lebih Tepat</div>
-                            <div class="text-muted small">Setiap permintaan tercatat berdasarkan layanan sehingga follow up lebih terarah.</div>
+                            <div class="fw-bold">Layanan Profesional</div>
+                            <div class="text-muted small">Didukung proses kerja yang terstruktur untuk memastikan pelayanan yang cepat dan tepat.</div>
                         </div>
                     </div>
                 </div>
@@ -183,33 +190,39 @@
                 <div class="col-lg-6 fade-up">
                     <div class="home-coverage-copy">
                         <span class="home-kicker">Coverage Internet</span>
-                        <h2 class="display-6 fw-800 mb-4">Cek coverage dulu, baru pilih paket yang cocok</h2>
-                        <p class="text-secondary mb-4">Gunakan peta untuk melihat coverage di area Anda. Setelah itu, lanjutkan ke halaman Internet Fiber untuk memilih paket dan mengisi form registrasi.</p>
+                        <h2 class="display-6 fw-800 mb-4">Cek Ketersediaan Jaringan di Lokasi Anda</h2>
+                        <p class="text-secondary mb-4">Periksa ketersediaan jaringan fiber optik di area Anda sebelum memilih paket internet yang sesuai.</p>
 
                         <div class="home-coverage-list mb-4">
                             <div class="home-coverage-item">
                                 <div class="home-coverage-icon">
-                                    <i class="fas fa-satellite-dish fa-lg"></i>
+                                    <i class="fas fa-check-circle fa-lg text-success"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-1">Peta ODP</h6>
-                                    <p class="small text-muted mb-0">Lihat titik ODP, status port, dan gambaran awal coverage di area Anda.</p>
+                                    <h6 class="mb-1">Coverage Aktif</h6>
                                 </div>
                             </div>
                             <div class="home-coverage-item">
                                 <div class="home-coverage-icon">
-                                    <i class="fas fa-location-dot fa-lg"></i>
+                                    <i class="fas fa-check-circle fa-lg text-success"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-1">Lanjut ke Halaman Internet</h6>
-                                    <p class="small text-muted mb-0">Landing internet memuat paket, voucher, dan form registrasi yang lebih spesifik.</p>
+                                    <h6 class="mb-1">Survey Lokasi Gratis</h6>
+                                </div>
+                            </div>
+                            <div class="home-coverage-item">
+                                <div class="home-coverage-icon">
+                                    <i class="fas fa-check-circle fa-lg text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Dukungan Teknisi</h6>
                                 </div>
                             </div>
                         </div>
 
                         <div class="home-coverage-actions">
                             <a href="{{ route('landing.services.internet') }}" class="btn btn-primary track-service-action" data-track-service="internet" data-track-action="from_home_coverage">
-                                <i class="fas fa-wifi me-2"></i> Buka Halaman Internet
+                                <i class="fas fa-wifi me-2"></i> Lihat Paket Internet
                             </a>
                             <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin cek coverage area internet.') }}" class="btn btn-green track-service-action" data-track-service="internet" data-track-action="coverage_whatsapp">
                                 <i class="fab fa-whatsapp me-2"></i> Kirim Alamat
@@ -227,22 +240,26 @@
                 <div class="col-lg-5 fade-up">
                     <div class="section-header mb-3 home-consult-copy">
                         <h6 class="text-primary fw-bold text-uppercase">Quick Consult</h6>
-                        <h2 class="display-6 fw-800 mb-2">Masih bingung mulai dari mana?</h2>
-                        <p class="text-muted mb-0">Isi form singkat. Tim kami akan bantu mengarahkan Anda ke layanan yang paling sesuai dan melanjutkan via WhatsApp bila diperlukan.</p>
+                        <h2 class="display-6 fw-800 mb-2">Belum Yakin Layanan Mana yang Cocok?</h2>
+                        <p class="text-muted mb-0">Sampaikan kebutuhan Anda melalui form berikut. Tim kami akan menghubungi Anda dan memberikan solusi yang paling sesuai.</p>
                     </div>
 
                     <div class="home-consult-points">
                         <div class="home-consult-point">
-                            <i class="fas fa-route"></i>
-                            <span>Dibantu pilih layanan yang paling cocok</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                            <span>Respon Cepat via WhatsApp</span>
                         </div>
                         <div class="home-consult-point">
-                            <i class="fas fa-comments"></i>
-                            <span>Langsung lanjut via WhatsApp setelah submit</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                            <span>Tim Profesional dan Berpengalaman</span>
                         </div>
                         <div class="home-consult-point">
-                            <i class="fas fa-layer-group"></i>
-                            <span>Data kebutuhan tercatat rapi untuk follow up</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                            <span>Dukungan Pelanggan Responsif</span>
+                        </div>
+                        <div class="home-consult-point">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <span>Solusi untuk Rumah, Bisnis, dan Event</span>
                         </div>
                     </div>
 
@@ -280,12 +297,12 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama</label>
-                                    <input name="name" value="{{ old('name') }}" class="form-control home-form-control @error('name') is-invalid @enderror" required>
+                                    <input name="name" value="{{ old('name') }}" class="form-control home-form-control @error('name') is-invalid @enderror" required placeholder="Masukkan nama lengkap">
                                     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">WhatsApp</label>
-                                    <input name="phone" value="{{ old('phone') }}" class="form-control home-form-control @error('phone') is-invalid @enderror" required>
+                                    <input name="phone" value="{{ old('phone') }}" class="form-control home-form-control @error('phone') is-invalid @enderror" required placeholder="08xxxxxxxxxx">
                                     @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-6">
@@ -300,12 +317,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Area / Lokasi</label>
-                                    <input name="coverage_area" value="{{ old('coverage_area') }}" class="form-control home-form-control @error('coverage_area') is-invalid @enderror" placeholder="Contoh: rumah, lokasi acara, cabang wash">
+                                    <input name="coverage_area" value="{{ old('coverage_area') }}" class="form-control home-form-control @error('coverage_area') is-invalid @enderror" placeholder="Contoh: Perumahan Griya Asri">
                                     @error('coverage_area')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Kebutuhan Singkat</label>
-                                    <textarea name="message" rows="4" class="form-control home-form-control home-form-textarea @error('message') is-invalid @enderror" placeholder="Contoh: butuh internet rumah, wedding package, survey CCTV, atau booking GT Wash">{{ old('message') }}</textarea>
+                                    <textarea name="message" rows="4" class="form-control home-form-control home-form-textarea @error('message') is-invalid @enderror" placeholder="Jelaskan kebutuhan Anda secara singkat">{{ old('message') }}</textarea>
                                     @error('message')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-12 d-flex flex-wrap gap-2">
@@ -329,8 +346,8 @@
             <div class="row g-4 align-items-center">
                 <div class="col-lg-6 fade-up">
                     <span class="home-kicker">Tentang {{ $siteName }}</span>
-                    <h2 class="display-6 fw-800 mb-3">Multi-bisnis yang terintegrasi, tetapi tetap fokus per kebutuhan</h2>
-                    <p class="text-muted mb-3">{{ $siteName }} mengelola beberapa lini layanan dalam satu ekosistem. Karena kebutuhan tiap layanan berbeda, kami sediakan halaman khusus agar informasi dan konsultasi lebih cepat diproses.</p>
+                    <h2 class="display-6 fw-800 mb-3">Partner Terpercaya untuk Kebutuhan Internet dan Teknologi Anda</h2>
+                    <p class="text-muted mb-3">Kami menghadirkan berbagai layanan terintegrasi mulai dari Internet Fiber Optik, CCTV & Security System, Event WiFi, Car Wash, hingga solusi Retail Digital untuk membantu kebutuhan rumah maupun bisnis Anda.</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-primary" href="#services">Lihat Semua Layanan</a>
                         <a class="btn btn-outline-primary" href="#kontak">Lihat Kontak</a>
@@ -349,6 +366,54 @@
                         @endforeach
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section class="py-2 home-section">
+        <div class="container py-2">
+            <div class="section-header text-center mb-5 fade-up">
+                <h6 class="text-primary fw-bold text-uppercase">Mengapa Memilih Kami</h6>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card text-center">
+                        <i class="fas fa-users fa-2x mb-3 text-primary"></i>
+                        <div class="fw-bold">Tim Berpengalaman</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card text-center">
+                        <i class="fas fa-headset fa-2x mb-3 text-primary"></i>
+                        <div class="fw-bold">Dukungan Cepat</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card text-center">
+                        <i class="fas fa-puzzle-piece fa-2x mb-3 text-primary"></i>
+                        <div class="fw-bold">Solusi Terintegrasi</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 fade-up">
+                    <div class="landing-mini-card h-100 home-mini-card text-center">
+                        <i class="fas fa-briefcase fa-2x mb-3 text-primary"></i>
+                        <div class="fw-bold">Layanan Profesional</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="py-5 home-section bg-primary bg-opacity-10">
+        <div class="container py-5">
+            <div class="text-center fade-up">
+                <h2 class="display-5 fw-800 mb-4">Siap Mendapatkan Solusi Terbaik untuk Kebutuhan Anda?</h2>
+                <p class="text-muted mb-6">Hubungi tim kami sekarang untuk konsultasi gratis dan dapatkan penawaran terbaik.</p>
+                <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi layanan MStore.') }}" class="btn btn-primary btn-lg track-service-action" data-track-service="umbrella" data-track-action="final_cta_whatsapp">
+                    <i class="fab fa-whatsapp me-2"></i> Hubungi Kami Sekarang
+                </a>
             </div>
         </div>
     </section>

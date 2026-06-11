@@ -886,7 +886,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
-            $photoRule = $this->isAttendancePhotoRequired() ? 'required' : 'nullable';
+            $photoRequired = $this->isAttendancePhotoRequired();
+            $photoRule = $photoRequired ? 'required' : 'nullable';
+
             $request->validate([
                 'photo' => $photoRule.'|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
@@ -897,6 +899,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo.required' => __('Foto selfie wajib diunggah untuk absensi.'),
             ]);
 
+            // If GPS is missing AND photo is not already required, it MUST be present as a fallback
             if (! $request->latitude || ! $request->longitude) {
                 if (! $request->hasFile('photo')) {
                     return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
@@ -1044,7 +1047,9 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $photoMaxKb = $this->resolveAttendancePhotoMaxKb();
-            $photoRule = $this->isAttendancePhotoRequired() ? 'required' : 'nullable';
+            $photoRequired = $this->isAttendancePhotoRequired();
+            $photoRule = $photoRequired ? 'required' : 'nullable';
+            
             $request->validate([
                 'photo' => $photoRule.'|image|max:'.$photoMaxKb,
                 'latitude' => 'nullable',
@@ -1055,7 +1060,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 'photo.required' => __('Foto selfie wajib diunggah untuk absensi.'),
             ]);
 
-            // If GPS is missing, photo MUST be present as a fallback
+            // If GPS is missing AND photo is not already required, it MUST be present as a fallback
             if (! $request->latitude || ! $request->longitude) {
                 if (! $request->hasFile('photo')) {
                     return back()->withErrors(['message' => __('GPS tidak terdeteksi. Silakan ambil foto sebagai bukti kehadiran.')]);
@@ -1244,10 +1249,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
     private function isAttendancePhotoRequired(): bool
     {
-        $value = Setting::getValue(
-            'attendance_photo_required',
-            Setting::getValue('attendance_enable_photo', '1')
-        );
+        $value = Setting::getValue('attendance_photo_required', '1');
 
         return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
     }
