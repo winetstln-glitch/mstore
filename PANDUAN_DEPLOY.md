@@ -81,10 +81,11 @@ Script `deploy.sh` akan otomatis menjalankan:
 1. Backup database
 2. Install dependencies Composer
 3. Jalankan migrasi database
-4. Bersihkan dan cache konfigurasi
-5. Build asset frontend
-6. Restart queue worker
-7. Set permissions file
+4. Sync roles and permissions (php artisan roles:normalize)
+5. Bersihkan dan cache konfigurasi
+6. Build asset frontend
+7. Restart queue worker
+8. Set permissions file
 
 ---
 
