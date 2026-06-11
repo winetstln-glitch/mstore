@@ -138,6 +138,9 @@
                     <a href="{{ $authHref }}" class="btn {{ auth()->check() ? 'btn-primary' : 'btn-outline-primary' }} btn-full-mobile nav-desktop-action">
                         {{ $authLabel }}
                     </a>
+                    <a href="{{ $authHref }}" class="btn-icon d-lg-none" aria-label="Login">
+                        <i class="fas fa-user"></i>
+                    </a>
                     <button class="btn-icon nav-toggle" type="button" id="navToggle" aria-controls="navMenu" aria-expanded="false" aria-label="Buka menu">
                         <i class="fas fa-bars"></i>
                     </button>
