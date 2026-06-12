@@ -584,22 +584,19 @@ class WhatsAppService
                 $body = [];
             }
 
-            // For Wablas: since send works, assume connected even if device endpoint fails!
-            if ($provider === 'wablas') {
-                $connected = true;
-                $statusMessage = 'Device WhatsApp terhubung.';
+            // Fix: For all providers, properly check connection status!
+            $connected = false;
+            $statusMessage = 'Device WhatsApp belum terhubung.';
+
+            if ($response && $response->successful()) {
+                $connected = $this->extractConnectionFlag($body);
+                $statusMessage = $connected ? 'Device WhatsApp terhubung.' : 'Device WhatsApp belum terhubung.';
             } else {
-                $connected = false;
-                $statusMessage = 'Device WhatsApp belum terhubung.';
-                
-                if ($response && $response->successful()) {
-                    $connected = $this->extractConnectionFlag($body);
-                    $statusMessage = $connected ? 'Device WhatsApp terhubung.' : 'Device WhatsApp belum terhubung.';
-                }
+                $statusMessage = 'Gagal terhubung ke gateway WhatsApp (cek URL/API Key).';
             }
 
             return [
-                'ok' => true, // Always ok for UI, just show connection status
+                'ok' => true,
                 'connected' => $connected,
                 'message' => $statusMessage,
                 'provider_response' => $response ? $response->body() : null,
@@ -608,8 +605,8 @@ class WhatsAppService
             Log::error('Check gateway status error: ' . $e->getMessage(), ['exception' => $e]);
             return [
                 'ok' => true,
-                'connected' => true, // Assume connected for Wablas even if error
-                'message' => 'Device WhatsApp terhubung.',
+                'connected' => false, // Fix: Don't assume connected on error!
+                'message' => 'Gagal memeriksa status gateway: ' . $e->getMessage(),
                 'provider_response' => $e->getMessage(),
             ];
         }

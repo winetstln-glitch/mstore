@@ -8,6 +8,7 @@ use App\Models\VoucherPayment;
 use App\Models\VoucherTemplate;
 use App\Models\WhatsAppMenu;
 use App\Models\WhatsAppLog;
+use App\Services\AiService;
 use App\Services\Payment\PaymentManager;
 use App\Services\VoucherService;
 use App\Services\WhatsAppService;

@@ -856,7 +856,7 @@
                         <div class="landing-mini-card">
                             <i class="fas fa-id-card"></i>
                             <div>
-                                <div class="fw-bold">Membership Gratis</div>
+                                <div class="fw-bold">Membership</div>
                                 <div class="text-muted small">Nama, WhatsApp, dan plat nomor cukup untuk mulai jadi member.</div>
                             </div>
                         </div>
