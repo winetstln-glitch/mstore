@@ -113,6 +113,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Tiket Notification</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_ticket_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_ticket_notification_enabled" name="whatsapp_ticket_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_ticket_notification_enabled', '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_ticket_notification_enabled">Aktifkan Notifikasi Tiket</label>
                                         </div>
@@ -124,6 +125,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Absensi Notification</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_attendance_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_attendance_notification_enabled" name="whatsapp_attendance_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_attendance_notification_enabled', '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_attendance_notification_enabled">Aktifkan Notifikasi Absensi</label>
                                         </div>
@@ -135,6 +137,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Modem UP Notification</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_modem_up_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_modem_up_notification_enabled" name="whatsapp_modem_up_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_modem_up_notification_enabled', '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_modem_up_notification_enabled">Aktifkan Notifikasi Modem UP</label>
                                         </div>
@@ -146,6 +149,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Modem DOWN Notification</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_modem_down_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_modem_down_notification_enabled" name="whatsapp_modem_down_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_modem_down_notification_enabled', '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_modem_down_notification_enabled">Aktifkan Notifikasi Modem DOWN</label>
                                         </div>
@@ -157,6 +161,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Modem RECAP Notification</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_modem_recap_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_modem_recap_notification_enabled" name="whatsapp_modem_recap_notification_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_modem_recap_notification_enabled', '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_modem_recap_notification_enabled">Aktifkan Notifikasi Modem RECAP</label>
                                         </div>
@@ -272,9 +277,23 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Enable Auto Reply</label>
                                 <div class="form-check form-switch mb-2">
+                                    <input type="hidden" name="whatsapp_autoreply_enabled" value="0">
                                     <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_autoreply_enabled" name="whatsapp_autoreply_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_autoreply_enabled', '1') == '1' ? 'checked' : '' }}>
                                     <label class="form-check-label" for="whatsapp_autoreply_enabled">Aktifkan Auto Reply</label>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Delay Auto Reply (Tunggu CS Dulu)</label>
+                                <div class="form-check form-switch mb-2">
+                                    <input type="hidden" name="whatsapp_delay_reply_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_delay_reply_enabled" name="whatsapp_delay_reply_enabled" value="1" {{ \App\Models\Setting::getValue('whatsapp_delay_reply_enabled', '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="whatsapp_delay_reply_enabled">Aktifkan Delay Auto Reply (Tunggu CS balas dulu)</label>
+                                </div>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="whatsapp_delay_reply_minutes" value="{{ \App\Models\Setting::getValue('whatsapp_delay_reply_minutes', '5') }}" placeholder="5">
+                                    <span class="input-group-text">menit</span>
+                                </div>
+                                <div class="form-text">Bot akan menunggu selama waktu ini, jika CS tidak membalas baru bot yang balas.</div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Balasan untuk Keyword Tidak Dikenali</label>

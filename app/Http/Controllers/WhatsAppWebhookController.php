@@ -16,6 +16,7 @@ use App\Services\WhatsApp\WhatsAppAutoReplyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -59,6 +60,7 @@ class WhatsAppWebhookController extends Controller
 
         $payload = null;
         try {
+            $startTime = microtime(true);
             $payload = $request->all();
             Log::info('WhatsApp Webhook Received', [
                 'keys' => array_slice(array_keys($payload), 0, 20),
@@ -75,15 +77,58 @@ class WhatsAppWebhookController extends Controller
             $message = $messageData['message'];
             $isGroup = $messageData['is_group'];
 
-            // Log incoming message
-            WhatsAppLog::logMessage('incoming', $phone, $message, 'delivered', $payload);
+            // Cek apakah ini pesan dari kita sendiri (CS yang mengirim via WhatsApp)
+            if ($this->isMessageFromUs($phone, $message)) {
+                Log::info('Ignoring message from ourselves', ['phone' => $phone]);
+                return response()->json(['status' => 'ignored_own_message']);
+            }
 
-            // Process the message
+            // Dapatkan atau buat conversation_id
+            $conversationId = $this->getOrCreateConversationId($phone);
+
+            // Log incoming message dengan metadata lengkap
+            $incomingLog = WhatsAppLog::logMessage('incoming', $phone, $message, 'delivered', $payload, null, [
+                'conversation_id' => $conversationId,
+                'sender_type' => 'customer',
+                'message_type' => 'text',
+            ]);
+
+            // Cek apakah fitur delay reply aktif
+            $delayReplyEnabled = Setting::getValue('whatsapp_delay_reply_enabled', '0') == '1';
+            $delayMinutes = (int) Setting::getValue('whatsapp_delay_reply_minutes', '5');
+            
+            if ($delayReplyEnabled && $delayMinutes > 0) {
+                // Jika fitur aktif, dispatch job dengan delay
+                $incomingTimestamp = $incomingLog->created_at->timestamp;
+                \App\Jobs\ProcessDelayedWhatsAppReply::dispatch(
+                    $phone,
+                    $message,
+                    $isGroup,
+                    $incomingTimestamp,
+                    $conversationId
+                )->delay(now()->addMinutes($delayMinutes));
+
+                Log::info('Delayed WhatsApp reply job dispatched', [
+                    'phone' => $phone,
+                    'delay' => "{$delayMinutes} minutes",
+                    'conversation_id' => $conversationId,
+                ]);
+                return response()->json(['status' => 'queued']);
+            }
+
+            // Jika fitur tidak aktif, langsung reply seperti biasa
             $response = $this->processIncomingMessage($phone, $message, $isGroup);
 
             if ($response) {
-                // Send reply back
-                $this->whatsappService->sendMessage($phone, $response);
+                // Send reply back dan log outgoing
+                $sendResult = $this->whatsappService->sendMessage($phone, $response);
+                $processingTime = round((microtime(true) - $startTime) * 1000);
+                WhatsAppLog::logMessage('outgoing', $phone, $response, $sendResult['success'] ? 'sent' : 'failed', $sendResult, null, [
+                    'conversation_id' => $conversationId,
+                    'sender_type' => 'bot',
+                    'message_type' => 'text',
+                    'processing_time_ms' => $processingTime,
+                ]);
             }
 
             return response()->json(['status' => 'success']);
@@ -97,6 +142,42 @@ class WhatsAppWebhookController extends Controller
             
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+
+    /**
+     * Cek apakah pesan ini berasal dari kita sendiri
+     */
+    private function isMessageFromUs(string $phone, string $message): bool
+    {
+        // Cek apakah ada pesan outgoing kita yang baru saja dikirim ke nomor ini dengan content yang sama
+        // Atau cek apakah phone nomor kita sendiri
+        $recentOutgoing = WhatsAppLog::where('phone_number', $phone)
+            ->where('type', 'outgoing')
+            ->where('message', $message)
+            ->where('created_at', '>=', now()->subMinutes(2))
+            ->exists();
+        
+        return $recentOutgoing;
+    }
+
+    /**
+     * Dapatkan atau buat conversation ID baru
+     */
+    private function getOrCreateConversationId(string $phone): string
+    {
+        // Cek apakah ada percakapan aktif dalam 24 jam terakhir
+        $recentLog = WhatsAppLog::where('phone_number', $phone)
+            ->whereNotNull('conversation_id')
+            ->where('created_at', '>=', now()->subHours(24))
+            ->latest()
+            ->first();
+        
+        if ($recentLog && $recentLog->conversation_id) {
+            return $recentLog->conversation_id;
+        }
+        
+        // Buat conversation ID baru
+        return Str::uuid()->toString();
     }
 
     private function isValidWebhookRequest(Request $request): bool
@@ -266,7 +347,7 @@ class WhatsAppWebhookController extends Controller
             return $customReply;
         }
 
-        // Default fallback (if custom reply is not set)
+        // Default fallback
         return 'Maaf, saya tidak memahami pesan Anda. Silakan ketik "bantuan" untuk melihat daftar menu yang tersedia.';
     }
 

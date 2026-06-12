@@ -250,6 +250,8 @@ class WhatsAppController extends Controller implements HasMiddleware
             'whatsapp_modem_down_notification_enabled' => 'WhatsApp Modem DOWN Notification Enabled',
             'whatsapp_modem_recap_notification_enabled' => 'WhatsApp Modem RECAP Notification Enabled',
             'whatsapp_autoreply_enabled' => 'WhatsApp Auto Reply Enabled',
+            'whatsapp_delay_reply_enabled' => 'WhatsApp Delay Reply Enabled',
+            'whatsapp_delay_reply_minutes' => 'WhatsApp Delay Reply Minutes',
         ];
 
         foreach ($groupSettings as $key => $label) {
@@ -419,7 +421,16 @@ class WhatsAppController extends Controller implements HasMiddleware
     {
         $type = $request->input('type', 'all');
         $status = $request->input('status', 'all');
+        $selectedPhone = $request->input('phone', null);
         
+        // Get unique phone numbers for sidebar
+        $uniquePhones = WhatsAppLog::select('phone_number')
+            ->distinct()
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->pluck('phone_number');
+        
+        // Get logs
         $logs = WhatsAppLog::orderBy('created_at', 'desc');
         
         if ($type !== 'all') {
@@ -430,9 +441,24 @@ class WhatsAppController extends Controller implements HasMiddleware
             $logs->where('status', $status);
         }
         
-        $logs = $logs->paginate(50)->withQueryString();
+        if ($selectedPhone) {
+            $logs->where('phone_number', $selectedPhone);
+        }
         
-        return view('whatsapp.logs', compact('logs', 'type', 'status'));
+        $logs = $logs->paginate(100)->withQueryString();
+        
+        // If selected phone, show conversation view
+        $conversationView = $selectedPhone ? true : false;
+        
+        // If conversation view, get all logs for that phone (without pagination)
+        $conversation = null;
+        if ($selectedPhone) {
+            $conversation = WhatsAppLog::where('phone_number', $selectedPhone)
+                ->orderBy('created_at', 'asc')
+                ->get();
+        }
+        
+        return view('whatsapp.logs', compact('logs', 'type', 'status', 'uniquePhones', 'selectedPhone', 'conversationView', 'conversation'));
     }
 
     private function upsertWhatsappSetting(string $key, ?string $value, string $type, string $label): void
