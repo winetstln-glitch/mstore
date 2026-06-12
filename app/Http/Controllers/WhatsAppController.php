@@ -423,12 +423,18 @@ class WhatsAppController extends Controller implements HasMiddleware
         $status = $request->input('status', 'all');
         $selectedPhone = $request->input('phone', null);
         
-        // Get unique phone numbers for sidebar
+        // Get unique phone numbers for sidebar with last message
         $uniquePhones = WhatsAppLog::select('phone_number')
             ->distinct()
             ->orderBy('created_at', 'desc')
             ->limit(100)
             ->pluck('phone_number');
+        
+        // Get last log for each phone
+        $phoneLastLogs = [];
+        foreach ($uniquePhones as $phone) {
+            $phoneLastLogs[$phone] = WhatsAppLog::where('phone_number', $phone)->latest()->first();
+        }
         
         // Get logs
         $logs = WhatsAppLog::orderBy('created_at', 'desc');
@@ -458,7 +464,7 @@ class WhatsAppController extends Controller implements HasMiddleware
                 ->get();
         }
         
-        return view('whatsapp.logs', compact('logs', 'type', 'status', 'uniquePhones', 'selectedPhone', 'conversationView', 'conversation'));
+        return view('whatsapp.logs', compact('logs', 'type', 'status', 'uniquePhones', 'selectedPhone', 'conversationView', 'conversation', 'phoneLastLogs'));
     }
 
     private function upsertWhatsappSetting(string $key, ?string $value, string $type, string $label): void

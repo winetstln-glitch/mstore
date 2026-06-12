@@ -64,18 +64,15 @@
                                         <i class="fa-solid fa-user-circle me-2"></i>
                                         {{ $phone }}
                                     </div>
-                                    @php
-                                        $lastLog = WhatsAppLog::where('phone_number', $phone)->latest()->first();
-                                    @endphp
-                                    @if($lastLog)
+                                    @if(isset($phoneLastLogs[$phone]))
                                         <small class="text-muted">
-                                            {{ Str::limit($lastLog->message, 30) }}
+                                            {{ Str::limit($phoneLastLogs[$phone]->message, 30) }}
                                         </small>
                                     @endif
                                 </div>
-                                @if($lastLog)
+                                @if(isset($phoneLastLogs[$phone]))
                                     <small class="text-muted">
-                                        {{ $lastLog->created_at->diffForHumans() }}
+                                        {{ $phoneLastLogs[$phone]->created_at->diffForHumans() }}
                                     </small>
                                 @endif
                             </a>
