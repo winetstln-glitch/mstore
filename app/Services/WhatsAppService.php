@@ -727,7 +727,7 @@ class WhatsAppService
     /**
      * Send System Notification to Group (Attendance/Ticket)
      */
-    public function sendGroupNotification(string $message, string $category = 'ticket'): array|bool
+    public function sendGroupNotification(string $message, string $category = 'ticket'): bool
     {
         $enabledKey = "whatsapp_{$category}_notification_enabled";
         $groupIdKey = "whatsapp_{$category}_group_id";
@@ -745,7 +745,8 @@ class WhatsAppService
         }
 
         try {
-            return $this->sendMessage($target, $message, "system_{$category}_notification");
+            $result = $this->sendMessage($target, $message, "system_{$category}_notification");
+            return $result['success'] ?? false;
         } catch (\Exception $e) {
             Log::error("Failed to send {$category} group notification: " . $e->getMessage());
             return false;

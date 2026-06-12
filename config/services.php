@@ -44,6 +44,7 @@ return [
         'key' => env('WHATSAPP_API_KEY'),
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'your-verify-token-change-me'),
         'secret' => env('WHATSAPP_WEBHOOK_SECRET'),
+        'group_id' => env('WHATSAPP_GROUP_ID'),
     ],
 
     'telegram' => [
