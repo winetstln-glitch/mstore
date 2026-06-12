@@ -125,6 +125,43 @@
                     </div>
                 </div>
 
+                @if($ticket->inventoryTransactions->count() > 0)
+                <div class="mb-4">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fa-solid fa-boxes-stacked me-1"></i> {{ __('Alat & Material yang Diambil') }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="text-muted small fw-bold">{{ __('Item') }}</th>
+                                    <th class="text-muted small fw-bold text-center">{{ __('Jumlah') }}</th>
+                                    <th class="text-muted small fw-bold text-end">{{ __('Total Biaya') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($ticket->inventoryTransactions as $transaction)
+                                <tr>
+                                    <td>
+                                        <span class="fw-medium">{{ $transaction->item->name ?? '-' }}</span>
+                                        @if($transaction->item)
+                                            <span class="badge bg-secondary-subtle text-secondary ms-1">{{ $transaction->item->unit ?? '' }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $transaction->quantity }}</td>
+                                    <td class="text-end">
+                                        @if($transaction->total_cost > 0)
+                                            Rp {{ number_format($transaction->total_cost, 0, ',', '.') }}
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+
                 @if($ticket->location)
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">

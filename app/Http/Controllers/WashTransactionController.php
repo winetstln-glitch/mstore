@@ -895,7 +895,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $updateData['kasbon_type'] = null;
                 $updateData['kasbon_user_id'] = null;
                 $updateData['kasbon_name'] = null;
-                $updateData['kasbon_settled'] = null;
+                $updateData['kasbon_settled'] = false;
             }
 
             $transaction->update($updateData);

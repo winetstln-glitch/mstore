@@ -81,6 +81,12 @@ class Ticket extends Model
         return $this->hasMany(TechnicianAssignment::class);
     }
 
+    public function inventoryTransactions(): HasMany
+    {
+        return $this->hasMany(InventoryTransaction::class, 'source_id')
+            ->where('source_type', 'ticket');
+    }
+
     public static function generateNumber(): string
     {
         do {

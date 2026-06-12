@@ -1,27 +1,33 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $typeGroup = request('type_group');
+    $isTool = $typeGroup === 'tool';
+    $isMaterial = $typeGroup === 'material';
+@endphp
+
 <div class="container-fluid inventory-pickup-page py-3">
     <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8">
+        <div class="col-12 col-xl-8">
             
             <!-- Main Card -->
             <div class="card shadow-sm border-0 inventory-pickup-shell overflow-hidden">
                 <!-- Header -->
-                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-{{ $isTool ? 'primary' : ($isMaterial ? 'success' : 'white') }} text-{{ $isTool || $isMaterial ? 'white' : 'dark' }} py-3 border-0 d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-box-open text-primary fa-lg"></i>
+                        <i class="fa-solid fa-{{ $isTool ? 'toolbox' : ($isMaterial ? 'cube' : 'box-open') }} fa-lg"></i>
                         <h5 class="mb-0 fw-bold">
-                            @if(request('type_group') == 'tool')
-                                {{ __('Pickup Alat & Aset') }}
-                            @elseif(request('type_group') == 'material')
-                                {{ __('Pickup Material') }}
+                            @if($isTool)
+                                {{ __('Ambil Alat & Aset') }}
+                            @elseif($isMaterial)
+                                {{ __('Ambil Material') }}
                             @else
                                 {{ __('Ambil Barang Inventaris') }}
                             @endif
                         </h5>
                     </div>
-                    <a href="{{ route('inventory.index', ['type_group' => request('type_group')]) }}" class="btn btn-sm btn-outline-secondary px-3">
+                    <a href="{{ route('inventory.index', ['type_group' => $typeGroup]) }}" class="btn btn-sm {{ $isTool || $isMaterial ? 'btn-light' : 'btn-outline-secondary' }} px-3">
                         <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
                     </a>
                 </div>
@@ -33,29 +39,33 @@
                         <input type="hidden" name="longitude" id="longitude">
 
                         <!-- Geolocation Status -->
-                        <div id="location-status" class="alert alert-light border d-flex align-items-center mb-4 py-2 px-3 shadow-xs">
+                        <div id="location-status" class="alert alert-light border d-flex align-items-center mb-3 py-2 px-3 shadow-xs">
                             <div class="spinner-border spinner-border-sm text-primary me-2" role="status" id="location-spinner"></div>
                             <i class="fa-solid fa-location-dot text-success d-none me-2" id="location-icon"></i>
                             <span class="small fw-medium text-muted" id="location-text">{{ __('Mendeteksi lokasi Anda...') }}</span>
                         </div>
                         
                         <!-- Items Selection Section -->
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold small text-uppercase text-muted mb-0">{{ __('Pilih Barang & Jumlah') }}</label>
-                                <span class="badge bg-light text-dark border fw-normal" id="item-count-badge">1 Item</span>
+                                <label class="form-label fw-bold small text-uppercase text-muted mb-0">
+                                    <i class="fa-solid fa-{{ $isTool ? 'toolbox' : ($isMaterial ? 'cube' : 'box') }} me-1"></i>
+                                    {{ $isTool ? __('Pilih Alat') : ($isMaterial ? __('Pilih Material') : __('Pilih Barang')) }}
+                                </label>
+                                <span class="badge bg-{{ $isTool ? 'primary' : ($isMaterial ? 'success' : 'secondary') }} text-white fw-normal" id="item-count-badge">1 Item</span>
                             </div>
                             
                             <!-- Items List -->
                             <div id="items-container" class="mb-3">
                                 <!-- Initial Row -->
-                                <div class="item-row card border shadow-xs mb-2 p-3 bg-light-subtle">
+                                <div class="item-row card border shadow-xs mb-2 p-2 bg-light-subtle">
                                     <div class="row g-2 align-items-end">
                                         <div class="col-12 col-md-7">
                                             <label class="x-small fw-bold text-muted text-uppercase mb-1">{{ __('Nama Barang') }}</label>
                                             <select name="items[0][inventory_item_id]" class="form-select item-select select2-basic" required>
-                                                <option value="">{{ __('Cari barang...') }}</option>
+                                                <option value="">{{ $isTool ? __('Pilih alat...') : ($isMaterial ? __('Pilih material...') : __('Cari barang...')) }}</option>
                                                 @foreach($items->groupBy('type_group') as $group => $groupedItems)
+                                                    @if($typeGroup && $group !== $typeGroup) @continue @endif
                                                     <optgroup label="{{ $group == 'tool' ? 'Alat / Aset' : 'Material / Perangkat' }}">
                                                         @foreach($groupedItems as $item)
                                                             <option value="{{ $item->id }}" data-unit="{{ $item->unit }}">
@@ -66,14 +76,14 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-8 col-md-4">
+                                        <div class="col-7 col-md-3">
                                             <label class="x-small fw-bold text-muted text-uppercase mb-1">{{ __('Jumlah') }}</label>
                                             <div class="input-group">
                                                 <input type="number" name="items[0][quantity]" class="form-control quantity-input" min="1" placeholder="0" required>
                                                 <span class="input-group-text bg-light unit-display x-small">pcs</span>
                                             </div>
                                         </div>
-                                        <div class="col-4 col-md-1 text-end">
+                                        <div class="col-5 col-md-2 text-end">
                                             <button type="button" class="btn btn-outline-danger w-100 remove-item-row" title="{{ __('Hapus') }}">
                                                 <i class="fa-solid fa-trash-can"></i>
                                             </button>
@@ -82,24 +92,27 @@
                                 </div>
                             </div>
                             
-                            <button type="button" id="add-item-row" class="btn btn-outline-primary btn-sm w-100 py-2 dashed-btn">
+                            <button type="button" id="add-item-row" class="btn btn-outline-{{ $isTool ? 'primary' : ($isMaterial ? 'success' : 'secondary') }} btn-sm w-100 py-2 dashed-btn">
                                 <i class="fa-solid fa-plus-circle me-1"></i> {{ __('Tambah Barang Lain') }}
                             </button>
                         </div>
 
-                        <hr class="my-4 opacity-5">
+                        <hr class="my-3 opacity-5">
 
                         <!-- Additional Details -->
-                        <div class="row g-3 mb-4">
+                        <div class="row g-2 mb-3">
                             <div class="col-md-6">
                                 <label for="usage" class="form-label fw-bold small text-muted text-uppercase">{{ __('Tujuan Pemakaian') }}</label>
                                 <select name="usage" id="usage" class="form-select" required>
                                     <option value="">{{ __('Pilih tujuan...') }}</option>
-                                    <option value="New Installation">{{ __('Pemasangan Baru') }}</option>
-                                    <option value="Installation">{{ __('Instalasi') }}</option>
-                                    <option value="Replacement">{{ __('Perbaikan / Maintenance') }}</option>
-                                    <option value="Device Replacement">{{ __('Penggantian Alat') }}</option>
-                                    <option value="Stock Team">{{ __('Stok Tim / Coordinator') }}</option>
+                                    <!-- Opsi untuk semua tipe -->
+                                    <option value="pemasangan_baru" class="usage-option">{{ __('Pemasangan Baru') }}</option>
+                                    <option value="perbaikan_maintenance" class="usage-option">{{ __('Perbaikan / Maintenance') }}</option>
+                                    <option value="stok_tim" class="usage-option">{{ __('Stok Tim / Coordinator') }}</option>
+                                    <!-- Opsi khusus material -->
+                                    <option value="penggantian_material" class="usage-option material-only">{{ __('Penggantian Material') }}</option>
+                                    <!-- Opsi khusus alat -->
+                                    <option value="penggantian_alat" class="usage-option tool-only">{{ __('Penggantian Alat') }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -116,7 +129,7 @@
                         </div>
 
                         <!-- Proof of Pickup -->
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label fw-bold small text-muted text-uppercase">{{ __('Foto Bukti Pengambilan') }}</label>
                             <div class="upload-container">
                                 <label for="proof_image" class="custom-file-upload shadow-xs" id="upload-area">
@@ -134,14 +147,14 @@
                         </div>
 
                         <!-- Description -->
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="description" class="form-label fw-bold small text-muted text-uppercase">{{ __('Catatan Tambahan') }}</label>
                             <textarea name="description" id="description" class="form-control" rows="2" placeholder="{{ __('Contoh: Nama pelanggan, lokasi ODP, dll...') }}"></textarea>
                         </div>
 
                         <!-- Submit -->
-                        <div class="pt-2">
-                            <button type="submit" class="btn btn-primary btn-lg w-100 shadow fw-bold py-3">
+                        <div class="pt-1">
+                            <button type="submit" class="btn btn-{{ $isTool ? 'primary' : ($isMaterial ? 'success' : 'primary') }} btn-lg w-100 shadow fw-bold py-3">
                                 <i class="fa-solid fa-paper-plane me-2"></i> {{ __('SIMPAN PENGAMBILAN') }}
                             </button>
                         </div>
@@ -157,20 +170,19 @@
     /* Compact Design for Pickup Page */
     .inventory-pickup-page .inventory-pickup-shell {
         border-radius: 1rem;
-        border-top: 4px solid var(--bs-primary) !important;
         background: var(--bs-card-bg);
     }
 
     /* Input Styling */
     .inventory-pickup-page .form-label {
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.35rem;
         letter-spacing: 0.025em;
     }
 
     .inventory-pickup-page .form-select, 
     .inventory-pickup-page .form-control {
         border-radius: 0.5rem;
-        padding: 0.6rem 0.85rem;
+        padding: 0.55rem 0.8rem;
         border-color: var(--bs-border-color);
     }
 
@@ -209,13 +221,13 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 2rem;
+        padding: 1.5rem;
         cursor: pointer;
         transition: all 0.2s;
         background: var(--bs-light-bg-subtle);
         position: relative;
         overflow: hidden;
-        min-height: 180px;
+        min-height: 150px;
         width: 100%;
     }
 
@@ -227,8 +239,8 @@
     .custom-file-upload input[type="file"] { display: none; }
 
     .icon-circle {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
         background: rgba(var(--bs-primary-rgb), 0.1);
         color: var(--bs-primary);
         border-radius: 50%;
@@ -273,11 +285,11 @@
         }
         
         .item-row {
-            padding: 1rem !important;
+            padding: 0.75rem !important;
         }
         
         .item-row .row > div {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
         
         .item-row .row > div:last-child {
@@ -290,6 +302,25 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- 0. Filter Tujuan Pemakaian berdasarkan tipe barang ---
+        const typeGroup = @json($typeGroup);
+        const usageSelect = document.getElementById('usage');
+        
+        function filterUsageOptions() {
+            const options = usageSelect.querySelectorAll('.usage-option');
+            options.forEach(option => {
+                if (typeGroup === 'tool' && option.classList.contains('material-only')) {
+                    option.style.display = 'none';
+                } else if (typeGroup === 'material' && option.classList.contains('tool-only')) {
+                    option.style.display = 'none';
+                } else {
+                    option.style.display = 'block';
+                }
+            });
+        }
+        
+        filterUsageOptions();
+
         // --- 1. Geolocation Logic ---
         const latInput = document.getElementById('latitude');
         const lngInput = document.getElementById('longitude');

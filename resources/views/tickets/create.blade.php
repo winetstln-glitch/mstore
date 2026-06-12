@@ -227,6 +227,76 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        
+                        <!-- Alat & Material -->
+                        <div class="col-12">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-boxes-stacked me-1"></i> {{ __('Alat & Material yang Dibutuhkan') }}</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-primary"><i class="fa-solid fa-toolbox me-1"></i> {{ __('Alat') }}</label>
+                                        <div id="tools-container">
+                                            <div class="row g-2 mb-2 tool-item">
+                                                <div class="col-md-5">
+                                                    <select name="tools[0][inventory_item_id]" class="form-select">
+                                                        <option value="">{{ __('Pilih Alat') }}</option>
+                                                        @foreach($inventoryItems as $item)
+                                                            @if($item->type_group === 'tool')
+                                                                <option value="{{ $item->id }}" data-stock="{{ $item->stock }}">
+                                                                    {{ $item->name }} (Stok: {{ $item->stock }})
+                                                                </option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="number" name="tools[0][quantity]" class="form-control" min="1" value="1" placeholder="{{ __('Jumlah') }}">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <button type="button" class="btn btn-outline-danger w-100 remove-item">
+                                                        <i class="fa-solid fa-trash"></i> {{ __('Hapus') }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-tool">
+                                            <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Alat') }}
+                                        </button>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="form-label fw-bold text-success"><i class="fa-solid fa-cube me-1"></i> {{ __('Material') }}</label>
+                                        <div id="materials-container">
+                                            <div class="row g-2 mb-2 material-item">
+                                                <div class="col-md-5">
+                                                    <select name="materials[0][inventory_item_id]" class="form-select">
+                                                        <option value="">{{ __('Pilih Material') }}</option>
+                                                        @foreach($inventoryItems as $item)
+                                                            @if($item->type_group === 'material')
+                                                                <option value="{{ $item->id }}" data-stock="{{ $item->stock }}">
+                                                                    {{ $item->name }} (Stok: {{ $item->stock }})
+                                                                </option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="number" name="materials[0][quantity]" class="form-control" min="1" value="1" placeholder="{{ __('Jumlah') }}">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <button type="button" class="btn btn-outline-danger w-100 remove-item">
+                                                        <i class="fa-solid fa-trash"></i> {{ __('Hapus') }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-success btn-sm mt-2" id="add-material">
+                                            <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Material') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Lokasi -->
                         <div class="col-12">
@@ -648,6 +718,39 @@
             await stopScanner(createMacScanner);
             $('#createMacQrScannerWrapper').addClass('d-none');
             $('#createMacQrScanStatus').text("{{ __('Scan MAC dihentikan.') }}");
+        });
+        
+        // Tambah Alat
+        let toolIndex = 1;
+        $('#add-tool').on('click', function() {
+            const toolsContainer = $('#tools-container');
+            const toolItem = toolsContainer.find('.tool-item').first().clone();
+            toolItem.find('select').attr('name', `tools[${toolIndex}][inventory_item_id]`).val('');
+            toolItem.find('input').attr('name', `tools[${toolIndex}][quantity]`).val(1);
+            toolsContainer.append(toolItem);
+            toolIndex++;
+        });
+        
+        // Tambah Material
+        let materialIndex = 1;
+        $('#add-material').on('click', function() {
+            const materialsContainer = $('#materials-container');
+            const materialItem = materialsContainer.find('.material-item').first().clone();
+            materialItem.find('select').attr('name', `materials[${materialIndex}][inventory_item_id]`).val('');
+            materialItem.find('input').attr('name', `materials[${materialIndex}][quantity]`).val(1);
+            materialsContainer.append(materialItem);
+            materialIndex++;
+        });
+        
+        // Hapus Item
+        $(document).on('click', '.remove-item', function() {
+            const container = $(this).closest('.row').parent();
+            if (container.children().length > 1) {
+                $(this).closest('.row').remove();
+            } else {
+                $(this).closest('.row').find('select').val('');
+                $(this).closest('.row').find('input').val(1);
+            }
         });
     });
 </script>

@@ -196,7 +196,7 @@ class InventoryController extends Controller implements HasMiddleware
                 'items' => 'required|array|min:1',
                 'items.*.inventory_item_id' => 'required|exists:inventory_items,id',
                 'items.*.quantity' => 'required|integer|min:1',
-                'usage' => 'required|string|in:New Installation,Replacement',
+                'usage' => 'required|string|in:pemasangan_baru,perbaikan_maintenance,stok_tim,penggantian_material,penggantian_alat',
                 'proof_image' => 'required|image|max:10240',
                 'description' => 'nullable|string',
                 'coordinator_id' => 'nullable|exists:coordinators,id',
@@ -206,7 +206,15 @@ class InventoryController extends Controller implements HasMiddleware
 
             $path = $request->file('proof_image')->store('inventory_proofs', 'public');
 
-            $finalDescription = '['.__($data['usage']).'] '.($data['description'] ?? '');
+            $usageLabels = [
+                'pemasangan_baru' => 'Pemasangan Baru',
+                'perbaikan_maintenance' => 'Perbaikan / Maintenance',
+                'stok_tim' => 'Stok Tim / Coordinator',
+                'penggantian_material' => 'Penggantian Material',
+                'penggantian_alat' => 'Penggantian Alat',
+            ];
+            $usageLabel = $usageLabels[$data['usage']] ?? $data['usage'];
+            $finalDescription = '['.$usageLabel.'] '.($data['description'] ?? '');
 
             $hasTools = false;
             DB::transaction(function () use ($data, $path, $finalDescription, &$hasTools) {
@@ -290,7 +298,7 @@ class InventoryController extends Controller implements HasMiddleware
             $request->validate([
                 'inventory_item_id' => 'required|exists:inventory_items,id',
                 'quantity' => 'required|integer|min:1',
-                'usage' => 'required|string|in:New Installation,Replacement',
+                'usage' => 'required|string|in:pemasangan_baru,perbaikan_maintenance,stok_tim,penggantian_material,penggantian_alat',
                 'proof_image' => 'required|image|max:10240',
                 'description' => 'nullable|string',
                 'coordinator_id' => 'nullable|exists:coordinators,id',
@@ -300,7 +308,16 @@ class InventoryController extends Controller implements HasMiddleware
 
             $path = $request->file('proof_image')->store('inventory_proofs', 'public');
 
-            DB::transaction(function () use ($request, $path) {
+            $usageLabels = [
+                'pemasangan_baru' => 'Pemasangan Baru',
+                'perbaikan_maintenance' => 'Perbaikan / Maintenance',
+                'stok_tim' => 'Stok Tim / Coordinator',
+                'penggantian_material' => 'Penggantian Material',
+                'penggantian_alat' => 'Penggantian Alat',
+            ];
+            $usageLabel = $usageLabels[$request->usage] ?? $request->usage;
+
+            DB::transaction(function () use ($request, $path, $usageLabel) {
                 $item = InventoryItem::findOrFail($request->inventory_item_id);
 
                 if ($item->stock < $request->quantity) {
@@ -319,7 +336,7 @@ class InventoryController extends Controller implements HasMiddleware
                     'total_cost' => $item->price * $request->quantity,
                     'source_type' => 'pickup',
                     'proof_image' => $path,
-                    'description' => '['.__($request->usage).'] '.$request->description,
+                    'description' => '['.$usageLabel.'] '.$request->description,
                 ]);
 
                 $item->decrement('stock', $request->quantity);

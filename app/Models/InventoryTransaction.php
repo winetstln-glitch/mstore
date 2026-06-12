@@ -19,6 +19,7 @@ class InventoryTransaction extends Model
         'unit_cost',
         'total_cost',
         'source_type',
+        'source_id',
         'supplier_name',
         'reference_no',
         'proof_image',

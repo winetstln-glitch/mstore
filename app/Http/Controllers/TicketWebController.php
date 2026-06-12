@@ -6,6 +6,7 @@ use App\Traits\SendsNotifications;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Coordinator;
 use App\Models\Customer;
+use App\Models\InventoryItem;
 use App\Models\Odp;
 use App\Models\Ticket;
 use App\Models\TicketLog;
@@ -16,6 +17,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -75,10 +77,6 @@ class TicketWebController extends Controller implements HasMiddleware
             });
         }
 
-        // If technician, show only assigned tickets? Or all?
-        // For MVP let's assume technicians see all or maybe filtered.
-        // But dashboard handles "My Tickets". Here is global list.
-
         $tickets = $query->latest()->paginate(10)->withQueryString();
 
         return view('tickets.index', compact('tickets'));
@@ -93,8 +91,9 @@ class TicketWebController extends Controller implements HasMiddleware
         $technicians = $this->availableTechnicians();
         $odps = Odp::all();
         $coordinators = Coordinator::with('region')->get();
+        $inventoryItems = InventoryItem::orderBy('type_group', 'desc')->orderBy('name')->get();
 
-        return view('tickets.create', compact('customers', 'technicians', 'odps', 'coordinators'));
+        return view('tickets.create', compact('customers', 'technicians', 'odps', 'coordinators', 'inventoryItems'));
     }
 
     /**
@@ -114,6 +113,13 @@ class TicketWebController extends Controller implements HasMiddleware
             'address' => 'nullable|string',
             'odp_id' => 'nullable|exists:odps,id',
             'coordinator_id' => 'nullable|exists:coordinators,id',
+            // Inventory validation
+            'tools' => 'nullable|array',
+            'tools.*.inventory_item_id' => 'nullable|exists:inventory_items,id',
+            'tools.*.quantity' => 'nullable|integer|min:1',
+            'materials' => 'nullable|array',
+            'materials.*.inventory_item_id' => 'nullable|exists:inventory_items,id',
+            'materials.*.quantity' => 'nullable|integer|min:1',
             // Conditional validation
             'customer_id' => 'required_if:type,gangguan,other|nullable|exists:customers,id',
             'new_customer_name' => 'required_if:type,pasang_baru|nullable|string|max:255',
@@ -123,7 +129,7 @@ class TicketWebController extends Controller implements HasMiddleware
             'new_customer_address' => 'required_if:type,pasang_baru|nullable|string',
         ]);
 
-        if ($request->filled('technicians')) {
+        if ($request->has('technicians')) {
             $allowedIds = $this->availableTechnicianIds();
 
             $invalid = array_diff($request->technicians, $allowedIds);
@@ -137,7 +143,6 @@ class TicketWebController extends Controller implements HasMiddleware
         $customerId = $request->customer_id;
 
         if ($request->type === 'pasang_baru') {
-            // Create new customer
             $customer = Customer::create([
                 'name' => $request->new_customer_name,
                 'address' => $request->new_customer_address,
@@ -145,7 +150,6 @@ class TicketWebController extends Controller implements HasMiddleware
                 'device_model' => $request->new_customer_modem_type,
                 'onu_serial' => $request->new_customer_onu_serial,
                 'wan_mac' => $request->new_customer_wan_mac ? strtoupper(trim($request->new_customer_wan_mac)) : null,
-                // Assuming latitude/longitude columns exist on customers table as per view usage
                 'latitude' => $request->new_customer_lat,
                 'longitude' => $request->new_customer_lng,
                 'status' => 'active',
@@ -171,47 +175,157 @@ class TicketWebController extends Controller implements HasMiddleware
                 ? (int) $request->estimated_duration_minutes
                 : null;
         }
-        $ticket = Ticket::create($ticketData);
 
-        if ($request->has('technicians')) {
-            $ticket->technicians()->sync($request->technicians);
+        DB::transaction(function () use ($request, $ticketData) {
+            $ticket = Ticket::create($ticketData);
 
-            // Notify each assigned technician
-            foreach ($ticket->technicians as $technician) {
-                $technician->notify(new TicketAssignedNotification($ticket));
+            $items = [];
+            if ($request->has('tools')) {
+                foreach ($request->tools as $tool) {
+                    if (!empty($tool['inventory_item_id']) && !empty($tool['quantity'])) {
+                        $items[] = $tool;
+                    }
+                }
             }
-        }
+            if ($request->has('materials')) {
+                foreach ($request->materials as $material) {
+                    if (!empty($material['inventory_item_id']) && !empty($material['quantity'])) {
+                        $items[] = $material;
+                    }
+                }
+            }
 
-        TicketLog::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => Auth::id(),
-            'action' => 'created',
-            'description' => 'Ticket created.',
-        ]);
+            if (!empty($items)) {
+                $usage = match($request->type) {
+                    'pasang_baru' => 'pemasangan_baru',
+                    'perbaikan' => 'perbaikan_maintenance',
+                    'maintenance' => 'perbaikan_maintenance',
+                    default => 'perbaikan_maintenance',
+                };
 
-        // Notify Technician Group via Telegram
-        app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'created');
+                $usageLabels = [
+                    'pemasangan_baru' => 'Pemasangan Baru',
+                    'perbaikan_maintenance' => 'Perbaikan / Maintenance',
+                    'stok_tim' => 'Stok Tim / Coordinator',
+                    'penggantian_material' => 'Penggantian Material',
+                    'penggantian_alat' => 'Penggantian Alat',
+                ];
+                $usageLabel = $usageLabels[$usage] ?? $usage;
+                $finalDescription = '['.$usageLabel.'] Tiket: '.$ticket->ticket_number.' - '.($request->description ?? '');
 
-        // Notify Group via WhatsApp (Fonnte) & Telegram
-        $customerName = $ticket->customer?->name ?? $request->new_customer_name ?? '-';
-        $priorityLabel = match($ticket->priority) {
-            'high' => '🔴 TINGGI',
-            'medium' => '🟡 SEDANG',
-            'low' => '🟢 RENDAH',
-            default => strtoupper($ticket->priority)
-        };
-        $typeLabel = strtoupper(str_replace('_', ' ', $ticket->type));
-        
-        $waMessage = "🎫 *TIKET BARU: {$ticket->ticket_number}*\n\n" .
-                     "📌 *Tipe:* {$typeLabel}\n" .
-                     "👤 *Pelanggan:* {$customerName}\n" .
-                     "📝 *Subjek:* {$ticket->subject}\n" .
-                     "⚡ *Prioritas:* {$priorityLabel}\n" .
-                     "📍 *Alamat:* " . ($ticket->address ?? '-') . "\n\n" .
-                     "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
-                     "🚀 _Sistem M-Store_";
-        
-        $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+                $totals = [];
+                foreach ($items as $row) {
+                    $itemId = $row['inventory_item_id'];
+                    $qty = $row['quantity'];
+                    if (!isset($totals[$itemId])) {
+                        $totals[$itemId] = 0;
+                    }
+                    $totals[$itemId] += $qty;
+                }
+
+                foreach ($totals as $itemId => $qty) {
+                    $item = InventoryItem::find($itemId);
+                    if (!$item || $item->stock < $qty) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'items' => [__('Stok tidak cukup untuk :item. Stok tersedia: :stock', ['item' => $item->name, 'stock' => $item->stock])],
+                        ]);
+                    }
+                }
+
+                foreach ($items as $row) {
+                    $item = InventoryItem::find($row['inventory_item_id']);
+
+                    $inventoryTransaction = \App\Models\InventoryTransaction::create([
+                        'user_id' => Auth::id(),
+                        'coordinator_id' => $request->coordinator_id ?? null,
+                        'inventory_item_id' => $row['inventory_item_id'],
+                        'type' => 'out',
+                        'quantity' => $row['quantity'],
+                        'unit_cost' => $item?->price ?? 0,
+                        'total_cost' => ($item?->price ?? 0) * $row['quantity'],
+                        'source_type' => 'ticket',
+                        'source_id' => $ticket->id,
+                        'proof_image' => null,
+                        'description' => $finalDescription,
+                    ]);
+
+                    if ($item) {
+                        $item->decrement('stock', $row['quantity']);
+
+                        if (!empty($request->coordinator_id) && $item->price > 0) {
+                            \App\Models\Transaction::create([
+                                'user_id' => Auth::id(),
+                                'coordinator_id' => $request->coordinator_id,
+                                'type' => 'expense',
+                                'category' => 'Pengeluaran Pengurus',
+                                'amount' => $item->price * $row['quantity'],
+                                'transaction_date' => now()->toDateString(),
+                                'description' => 'Pengurus mengambil '.$row['quantity'].' '.$item->unit.' '.$item->name.' untuk tiket '.$ticket->ticket_number,
+                                'reference_number' => 'INV-OUT-'.$inventoryTransaction->id,
+                            ]);
+                            Cache::forget('inventory.total_sales');
+                        }
+
+                        if ($item->type_group === 'tool') {
+                            $holderType = !empty($request->coordinator_id) ? Coordinator::class : User::class;
+                            $holderId = $request->coordinator_id ?? Auth::id();
+
+                            for ($i = 0; $i < $row['quantity']; $i++) {
+                                \App\Models\Asset::create([
+                                    'inventory_item_id' => $item->id,
+                                    'asset_code' => 'TOOL-'.$item->id.'-'.time().'-'.uniqid(),
+                                    'status' => 'deployed',
+                                    'condition' => 'good',
+                                    'holder_type' => $holderType,
+                                    'holder_id' => $holderId,
+                                    'latitude' => $request->location ? explode(',', $request->location)[0] : null,
+                                    'longitude' => $request->location ? explode(',', $request->location)[1] : null,
+                                    'purchase_date' => now(),
+                                    'meta_data' => ['source_transaction_id' => $inventoryTransaction->id, 'ticket_id' => $ticket->id],
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ($request->has('technicians')) {
+                $ticket->technicians()->sync($request->technicians);
+
+                foreach ($ticket->technicians as $technician) {
+                    $technician->notify(new TicketAssignedNotification($ticket));
+                }
+            }
+
+            TicketLog::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => Auth::id(),
+                'action' => 'created',
+                'description' => 'Ticket created.',
+            ]);
+
+            app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'created');
+
+            $customerName = $ticket->customer?->name ?? $request->new_customer_name ?? '-';
+            $priorityLabel = match($ticket->priority) {
+                'high' => '🔴 TINGGI',
+                'medium' => '🟡 SEDANG',
+                'low' => '🟢 RENDAH',
+                default => strtoupper($ticket->priority)
+            };
+            $typeLabel = strtoupper(str_replace('_', ' ', $ticket->type));
+            
+            $waMessage = "🎫 *TIKET BARU: {$ticket->ticket_number}*\n\n" .
+                        "📌 *Tipe:* {$typeLabel}\n" .
+                        "👤 *Pelanggan:* {$customerName}\n" .
+                        "📝 *Subjek:* {$ticket->subject}\n" .
+                        "⚡ *Prioritas:* {$priorityLabel}\n" .
+                        "📍 *Alamat:* " . ($ticket->address ?? '-') . "\n\n" .
+                        "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
+                        "🚀 _Sistem M-Store_";
+            
+            $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+        });
 
         return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
     }
@@ -221,7 +335,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function show(Ticket $ticket)
     {
-        $ticket->load(['customer', 'technicians', 'logs.user', 'odp', 'coordinator.region']);
+        $ticket->load(['customer', 'technicians', 'logs.user', 'odp', 'coordinator.region', 'inventoryTransactions.item']);
         $technicians = User::query()
             ->whereIn('id', $this->presentTechnicianIds())
             ->orderBy('name')
@@ -280,14 +394,12 @@ class TicketWebController extends Controller implements HasMiddleware
         $oldStatus = $ticket->status;
         $oldTechnicianIds = $ticket->technicians->pluck('id')->toArray();
 
-        // Update ticket fields (excluding technicians which is pivot)
         $ticketUpdateData = collect($validated)->except('technicians')->toArray();
         if (! Schema::hasColumn('tickets', 'estimated_duration_minutes')) {
             unset($ticketUpdateData['estimated_duration_minutes']);
         }
         $ticket->update($ticketUpdateData);
 
-        // Log status change
         if ($ticket->wasChanged('status')) {
             TicketLog::create([
                 'ticket_id' => $ticket->id,
@@ -300,12 +412,10 @@ class TicketWebController extends Controller implements HasMiddleware
                 $ticket->update(['closed_at' => now()]);
             }
 
-            // Notify Technician Group via Telegram if solved or closed
             if (in_array($ticket->status, ['solved', 'closed'])) {
                 app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'solved', "Status changed to " . ucfirst($ticket->status));
             }
 
-            // Notify Group via WhatsApp & Telegram
             $statusLabel = match($ticket->status) {
                 'open' => 'BUKA 🔓',
                 'assigned' => 'DITUGASKAN 👤',
@@ -323,7 +433,6 @@ class TicketWebController extends Controller implements HasMiddleware
                          "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                          "🚀 _Sistem M-Store_";
             
-            // If we already sent a specialized Telegram notification (for solved/closed), only send to WhatsApp here
             if (in_array($ticket->status, ['solved', 'closed'])) {
                 $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
             } else {
@@ -331,7 +440,6 @@ class TicketWebController extends Controller implements HasMiddleware
             }
         }
 
-        // Handle Technician Assignment
         if ($canEdit && $request->has('technicians')) {
             if (! empty($request->technicians)) {
                 $currentTechIds = $ticket->technicians->pluck('id')->toArray();
@@ -348,7 +456,6 @@ class TicketWebController extends Controller implements HasMiddleware
 
             $newTechnicianIds = $request->technicians ?? [];
 
-            // Check if assignment changed
             sort($oldTechnicianIds);
             $sortedNewIds = $newTechnicianIds;
             sort($sortedNewIds);
@@ -356,7 +463,6 @@ class TicketWebController extends Controller implements HasMiddleware
             if ($oldTechnicianIds !== $sortedNewIds) {
                 $ticket->technicians()->sync($newTechnicianIds);
 
-                // Determine added technicians to notify
                 $addedTechnicianIds = array_diff($newTechnicianIds, $oldTechnicianIds);
 
                 if (! empty($addedTechnicianIds)) {
@@ -369,7 +475,6 @@ class TicketWebController extends Controller implements HasMiddleware
                         'description' => "Assigned to: {$newTechNames}",
                     ]);
 
-                    // Notify only new technicians
                     foreach ($addedTechnicianIds as $techId) {
                         $tech = User::find($techId);
                         if ($tech) {
@@ -377,16 +482,13 @@ class TicketWebController extends Controller implements HasMiddleware
                         }
                     }
 
-                    // Notify Group via WhatsApp & Telegram
                     $waMessage = "🎫 *PENUGASAN TIKET: {$ticket->ticket_number}*\n\n" .
                                  "📝 *Subjek:* {$ticket->subject}\n" .
                                  "👷 *Teknisi:* {$newTechNames}\n" .
                                  "👤 *Oleh:* " . Auth::user()->name . "\n" .
                                  "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                                  "🚀 _Sistem M-Store_";
-                    
-                    // If we already sent a status update notification in this request, only send to WhatsApp here
-                    // to avoid duplicate Telegram messages in the same group.
+            
                     if ($ticket->wasChanged('status')) {
                         $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
                     } else {
@@ -562,22 +664,20 @@ class TicketWebController extends Controller implements HasMiddleware
             'description' => 'Ticket marked as solved with photos.'.$completionNote,
         ]);
 
-        // Notify Technician Group via Telegram for Solved Ticket
-            app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'solved', $request->description);
+        app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'solved', $request->description);
 
-            // Notify Group via WhatsApp (Fonnte) for Solved Ticket
-            try {
-                $waMessage = "✅ *TIKET SELESAI: {$ticket->ticket_number}*\n\n" .
-                             "👤 *Pelanggan:* " . ($ticket->customer?->name ?? '-') . "\n" .
-                             "📝 *Subjek:* {$ticket->subject}\n" .
-                             "🛠️ *Oleh:* " . Auth::user()->name . "\n" .
-                             "🗒️ *Hasil:* " . ($request->description ?? 'Telah diperbaiki') . "\n\n" .
-                             "🚀 _Sistem M-Store_";
-                
-                app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Ticket Solved WA Notification Error: ' . $e->getMessage());
-            }
+        try {
+            $waMessage = "✅ *TIKET SELESAI: {$ticket->ticket_number}*\n\n" .
+                         "👤 *Pelanggan:* " . ($ticket->customer?->name ?? '-') . "\n" .
+                         "📝 *Subjek:* {$ticket->subject}\n" .
+                         "🛠️ *Oleh:* " . Auth::user()->name . "\n" .
+                         "🗒️ *Hasil:* " . ($request->description ?? 'Telah diperbaiki') . "\n\n" .
+                         "🚀 _Sistem M-Store_";
+            
+            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage);
+        } catch (\Exception $e) {
+            Log::error('Ticket Solved WA Notification Error: ' . $e->getMessage());
+        }
 
         DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
 
@@ -604,14 +704,12 @@ class TicketWebController extends Controller implements HasMiddleware
         $ticket->location = $request->location;
         $ticket->save();
 
-        // Update Customer Location if ticket has a customer
         if ($ticket->customer) {
             $parts = explode(',', $request->location);
             if (count($parts) >= 2) {
                 $lat = trim($parts[0]);
                 $lng = trim($parts[1]);
 
-                // Basic validation for coordinates
                 if (is_numeric($lat) && is_numeric($lng)) {
                     $ticket->customer->update([
                         'latitude' => $lat,
@@ -703,7 +801,6 @@ class TicketWebController extends Controller implements HasMiddleware
 
         foreach ($ticket->technicians as $technician) {
             try {
-                // Build personalized message for each assigned technician.
                 $message = TicketAssignedNotification::buildMessage($ticket, $technician, $customTemplate);
 
                 if (empty($technician->phone)) {
@@ -713,22 +810,18 @@ class TicketWebController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                // Send directly via service to get immediate feedback
-                // sendMessage throws exception if config missing or API error
                 $whatsappService->sendMessage($technician->phone, $message, 'ticket_assignment', null);
 
                 $successCount++;
-
             } catch (\Exception $e) {
                 $failCount++;
-                // Clean up error message for user display
                 $msg = $e->getMessage();
                 if (str_contains($msg, 'Configuration missing')) {
-                    $msg = 'WhatsApp Configuration Missing (.env)';
+                    $msg = 'WhatsApp Configuration missing (.env)';
                 }
                 $errors[] = $msg;
 
-                \Log::error("Failed to send manual notification to user {$technician->id}: ".$e->getMessage());
+                Log::error("Failed to send manual notification to user {$technician->id}: ".$e->getMessage());
             }
         }
 
