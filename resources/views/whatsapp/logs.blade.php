@@ -3,8 +3,8 @@
 @section('title', 'WhatsApp Logs')
 
 @section('content')
-<div class="container-fluid px-4 py-4 h-100">
-    <div class="card shadow-sm h-100" style="min-height: 80vh;">
+<div class="container-fluid px-4 py-4">
+    <div class="card shadow-sm">
         <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
             <h5 class="mb-0 fw-bold">
                 <i class="fa-brands fa-whatsapp me-2 text-success"></i>
@@ -26,7 +26,7 @@
             </div>
         </div>
 
-        <div class="card-body p-0 d-flex flex-column flex-grow-1" style="max-height: calc(80vh - 80px);">
+        <div class="card-body p-0">
             <!-- Filters & Sidebar -->
             @if(!$selectedPhone)
                 <div class="bg-light border-bottom px-4 py-3">
@@ -57,7 +57,7 @@
                     </form>
                 </div>
                 
-                <div class="d-flex flex-grow-1 overflow-hidden">
+                <div class="d-flex" style="min-height: 600px;">
                     <!-- Sidebar Phone List -->
                     <div class="border-end bg-white" style="width: 320px; flex-shrink: 0; overflow-y: auto;">
                         <div class="list-group list-group-flush">
@@ -179,7 +179,7 @@
                 
             @else
                 <!-- Conversation View -->
-                <div class="d-flex flex-column flex-grow-1" style="background: #e5ddd5;">
+                <div class="d-flex flex-column" style="min-height: 600px;">
                     <div class="bg-white border-bottom shadow-sm px-4 py-3 d-flex justify-content-between align-items-center">
                         <div class="d-flex flex-column">
                             <h6 class="mb-0 fw-bold">
