@@ -131,6 +131,17 @@ class WashMembershipService
             return 0;
         }
 
+        // Check for active subscription first
+        $activeSubscription = $member->activeSubscription();
+        if ($activeSubscription) {
+            $activeSubscription->loadMissing('package');
+            $pct = (float) ($activeSubscription->package?->discount_percent ?? 0);
+            if ($pct > 0) {
+                return min($pct, 50);
+            }
+        }
+
+        // Fallback to level discount
         $member->loadMissing('level');
         $pct = (float) ($member->level?->discount_percent ?? 0);
         if ($pct < 0) {
@@ -140,6 +151,38 @@ class WashMembershipService
             $pct = 50;
         }
         return $pct;
+    }
+
+    public function purchasePackage(WashMember $member, int $packageId, ?WashTransaction $transaction = null): \App\Models\WashMemberSubscription
+    {
+        $package = \App\Models\WashMemberPackage::query()->where('is_active', true)->findOrFail($packageId);
+
+        return DB::transaction(function () use ($member, $package, $transaction) {
+            $now = now();
+
+            // Check if member already has an active subscription
+            $activeSubscription = $member->activeSubscription();
+            $startDate = $activeSubscription ? $activeSubscription->end_date : $now;
+            $endDate = $startDate->copy()->addDays($package->duration_days);
+
+            $subscription = \App\Models\WashMemberSubscription::create([
+                'wash_member_id' => $member->id,
+                'wash_member_package_id' => $package->id,
+                'wash_transaction_id' => $transaction?->id,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => 'active',
+                'paid_amount' => $package->price,
+            ]);
+
+            $this->auditLog->logAction('wash_membership.package_purchased', $subscription, [
+                'member_number' => $member->member_number,
+                'package_code' => $package->code,
+                'package_name' => $package->name,
+            ]);
+
+            return $subscription;
+        });
     }
 
     public function calculateDiscountAmount(float $amount, float $discountPercent): float

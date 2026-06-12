@@ -49,4 +49,18 @@ class WashMember extends Model
     {
         return $this->hasMany(WashTransaction::class, 'wash_member_id');
     }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(WashMemberSubscription::class, 'wash_member_id');
+    }
+
+    public function activeSubscription()
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where('end_date', '>', now())
+            ->latest()
+            ->first();
+    }
 }
