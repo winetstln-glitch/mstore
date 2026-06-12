@@ -523,7 +523,12 @@ class WhatsAppService
 
     public function checkGatewayStatus(): array
     {
+        Log::info('=== Starting WhatsApp Gateway Check ===');
+        Log::info('Base URL:', ['url' => $this->baseUrl]);
+        Log::info('API Key:', ['key' => substr($this->apiKey, 0, 8) . '...']);
+
         if (! $this->baseUrl || ! $this->apiKey) {
+            Log::warning('Missing base URL or API key');
             return [
                 'ok' => false,
                 'connected' => false,
@@ -534,6 +539,7 @@ class WhatsAppService
 
         try {
             $provider = $this->getProvider();
+            Log::info('Detected Provider:', ['provider' => $provider]);
             $response = null;
             $responseBody = '';
             
@@ -543,46 +549,71 @@ class WhatsAppService
                 $endpoints = ['/api/v2/device', '/device'];
                 foreach ($endpoints as $endpoint) {
                     try {
+                        $fullUrl = $this->baseUrl . $endpoint;
+                        Log::info('Trying endpoint', ['url' => $fullUrl]);
+                        
                         $response = Http::timeout(8)
                             ->connectTimeout(3)
                             ->withHeaders(['Authorization' => $this->apiKey])
-                            ->post($this->baseUrl . $endpoint);
+                            ->post($fullUrl);
                         
                         $responseBody = $response->body();
                         Log::info('Wablas ' . $endpoint . ' response', [
                             'status' => $response->status(),
+                            'body' => $responseBody
                         ]);
                         
                         if ($response->successful()) {
+                            Log::info('Endpoint successful!');
                             break;
                         }
                     } catch (\Exception $e) {
                         // Continue to next endpoint
-                        Log::warning("Wablas endpoint {$endpoint} failed: " . $e->getMessage());
+                        Log::warning("Wablas endpoint {$endpoint} failed: " . $e->getMessage(), ['exception' => $e]);
                         continue;
                     }
                 }
                 
                 // If all endpoints failed, still use last response
             } elseif ($provider === 'fonnte') {
+                $fullUrl = $this->baseUrl.'/device';
+                Log::info('Checking Fonnte endpoint', ['url' => $fullUrl]);
+                
                 $response = Http::timeout(8)
                     ->connectTimeout(3)
                     ->retry(1, 200)
                     ->withHeaders(['Authorization' => $this->apiKey])
-                    ->post($this->baseUrl.'/device');
+                    ->post($fullUrl);
+                
+                $responseBody = $response->body();
+                Log::info('Fonnte response', [
+                    'status' => $response->status(),
+                    'body' => $responseBody
+                ]);
+                
             } else {
+                $fullUrl = $this->baseUrl.'/status';
+                Log::info('Checking generic endpoint', ['url' => $fullUrl]);
+                
                 $response = Http::timeout(8)
                     ->connectTimeout(3)
                     ->retry(1, 200)
-                    ->post($this->baseUrl.'/status', [
+                    ->post($fullUrl, [
                         'api_key' => $this->apiKey,
                     ]);
+                
+                $responseBody = $response->body();
+                Log::info('Generic response', [
+                    'status' => $response->status(),
+                    'body' => $responseBody
+                ]);
             }
 
             $body = $response ? $response->json() : [];
             if (! is_array($body)) {
                 $body = [];
             }
+            Log::info('Parsed response body', $body);
 
             // Fix: For all providers, properly check connection status!
             $connected = false;
@@ -595,12 +626,15 @@ class WhatsAppService
                 $statusMessage = 'Gagal terhubung ke gateway WhatsApp (cek URL/API Key).';
             }
 
-            return [
+            $result = [
                 'ok' => true,
                 'connected' => $connected,
                 'message' => $statusMessage,
                 'provider_response' => $response ? $response->body() : null,
             ];
+            Log::info('=== Gateway Check Result ===', $result);
+            
+            return $result;
         } catch (\Throwable $e) {
             Log::error('Check gateway status error: ' . $e->getMessage(), ['exception' => $e]);
             return [
