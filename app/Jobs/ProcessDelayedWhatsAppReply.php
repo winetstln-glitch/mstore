@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Setting;
 use App\Models\WhatsAppLog;
+use App\Models\WhatsAppConversation;
 use App\Services\WhatsApp\WhatsAppAutoReplyService;
 use App\Services\WhatsAppService;
 use Illuminate\Bus\Queueable;
@@ -26,6 +27,11 @@ class ProcessDelayedWhatsAppReply implements ShouldQueue
     public bool $isGroup;
     public int $incomingTimestamp;
     public string $conversationId;
+    
+    // Job configuration
+    public $tries = 3;
+    public $timeout = 30;
+    public $backoff = [10, 20, 40]; // Exponential backoff
 
     /**
      * Create a new job instance.
@@ -47,16 +53,26 @@ class ProcessDelayedWhatsAppReply implements ShouldQueue
         Log::info('Processing delayed WhatsApp reply', [
             'phone' => $this->phone,
             'since' => date('Y-m-d H:i:s', $this->incomingTimestamp),
+            'attempt' => $this->attempts(),
         ]);
 
-        // Cek apakah fitur masih aktif
+        // 1. Cek apakah fitur masih aktif
         $featureEnabled = Setting::getValue('whatsapp_delay_reply_enabled', '0') == '1';
         if (!$featureEnabled) {
             Log::info('Delayed reply feature is disabled, skipping');
             return;
         }
 
-        // Cek apakah ada pesan outgoing dari kita ke nomor ini setelah incoming message
+        // 2. Cek status conversation - JANGAN balas jika CS sudah mengambil alih!
+        $conversation = WhatsAppConversation::where('conversation_id', $this->conversationId)->first();
+        if ($conversation && !$conversation->shouldBotReply()) {
+            Log::info('Conversation is handled by CS, skipping auto reply', [
+                'status' => $conversation->status
+            ]);
+            return;
+        }
+
+        // 3. Cek apakah ada pesan outgoing dari kita ke nomor ini setelah incoming message
         $hasCsReply = WhatsAppLog::where('phone_number', $this->phone)
             ->where('type', 'outgoing')
             ->where('created_at', '>', date('Y-m-d H:i:s', $this->incomingTimestamp))
@@ -67,7 +83,7 @@ class ProcessDelayedWhatsAppReply implements ShouldQueue
             return;
         }
 
-        // Jika CS tidak membalas, jalankan auto reply logic seperti biasa
+        // 4. Jika CS tidak membalas, jalankan auto reply logic seperti biasa
         $startTime = microtime(true);
         $response = $this->processAutoReplyLogic($this->phone, $this->message, $this->isGroup);
         
@@ -83,6 +99,18 @@ class ProcessDelayedWhatsAppReply implements ShouldQueue
                 'processing_time_ms' => $processingTime,
             ]);
         }
+    }
+    
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('Delayed WhatsApp reply job failed', [
+            'phone' => $this->phone,
+            'exception' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
+        ]);
     }
 
     /**

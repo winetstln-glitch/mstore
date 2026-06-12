@@ -41,6 +41,7 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
+        // 1. Handle verification request (GET)
         if ($request->isMethod('GET')) {
             $verifyToken = config('services.whatsapp.verify_token');
             $receivedToken = $request->input('hub.verify_token') ?? $request->input('verify_token');
@@ -51,11 +52,12 @@ class WhatsAppWebhookController extends Controller
                     return response('Invalid verify token', 403);
                 }
             }
-
             return response((string) ($challenge ?? 'OK'), 200);
         }
 
+        // 2. Validate webhook request (signature/token)
         if (! $this->isValidWebhookRequest($request)) {
+            Log::warning('Unauthorized WhatsApp webhook request');
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -68,9 +70,8 @@ class WhatsAppWebhookController extends Controller
                 'keys' => array_slice(array_keys($payload), 0, 20),
             ]);
 
-            // Try to extract message from different provider formats (Fonnte, Wablas, etc.)
+            // 3. Extract message from provider payload
             $messageData = $this->extractMessage($payload);
-            
             if (! $messageData) {
                 return response()->json(['status' => 'no_message']);
             }
@@ -80,36 +81,38 @@ class WhatsAppWebhookController extends Controller
             $isGroup = $messageData['is_group'];
             $providerMessageId = $messageData['provider_message_id'] ?? null;
 
-            // Cek apakah ini pesan dari kita sendiri (CS yang mengirim via WhatsApp)
+            // 4. Anti-loop: Cek apakah ini pesan dari kita sendiri (CS yang mengirim via WhatsApp)
             if ($this->isMessageFromUs($phone, $message)) {
                 Log::info('Ignoring message from ourselves', ['phone' => $phone]);
                 return response()->json(['status' => 'ignored_own_message']);
             }
 
-            // Cek apakah pesan duplikat
-            if ($providerMessageId && WhatsAppLog::where('provider_message_id', $providerMessageId)->exists()) {
-                // Log duplicate
-                $existingLog = WhatsAppLog::where('provider_message_id', $providerMessageId)->first();
-                $existingLog->increment('duplicate_count');
-                $existingLog->update(['duplicate_detected_at' => now()]);
-                
-                Log::info('Duplicate message detected and ignored', ['phone' => $phone, 'message_id' => $providerMessageId]);
-                return response()->json(['status' => 'duplicate_ignored']);
+            // 5. Anti-duplicate: Cek provider message ID
+            if ($providerMessageId) {
+                $existingDuplicate = WhatsAppLog::where('provider_message_id', $providerMessageId)->first();
+                if ($existingDuplicate) {
+                    $existingDuplicate->increment('duplicate_count');
+                    $existingDuplicate->update(['duplicate_detected_at' => now()]);
+                    Log::info('Duplicate message detected and ignored', [
+                        'phone' => $phone, 
+                        'message_id' => $providerMessageId,
+                        'duplicate_count' => $existingDuplicate->duplicate_count
+                    ]);
+                    return response()->json(['status' => 'duplicate_ignored']);
+                }
             }
 
-            // Dapatkan atau buat conversation
+            // 6. Dapatkan atau buat conversation
             $conversation = WhatsAppConversation::getOrCreate($phone);
             $conversationId = $conversation->conversation_id;
-
-            // Increment unread count
             $conversation->incrementUnread();
 
-            // Detect intent & confidence (simulasi)
+            // 7. Intent detection & confidence scoring
             $intentData = $this->detectIntent($message);
             $detectedIntent = $intentData['intent'];
             $aiConfidence = $intentData['confidence'];
 
-            // Log incoming message dengan metadata lengkap
+            // 8. Log incoming message dengan metadata lengkap
             $incomingLog = WhatsAppLog::logMessage('incoming', $phone, $message, 'delivered', $payload, null, [
                 'conversation_id' => $conversationId,
                 'sender_type' => 'customer',
@@ -119,26 +122,35 @@ class WhatsAppWebhookController extends Controller
                 'ai_confidence' => $aiConfidence,
             ]);
 
-            // Cek apakah percakapan sedang ditangani oleh CS
+            // 9. Human takeover validation: JANGAN balas jika CS sedang menangani!
             if (! $conversation->shouldBotReply()) {
-                Log::info('Conversation is handled by CS, bot will not reply', ['phone' => $phone, 'status' => $conversation->status]);
+                Log::info('Conversation is handled by CS, bot will not reply', [
+                    'phone' => $phone, 
+                    'status' => $conversation->status
+                ]);
                 return response()->json(['status' => 'cs_handling']);
             }
 
-            // Jika confidence rendah, assign ke CS
+            // 10. Low confidence: Assign ke CS waiting list
             $minConfidence = (float) Setting::getValue('whatsapp_min_confidence', 0.70);
             if ($aiConfidence < $minConfidence) {
-                $conversation->update(['status' => 'waiting_cs', 'takeover_reason' => 'Low AI confidence: ' . $aiConfidence]);
-                Log::info('Low confidence, assigned to CS waiting list', ['phone' => $phone, 'confidence' => $aiConfidence]);
+                $conversation->update([
+                    'status' => 'waiting_cs', 
+                    'takeover_reason' => 'Low AI confidence: ' . $aiConfidence
+                ]);
+                Log::info('Low confidence, assigned to CS waiting list', [
+                    'phone' => $phone, 
+                    'confidence' => $aiConfidence
+                ]);
                 return response()->json(['status' => 'waiting_cs']);
             }
 
-            // Cek apakah fitur delay reply aktif
+            // 11. Check delay reply feature
             $delayReplyEnabled = Setting::getValue('whatsapp_delay_reply_enabled', '0') == '1';
-            $delayMinutes = (int) Setting::getValue('whatsapp_delay_reply_minutes', '5');
+            $delayMinutes = (int) Setting::getValue('whatsapp_delay_reply_minutes', 5);
             
             if ($delayReplyEnabled && $delayMinutes > 0) {
-                // Jika fitur aktif, dispatch job dengan delay
+                // Dispatch delayed reply job
                 $incomingTimestamp = $incomingLog->created_at->timestamp;
                 \App\Jobs\ProcessDelayedWhatsAppReply::dispatch(
                     $phone,
@@ -156,13 +168,12 @@ class WhatsAppWebhookController extends Controller
                 return response()->json(['status' => 'queued']);
             }
 
-            // Jika fitur tidak aktif, langsung reply seperti biasa
+            // 12. No delay, process & reply immediately
             $response = $this->processIncomingMessage($phone, $message, $isGroup, $conversation);
-
             if ($response) {
-                // Send reply back dan log outgoing
                 $sendResult = $this->whatsappService->sendMessage($phone, $response);
                 $processingTime = round((microtime(true) - $startTime) * 1000);
+                
                 WhatsAppLog::logMessage('outgoing', $phone, $response, $sendResult['success'] ? 'sent' : 'failed', $sendResult, null, [
                     'conversation_id' => $conversationId,
                     'sender_type' => 'bot',
@@ -175,7 +186,6 @@ class WhatsAppWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error('WhatsApp Webhook Error: ' . $e->getMessage(), ['exception' => $e]);
             
-            // Log error to WhatsAppLog
             if (isset($phone)) {
                 WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload ?? [], $e->getMessage());
             }
@@ -410,7 +420,7 @@ class WhatsAppWebhookController extends Controller
             // Exact match
             if ($message === $keyword) {
                 $menu->incrementHitCount();
-                return $this->sendMenuReply($phone, $menu);
+                return $this->sendMenuReplyText($menu);
             }
 
             // Fuzzy match (if enabled)
@@ -418,7 +428,7 @@ class WhatsAppWebhookController extends Controller
                 similar_text($message, $keyword, $percent);
                 if ($percent >= 70 || Str::contains($message, $keyword)) {
                     $menu->incrementHitCount();
-                    return $this->sendMenuReply($phone, $menu);
+                    return $this->sendMenuReplyText($menu);
                 }
             }
         }
@@ -475,7 +485,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function sendMenuReply(string $phone, WhatsAppMenu $menu): ?string
     {
-        $replyText = $this->renderMenuReply($menu);
+        $replyText = $this->renderMenuReplyText($menu);
         
         if ($menu->file_path && in_array($menu->type, ['image', 'document'])) {
             $mediaUrl = asset('storage/' . $menu->file_path);
@@ -493,6 +503,20 @@ class WhatsAppWebhookController extends Controller
         }
 
         return $replyText;
+    }
+
+    /**
+     * Render menu reply text
+     */
+    private function sendMenuReplyText(WhatsAppMenu $menu): string
+    {
+        $reply = $menu->response_text;
+        
+        $reply = str_replace('{nama_user}', 'Teman', $reply);
+        $reply = str_replace('{jam_sekarang}', now()->format('H:i'), $reply);
+        $reply = str_replace('{tanggal_sekarang}', now()->format('d M Y'), $reply);
+
+        return $reply;
     }
 
     /**
@@ -577,7 +601,7 @@ class WhatsAppWebhookController extends Controller
             $paymentUrl = route('voucher.payment.show', $payment->reference_id);
             $expiresAt = $payment->expires_at->format('d M Y H:i');
 
-            $response = "*🛒 Pembayaran Voucher Hotspot*\n\n";
+            $response = "*🛒 Pembayaran Voucher Hotspot:*\n\n";
             $response .= "*Paket:* {$template->name}\n";
             $response .= "*Total:* Rp " . number_format($template->price, 0, ',', '.') . "\n";
             $response .= "*Metode:* QRIS\n\n";
@@ -625,7 +649,7 @@ class WhatsAppWebhookController extends Controller
             'expired' => 'Kadaluarsa',
         ];
 
-        $response = "*📊 Status Pembayaran*\n\n";
+        $response = "*📊 Status Pembayaran:*\n\n";
         $response .= "*ID:* {$payment->reference_id}\n";
         $response .= "*Status:* {$statusText[$payment->status]}\n";
         $response .= "*Paket:* {$payment->voucherTemplate->name}\n";
