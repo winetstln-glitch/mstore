@@ -35,18 +35,21 @@ return new class extends Migration
             if (!Schema::hasColumn('whatsapp_logs', 'customer_id')) {
                 $table->foreignId('customer_id')->nullable();
             }
-            
-            // Indexes for performance
-            try {
-                $table->index('provider_message_id');
-            } catch (\Exception $e) {}
-            try {
-                $table->index('conversation_id');
-            } catch (\Exception $e) {}
-            try {
-                $table->index('sender_type');
-            } catch (\Exception $e) {}
         });
+
+        // Add indexes outside the closure so we can check existing indexes
+        $sm = Schema::getConnection()->getDoctrineSchemaManager();
+        $indexes = collect($sm->listTableIndexes('whatsapp_logs'))->keyBy('name');
+        $columnsToIndex = ['provider_message_id', 'conversation_id', 'sender_type'];
+
+        foreach ($columnsToIndex as $column) {
+            $indexName = "whatsapp_logs_{$column}_index";
+            if (!$indexes->has($indexName)) {
+                Schema::table('whatsapp_logs', function (Blueprint $table) use ($column) {
+                    $table->index($column);
+                });
+            }
+        }
     }
 
     public function down(): void
