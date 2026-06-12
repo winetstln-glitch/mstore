@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 
 class WhatsAppConversation extends Model
 {
+    protected $table = 'whatsapp_conversations';
+
     protected $fillable = [
         'phone_number',
         'conversation_id',
