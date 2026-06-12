@@ -425,8 +425,8 @@ class WhatsAppController extends Controller implements HasMiddleware
         
         // Get unique phone numbers for sidebar with last message
         $uniquePhones = WhatsAppLog::select('phone_number')
-            ->distinct()
-            ->orderBy('created_at', 'desc')
+            ->groupBy('phone_number')
+            ->orderByRaw('MAX(created_at) DESC')
             ->limit(100)
             ->pluck('phone_number');
         
