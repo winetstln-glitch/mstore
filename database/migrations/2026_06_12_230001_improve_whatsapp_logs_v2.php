@@ -37,17 +37,16 @@ return new class extends Migration
             }
         });
 
-        // Add indexes outside the closure so we can check existing indexes
-        $sm = Schema::getConnection()->getDoctrineSchemaManager();
-        $indexes = collect($sm->listTableIndexes('whatsapp_logs'))->keyBy('name');
+        // Add indexes with try-catch to avoid duplicate errors
         $columnsToIndex = ['provider_message_id', 'conversation_id', 'sender_type'];
 
         foreach ($columnsToIndex as $column) {
-            $indexName = "whatsapp_logs_{$column}_index";
-            if (!$indexes->has($indexName)) {
+            try {
                 Schema::table('whatsapp_logs', function (Blueprint $table) use ($column) {
                     $table->index($column);
                 });
+            } catch (\Exception $e) {
+                // Index already exists, skip
             }
         }
     }
