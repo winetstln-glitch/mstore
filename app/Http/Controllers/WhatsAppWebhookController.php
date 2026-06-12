@@ -8,6 +8,7 @@ use App\Models\VoucherPayment;
 use App\Models\VoucherTemplate;
 use App\Models\WhatsAppMenu;
 use App\Models\WhatsAppLog;
+use App\Models\WhatsAppConversation;
 use App\Services\AiService;
 use App\Services\Payment\PaymentManager;
 use App\Services\VoucherService;
@@ -59,6 +60,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         $payload = null;
+        $phone = null;
         try {
             $startTime = microtime(true);
             $payload = $request->all();
@@ -76,6 +78,7 @@ class WhatsAppWebhookController extends Controller
             $phone = $messageData['phone'];
             $message = $messageData['message'];
             $isGroup = $messageData['is_group'];
+            $providerMessageId = $messageData['provider_message_id'] ?? null;
 
             // Cek apakah ini pesan dari kita sendiri (CS yang mengirim via WhatsApp)
             if ($this->isMessageFromUs($phone, $message)) {
@@ -83,15 +86,52 @@ class WhatsAppWebhookController extends Controller
                 return response()->json(['status' => 'ignored_own_message']);
             }
 
-            // Dapatkan atau buat conversation_id
-            $conversationId = $this->getOrCreateConversationId($phone);
+            // Cek apakah pesan duplikat
+            if ($providerMessageId && WhatsAppLog::where('provider_message_id', $providerMessageId)->exists()) {
+                // Log duplicate
+                $existingLog = WhatsAppLog::where('provider_message_id', $providerMessageId)->first();
+                $existingLog->increment('duplicate_count');
+                $existingLog->update(['duplicate_detected_at' => now()]);
+                
+                Log::info('Duplicate message detected and ignored', ['phone' => $phone, 'message_id' => $providerMessageId]);
+                return response()->json(['status' => 'duplicate_ignored']);
+            }
+
+            // Dapatkan atau buat conversation
+            $conversation = WhatsAppConversation::getOrCreate($phone);
+            $conversationId = $conversation->conversation_id;
+
+            // Increment unread count
+            $conversation->incrementUnread();
+
+            // Detect intent & confidence (simulasi)
+            $intentData = $this->detectIntent($message);
+            $detectedIntent = $intentData['intent'];
+            $aiConfidence = $intentData['confidence'];
 
             // Log incoming message dengan metadata lengkap
             $incomingLog = WhatsAppLog::logMessage('incoming', $phone, $message, 'delivered', $payload, null, [
                 'conversation_id' => $conversationId,
                 'sender_type' => 'customer',
                 'message_type' => 'text',
+                'provider_message_id' => $providerMessageId,
+                'detected_intent' => $detectedIntent,
+                'ai_confidence' => $aiConfidence,
             ]);
+
+            // Cek apakah percakapan sedang ditangani oleh CS
+            if (! $conversation->shouldBotReply()) {
+                Log::info('Conversation is handled by CS, bot will not reply', ['phone' => $phone, 'status' => $conversation->status]);
+                return response()->json(['status' => 'cs_handling']);
+            }
+
+            // Jika confidence rendah, assign ke CS
+            $minConfidence = (float) Setting::getValue('whatsapp_min_confidence', 0.70);
+            if ($aiConfidence < $minConfidence) {
+                $conversation->update(['status' => 'waiting_cs', 'takeover_reason' => 'Low AI confidence: ' . $aiConfidence]);
+                Log::info('Low confidence, assigned to CS waiting list', ['phone' => $phone, 'confidence' => $aiConfidence]);
+                return response()->json(['status' => 'waiting_cs']);
+            }
 
             // Cek apakah fitur delay reply aktif
             $delayReplyEnabled = Setting::getValue('whatsapp_delay_reply_enabled', '0') == '1';
@@ -117,7 +157,7 @@ class WhatsAppWebhookController extends Controller
             }
 
             // Jika fitur tidak aktif, langsung reply seperti biasa
-            $response = $this->processIncomingMessage($phone, $message, $isGroup);
+            $response = $this->processIncomingMessage($phone, $message, $isGroup, $conversation);
 
             if ($response) {
                 // Send reply back dan log outgoing
@@ -142,6 +182,59 @@ class WhatsAppWebhookController extends Controller
             
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+
+    /**
+     * Detect intent from message (simulasi ISP-specific)
+     */
+    private function detectIntent(string $message): array
+    {
+        $message = Str::lower(trim($message));
+        
+        $patterns = [
+            'greeting' => ['halo', 'hai', 'hi', 'hallo', 'selamat pagi', 'selamat siang', 'selamat malam', 'assalamualaikum'],
+            'new_installation' => ['pasang wifi', 'daftar internet', 'internet rumah', 'pasang baru', 'pendaftaran'],
+            'complaint' => ['wifi lemot', 'lemot banget', 'lambat', 'tidak bisa konek', 'putus', 'error', 'gangguan'],
+            'technical_issue' => ['modem mati', 'merah', 'los merah', 'tidak ada sinyal', 'sinyal hilang'],
+            'billing' => ['tagihan', 'bayar', 'invoice', 'harga', 'biaya', 'pembayaran'],
+            'closing' => ['sudah bisa', 'normal', 'aman', 'beres', 'selesai', 'terima kasih', 'makasih', 'thanks'],
+            'support' => ['bantuan', 'help', 'tolong', 'cs', 'petugas'],
+        ];
+
+        $highestConfidence = 0;
+        $detectedIntent = 'unknown';
+
+        foreach ($patterns as $intent => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (Str::contains($message, $keyword)) {
+                    // Calculate confidence based on match quality
+                    similar_text($message, $keyword, $percent);
+                    $confidence = $percent / 100;
+                    
+                    // Boost confidence if exact match
+                    if ($message === $keyword) {
+                        $confidence = 1.0;
+                    } elseif (Str::startsWith($message, $keyword)) {
+                        $confidence = min(1.0, $confidence + 0.2);
+                    }
+                    
+                    if ($confidence > $highestConfidence) {
+                        $highestConfidence = $confidence;
+                        $detectedIntent = $intent;
+                    }
+                }
+            }
+        }
+
+        // Default for unknown
+        if ($detectedIntent === 'unknown') {
+            $highestConfidence = 0.3;
+        }
+
+        return [
+            'intent' => $detectedIntent,
+            'confidence' => round($highestConfidence, 2),
+        ];
     }
 
     /**
@@ -230,6 +323,7 @@ class WhatsAppWebhookController extends Controller
                         'phone' => $msg['phone'] ?? $msg['sender'] ?? null,
                         'message' => $msg['message'],
                         'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : false,
+                        'provider_message_id' => $msg['id'] ?? $msg['message_id'] ?? null,
                     ];
                 }
             }
@@ -248,6 +342,7 @@ class WhatsAppWebhookController extends Controller
                         'phone' => $phone,
                         'message' => $msg['message'],
                         'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : (isset($msg['group_id']) && !empty($msg['group_id'])),
+                        'provider_message_id' => $msg['id'] ?? $msg['message_id'] ?? null,
                     ];
                 }
             }
@@ -263,6 +358,7 @@ class WhatsAppWebhookController extends Controller
                 'phone' => $phone,
                 'message' => $payload['message'],
                 'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
+                'provider_message_id' => $payload['id'] ?? $payload['message_id'] ?? null,
             ];
         }
         
@@ -276,6 +372,7 @@ class WhatsAppWebhookController extends Controller
                 'phone' => $phone,
                 'message' => $payload['message'] ?? $payload['text'] ?? '',
                 'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
+                'provider_message_id' => $payload['id'] ?? $payload['message_id'] ?? null,
             ];
         }
 
@@ -285,7 +382,7 @@ class WhatsAppWebhookController extends Controller
     /**
      * Process incoming message and find appropriate reply
      */
-    private function processIncomingMessage(string $phone, string $message, bool $isGroup): ?string
+    private function processIncomingMessage(string $phone, string $message, bool $isGroup, WhatsAppConversation $conversation = null): ?string
     {
         $message = trim(Str::lower($message));
 
@@ -333,7 +430,10 @@ class WhatsAppWebhookController extends Controller
 
         // Try AI Assistant if no keyword matches
         try {
-            $aiResponse = $this->aiService->processChat($message);
+            // Get context from previous messages (last 20 messages)
+            $context = $this->getConversationContext($phone);
+            
+            $aiResponse = $this->aiService->processChat($message . "\n\nContext:\n" . $context);
             if ($aiResponse && !str_contains($aiResponse, 'Saya adalah Asisten AI')) {
                 return $this->renderAiResponse($aiResponse);
             }
@@ -349,6 +449,25 @@ class WhatsAppWebhookController extends Controller
 
         // Default fallback
         return 'Maaf, saya tidak memahami pesan Anda. Silakan ketik "bantuan" untuk melihat daftar menu yang tersedia.';
+    }
+
+    /**
+     * Get conversation context from last 20 messages
+     */
+    private function getConversationContext(string $phone): string
+    {
+        $messages = WhatsAppLog::where('phone_number', $phone)
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->reverse()
+            ->map(function ($log) {
+                $sender = $log->type === 'incoming' ? 'Customer' : 'Bot';
+                return "{$sender}: {$log->message}";
+            })
+            ->implode("\n");
+
+        return $messages ?: 'No previous context';
     }
 
     /**

@@ -22,6 +22,10 @@ class WhatsAppLog extends Model
         'sender_type',
         'message_type',
         'processing_time_ms',
+        'duplicate_count',
+        'duplicate_detected_at',
+        'ai_confidence',
+        'detected_intent',
         'ai_history_id',
         'user_id',
         'customer_id',
@@ -98,23 +102,23 @@ class WhatsAppLog extends Model
         ];
 
         // Merge extra data
-        if (isset($extraData['conversation_id'])) {
-            $data['conversation_id'] = $extraData['conversation_id'];
-        }
-        if (isset($extraData['sender_type'])) {
-            $data['sender_type'] = $extraData['sender_type'];
-        }
-        if (isset($extraData['message_type'])) {
-            $data['message_type'] = $extraData['message_type'];
-        }
-        if (isset($extraData['processing_time_ms'])) {
-            $data['processing_time_ms'] = $extraData['processing_time_ms'];
-        }
-        if (isset($extraData['user_id'])) {
-            $data['user_id'] = $extraData['user_id'];
-        }
-        if (isset($extraData['customer_id'])) {
-            $data['customer_id'] = $extraData['customer_id'];
+        $extraFields = [
+            'conversation_id',
+            'sender_type',
+            'message_type',
+            'processing_time_ms',
+            'provider_message_id',
+            'ai_confidence',
+            'detected_intent',
+            'ai_history_id',
+            'user_id',
+            'customer_id'
+        ];
+
+        foreach ($extraFields as $field) {
+            if (isset($extraData[$field])) {
+                $data[$field] = $extraData[$field];
+            }
         }
 
         return self::create($data);
