@@ -36,19 +36,6 @@ return new class extends Migration
                 $table->foreignId('customer_id')->nullable();
             }
         });
-
-        // Add indexes with try-catch to avoid duplicate errors
-        $columnsToIndex = ['provider_message_id', 'conversation_id', 'sender_type'];
-
-        foreach ($columnsToIndex as $column) {
-            try {
-                Schema::table('whatsapp_logs', function (Blueprint $table) use ($column) {
-                    $table->index($column);
-                });
-            } catch (\Exception $e) {
-                // Index already exists, skip
-            }
-        }
     }
 
     public function down(): void
