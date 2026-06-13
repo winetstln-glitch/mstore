@@ -320,7 +320,6 @@ body {
 }
 
 #page-content-wrapper .container-fluid {
-    max-width: var(--content-max-width);
     margin: 0 auto;
     padding-left: 1.5rem;
     padding-right: 1.5rem;

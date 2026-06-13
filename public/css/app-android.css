@@ -232,11 +232,6 @@ input, textarea, select {
   to { transform: translate(-50%, -50%) scale(40); opacity: 0; }
 }
 
-.route-wash #page-content-wrapper .container-fluid,
-.route-accounting #page-content-wrapper .container-fluid {
-  max-width: 1600px;
-}
-
 .route-wash .card,
 .route-accounting .card {
   border-radius: 16px;
@@ -475,10 +470,6 @@ input, textarea, select {
 [data-bs-theme="dark"] .route-accounting .badge.bg-secondary {
   background-color: #334155 !important;
   color: #e2e8f0 !important;
-}
-
-.route-finance #page-content-wrapper .container-fluid {
-  max-width: 1400px;
 }
 
 .route-finance .card {
