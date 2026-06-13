@@ -941,6 +941,13 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::delete('products/bulk-destroy', [\App\Http\Controllers\AtkProductController::class, 'bulkDestroy'])->name('products.bulk_destroy');
         Route::resource('products', \App\Http\Controllers\AtkProductController::class);
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show', 'destroy']);
+        
+        // Cash Register Routes
+        Route::get('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'index'])->name('cash-registers.index');
+        Route::get('/cash-registers/create', [\App\Http\Controllers\AtkCashRegisterController::class, 'create'])->name('cash-registers.create');
+        Route::post('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'store'])->name('cash-registers.store');
+        Route::get('/cash-registers/{register}', [\App\Http\Controllers\AtkCashRegisterController::class, 'show'])->name('cash-registers.show');
+        Route::post('/cash-registers/{register}/close', [\App\Http\Controllers\AtkCashRegisterController::class, 'close'])->name('cash-registers.close');
     });
 
     Route::prefix('wedding')->name('wedding.')->group(function () {
