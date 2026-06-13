@@ -76,6 +76,12 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $monthlySales = AtkTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
         $transactionCount = AtkTransaction::whereDate('created_at', $today)->count();
 
+        // Get active cash register for current user
+        $activeRegister = \App\Models\AtkCashRegister::where('user_id', Auth::id())
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
         // Top selling products
         $topProducts = AtkTransactionItem::select('product_name', DB::raw('sum(quantity) as total_qty'))
             ->groupBy('product_name')
@@ -90,7 +96,8 @@ class AtkTransactionController extends Controller implements HasMiddleware
             'topProducts',
             'todayAttendance',
             'attendanceOverview',
-            'shiftSchedule'
+            'shiftSchedule',
+            'activeRegister'
         ));
     }
 

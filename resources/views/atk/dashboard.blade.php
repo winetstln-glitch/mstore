@@ -6,10 +6,60 @@
 <div class="container-fluid">
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Dasbor Toko ATK') }}</h1>
-        <a href="{{ route('atk.pos') }}" class="btn btn-primary">
-            <i class="fa-solid fa-cash-register me-2"></i> {{ __('Buka POS') }}
-        </a>
+        <div class="d-flex gap-2">
+            @if($activeRegister)
+                <a href="{{ route('atk.pos') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-cash-register me-2"></i> {{ __('Buka POS') }}
+                </a>
+            @else
+                <a href="{{ route('atk.cash-registers.create') }}" class="btn btn-success">
+                    <i class="fa-solid fa-door-open me-2"></i> {{ __('Buka Shift') }}
+                </a>
+            @endif
+        </div>
     </div>
+    
+    @if($activeRegister)
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm border-start border-4 border-success">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ __('Shift Aktif') }}</h5>
+                        <p class="mb-0 text-muted small">
+                            <i class="fa-solid fa-user-tie me-1"></i> {{ $activeRegister->name }}
+                            <span class="ms-2">
+                                <i class="fa-solid fa-clock me-1"></i> {{ __('Dibuka') }}: {{ $activeRegister->opened_at->format('H:i d/m/Y') }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <p class="mb-1 fw-bold text-success">
+                            {{ __('Saldo Kas') }}: Rp {{ number_format($activeRegister->closing_balance, 0, ',', '.') }}
+                        </p>
+                        <form method="POST" action="{{ route('atk.cash-registers.close', $activeRegister->id) }}" class="d-inline" onsubmit="return confirm('Anda yakin ingin menutup shift ini?')">
+                            @csrf
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#closeShiftModal">
+                                <i class="fa-solid fa-door-closed"></i> {{ __('Tutup Shift') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @else
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm border-start border-4 border-warning">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ __('Tidak Ada Shift Aktif') }}</h5>
+                        <p class="mb-0 text-muted small">Silakan buka shift sebelum melakukan transaksi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if(Auth::user()->hasPermission('attendance.view'))
     <div class="row mb-4">
@@ -177,4 +227,34 @@
         </div>
     </div>
 </div>
+
+@if($activeRegister)
+<div class="modal fade" id="closeShiftModal" tabindex="-1" aria-labelledby="closeShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('atk.cash-registers.close', $activeRegister->id) }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="closeShiftModalLabel">Tutup Shift</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Saldo Akhir Kas</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" name="closing_balance" class="form-control" placeholder="0" value="{{ old('closing_balance', $activeRegister->closing_balance) }}" required>
+                        </div>
+                    </div>
+                    <p class="text-muted small">Masukan jumlah uang tunai di kasir untuk menutup shift</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger">Tutup Shift</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
