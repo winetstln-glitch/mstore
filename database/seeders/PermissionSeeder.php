@@ -186,6 +186,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'atk.pos', 'label' => 'Access ATK POS', 'group' => 'ATK Store'],
             ['name' => 'atk.manage', 'label' => 'Manage ATK Products', 'group' => 'ATK Store'],
             ['name' => 'atk.report', 'label' => 'View ATK Reports', 'group' => 'ATK Store'],
+            ['name' => 'atk.cash-register.manage', 'label' => 'Manage ATK Cash Registers', 'group' => 'ATK Store'],
 
             // Car Wash
             ['name' => 'wash.view', 'label' => 'View Wash Dashboard', 'group' => 'Car Wash'],

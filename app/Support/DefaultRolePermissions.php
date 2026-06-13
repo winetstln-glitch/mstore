@@ -191,7 +191,7 @@ class DefaultRolePermissions
             Role::KASIR_ATK => [
                 'label' => 'Kasir ATK',
                 'permissions' => [
-                    'atk.view', 'atk.pos', 'atk.report',
+                    'atk.view', 'atk.pos', 'atk.report', 'atk.cash-register.manage',
                     'attendance.view', 'attendance.create',
                     'profile.view', 'profile.update',
                     'notification.view',
