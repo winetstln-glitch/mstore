@@ -47,6 +47,9 @@ return new class extends Migration
             if (!Schema::hasColumn('whatsapp_logs', 'sender_type')) {
                 $table->enum('sender_type', ['customer', 'bot', 'agent', 'system'])->default('customer')->after('confidence_score');
             }
+            if (!Schema::hasColumn('whatsapp_logs', 'normalized_message')) {
+                $table->text('normalized_message')->nullable()->after('sender_type');
+            }
         });
     }
 

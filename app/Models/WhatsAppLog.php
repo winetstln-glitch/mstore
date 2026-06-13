@@ -33,6 +33,7 @@ class WhatsAppLog extends Model
         'group_id',
         'intent',
         'confidence_score',
+        'normalized_message',
     ];
 
     protected $casts = [
@@ -121,7 +122,8 @@ class WhatsAppLog extends Model
             'is_group',
             'group_id',
             'intent',
-            'confidence_score'
+            'confidence_score',
+            'normalized_message'
         ];
 
         foreach ($extraFields as $field) {

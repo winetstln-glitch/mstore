@@ -755,6 +755,41 @@ class WhatsAppService
         return $error;
     }
 
+    public function getHealthStatus(): array
+    {
+        $provider = $this->getProvider();
+        $gatewayCheck = $this->checkGatewayStatus();
+
+        // Get last messages
+        $lastIncoming = WhatsAppLog::where('type', 'incoming')->latest()->first();
+        $lastOutgoing = WhatsAppLog::where('type', 'outgoing')->latest()->first();
+        $lastFailure = WhatsAppLog::where('status', 'failed')->latest()->first();
+
+        return [
+            'provider' => $provider,
+            'base_url' => $this->baseUrl,
+            'api_key_status' => !empty($this->apiKey) ? 'configured' : 'missing',
+            'gateway_status' => $gatewayCheck,
+            'last_incoming_message' => $lastIncoming ? [
+                'id' => $lastIncoming->id,
+                'phone' => $this->maskPhoneForLogs($lastIncoming->phone_number),
+                'time' => $lastIncoming->created_at,
+            ] : null,
+            'last_outgoing_message' => $lastOutgoing ? [
+                'id' => $lastOutgoing->id,
+                'phone' => $this->maskPhoneForLogs($lastOutgoing->phone_number),
+                'time' => $lastOutgoing->created_at,
+                'status' => $lastOutgoing->status,
+            ] : null,
+            'last_failure' => $lastFailure ? [
+                'id' => $lastFailure->id,
+                'phone' => $this->maskPhoneForLogs($lastFailure->phone_number),
+                'time' => $lastFailure->created_at,
+                'error' => $lastFailure->error_message,
+            ] : null,
+        ];
+    }
+
     /**
      * Send System Notification to Group (Attendance/Ticket)
      */

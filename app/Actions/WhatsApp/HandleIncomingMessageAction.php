@@ -50,6 +50,7 @@ class HandleIncomingMessageAction
         $isGroup = $extracted['is_group'] ?? false;
         $groupId = $extracted['group_id'] ?? null;
         $groupName = $extracted['group_name'] ?? null;
+        $senderType = $extracted['sender_type'] ?? 'customer';
 
         // Handle group messages
         if ($isGroup && $groupId) {
@@ -62,22 +63,42 @@ class HandleIncomingMessageAction
                     'media_url' => $mediaUrl,
                     'is_group' => true,
                     'group_id' => $groupId,
+                    'sender_type' => $senderType,
                 ]);
                 return;
             }
+        }
+
+        // Skip processing if sender is agent, bot, or system
+        if (in_array($senderType, ['agent', 'bot', 'system'])) {
+            Log::info('Skipping message from non-customer sender', [
+                'sender_type' => $senderType,
+                'phone' => $this->maskPhone($from)
+            ]);
+            WhatsAppLog::logMessage('incoming', $from, (string) $message, 'received', [
+                'media_type' => $mediaType,
+                'media_url' => $mediaUrl,
+                'is_group' => $isGroup,
+                'group_id' => $groupId,
+                'sender_type' => $senderType,
+            ]);
+            return;
         }
 
         // Classify intent
         $intentResult = $this->intentService->classifyIntent((string) $message);
         $intent = $intentResult['intent'];
         $confidence = $intentResult['confidence_score'];
+        $normalizedMessage = $intentResult['normalized_message'];
 
         Log::info('Processing WhatsApp message', [
             'from' => $this->maskPhone($from),
             'is_group' => $isGroup,
             'group_id' => $groupId,
+            'sender_type' => $senderType,
             'intent' => $intent,
-            'confidence' => $confidence,
+            'confidence_score' => $confidence,
+            'normalized_message' => $normalizedMessage,
             'has_media' => !empty($mediaUrl),
             'media_type' => $mediaType,
         ]);
@@ -88,6 +109,7 @@ class HandleIncomingMessageAction
         $conversation->update([
             'last_intent' => $intent,
             'confidence_score' => $confidence,
+            'sender_type' => $senderType,
         ]);
 
         // Log message with intent and group info
@@ -98,13 +120,17 @@ class HandleIncomingMessageAction
             'group_id' => $groupId,
             'intent' => $intent,
             'confidence_score' => $confidence,
+            'normalized_message' => $normalizedMessage,
+            'sender_type' => $senderType,
         ]);
 
         // Human takeover if confidence < 70% or intent unknown
         if ($confidence < 70 || $intent === 'unknown') {
             Log::info('Low confidence or unknown intent, triggering human takeover', [
                 'from' => $this->maskPhone($from),
-                'confidence' => $confidence,
+                'confidence_score' => $confidence,
+                'intent' => $intent,
+                'takeover_reason' => $confidence < 70 ? 'low_confidence' : 'unknown_intent'
             ]);
             $conversation->update([
                 'status' => 'waiting_cs',
@@ -129,6 +155,7 @@ class HandleIncomingMessageAction
                 'meta' => [
                     'media_type' => $mediaType,
                     'has_media' => ! empty($mediaUrl),
+                    'confidence_score' => $confidence,
                 ],
             ]));
             $this->processMultiFormatAction->execute($from, [
@@ -157,6 +184,7 @@ class HandleIncomingMessageAction
                     'meta' => [
                         'media_type' => $mediaType,
                         'has_media' => ! empty($mediaUrl),
+                        'confidence_score' => $confidence,
                     ],
                 ]));
                 $this->processMultiFormatAction->execute($from, $dynamicReply);
@@ -176,6 +204,7 @@ class HandleIncomingMessageAction
                 'meta' => [
                     'media_type' => $mediaType,
                     'has_media' => ! empty($mediaUrl),
+                    'confidence_score' => $confidence,
                 ],
             ]));
             $this->processMultiFormatAction->execute($from, [
@@ -196,6 +225,7 @@ class HandleIncomingMessageAction
                 'meta' => [
                     'media_type' => $mediaType,
                     'has_media' => ! empty($mediaUrl),
+                    'confidence_score' => $confidence,
                 ],
             ]));
             $this->processMultiFormatAction->execute($from, array_merge($reply, [
@@ -267,6 +297,7 @@ class HandleIncomingMessageAction
                 'is_group' => $isGroup,
                 'group_id' => $isGroup ? ($data['group']['group_id'] ?? $data['group_id'] ?? null) : null,
                 'group_name' => $isGroup ? ($data['group']['subject'] ?? $data['group_name'] ?? null) : null,
+                'sender_type' => $data['sender_type'] ?? 'customer',
             ];
         }
 
@@ -291,6 +322,7 @@ class HandleIncomingMessageAction
             'is_group' => $isGroup,
             'group_id' => $isGroup ? ($msg['group']['group_id'] ?? $msg['group_id'] ?? null) : null,
             'group_name' => $isGroup ? ($msg['group']['subject'] ?? $msg['group_name'] ?? null) : null,
+            'sender_type' => $msg['sender_type'] ?? 'customer',
         ];
     }
 
@@ -312,6 +344,7 @@ class HandleIncomingMessageAction
             'is_group' => $isGroup,
             'group_id' => $isGroup ? ($msg['group']['group_id'] ?? $msg['group_id'] ?? null) : null,
             'group_name' => $isGroup ? ($msg['group']['subject'] ?? $msg['group_name'] ?? null) : null,
+            'sender_type' => $msg['sender_type'] ?? 'customer',
         ];
     }
 
