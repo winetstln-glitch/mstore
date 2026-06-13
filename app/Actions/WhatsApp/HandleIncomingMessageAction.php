@@ -106,11 +106,15 @@ class HandleIncomingMessageAction
         $user = $this->autoReplyService->getUserByPhone($from);
         $session = WhatsAppSession::getOrCreate($from);
         $conversation = WhatsAppConversation::getOrCreate($from, $isGroup, $groupId);
-        $conversation->update([
-            'last_intent' => $intent,
-            'confidence_score' => $confidence,
-            'sender_type' => $senderType,
-        ]);
+        
+        // Only update conversation if it exists
+        if ($conversation) {
+            $conversation->update([
+                'last_intent' => $intent,
+                'confidence_score' => $confidence,
+                'sender_type' => $senderType,
+            ]);
+        }
 
         // Log message with intent and group info
         WhatsAppLog::logMessage('incoming', $from, (string) $message, 'received', [
@@ -124,7 +128,7 @@ class HandleIncomingMessageAction
             'sender_type' => $senderType,
         ]);
 
-        // Human takeover if confidence < 70% or intent unknown
+        // Human takeover if confidence < 70% or intent unknown (only if conversation exists)
         if ($confidence < 70 || $intent === 'unknown') {
             Log::info('Low confidence or unknown intent, triggering human takeover', [
                 'from' => $this->maskPhone($from),
@@ -132,10 +136,14 @@ class HandleIncomingMessageAction
                 'intent' => $intent,
                 'takeover_reason' => $confidence < 70 ? 'low_confidence' : 'unknown_intent'
             ]);
-            $conversation->update([
-                'status' => 'waiting_cs',
-                'takeover_reason' => $confidence < 70 ? 'low_confidence' : 'unknown_intent',
-            ]);
+            
+            if ($conversation) {
+                $conversation->update([
+                    'status' => 'waiting_cs',
+                    'takeover_reason' => $confidence < 70 ? 'low_confidence' : 'unknown_intent',
+                ]);
+            }
+            
             // Send fallback message or don't reply
             return;
         }

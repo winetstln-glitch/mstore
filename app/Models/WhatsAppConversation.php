@@ -36,31 +36,41 @@ class WhatsAppConversation extends Model
     ];
 
     /**
-     * Get or create conversation by phone
+     * Get or create conversation by phone with fail-safe
      */
-    public static function getOrCreate(string $phone, bool $isGroup = false, ?string $groupId = null): self
+    public static function getOrCreate(string $phone, bool $isGroup = false, ?string $groupId = null): ?self
     {
-        $query = self::where('phone_number', $phone);
-        
-        if ($isGroup && $groupId) {
-            $query->where('group_id', $groupId);
-        } else {
-            $query->whereNull('group_id');
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_conversations')) {
+                \Illuminate\Support\Facades\Log::warning('whatsapp_conversations table not found, skipping conversation tracking');
+                return null;
+            }
+            
+            $query = self::where('phone_number', $phone);
+            
+            if ($isGroup && $groupId) {
+                $query->where('group_id', $groupId);
+            } else {
+                $query->whereNull('group_id');
+            }
+
+            $conversation = $query->latest()->first();
+
+            if ($conversation && $conversation->status !== 'closed') {
+                return $conversation;
+            }
+
+            return self::create([
+                'phone_number' => $phone,
+                'conversation_id' => (string) Str::uuid(),
+                'status' => 'bot',
+                'is_group' => $isGroup,
+                'group_id' => $groupId,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to get or create WhatsApp conversation: ' . $e->getMessage(), ['exception' => $e]);
+            return null;
         }
-
-        $conversation = $query->latest()->first();
-
-        if ($conversation && $conversation->status !== 'closed') {
-            return $conversation;
-        }
-
-        return self::create([
-            'phone_number' => $phone,
-            'conversation_id' => (string) Str::uuid(),
-            'status' => 'bot',
-            'is_group' => $isGroup,
-            'group_id' => $groupId,
-        ]);
     }
 
     /**

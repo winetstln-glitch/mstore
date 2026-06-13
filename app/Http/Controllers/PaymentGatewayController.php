@@ -116,24 +116,53 @@ class PaymentGatewayController extends Controller
 
     protected function getTransactionStats()
     {
-        $today = Carbon::today();
-        
-        return [
-            'today_total' => Transaction::whereDate('created_at', $today)->count(),
-            'today_amount' => Transaction::whereDate('created_at', $today)->where('status', 'paid')->sum('amount'),
-            'pending' => Transaction::where('status', 'pending')->count(),
-            'paid' => Transaction::where('status', 'paid')->count(),
-            'failed' => Transaction::where('status', 'failed')->count(),
-            'success_rate' => $this->calculateSuccessRate(),
-        ];
+        try {
+            $today = Carbon::today();
+            
+            // Check if 'status' column exists first
+            $hasStatusColumn = \Illuminate\Support\Facades\Schema::hasColumn('transactions', 'status');
+            
+            $todayTotal = Transaction::whereDate('created_at', $today)->count();
+            $todayAmount = $hasStatusColumn ? Transaction::whereDate('created_at', $today)->where('status', 'paid')->sum('amount') : 0;
+            $pending = $hasStatusColumn ? Transaction::where('status', 'pending')->count() : 0;
+            $paid = $hasStatusColumn ? Transaction::where('status', 'paid')->count() : 0;
+            $failed = $hasStatusColumn ? Transaction::where('status', 'failed')->count() : 0;
+            $successRate = $this->calculateSuccessRate($hasStatusColumn);
+            
+            return [
+                'today_total' => $todayTotal,
+                'today_amount' => $todayAmount,
+                'pending' => $pending,
+                'paid' => $paid,
+                'failed' => $failed,
+                'success_rate' => $successRate,
+            ];
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting transaction stats: ' . $e->getMessage(), ['exception' => $e]);
+            return [
+                'today_total' => 0,
+                'today_amount' => 0,
+                'pending' => 0,
+                'paid' => 0,
+                'failed' => 0,
+                'success_rate' => 0,
+            ];
+        }
     }
 
-    protected function calculateSuccessRate()
+    protected function calculateSuccessRate(bool $hasStatusColumn = true)
     {
-        $total = Transaction::whereIn('status', ['paid', 'failed'])->count();
-        if ($total === 0) return 0;
-        
-        $paid = Transaction::where('status', 'paid')->count();
-        return round(($paid / $total) * 100, 2);
+        try {
+            if (!$hasStatusColumn) return 0;
+            
+            $total = Transaction::whereIn('status', ['paid', 'failed'])->count();
+            if ($total === 0) return 0;
+            
+            $paid = Transaction::where('status', 'paid')->count();
+            return round(($paid / $total) * 100, 2);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error calculating success rate: ' . $e->getMessage(), ['exception' => $e]);
+            return 0;
+        }
     }
 }
