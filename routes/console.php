@@ -14,6 +14,9 @@ Artisan::command('inspire', function () {
 // Schedule GenieACS Network Monitor
 Schedule::command('app:monitor-genie-devices')->everyFiveMinutes()->withoutOverlapping(10);
 
+// Schedule Router Mikrotik Status Check
+Schedule::command('router:check-status')->everyFiveMinutes()->withoutOverlapping(10);
+
 Schedule::command('noc:capture-metrics --queue')->everyMinute()->withoutOverlapping(2);
 
 Schedule::command('sla:evaluate --queue')->everyFifteenMinutes()->withoutOverlapping(10);

@@ -20,13 +20,17 @@ class Router extends Model
         'longitude',
         'password',
         'is_active',
+        'is_online',
+        'last_online_at',
         'description',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_online' => 'boolean',
         'port' => 'integer',
         'password' => 'encrypted', // Securely store password
+        'last_online_at' => 'datetime',
     ];
 
     public function vpnAccount()
