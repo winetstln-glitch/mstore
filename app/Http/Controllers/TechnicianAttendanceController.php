@@ -81,18 +81,26 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $endDate = $request->query('end_date', date('Y-m-d'));
         }
         $status = (string) $request->query('status', '');
+        $search = (string) $request->query('search', '');
 
         if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
             [$startDate, $endDate] = [$endDate, $startDate];
         }
 
-        // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query
-        $users = User::whereHas('role', function ($q) {
+        // PERBAIKAN: Tambahkan with('role') untuk menghindari N+1 query dan filter nama
+        $usersQuery = User::whereHas('role', function ($q) {
             $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
         })->where('is_active', true)
           ->with('role')
-          ->orderBy('name')
-          ->get();
+          ->orderBy('name');
+
+        if ($search) {
+            $usersQuery->where('name', 'LIKE', "%{$search}%")
+                        ->orWhere('username', 'LIKE', "%{$search}%")
+                        ->orWhere('email', 'LIKE', "%{$search}%");
+        }
+
+        $users = $usersQuery->get();
 
         $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->orWhereBetween('work_date', [$startDate, $endDate])
@@ -112,7 +120,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $current->addDay();
         }
 
-        return view('technicians.attendance.daily', compact('users', 'attendancesByDate', 'dates', 'startDate', 'endDate', 'status'));
+        return view('technicians.attendance.daily', compact('users', 'attendancesByDate', 'dates', 'startDate', 'endDate', 'status', 'search'));
     }
 
     /**

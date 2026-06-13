@@ -37,10 +37,17 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="col-12 col-md">
+                                <label class="form-label small fw-bold text-muted">{{ __('Cari Nama') }}</label>
+                                <input type="text" name="search" value="{{ $search }}" placeholder="Cari nama, username, atau email..." class="form-control" onchange="this.form.submit()">
+                            </div>
                             <div class="col-12 col-md-auto d-flex gap-2">
                                 <button type="submit" class="btn btn-primary flex-fill">
                                     <i class="fa-solid fa-filter me-1"></i> {{ __('Terapkan') }}
                                 </button>
+                                <a href="{{ route('attendance.daily') }}" class="btn btn-outline-secondary flex-fill">
+                                    <i class="fa-solid fa-rotate me-1"></i> {{ __('Reset') }}
+                                </a>
                                 <a href="{{ route('attendance.excel', array_merge(request()->query(), ['scope' => 'daily'])) }}" target="_blank" class="btn btn-success flex-fill">
                                     <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
                                 </a>
