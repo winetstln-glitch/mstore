@@ -10,6 +10,7 @@ class EscalationNotification extends Model
     protected $fillable = [
         'ticket_id',
         'sla_rule_id',
+        'notification_type',
         'channel',
         'target',
         'recipient_role',

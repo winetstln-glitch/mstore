@@ -89,15 +89,41 @@ class DispatchSlaEscalationNotificationsJob implements ShouldQueue
         $rule = $payload['sla_rule'] ?? [];
         $status = (string) ($rule['status'] ?? ($ticket->sla_status ?? '-'));
         $ruleName = (string) ($rule['name'] ?? '-');
+        $notificationType = (string) ($payload['notification_type'] ?? 'breach');
+        $minutesRemaining = $payload['minutes_remaining'] ?? null;
+
+        $icon = '🚨';
+        $title = 'SLA Escalation Ticket';
+        if ($notificationType === 'warning') {
+            $icon = '⚠️';
+            $title = 'Pengingat SLA Ticket';
+        } elseif ($notificationType === 'critical') {
+            $icon = '🔥';
+            $title = 'Pengingat Kritis SLA Ticket';
+        }
 
         $lines = [
-            '🚨 SLA Escalation Ticket',
+            "{$icon} {$title}",
             "Ticket: {$ticket->ticket_number}",
             "Status Ticket: {$ticket->status}",
-            "SLA: {$ruleName} ({$status})",
             "Prioritas: {$ticket->priority}",
             "Subject: {$ticket->subject}",
         ];
+
+        if ($minutesRemaining !== null && $minutesRemaining > 0) {
+            $hours = floor($minutesRemaining / 60);
+            $mins = $minutesRemaining % 60;
+            $timeStr = $hours > 0 ? "{$hours} jam {$mins} menit" : "{$mins} menit";
+            $lines[] = "Waktu tersisa: {$timeStr}";
+        }
+
+        if (isset($payload['sla_deadline'])) {
+            $lines[] = "Deadline: {$payload['sla_deadline']}";
+        }
+
+        if ($notificationType === 'breach') {
+            $lines[] = "SLA: {$ruleName} ({$status})";
+        }
 
         return implode("\n", $lines);
     }

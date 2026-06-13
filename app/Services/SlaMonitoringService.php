@@ -62,6 +62,11 @@ class SlaMonitoringService
         $ticketsUpdated = 0;
         $notificationsQueued = 0;
 
+        // Check for pre-deadline warnings first (based on sla_deadline)
+        if ($ticket->sla_deadline) {
+            $notificationsQueued += $this->checkDeadlineWarnings($ticket, $rules);
+        }
+
         if (empty($applicable)) {
             if ($ticket->sla_status !== 'ok') {
                 $ticket->forceFill(['sla_status' => 'ok'])->saveQuietly();
@@ -88,7 +93,7 @@ class SlaMonitoringService
                 $breach = $this->breaches->firstOrCreateBreach($ticket, $rule, $currentStatus);
                 if ($breach->wasRecentlyCreated) {
                     $breachesCreated++;
-                    $notificationsQueued += $this->queueEscalationNotifications($ticket, $rule);
+                    $notificationsQueued += $this->queueEscalationNotifications($ticket, $rule, 'breach');
                 }
             }
         });
@@ -98,6 +103,36 @@ class SlaMonitoringService
             'tickets_updated' => $ticketsUpdated,
             'notifications_queued' => $notificationsQueued,
         ];
+    }
+
+    private function checkDeadlineWarnings(Ticket $ticket, array $rules): int
+    {
+        $queued = 0;
+        $now = now();
+        $deadline = $ticket->sla_deadline;
+        if (!$deadline) {
+            return 0;
+        }
+
+        $minutesRemaining = (int) $now->diffInMinutes($deadline, false);
+
+        // Get the most applicable rule
+        $activeRule = collect($rules)->sortByDesc('threshold_minutes')->first();
+        if (!$activeRule) {
+            return 0;
+        }
+
+        // Check warning threshold (e.g., 2 hours before deadline)
+        if ($activeRule->warning_threshold_hours && $minutesRemaining > 0 && $minutesRemaining <= $activeRule->warning_threshold_hours * 60) {
+            $queued += $this->queueEscalationNotifications($ticket, $activeRule, 'warning', $minutesRemaining);
+        }
+
+        // Check critical threshold (e.g., 30 minutes before deadline)
+        if ($activeRule->critical_threshold_hours && $minutesRemaining > 0 && $minutesRemaining <= $activeRule->critical_threshold_hours * 60) {
+            $queued += $this->queueEscalationNotifications($ticket, $activeRule, 'critical', $minutesRemaining);
+        }
+
+        return $queued;
     }
 
     public function closeTicketBreaches(Ticket $ticket): int
@@ -187,16 +222,17 @@ class SlaMonitoringService
         return $count > 0 ? (int) round($sum / $count) : 0;
     }
 
-    private function queueEscalationNotifications(Ticket $ticket, SlaRule $rule): int
+    private function queueEscalationNotifications(Ticket $ticket, SlaRule $rule, string $notificationType = 'breach', ?int $minutesRemaining = null): int
     {
         $targets = $this->resolveRecipientTargets($ticket);
-        $payload = $this->buildEscalationPayload($ticket, $rule);
+        $payload = $this->buildEscalationPayload($ticket, $rule, $notificationType, $minutesRemaining);
         $count = 0;
 
         foreach ($targets as $target) {
             $exists = EscalationNotification::query()
                 ->where('ticket_id', $ticket->id)
                 ->where('sla_rule_id', $rule->id)
+                ->where('notification_type', $notificationType)
                 ->where('channel', $target['channel'])
                 ->where('target', $target['target'])
                 ->exists();
@@ -207,6 +243,7 @@ class SlaMonitoringService
             EscalationNotification::create([
                 'ticket_id' => $ticket->id,
                 'sla_rule_id' => $rule->id,
+                'notification_type' => $notificationType,
                 'channel' => $target['channel'],
                 'target' => $target['target'],
                 'recipient_role' => $target['role'],
@@ -250,7 +287,7 @@ class SlaMonitoringService
         return $targets;
     }
 
-    private function buildEscalationPayload(Ticket $ticket, SlaRule $rule): array
+    private function buildEscalationPayload(Ticket $ticket, SlaRule $rule, string $notificationType, ?int $minutesRemaining = null): array
     {
         return [
             'ticket_id' => $ticket->id,
@@ -258,10 +295,15 @@ class SlaMonitoringService
             'subject' => $ticket->subject,
             'status' => $ticket->status,
             'priority' => $ticket->priority,
+            'notification_type' => $notificationType,
+            'minutes_remaining' => $minutesRemaining,
+            'sla_deadline' => $ticket->sla_deadline?->toDateTimeString(),
             'sla_rule' => [
                 'name' => $rule->name,
                 'status' => $rule->status,
                 'threshold_minutes' => $rule->threshold_minutes,
+                'warning_threshold_hours' => $rule->warning_threshold_hours,
+                'critical_threshold_hours' => $rule->critical_threshold_hours,
             ],
             'created_at' => $ticket->created_at?->toDateTimeString(),
         ];
