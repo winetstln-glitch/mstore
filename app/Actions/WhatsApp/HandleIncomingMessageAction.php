@@ -6,9 +6,12 @@ use App\Events\WhatsApp\WhatsAppAnalyticsObserved;
 use App\Models\Setting;
 use App\Models\WhatsAppLog;
 use App\Models\WhatsAppSession;
+use App\Models\WhatsAppConversation;
+use App\Models\WhatsAppGroup;
 use App\Services\WhatsApp\WhatsAppAutoReplyService;
 use App\Services\WhatsApp\WhatsAppDynamicReplyService;
 use App\Services\WhatsApp\WhatsAppIntegrationRouter;
+use App\Services\WhatsApp\WhatsAppIntentService;
 use Illuminate\Support\Facades\Log;
 
 class HandleIncomingMessageAction
@@ -17,7 +20,8 @@ class HandleIncomingMessageAction
         private readonly WhatsAppAutoReplyService $autoReplyService,
         private readonly WhatsAppIntegrationRouter $integrationRouter,
         private readonly WhatsAppDynamicReplyService $dynamicReplyService,
-        private readonly ProcessMultiFormatMessageAction $processMultiFormatAction
+        private readonly ProcessMultiFormatMessageAction $processMultiFormatAction,
+        private readonly WhatsAppIntentService $intentService
     ) {}
 
     public function execute(array $data): void
@@ -43,23 +47,99 @@ class HandleIncomingMessageAction
         $message = $extracted['message'];
         $mediaType = $extracted['media_type'] ?? null;
         $mediaUrl = $extracted['media_url'] ?? null;
+        $isGroup = $extracted['is_group'] ?? false;
+        $groupId = $extracted['group_id'] ?? null;
+        $groupName = $extracted['group_name'] ?? null;
 
-        WhatsAppLog::logMessage('incoming', $from, (string) $message, 'received', [
-            'media_type' => $mediaType,
-            'media_url' => $mediaUrl,
-        ]);
+        // Handle group messages
+        if ($isGroup && $groupId) {
+            $group = WhatsAppGroup::getOrCreate($groupId, $groupName);
+            if (!$group->bot_enabled) {
+                Log::info('Bot disabled for group, skipping reply', ['group_id' => $groupId]);
+                // Still log the message
+                WhatsAppLog::logMessage('incoming', $from, (string) $message, 'received', [
+                    'media_type' => $mediaType,
+                    'media_url' => $mediaUrl,
+                    'is_group' => true,
+                    'group_id' => $groupId,
+                ]);
+                return;
+            }
+        }
 
-        Log::info('Received WhatsApp message', [
+        // Classify intent
+        $intentResult = $this->intentService->classifyIntent((string) $message);
+        $intent = $intentResult['intent'];
+        $confidence = $intentResult['confidence_score'];
+
+        Log::info('Processing WhatsApp message', [
             'from' => $this->maskPhone($from),
+            'is_group' => $isGroup,
+            'group_id' => $groupId,
+            'intent' => $intent,
+            'confidence' => $confidence,
             'has_media' => !empty($mediaUrl),
             'media_type' => $mediaType,
         ]);
 
         $user = $this->autoReplyService->getUserByPhone($from);
         $session = WhatsAppSession::getOrCreate($from);
-        $intent = $this->classifyAnalyticsIntent((string) $message);
+        $conversation = WhatsAppConversation::getOrCreate($from, $isGroup, $groupId);
+        $conversation->update([
+            'last_intent' => $intent,
+            'confidence_score' => $confidence,
+        ]);
 
-        // Pass media info to dynamic reply service for OCR/voice processing (Phase 3+)
+        // Log message with intent and group info
+        WhatsAppLog::logMessage('incoming', $from, (string) $message, 'received', [
+            'media_type' => $mediaType,
+            'media_url' => $mediaUrl,
+            'is_group' => $isGroup,
+            'group_id' => $groupId,
+            'intent' => $intent,
+            'confidence_score' => $confidence,
+        ]);
+
+        // Human takeover if confidence < 70% or intent unknown
+        if ($confidence < 70 || $intent === 'unknown') {
+            Log::info('Low confidence or unknown intent, triggering human takeover', [
+                'from' => $this->maskPhone($from),
+                'confidence' => $confidence,
+            ]);
+            $conversation->update([
+                'status' => 'waiting_cs',
+                'takeover_reason' => $confidence < 70 ? 'low_confidence' : 'unknown_intent',
+            ]);
+            // Send fallback message or don't reply
+            return;
+        }
+
+        // Get reply for intent
+        $intentReply = $this->intentService->getReplyForIntent($intent);
+        if ($intentReply) {
+            Log::info('Using intent-specific reply', ['intent' => $intent]);
+            event(new WhatsAppAnalyticsObserved([
+                'occurred_at' => now(),
+                'direction' => 'incoming',
+                'phone_number' => $from,
+                'whatsapp_session_id' => $session->id,
+                'intent' => $intent,
+                'used_ai' => false,
+                'is_fallback' => false,
+                'meta' => [
+                    'media_type' => $mediaType,
+                    'has_media' => ! empty($mediaUrl),
+                ],
+            ]));
+            $this->processMultiFormatAction->execute($from, [
+                'type' => 'text',
+                'text' => $intentReply,
+                'is_group' => $isGroup,
+                'group_id' => $groupId,
+            ]);
+            return;
+        }
+
         $reply = $this->integrationRouter->routeIncomingMessage($from, $message, $user);
 
         if (!$reply) {
@@ -101,6 +181,8 @@ class HandleIncomingMessageAction
             $this->processMultiFormatAction->execute($from, [
                 'type' => 'text',
                 'text' => $reply,
+                'is_group' => $isGroup,
+                'group_id' => $groupId,
             ]);
         } elseif (is_array($reply)) {
             event(new WhatsAppAnalyticsObserved([
@@ -116,7 +198,10 @@ class HandleIncomingMessageAction
                     'has_media' => ! empty($mediaUrl),
                 ],
             ]));
-            $this->processMultiFormatAction->execute($from, $reply);
+            $this->processMultiFormatAction->execute($from, array_merge($reply, [
+                'is_group' => $isGroup,
+                'group_id' => $groupId,
+            ]));
         }
     }
 
@@ -171,13 +256,17 @@ class HandleIncomingMessageAction
             }
         }
 
-        // Format 3: Generic
+        // Format 3: Generic (including group message format from user)
         if (isset($data['message'])) {
+            $isGroup = isset($data['isGroup']) ? (bool)$data['isGroup'] : false;
             return [
                 'phone' => $data['phone'] ?? $data['sender'] ?? $data['from'] ?? null,
                 'message' => $data['message'] ?? '',
                 'media_type' => $data['media_type'] ?? null,
                 'media_url' => $data['media_url'] ?? null,
+                'is_group' => $isGroup,
+                'group_id' => $isGroup ? ($data['group']['group_id'] ?? $data['group_id'] ?? null) : null,
+                'group_name' => $isGroup ? ($data['group']['subject'] ?? $data['group_name'] ?? null) : null,
             ];
         }
 
@@ -192,12 +281,16 @@ class HandleIncomingMessageAction
         $text = $msg['message'] ?? $msg['caption'] ?? '';
         $mediaType = $msg['type'] ?? null;
         $mediaUrl = $msg['url'] ?? $msg['media_url'] ?? null;
+        $isGroup = isset($msg['isGroup']) ? (bool)$msg['isGroup'] : false;
 
         return [
             'phone' => $phone,
             'message' => $text,
             'media_type' => $mediaType,
             'media_url' => $mediaUrl,
+            'is_group' => $isGroup,
+            'group_id' => $isGroup ? ($msg['group']['group_id'] ?? $msg['group_id'] ?? null) : null,
+            'group_name' => $isGroup ? ($msg['group']['subject'] ?? $msg['group_name'] ?? null) : null,
         ];
     }
 
@@ -209,12 +302,16 @@ class HandleIncomingMessageAction
         $text = $msg['message'] ?? $msg['caption'] ?? '';
         $mediaType = $msg['type'] ?? null;
         $mediaUrl = $msg['url'] ?? $msg['media_url'] ?? null;
+        $isGroup = isset($msg['isGroup']) ? (bool)$msg['isGroup'] : false;
 
         return [
             'phone' => $phone,
             'message' => $text,
             'media_type' => $mediaType,
             'media_url' => $mediaUrl,
+            'is_group' => $isGroup,
+            'group_id' => $isGroup ? ($msg['group']['group_id'] ?? $msg['group_id'] ?? null) : null,
+            'group_name' => $isGroup ? ($msg['group']['subject'] ?? $msg['group_name'] ?? null) : null,
         ];
     }
 

@@ -29,11 +29,16 @@ class WhatsAppLog extends Model
         'ai_history_id',
         'user_id',
         'customer_id',
+        'is_group',
+        'group_id',
+        'intent',
+        'confidence_score',
     ];
 
     protected $casts = [
         'payload' => 'array',
         'processing_time_ms' => 'integer',
+        'is_group' => 'boolean',
     ];
 
     protected function phoneMasked(): Attribute
@@ -112,7 +117,11 @@ class WhatsAppLog extends Model
             'detected_intent',
             'ai_history_id',
             'user_id',
-            'customer_id'
+            'customer_id',
+            'is_group',
+            'group_id',
+            'intent',
+            'confidence_score'
         ];
 
         foreach ($extraFields as $field) {

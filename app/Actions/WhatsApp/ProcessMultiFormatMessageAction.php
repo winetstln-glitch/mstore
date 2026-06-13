@@ -20,25 +20,30 @@ class ProcessMultiFormatMessageAction
         $filePath = $replyData['file_path'] ?? null;
         $fileType = $replyData['file_type'] ?? null;
         $mediaUrl = $replyData['media_url'] ?? null;
+        $isGroup = $replyData['is_group'] ?? false;
+        $groupId = $replyData['group_id'] ?? null;
+        
+        // If it's a group message, use groupId as the phoneNumber
+        $targetPhone = ($isGroup && $groupId) ? $groupId : $phoneNumber;
 
         switch ($type) {
             case 'text':
-                $this->sendTextMessage($phoneNumber, $text);
+                $this->sendTextMessage($targetPhone, $text);
                 break;
             case 'image':
-                $this->sendImageMessage($phoneNumber, $text, $filePath, $mediaUrl, $fileType);
+                $this->sendImageMessage($targetPhone, $text, $filePath, $mediaUrl, $fileType);
                 break;
             case 'document':
-                $this->sendDocumentMessage($phoneNumber, $text, $filePath, $mediaUrl, $fileType);
+                $this->sendDocumentMessage($targetPhone, $text, $filePath, $mediaUrl, $fileType);
                 break;
             case 'button':
-                $this->sendButtonMessage($phoneNumber, $text, $replyData['buttons'] ?? []);
+                $this->sendButtonMessage($targetPhone, $text, $replyData['buttons'] ?? []);
                 break;
             case 'list':
-                $this->sendListMessage($phoneNumber, $text, $replyData['list'] ?? []);
+                $this->sendListMessage($targetPhone, $text, $replyData['list'] ?? []);
                 break;
             default:
-                $this->sendTextMessage($phoneNumber, $text);
+                $this->sendTextMessage($targetPhone, $text);
         }
     }
 

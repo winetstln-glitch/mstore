@@ -21,22 +21,34 @@ class WhatsAppConversation extends Model
         'ai_history',
         'last_message_at',
         'unread_count',
+        'is_group',
+        'group_id',
+        'last_intent',
+        'confidence_score',
+        'sender_type',
     ];
 
     protected $casts = [
         'ai_history' => 'array',
         'assigned_at' => 'datetime',
         'last_message_at' => 'datetime',
+        'is_group' => 'boolean',
     ];
 
     /**
      * Get or create conversation by phone
      */
-    public static function getOrCreate(string $phone): self
+    public static function getOrCreate(string $phone, bool $isGroup = false, ?string $groupId = null): self
     {
-        $conversation = self::where('phone_number', $phone)
-            ->latest()
-            ->first();
+        $query = self::where('phone_number', $phone);
+        
+        if ($isGroup && $groupId) {
+            $query->where('group_id', $groupId);
+        } else {
+            $query->whereNull('group_id');
+        }
+
+        $conversation = $query->latest()->first();
 
         if ($conversation && $conversation->status !== 'closed') {
             return $conversation;
@@ -46,6 +58,8 @@ class WhatsAppConversation extends Model
             'phone_number' => $phone,
             'conversation_id' => (string) Str::uuid(),
             'status' => 'bot',
+            'is_group' => $isGroup,
+            'group_id' => $groupId,
         ]);
     }
 
