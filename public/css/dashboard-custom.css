@@ -44,7 +44,6 @@
     --glass-bg: rgba(255, 255, 255, 0.85);
     --glass-border: 1px solid rgba(255, 255, 255, 0.5);
     --blur: blur(12px);
-    --content-max-width: 1400px;
     --neon-glow: 0 0 0 rgba(0, 0, 0, 0);
 }
 

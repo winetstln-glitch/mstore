@@ -3,6 +3,26 @@ set -e
 
 echo "=== Memulai deploy aplikasi MStore ==="
 
+set_permissions() {
+    echo "   Menyiapkan permission storage dan bootstrap/cache..."
+    mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+
+    chmod -R ug+rwX storage bootstrap/cache
+    find storage bootstrap/cache -type d -exec chmod 775 {} \;
+    find storage bootstrap/cache -type f -exec chmod 664 {} \;
+
+    if id "www-data" >/dev/null 2>&1; then
+        if command -v sudo >/dev/null 2>&1; then
+            sudo chown -R www-data:www-data storage bootstrap/cache
+        elif [ "$(id -u)" -eq 0 ]; then
+            chown -R www-data:www-data storage bootstrap/cache
+        else
+            echo "   Peringatan: tidak bisa chown ke www-data karena sudo tidak tersedia."
+            echo "   Pastikan user web server memiliki akses tulis ke storage dan bootstrap/cache."
+        fi
+    fi
+}
+
 # 0. Backup database & file (WAJIB!)
 echo "0. Creating backup of database and files..."
 if [ -f "artisan" ]; then
@@ -11,6 +31,10 @@ if [ -f "artisan" ]; then
 else
     echo "   Perintah artisan tidak ditemukan, backup dilewati!"
 fi
+
+# Pastikan permission benar sebelum artisan menulis cache/view.
+echo "0b. Preparing writable directories..."
+set_permissions
 
 # 1. Install dependencies
 echo "1. Installing dependencies..."
@@ -45,7 +69,6 @@ php artisan queue:restart
 
 # 7. Set permissions
 echo "7. Setting file permissions..."
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+set_permissions
 
 echo "=== Deploy selesai! ==="
