@@ -185,6 +185,7 @@ class WhatsAppController extends Controller implements HasMiddleware
         $maskedWaApiKey = is_string($waApiKey->value) && $waApiKey->value !== ''
             ? str_repeat('*', max(strlen($waApiKey->value) - 4, 0)) . substr($waApiKey->value, -4)
             : null;
+        $ticketGroupStatus = app(WhatsAppService::class)->getGroupNotificationStatus('ticket');
         
         return view('whatsapp.index', compact(
             'template',
@@ -199,7 +200,8 @@ class WhatsAppController extends Controller implements HasMiddleware
             'unknownKeywordReply',
             'waApiUrl',
             'waApiKey',
-            'maskedWaApiKey'
+            'maskedWaApiKey',
+            'ticketGroupStatus'
         ));
     }
 

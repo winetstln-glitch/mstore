@@ -75,6 +75,16 @@
                     <div>API Key: <code>{{ $maskedWaApiKey ?: 'Belum diatur' }}</code></div>
                 </div>
 
+                <div class="alert {{ ($ticketGroupStatus['ready'] ?? false) ? 'alert-success' : 'alert-warning' }}">
+                    <div class="fw-semibold mb-1">Status Notifikasi Grup Tiket</div>
+                    <div>{{ $ticketGroupStatus['message'] ?? 'Status tidak tersedia.' }}</div>
+                    @if(!($ticketGroupStatus['ready'] ?? false))
+                        <div class="small text-muted mt-2">
+                            Lengkapi `API Key` dan `Group ID Tiket` agar notifikasi tiket ke grup WhatsApp bisa berjalan.
+                        </div>
+                    @endif
+                </div>
+
                 <form method="POST" action="{{ route('whatsapp.check-status') }}" class="mb-3">
                     @csrf
                     <button type="submit" class="btn btn-outline-dark btn-sm">

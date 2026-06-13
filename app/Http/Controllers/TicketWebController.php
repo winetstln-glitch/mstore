@@ -176,7 +176,9 @@ class TicketWebController extends Controller implements HasMiddleware
                 : null;
         }
 
-        DB::transaction(function () use ($request, $ticketData) {
+        $notificationWarnings = [];
+
+        DB::transaction(function () use ($request, $ticketData, &$notificationWarnings) {
             $ticket = Ticket::create($ticketData);
 
             $items = [];
@@ -324,10 +326,14 @@ class TicketWebController extends Controller implements HasMiddleware
                         "🔗 *Detail:* " . route('tickets.show', $ticket) . "\n\n" .
                         "🚀 _Sistem M-Store_";
             
-            $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+            $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket', ['whatsapp']);
+            $this->collectWhatsAppNotificationWarning($notificationResult, $notificationWarnings);
         });
 
-        return redirect()->route('tickets.index')->with('success', __('Ticket created successfully.'));
+        return $this->redirectWithNotificationWarning(
+            redirect()->route('tickets.index')->with('success', __('Ticket created successfully.')),
+            $notificationWarnings
+        );
     }
 
     /**
@@ -393,6 +399,7 @@ class TicketWebController extends Controller implements HasMiddleware
 
         $oldStatus = $ticket->status;
         $oldTechnicianIds = $ticket->technicians->pluck('id')->toArray();
+        $notificationWarnings = [];
 
         $ticketUpdateData = collect($validated)->except('technicians')->toArray();
         if (! Schema::hasColumn('tickets', 'estimated_duration_minutes')) {
@@ -434,10 +441,12 @@ class TicketWebController extends Controller implements HasMiddleware
                          "🚀 _Sistem M-Store_";
             
             if (in_array($ticket->status, ['solved', 'closed'])) {
-                $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+                $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket', ['whatsapp']);
             } else {
-                $this->sendGroupNotification($waMessage, 'ticket');
+                $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket');
             }
+
+            $this->collectWhatsAppNotificationWarning($notificationResult, $notificationWarnings);
         }
 
         if ($canEdit && $request->has('technicians')) {
@@ -490,15 +499,20 @@ class TicketWebController extends Controller implements HasMiddleware
                                  "🚀 _Sistem M-Store_";
             
                     if ($ticket->wasChanged('status')) {
-                        $this->sendGroupNotification($waMessage, 'ticket', ['whatsapp']);
+                        $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket', ['whatsapp']);
                     } else {
-                        $this->sendGroupNotification($waMessage, 'ticket');
+                        $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket');
                     }
+
+                    $this->collectWhatsAppNotificationWarning($notificationResult, $notificationWarnings);
                 }
             }
         }
 
-        return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket updated successfully.'));
+        return $this->redirectWithNotificationWarning(
+            redirect()->route('tickets.show', $ticket)->with('success', __('Ticket updated successfully.')),
+            $notificationWarnings
+        );
     }
 
     /**
@@ -666,6 +680,8 @@ class TicketWebController extends Controller implements HasMiddleware
 
         app(\App\Services\TelegramService::class)->sendTicketNotification($ticket, 'solved', $request->description);
 
+        $notificationWarnings = [];
+
         try {
             $waMessage = "✅ *TIKET SELESAI: {$ticket->ticket_number}*\n\n" .
                          "👤 *Pelanggan:* " . ($ticket->customer?->name ?? '-') . "\n" .
@@ -673,15 +689,19 @@ class TicketWebController extends Controller implements HasMiddleware
                          "🛠️ *Oleh:* " . Auth::user()->name . "\n" .
                          "🗒️ *Hasil:* " . ($request->description ?? 'Telah diperbaiki') . "\n\n" .
                          "🚀 _Sistem M-Store_";
-            
-            app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage);
+
+            $notificationResult = $this->sendGroupNotificationDetailed($waMessage, 'ticket', ['whatsapp']);
+            $this->collectWhatsAppNotificationWarning($notificationResult, $notificationWarnings);
         } catch (\Exception $e) {
             Log::error('Ticket Solved WA Notification Error: ' . $e->getMessage());
         }
 
         DatabaseNotification::where('data->ticket_id', $ticket->id)->delete();
 
-        return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket marked as solved successfully.'));
+        return $this->redirectWithNotificationWarning(
+            redirect()->route('tickets.show', $ticket)->with('success', __('Ticket marked as solved successfully.')),
+            $notificationWarnings
+        );
     }
 
     /**
@@ -772,6 +792,30 @@ class TicketWebController extends Controller implements HasMiddleware
         ]);
 
         return redirect()->route('tickets.show', $ticket)->with('success', __('Customer updated successfully.'));
+    }
+
+    protected function collectWhatsAppNotificationWarning(array $notificationResult, array &$warnings): void
+    {
+        $whatsAppResult = $notificationResult['whatsapp'] ?? null;
+
+        if (! is_array($whatsAppResult) || ! ($whatsAppResult['attempted'] ?? false) || ($whatsAppResult['success'] ?? false)) {
+            return;
+        }
+
+        $message = trim((string) ($whatsAppResult['message'] ?? ''));
+
+        if ($message !== '' && ! in_array($message, $warnings, true)) {
+            $warnings[] = $message;
+        }
+    }
+
+    protected function redirectWithNotificationWarning($redirectResponse, array $warnings)
+    {
+        if ($warnings === []) {
+            return $redirectResponse;
+        }
+
+        return $redirectResponse->with('warning', implode(' ', array_unique($warnings)));
     }
 
     /**

@@ -18,6 +18,8 @@ class WhatsAppService
     
     protected $secretKey;
 
+    protected ?string $lastErrorMessage = null;
+
     public function __construct()
     {
         // Prefer DB settings, fallback to .env
@@ -45,6 +47,23 @@ class WhatsAppService
             return 'fonnte';
         }
         return 'generic';
+    }
+
+    public function getLastErrorMessage(): ?string
+    {
+        return $this->lastErrorMessage;
+    }
+
+    protected function getCategoryLabel(string $category): string
+    {
+        return match ($category) {
+            'ticket' => 'tiket',
+            'attendance' => 'absensi',
+            'modem_up' => 'modem UP',
+            'modem_down' => 'modem DOWN',
+            'modem_recap' => 'rekap modem',
+            default => $category,
+        };
     }
 
     /**
@@ -750,6 +769,9 @@ class WhatsAppService
         if (str_contains($normalized, 'http 401') || str_contains($normalized, 'unauthorized')) {
             return 'API key WhatsApp tidak valid atau ditolak provider (401 Unauthorized).';
         }
+        if (str_contains($normalized, 'curl error 60') || str_contains($normalized, 'ssl certificate problem') || str_contains($normalized, 'unable to get local issuer certificate')) {
+            return 'Koneksi ke gateway WhatsApp gagal karena verifikasi sertifikat SSL. Periksa sertifikat CA di server/PHP atau gunakan endpoint gateway dengan sertifikat yang valid.';
+        }
 
         return $error;
     }
@@ -792,27 +814,78 @@ class WhatsAppService
     /**
      * Send System Notification to Group (Attendance/Ticket)
      */
-    public function sendGroupNotification(string $message, string $category = 'ticket'): bool
+    public function getGroupNotificationStatus(string $category = 'ticket'): array
     {
         $enabledKey = "whatsapp_{$category}_notification_enabled";
         $groupIdKey = "whatsapp_{$category}_group_id";
+        $categoryLabel = $this->getCategoryLabel($category);
 
         $isEnabled = Setting::getValue($enabledKey, '1') == '1';
-        $target = Setting::getValue($groupIdKey, Setting::getValue('whatsapp_group_notification_id', config('services.whatsapp.group_id')));
+        $target = trim((string) Setting::getValue($groupIdKey, Setting::getValue('whatsapp_group_notification_id', config('services.whatsapp.group_id'))));
+        $hasBaseUrl = ! empty($this->baseUrl);
+        $hasApiKey = ! empty($this->apiKey);
+
+        $issues = [];
 
         if (! $isEnabled) {
+            $issues[] = "Notifikasi WhatsApp {$categoryLabel} sedang nonaktif.";
+        }
+
+        if ($target === '') {
+            $issues[] = "Group ID WhatsApp {$categoryLabel} belum diatur.";
+        }
+
+        if (! $hasBaseUrl) {
+            $issues[] = 'URL gateway WhatsApp belum diatur.';
+        }
+
+        if (! $hasApiKey) {
+            $issues[] = 'API key WhatsApp belum diatur.';
+        }
+
+        $ready = $isEnabled && $target !== '' && $hasBaseUrl && $hasApiKey;
+
+        return [
+            'category' => $category,
+            'category_label' => $categoryLabel,
+            'enabled' => $isEnabled,
+            'target' => $target,
+            'has_base_url' => $hasBaseUrl,
+            'has_api_key' => $hasApiKey,
+            'provider' => $this->getProvider(),
+            'ready' => $ready,
+            'message' => $ready
+                ? "Notifikasi WhatsApp {$categoryLabel} siap dikirim."
+                : implode(' ', $issues),
+        ];
+    }
+
+    public function sendGroupNotification(string $message, string $category = 'ticket'): bool
+    {
+        $status = $this->getGroupNotificationStatus($category);
+        $this->lastErrorMessage = null;
+
+        if (! $status['enabled']) {
             return false;
         }
 
-        if (empty($target)) {
-            Log::warning("WhatsApp Group Notification ID for {$category} not set.");
+        if (! $status['ready']) {
+            $this->lastErrorMessage = $status['message'];
+            Log::warning($status['message']);
             return false;
         }
 
         try {
-            $result = $this->sendMessage($target, $message, "system_{$category}_notification");
+            $result = $this->sendMessage($status['target'], $message, "system_{$category}_notification");
+
+            if (! ($result['success'] ?? false)) {
+                $rawError = $result['error'] ?? $result['message'] ?? "Notifikasi WhatsApp {$status['category_label']} gagal dikirim.";
+                $this->lastErrorMessage = $this->humanizeProviderError($rawError);
+            }
+
             return $result['success'] ?? false;
         } catch (\Exception $e) {
+            $this->lastErrorMessage = $this->humanizeProviderError($e->getMessage());
             Log::error("Failed to send {$category} group notification: " . $e->getMessage());
             return false;
         }
