@@ -545,17 +545,16 @@ class WhatsAppService
             
             if ($provider === 'wablas') {
                 Log::info('Checking Wablas gateway status');
-                // Try multiple endpoints for Wablas
+                // Try multiple endpoints for Wablas with GET method!
                 $endpoints = ['/api/v2/device', '/device'];
                 foreach ($endpoints as $endpoint) {
                     try {
                         $fullUrl = $this->baseUrl . $endpoint;
-                        Log::info('Trying endpoint', ['url' => $fullUrl]);
+                        Log::info('Trying endpoint', ['url' => $fullUrl, 'method' => 'GET']);
                         
                         $response = Http::timeout(8)
                             ->connectTimeout(3)
-                            ->withHeaders(['Authorization' => $this->apiKey])
-                            ->post($fullUrl);
+                            ->get($fullUrl, ['token' => $this->apiKey]);
                         
                         $responseBody = $response->body();
                         Log::info('Wablas ' . $endpoint . ' response', [

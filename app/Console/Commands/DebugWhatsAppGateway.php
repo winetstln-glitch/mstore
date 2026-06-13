@@ -32,7 +32,7 @@ class DebugWhatsAppGateway extends Command
 
         // Get server IP
         try {
-            $ip = Http::timeout(5)->get('https://ifconfig.me')->body();
+            $ip = trim(Http::timeout(5)->get('https://ifconfig.me/ip')->body());
             $this->info('Server IP: ' . $ip);
             $this->warn('Pastikan IP ini di-whitelist di dashboard provider!');
         } catch (\Exception $e) {
