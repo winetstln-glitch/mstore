@@ -1000,8 +1000,8 @@
             btnCheckout.disabled = false;
 
             cart.forEach(item => {
-                const subtotal = item.bank ? item.fee : (item.price * item.quantity);
-                total += item.bank ? (item.nominal_transaksi + item.fee) : subtotal;
+                const subtotal = (item.bank || item.cashOut || item.topUp || item.ppob) ? (item.fee || 0) : (item.price * item.quantity);
+                total += (item.bank || item.cashOut || item.topUp || item.ppob) ? ((item.nominal_transaksi || 0) + (item.fee || 0)) : subtotal;
                 count += item.quantity;
 
                 const li = document.createElement('li');
@@ -1010,14 +1010,14 @@
                     <div class="flex-grow-1">
                         <div class="fw-bold text-truncate" style="max-width: 150px;">${item.name}</div>
                         <div class="text-muted small">${
-                            item.bank 
-                            ? ('Nominal: Rp ' + new Intl.NumberFormat('id-ID').format(item.nominal_transaksi) + ' | Fee: Rp ' + new Intl.NumberFormat('id-ID').format(item.fee))
+                            item.bank || item.cashOut || item.topUp || item.ppob
+                            ? (item.nominal_transaksi ? ('Nominal: Rp ' + new Intl.NumberFormat('id-ID').format(item.nominal_transaksi) + ' | ') : '') + (item.fee ? ('Fee: Rp ' + new Intl.NumberFormat('id-ID').format(item.fee)) : '')
                             : ('Rp ' + new Intl.NumberFormat('id-ID').format(item.price) + ' x ' + item.quantity)
                         }</div>
                     </div>
                     <div class="d-flex align-items-center">
                          <div class="btn-group btn-group-sm me-2">
-                            ${ (item.bank || item.customerPayment)
+                            ${ (item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob)
                                 ? '<button class="btn btn-outline-secondary" disabled>1</button>' 
                                 : `<button class="btn btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
                                    <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
@@ -1045,7 +1045,7 @@
         const method = document.getElementById('paymentMethod').value;
         let total = 0;
         cart.forEach(item => {
-            total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
+            total += (item.bank || item.cashOut || item.topUp || item.ppob) ? ((item.nominal_transaksi || 0) + (item.fee || 0)) : (item.price * item.quantity);
         });
         
         const change = method === 'cash' ? (cash - total) : 0;
@@ -1095,7 +1095,7 @@ function updatePengurusVisibility() {
         const cashAmount = paymentMethod === 'cash' ? (parseFloat(document.getElementById('cashAmount').value) || 0) : null;
         let total = 0;
         cart.forEach(item => {
-            total += item.bank ? (item.nominal_transaksi + item.fee) : (item.price * item.quantity);
+            total += (item.bank || item.cashOut || item.topUp || item.ppob) ? ((item.nominal_transaksi || 0) + (item.fee || 0)) : (item.price * item.quantity);
         });
 
         if (paymentMethod === 'cash' && cashAmount < total) {
@@ -1112,11 +1112,11 @@ function updatePengurusVisibility() {
         }
         const data = {
             items: cart.map(item => ({
-                id: item.bank || item.customerPayment ? null : item.id,
-                type: item.bank ? 'bank' : (item.service ? 'service' : (item.customerPayment ? 'customer_payment' : 'product')),
+                id: item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob ? null : item.id,
+                type: item.bank ? 'bank' : (item.service ? 'service' : (item.customerPayment ? 'customer_payment' : (item.cashOut ? 'cash_out' : (item.topUp ? 'top_up' : (item.ppob ? 'ppob' : 'product'))))),
                 quantity: item.quantity,
-                nominal_transaksi: (item.bank || item.customerPayment) ? item.nominal_transaksi : undefined,
-                fee: item.bank ? item.fee : undefined,
+                nominal_transaksi: (item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob) ? item.nominal_transaksi : undefined,
+                fee: (item.bank || item.cashOut || item.topUp || item.ppob) ? item.fee : undefined,
                 customer_name: item.customerPayment ? item.customerName : undefined
             })),
             transaction_category: transactionCategory,
