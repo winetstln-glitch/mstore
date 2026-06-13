@@ -4,6 +4,49 @@
 
 @section('content')
 <div class="container-fluid atk-pos-page">
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            @if(!$activeRegister)
+            <div class="card border-left-warning shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="fw-bold text-warning mb-1">
+                                <i class="fa-solid fa-door-closed me-2"></i>Tidak Ada Shift Aktif
+                            </div>
+                            <div class="text-muted small">Silakan buka shift di halaman Dashboard sebelum melakukan transaksi.</div>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ route('atk.dashboard') }}" class="btn btn-outline-warning">
+                                <i class="fa-solid fa-arrow-left me-2"></i>Ke Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @else
+            <div class="card border-left-success shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="fw-bold text-success mb-1">
+                                <i class="fa-solid fa-door-open me-2"></i>{{ $activeRegister->name }}
+                            </div>
+                            <div class="text-muted small">Dibuka: {{ $activeRegister->opened_at?->format('H:i d/m/Y') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="text-end">
+                                <div class="fw-bold mb-1">Saldo Kas</div>
+                                <div class="h5 mb-0 text-success">Rp {{ number_format($activeRegister->closing_balance, 0, ',', '.') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
     <div class="row h-100">
         <!-- Product & Service List -->
         <div class="col-12 col-lg-8 mb-3 mb-lg-0">
@@ -17,7 +60,7 @@
                         </button>
                     </div>
                     <div class="mt-2">
-                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="btn-group btn-group-sm flex-wrap" role="group">
                             <button class="btn btn-outline-primary" id="tabProducts" onclick="switchTab('products')">
                                 <i class="fa-solid fa-box"></i> Produk
                             </button>
@@ -26,6 +69,15 @@
                             </button>
                             <button class="btn btn-outline-success" id="tabBank" onclick="switchTab('bank')">
                                 <i class="fa-solid fa-building-columns"></i> Agen Bank
+                            </button>
+                            <button class="btn btn-outline-danger" id="tabCashOut" onclick="switchTab('cash-out')">
+                                <i class="fa-solid fa-money-bill-transfer"></i> Tarik Tunai
+                            </button>
+                            <button class="btn btn-outline-warning" id="tabTopUp" onclick="switchTab('top-up')">
+                                <i class="fa-solid fa-wallet"></i> Top Up E-Wallet
+                            </button>
+                            <button class="btn btn-outline-info" id="tabPPOB" onclick="switchTab('ppob')">
+                                <i class="fa-solid fa-bolt-lightning"></i> PPOB
                             </button>
                             <button class="btn btn-outline-info" id="tabCustomerPayments" onclick="switchTab('customer-payments')">
                                 <i class="fa-solid fa-money-check-dollar"></i> Pembayaran Pelanggan
@@ -145,6 +197,100 @@
                             </div>
                             <div class="col-md-6 d-flex align-items-end">
                                 <button class="btn btn-success w-100" onclick="addBankToCart()">
+                                    <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-none" id="cashOutPanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal Tarik Tunai</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="cashOutNominal" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="cashOutFee" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-danger w-100" onclick="addCashOutToCart()">
+                                    <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-none" id="topUpPanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">E-Wallet</label>
+                                <select id="topUpWallet" class="form-select">
+                                    <option value="dana">DANA</option>
+                                    <option value="ovo">OVO</option>
+                                    <option value="gopay">GoPay</option>
+                                    <option value="shopeePay">ShopeePay</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal Top Up</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="topUpNominal" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="topUpFee" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-warning text-dark w-100" onclick="addTopUpToCart()">
+                                    <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-none" id="ppobPanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis Layanan</label>
+                                <select id="ppobService" class="form-select">
+                                    <option value="pulsa">Pulsa</option>
+                                    <option value="data">Paket Data</option>
+                                    <option value="listrik">Listrik PLN</option>
+                                    <option value="bpjs">BPJS</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nomor Pelanggan</label>
+                                <input type="text" id="ppobNumber" class="form-control" placeholder="08xxxxxxxxxx">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nominal</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="ppobNominal" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" id="ppobFee" class="form-control" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-info text-white w-100" onclick="addPPOBToCart()">
                                     <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                 </button>
                             </div>
@@ -616,50 +762,55 @@
         const sList = document.getElementById('serviceList');
         const cpList = document.getElementById('customerPaymentList');
         const bPanel = document.getElementById('bankPanel');
+        const coPanel = document.getElementById('cashOutPanel');
+        const tuPanel = document.getElementById('topUpPanel');
+        const ppPanel = document.getElementById('ppobPanel');
         const tabP = document.getElementById('tabProducts');
         const tabS = document.getElementById('tabServices');
         const tabB = document.getElementById('tabBank');
+        const tabCO = document.getElementById('tabCashOut');
+        const tabTU = document.getElementById('tabTopUp');
+        const tabPP = document.getElementById('tabPPOB');
         const tabCP = document.getElementById('tabCustomerPayments');
+        
+        // Reset all
+        pList.classList.add('d-none');
+        sList.classList.add('d-none');
+        cpList.classList.add('d-none');
+        bPanel.classList.add('d-none');
+        coPanel.classList.add('d-none');
+        tuPanel.classList.add('d-none');
+        ppPanel.classList.add('d-none');
+        
+        tabP.classList.remove('active');
+        tabS.classList.remove('active');
+        tabB.classList.remove('active');
+        tabCO.classList.remove('active');
+        tabTU.classList.remove('active');
+        tabPP.classList.remove('active');
+        tabCP.classList.remove('active');
+        
         if (tab === 'products') {
             pList.classList.remove('d-none');
-            sList.classList.add('d-none');
-            cpList.classList.add('d-none');
-            bPanel.classList.add('d-none');
             tabP.classList.add('active');
-            tabS.classList.remove('active');
-            tabB.classList.remove('active');
-            tabCP.classList.remove('active');
-        } else {
-            if (tab === 'services') {
-                pList.classList.add('d-none');
-                sList.classList.remove('d-none');
-                cpList.classList.add('d-none');
-                bPanel.classList.add('d-none');
-                tabS.classList.add('active');
-                tabP.classList.remove('active');
-                tabB.classList.remove('active');
-                tabCP.classList.remove('active');
-            } else {
-                if (tab === 'bank') {
-                    pList.classList.add('d-none');
-                    sList.classList.add('d-none');
-                    cpList.classList.add('d-none');
-                    bPanel.classList.remove('d-none');
-                    tabB.classList.add('active');
-                    tabP.classList.remove('active');
-                    tabS.classList.remove('active');
-                    tabCP.classList.remove('active');
-                } else {
-                    pList.classList.add('d-none');
-                    sList.classList.add('d-none');
-                    cpList.classList.remove('d-none');
-                    bPanel.classList.add('d-none');
-                    tabCP.classList.add('active');
-                    tabP.classList.remove('active');
-                    tabS.classList.remove('active');
-                    tabB.classList.remove('active');
-                }
-            }
+        } else if (tab === 'services') {
+            sList.classList.remove('d-none');
+            tabS.classList.add('active');
+        } else if (tab === 'bank') {
+            bPanel.classList.remove('d-none');
+            tabB.classList.add('active');
+        } else if (tab === 'cash-out') {
+            coPanel.classList.remove('d-none');
+            tabCO.classList.add('active');
+        } else if (tab === 'top-up') {
+            tuPanel.classList.remove('d-none');
+            tabTU.classList.add('active');
+        } else if (tab === 'ppob') {
+            ppPanel.classList.remove('d-none');
+            tabPP.classList.add('active');
+        } else if (tab === 'customer-payments') {
+            cpList.classList.remove('d-none');
+            tabCP.classList.add('active');
         }
         document.getElementById('productSearch').dispatchEvent(new Event('input'));
         updatePengurusVisibility();
@@ -705,6 +856,93 @@
                 nominal_transaksi: nominal
             });
         }
+        renderCart();
+    }
+    
+    function addCashOutToCart() {
+        const nominal = parseFloat(document.getElementById('cashOutNominal').value) || 0;
+        const fee = parseFloat(document.getElementById('cashOutFee').value) || 0;
+        if (nominal <= 0) {
+            alert('Nominal tarik tunai wajib diisi.');
+            return;
+        }
+        const id = 800000000 + Date.now();
+        cart.push({
+            id,
+            name: 'Tarik Tunai',
+            price: fee,
+            quantity: 1,
+            maxStock: 1,
+            cashOut: true,
+            nominal_transaksi: nominal,
+            fee
+        });
+        renderCart();
+    }
+    
+    function addTopUpToCart() {
+        const wallet = document.getElementById('topUpWallet').value;
+        const walletNames = {
+            'dana': 'DANA',
+            'ovo': 'OVO',
+            'gopay': 'GoPay',
+            'shopeePay': 'ShopeePay'
+        };
+        const walletName = walletNames[wallet] || wallet;
+        const nominal = parseFloat(document.getElementById('topUpNominal').value) || 0;
+        const fee = parseFloat(document.getElementById('topUpFee').value) || 0;
+        if (nominal <= 0) {
+            alert('Nominal top up wajib diisi.');
+            return;
+        }
+        const id = 700000000 + Date.now();
+        cart.push({
+            id,
+            name: `Top Up ${walletName}`,
+            price: fee,
+            quantity: 1,
+            maxStock: 1,
+            topUp: true,
+            wallet,
+            nominal_transaksi: nominal,
+            fee
+        });
+        renderCart();
+    }
+    
+    function addPPOBToCart() {
+        const service = document.getElementById('ppobService').value;
+        const serviceNames = {
+            'pulsa': 'Pulsa',
+            'data': 'Paket Data',
+            'listrik': 'Listrik PLN',
+            'bpjs': 'BPJS'
+        };
+        const serviceName = serviceNames[service] || service;
+        const number = document.getElementById('ppobNumber').value;
+        const nominal = parseFloat(document.getElementById('ppobNominal').value) || 0;
+        const fee = parseFloat(document.getElementById('ppobFee').value) || 0;
+        if (nominal <= 0) {
+            alert('Nominal wajib diisi.');
+            return;
+        }
+        if (!number) {
+            alert('Nomor pelanggan wajib diisi.');
+            return;
+        }
+        const id = 600000000 + Date.now();
+        cart.push({
+            id,
+            name: `${serviceName} - ${number}`,
+            price: fee,
+            quantity: 1,
+            maxStock: 1,
+            ppob: true,
+            service,
+            number,
+            nominal_transaksi: nominal,
+            fee
+        });
         renderCart();
     }
 

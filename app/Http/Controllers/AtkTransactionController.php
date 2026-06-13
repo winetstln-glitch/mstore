@@ -109,8 +109,12 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $customers = Customer::orderBy('name')->get(['id', 'name', 'phone']);
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $investors = Investor::orderBy('name')->get(['id', 'name', 'coordinator_id']);
+        $activeRegister = \App\Models\AtkCashRegister::where('user_id', \Auth::id())
+            ->where('status', 'open')
+            ->latest()
+            ->first();
 
-        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors'));
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors', 'activeRegister'));
     }
 
     public function store(Request $request)
