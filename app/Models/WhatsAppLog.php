@@ -76,6 +76,50 @@ class WhatsAppLog extends Model
         return $query->where('status', 'failed');
     }
 
+    // Helper methods for sender type
+    public function isCustomer(): bool
+    {
+        return $this->sender_type === 'customer';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->sender_type === 'admin';
+    }
+
+    public function isBot(): bool
+    {
+        return $this->sender_type === 'bot';
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->sender_type === 'agent';
+    }
+
+    // Helper methods for direction
+    public function isIncoming(): bool
+    {
+        return $this->type === 'incoming';
+    }
+
+    public function isOutgoing(): bool
+    {
+        return $this->type === 'outgoing';
+    }
+
+    // Get sender label for display
+    public function getSenderLabelAttribute(): string
+    {
+        return match ($this->sender_type) {
+            'customer' => 'Customer',
+            'admin' => 'CS',
+            'bot' => 'AI Bot',
+            'agent' => 'Agent',
+            default => 'Unknown',
+        };
+    }
+
     // Relasi ke User (CS yang mengirim pesan)
     public function user(): BelongsTo
     {

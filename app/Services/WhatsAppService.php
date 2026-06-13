@@ -270,13 +270,15 @@ class WhatsAppService
             $responseBody = $response->body();
             $responseJson = $response->json();
             
-            Log::info('WhatsApp Request', [
+            Log::info('WHATSAPP GATEWAY REQUEST SENT', [
                 'provider' => $this->getProvider(),
-                'url' => $response->effectiveUri(),
+                'url' => (string)$response->effectiveUri(),
                 'phone' => $this->maskPhoneForLogs($phone),
                 'is_group' => $isGroup,
                 'has_media' => !empty($mediaUrl),
                 'response_status' => $response->status(),
+                'response_body' => $responseBody,
+                'response_json' => $responseJson,
             ]);
             
             $providerValidation = $this->validateProviderResponse($responseJson, $responseBody);

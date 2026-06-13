@@ -66,13 +66,15 @@ class WhatsAppWebhookController extends Controller
         try {
             $startTime = microtime(true);
             $payload = $request->all();
-            Log::info('WhatsApp Webhook Received', [
-                'keys' => array_slice(array_keys($payload), 0, 20),
-            ]);
+            Log::info('WHATSAPP WEBHOOK RECEIVED', ['payload' => $payload]);
+            Log::info('WHATSAPP RAW CONTENT', ['content' => $request->getContent()]);
 
             // 3. Extract message from provider payload
             $messageData = $this->extractMessage($payload);
+            Log::info('WHATSAPP EXTRACTED MESSAGE DATA', ['messageData' => $messageData]);
+            
             if (! $messageData) {
+                Log::info('WHATSAPP NO MESSAGE EXTRACTED');
                 return response()->json(['status' => 'no_message']);
             }
 
@@ -80,10 +82,17 @@ class WhatsAppWebhookController extends Controller
             $message = $messageData['message'];
             $isGroup = $messageData['is_group'];
             $providerMessageId = $messageData['provider_message_id'] ?? null;
+            $fromMe = $messageData['from_me'] ?? false;
 
-            // 4. Anti-loop: Cek apakah ini pesan dari kita sendiri (CS yang mengirim via WhatsApp)
-            if ($this->isMessageFromUs($phone, $message)) {
-                Log::info('Ignoring message from ourselves', ['phone' => $phone]);
+            // 4. Anti-loop: Skip messages from ourselves
+            if ($fromMe) {
+                Log::info('WHATSAPP IGNORING OWN MESSAGE (fromMe=true)', ['phone' => $phone, 'message' => $message]);
+                // Save the outgoing message (from CS/Admin)
+                WhatsAppLog::logMessage('outgoing', $phone, $message, 'delivered', $payload, null, [
+                    'sender_type' => 'admin',
+                    'message_type' => 'text',
+                    'provider_message_id' => $providerMessageId,
+                ]);
                 return response()->json(['status' => 'ignored_own_message']);
             }
 
@@ -93,7 +102,7 @@ class WhatsAppWebhookController extends Controller
                 if ($existingDuplicate) {
                     $existingDuplicate->increment('duplicate_count');
                     $existingDuplicate->update(['duplicate_detected_at' => now()]);
-                    Log::info('Duplicate message detected and ignored', [
+                    Log::info('WHATSAPP DUPLICATE MESSAGE', [
                         'phone' => $phone, 
                         'message_id' => $providerMessageId,
                         'duplicate_count' => $existingDuplicate->duplicate_count
@@ -104,8 +113,10 @@ class WhatsAppWebhookController extends Controller
 
             // 6. Dapatkan atau buat conversation
             $conversation = WhatsAppConversation::getOrCreate($phone);
-            $conversationId = $conversation->conversation_id;
-            $conversation->incrementUnread();
+            $conversationId = $conversation ? $conversation->conversation_id : null;
+            if ($conversation) {
+                $conversation->incrementUnread();
+            }
 
             // 7. Intent detection & confidence scoring
             $intentData = $this->detectIntent($message);
@@ -121,12 +132,13 @@ class WhatsAppWebhookController extends Controller
                 'detected_intent' => $detectedIntent,
                 'ai_confidence' => $aiConfidence,
             ]);
+            Log::info('WHATSAPP MESSAGE SAVED', ['log_id' => $incomingLog->id]);
 
             // 9. Human takeover validation: JANGAN balas jika CS sedang menangani!
-            if (! $conversation->shouldBotReply()) {
-                Log::info('Conversation is handled by CS, bot will not reply', [
+            if (! $conversation || ! $conversation->shouldBotReply()) {
+                Log::info('WHATSAPP CONVERSATION HANDLED BY CS OR NOT FOUND', [
                     'phone' => $phone, 
-                    'status' => $conversation->status
+                    'status' => $conversation ? $conversation->status : 'no_conversation'
                 ]);
                 return response()->json(['status' => 'cs_handling']);
             }
@@ -138,7 +150,7 @@ class WhatsAppWebhookController extends Controller
                     'status' => 'waiting_cs', 
                     'takeover_reason' => 'Low AI confidence: ' . $aiConfidence
                 ]);
-                Log::info('Low confidence, assigned to CS waiting list', [
+                Log::info('WHATSAPP LOW CONFIDENCE, ASSIGNED TO CS', [
                     'phone' => $phone, 
                     'confidence' => $aiConfidence
                 ]);
@@ -160,7 +172,7 @@ class WhatsAppWebhookController extends Controller
                     $conversationId
                 )->delay(now()->addMinutes($delayMinutes));
 
-                Log::info('Delayed WhatsApp reply job dispatched', [
+                Log::info('WHATSAPP DELAYED REPLY QUEUED', [
                     'phone' => $phone,
                     'delay' => "{$delayMinutes} minutes",
                     'conversation_id' => $conversationId,
@@ -169,9 +181,14 @@ class WhatsAppWebhookController extends Controller
             }
 
             // 12. No delay, process & reply immediately
+            Log::info('WHATSAPP PROCESSING INCOMING MESSAGE', ['phone' => $phone, 'message' => $message]);
             $response = $this->processIncomingMessage($phone, $message, $isGroup, $conversation);
+            Log::info('WHATSAPP AI RESPONSE GENERATED', ['response' => $response]);
+            
             if ($response) {
+                Log::info('WHATSAPP SENDING TO GATEWAY', ['phone' => $phone, 'response' => $response]);
                 $sendResult = $this->whatsappService->sendMessage($phone, $response);
+                Log::info('WHATSAPP GATEWAY RESPONSE', ['sendResult' => $sendResult]);
                 $processingTime = round((microtime(true) - $startTime) * 1000);
                 
                 WhatsAppLog::logMessage('outgoing', $phone, $response, $sendResult['success'] ? 'sent' : 'failed', $sendResult, null, [
@@ -183,11 +200,19 @@ class WhatsAppWebhookController extends Controller
             }
 
             return response()->json(['status' => 'success']);
-        } catch (\Exception $e) {
-            Log::error('WhatsApp Webhook Error: ' . $e->getMessage(), ['exception' => $e]);
+        } catch (\Throwable $e) {
+            Log::error('WHATSAPP WEBHOOK ERROR', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             
             if (isset($phone)) {
-                WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload ?? [], $e->getMessage());
+                try {
+                    WhatsAppLog::logMessage('incoming', $phone, $request->getContent() ?? 'error', 'failed', $payload ?? [], $e->getMessage());
+                } catch (\Throwable $logError) {
+                    Log::error('WHATSAPP FAILED TO LOG ERROR', ['error' => $logError->getMessage()]);
+                }
             }
             
             return response()->json(['error' => 'Server error'], 500);
@@ -325,6 +350,16 @@ class WhatsAppWebhookController extends Controller
      */
     private function extractMessage(array $payload): ?array
     {
+        // Helper to extract fromMe from message object
+        $extractFromMe = function ($msg) {
+            return isset($msg['fromMe']) ? (bool)$msg['fromMe'] :
+                   (isset($msg['key']['fromMe']) ? (bool)$msg['key']['fromMe'] :
+                   (isset($msg['is_outgoing']) ? (bool)$msg['is_outgoing'] :
+                   (isset($msg['isOutgoing']) ? (bool)$msg['isOutgoing'] :
+                   (isset($msg['is_me']) ? (bool)$msg['is_me'] :
+                   false))));
+        };
+
         // Fonnte format
         if (isset($payload['data']['messages']) && is_array($payload['data']['messages'])) {
             foreach ($payload['data']['messages'] as $msg) {
@@ -334,6 +369,7 @@ class WhatsAppWebhookController extends Controller
                         'message' => $msg['message'],
                         'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : false,
                         'provider_message_id' => $msg['id'] ?? $msg['message_id'] ?? null,
+                        'from_me' => $extractFromMe($msg),
                     ];
                 }
             }
@@ -353,6 +389,7 @@ class WhatsAppWebhookController extends Controller
                         'message' => $msg['message'],
                         'is_group' => isset($msg['is_group']) ? (bool) $msg['is_group'] : (isset($msg['group_id']) && !empty($msg['group_id'])),
                         'provider_message_id' => $msg['id'] ?? $msg['message_id'] ?? null,
+                        'from_me' => $extractFromMe($msg),
                     ];
                 }
             }
@@ -369,6 +406,7 @@ class WhatsAppWebhookController extends Controller
                 'message' => $payload['message'],
                 'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
                 'provider_message_id' => $payload['id'] ?? $payload['message_id'] ?? null,
+                'from_me' => $extractFromMe($payload),
             ];
         }
         
@@ -383,6 +421,7 @@ class WhatsAppWebhookController extends Controller
                 'message' => $payload['message'] ?? $payload['text'] ?? '',
                 'is_group' => isset($payload['is_group']) ? (bool) $payload['is_group'] : (isset($payload['group_id']) && !empty($payload['group_id'])),
                 'provider_message_id' => $payload['id'] ?? $payload['message_id'] ?? null,
+                'from_me' => $extractFromMe($payload),
             ];
         }
 
