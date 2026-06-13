@@ -122,7 +122,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $request->validate([
             'items' => 'required|array',
             'items.*.id' => 'nullable',
-            'items.*.type' => 'nullable|string|in:product,service,bank,customer_payment',
+            'items.*.type' => 'nullable|string|in:product,service,bank,customer_payment,cash_out,top_up,ppob',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.nominal_transaksi' => 'nullable|numeric|min:0',
             'items.*.fee' => 'nullable|numeric|min:0',
@@ -134,6 +134,12 @@ class AtkTransactionController extends Controller implements HasMiddleware
 
         try {
             DB::beginTransaction();
+
+            // Get active register
+            $activeRegister = AtkCashRegister::where('user_id', Auth::id())->where('status', 'open')->latest()->first();
+            if (! $activeRegister) {
+                throw new \Exception('Silakan buka shift terlebih dahulu sebelum melakukan transaksi!');
+            }
 
             $total = 0;
             $items = [];
@@ -237,6 +243,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 'cash_amount' => $request->cash_amount,
                 'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
                 'coordinator_id' => ($request->payment_method === 'hutang' || $transactionCategory === 'pembayaran_pelanggan') ? ($request->coordinator_id ?? null) : null,
+                'atk_cash_register_id' => $activeRegister->id,
             ];
             if (Schema::hasColumn('atk_transactions', 'transaction_category')) {
                 $payload['transaction_category'] = $transactionCategory;
@@ -253,6 +260,23 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
                 $cash->balance = (float) $cash->balance + (float) $total;
                 $cash->save();
+            }
+
+            // Create cash movement
+            if ($request->payment_method !== 'hutang') {
+                $balanceBefore = $activeRegister->closing_balance;
+                $balanceAfter = $balanceBefore + $total;
+                $activeRegister->update(['closing_balance' => $balanceAfter]);
+                
+                AtkCashMovement::create([
+                    'atk_cash_register_id' => $activeRegister->id,
+                    'movement_type' => 'sale',
+                    'amount' => $total,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'description' => 'Transaksi POS - ' . $transaction->transaction_number,
+                    'created_by' => Auth::id(),
+                ]);
             }
 
             // Reduce Agent Deposit by nominal transfer sum
