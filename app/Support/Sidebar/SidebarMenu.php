@@ -152,10 +152,12 @@ class SidebarMenu
                 'label' => 'Business Units',
                 'items' => [
                     self::group('bu-atk', 'ATK', [
+                        self::link('atk-dashboard', 'Dashboard ATK', 'atk.dashboard', permissions: ['atk.view']),
                         self::link('atk-pos', 'POS ATK', 'atk.pos', permissions: ['atk.pos']),
+                        self::link('atk-cash-registers', 'Kasir Shift', 'atk.cash-registers.index', permissions: ['atk.cash-register.manage']),
                         self::link('atk-manage', 'Manajemen ATK', 'atk.products.index', permissions: ['atk.manage']),
                         self::link('atk-report', 'Laporan ATK', 'atk.reports.index', permissions: ['atk.report']),
-                    ], permissions: ['atk.pos', 'atk.manage', 'atk.report']),
+                    ], permissions: ['atk.view', 'atk.pos', 'atk.cash-register.manage', 'atk.manage', 'atk.report']),
                     self::group('bu-wash', 'GT Wash', [
                         self::link('wash-dashboard', 'Dashboard', 'wash.dashboard', permissions: ['wash.view']),
                         self::link('wash-pos', 'POS Wash', 'wash.pos', permissions: ['wash.pos']),
