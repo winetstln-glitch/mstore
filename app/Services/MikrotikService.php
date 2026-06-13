@@ -20,6 +20,11 @@ class MikrotikService
 
         try {
             $host = $router->vpn_tunnel_ip ?: $router->host;
+            if (empty($host)) {
+                Log::error("Failed to connect to Mikrotik {$router->name}: Host address is empty/NULL");
+                $this->client = null;
+                return;
+            }
             $this->client = new Client([
                 'host' => $host,
                 'user' => $router->username,
