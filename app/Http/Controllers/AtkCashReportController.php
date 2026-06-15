@@ -53,20 +53,33 @@ class AtkCashReportController extends Controller implements HasMiddleware
             $startBalance = $earliest->balance_after;
         }
 
-        $endBalance = $startBalance + $incoming - $outgoing;
+        // Get detail movements with running balance
+        $movements = AtkCashMovement::whereDate('created_at', '>=', $start)
+            ->whereDate('created_at', '<=', $end)
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-        return view('atk.reports.cash', compact('start', 'end', 'period', 'cash', 'startBalance', 'incoming', 'outgoing', 'endBalance'));
+        $endBalance = $startBalance;
+        foreach ($movements as $movement) {
+            $isIncoming = in_array($movement->movement_type, ['sale', 'service', 'topup', 'ppob', 'owner_loan', 'adjustment_in']);
+            if ($isIncoming) {
+                $endBalance += $movement->amount;
+            } else {
+                $endBalance -= $movement->amount;
+            }
+            $movement->running_balance = $endBalance;
+        }
+
+        return view('atk.reports.cash', compact('start', 'end', 'period', 'cash', 'startBalance', 'incoming', 'outgoing', 'endBalance', 'movements'));
     }
 
     public function pdf(Request $request)
     {
-        // Will implement later, placeholder
         return redirect()->back();
     }
 
     public function excel(Request $request)
     {
-        // Will implement later, placeholder
         return redirect()->back();
     }
 }

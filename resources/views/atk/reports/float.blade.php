@@ -96,6 +96,49 @@
             </div>
         </div>
     </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Detail Transaksi Float - {{ $selectedAccount->name }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead class="table">
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 15%;">Tanggal</th>
+                            <th style="width: 15%;">Referensi</th>
+                            <th style="width: 30%;">Keterangan</th>
+                            <th class="text-end" style="width: 10%;">Debit</th>
+                            <th class="text-end" style="width: 10%;">Kredit</th>
+                            <th class="text-end" style="width: 15%;">Saldo Berjalan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($transactions as $index => $transaction)
+                            @php
+                                $isIncoming = in_array($transaction->transaction_type, ['deposit', 'topup', 'transfer_in']);
+                            @endphp
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
+                                <td><span class="badge bg-secondary">{{ $transaction->transaction_type }}</span></td>
+                                <td>{{ $transaction->description }}</td>
+                                <td class="text-end">{{ $isIncoming ? 'Rp ' . number_format($transaction->amount, 0, ',', '.') : '-' }}</td>
+                                <td class="text-end">{{ !$isIncoming ? 'Rp ' . number_format($transaction->amount, 0, ',', '.') : '-' }}</td>
+                                <td class="text-end fw-semibold">Rp {{ number_format($transaction->running_balance, 0, ',', '.') }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-4">Tidak ada data transaksi</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     @endif
 </div>
 @endsection

@@ -95,5 +95,48 @@
             </div>
         </div>
     </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Detail Pergerakan Kas</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead class="table">
+                        <tr>
+                            <th style="width: 5%;">No</th>
+                            <th style="width: 15%;">Tanggal</th>
+                            <th style="width: 15%;">Kategori</th>
+                            <th style="width: 30%;">Keterangan</th>
+                            <th class="text-end" style="width: 10%;">Masuk</th>
+                            <th class="text-end" style="width: 10%;">Keluar</th>
+                            <th class="text-end" style="width: 15%;">Saldo Berjalan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($movements as $index => $movement)
+                            @php
+                                $isIncoming = in_array($movement->movement_type, ['sale', 'service', 'topup', 'ppob', 'owner_loan', 'adjustment_in']);
+                            @endphp
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>{{ $movement->created_at->format('d/m/Y H:i') }}</td>
+                                <td><span class="badge bg-secondary">{{ $movement->movement_type }}</span></td>
+                                <td>{{ $movement->description }}</td>
+                                <td class="text-end">{{ $isIncoming ? 'Rp ' . number_format($movement->amount, 0, ',', '.') : '-' }}</td>
+                                <td class="text-end">{{ !$isIncoming ? 'Rp ' . number_format($movement->amount, 0, ',', '.') : '-' }}</td>
+                                <td class="text-end fw-semibold">Rp {{ number_format($movement->running_balance, 0, ',', '.') }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-4">Tidak ada data pergerakan kas</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

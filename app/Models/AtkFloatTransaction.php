@@ -2,14 +2,24 @@
 
 namespace App\Models;
 
+use App\Services\AccountingPoster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AtkFloatTransaction extends Model
 {
     protected $fillable = [
-        'atk_float_account_id', 'transaction_type', 'amount', 'balance_before', 'balance_after',
-        'reference_type', 'reference_id', 'description', 'created_by',
+        'atk_float_account_id',
+        'transaction_type',
+        'amount',
+        'balance_before',
+        'balance_after',
+        'reference_type',
+        'reference_id',
+        'description',
+        'created_by',
     ];
 
     protected $casts = [
@@ -26,5 +36,62 @@ class AtkFloatTransaction extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function syncAccountingJournal(): void
+    {
+        if (! Schema::hasTable('journals') || ! Schema::hasTable('journal_entries') || ! Schema::hasTable('accounts')) {
+            return;
+        }
+
+        Account::ensureDefaultChart();
+
+        DB::transaction(function () {
+            // Delete old journal for this transaction
+            $journals = Journal::where('source_type', 'atk_float_transaction')
+                ->where('source_id', $this->id)
+                ->with('entries')
+                ->get();
+
+            foreach ($journals as $journal) {
+                foreach ($journal->entries as $entry) {
+                    $entry->delete();
+                }
+                $journal->delete();
+            }
+
+            $cashAccId = Account::where('code', '1001')->value('id');
+            $floatAccId = Account::where('code', '1002')->value('id');
+            if (! $cashAccId || ! $floatAccId) {
+                return;
+            }
+
+            $lines = [];
+            $isDeposit = in_array($this->transaction_type, ['deposit', 'topup', 'transfer_in']);
+
+            if ($isDeposit) {
+                // Topup Float: Debit Float, Kredit Kas
+                $lines[] = ['account_id' => $floatAccId, 'debit' => $this->amount, 'credit' => 0, 'unit' => 'ATK'];
+                $lines[] = ['account_id' => $cashAccId, 'debit' => 0, 'credit' => $this->amount, 'unit' => 'ATK'];
+            } else {
+                // Penarikan Float: Debit Kas, Kredit Float
+                $lines[] = ['account_id' => $cashAccId, 'debit' => $this->amount, 'credit' => 0, 'unit' => 'ATK'];
+                $lines[] = ['account_id' => $floatAccId, 'debit' => 0, 'credit' => $this->amount, 'unit' => 'ATK'];
+            }
+
+            if (count($lines) > 0) {
+                $date = $this->created_at?->toDateString() ?? now()->toDateString();
+                $poster = app(AccountingPoster::class);
+                $poster->post(
+                    'ATK-FT-' . ($this->id),
+                    $date,
+                    $this->description ?: 'Pergerakan Float ATK',
+                    $lines,
+                    null,
+                    'atk_float_transaction',
+                    $this->id
+                );
+            }
+        });
     }
 }
