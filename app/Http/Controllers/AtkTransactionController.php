@@ -76,11 +76,56 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $monthlySales = AtkTransaction::where('created_at', 'like', "$month%")->sum('total_amount');
         $transactionCount = AtkTransaction::whereDate('created_at', $today)->count();
 
-        // Get active cash register for current user
-        $activeRegister = \App\Models\AtkCashRegister::where('user_id', Auth::id())
-            ->where('status', 'open')
-            ->latest()
-            ->first();
+        // Get Kas Utama
+        $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+
+        // Get float accounts
+        $floatAccounts = \App\Models\AtkFloatAccount::where('status', 'active')->get();
+
+        // Get current owner fund balance
+        $currentOwnerBalance = \App\Models\OwnerFund::latest()->first()?->total_balance ?? 0;
+
+        // Get today's expenses
+        $todayExpenses = \App\Models\Transaction::where('type', 'expense')
+            ->where('reference_number', 'like', 'ATK-EXP-%')
+            ->whereDate('created_at', today())
+            ->sum('amount');
+
+        // Get today's top up
+        $todayTopUp = AtkTransaction::whereDate('created_at', today())
+            ->whereHas('items', function ($query) {
+                $query->where('item_type', 'top_up');
+            })
+            ->withSum('items', 'nominal_transaksi')
+            ->get()
+            ->sum('items_sum_nominal_transaksi');
+
+        // Get today's withdrawal (cash out)
+        $todayWithdrawal = AtkTransaction::whereDate('created_at', today())
+            ->whereHas('items', function ($query) {
+                $query->where('item_type', 'cash_out');
+            })
+            ->withSum('items', 'nominal_transaksi')
+            ->get()
+            ->sum('items_sum_nominal_transaksi');
+
+        // Get today's PPOB
+        $todayPpob = AtkTransaction::whereDate('created_at', today())
+            ->whereHas('items', function ($query) {
+                $query->where('item_type', 'ppob');
+            })
+            ->withSum('items', 'nominal_transaksi')
+            ->get()
+            ->sum('items_sum_nominal_transaksi');
+
+        // Get today's Transfer
+        $todayTransfer = AtkTransaction::whereDate('created_at', today())
+            ->whereHas('items', function ($query) {
+                $query->where('item_type', 'bank');
+            })
+            ->withSum('items', 'nominal_transaksi')
+            ->get()
+            ->sum('items_sum_nominal_transaksi');
 
         // Top selling products
         $topProducts = AtkTransactionItem::select('product_name', DB::raw('sum(quantity) as total_qty'))
@@ -97,7 +142,14 @@ class AtkTransactionController extends Controller implements HasMiddleware
             'todayAttendance',
             'attendanceOverview',
             'shiftSchedule',
-            'activeRegister'
+            'cash',
+            'floatAccounts',
+            'currentOwnerBalance',
+            'todayExpenses',
+            'todayTopUp',
+            'todayWithdrawal',
+            'todayPpob',
+            'todayTransfer'
         ));
     }
 
@@ -109,16 +161,15 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $customers = Customer::orderBy('name')->get(['id', 'name', 'phone']);
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $investors = Investor::orderBy('name')->get(['id', 'name', 'coordinator_id']);
-        $activeRegister = \App\Models\AtkCashRegister::where('user_id', \Auth::id())
-            ->where('status', 'open')
-            ->latest()
-            ->first();
+        $floatAccounts = \App\Models\AtkFloatAccount::where('status', 'active')->get();
+        $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
 
-        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors', 'activeRegister'));
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors', 'floatAccounts', 'cash'));
     }
 
     public function store(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('ATK Transaction Store Request:', $request->all());
         $request->validate([
             'items' => 'required|array',
             'items.*.id' => 'nullable',
@@ -127,6 +178,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
             'items.*.nominal_transaksi' => 'nullable|numeric|min:0',
             'items.*.fee' => 'nullable|numeric|min:0',
             'items.*.customer_name' => 'nullable|string|max:255',
+            'items.*.float_account_id' => 'nullable|exists:atk_float_accounts,id',
             'transaction_category' => 'nullable|string|in:penjualan_atk,pembayaran_pelanggan',
             'payment_method' => 'required|string',
             'cash_amount' => 'nullable|numeric',
@@ -135,22 +187,23 @@ class AtkTransactionController extends Controller implements HasMiddleware
         try {
             DB::beginTransaction();
 
-            // Get active register
-            $activeRegister = AtkCashRegister::where('user_id', Auth::id())->where('status', 'open')->latest()->first();
-            if (! $activeRegister) {
-                throw new \Exception('Silakan buka shift terlebih dahulu sebelum melakukan transaksi!');
-            }
+        $total = 0;
+        $items = [];
 
-            $total = 0;
-            $items = [];
-
-            $sumBankNominal = 0;
-            $sumFee = 0;
-            $sumRevenueSales = 0;
-            $hpp = 0;
-            $containsService = false;
-            foreach ($request->items as $itemData) {
-                $itemType = $itemData['type'] ?? 'product';
+        $sumBankNominal = 0;
+        $sumFee = 0;
+        $sumRevenueSales = 0;
+        $hpp = 0;
+        $containsService = false;
+        $totalCashIn = 0;
+        $totalCashOut = 0;
+        $totalFloatIn = 0;
+        $totalFloatOut = 0;
+        $cashOutFloatTransactions = [];
+        foreach ($request->items as $itemData) {
+            \Illuminate\Support\Facades\Log::info('Item data:', $itemData);
+            $itemType = $itemData['type'] ?? 'product';
+            \Illuminate\Support\Facades\Log::info('Item type:', ['type' => $itemType]);
                 if ($itemType === 'customer_payment') {
                     $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
                     if ($nominal <= 0) {
@@ -160,6 +213,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                     $subtotal = $nominal;
                     $total += $subtotal;
                     $sumRevenueSales += $subtotal;
+                    $totalCashIn += $subtotal;
                     $items[] = [
                         'product_id' => null,
                         'product_name' => 'Pembayaran Pelanggan - '.$customerName,
@@ -168,8 +222,86 @@ class AtkTransactionController extends Controller implements HasMiddleware
                         'subtotal' => $subtotal,
                         'nominal_transaksi' => $subtotal,
                         'fee' => null,
+                        'item_type' => 'customer_payment',
                     ];
 
+                    continue;
+                }
+
+                if ($itemType === 'cash_out') {
+                    $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
+                    $fee = (float) ($itemData['fee'] ?? 0);
+                    $floatAccountId = $itemData['float_account_id'] ?? null;
+                    if ($nominal <= 0) {
+                        throw new \Exception('Nominal cash out wajib diisi.');
+                    }
+                    if (!$floatAccountId) {
+                        throw new \Exception('Akun float untuk cash out wajib dipilih.');
+                    }
+                    $totalFloatIn += $nominal + $fee;
+                    $totalCashOut += $nominal;
+                    $total += $fee;
+                    $sumFee += $fee;
+                    $items[] = [
+                        'product_id' => null,
+                        'product_name' => 'Cash Out',
+                        'price' => $fee,
+                        'quantity' => 1,
+                        'subtotal' => $fee,
+                        'nominal_transaksi' => $nominal,
+                        'fee' => $fee,
+                        'item_type' => 'cash_out',
+                    ];
+                    $cashOutFloatTransactions[] = [
+                        'float_account_id' => $floatAccountId,
+                        'amount' => $nominal + $fee,
+                        'nominal' => $nominal,
+                        'fee' => $fee
+                    ];
+                    continue;
+                }
+
+                if ($itemType === 'top_up') {
+                    $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
+                    $fee = (float) ($itemData['fee'] ?? 0);
+                    if ($nominal <= 0) {
+                        throw new \Exception('Nominal top up wajib diisi.');
+                    }
+                    $total += $fee;
+                    $sumFee += $fee;
+                    $totalCashIn += $nominal + $fee;
+                    $items[] = [
+                        'product_id' => null,
+                        'product_name' => 'Top Up',
+                        'price' => $fee,
+                        'quantity' => 1,
+                        'subtotal' => $fee,
+                        'nominal_transaksi' => $nominal,
+                        'fee' => $fee,
+                        'item_type' => 'top_up',
+                    ];
+                    continue;
+                }
+
+                if ($itemType === 'ppob') {
+                    $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
+                    $fee = (float) ($itemData['fee'] ?? 0);
+                    if ($nominal <= 0) {
+                        throw new \Exception('Nominal PPOB wajib diisi.');
+                    }
+                    $total += $nominal + $fee;
+                    $sumFee += $fee;
+                    $totalCashIn += $nominal + $fee;
+                    $items[] = [
+                        'product_id' => null,
+                        'product_name' => 'PPOB',
+                        'price' => $fee,
+                        'quantity' => 1,
+                        'subtotal' => $fee,
+                        'nominal_transaksi' => $nominal,
+                        'fee' => $fee,
+                        'item_type' => 'ppob',
+                    ];
                     continue;
                 }
 
@@ -183,7 +315,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($isService) {
                     $containsService = true;
                 }
-                if (! $isService) {
+                if (! $isService && ! $isBank) {
                     if ($product->stock < $itemData['quantity']) {
                         throw new \Exception("Stock for {$product->name} is insufficient.");
                     }
@@ -196,15 +328,17 @@ class AtkTransactionController extends Controller implements HasMiddleware
                     $sumFee += $fee;
                     $subtotal = $fee;
                     $total += ($nominal + $fee);
+                    $totalCashIn += $nominal + $fee;
                     $price = $fee;
                 } else {
                     $price = $product->price;
                     $subtotal = $price * $itemData['quantity'];
                     $total += $subtotal;
                     $sumRevenueSales += $subtotal;
+                    $totalCashIn += $subtotal;
                 }
 
-                if (! $isService) {
+                if (! $isService && ! $isBank) {
                     $product->decrement('stock', $itemData['quantity']);
                     if (! $isBank) {
                         $hpp += ((float) $product->cost_price) * (int) $itemData['quantity'];
@@ -219,6 +353,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                     'subtotal' => $subtotal,
                     'nominal_transaksi' => $isBank ? $nominal : null,
                     'fee' => $isBank ? $fee : null,
+                    'item_type' => $isBank ? 'bank' : ($isService ? 'service' : 'product'),
                 ];
             }
 
@@ -243,7 +378,6 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 'cash_amount' => $request->cash_amount,
                 'change_amount' => $request->cash_amount ? ($request->cash_amount - $total) : 0,
                 'coordinator_id' => ($request->payment_method === 'hutang' || $transactionCategory === 'pembayaran_pelanggan') ? ($request->coordinator_id ?? null) : null,
-                'atk_cash_register_id' => $activeRegister->id,
             ];
             if (Schema::hasColumn('atk_transactions', 'transaction_category')) {
                 $payload['transaction_category'] = $transactionCategory;
@@ -255,28 +389,57 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 $transaction->items()->create($item);
             }
 
-            // Update default cash balance (Kas Utama) if not credit/debt
             if ($request->payment_method !== 'hutang') {
-                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-                $cash->balance = (float) $cash->balance + (float) $total;
-                $cash->save();
-            }
+                $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $netCashChange = $totalCashIn - $totalCashOut;
 
-            // Create cash movement
-            if ($request->payment_method !== 'hutang') {
-                $balanceBefore = $activeRegister->closing_balance;
-                $balanceAfter = $balanceBefore + $total;
-                $activeRegister->update(['closing_balance' => $balanceAfter]);
-                
-                AtkCashMovement::create([
-                    'atk_cash_register_id' => $activeRegister->id,
-                    'movement_type' => 'sale',
-                    'amount' => $total,
-                    'balance_before' => $balanceBefore,
-                    'balance_after' => $balanceAfter,
-                    'description' => 'Transaksi POS - ' . $transaction->transaction_number,
-                    'created_by' => Auth::id(),
-                ]);
+                if ($netCashChange < 0 && abs($netCashChange) > $cash->balance) {
+                    throw new \Exception('Saldo Kas Utama tidak cukup untuk transaksi ini.');
+                }
+
+                foreach ($cashOutFloatTransactions as $coFt) {
+                    $floatAccount = \App\Models\AtkFloatAccount::findOrFail($coFt['float_account_id']);
+                    $balanceBefore = $floatAccount->current_balance;
+                    $floatAccount->current_balance += $coFt['amount'];
+                    $floatAccount->save();
+
+                    \App\Models\AtkFloatTransaction::create([
+                        'atk_float_account_id' => $floatAccount->id,
+                        'transaction_type' => 'deposit',
+                        'amount' => $coFt['amount'],
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $floatAccount->current_balance,
+                        'description' => 'Cash Out - ' . $transaction->transaction_number,
+                        'reference_type' => 'atk_transaction',
+                        'reference_id' => $transaction->id,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
+
+                $balanceBefore = $cash->balance;
+                $cash->balance = (float) $cash->balance + $netCashChange;
+                $cash->save();
+
+                if ($totalCashIn > 0) {
+                    \App\Models\AtkCashMovement::create([
+                        'movement_type' => 'sale',
+                        'amount' => $totalCashIn,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $cash->balance,
+                        'description' => 'Transaksi POS - Masuk - ' . $transaction->transaction_number,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
+                if ($totalCashOut > 0) {
+                    \App\Models\AtkCashMovement::create([
+                        'movement_type' => 'withdrawal',
+                        'amount' => $totalCashOut,
+                        'balance_before' => $balanceBefore + $totalCashIn,
+                        'balance_after' => $cash->balance,
+                        'description' => 'Transaksi POS - Keluar - ' . $transaction->transaction_number,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
             }
 
             // Reduce Agent Deposit by nominal transfer sum
@@ -293,6 +456,28 @@ class AtkTransactionController extends Controller implements HasMiddleware
             $depositId = Account::where('code', '1401')->value('id');
             $hppId = Account::where('code', '5001')->value('id');
             $inventoryId = Account::where('code', '1201')->value('id');
+            
+            $sumPPOBTopUpNominal = 0;
+            $sumCustomerPaymentNominal = 0;
+            foreach ($request->items as $itemData) {
+                $itemType = $itemData['type'] ?? 'product';
+                if (in_array($itemType, ['ppob', 'top_up'])) {
+                    $sumPPOBTopUpNominal += (float) ($itemData['nominal_transaksi'] ?? 0);
+                }
+                if ($itemType === 'customer_payment') {
+                    $sumCustomerPaymentNominal += (float) ($itemData['nominal_transaksi'] ?? 0);
+                }
+            }
+            
+            \Illuminate\Support\Facades\Log::info('Accounting data:', [
+                'total' => $total,
+                'sumRevenueSales' => $sumRevenueSales,
+                'sumFee' => $sumFee,
+                'sumBankNominal' => $sumBankNominal,
+                'sumPPOBTopUpNominal' => $sumPPOBTopUpNominal,
+                'sumCustomerPaymentNominal' => $sumCustomerPaymentNominal
+            ]);
+            
             if ($drAccId && $revAtkId && $revBankId && $depositId) {
                 $lines = [];
                 if ($total > 0) {
@@ -307,10 +492,28 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($sumBankNominal > 0) {
                     $lines[] = ['account_id' => $depositId, 'debit' => 0, 'credit' => $sumBankNominal, 'unit' => 'ATK'];
                 }
+                if ($sumPPOBTopUpNominal > 0) {
+                    $lines[] = ['account_id' => $depositId, 'debit' => 0, 'credit' => $sumPPOBTopUpNominal, 'unit' => 'ATK'];
+                }
+                if ($sumCustomerPaymentNominal > 0) {
+                    $customerReceivableId = Account::where('code', '1101')->value('id');
+                    if ($customerReceivableId) {
+                        $lines[] = ['account_id' => $customerReceivableId, 'debit' => 0, 'credit' => $sumCustomerPaymentNominal, 'unit' => 'ATK'];
+                    }
+                }
                 if ($hpp > 0 && $hppId && $inventoryId) {
                     $lines[] = ['account_id' => $hppId, 'debit' => $hpp, 'credit' => 0, 'unit' => 'ATK'];
                     $lines[] = ['account_id' => $inventoryId, 'debit' => 0, 'credit' => $hpp, 'unit' => 'ATK'];
                 }
+                
+                $totalDebit = array_sum(array_column($lines, 'debit'));
+                $totalCredit = array_sum(array_column($lines, 'credit'));
+                \Illuminate\Support\Facades\Log::info('Journal lines:', [
+                    'lines' => $lines,
+                    'totalDebit' => $totalDebit,
+                    'totalCredit' => $totalCredit
+                ]);
+                
                 $poster = app(AccountingPoster::class);
                 $poster->post(
                     'ATK-'.$transaction->transaction_number,
@@ -393,10 +596,14 @@ class AtkTransactionController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($transaction) {
             $sumBankNominal = 0;
+            $totalCashIn = 0;
+            $totalCashOut = 0;
+            $cashOutFloatTransactions = [];
 
             foreach ($transaction->items as $item) {
                 $product = $item->product;
-                $category = strtoupper($product->category ?? '');
+                $itemType = $item->item_type ?? ($product ? (strtoupper($product->category ?? '') === 'JASA TRANSFER BANK' ? 'bank' : (strtoupper($product->category ?? '') === 'JASA POTOCOPY' ? 'service' : 'product')) : 'product');
+                $category = $product ? strtoupper($product->category ?? '') : '';
                 $isService = $category === 'JASA POTOCOPY';
                 $isBank = $category === 'JASA TRANSFER BANK';
 
@@ -407,11 +614,83 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($isBank) {
                     $sumBankNominal += (float) ($item->nominal_transaksi ?? 0);
                 }
+
+                // Calculate totalCashIn and totalCashOut just like in store method
+                if ($itemType === 'customer_payment') {
+                    $totalCashIn += (float) ($item->nominal_transaksi ?? 0);
+                } elseif ($itemType === 'cash_out') {
+                    $totalCashOut += (float) ($item->nominal_transaksi ?? 0);
+                    $cashOutFloatTransactions[] = [
+                        'float_account_id' => $transaction->atk_float_account_id,
+                        'amount' => (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0),
+                    ];
+                } elseif ($itemType === 'top_up') {
+                    $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                } elseif ($itemType === 'ppob') {
+                    $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                } elseif ($itemType === 'bank') {
+                    $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                } elseif ($itemType === 'service' || $itemType === 'product') {
+                    $totalCashIn += (float) ($item->subtotal ?? 0);
+                }
             }
 
-            $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-            $cash->balance = (float) $cash->balance - (float) $transaction->total_amount;
-            $cash->save();
+            // Only update cash if payment method wasn't hutang
+            if ($transaction->payment_method !== 'hutang') {
+                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                $netCashChange = $totalCashIn - $totalCashOut;
+                $balanceBefore = $cash->balance;
+                
+                // Reverse the cash change: if original was +X, now we do -X
+                $cash->balance = (float) $cash->balance - $netCashChange;
+                $cash->save();
+
+                // Create AtkCashMovement records for the reversal
+                if ($totalCashIn > 0) {
+                    \App\Models\AtkCashMovement::create([
+                        'movement_type' => 'adjustment',
+                        'amount' => $totalCashIn,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceBefore - $netCashChange,
+                        'description' => 'Pembatalan Transaksi POS - Masuk - ' . $transaction->transaction_number,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
+                if ($totalCashOut > 0) {
+                    \App\Models\AtkCashMovement::create([
+                        'movement_type' => 'adjustment',
+                        'amount' => $totalCashOut,
+                        'balance_before' => $balanceBefore - $totalCashIn,
+                        'balance_after' => $balanceBefore - $netCashChange,
+                        'description' => 'Pembatalan Transaksi POS - Keluar - ' . $transaction->transaction_number,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
+
+                // Reverse float account changes from cash_out
+                foreach ($cashOutFloatTransactions as $coFt) {
+                    if ($coFt['float_account_id']) {
+                        $floatAccount = \App\Models\AtkFloatAccount::find($coFt['float_account_id']);
+                        if ($floatAccount) {
+                            $balanceBeforeFloat = $floatAccount->current_balance;
+                            $floatAccount->current_balance -= $coFt['amount'];
+                            $floatAccount->save();
+
+                            \App\Models\AtkFloatTransaction::create([
+                                'atk_float_account_id' => $floatAccount->id,
+                                'transaction_type' => 'withdrawal',
+                                'amount' => $coFt['amount'],
+                                'balance_before' => $balanceBeforeFloat,
+                                'balance_after' => $floatAccount->current_balance,
+                                'description' => 'Pembatalan Cash Out - ' . $transaction->transaction_number,
+                                'reference_type' => 'atk_transaction',
+                                'reference_id' => $transaction->id,
+                                'created_by' => Auth::id(),
+                            ]);
+                        }
+                    }
+                }
+            }
 
             if ($sumBankNominal > 0) {
                 $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);
@@ -453,10 +732,14 @@ class AtkTransactionController extends Controller implements HasMiddleware
         DB::transaction(function () use ($transactions) {
             foreach ($transactions as $transaction) {
                 $sumBankNominal = 0;
+                $totalCashIn = 0;
+                $totalCashOut = 0;
+                $cashOutFloatTransactions = [];
 
                 foreach ($transaction->items as $item) {
                     $product = $item->product;
-                    $category = strtoupper($product->category ?? '');
+                    $itemType = $item->item_type ?? ($product ? (strtoupper($product->category ?? '') === 'JASA TRANSFER BANK' ? 'bank' : (strtoupper($product->category ?? '') === 'JASA POTOCOPY' ? 'service' : 'product')) : 'product');
+                    $category = $product ? strtoupper($product->category ?? '') : '';
                     $isService = $category === 'JASA POTOCOPY';
                     $isBank = $category === 'JASA TRANSFER BANK';
 
@@ -467,11 +750,83 @@ class AtkTransactionController extends Controller implements HasMiddleware
                     if ($isBank) {
                         $sumBankNominal += (float) ($item->nominal_transaksi ?? 0);
                     }
+
+                    // Calculate totalCashIn and totalCashOut just like in store method
+                    if ($itemType === 'customer_payment') {
+                        $totalCashIn += (float) ($item->nominal_transaksi ?? 0);
+                    } elseif ($itemType === 'cash_out') {
+                        $totalCashOut += (float) ($item->nominal_transaksi ?? 0);
+                        $cashOutFloatTransactions[] = [
+                            'float_account_id' => $transaction->atk_float_account_id,
+                            'amount' => (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0),
+                        ];
+                    } elseif ($itemType === 'top_up') {
+                        $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                    } elseif ($itemType === 'ppob') {
+                        $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                    } elseif ($itemType === 'bank') {
+                        $totalCashIn += (float) ($item->nominal_transaksi ?? 0) + (float) ($item->fee ?? 0);
+                    } elseif ($itemType === 'service' || $itemType === 'product') {
+                        $totalCashIn += (float) ($item->subtotal ?? 0);
+                    }
                 }
 
-                $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
-                $cash->balance = (float) $cash->balance - (float) $transaction->total_amount;
-                $cash->save();
+                // Only update cash if payment method wasn't hutang
+                if ($transaction->payment_method !== 'hutang') {
+                    $cash = Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
+                    $netCashChange = $totalCashIn - $totalCashOut;
+                    $balanceBefore = $cash->balance;
+                    
+                    // Reverse the cash change: if original was +X, now we do -X
+                    $cash->balance = (float) $cash->balance - $netCashChange;
+                    $cash->save();
+
+                    // Create AtkCashMovement records for the reversal
+                    if ($totalCashIn > 0) {
+                        \App\Models\AtkCashMovement::create([
+                            'movement_type' => 'adjustment',
+                            'amount' => $totalCashIn,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $balanceBefore - $netCashChange,
+                            'description' => 'Pembatalan Transaksi POS - Masuk - ' . $transaction->transaction_number,
+                            'created_by' => Auth::id(),
+                        ]);
+                    }
+                    if ($totalCashOut > 0) {
+                        \App\Models\AtkCashMovement::create([
+                            'movement_type' => 'adjustment',
+                            'amount' => $totalCashOut,
+                            'balance_before' => $balanceBefore - $totalCashIn,
+                            'balance_after' => $balanceBefore - $netCashChange,
+                            'description' => 'Pembatalan Transaksi POS - Keluar - ' . $transaction->transaction_number,
+                            'created_by' => Auth::id(),
+                        ]);
+                    }
+
+                    // Reverse float account changes from cash_out
+                    foreach ($cashOutFloatTransactions as $coFt) {
+                        if ($coFt['float_account_id']) {
+                            $floatAccount = \App\Models\AtkFloatAccount::find($coFt['float_account_id']);
+                            if ($floatAccount) {
+                                $balanceBeforeFloat = $floatAccount->current_balance;
+                                $floatAccount->current_balance -= $coFt['amount'];
+                                $floatAccount->save();
+
+                                \App\Models\AtkFloatTransaction::create([
+                                    'atk_float_account_id' => $floatAccount->id,
+                                    'transaction_type' => 'withdrawal',
+                                    'amount' => $coFt['amount'],
+                                    'balance_before' => $balanceBeforeFloat,
+                                    'balance_after' => $floatAccount->current_balance,
+                                    'description' => 'Pembatalan Cash Out - ' . $transaction->transaction_number,
+                                    'reference_type' => 'atk_transaction',
+                                    'reference_id' => $transaction->id,
+                                    'created_by' => Auth::id(),
+                                ]);
+                            }
+                        }
+                    }
+                }
 
                 if ($sumBankNominal > 0) {
                     $deposit = AgentDeposit::firstOrCreate(['name' => 'Deposit Agen Bank'], ['balance' => 0]);

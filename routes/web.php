@@ -57,7 +57,7 @@ Route::get('/voucher-payment/{referenceId}/check-status', [\App\Http\Controllers
 // Debug Route for Duitku Credentials (development only)
 if (app()->environment('local')) {
 Route::get('/debug-duitku', function () {
-    echo "<h1>🔍 Duitku Debug</h1>";
+    echo "<h1>ðŸ” Duitku Debug</h1>";
     
     $merchantCode = \App\Models\Setting::getValue('duitku_merchant_code', config('services.duitku.merchant_code'));
     $apiKey = \App\Models\Setting::getValue('duitku_api_key', config('services.duitku.api_key'));
@@ -91,17 +91,17 @@ Route::get('/debug-duitku', function () {
             $duitku = $paymentManager->gateway('duitku');
             $result = $duitku->getPaymentMethods();
             if (isset($result['success']) && !$result['success']) {
-                echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($result['message']) . "</p>";
+                echo "<p style='color: red; font-weight: bold;'>âŒ ERROR: " . htmlspecialchars($result['message']) . "</p>";
             } else {
-                echo "<p style='color: green; font-weight: bold;'>✅ SUCCESS!</p>";
+                echo "<p style='color: green; font-weight: bold;'>âœ… SUCCESS!</p>";
                 echo "<pre>" . htmlspecialchars(json_encode($result, JSON_PRETTY_PRINT)) . "</pre>";
             }
         } catch (Exception $e) {
-            echo "<p style='color: red; font-weight: bold;'>❌ ERROR: " . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "<p style='color: red; font-weight: bold;'>âŒ ERROR: " . htmlspecialchars($e->getMessage()) . "</p>";
             echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
         }
     } catch (Exception $e) {
-        echo "<p style='color: red; font-weight: bold;'>❌ Config Error: " . htmlspecialchars($e->getMessage()) . "</p>";
+        echo "<p style='color: red; font-weight: bold;'>âŒ Config Error: " . htmlspecialchars($e->getMessage()) . "</p>";
     }
     
     echo "<hr><p>Generated at: " . now() . "</p>";
@@ -480,6 +480,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::get('attendance/excel', [TechnicianAttendanceController::class, 'exportExcel'])->name('attendance.excel');
     Route::post('attendance/recap-finance', [TechnicianAttendanceController::class, 'recapToFinance'])->name('attendance.recap_finance');
     Route::post('attendance/manual', [TechnicianAttendanceController::class, 'storeManual'])->name('attendance.storeManual')->middleware('throttle:5,1');
+    Route::put('attendance/manual/{attendance}', [TechnicianAttendanceController::class, 'updateManual'])->name('attendance.updateManual')->middleware('throttle:5,1');
     Route::delete('attendance/bulk-destroy', [TechnicianAttendanceController::class, 'bulkDestroy'])->name('attendance.bulkDestroy');
     Route::post('attendance/{attendance}/notify', [TechnicianAttendanceController::class, 'sendNotification'])->name('attendance.notify');
     Route::get('attendance/kiosk', [TechnicianAttendanceController::class, 'kiosk'])->name('attendance.kiosk');
@@ -924,6 +925,18 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::get('/reports', [\App\Http\Controllers\AtkReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/pdf', [\App\Http\Controllers\AtkReportController::class, 'pdf'])->name('reports.pdf');
         Route::get('/reports/excel', [\App\Http\Controllers\AtkReportController::class, 'excel'])->name('reports.excel');
+        
+        // Reports
+        Route::get('/reports/cash', [\App\Http\Controllers\AtkCashReportController::class, 'index'])->name('reports.cash');
+        Route::get('/reports/cash/pdf', [\App\Http\Controllers\AtkCashReportController::class, 'pdf'])->name('reports.cash.pdf');
+        Route::get('/reports/cash/excel', [\App\Http\Controllers\AtkCashReportController::class, 'excel'])->name('reports.cash.excel');
+        Route::get('/reports/float', [\App\Http\Controllers\AtkFloatReportController::class, 'index'])->name('reports.float');
+        Route::get('/reports/float/pdf', [\App\Http\Controllers\AtkFloatReportController::class, 'pdf'])->name('reports.float.pdf');
+        Route::get('/reports/float/excel', [\App\Http\Controllers\AtkFloatReportController::class, 'excel'])->name('reports.float.excel');
+        Route::get('/reports/owner-funds', [\App\Http\Controllers\AtkOwnerFundReportController::class, 'index'])->name('reports.owner-funds');
+        Route::get('/reports/owner-funds/pdf', [\App\Http\Controllers\AtkOwnerFundReportController::class, 'pdf'])->name('reports.owner-funds.pdf');
+        Route::get('/reports/owner-funds/excel', [\App\Http\Controllers\AtkOwnerFundReportController::class, 'excel'])->name('reports.owner-funds.excel');
+        
         Route::get('/expenses', [\App\Http\Controllers\AtkExpenseController::class, 'index'])->name('expenses.index');
         Route::get('/expenses/create', [\App\Http\Controllers\AtkExpenseController::class, 'create'])->name('expenses.create');
         Route::post('/expenses', [\App\Http\Controllers\AtkExpenseController::class, 'store'])->name('expenses.store');
@@ -948,6 +961,19 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::post('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'store'])->name('cash-registers.store');
         Route::get('/cash-registers/{register}', [\App\Http\Controllers\AtkCashRegisterController::class, 'show'])->name('cash-registers.show');
         Route::post('/cash-registers/{register}/close', [\App\Http\Controllers\AtkCashRegisterController::class, 'close'])->name('cash-registers.close');
+        
+        // Cash Movements Routes
+        Route::get('/cash-movements', [\App\Http\Controllers\AtkCashMovementController::class, 'index'])->name('cash-movements.index');
+        Route::get('/cash-movements/create', [\App\Http\Controllers\AtkCashMovementController::class, 'create'])->name('cash-movements.create');
+        Route::post('/cash-movements', [\App\Http\Controllers\AtkCashMovementController::class, 'store'])->name('cash-movements.store');
+        
+        // Float Account Routes
+        Route::resource('float-accounts', \App\Http\Controllers\AtkFloatAccountController::class);
+        Route::get('float-accounts/{account}/create-transaction', [\App\Http\Controllers\AtkFloatAccountController::class, 'createTransaction'])->name('float-accounts.create-transaction');
+        Route::post('float-accounts/{account}/transaction', [\App\Http\Controllers\AtkFloatAccountController::class, 'storeTransaction'])->name('float-accounts.store-transaction');
+        
+        // Owner Fund Routes
+        Route::resource('owner-funds', \App\Http\Controllers\AtkOwnerFundController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     });
 
     Route::prefix('wedding')->name('wedding.')->group(function () {

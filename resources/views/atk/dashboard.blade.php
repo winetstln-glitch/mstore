@@ -7,59 +7,11 @@
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Dasbor Toko ATK') }}</h1>
         <div class="d-flex gap-2">
-            @if($activeRegister)
-                <a href="{{ route('atk.pos') }}" class="btn btn-primary">
-                    <i class="fa-solid fa-cash-register me-2"></i> {{ __('Buka POS') }}
-                </a>
-            @else
-                <a href="{{ route('atk.cash-registers.create') }}" class="btn btn-success">
-                    <i class="fa-solid fa-door-open me-2"></i> {{ __('Buka Shift') }}
-                </a>
-            @endif
+            <a href="{{ route('atk.pos') }}" class="btn btn-primary">
+                <i class="fa-solid fa-cash-register me-2"></i> {{ __('Buka POS') }}
+            </a>
         </div>
     </div>
-    
-    @if($activeRegister)
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm border-start border-4 border-success">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <h5 class="fw-bold mb-1">{{ __('Shift Aktif') }}</h5>
-                        <p class="mb-0 text-muted small">
-                            <i class="fa-solid fa-user-tie me-1"></i> {{ $activeRegister->name }}
-                            <span class="ms-2">
-                                <i class="fa-solid fa-clock me-1"></i> {{ __('Dibuka') }}: {{ $activeRegister->opened_at->format('H:i d/m/Y') }}
-                            </span>
-                        </p>
-                    </div>
-                    <div class="text-end">
-                        <p class="mb-1 fw-bold text-success">
-                            {{ __('Saldo Kas') }}: Rp {{ number_format($activeRegister->closing_balance, 0, ',', '.') }}
-                        </p>
-                        <form method="POST" action="{{ route('atk.cash-registers.close', $activeRegister->id) }}" class="d-inline" onsubmit="return confirm('Anda yakin ingin menutup shift ini?')">
-                            @csrf
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#closeShiftModal">
-                                <i class="fa-solid fa-door-closed"></i> {{ __('Tutup Shift') }}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @else
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm border-start border-4 border-warning">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <h5 class="fw-bold mb-1">{{ __('Tidak Ada Shift Aktif') }}</h5>
-                        <p class="mb-0 text-muted small">Silakan buka shift sebelum melakukan transaksi</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     @if(Auth::user()->hasPermission('attendance.view'))
     <div class="row mb-4">
@@ -104,75 +56,202 @@
 
     <div class="row">
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                {{ __('Penjualan Harian') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    {{ __('Penjualan Harian') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                {{ __('Penjualan Bulanan') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+            <a href="{{ route('atk.reports.index') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    {{ __('Penjualan Bulanan') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlySales, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                {{ __('Transaksi Hari Ini') }}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $transactionCount }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    {{ __('Transaksi Hari Ini') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $transactionCount }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <div class="row">
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Kasir Hadir Hari Ini') }}</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $attendanceOverview['present'] ?? 0 }}</div>
-                    <div class="small text-muted mt-2">{{ __('Total kasir aktif: :total', ['total' => $attendanceOverview['total'] ?? 0]) }}</div>
+            <a href="{{ route('atk.cash-registers.index') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Kas Utama') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($cash->balance, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-secondary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Kasir Tidak Hadir') }}</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $attendanceOverview['not_present'] ?? 0 }}</div>
-                    <div class="small text-muted mt-2">{{ __('Belum absen atau tidak masuk hari ini') }}</div>
+            <a href="{{ route('atk.float-accounts.index') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('Saldo Float') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($floatAccounts->sum('current_balance'), 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-credit-card fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </a>
+        </div>
+        <div class="col-xl-4 col-md-12 mb-4">
+            <a href="{{ route('atk.owner-funds.index') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ __('Dana Talangan') }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($currentOwnerBalance, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-hand-holding-usd fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Penjualan</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailySales,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.expenses.index') }}" class="text-decoration-none">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pengeluaran</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todayExpenses,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Top Up</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todayTopUp,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">PPOB</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todayPpob,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Transfer</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todayTransfer,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-2 col-md-4 mb-4">
+            <a href="{{ route('atk.cash-movements.index') }}" class="text-decoration-none">
+                <div class="card border-left-secondary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Tarik Tunai</div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($todayWithdrawal,0,',','.') }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <a href="{{ route('attendance.daily') }}" class="text-decoration-none">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ __('Kasir Hadir Hari Ini') }}</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $attendanceOverview['present'] ?? 0 }}</div>
+                        <div class="small text-muted mt-2">{{ __('Total kasir aktif: :total', ['total' => $attendanceOverview['total'] ?? 0]) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <a href="{{ route('attendance.daily') }}" class="text-decoration-none">
+                <div class="card border-left-secondary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">{{ __('Kasir Tidak Hadir') }}</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $attendanceOverview['not_present'] ?? 0 }}</div>
+                        <div class="small text-muted mt-2">{{ __('Belum absen atau tidak masuk hari ini') }}</div>
+                    </div>
+                </div>
+            </a>
         </div>
         <div class="col-xl-4 col-md-12 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
@@ -221,40 +300,18 @@
                         <a href="{{ route('atk.transactions.index') }}" class="btn btn-outline-secondary">
                             <i class="fa-solid fa-list me-2"></i> {{ __('Lihat Riwayat Transaksi') }}
                         </a>
+                        @if(Auth::user()->hasPermission('atk.manage'))
+                            <a href="{{ route('atk.float-accounts.index') }}" class="btn btn-outline-info">
+                                <i class="fa-solid fa-credit-card me-2"></i> {{ __('Kelola Akun Float') }}
+                            </a>
+                            <a href="{{ route('atk.owner-funds.index') }}" class="btn btn-outline-warning">
+                                <i class="fa-solid fa-hand-holding-usd me-2"></i> {{ __('Kelola Dana Talangan') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-@if($activeRegister)
-<div class="modal fade" id="closeShiftModal" tabindex="-1" aria-labelledby="closeShiftModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ route('atk.cash-registers.close', $activeRegister->id) }}">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="closeShiftModalLabel">Tutup Shift</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Saldo Akhir Kas</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" name="closing_balance" class="form-control" placeholder="0" value="{{ old('closing_balance', $activeRegister->closing_balance) }}" required>
-                        </div>
-                    </div>
-                    <p class="text-muted small">Masukan jumlah uang tunai di kasir untuk menutup shift</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Tutup Shift</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
 @endsection

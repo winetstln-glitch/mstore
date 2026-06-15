@@ -12,7 +12,7 @@ class AtkTransaction extends Model
 {
     protected $fillable = [
         'user_id', 'transaction_number', 'total_amount', 'transaction_category', 'payment_method', 'is_debt', 'cash_amount', 'change_amount', 'amount_paid', 'coordinator_id', 'customer_name', 'customer_phone', 'due_date', 'is_settled', 'settled_at', 'settled_amount', 'queue_number',
-        'transaction_type', 'payment_status', 'journal_status', 'atk_cash_register_id', 'atk_float_account_id', 'grand_total', 'atk_customer_id',
+        'transaction_type', 'payment_status', 'journal_status', 'atk_float_account_id', 'grand_total', 'atk_customer_id',
     ];
 
     protected $casts = [
@@ -32,11 +32,6 @@ class AtkTransaction extends Model
     public function coordinator()
     {
         return $this->belongsTo(Coordinator::class);
-    }
-
-    public function register(): BelongsTo
-    {
-        return $this->belongsTo(AtkCashRegister::class, 'atk_cash_register_id');
     }
 
     public function floatAccount(): BelongsTo

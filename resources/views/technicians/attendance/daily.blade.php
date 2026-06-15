@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="row">
@@ -68,6 +68,7 @@
                         <li>Klik <strong>"Excel"</strong> untuk mengunduh seluruh data kehadiran dalam format Excel.</li>
                         <li>Klik accordion untuk membuka/menutup detail kehadiran per tanggal.</li>
                         <li>Klik <strong>"Kembali ke Rekap"</strong> untuk kembali ke halaman riwayat absensi.</li>
+                        <li>Admin dapat mengedit atau membuat absensi baru via tombol di kolom <strong>Aksi</strong>.</li>
                     </ul>
                 </div>
 
@@ -125,6 +126,9 @@
                                                         <th>{{ __('Jam Keluar') }}</th>
                                                         <th>{{ __('Status') }}</th>
                                                         <th class="pe-3">{{ __('Keterangan') }}</th>
+                                                        @if(Auth::user()->hasRole('admin'))
+                                                            <th class="text-end pe-3">{{ __('Aksi') }}</th>
+                                                        @endif
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -209,6 +213,21 @@
                                                                     {{ $attendance->notes ?? '-' }}
                                                                 </small>
                                                             </td>
+                                                            @if(Auth::user()->hasRole('admin'))
+                                                                <td class="text-end pe-3">
+                                                                    <div class="d-inline-flex gap-1">
+                                                                        @if($attendance)
+                                                                            <button type="button" class="btn btn-outline-primary btn-sm" title="Edit" data-bs-toggle="modal" data-bs-target="#editModalDaily-{{ $user->id }}-{{ $currentDate }}">
+                                                                                <i class="fas fa-edit"></i>
+                                                                            </button>
+                                                                        @elseif(!$isOff)
+                                                                            <button type="button" class="btn btn-outline-success btn-sm" title="Buat Absensi" data-bs-toggle="modal" data-bs-target="#createModalDaily-{{ $user->id }}-{{ $currentDate }}">
+                                                                                <i class="fas fa-plus"></i>
+                                                                            </button>
+                                                                        @endif
+                                                                    </div>
+                                                                </td>
+                                                            @endif
                                                         </tr>
                                                     @endforeach
                                                 </tbody>
@@ -220,11 +239,134 @@
                         </div>
                     @endforeach
                 </div>
-
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modals for Edit and Create -->
+@foreach($dates as $index => $currentDate)
+    @php
+        $attendances = $attendancesByDate->get($currentDate, collect());
+        $filteredUsersForModal = $users->filter(function($user) use ($attendances, $currentDate, $status) {
+            $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+            $attendance = $attendances->get($user->id);
+            if ($status === '') return true;
+            if ($status === 'belum_absen') return ! $attendance && ! $isOff;
+            if ($status === 'off') return $isOff;
+            return $attendance && $attendance->status === $status;
+        });
+    @endphp
+    @foreach($filteredUsersForModal as $user)
+        @php
+            $attendance = $attendances->get($user->id);
+            $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+        @endphp
+        @if($attendance)
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editModalDaily-{{ $user->id }}-{{ $currentDate }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">{{ __('Edit Absensi') }} - {{ $user->name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="{{ route('attendance.updateManual', $attendance->id) }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Tanggal') }}</label>
+                                    <input type="date" name="date" class="form-control" required value="{{ $currentDate }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Status') }}</label>
+                                    <select name="status" class="form-select" required>
+                                        <option value="present" {{ $attendance->status === 'present' ? 'selected' : '' }}>{{ __('Hadir') }}</option>
+                                        <option value="leave" {{ $attendance->status === 'leave' ? 'selected' : '' }}>{{ __('Cuti') }}</option>
+                                        <option value="permit" {{ $attendance->status === 'permit' ? 'selected' : '' }}>{{ __('Izin') }}</option>
+                                        <option value="sick" {{ $attendance->status === 'sick' ? 'selected' : '' }}>{{ __('Sakit') }}</option>
+                                        <option value="late" {{ $attendance->status === 'late' ? 'selected' : '' }}>{{ __('Terlambat') }}</option>
+                                        <option value="alpha" {{ $attendance->status === 'alpha' ? 'selected' : '' }}>{{ __('Alpha (Tanpa Keterangan)') }}</option>
+                                    </select>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-medium">{{ __('Jam Masuk') }}</label>
+                                        <input type="time" name="clock_in" class="form-control" value="{{ $attendance->clock_in?->format('H:i') }}">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-medium">{{ __('Jam Keluar') }}</label>
+                                        <input type="time" name="clock_out" class="form-control" value="{{ $attendance->clock_out?->format('H:i') }}">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Catatan') }}</label>
+                                    <textarea name="notes" class="form-control" rows="2">{{ $attendance->notes }}</textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Simpan Perubahan') }}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @elseif(!$isOff)
+            <!-- Create Modal -->
+            <div class="modal fade" id="createModalDaily-{{ $user->id }}-{{ $currentDate }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">{{ __('Buat Absensi Baru') }} - {{ $user->name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="{{ route('attendance.storeManual') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="user_id" value="{{ $user->id }}">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Tanggal') }}</label>
+                                    <input type="date" name="date" class="form-control" required value="{{ $currentDate }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Status') }}</label>
+                                    <select name="status" class="form-select" required>
+                                        <option value="present">{{ __('Hadir') }}</option>
+                                        <option value="leave">{{ __('Cuti') }}</option>
+                                        <option value="permit">{{ __('Izin') }}</option>
+                                        <option value="sick">{{ __('Sakit') }}</option>
+                                        <option value="late">{{ __('Terlambat') }}</option>
+                                        <option value="alpha">{{ __('Alpha (Tanpa Keterangan)') }}</option>
+                                    </select>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-medium">{{ __('Jam Masuk') }}</label>
+                                        <input type="time" name="clock_in_create" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-medium">{{ __('Jam Keluar') }}</label>
+                                        <input type="time" name="clock_out_create" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">{{ __('Catatan') }}</label>
+                                    <textarea name="notes" class="form-control" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Tutup') }}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Simpan Data') }}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endforeach
+@endforeach
 @endsection
 
 @push('styles')

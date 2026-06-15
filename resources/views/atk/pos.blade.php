@@ -3,51 +3,8 @@
 @section('title', __('ATK POS'))
 
 @section('content')
-<div class="container-fluid atk-pos-page">
-    <!-- Header -->
-    <div class="row mb-3">
-        <div class="col-12">
-            @if(!$activeRegister)
-            <div class="card border-left-warning shadow-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <div class="fw-bold text-warning mb-1">
-                                <i class="fa-solid fa-door-closed me-2"></i>Tidak Ada Shift Aktif
-                            </div>
-                            <div class="text-muted small">Silakan buka shift di halaman Dashboard sebelum melakukan transaksi.</div>
-                        </div>
-                        <div class="col-auto">
-                            <a href="{{ route('atk.dashboard') }}" class="btn btn-outline-warning">
-                                <i class="fa-solid fa-arrow-left me-2"></i>Ke Dashboard
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @else
-            <div class="card border-left-success shadow-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <div class="fw-bold text-success mb-1">
-                                <i class="fa-solid fa-door-open me-2"></i>{{ $activeRegister->name }}
-                            </div>
-                            <div class="text-muted small">Dibuka: {{ $activeRegister->opened_at?->format('H:i d/m/Y') }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="text-end">
-                                <div class="fw-bold mb-1">Saldo Kas</div>
-                                <div class="h5 mb-0 text-success">Rp {{ number_format($activeRegister->closing_balance, 0, ',', '.') }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-        </div>
-    </div>
-    <div class="row h-100">
+<div class="container-fluid">
+    <div class="row" style="min-height: calc(100vh - 100px);">
         <!-- Product & Service List -->
         <div class="col-12 col-lg-8 mb-3 mb-lg-0">
             <div class="card shadow-sm h-100">
@@ -203,8 +160,17 @@
                         </div>
                     </div>
                     
-                    <div class="d-none" id="cashOutPanel">
+                    <div class="d-none p-3" id="cashOutPanel">
                         <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Akun Float</label>
+                                <select id="cashOutFloatAccountId" class="form-select">
+                                    <option value="">Pilih Akun Float</option>
+                                    @foreach(($floatAccounts ?? []) as $account)
+                                        <option value="{{ $account->id }}">{{ $account->name }} (Saldo: Rp {{ number_format($account->current_balance, 0, ',', '.') }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label">Nominal Tarik Tunai</label>
                                 <div class="input-group">
@@ -860,8 +826,13 @@
     }
     
     function addCashOutToCart() {
+        const floatAccountId = document.getElementById('cashOutFloatAccountId').value;
         const nominal = parseFloat(document.getElementById('cashOutNominal').value) || 0;
         const fee = parseFloat(document.getElementById('cashOutFee').value) || 0;
+        if (!floatAccountId) {
+            alert('Pilih akun float terlebih dahulu.');
+            return;
+        }
         if (nominal <= 0) {
             alert('Nominal tarik tunai wajib diisi.');
             return;
@@ -874,6 +845,7 @@
             quantity: 1,
             maxStock: 1,
             cashOut: true,
+            float_account_id: floatAccountId,
             nominal_transaksi: nominal,
             fee
         });
@@ -938,7 +910,7 @@
             quantity: 1,
             maxStock: 1,
             ppob: true,
-            service,
+            ppobService: service,
             number,
             nominal_transaksi: nominal,
             fee
@@ -1089,6 +1061,7 @@ function updatePengurusVisibility() {
 }
     function processTransaction() {
         if (cart.length === 0) return;
+        console.log('Cart sebelum checkout:', cart);
 
         const paymentMethod = document.getElementById('paymentMethod').value;
         const transactionCategory = cart.some(item => item.customerPayment === true) ? 'pembayaran_pelanggan' : 'penjualan_atk';
@@ -1111,19 +1084,25 @@ function updatePengurusVisibility() {
             return;
         }
         const data = {
-            items: cart.map(item => ({
-                id: item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob ? null : item.id,
-                type: item.bank ? 'bank' : (item.service ? 'service' : (item.customerPayment ? 'customer_payment' : (item.cashOut ? 'cash_out' : (item.topUp ? 'top_up' : (item.ppob ? 'ppob' : 'product'))))),
-                quantity: item.quantity,
-                nominal_transaksi: (item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob) ? item.nominal_transaksi : undefined,
-                fee: (item.bank || item.cashOut || item.topUp || item.ppob) ? item.fee : undefined,
-                customer_name: item.customerPayment ? item.customerName : undefined
-            })),
+            items: cart.map(item => {
+                const mappedItem = {
+                    id: item.customerPayment || item.cashOut || item.topUp || item.ppob ? null : item.id,
+                    type: item.bank ? 'bank' : (item.service ? 'service' : (item.customerPayment ? 'customer_payment' : (item.cashOut ? 'cash_out' : (item.topUp ? 'top_up' : (item.ppob ? 'ppob' : 'product'))))),
+                    quantity: item.quantity,
+                    nominal_transaksi: (item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob) ? item.nominal_transaksi : undefined,
+                    fee: (item.bank || item.cashOut || item.topUp || item.ppob) ? item.fee : undefined,
+                    customer_name: item.customerPayment ? item.customerName : undefined,
+                    float_account_id: item.cashOut ? item.float_account_id : undefined
+                };
+                console.log('Mapped item:', mappedItem);
+                return mappedItem;
+            }),
             transaction_category: transactionCategory,
             payment_method: paymentMethod,
             cash_amount: cashAmount,
             coordinator_id: coordinatorId
         };
+        console.log('Data to send:', data);
 
         const btn = document.getElementById('btnCheckout');
         btn.disabled = true;

@@ -152,12 +152,28 @@ class SidebarMenu
                 'label' => 'Business Units',
                 'items' => [
                     self::group('bu-atk', 'ATK', [
-                        self::link('atk-dashboard', 'Dashboard ATK', 'atk.dashboard', permissions: ['atk.view']),
-                        self::link('atk-pos', 'POS ATK', 'atk.pos', permissions: ['atk.pos']),
-                        self::link('atk-cash-registers', 'Kasir Shift', 'atk.cash-registers.index', permissions: ['atk.cash-register.manage']),
-                        self::link('atk-manage', 'Manajemen ATK', 'atk.products.index', permissions: ['atk.manage']),
-                        self::link('atk-report', 'Laporan ATK', 'atk.reports.index', permissions: ['atk.report']),
-                    ], permissions: ['atk.view', 'atk.pos', 'atk.cash-register.manage', 'atk.manage', 'atk.report']),
+                self::link('atk-dashboard', 'Dashboard ATK', 'atk.dashboard', permissions: ['atk.view']),
+                self::link('atk-pos', 'POS ATK', 'atk.pos', permissions: ['atk.pos']),
+                self::group('atk-transactions', 'Transaksi', [
+                    self::link('atk-transactions-list', 'Riwayat Transaksi', 'atk.transactions.index', permissions: ['atk.view']),
+                ], permissions: ['atk.view']),
+                self::group('atk-finance', 'Keuangan', [
+                    self::link('atk-float-accounts', 'Akun Float', 'atk.float-accounts.index', permissions: ['atk.manage']),
+                    self::link('atk-owner-funds', 'Dana Talangan', 'atk.owner-funds.index', permissions: ['atk.manage']),
+                    self::link('atk-expenses', 'Pengeluaran ATK', 'atk.expenses.index', permissions: ['atk.manage']),
+                    self::link('atk-cash-movements', 'Mutasi Kas Utama', 'atk.cash-movements.index', permissions: ['atk.manage']),
+                ], permissions: ['atk.manage']),
+                self::group('atk-master', 'Master Data', [
+                    self::link('atk-manage', 'Manajemen ATK', 'atk.products.index', permissions: ['atk.manage']),
+                ], permissions: ['atk.manage']),
+                self::group('atk-reports', 'Laporan', [
+                    self::link('atk-reports-sales', 'Laporan Penjualan', 'atk.reports.index', permissions: ['atk.report']),
+                    self::link('atk-reports-cash', 'Laporan Kas Harian', 'atk.reports.cash', permissions: ['atk.report']),
+                    self::link('atk-reports-cash-movements', 'Laporan Mutasi Kas', 'atk.reports.cash', permissions: ['atk.report']),
+                    self::link('atk-reports-float', 'Laporan Float', 'atk.reports.float', permissions: ['atk.report']),
+                    self::link('atk-reports-owner-funds', 'Laporan Dana Talangan', 'atk.reports.owner-funds', permissions: ['atk.report']),
+                ], permissions: ['atk.report']),
+            ], permissions: ['atk.view', 'atk.pos', 'atk.manage', 'atk.report']),
                     self::group('bu-wash', 'GT Wash', [
                         self::link('wash-dashboard', 'Dashboard', 'wash.dashboard', permissions: ['wash.view']),
                         self::link('wash-pos', 'POS Wash', 'wash.pos', permissions: ['wash.pos']),

@@ -506,7 +506,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $status = ucfirst($attendance->status);
         $date = $attendance->clock_in->translatedFormat('d F Y');
 
-        $message = "Halo {$user->name},\n\nBerikut detail absensi Anda:\n📅 Tanggal: {$date}\n⏰ Masuk: {$clockIn}\n⏰ Pulang: {$clockOut}\n📊 Status: {$status}\n\nTerima kasih.";
+        $message = "Halo {$user->name},\n\nBerikut detail absensi Anda:\nðŸ“… Tanggal: {$date}\nâ° Masuk: {$clockIn}\nâ° Pulang: {$clockOut}\nðŸ“Š Status: {$status}\n\nTerima kasih.";
 
         $sentCount = 0;
         $channels = [];
@@ -520,13 +520,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
         if ($user->telegram_chat_id) {
             $telegram = new \App\Services\TelegramService;
-            $tgMessage = "🔔 *DETAIL ABSENSI*\n\n".
+            $tgMessage = "ðŸ”” *DETAIL ABSENSI*\n\n".
                 "Halo *".\App\Services\TelegramService::escape($user->name)."*,\n\n".
                 "Berikut detail absensi Anda:\n".
-                "📅 *Tanggal:* ".\App\Services\TelegramService::escape($date)."\n".
-                "⏰ *Masuk:* ".\App\Services\TelegramService::escape($clockIn)."\n".
-                "⏰ *Pulang:* ".\App\Services\TelegramService::escape($clockOut)."\n".
-                "📊 *Status:* *".\App\Services\TelegramService::escape($status)."*\n\n".
+                "ðŸ“… *Tanggal:* ".\App\Services\TelegramService::escape($date)."\n".
+                "â° *Masuk:* ".\App\Services\TelegramService::escape($clockIn)."\n".
+                "â° *Pulang:* ".\App\Services\TelegramService::escape($clockOut)."\n".
+                "ðŸ“Š *Status:* *".\App\Services\TelegramService::escape($status)."*\n\n".
                 "Terima kasih.";
 
             $telegram->sendMessage($user->telegram_chat_id, $tgMessage);
@@ -555,6 +555,8 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'user_id' => 'required|exists:users,id',
             'date' => 'required|date',
             'status' => 'required|in:present,late,leave,permit,sick,alpha',
+            'clock_in_create' => 'nullable|date_format:H:i',
+            'clock_out_create' => 'nullable|date_format:H:i',
             'notes' => 'nullable|string',
         ]);
 
@@ -569,14 +571,26 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             return back()->with('error', __('Attendance record for this user on this date already exists.'));
         }
 
-        $attendance = TechnicianAttendance::create([
+        $data = [
             'user_id' => $request->user_id,
             'work_date' => $request->date,
-            'clock_in' => $request->date.' 08:00:00',
-            'clock_out' => $request->date.' 17:00:00',
             'status' => $request->status,
             'notes' => $request->notes,
-        ]);
+        ];
+
+        if ($request->clock_in_create) {
+            $data['clock_in'] = $request->date . ' ' . $request->clock_in_create . ':00';
+        } else {
+            $data['clock_in'] = $request->date . ' 08:00:00';
+        }
+
+        if ($request->clock_out_create) {
+            $data['clock_out'] = $request->date . ' ' . $request->clock_out_create . ':00';
+        } else {
+            $data['clock_out'] = $request->date . ' 17:00:00';
+        }
+
+        $attendance = TechnicianAttendance::create($data);
 
         \App\Models\AuditLog::log(
             'create',
@@ -589,22 +603,22 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         try {
             $user = $attendance->user;
             $statusLabel = match($attendance->status) {
-                'present' => 'HADIR ✅',
-                'late' => 'TERLAMBAT ⚠️',
-                'leave' => 'CUTI 🌴',
-                'permit' => 'IZIN 📝',
-                'sick' => 'SAKIT 🤒',
-                'alpha' => 'ALPHA ❌',
+                'present' => 'HADIR âœ…',
+                'late' => 'TERLAMBAT âš ï¸',
+                'leave' => 'CUTI ðŸŒ´',
+                'permit' => 'IZIN ðŸ“',
+                'sick' => 'SAKIT ðŸ¤’',
+                'alpha' => 'ALPHA âŒ',
                 default => strtoupper($attendance->status)
             };
             $date = $attendance->clock_in->translatedFormat('d M Y');
-            $waMessage = "🔔 *NOTIFIKASI ABSENSI MANUAL*\n\n" .
-                         "👤 *Nama:* {$user->name}\n" .
-                         "📅 *Tanggal:* {$date}\n" .
-                         "📊 *Status:* {$statusLabel}\n" .
-                         "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n" .
-                         "👮 *Admin:* " . Auth::user()->name . "\n\n" .
-                         "🚀 _Sistem M-Store_";
+            $waMessage = "ðŸ”” *NOTIFIKASI ABSENSI MANUAL*\n\n" .
+                         "ðŸ‘¤ *Nama:* {$user->name}\n" .
+                         "ðŸ“… *Tanggal:* {$date}\n" .
+                         "ðŸ“Š *Status:* {$statusLabel}\n" .
+                         "ðŸ“ *Catatan:* " . ($attendance->notes ?? '-') . "\n" .
+                         "ðŸ‘® *Admin:* " . Auth::user()->name . "\n\n" .
+                         "ðŸš€ _Sistem M-Store_";
             
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
             app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
@@ -615,6 +629,54 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         return back()->with('success', __('Manual attendance added successfully.'));
     }
 
+
+  public function updateManual(Request $request, $id)
+{
+    $user = Auth::user();
+    $isAdmin = $this->isAdminOrHrdManager();
+
+    if (!$isAdmin) {
+        abort(403, 'Unauthorized');
+    }
+
+    $request->validate([
+        'date'      => 'required|date',
+        'status'    => 'required|in:present,late,leave,permit,sick,alpha',
+        'clock_in'  => 'nullable|date_format:H:i',
+        'clock_out' => 'nullable|date_format:H:i',
+        'notes'     => 'nullable|string',
+    ]);
+
+    $attendance = TechnicianAttendance::findOrFail($id);
+
+    $oldValues = $attendance->toArray();
+
+    $updateData = [
+        'work_date' => $request->date,
+        'status'    => $request->status,
+        'notes'     => $request->notes,
+    ];
+
+    if ($request->clock_in) {
+        $updateData['clock_in'] = $request->date . ' ' . $request->clock_in . ':00';
+    }
+
+    if ($request->clock_out) {
+        $updateData['clock_out'] = $request->date . ' ' . $request->clock_out . ':00';
+    }
+
+    $attendance->update($updateData);
+
+    \App\Models\AuditLog::log(
+        'update',
+        $attendance,
+        $oldValues,
+        $attendance->toArray(),
+        'Mengedit absensi untuk ' . $attendance->user->name
+    );
+
+    return back()->with('success', __('Attendance updated successfully.'));
+}
     /**
      * Show the form for creating a new resource (Technician Absen Page).
      */
@@ -751,19 +813,19 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             // PERBAIKAN: Perbaiki indentasi try-catch
             try {
                 $statusLabel = match($attendance->status) {
-                    'present' => 'HADIR ✅',
-                    'late' => 'TERLAMBAT ⚠️',
+                    'present' => 'HADIR âœ…',
+                    'late' => 'TERLAMBAT âš ï¸',
                     default => strtoupper($attendance->status)
                 };
                 $time = $attendance->clock_in->format('H:i');
                 $date = $attendance->clock_in->translatedFormat('d M Y');
-                $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK (KIOSK)*\n\n" .
-                             "👤 *Nama:* {$user->name}\n" .
-                             "⏰ *Jam:* {$time} WIB\n" .
-                             "📅 *Tanggal:* {$date}\n" .
-                             "📊 *Status:* {$statusLabel}\n" .
-                             "📝 *Metode:* Kiosk Scan\n\n" .
-                             "🚀 _Sistem M-Store_";
+                $waMessage = "ðŸ”” *NOTIFIKASI ABSEN MASUK (KIOSK)*\n\n" .
+                             "ðŸ‘¤ *Nama:* {$user->name}\n" .
+                             "â° *Jam:* {$time} WIB\n" .
+                             "ðŸ“… *Tanggal:* {$date}\n" .
+                             "ðŸ“Š *Status:* {$statusLabel}\n" .
+                             "ðŸ“ *Metode:* Kiosk Scan\n\n" .
+                             "ðŸš€ _Sistem M-Store_";
                 
                 app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
                 app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
@@ -813,13 +875,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         try {
             $time = $todayAttendance->clock_out->format('H:i');
             $date = $todayAttendance->clock_out->translatedFormat('d M Y');
-            $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG (KIOSK)*\n\n" .
-                         "👤 *Nama:* {$user->name}\n" .
-                         "⏰ *Jam:* {$time} WIB\n" .
-                         "📅 *Tanggal:* {$date}\n" .
-                         "🏁 *Status:* SELESAI TUGAS 👋\n" .
-                         "📝 *Metode:* Kiosk Scan\n\n" .
-                         "🚀 _Sistem M-Store_";
+            $waMessage = "ðŸ”” *NOTIFIKASI ABSEN PULANG (KIOSK)*\n\n" .
+                         "ðŸ‘¤ *Nama:* {$user->name}\n" .
+                         "â° *Jam:* {$time} WIB\n" .
+                         "ðŸ“… *Tanggal:* {$date}\n" .
+                         "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
+                         "ðŸ“ *Metode:* Kiosk Scan\n\n" .
+                         "ðŸš€ _Sistem M-Store_";
             
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
             app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
@@ -968,19 +1030,19 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             dispatch(function () use ($currentUser, $attendance) {
                 try {
                     $statusLabel = match($attendance->status) {
-                        'present' => 'HADIR ✅',
-                        'late' => 'TERLAMBAT ⚠️',
+                        'present' => 'HADIR âœ…',
+                        'late' => 'TERLAMBAT âš ï¸',
                         default => strtoupper($attendance->status)
                     };
                     $time = $attendance->clock_in->format('H:i');
                     $date = $attendance->clock_in->translatedFormat('d M Y');
-                    $waMessage = "🔔 *NOTIFIKASI ABSEN MASUK*\n\n" .
-                                 "👤 *Nama:* {$currentUser->name}\n" .
-                                 "⏰ *Jam:* {$time} WIB\n" .
-                                 "📅 *Tanggal:* {$date}\n" .
-                                 "📊 *Status:* {$statusLabel}\n" .
-                                 "📝 *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
-                                 "🚀 _Sistem M-Store_";
+                    $waMessage = "ðŸ”” *NOTIFIKASI ABSEN MASUK*\n\n" .
+                                 "ðŸ‘¤ *Nama:* {$currentUser->name}\n" .
+                                 "â° *Jam:* {$time} WIB\n" .
+                                 "ðŸ“… *Tanggal:* {$date}\n" .
+                                 "ðŸ“Š *Status:* {$statusLabel}\n" .
+                                 "ðŸ“ *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
+                                 "ðŸš€ _Sistem M-Store_";
                     
                     app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
                     app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
@@ -1132,13 +1194,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                         $parts = explode("\nClock Out Note: ", $attendance->notes);
                         $clockOutNotes = $parts[1] ?? '-';
                     }
-                    $waMessage = "🔔 *NOTIFIKASI ABSEN PULANG*\n\n" .
-                                 "👤 *Nama:* {$currentUser->name}\n" .
-                                 "⏰ *Jam:* {$time} WIB\n" .
-                                 "📅 *Tanggal:* {$date}\n" .
-                                 "🏁 *Status:* SELESAI TUGAS 👋\n" .
-                                 "📝 *Catatan:* {$clockOutNotes}\n\n" .
-                                 "🚀 _Sistem M-Store_";
+                    $waMessage = "ðŸ”” *NOTIFIKASI ABSEN PULANG*\n\n" .
+                                 "ðŸ‘¤ *Nama:* {$currentUser->name}\n" .
+                                 "â° *Jam:* {$time} WIB\n" .
+                                 "ðŸ“… *Tanggal:* {$date}\n" .
+                                 "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
+                                 "ðŸ“ *Catatan:* {$clockOutNotes}\n\n" .
+                                 "ðŸš€ _Sistem M-Store_";
                     
                     app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
                     app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
