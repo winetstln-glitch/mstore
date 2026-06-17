@@ -98,6 +98,20 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Kualitas Kompresi Foto Absensi (%)',
             ],
+            [
+                'key' => 'attendance_auto_alpha_enabled',
+                'value' => '1',
+                'group' => 'attendance',
+                'type' => 'boolean',
+                'label' => 'Aktifkan Pembuatan Alpha Otomatis',
+            ],
+            [
+                'key' => 'attendance_allow_after_cutoff',
+                'value' => '0',
+                'group' => 'attendance',
+                'type' => 'boolean',
+                'label' => 'Izinkan Absen Masuk Setelah Batas Cutoff',
+            ],
             // Finance Settings
             [
                 'key' => 'commission_coordinator_percent',
