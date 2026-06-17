@@ -4,6 +4,7 @@ namespace App\Actions\Attendance;
 
 use App\Models\LeaveRequest;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\TechnicianAttendance;
 use App\Models\TechnicianDailySchedule;
 use App\Models\TechnicianSchedule;
@@ -27,6 +28,14 @@ class MarkAbsentAsAlphaAction
             'role_name' => $user->role?->name ?? 'N/A',
             'date' => $date->toDateString(),
         ]);
+
+        $autoAlphaEnabled = (bool) Setting::getValue('attendance_auto_alpha_enabled', true);
+        if (!$autoAlphaEnabled) {
+            Log::info('MarkAbsentAsAlphaAction: Auto alpha disabled, skipping', [
+                'user_id' => $user->id,
+            ]);
+            return null;
+        }
 
         $existingAttendance = TechnicianAttendance::where('user_id', $user->id)
             ->where(function ($query) use ($date) {
@@ -89,35 +98,33 @@ class MarkAbsentAsAlphaAction
         if ($isExcludedFromSchedule) {
             Log::info('MarkAbsentAsAlphaAction: Role excluded from schedule, skipping', [
                 'user_id' => $user->id,
-                'role_name' => $roleName,
+                'role_name' => $user->role?->name ?? 'N/A',
             ]);
             return null;
         }
 
-        $group = $this->attendanceService->resolveUserGroup($user);
+        $clockInWindow = $this->attendanceService->resolveClockInWindow($user);
+        $cutoff = $clockInWindow['shift_cutoff'];
 
-        $daily = TechnicianDailySchedule::where('user_id', $user->id)
-            ->whereDate('date', $date->toDateString())
-            ->first();
-
-        $status = $daily?->status;
-
-        if ($status === null) {
-            $weekly = TechnicianSchedule::where('user_id', $user->id)
-                ->where('year', $date->year)
-                ->where('week_number', $date->weekOfYear)
-                ->first();
-            $status = $weekly?->status;
+        $now = Carbon::now();
+        if (!$this->attendanceService->isPastCutoffTime($cutoff, $now)) {
+            Log::info('MarkAbsentAsAlphaAction: Not past cutoff yet, skipping', [
+                'user_id' => $user->id,
+                'cutoff' => $cutoff,
+                'now' => $now->format('H:i'),
+            ]);
+            return null;
         }
+
+        $status = $clockInWindow['status'];
 
         Log::info('MarkAbsentAsAlphaAction: Schedule status check', [
             'user_id' => $user->id,
-            'daily_status' => $daily?->status,
-            'weekly_status' => $weekly?->status ?? null,
             'final_status' => $status,
+            'cutoff' => $cutoff,
         ]);
 
-        if ($status !== null && ! in_array($status, ['piket', 'backup', 'longshift'], true)) {
+        if (! in_array($status, ['piket', 'backup', 'longshift'], true)) {
             Log::info('MarkAbsentAsAlphaAction: Schedule status not eligible, skipping', [
                 'user_id' => $user->id,
                 'status' => $status,
@@ -128,6 +135,7 @@ class MarkAbsentAsAlphaAction
         Log::info('MarkAbsentAsAlphaAction: Creating alpha attendance', [
             'user_id' => $user->id,
             'schedule_status' => $status ?? 'no_schedule',
+            'cutoff' => $cutoff,
         ]);
 
         return TechnicianAttendance::create([
@@ -135,7 +143,7 @@ class MarkAbsentAsAlphaAction
             'work_date' => $date->toDateString(),
             'status' => 'alpha',
             'generated_type' => 'system_alpha',
-            'notes' => 'Auto-marked as alpha - no check-in after cut-off time',
+            'notes' => 'Auto-marked as alpha - no check-in after cut-off time (' . $cutoff . ')',
         ]);
     }
 }

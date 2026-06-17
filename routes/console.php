@@ -25,13 +25,9 @@ Schedule::call(function () {
     Cache::put('mstore.scheduler.heartbeat_at', now()->toDateTimeString(), now()->addMinutes(10));
 })->name('mstore:scheduler-heartbeat')->everyMinute()->withoutOverlapping(1);
 
-// Schedule Attendance: Mark Absent as Alpha (run at 13:05 and 17:05 daily)
+// Schedule Attendance: Mark Absent as Alpha (run every minute)
 Schedule::command('attendance:mark-alpha')
-    ->dailyAt('13:05')
-    ->withoutOverlapping(10);
-
-Schedule::command('attendance:mark-alpha')
-    ->dailyAt('17:05')
+    ->everyMinute()
     ->withoutOverlapping(10);
 
 tap(

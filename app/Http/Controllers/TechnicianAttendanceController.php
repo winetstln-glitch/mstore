@@ -782,6 +782,13 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             })
             ->first();
 
+        if ($todayAttendance && $todayAttendance->status === 'alpha') {
+            return response()->json([
+                'success' => false,
+                'message' => __('Anda sudah tercatat sebagai Alpha hari ini. Tidak bisa melakukan clock-in.'),
+            ], 422);
+        }
+
         if (! $todayAttendance) {
             $hasLeaveRequest = LeaveRequest::where('user_id', $user->id)
                 ->where('status', 'approved')
@@ -799,11 +806,20 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $clockInWindow = $this->resolveClockInWindow($user);
             $clockInStart = $clockInWindow['start'];
             $clockInEnd = $clockInWindow['end'];
+            $shiftCutoff = $clockInWindow['shift_cutoff'];
             $currentTime = now()->format('H:i');
             if (! $this->isTimeWithinRange($currentTime, $clockInStart, $clockInEnd)) {
                 return response()->json([
                     'success' => false,
                     'message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd]),
+                ], 422);
+            }
+
+            $allowAfterCutoff = (bool) \App\Models\Setting::getValue('attendance_allow_after_cutoff', false);
+            if (!$allowAfterCutoff && $this->isPastCutoffTime($shiftCutoff)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Batas waktu absensi masuk telah berakhir. Status kehadiran Anda akan dicatat sebagai Alpha.'),
                 ], 422);
             }
 
@@ -945,12 +961,17 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             $clockInWindow = $this->resolveClockInWindow(Auth::user());
             $clockInStart = $clockInWindow['start'];
             $clockInEnd = $clockInWindow['end'];
+            $shiftCutoff = $clockInWindow['shift_cutoff'];
 
             $now = now();
             $currentTime = $now->format('H:i');
 
             if (! $this->isTimeWithinRange($currentTime, $clockInStart, $clockInEnd)) {
                 return back()->withErrors(['message' => __('Clock In only allowed between :start - :end WIB.', ['start' => $clockInStart, 'end' => $clockInEnd])]);
+            }
+
+            if ($this->isPastCutoffTime($shiftCutoff, $now)) {
+                return back()->withErrors(['message' => __('Batas waktu absensi masuk telah berakhir. Status kehadiran Anda telah dicatat sebagai Alpha.')]);
             }
 
             $today = today();
@@ -1494,13 +1515,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $clockInStartMinutes = $this->timeToMinutes($clockInStart, 8 * 60);
         $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
         $lateThreshold = min((23 * 60) + 59, $clockInStartMinutes + $lateTolerance);
-        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
-
-        if ($currentMinutes > $cutoffMinutes) {
-            return 'alpha';
-        }
 
         return $currentMinutes > $lateThreshold ? 'late' : 'present';
+    }
+
+    private function isPastCutoffTime(string $shiftCutoff, ?Carbon $now = null): bool
+    {
+        $checkTime = ($now ?? now())->copy()->timezone(config('app.timezone', 'Asia/Jakarta'));
+        $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
+        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
+        return $currentMinutes > $cutoffMinutes;
     }
 
     private function isTimeWithinRange(string $currentTime, string $startTime, string $endTime): bool

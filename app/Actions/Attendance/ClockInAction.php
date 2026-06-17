@@ -54,6 +54,14 @@ class ClockInAction
             if ($existingAttendance && $existingAttendance->clock_in) {
                 throw new \RuntimeException('Anda sudah melakukan absensi masuk hari ini.');
             }
+            if ($existingAttendance && $existingAttendance->status === 'alpha') {
+                throw new \RuntimeException('Anda sudah tercatat sebagai Alpha hari ini. Tidak bisa melakukan clock-in.');
+            }
+
+            $allowAfterCutoff = (bool) Setting::getValue('attendance_allow_after_cutoff', false);
+            if (!$allowAfterCutoff && $this->attendanceService->isPastCutoffTime($clockInStart['shift_cutoff'], $now)) {
+                throw new \RuntimeException('Batas waktu absensi masuk telah berakhir. Status kehadiran Anda akan dicatat sebagai Alpha.');
+            }
 
             $maxDistance = (float) Setting::getValue(
                 'attendance_radius',

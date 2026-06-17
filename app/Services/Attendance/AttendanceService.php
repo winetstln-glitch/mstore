@@ -105,13 +105,16 @@ class AttendanceService
         $clockInStartMinutes = $this->timeToMinutes($clockInStart, 8 * 60);
         $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
         $lateThreshold = min((23 * 60) + 59, $clockInStartMinutes + $lateTolerance);
-        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
-
-        if ($currentMinutes > $cutoffMinutes) {
-            return 'alpha';
-        }
 
         return $currentMinutes > $lateThreshold ? 'late' : 'present';
+    }
+
+    public function isPastCutoffTime(string $shiftCutoff, ?Carbon $now = null): bool
+    {
+        $checkTime = ($now ?? now())->copy()->timezone(config('app.timezone', 'Asia/Jakarta'));
+        $currentMinutes = ((int) $checkTime->format('H') * 60) + (int) $checkTime->format('i');
+        $cutoffMinutes = $this->timeToMinutes($shiftCutoff, 10 * 60);
+        return $currentMinutes > $cutoffMinutes;
     }
 
     public function isTimeWithinRange(string $currentTime, string $startTime, string $endTime): bool
@@ -171,11 +174,7 @@ class AttendanceService
             return false;
         }
         
-        if ($this->isUserCoordinator($user)) {
-            return false;
-        }
-        
-        $excludedRoles = ['customer', 'direktur', 'owner', 'owner pendiri', 'leader'];
+        $excludedRoles = ['customer', 'reseller', 'coordinator', 'direktur', 'owner', 'owner pendiri', 'owner-pendiri'];
         return ! $user->hasAnyRole($excludedRoles);
     }
 

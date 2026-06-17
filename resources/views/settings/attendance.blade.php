@@ -118,6 +118,16 @@
                                     class="form-control" min="0">
                                 <div class="form-text">Contoh: 15 = boleh terlambat 15 menit tanpa status late</div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="attendance_auto_alpha_enabled" name="attendance_auto_alpha_enabled" value="1" {{ ($settings['attendance_auto_alpha_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="attendance_auto_alpha_enabled">Aktifkan Pembuatan Alpha Otomatis</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="attendance_allow_after_cutoff" name="attendance_allow_after_cutoff" value="1" {{ ($settings['attendance_allow_after_cutoff'] ?? '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="attendance_allow_after_cutoff">Izinkan Clock-in Setelah Batas Cut-off</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
