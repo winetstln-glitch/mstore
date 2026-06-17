@@ -64,48 +64,50 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // View Composers for Sidebar / Layout Data
-        \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
-            $authUser = Auth::user();
-            if ($authUser) {
-                $isAdmin = $authUser->hasRole(Role::ADMIN);
-                $roleId = $authUser->role_id;
-                $runningUnitTests = app()->runningUnitTests();
+        if (! $this->app->runningInConsole()) {
+            // View Composers for Sidebar / Layout Data
+            \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
+                $authUser = Auth::user();
+                if ($authUser) {
+                    $isAdmin = $authUser->hasRole(Role::ADMIN);
+                    $roleId = $authUser->role_id;
+                    $runningUnitTests = app()->runningUnitTests();
 
-                $permissionMap = [];
-                if (! $isAdmin) {
-                    $computePermissionMap = function () use ($roleId): array {
-                        $role = Role::query()
-                            ->whereKey($roleId)
-                            ->with(['permissions:id,name'])
-                            ->first();
+                    $permissionMap = [];
+                    if (! $isAdmin) {
+                        $computePermissionMap = function () use ($roleId): array {
+                            $role = Role::query()
+                                ->whereKey($roleId)
+                                ->with(['permissions:id,name'])
+                                ->first();
 
-                        return ($role?->permissions?->pluck('name')->flip()->all()) ?? [];
-                    };
+                            return ($role?->permissions?->pluck('name')->flip()->all()) ?? [];
+                        };
 
-                    $permissionMap = $runningUnitTests
-                        ? $computePermissionMap()
-                        : Cache::remember("sidebar.permission_map.role.{$roleId}", 300, $computePermissionMap);
+                        $permissionMap = $runningUnitTests
+                            ? $computePermissionMap()
+                            : Cache::remember("sidebar.permission_map.role.{$roleId}", 300, $computePermissionMap);
+                    }
+
+                    $sidebarMenu = $runningUnitTests
+                        ? \App\Support\Sidebar\SidebarMenu::tree()
+                        : Cache::rememberForever('sidebar.menu.tree.v11', function () {
+                            return \App\Support\Sidebar\SidebarMenu::tree();
+                        });
+                    $unreadNotificationCount = $authUser->unreadNotifications()->count();
+                    $unreadNotifications = $authUser->unreadNotifications()->latest()->limit(10)->get();
+                    
+                    $view->with([
+                        'authUser' => $authUser,
+                        'isAdmin' => $isAdmin,
+                        'permissionMap' => $permissionMap,
+                        'sidebarMenu' => $sidebarMenu,
+                        'unreadNotificationCount' => $unreadNotificationCount,
+                        'unreadNotifications' => $unreadNotifications,
+                    ]);
                 }
-
-                $sidebarMenu = $runningUnitTests
-                    ? \App\Support\Sidebar\SidebarMenu::tree()
-                    : Cache::rememberForever('sidebar.menu.tree.v11', function () {
-                        return \App\Support\Sidebar\SidebarMenu::tree();
-                    });
-                $unreadNotificationCount = $authUser->unreadNotifications()->count();
-                $unreadNotifications = $authUser->unreadNotifications()->latest()->limit(10)->get();
-                
-                $view->with([
-                    'authUser' => $authUser,
-                    'isAdmin' => $isAdmin,
-                    'permissionMap' => $permissionMap,
-                    'sidebarMenu' => $sidebarMenu,
-                    'unreadNotificationCount' => $unreadNotificationCount,
-                    'unreadNotifications' => $unreadNotifications,
-                ]);
-            }
-        });
+            });
+        }
 
         // Dynamic Permissions from Database
         try {

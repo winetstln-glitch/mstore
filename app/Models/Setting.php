@@ -48,9 +48,16 @@ class Setting extends Model
     {
         if (self::$cachedValues === null) {
             self::$cachedValues = \Illuminate\Support\Facades\Cache::rememberForever('settings_all', function () {
-                return self::query()
-                    ->pluck('value', 'key')
-                    ->all();
+                try {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                        return self::query()
+                            ->pluck('value', 'key')
+                            ->all();
+                    }
+                } catch (\Exception $e) {
+                    // Do nothing if table doesn't exist
+                }
+                return [];
             });
         }
 

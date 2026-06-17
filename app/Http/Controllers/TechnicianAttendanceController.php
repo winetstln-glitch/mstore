@@ -619,9 +619,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                          "ðŸ“ *Catatan:* " . ($attendance->notes ?? '-') . "\n" .
                          "ðŸ‘® *Admin:* " . Auth::user()->name . "\n\n" .
                          "ðŸš€ _Sistem M-Store_";
+            $tgMessage = "ðŸ”” *NOTIFIKASI ABSENSI MANUAL*\n\n" .
+                         "ðŸ‘¤ *Nama:* " . \App\Services\TelegramService::escape($user->name) . "\n" .
+                         "ðŸ“… *Tanggal:* {$date}\n" .
+                         "ðŸ“Š *Status:* {$statusLabel}\n" .
+                         "ðŸ“ *Catatan:* " . \App\Services\TelegramService::escape(($attendance->notes ?? '-')) . "\n" .
+                         "ðŸ‘® *Admin:* " . \App\Services\TelegramService::escape(Auth::user()->name) . "\n\n" .
+                         "ðŸš€ _Sistem M-Store_";
             
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($tgMessage, 'attendance');
         } catch (\Exception $e) {
             Log::error('Manual Attendance WA Notification Error: ' . $e->getMessage());
         }
@@ -826,9 +833,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                              "ðŸ“Š *Status:* {$statusLabel}\n" .
                              "ðŸ“ *Metode:* Kiosk Scan\n\n" .
                              "ðŸš€ _Sistem M-Store_";
+                $tgMessage = "ðŸ”” *NOTIFIKASI ABSEN MASUK (KIOSK)*\n\n" .
+                             "ðŸ‘¤ *Nama:* " . \App\Services\TelegramService::escape($user->name) . "\n" .
+                             "â° *Jam:* {$time} WIB\n" .
+                             "ðŸ“… *Tanggal:* {$date}\n" .
+                             "ðŸ“Š *Status:* {$statusLabel}\n" .
+                             "ðŸ“ *Metode:* Kiosk Scan\n\n" .
+                             "ðŸš€ _Sistem M-Store_";
                 
                 app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+                app(\App\Services\TelegramService::class)->sendGroupNotification($tgMessage, 'attendance');
             } catch (\Exception $e) {
                 Log::error('Kiosk Attendance WA Notification Error: ' . $e->getMessage());
             }
@@ -882,9 +896,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                          "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
                          "ðŸ“ *Metode:* Kiosk Scan\n\n" .
                          "ðŸš€ _Sistem M-Store_";
+            $tgMessage = "ðŸ”” *NOTIFIKASI ABSEN PULANG (KIOSK)*\n\n" .
+                         "ðŸ‘¤ *Nama:* " . \App\Services\TelegramService::escape($user->name) . "\n" .
+                         "â° *Jam:* {$time} WIB\n" .
+                         "ðŸ“… *Tanggal:* {$date}\n" .
+                         "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
+                         "ðŸ“ *Metode:* Kiosk Scan\n\n" .
+                         "ðŸš€ _Sistem M-Store_";
             
             app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-            app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+            app(\App\Services\TelegramService::class)->sendGroupNotification($tgMessage, 'attendance');
         } catch (\Exception $e) {
             Log::error('Kiosk Clock Out WA Notification Error: ' . $e->getMessage());
         }
@@ -1043,9 +1064,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                                  "ðŸ“Š *Status:* {$statusLabel}\n" .
                                  "ðŸ“ *Catatan:* " . ($attendance->notes ?? '-') . "\n\n" .
                                  "ðŸš€ _Sistem M-Store_";
+                    $tgMessage = "ðŸ”” *NOTIFIKASI ABSEN MASUK*\n\n" .
+                                 "ðŸ‘¤ *Nama:* " . \App\Services\TelegramService::escape($currentUser->name) . "\n" .
+                                 "â° *Jam:* {$time} WIB\n" .
+                                 "ðŸ“… *Tanggal:* {$date}\n" .
+                                 "ðŸ“Š *Status:* {$statusLabel}\n" .
+                                 "ðŸ“ *Catatan:* " . \App\Services\TelegramService::escape(($attendance->notes ?? '-')) . "\n\n" .
+                                 "ðŸš€ _Sistem M-Store_";
                     
                     app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                    app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+                    app(\App\Services\TelegramService::class)->sendGroupNotification($tgMessage, 'attendance');
                 } catch (\Throwable $e) {
                     Log::error('Attendance WA/TG Notification Error: ' . $e->getMessage());
                 }
@@ -1201,9 +1229,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                                  "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
                                  "ðŸ“ *Catatan:* {$clockOutNotes}\n\n" .
                                  "ðŸš€ _Sistem M-Store_";
+                    $tgMessage = "ðŸ”” *NOTIFIKASI ABSEN PULANG*\n\n" .
+                                 "ðŸ‘¤ *Nama:* " . \App\Services\TelegramService::escape($currentUser->name) . "\n" .
+                                 "â° *Jam:* {$time} WIB\n" .
+                                 "ðŸ“… *Tanggal:* {$date}\n" .
+                                 "ðŸ *Status:* SELESAI TUGAS ðŸ‘‹\n" .
+                                 "ðŸ“ *Catatan:* " . \App\Services\TelegramService::escape($clockOutNotes) . "\n\n" .
+                                 "ðŸš€ _Sistem M-Store_";
                     
                     app(\App\Services\WhatsAppService::class)->sendGroupNotification($waMessage, 'attendance');
-                    app(\App\Services\TelegramService::class)->sendGroupNotification($waMessage, 'attendance');
+                    app(\App\Services\TelegramService::class)->sendGroupNotification($tgMessage, 'attendance');
                 } catch (\Throwable $e) {
                     Log::error('Attendance Clock Out WA Notification Error: ' . $e->getMessage());
                 }

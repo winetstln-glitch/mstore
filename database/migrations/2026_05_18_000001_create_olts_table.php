@@ -149,7 +149,7 @@ return new class extends Migration
                 $table->timestamp('acknowledged_at')->nullable();
                 $table->boolean('resolved')->default(false);
                 $table->timestamp('resolved_at')->nullable();
-                $table->timestamp('occurred_at');
+                $table->timestamp('occurred_at')->useCurrent();
                 $table->timestamps();
                 $table->index(['olt_id', 'severity', 'resolved']);
             });

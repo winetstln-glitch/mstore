@@ -22,6 +22,9 @@ return new class extends Migration
             if (! Schema::hasColumn('atk_products', 'current_stock')) {
                 $table->integer('current_stock')->default(0)->after('selling_price');
             }
+            if (! Schema::hasColumn('atk_products', 'minimum_stock')) {
+                $table->integer('minimum_stock')->default(0)->after('current_stock');
+            }
             if (! Schema::hasColumn('atk_products', 'stock_alert')) {
                 $table->boolean('stock_alert')->default(false)->after('minimum_stock');
             }
@@ -48,6 +51,9 @@ return new class extends Migration
             }
             if (! Schema::hasColumn('atk_transactions', 'journal_status')) {
                 $table->enum('journal_status', ['pending', 'posted', 'failed'])->default('pending')->after('payment_status');
+            }
+            if (! Schema::hasColumn('atk_transactions', 'atk_cash_register_id')) {
+                $table->foreignId('atk_cash_register_id')->nullable()->after('payment_method')->constrained('atk_cash_registers')->nullOnDelete();
             }
             if (! Schema::hasColumn('atk_transactions', 'atk_float_account_id')) {
                 $table->foreignId('atk_float_account_id')->nullable()->after('atk_cash_register_id')->constrained('atk_float_accounts')->nullOnDelete();
@@ -92,6 +98,9 @@ return new class extends Migration
             if (Schema::hasColumn('atk_products', 'current_stock')) {
                 $table->dropColumn('current_stock');
             }
+            if (Schema::hasColumn('atk_products', 'minimum_stock')) {
+                $table->dropColumn('minimum_stock');
+            }
             if (Schema::hasColumn('atk_products', 'stock_alert')) {
                 $table->dropColumn('stock_alert');
             }
@@ -106,6 +115,10 @@ return new class extends Migration
             }
             if (Schema::hasColumn('atk_transactions', 'journal_status')) {
                 $table->dropColumn('journal_status');
+            }
+            if (Schema::hasColumn('atk_transactions', 'atk_cash_register_id')) {
+                $table->dropForeign(['atk_cash_register_id']);
+                $table->dropColumn('atk_cash_register_id');
             }
             if (Schema::hasColumn('atk_transactions', 'atk_float_account_id')) {
                 $table->dropForeign(['atk_float_account_id']);

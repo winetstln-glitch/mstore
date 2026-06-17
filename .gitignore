@@ -26,3 +26,4 @@ Thumbs.db
 /actions-runner/
 /public/.well-known/
 /database/*.sqlite
+composer.phar

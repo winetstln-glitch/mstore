@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -22,7 +23,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Super Admin',
                 'username' => 'admin',
-                'password' => 'password',
+                'password' => Hash::make('password'),
                 'role_id' => $adminRole->id,
                 'is_active' => true,
             ]
@@ -33,7 +34,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'NOC Officer',
                 'username' => 'noc',
-                'password' => 'password',
+                'password' => Hash::make('password'),
                 'role_id' => $nocRole->id,
                 'is_active' => true,
             ]
@@ -44,7 +45,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Technician One',
                 'username' => 'tech1',
-                'password' => 'password',
+                'password' => Hash::make('password'),
                 'role_id' => $techRole->id,
                 'is_active' => true,
             ]
@@ -55,7 +56,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'username' => 'testuser',
-                'password' => 'Test12345!',
+                'password' => Hash::make('Test12345!'),
                 'role_id' => $adminRole->id,
                 'is_active' => true,
             ]

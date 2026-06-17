@@ -33,9 +33,12 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('Username') }}</label>
-                                <input type="text" id="username_preview" class="form-control" value="{{ old('name') ? Str::slug(old('name'), '_') : '' }}" placeholder="Otomatis dari nama" readonly>
-                                <div class="form-text">Username dibuat otomatis dari nama.</div>
+                                <label for="username" class="form-label">{{ __('Username') }}</label>
+                                <input type="text" name="username" id="username" value="{{ old('username') }}" class="form-control @error('username') is-invalid @enderror" required>
+                                @error('username')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Username dapat diubah secara manual, atau otomatis dari nama.</div>
                             </div>
 
                             <div class="col-md-6">
@@ -158,23 +161,31 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const nameInput = document.getElementById('name');
-        const usernamePreview = document.getElementById('username_preview');
+        const usernameInput = document.getElementById('username');
         const monthlySalaryInput = document.getElementById('monthly_salary');
         const dailySalaryInput = document.getElementById('daily_salary');
         const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
 
-        if (nameInput && usernamePreview) {
+        if (nameInput && usernameInput) {
             const slugify = (value) => value
                 .toLowerCase()
                 .normalize('NFKD')
                 .replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9]+/g, '_')
                 .replace(/^_+|_+$/g, '');
-            const syncPreview = () => {
-                usernamePreview.value = slugify(nameInput.value);
+            const syncUsername = () => {
+                usernameInput.value = slugify(nameInput.value);
             };
-            nameInput.addEventListener('input', syncPreview);
-            syncPreview();
+            nameInput.addEventListener('input', function() {
+                // Only auto-sync if user hasn't manually edited the username yet
+                if (usernameInput.value === slugify(nameInput.defaultValue) || usernameInput.value === '') {
+                    syncUsername();
+                }
+            });
+            // Initialize username if empty
+            if (usernameInput.value === '') {
+                syncUsername();
+            }
         }
 
         if (monthlySalaryInput && dailySalaryInput) {

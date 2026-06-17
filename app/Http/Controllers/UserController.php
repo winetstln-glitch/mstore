@@ -143,6 +143,7 @@ class UserController extends Controller implements HasMiddleware
         $customerRoleId = Role::where('name', 'customer')->value('id');
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
@@ -172,7 +173,10 @@ class UserController extends Controller implements HasMiddleware
             return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email ?: $existing->username])])->withInput();
         }
 
-        $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null);
+        $username = trim((string) $validated['username']);
+        if ($username === '') {
+            $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null);
+        }
 
         $createData = [
             'name' => $validated['name'],
@@ -218,6 +222,7 @@ class UserController extends Controller implements HasMiddleware
         $customerRoleId = Role::where('name', 'customer')->value('id');
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
@@ -245,7 +250,10 @@ class UserController extends Controller implements HasMiddleware
             return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email ?: $existing->username])])->withInput();
         }
 
-        $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null, (int) $user->id);
+        $username = trim((string) $validated['username']);
+        if ($username === '') {
+            $username = $this->buildUsernameFromName($validated['name'], $validated['email'] ?? null, (int) $user->id);
+        }
 
         $updateData = [
             'name' => $validated['name'],

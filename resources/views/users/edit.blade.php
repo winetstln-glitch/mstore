@@ -36,8 +36,11 @@
                             <!-- Username -->
                             <div class="col-md-6">
                                 <label for="username" class="form-label">{{ __('Username') }}</label>
-                                <input type="text" name="username_preview" id="username_preview" value="{{ old('username', $user->username) }}" class="form-control" readonly>
-                                <div class="form-text">Username otomatis mengikuti nama.</div>
+                                <input type="text" name="username" id="username" value="{{ old('username', $user->username) }}" class="form-control @error('username') is-invalid @enderror" required>
+                                @error('username')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Username dapat diubah secara manual.</div>
                             </div>
 
                             <div class="col-md-6">
@@ -165,23 +168,28 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const nameInput = document.getElementById('name');
-        const usernamePreview = document.getElementById('username_preview');
+        const usernameInput = document.getElementById('username');
         const monthlySalaryInput = document.getElementById('monthly_salary');
         const dailySalaryInput = document.getElementById('daily_salary');
         const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
 
-        if (nameInput && usernamePreview) {
+        if (nameInput && usernameInput) {
             const slugify = (value) => value
                 .toLowerCase()
                 .normalize('NFKD')
                 .replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9]+/g, '_')
                 .replace(/^_+|_+$/g, '');
-            const syncPreview = () => {
-                usernamePreview.value = slugify(nameInput.value);
+            const syncUsername = () => {
+                // Only sync if user hasn't edited the username yet
+                usernameInput.value = slugify(nameInput.value);
             };
-            nameInput.addEventListener('input', syncPreview);
-            syncPreview();
+            nameInput.addEventListener('input', function() {
+                // Only auto-sync if the username was previously matching the name's slug
+                if (usernameInput.value === slugify(nameInput.defaultValue)) {
+                    syncUsername();
+                }
+            });
         }
 
         if (monthlySalaryInput && dailySalaryInput) {
