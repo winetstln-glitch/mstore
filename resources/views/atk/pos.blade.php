@@ -1266,20 +1266,7 @@ function processTransaction() {
             const sendWa = document.getElementById('sendWhatsapp').checked;
             const phone = document.getElementById('customerPhone').value;
             if (sendWa && phone) {
-                await sendAtkWhatsappReceipt(result.transaction_id, phone, {
-                    items: result.items?.map((item) => ({
-                        name: item.bank
-                            ? `${item.name} (Nominal ${formatRupiah(item.nominal_transaksi || 0)})`
-                            : item.name,
-                        quantity: item.quantity,
-                        price: item.bank ? (item.fee || 0) : item.price,
-                        subtotal: item.bank
-                            ? ((item.nominal_transaksi || 0) + (item.fee || 0))
-                            : (item.price * item.quantity)
-                    })),
-                    total: result.total,
-                    paymentMethod: paymentMethod
-                }).catch(() => {});
+                await sendAtkWhatsappReceipt(result.transaction_id, phone).catch(() => {});
             }
 
             // 3. Re-render empty cart
