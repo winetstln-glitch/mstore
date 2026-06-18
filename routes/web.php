@@ -987,6 +987,9 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
 
     // ATK Store Routes
     Route::prefix('atk')->name('atk.')->group(function () {
+        Route::get('/guide', function () {
+            return view('atk.guide');
+        })->middleware('permission:atk.view')->name('guide');
         Route::get('/dashboard', [\App\Http\Controllers\AtkTransactionController::class, 'dashboard'])->name('dashboard');
         Route::get('/pos', [\App\Http\Controllers\AtkTransactionController::class, 'pos'])->name('pos');
         Route::post('/transactions', [\App\Http\Controllers\AtkTransactionController::class, 'store'])->name('transactions.store');

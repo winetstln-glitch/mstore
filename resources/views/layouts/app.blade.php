@@ -679,7 +679,7 @@
                 $atkMasterActive = $routeIs('atk.products.*');
                 $atkTransactionActive = $routeIs('atk.pos') || $routeIs('atk.transactions.*');
                 $atkFinanceActive = $routeIs('atk.expenses.*') || $routeIs('atk.reports.*') || $routeIs('atk.fee.*');
-                $atkAnyActive = $atkDashboardActive || $atkMasterActive || $atkTransactionActive || $atkFinanceActive;
+                $atkAnyActive = $routeIs('atk.guide') || $atkDashboardActive || $atkMasterActive || $atkTransactionActive || $atkFinanceActive;
             @endphp
 
             <a class="sidebar-item {{ $atkAnyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#atkCollapse" role="button" aria-expanded="{{ $atkAnyActive ? 'true' : 'false' }}" aria-controls="atkCollapse">
@@ -688,6 +688,9 @@
             <div class="collapse {{ $atkAnyActive ? 'show' : '' }}" id="atkCollapse">
                 <div class="ps-3">
                     @if($hasPermission('atk.view'))
+                    <a href="{{ route('atk.guide') }}" class="sidebar-item {{ $routeIs('atk.guide') ? 'active' : '' }}">
+                        <i class="fa-solid fa-book"></i> {{ __('Panduan') }}
+                    </a>
                     <a href="{{ route('atk.dashboard') }}" class="sidebar-item {{ $atkDashboardActive ? 'active' : '' }}">
                         <i class="fa-solid fa-chart-pie"></i> {{ __('Dasbor') }}
                     </a>

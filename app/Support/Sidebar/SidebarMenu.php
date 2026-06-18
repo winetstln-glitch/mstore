@@ -152,6 +152,7 @@ class SidebarMenu
                 'label' => 'Business Units',
                 'items' => [
                     self::group('bu-atk', 'ATK', [
+                self::link('atk-guide', '📖 Panduan ATK', 'atk.guide', permissions: ['atk.view']),
                 self::link('atk-dashboard', 'Dashboard ATK', 'atk.dashboard', permissions: ['atk.view']),
                 self::link('atk-pos', 'POS ATK', 'atk.pos', permissions: ['atk.pos']),
                 self::group('atk-transactions', 'Transaksi', [
