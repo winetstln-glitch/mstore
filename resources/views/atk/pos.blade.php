@@ -900,28 +900,43 @@ function renderCart() {
 
             const li = document.createElement('div');
             li.className = 'cart-item';
+            li.dataset.itemId = item.id;
+            
+            // Build meta text
+            let metaText = '';
+            if (item.bank || item.cashOut || item.topUp || item.ppob) {
+                if (item.nominal_transaksi) {
+                    metaText = `Nominal: Rp ${new Intl.NumberFormat('id-ID').format(item.nominal_transaksi)}`;
+                    if (item.fee) {
+                        metaText += ` | Fee: Rp ${new Intl.NumberFormat('id-ID').format(item.fee)}`;
+                    }
+                }
+            } else {
+                metaText = `Rp ${new Intl.NumberFormat('id-ID').format(item.price)} x ${item.quantity}`;
+            }
+            
+            // Build quantity buttons HTML
+            let quantityButtons = '';
+            if (!(item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob)) {
+                quantityButtons = `
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn atk-secondary-btn" data-action="update-quantity" data-item-id="${item.id}" data-delta="-1">-</button>
+                        <button class="btn atk-secondary-btn" disabled>${item.quantity}</button>
+                        <button class="btn atk-secondary-btn" data-action="update-quantity" data-item-id="${item.id}" data-delta="1">+</button>
+                    </div>
+                `;
+            }
+            
             li.innerHTML = `
                 <div class="cart-item-left">
                     <div class="cart-item-name">${escapeHtml(item.name)}</div>
-                    <div class="cart-item-meta">
-                        ${item.bank || item.cashOut || item.topUp || item.ppob
-                            ? (item.nominal_transaksi ? `Nominal: Rp ${new Intl.NumberFormat('id-ID').format(item.nominal_transaksi)}${item.fee ? ` | Fee: Rp ${new Intl.NumberFormat('id-ID').format(item.fee)}` : ''}`
-                            : `Rp ${new Intl.NumberFormat('id-ID').format(item.price)} x ${item.quantity}`
-                        }
-                    </div>
+                    <div class="cart-item-meta">${metaText}</div>
                 </div>
                 <div class="cart-item-right">
                     <span class="cart-item-total">Rp ${new Intl.NumberFormat('id-ID').format(subtotal)}</span>
                     <div class="d-flex gap-2 align-items-center">
-                        ${(item.bank || item.customerPayment || item.cashOut || item.topUp || item.ppob)
-                            ? ''
-                            : `<div class="btn-group btn-group-sm">
-                                <button class="btn atk-secondary-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
-                                <button class="btn atk-secondary-btn" disabled>${item.quantity}</button>
-                                <button class="btn atk-secondary-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
-                              </div>`
-                        }
-                        <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})">
+                        ${quantityButtons}
+                        <button class="btn btn-sm btn-link text-danger p-0" data-action="remove-item" data-item-id="${item.id}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
