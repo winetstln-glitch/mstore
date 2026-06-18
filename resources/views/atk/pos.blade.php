@@ -3,21 +3,20 @@
 @section('title', __('ATK POS'))
 
 @section('content')
-<div class="container-fluid">
-    <div class="row" style="min-height: calc(100vh - 100px);">
+<div class="container-fluid atk-pos-page">
+    <div class="row h-100" style="min-height: calc(100vh - 100px);">
         <!-- Product & Service List -->
-        <div class="col-12 col-lg-8 mb-3 mb-lg-0">
-            <div class="card shadow-sm h-100">
+        <div class="col-12 col-lg-8 mb-3 mb-lg-0 d-flex flex-column">
+            <div class="card flex-grow-1 d-flex flex-column shadow-sm h-100">
                 <div class="card-header py-3">
-                    <div class="input-group">
-                        <span class="input-group-text  border-end-0"><i class="fas fa-search text-body-secondary"></i></span>
-                        <input type="text" id="productSearch" class="form-control border-start-0 ps-0" placeholder="Search products by name or code...">
+                    <div class="input-group mb-2">
+                        <span class="input-group-text border-end-0"><i class="fas fa-search text-body-secondary"></i></span>
+                        <input type="text" id="productSearch" class="form-control border-start-0 ps-0" placeholder="Cari produk berdasarkan nama atau kode...">
                         <button type="button" class="btn btn-outline-primary" id="openAtkBarcodeScan" title="Scan barcode via kamera">
                             <i class="fa-solid fa-barcode"></i>
                         </button>
                     </div>
-                    <div class="mt-2">
-                        <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <div class="btn-group btn-group-sm flex-wrap w-100 gap-1" role="group">
                             <button class="btn btn-outline-primary" id="tabProducts" onclick="switchTab('products')">
                                 <i class="fa-solid fa-box"></i> Produk
                             </button>
@@ -272,61 +271,61 @@
                 </div>
 
                 <!-- Cart -->
-                <div class="col-12 col-lg-4">
-                    <div class="card shadow-sm h-100 d-flex flex-column">
-                        <div class="card-header bg-primary text-white py-3">
-                            <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Current Order</h5>
-                        </div>
-                        <div class="mb-3 custom-scrollbar" id="cartItems" style="max-height: 50vh;">
-                            <div class="text-center py-5 text-body-secondary" id="emptyCartMessage">
-                                <i class="fas fa-shopping-basket fa-3x mb-3"></i>
-                                <p>Cart is empty</p>
-                            </div>
-                            <ul class="list-group list-group-flush" id="cartList"></ul>
-                        </div>
-                        <div class="card-footer border-top">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-body-secondary">Total Items:</span>
-                                <span class="fw-bold" id="totalItems">0</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3">
-                                <span class="h5 mb-0">Total:</span>
-                                <span class="h4 mb-0 text-primary" id="totalAmount">Rp 0</span>
-                            </div>
-                            
-                            
-                            <div class="mb-3">
-                                 <label class="form-label">Metode Pembayaran</label>
-                                 <select class="form-select" id="paymentMethod">
-                                     <option value="cash">Cash</option>
-                                     <option value="transfer">Transfer</option>
-                                     <option value="qris">QRIS</option>
-                                     <option value="hutang">Hutang</option>
-                                 </select>
-                            </div>
-                            
-                            <div class="mb-3 d-none" id="pengurusDiv">
-                                <label class="form-label">Pengurus</label>
-                                <select class="form-select" id="coordinatorId">
-                                    <option value="">Pilih Pengurus (wajib untuk hutang jasa potocopy)</option>
-                                    @foreach(($coordinators ?? []) as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3" id="cashInputDiv">
-                                <label class="form-label">Cash Received</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control" id="cashAmount" placeholder="0">
-                                </div>
-                                <div class="mt-1 d-flex justify-content-between text-body-secondary small">
-                                     <span>Change:</span>
-                                     <span id="changeAmount" class="fw-bold">Rp 0</span>
-                                </div>
-                            </div>
+        <div class="col-12 col-lg-4 d-flex flex-column">
+            <div class="card flex-grow-1 d-flex flex-column shadow-sm">
+                <div class="card-header py-3">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Pesanan Saat Ini</h5>
+                </div>
+                <div class="mb-3 custom-scrollbar flex-grow-1" id="cartItems" style="overflow-y: auto;">
+                    <div class="text-center py-5 text-body-secondary" id="emptyCartMessage">
+                        <i class="fas fa-shopping-basket fa-3x mb-3"></i>
+                        <p>Keranjang kosong</p>
+                    </div>
+                    <ul class="list-group list-group-flush" id="cartList"></ul>
+                </div>
+                <div class="card-footer border-top pt-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-body-secondary">Total Item:</span>
+                        <span class="fw-bold" id="totalItems">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="h5 mb-0">Total:</span>
+                        <span class="h4 mb-0 text-primary" id="totalAmount">Rp 0</span>
+                    </div>
                     
+                    
+                    <div class="mb-3">
+                         <label class="form-label">Metode Pembayaran</label>
+                         <select class="form-select" id="paymentMethod">
+                             <option value="cash">Tunai</option>
+                             <option value="transfer">Transfer</option>
+                             <option value="qris">QRIS</option>
+                             <option value="hutang">Hutang</option>
+                         </select>
+                    </div>
+                    
+                    <div class="mb-3 d-none" id="pengurusDiv">
+                        <label class="form-label">Pengurus</label>
+                        <select class="form-select" id="coordinatorId">
+                            <option value="">Pilih Pengurus (wajib untuk hutang jasa potocopy)</option>
+                            @foreach(($coordinators ?? []) as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="cashInputDiv">
+                        <label class="form-label">Uang Diterima</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" class="form-control" id="cashAmount" placeholder="0">
+                        </div>
+                        <div class="mt-1 d-flex justify-content-between text-body-secondary small">
+                             <span>Kembalian:</span>
+                             <span id="changeAmount" class="fw-bold">Rp 0</span>
+                        </div>
+                    </div>
+
                     <div class="mb-2">
                         <label class="form-label">No. WhatsApp (opsional)</label>
                         <input type="text" class="form-control" id="customerPhone" placeholder="08xxxxxxxxxx">
@@ -1169,22 +1168,32 @@ function updatePengurusVisibility() {
 
 <style>
     .atk-pos-page .product-card:hover {
-        border-color: #0d6efd;
-        background-color: #f8f9fa;
+        border-color: var(--bs-primary);
+        background-color: rgba(13, 110, 253, 0.05);
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
     }
     .atk-pos-page .card {
         border: 1px solid rgba(148, 163, 184, 0.2);
         border-radius: 16px;
         box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+        backdrop-filter: blur(10px);
     }
     .atk-pos-page .card-header {
         border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-        background: rgba(248, 250, 252, 0.82);
+        background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%);
     }
     .atk-pos-page .form-control,
     .atk-pos-page .form-select,
     .atk-pos-page .input-group-text {
         border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        transition: all 0.2s ease;
+    }
+    .atk-pos-page .form-control:focus,
+    .atk-pos-page .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-color: var(--bs-primary);
     }
     .atk-pos-page .input-group .form-control {
         border-top-left-radius: 0;
@@ -1193,22 +1202,89 @@ function updatePengurusVisibility() {
     .atk-pos-page .input-group .input-group-text {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     }
     .atk-pos-page .cursor-pointer {
         cursor: pointer;
     }
+    .atk-pos-page .list-group-item {
+        border-left: 0;
+        border-right: 0;
+        border-color: rgba(148, 163, 184, 0.25);
+        padding: 0.75rem 0.5rem;
+        transition: all 0.2s ease;
+    }
+    .atk-pos-page .list-group-item:hover {
+        background: rgba(13, 110, 253, 0.03);
+    }
+    .atk-pos-page .btn {
+        border-radius: 12px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .atk-pos-page .btn-success {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        border: 0;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+    }
+    .atk-pos-page .btn-success:hover {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45);
+        transform: translateY(-1px);
+    }
+    .atk-pos-page .btn-success:disabled {
+        background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+        box-shadow: none;
+    }
+    .atk-pos-page .btn-outline-primary {
+        border-color: rgba(13, 110, 253, 0.5);
+        color: #0d6efd;
+    }
+    .atk-pos-page .btn-outline-primary:hover,
+    .atk-pos-page .btn-outline-primary.active {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        border-color: #0d6efd;
+        color: white;
+    }
+    .atk-pos-page .product-card {
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        overflow: hidden;
+    }
+    .atk-pos-page .product-card .card-body {
+        padding: 0.75rem;
+    }
+    .atk-pos-page .product-card h6 {
+        font-weight: 600;
+        color: #0f172a;
+    }
+    [data-bs-theme="dark"] .atk-pos-page .product-card h6 {
+        color: #e2e8f0;
+    }
+    .atk-scan-reader video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        filter: brightness(1.2) contrast(1.15) saturate(1.05);
+    }
     [data-bs-theme="dark"] .atk-pos-page .card {
-        background: #111827;
+        background: linear-gradient(145deg, #111827 0%, #0f172a 100%);
         border-color: rgba(148, 163, 184, 0.22);
         box-shadow: 0 18px 38px rgba(2, 6, 23, 0.55);
     }
     [data-bs-theme="dark"] .atk-pos-page .card-header {
-        background: #0f172a;
+        background: linear-gradient(135deg, #0f172a 0%, #0b1220 100%);
         border-color: rgba(148, 163, 184, 0.3);
     }
     [data-bs-theme="dark"] .atk-pos-page .product-card:hover {
         background-color: rgba(37, 99, 235, 0.18);
         border-color: rgba(96, 165, 250, 0.5);
+    }
+    [data-bs-theme="dark"] .atk-pos-page .product-card {
+        background: linear-gradient(145deg, #0f172a 0%, #0b1220 100%);
+        border-color: rgba(148, 163, 184, 0.3);
     }
     [data-bs-theme="dark"] .atk-pos-page .form-control,
     [data-bs-theme="dark"] .atk-pos-page .form-select,
@@ -1217,9 +1293,16 @@ function updatePengurusVisibility() {
         color: #e2e8f0;
         border-color: rgba(148, 163, 184, 0.35);
     }
+    [data-bs-theme="dark"] .atk-pos-page .input-group-text {
+        background: linear-gradient(135deg, #0b1220 0%, #0f172a 100%);
+    }
     [data-bs-theme="dark"] .atk-pos-page .text-muted,
     [data-bs-theme="dark"] .atk-pos-page .text-body-secondary {
         color: #94a3b8 !important;
+    }
+    [data-bs-theme="dark"] .atk-pos-page .list-group-item {
+        background: transparent;
+        border-color: rgba(148, 163, 184, 0.3);
     }
     @media (max-width: 991.98px) {
         .atk-pos-page {
