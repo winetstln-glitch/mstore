@@ -1256,18 +1256,18 @@ function processTransaction() {
     .then(response => response.json())
     .then(async result => {
         if (result.success) {
-            const receiptUrl = '{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt';
-            if (isMobileDevice()) {
-                window.location.href = withAutoPrint(receiptUrl);
-            } else {
-                window.open(receiptUrl, '_blank', 'width=400,height=600');
-            }
-
+            // 1. First reset cart and form inputs immediately
+            cart = [];
+            document.getElementById('cashAmount').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('sendWhatsapp').checked = false;
+            
+            // 2. Try to send WhatsApp receipt if needed
             const sendWa = document.getElementById('sendWhatsapp').checked;
             const phone = document.getElementById('customerPhone').value;
             if (sendWa && phone) {
                 await sendAtkWhatsappReceipt(result.transaction_id, phone, {
-                    items: cart.map((item) => ({
+                    items: result.items?.map((item) => ({
                         name: item.bank
                             ? `${item.name} (Nominal ${formatRupiah(item.nominal_transaksi || 0)})`
                             : item.name,
@@ -1277,18 +1277,29 @@ function processTransaction() {
                             ? ((item.nominal_transaksi || 0) + (item.fee || 0))
                             : (item.price * item.quantity)
                     })),
-                    total,
-                    paymentMethod
+                    total: result.total,
+                    paymentMethod: paymentMethod
                 }).catch(() => {});
             }
 
-            cart = [];
-            document.getElementById('cashAmount').value = '';
-            document.getElementById('customerPhone').value = '';
-            document.getElementById('sendWhatsapp').checked = false;
+            // 3. Re-render empty cart
             renderCart();
+
+            // 4. Handle receipt display
+            const receiptUrl = '{{ url("atk/transactions") }}/' + result.transaction_id + '/receipt';
+            if (isMobileDevice()) {
+                // On mobile, open receipt in new tab instead of navigating away
+                window.open(withAutoPrint(receiptUrl), '_blank');
+            } else {
+                window.open(receiptUrl, '_blank', 'width=400,height=600');
+            }
+
+            // 5. Reset checkout button to enabled
+            btn.disabled = false;
+            btn.innerHTML = 'Proses Pembayaran';
+            
+            // 6. Show success message (no need to reload page)
             alert('Transaksi berhasil!');
-            location.reload();
         } else {
             alert('Error: ' + result.message);
             btn.disabled = false;
