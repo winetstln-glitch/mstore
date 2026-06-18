@@ -161,6 +161,7 @@ class SidebarMenu
                     self::link('atk-float-accounts', 'Akun Float', 'atk.float-accounts.index', permissions: ['atk.manage']),
                     self::link('atk-owner-funds', 'Dana Talangan', 'atk.owner-funds.index', permissions: ['atk.manage']),
                     self::link('atk-expenses', 'Pengeluaran ATK', 'atk.expenses.index', permissions: ['atk.manage']),
+                    self::link('atk-fee-management', 'Manajemen Biaya', 'atk.fee.index', permissions: ['atk.manage']),
                     self::link('atk-cash-movements', 'Mutasi Kas Utama', 'atk.cash-movements.index', permissions: ['atk.manage']),
                 ], permissions: ['atk.manage']),
                 self::group('atk-master', 'Master Data', [

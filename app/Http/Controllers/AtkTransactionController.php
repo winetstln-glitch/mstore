@@ -127,6 +127,35 @@ class AtkTransactionController extends Controller implements HasMiddleware
             ->get()
             ->sum('items_sum_nominal_transaksi');
 
+        // Calculate total fees
+        $todayFees = AtkTransactionItem::whereHas('transaction', function ($q) use ($today) {
+            $q->whereDate('created_at', $today);
+        })->sum('fee');
+        
+        $monthlyFees = AtkTransactionItem::whereHas('transaction', function ($q) use ($month) {
+            $q->where('created_at', 'like', "$month%");
+        })->sum('fee');
+        
+        $todayFeesBank = AtkTransactionItem::where('item_type', 'bank')
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->whereDate('created_at', $today);
+            })->sum('fee');
+            
+        $todayFeesPpob = AtkTransactionItem::where('item_type', 'ppob')
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->whereDate('created_at', $today);
+            })->sum('fee');
+            
+        $todayFeesTopUp = AtkTransactionItem::where('item_type', 'top_up')
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->whereDate('created_at', $today);
+            })->sum('fee');
+            
+        $todayFeesCashOut = AtkTransactionItem::where('item_type', 'cash_out')
+            ->whereHas('transaction', function ($q) use ($today) {
+                $q->whereDate('created_at', $today);
+            })->sum('fee');
+
         // Top selling products
         $topProducts = AtkTransactionItem::select('product_name', DB::raw('sum(quantity) as total_qty'))
             ->groupBy('product_name')
@@ -149,7 +178,13 @@ class AtkTransactionController extends Controller implements HasMiddleware
             'todayTopUp',
             'todayWithdrawal',
             'todayPpob',
-            'todayTransfer'
+            'todayTransfer',
+            'todayFees',
+            'monthlyFees',
+            'todayFeesBank',
+            'todayFeesPpob',
+            'todayFeesTopUp',
+            'todayFeesCashOut'
         ));
     }
 
@@ -164,10 +199,33 @@ class AtkTransactionController extends Controller implements HasMiddleware
         $floatAccounts = \App\Models\AtkFloatAccount::where('status', 'active')->get();
         $cash = \App\Models\Cash::firstOrCreate(['name' => 'Kas Utama'], ['balance' => 0]);
 
-        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors', 'floatAccounts', 'cash'));
+        // Get fee settings
+        $feeSettings = [
+            'bank' => [
+                'percent' => (float) Setting::getValue('atk_fee_bank_percent', 0),
+                'fixed' => (float) Setting::getValue('atk_fee_bank_fixed', 0),
+            ],
+            'cash_out' => [
+                'percent' => (float) Setting::getValue('atk_fee_cashout_percent', 0),
+                'fixed' => (float) Setting::getValue('atk_fee_cashout_fixed', 0),
+            ],
+            'top_up' => [
+                'percent' => (float) Setting::getValue('atk_fee_topup_percent', 0),
+                'fixed' => (float) Setting::getValue('atk_fee_topup_fixed', 0),
+            ],
+            'ppob' => [
+                'percent' => (float) Setting::getValue('atk_fee_ppob_percent', 0),
+                'fixed' => (float) Setting::getValue('atk_fee_ppob_fixed', 0),
+            ],
+        ];
+
+        // Get fee profiles
+        $feeProfiles = \App\Models\FeeProfile::where('module', 'atk')->where('is_active', true)->with('tiers')->get();
+
+        return view('atk.pos', compact('products', 'services', 'bankServices', 'customers', 'coordinators', 'investors', 'floatAccounts', 'cash', 'feeSettings', 'feeProfiles'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\FeeCalculationService $feeService)
     {
         \Illuminate\Support\Facades\Log::info('ATK Transaction Store Request:', $request->all());
         $request->validate([
@@ -177,6 +235,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.nominal_transaksi' => 'nullable|numeric|min:0',
             'items.*.fee' => 'nullable|numeric|min:0',
+            'items.*.calculated_fee' => 'nullable|numeric|min:0',
             'items.*.customer_name' => 'nullable|string|max:255',
             'items.*.float_account_id' => 'nullable|exists:atk_float_accounts,id',
             'transaction_category' => 'nullable|string|in:penjualan_atk,pembayaran_pelanggan',
@@ -189,6 +248,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
 
         $total = 0;
         $items = [];
+        $feeLogData = [];
 
         $sumBankNominal = 0;
         $sumFee = 0;
@@ -231,6 +291,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($itemType === 'cash_out') {
                     $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
                     $fee = (float) ($itemData['fee'] ?? 0);
+                    $calculatedFee = (float) ($itemData['calculated_fee'] ?? $fee);
                     $floatAccountId = $itemData['float_account_id'] ?? null;
                     if ($nominal <= 0) {
                         throw new \Exception('Nominal cash out wajib diisi.');
@@ -252,6 +313,13 @@ class AtkTransactionController extends Controller implements HasMiddleware
                         'fee' => $fee,
                         'item_type' => 'cash_out',
                     ];
+                    $feeLogData[] = [
+                        'transaction_type' => 'cash_out',
+                        'nominal' => $nominal,
+                        'calculated_fee' => $calculatedFee,
+                        'manual_fee' => $calculatedFee !== $fee ? $fee : null,
+                        'final_fee' => $fee,
+                    ];
                     $cashOutFloatTransactions[] = [
                         'float_account_id' => $floatAccountId,
                         'amount' => $nominal + $fee,
@@ -264,6 +332,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($itemType === 'top_up') {
                     $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
                     $fee = (float) ($itemData['fee'] ?? 0);
+                    $calculatedFee = (float) ($itemData['calculated_fee'] ?? $fee);
                     if ($nominal <= 0) {
                         throw new \Exception('Nominal top up wajib diisi.');
                     }
@@ -280,12 +349,20 @@ class AtkTransactionController extends Controller implements HasMiddleware
                         'fee' => $fee,
                         'item_type' => 'top_up',
                     ];
+                    $feeLogData[] = [
+                        'transaction_type' => 'top_up',
+                        'nominal' => $nominal,
+                        'calculated_fee' => $calculatedFee,
+                        'manual_fee' => $calculatedFee !== $fee ? $fee : null,
+                        'final_fee' => $fee,
+                    ];
                     continue;
                 }
 
                 if ($itemType === 'ppob') {
                     $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
                     $fee = (float) ($itemData['fee'] ?? 0);
+                    $calculatedFee = (float) ($itemData['calculated_fee'] ?? $fee);
                     if ($nominal <= 0) {
                         throw new \Exception('Nominal PPOB wajib diisi.');
                     }
@@ -301,6 +378,13 @@ class AtkTransactionController extends Controller implements HasMiddleware
                         'nominal_transaksi' => $nominal,
                         'fee' => $fee,
                         'item_type' => 'ppob',
+                    ];
+                    $feeLogData[] = [
+                        'transaction_type' => 'ppob',
+                        'nominal' => $nominal,
+                        'calculated_fee' => $calculatedFee,
+                        'manual_fee' => $calculatedFee !== $fee ? $fee : null,
+                        'final_fee' => $fee,
                     ];
                     continue;
                 }
@@ -324,12 +408,20 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 if ($isBank) {
                     $nominal = (float) ($itemData['nominal_transaksi'] ?? 0);
                     $fee = (float) ($itemData['fee'] ?? 0);
+                    $calculatedFee = (float) ($itemData['calculated_fee'] ?? $fee);
                     $sumBankNominal += $nominal;
                     $sumFee += $fee;
                     $subtotal = $fee;
                     $total += ($nominal + $fee);
                     $totalCashIn += $nominal + $fee;
                     $price = $fee;
+                    $feeLogData[] = [
+                        'transaction_type' => 'bank',
+                        'nominal' => $nominal,
+                        'calculated_fee' => $calculatedFee,
+                        'manual_fee' => $calculatedFee !== $fee ? $fee : null,
+                        'final_fee' => $fee,
+                    ];
                 } else {
                     $price = $product->price;
                     $subtotal = $price * $itemData['quantity'];
@@ -387,6 +479,15 @@ class AtkTransactionController extends Controller implements HasMiddleware
 
             foreach ($items as $item) {
                 $transaction->items()->create($item);
+            }
+            
+            // Log fees
+            foreach ($feeLogData as $feeData) {
+                $feeService->logFee(array_merge($feeData, [
+                    'transaction_id' => $transaction->id,
+                    'module' => 'atk',
+                    'user_id' => Auth::id(),
+                ]));
             }
 
             if ($request->payment_method !== 'hutang') {

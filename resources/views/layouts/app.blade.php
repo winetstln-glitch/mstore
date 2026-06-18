@@ -678,7 +678,7 @@
                 $atkDashboardActive = $routeIs('atk.dashboard');
                 $atkMasterActive = $routeIs('atk.products.*');
                 $atkTransactionActive = $routeIs('atk.pos') || $routeIs('atk.transactions.*');
-                $atkFinanceActive = $routeIs('atk.expenses.*') || $routeIs('atk.reports.*');
+                $atkFinanceActive = $routeIs('atk.expenses.*') || $routeIs('atk.reports.*') || $routeIs('atk.fee.*');
                 $atkAnyActive = $atkDashboardActive || $atkMasterActive || $atkTransactionActive || $atkFinanceActive;
             @endphp
 
@@ -735,6 +735,9 @@
                             @if($hasPermission('atk.manage'))
                             <a href="{{ route('atk.expenses.index') }}" class="sidebar-item {{ $routeIs('atk.expenses.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
+                            </a>
+                            <a href="{{ route('atk.fee.index') }}" class="sidebar-item {{ $routeIs('atk.fee.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-percent"></i> {{ __('Manajemen Biaya') }}
                             </a>
                             @endif
                             @if($hasPermission('atk.report'))

@@ -379,6 +379,8 @@ let cart = [];
 let atkBarcodeScanner = null;
 let isAtkBarcodeScannerRunning = false;
 const appName = @json(config('app.name'));
+const feeSettings = @json($feeSettings);
+const feeProfiles = @json($feeProfiles);
 
 document.addEventListener('DOMContentLoaded', function () {
     const openScanBtn = document.getElementById('openAtkBarcodeScan');
@@ -489,8 +491,106 @@ document.addEventListener('DOMContentLoaded', function () {
         setInterval(updateTime, 60000);
     }
 
+    // Auto-calculate fees
+    document.getElementById('bankNominal')?.addEventListener('input', function() {
+        const nominal = parseFloat(this.value) || 0;
+        const fee = calculateFee('bank', nominal);
+        document.getElementById('bankFee').value = Math.round(fee);
+    });
+    
+    document.getElementById('cashOutNominal')?.addEventListener('input', function() {
+        const nominal = parseFloat(this.value) || 0;
+        const fee = calculateFee('cash_out', nominal);
+        document.getElementById('cashOutFee').value = Math.round(fee);
+    });
+    
+    document.getElementById('topUpNominal')?.addEventListener('input', function() {
+        const nominal = parseFloat(this.value) || 0;
+        const fee = calculateFee('top_up', nominal);
+        document.getElementById('topUpFee').value = Math.round(fee);
+    });
+    
+    document.getElementById('ppobNominal')?.addEventListener('input', function() {
+        const nominal = parseFloat(this.value) || 0;
+        const fee = calculateFee('ppob', nominal);
+        document.getElementById('ppobFee').value = Math.round(fee);
+    });
+
     updatePengurusVisibility();
 });
+
+function calculateFee(transactionType, nominal) {
+    const profile = feeProfiles.find(p => p.transaction_type === transactionType);
+    if (!profile) {
+        const fallback = feeSettings[transactionType];
+        if (fallback) {
+            return (nominal * fallback.percent / 100) + fallback.fixed;
+        }
+        return 0;
+    }
+
+    let fee = 0;
+    switch (profile.fee_mode) {
+        case 'fixed':
+            if (profile.tiers && profile.tiers.length > 0) {
+                fee = profile.tiers[0].fee_value || 0;
+            }
+            break;
+        case 'percentage':
+            if (profile.tiers && profile.tiers.length > 0) {
+                fee = (nominal * (profile.tiers[0].fee_value || 0)) / 100;
+            }
+            break;
+        case 'fixed_percentage':
+            if (profile.tiers && profile.tiers.length > 0) {
+                const fixed = profile.tiers[0].fixed_value || 0;
+                const percentage = (nominal * (profile.tiers[0].fee_value || 0)) / 100;
+                fee = fixed + percentage;
+            }
+            break;
+        case 'tier':
+            if (profile.tiers && profile.tiers.length > 0) {
+                for (const tier of profile.tiers) {
+                    const min = parseFloat(tier.min_amount) || 0;
+                    const max = tier.max_amount ? parseFloat(tier.max_amount) : null;
+                    if (nominal >= min && (max === null || nominal <= max)) {
+                        if (tier.fee_type === 'fixed') {
+                            fee = tier.fee_value || 0;
+                        } else if (tier.fee_type === 'percentage') {
+                            fee = (nominal * (tier.fee_value || 0)) / 100;
+                        } else if (tier.fee_type === 'fixed_percentage') {
+                            const fixed = tier.fixed_value || 0;
+                            const percentage = (nominal * (tier.fee_value || 0)) / 100;
+                            fee = fixed + percentage;
+                        }
+                        break;
+                    }
+                }
+            }
+            break;
+        case 'cost_plus':
+            const costPrice = parseFloat(profile.cost_price) || nominal;
+            const markupType = profile.markup_type;
+            const markupValue = parseFloat(profile.markup_value) || 0;
+            if (markupType === 'fixed') {
+                fee = costPrice + markupValue;
+            } else {
+                fee = costPrice + (costPrice * markupValue / 100);
+            }
+            break;
+        case 'custom':
+            const formula = profile.custom_formula || '';
+            try {
+                let safeFormula = formula.replace(/amount/gi, nominal);
+                safeFormula = safeFormula.replace(/[^0-9+\-*/().%\s]/g, '');
+                fee = eval(safeFormula);
+            } catch (e) {
+                fee = 0;
+            }
+            break;
+    }
+    return fee;
+}
 
 function setAtkScanStatus(message, type = 'muted') {
     const statusEl = document.getElementById('atkScanStatus');

@@ -240,10 +240,21 @@
             @foreach($transaction->items as $item)
                 <div>
                     <span class="block font-bold uppercase">{{ $item->product_name }}</span>
-                    <div class="flex justify-between text-[11px]">
-                        <span>{{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
-                        <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
-                    </div>
+                    @if(in_array($item->item_type, ['bank', 'cash_out', 'top_up', 'ppob']) && ($item->nominal_transaksi > 0 || $item->fee > 0))
+                        <div class="flex justify-between text-[11px]">
+                            <span>Nominal Transaksi</span>
+                            <span>{{ number_format($item->nominal_transaksi, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px]">
+                            <span>Fee</span>
+                            <span>{{ number_format($item->fee, 0, ',', '.') }}</span>
+                        </div>
+                    @else
+                        <div class="flex justify-between text-[11px]">
+                            <span>{{ (float)$item->quantity }} x {{ number_format($item->price, 0, ',', '.') }}</span>
+                            <span>{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>
@@ -313,7 +324,10 @@ const txnData = {{ Js::from([
         'name' => strtoupper($i->product_name),
         'qty' => (float)$i->quantity,
         'prc' => (float)$i->price,
-        'sub' => (float)$i->subtotal
+        'sub' => (float)$i->subtotal,
+        'item_type' => $i->item_type,
+        'nominal_transaksi' => (float)$i->nominal_transaksi,
+        'fee' => (float)$i->fee
     ]),
     'total' => (float)$transaction->total_amount,
     'method' => strtoupper($transaction->payment_method),
@@ -366,7 +380,15 @@ function buildEscPosText(data){
     txt+="[L]KASIR: "+data.cashier+"\n";
     if(data.queue){txt+="\n[C]<b>ANTRIAN: #"+data.queue+"</b>\n\n";}
     txt+="[L]--------------------------------\n";
-    data.items.forEach(item=>{txt+="[L]"+item.name+"\n[L]"+item.qty+" x "+item.prc.toLocaleString('id-ID')+" = "+item.sub.toLocaleString('id-ID')+"\n";});
+    data.items.forEach(item=>{
+        txt+="[L]"+item.name+"\n";
+        if(['bank','cash_out','top_up','ppob'].includes(item.item_type) && (item.nominal_transaksi > 0 || item.fee > 0)) {
+            txt+="[L]  Nominal: "+item.nominal_transaksi.toLocaleString('id-ID')+"\n";
+            txt+="[L]  Fee: "+item.fee.toLocaleString('id-ID')+"\n";
+        } else {
+            txt+="[L]"+item.qty+" x "+item.prc.toLocaleString('id-ID')+" = "+item.sub.toLocaleString('id-ID')+"\n";
+        }
+    });
     txt+="[L]--------------------------------\n";
     txt+="[L]TOTAL AKHIR : Rp "+data.total.toLocaleString('id-ID')+"\n";
     txt+="[L]METODE: "+data.method+"\n";

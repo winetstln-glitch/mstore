@@ -72,6 +72,46 @@
                         </div>
                     </div>
 
+                    <div class="mb-4 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-calculator me-1"></i> Pengaturan Fee
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="atk_fee_bank_percent" class="form-label fw-medium">Fee Bank (%)</label>
+                                <input type="number" step="0.01" class="form-control" id="atk_fee_bank_percent" name="atk_fee_bank_percent" value="{{ \App\Models\Setting::getValue('atk_fee_bank_percent', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_bank_fixed" class="form-label fw-medium">Fee Bank (Fixed Rp)</label>
+                                <input type="number" class="form-control" id="atk_fee_bank_fixed" name="atk_fee_bank_fixed" value="{{ \App\Models\Setting::getValue('atk_fee_bank_fixed', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_cashout_percent" class="form-label fw-medium">Fee Tarik Tunai (%)</label>
+                                <input type="number" step="0.01" class="form-control" id="atk_fee_cashout_percent" name="atk_fee_cashout_percent" value="{{ \App\Models\Setting::getValue('atk_fee_cashout_percent', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_cashout_fixed" class="form-label fw-medium">Fee Tarik Tunai (Fixed Rp)</label>
+                                <input type="number" class="form-control" id="atk_fee_cashout_fixed" name="atk_fee_cashout_fixed" value="{{ \App\Models\Setting::getValue('atk_fee_cashout_fixed', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_topup_percent" class="form-label fw-medium">Fee Top Up (%)</label>
+                                <input type="number" step="0.01" class="form-control" id="atk_fee_topup_percent" name="atk_fee_topup_percent" value="{{ \App\Models\Setting::getValue('atk_fee_topup_percent', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_topup_fixed" class="form-label fw-medium">Fee Top Up (Fixed Rp)</label>
+                                <input type="number" class="form-control" id="atk_fee_topup_fixed" name="atk_fee_topup_fixed" value="{{ \App\Models\Setting::getValue('atk_fee_topup_fixed', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_ppob_percent" class="form-label fw-medium">Fee PPOB (%)</label>
+                                <input type="number" step="0.01" class="form-control" id="atk_fee_ppob_percent" name="atk_fee_ppob_percent" value="{{ \App\Models\Setting::getValue('atk_fee_ppob_percent', '0') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="atk_fee_ppob_fixed" class="form-label fw-medium">Fee PPOB (Fixed Rp)</label>
+                                <input type="number" class="form-control" id="atk_fee_ppob_fixed" name="atk_fee_ppob_fixed" value="{{ \App\Models\Setting::getValue('atk_fee_ppob_fixed', '0') }}">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-print me-1"></i> POS Android

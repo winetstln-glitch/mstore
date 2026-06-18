@@ -61,7 +61,7 @@
 
     {{-- Key Performance Indicators --}}
     <div class="row g-4 mb-5">
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
                 <div class="stat-card primary">
                     <div class="d-flex justify-content-between align-items-start">
@@ -76,7 +76,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <a href="{{ route('atk.reports.index') }}" class="text-decoration-none">
                 <div class="stat-card success">
                     <div class="d-flex justify-content-between align-items-start">
@@ -91,7 +91,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <a href="{{ route('atk.transactions.index') }}" class="text-decoration-none">
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-start">
@@ -105,6 +105,75 @@
                     </div>
                 </div>
             </a>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card warning">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-card-label">{{ __('Fee Hari Ini') }}</div>
+                        <div class="stat-card-value">Rp {{ number_format($todayFees, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-card-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {{-- Fee Breakdown --}}
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-card-label">{{ __('Fee Bulanan') }}</div>
+                        <div class="stat-card-value">Rp {{ number_format($monthlyFees, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-card-icon bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card primary">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-card-label">{{ __('Fee Transfer Bank') }}</div>
+                        <div class="stat-card-value">Rp {{ number_format($todayFeesBank, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-card-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card success">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-card-label">{{ __('Fee Top Up') }}</div>
+                        <div class="stat-card-value">Rp {{ number_format($todayFeesTopUp, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-card-icon bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-arrow-up-right-dots"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-card-label">{{ __('Fee PPOB') }}</div>
+                        <div class="stat-card-value">Rp {{ number_format($todayFeesPpob, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-card-icon bg-secondary bg-opacity-10 text-secondary">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

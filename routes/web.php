@@ -1042,6 +1042,18 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         
         // Owner Fund Routes
         Route::resource('owner-funds', \App\Http\Controllers\AtkOwnerFundController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+        
+        // Fee Management Routes
+        Route::prefix('fee')->name('fee.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\FeeController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\FeeController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\FeeController::class, 'store'])->name('store');
+            Route::get('/{id}', [\App\Http\Controllers\FeeController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [\App\Http\Controllers\FeeController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [\App\Http\Controllers\FeeController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\FeeController::class, 'destroy'])->name('destroy');
+            Route::post('/calculate', [\App\Http\Controllers\FeeController::class, 'calculate'])->name('calculate');
+        });
     });
 
     Route::prefix('wedding')->name('wedding.')->group(function () {
