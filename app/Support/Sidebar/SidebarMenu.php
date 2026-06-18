@@ -65,7 +65,7 @@ class SidebarMenu
                         self::link('infra-odp', 'ODP', 'odps.index', permissions: ['odp.view']),
                         self::link('infra-closure', 'Closure', 'closures.index', permissions: ['closure.view']),
                         self::link('infra-htb', 'HTB', 'htbs.index', permissions: ['htb.view']),
-                    ]),
+                    ], permissions: ['olt.view', 'odc.view', 'odp.view', 'closure.view', 'htb.view']),
                     self::group('net-access', 'Akses', [
                         self::link('access-router', 'Router', 'routers.index', permissions: ['router.view']),
                         self::link('access-vpn-bridge', 'VPN Bridge', 'vpn.servers.index', permissions: ['router.view']),

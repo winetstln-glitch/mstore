@@ -191,7 +191,7 @@ class DefaultRolePermissions
             Role::KASIR_ATK => [
                 'label' => 'Kasir ATK',
                 'permissions' => [
-                    'atk.view', 'atk.pos', 'atk.report', 'atk.cash-register.manage',
+                    'atk.view', 'atk.pos', 'atk.report', 'atk.cash-register.manage', 'atk.manage',
                     'attendance.view', 'attendance.create',
                     'profile.view', 'profile.update',
                     'notification.view',
@@ -204,7 +204,7 @@ class DefaultRolePermissions
                     'attendance.view', 'attendance.create',
                     'schedule.view',
                     'leave.view', 'leave.create', 'leave.edit',
-                    'wash.view', 'wash.pos', 'wash.report',
+                    'wash.view', 'wash.pos', 'wash.report', 'wash.manage',
                     'wash.member.view',
                     'wash.loyalty.view',
                     'wash.reward.view',
