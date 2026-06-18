@@ -378,6 +378,7 @@
 let cart = [];
 let atkBarcodeScanner = null;
 let isAtkBarcodeScannerRunning = false;
+const appName = {{ Js::from(config('app.name')) }};
 
 document.addEventListener('DOMContentLoaded', function () {
     const openScanBtn = document.getElementById('openAtkBarcodeScan');
@@ -989,7 +990,7 @@ async function buildAtkReceiptBlob(transactionId, payload) {
     `).join('');
 
     capture.innerHTML = `
-        <div style="text-align:center;font-weight:700;font-size:14px;">${escapeHtml(@json(config('app.name')))}</div>
+        <div style="text-align:center;font-weight:700;font-size:14px;">${escapeHtml(appName)}</div>
         <div style="text-align:center;color:#4b5563;">Detail Transaksi ATK</div>
         <div style="margin-top:8px;">No. Transaksi: #${escapeHtml(transactionId)}</div>
         <div>Tanggal: ${escapeHtml(new Date().toLocaleString('id-ID'))}</div>
