@@ -15,13 +15,13 @@
                     <div class="atk-card-header">
                         <h2 class="atk-card-title"><i class="fas fa-th-large"></i> Pilih Produk</h2>
                         <div class="atk-filter-group">
-                            <button class="filter-btn active" data-tab="products" type="button" onclick="switchTab('products')">Produk</button>
-                            <button class="filter-btn" data-tab="services" type="button" onclick="switchTab('services')">Jasa</button>
-                            <button class="filter-btn" data-tab="bank" type="button" onclick="switchTab('bank')">Bank</button>
-                            <button class="filter-btn" data-tab="cash-out" type="button" onclick="switchTab('cash-out')">Tarik Tunai</button>
-                            <button class="filter-btn" data-tab="top-up" type="button" onclick="switchTab('top-up')">Top Up</button>
-                            <button class="filter-btn" data-tab="ppob" type="button" onclick="switchTab('ppob')">PPOB</button>
-                            <button class="filter-btn" data-tab="customer-payments" type="button" onclick="switchTab('customer-payments')">Pembayaran</button>
+                            <button class="filter-btn active" data-tab="products" type="button">Produk</button>
+                            <button class="filter-btn" data-tab="services" type="button">Jasa</button>
+                            <button class="filter-btn" data-tab="bank" type="button">Bank</button>
+                            <button class="filter-btn" data-tab="cash-out" type="button">Tarik Tunai</button>
+                            <button class="filter-btn" data-tab="top-up" type="button">Top Up</button>
+                            <button class="filter-btn" data-tab="ppob" type="button">PPOB</button>
+                            <button class="filter-btn" data-tab="customer-payments" type="button">Pembayaran</button>
                         </div>
                         <div class="mt-2">
                             <div class="input-group">
@@ -114,7 +114,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn atk-primary-btn w-100" onclick="addCustomerPaymentToCart()">
+                                    <button class="btn atk-primary-btn w-100" data-action="add-customer-payment">
                                         <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                     </button>
                                 </div>
@@ -154,7 +154,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn atk-primary-btn w-100" onclick="addBankToCart()">
+                                    <button class="btn atk-primary-btn w-100" data-action="add-bank">
                                         <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                     </button>
                                 </div>
@@ -190,7 +190,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn atk-primary-btn w-100" onclick="addCashOutToCart()">
+                                    <button class="btn atk-primary-btn w-100" data-action="add-cash-out">
                                         <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                     </button>
                                 </div>
@@ -226,7 +226,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn atk-primary-btn w-100" onclick="addTopUpToCart()">
+                                    <button class="btn atk-primary-btn w-100" data-action="add-top-up">
                                         <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                     </button>
                                 </div>
@@ -266,7 +266,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn atk-primary-btn w-100" onclick="addPPOBToCart()">
+                                    <button class="btn atk-primary-btn w-100" data-action="add-ppob">
                                         <i class="fa-solid fa-plus me-2"></i> Tambah ke Keranjang
                                     </button>
                                 </div>
@@ -319,7 +319,7 @@
                                     <label class="atk-field-label">Uang Diterima</label>
                                     <div class="input-group">
                                         <span class="input-group-text atk-input-group-text">Rp</span>
-                                        <input type="number" class="form-control atk-input" id="cashAmount" placeholder="0" oninput="calculateChange()">
+                                        <input type="number" class="form-control atk-input" id="cashAmount" placeholder="0">
                                     </div>
                                 </div>
                             </div>
@@ -342,7 +342,7 @@
                                 </div>
                             </div>
 
-                            <button type="button" class="btn atk-primary-btn w-100 mt-3" id="btnCheckout" onclick="processTransaction()" disabled>Proses Pembayaran</button>
+                            <button type="button" class="btn atk-primary-btn w-100 mt-3" id="btnCheckout" data-action="process-transaction" disabled>Proses Pembayaran</button>
                         </form>
                     </div>
                 </div>
@@ -378,12 +378,23 @@
 let cart = [];
 let atkBarcodeScanner = null;
 let isAtkBarcodeScannerRunning = false;
-const appName = {{ Js::from(config('app.name')) }};
+const appName = @json(config('app.name'));
 
 document.addEventListener('DOMContentLoaded', function () {
     const openScanBtn = document.getElementById('openAtkBarcodeScan');
     const stopScanBtn = document.getElementById('stopAtkBarcodeScan');
     const scanModalEl = document.getElementById('atkBarcodeScanModal');
+    const filterBtns = document.querySelectorAll('.atk-filter-group .filter-btn');
+
+    // Tab buttons click listeners
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tab = this.dataset.tab;
+            console.log('Switching to tab:', tab);
+            switchTab(tab);
+        });
+    });
 
     if (openScanBtn && scanModalEl && window.bootstrap) {
         openScanBtn.addEventListener('click', function () {
@@ -420,6 +431,32 @@ document.addEventListener('DOMContentLoaded', function () {
             addToCart(id, name, price, maxStock, type);
         });
     });
+
+    // Event delegation for all data-action buttons
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+        const action = target.dataset.action;
+        if (action === 'add-customer-payment') {
+            addCustomerPaymentToCart();
+        } else if (action === 'add-bank') {
+            addBankToCart();
+        } else if (action === 'add-cash-out') {
+            addCashOutToCart();
+        } else if (action === 'add-top-up') {
+            addTopUpToCart();
+        } else if (action === 'add-ppob') {
+            addPPOBToCart();
+        } else if (action === 'process-transaction') {
+            processTransaction();
+        }
+    });
+
+    // Cash amount input listener
+    const cashAmountInput = document.getElementById('cashAmount');
+    if (cashAmountInput) {
+        cashAmountInput.addEventListener('input', calculateChange);
+    }
 
     // Product search
     document.getElementById('productSearch').addEventListener('input', function(e) {
