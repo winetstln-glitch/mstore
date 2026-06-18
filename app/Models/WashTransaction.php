@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WashTransaction extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'user_id', 'transaction_number', 'customer_name', 'vehicle_plate',
         'total_amount', 'payment_method', 'cash_amount', 'change_amount', 'notes',
@@ -15,6 +19,10 @@ class WashTransaction extends Model
         'status',
         'kasbon_type', 'kasbon_user_id', 'kasbon_name', 'kasbon_settled',
         'queue_number',
+        'profit_center_id',
+        'cost_center_id',
+        'wash_shift_session_id',
+        'wash_cash_register_id',
     ];
 
     protected $appends = [
@@ -49,6 +57,31 @@ class WashTransaction extends Model
     public function member(): BelongsTo
     {
         return $this->belongsTo(WashMember::class, 'wash_member_id');
+    }
+
+    public function profitCenter(): BelongsTo
+    {
+        return $this->belongsTo(ProfitCenter::class);
+    }
+
+    public function costCenter(): BelongsTo
+    {
+        return $this->belongsTo(CostCenter::class);
+    }
+
+    public function shiftSession(): BelongsTo
+    {
+        return $this->belongsTo(WashShiftSession::class);
+    }
+
+    public function cashRegister(): BelongsTo
+    {
+        return $this->belongsTo(WashCashRegister::class);
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(WashPointTransaction::class);
     }
 
     public function getQueuePriorityCodeAttribute(): string

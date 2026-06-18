@@ -7,6 +7,9 @@
         'snack' => 'Snack',
         'kopi' => 'Caffe',
         'caffe' => 'Caffe',
+        'uang_makan' => 'Uang Makan',
+        'insentif' => 'Insentif',
+        'lembur' => 'Lembur',
         'lainnya' => 'Lainnya',
     ];
 @endphp
@@ -35,6 +38,9 @@
                         <option value="shampoo" {{ ($category ?? '') === 'shampoo' ? 'selected' : '' }}>Sampo Wash</option>
                         <option value="snack" {{ ($category ?? '') === 'snack' ? 'selected' : '' }}>Snack</option>
                         <option value="caffe" {{ in_array(($category ?? ''), ['caffe', 'kopi'], true) ? 'selected' : '' }}>Caffe</option>
+                        <option value="uang_makan" {{ ($category ?? '') === 'uang_makan' ? 'selected' : '' }}>Uang Makan</option>
+                        <option value="insentif" {{ ($category ?? '') === 'insentif' ? 'selected' : '' }}>Insentif</option>
+                        <option value="lembur" {{ ($category ?? '') === 'lembur' ? 'selected' : '' }}>Lembur</option>
                         <option value="lainnya" {{ ($category ?? '') === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
                     </select>
                 </div>
@@ -221,6 +227,9 @@
                                 <option value="shampoo">Sampo Wash</option>
                                 <option value="snack">Snack</option>
                                 <option value="caffe">Caffe</option>
+                                <option value="uang_makan">Uang Makan</option>
+                                <option value="insentif">Insentif</option>
+                                <option value="lembur">Lembur</option>
                                 <option value="lainnya">Lainnya</option>
                             </select>
                         </div>

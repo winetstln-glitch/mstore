@@ -755,14 +755,19 @@
 
             @php
                 $washDashboardActive = $routeIs('wash.dashboard');
-                $washMasterActive = $routeIs('wash.services.*') || $routeIs('wash.stock.*');
+                $washMasterActive = $routeIs('wash.services.*') || $routeIs('wash.stock.*') || $routeIs('wash.suppliers.*');
+                $washMemberActive = $routeIs('wash.members.*');
+                $washLoyaltyActive = $routeIs('wash.loyalty.*');
                 $washTransactionActive = $routeIs('wash.pos') || $routeIs('wash.transactions.*');
+                $washShiftActive = $routeIs('wash.shifts.*');
+                $washCashActive = $routeIs('wash.cash-registers.*');
+                $washClosingActive = $routeIs('wash.daily-closings.*');
                 $washFinanceActive = $routeIs('wash.expenses.*') || $routeIs('wash.reports.*');
-                $washAnyActive = $washDashboardActive || $washMasterActive || $washTransactionActive || $washFinanceActive;
+                $washAnyActive = $washDashboardActive || $washMasterActive || $washMemberActive || $washLoyaltyActive || $washTransactionActive || $washShiftActive || $washCashActive || $washClosingActive || $washFinanceActive;
             @endphp
 
             <a class="sidebar-item {{ $washAnyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washCollapse" role="button" aria-expanded="{{ $washAnyActive ? 'true' : 'false' }}" aria-controls="washCollapse">
-                <i class="fa fa-car"></i> {{ __('Pusat Car Wash') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                <i class="fa fa-car"></i> {{ __('Pusat Car Wash ERP') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
             </a>
             <div class="collapse {{ $washAnyActive ? 'show' : '' }}" id="washCollapse">
                 <div class="ps-3">
@@ -784,9 +789,105 @@
                             <a href="{{ route('wash.stock.index') }}" class="sidebar-item {{ $routeIs('wash.stock.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-boxes-stacked"></i> {{ __('Stok Barang') }}
                             </a>
+                            @if($hasPermission('wash.supplier.view'))
+                            <a href="{{ route('wash.suppliers.index') }}" class="sidebar-item {{ $routeIs('wash.suppliers.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-truck"></i> {{ __('Supplier') }}
+                            </a>
+                            @endif
                         </div>
                     </div>
                     @endif
+
+                    @if($hasPermission('wash.member.view') || $hasPermission('wash.member.manage'))
+                    <a class="sidebar-item {{ $washMemberActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washMemberCollapse" role="button" aria-expanded="{{ $washMemberActive ? 'true' : 'false' }}" aria-controls="washMemberCollapse">
+                        <i class="fa-solid fa-id-card"></i> {{ __('Membership') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $washMemberActive ? 'show' : '' }}" id="washMemberCollapse">
+                        <div class="ps-3">
+                            @if($hasPermission('wash.member.view'))
+                            <a href="{{ route('wash.members.index') }}" class="sidebar-item {{ $routeIs('wash.members.index') ? 'active' : '' }}">
+                                <i class="fa-solid fa-users"></i> {{ __('Daftar Member') }}
+                            </a>
+                            <a href="{{ route('wash.members.levels') }}" class="sidebar-item {{ $routeIs('wash.members.levels') ? 'active' : '' }}">
+                                <i class="fa-solid fa-layer-group"></i> {{ __('Level Member') }}
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($hasPermission('wash.loyalty.view') || $hasPermission('wash.reward.view'))
+                    <a class="sidebar-item {{ $washLoyaltyActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washLoyaltyCollapse" role="button" aria-expanded="{{ $washLoyaltyActive ? 'true' : 'false' }}" aria-controls="washLoyaltyCollapse">
+                        <i class="fa-solid fa-star"></i> {{ __('Loyalty & Reward') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $washLoyaltyActive ? 'show' : '' }}" id="washLoyaltyCollapse">
+                        <div class="ps-3">
+                            @if($hasPermission('wash.loyalty.view'))
+                            <a href="{{ route('wash.loyalty.index') }}" class="sidebar-item {{ $routeIs('wash.loyalty.index') ? 'active' : '' }}">
+                                <i class="fa-solid fa-star-half-stroke"></i> {{ __('Progress Loyalty') }}
+                            </a>
+                            @endif
+                            @if($hasPermission('wash.reward.view'))
+                            <a href="{{ route('wash.loyalty.vouchers') }}" class="sidebar-item {{ $routeIs('wash.loyalty.vouchers') ? 'active' : '' }}">
+                                <i class="fa-solid fa-ticket"></i> {{ __('Voucher Hadiah') }}
+                            </a>
+                            <a href="{{ route('wash.loyalty.redemptions') }}" class="sidebar-item {{ $routeIs('wash.loyalty.redemptions') ? 'active' : '' }}">
+                                <i class="fa-solid fa-gift"></i> {{ __('Penukaran Hadiah') }}
+                            </a>
+                            <a href="{{ route('wash.loyalty.report') }}" class="sidebar-item {{ $routeIs('wash.loyalty.report') ? 'active' : '' }}">
+                                <i class="fa-solid fa-file-invoice"></i> {{ __('Laporan Loyalty') }}
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($hasPermission('wash.shift.view') || $hasPermission('wash.shift.manage'))
+                    <a class="sidebar-item {{ $washShiftActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washShiftCollapse" role="button" aria-expanded="{{ $washShiftActive ? 'true' : 'false' }}" aria-controls="washShiftCollapse">
+                        <i class="fa-solid fa-clock"></i> {{ __('Manajemen Shift') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $washShiftActive ? 'show' : '' }}" id="washShiftCollapse">
+                        <div class="ps-3">
+                            @if($hasPermission('wash.shift.view'))
+                            <a href="{{ route('wash.shifts.index') }}" class="sidebar-item {{ $routeIs('wash.shifts.index') ? 'active' : '' }}">
+                                <i class="fa-solid fa-calendar-clock"></i> {{ __('Daftar Shift') }}
+                            </a>
+                            <a href="{{ route('wash.shift-sessions.index') }}" class="sidebar-item {{ $routeIs('wash.shift-sessions.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-door-open"></i> {{ __('Sesi Shift') }}
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($hasPermission('wash.cash.view') || $hasPermission('wash.cash.manage'))
+                    <a class="sidebar-item {{ $washCashActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washCashCollapse" role="button" aria-expanded="{{ $washCashActive ? 'true' : 'false' }}" aria-controls="washCashCollapse">
+                        <i class="fa-solid fa-money-bill-1-wave"></i> {{ __('Manajemen Kas') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $washCashActive ? 'show' : '' }}" id="washCashCollapse">
+                        <div class="ps-3">
+                            @if($hasPermission('wash.cash.view'))
+                            <a href="{{ route('wash.cash-registers.index') }}" class="sidebar-item {{ $routeIs('wash.cash-registers.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-cash-register"></i> {{ __('Daftar Kasir') }}
+                            </a>
+                            <a href="{{ route('wash.cash-movements.index') }}" class="sidebar-item {{ $routeIs('wash.cash-movements.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-arrow-right-arrow-left"></i> {{ __('Mutasi Kas') }}
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    <a class="sidebar-item {{ $washClosingActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washClosingCollapse" role="button" aria-expanded="{{ $washClosingActive ? 'true' : 'false' }}" aria-controls="washClosingCollapse">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> {{ __('Penutupan Harian') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+                    </a>
+                    <div class="collapse {{ $washClosingActive ? 'show' : '' }}" id="washClosingCollapse">
+                        <div class="ps-3">
+                            <a href="{{ route('wash.daily-closings.index') }}" class="sidebar-item {{ $routeIs('wash.daily-closings.*') ? 'active' : '' }}">
+                                <i class="fa-solid fa-clipboard-list"></i> {{ __('Riwayat Penutupan') }}
+                            </a>
+                        </div>
+                    </div>
 
                     @if($hasPermission('wash.pos') || $hasPermission('wash.report'))
                     <a class="sidebar-item {{ $washTransactionActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#washTransactionCollapse" role="button" aria-expanded="{{ $washTransactionActive ? 'true' : 'false' }}" aria-controls="washTransactionCollapse">

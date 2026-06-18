@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WashMember extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'member_number',
         'name',
@@ -62,5 +65,15 @@ class WashMember extends Model
             ->where('end_date', '>', now())
             ->latest()
             ->first();
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(WashPointTransaction::class);
+    }
+
+    public function loyaltyCounter(): HasOne
+    {
+        return $this->hasOne(WashLoyaltyCounter::class);
     }
 }

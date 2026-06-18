@@ -806,6 +806,9 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
 
     // Wash Service Routes
     Route::prefix('wash')->name('wash.')->group(function () {
+        Route::get('/guide', function () {
+            return view('wash.guide');
+        })->middleware('permission:wash.view')->name('guide');
         Route::get('/dashboard', [\App\Http\Controllers\WashTransactionController::class, 'dashboard'])
             ->middleware('permission:wash.view')
             ->name('dashboard');
@@ -913,6 +916,71 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::get('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'stockIn'])->name('stock-in');
         Route::post('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'storeStockIn'])->name('stock-in.store');
     });
+    // Test Wash ERP
+    Route::get('/test-wash', function () {
+        return view('test-wash');
+    });
+
+    // Wash Suppliers
+    Route::prefix('wash/suppliers')->name('wash.suppliers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashSupplierController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashSupplierController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashSupplierController::class, 'store'])->name('store');
+        Route::get('/{supplier}', [\App\Http\Controllers\WashSupplierController::class, 'show'])->name('show');
+        Route::get('/{supplier}/edit', [\App\Http\Controllers\WashSupplierController::class, 'edit'])->name('edit');
+        Route::put('/{supplier}', [\App\Http\Controllers\WashSupplierController::class, 'update'])->name('update');
+        Route::delete('/{supplier}', [\App\Http\Controllers\WashSupplierController::class, 'destroy'])->name('destroy');
+    });
+
+    // Wash Shifts
+    Route::prefix('wash/shifts')->name('wash.shifts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashShiftController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashShiftController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashShiftController::class, 'store'])->name('store');
+        Route::get('/{shift}', [\App\Http\Controllers\WashShiftController::class, 'show'])->name('show');
+        Route::get('/{shift}/edit', [\App\Http\Controllers\WashShiftController::class, 'edit'])->name('edit');
+        Route::put('/{shift}', [\App\Http\Controllers\WashShiftController::class, 'update'])->name('update');
+        Route::delete('/{shift}', [\App\Http\Controllers\WashShiftController::class, 'destroy'])->name('destroy');
+    });
+
+    // Wash Shift Sessions
+    Route::prefix('wash/shift-sessions')->name('wash.shift-sessions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashShiftSessionController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashShiftSessionController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashShiftSessionController::class, 'store'])->name('store');
+        Route::get('/{session}', [\App\Http\Controllers\WashShiftSessionController::class, 'show'])->name('show');
+        Route::get('/{session}/edit', [\App\Http\Controllers\WashShiftSessionController::class, 'edit'])->name('edit');
+        Route::put('/{session}', [\App\Http\Controllers\WashShiftSessionController::class, 'update'])->name('update');
+    });
+
+    // Wash Cash Registers
+    Route::prefix('wash/cash-registers')->name('wash.cash-registers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashCashRegisterController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashCashRegisterController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashCashRegisterController::class, 'store'])->name('store');
+        Route::get('/{register}', [\App\Http\Controllers\WashCashRegisterController::class, 'show'])->name('show');
+        Route::get('/{register}/edit', [\App\Http\Controllers\WashCashRegisterController::class, 'edit'])->name('edit');
+        Route::put('/{register}', [\App\Http\Controllers\WashCashRegisterController::class, 'update'])->name('update');
+        Route::delete('/{register}', [\App\Http\Controllers\WashCashRegisterController::class, 'destroy'])->name('destroy');
+    });
+
+    // Wash Cash Movements
+    Route::prefix('wash/cash-movements')->name('wash.cash-movements.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashCashMovementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashCashMovementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashCashMovementController::class, 'store'])->name('store');
+        Route::get('/{movement}', [\App\Http\Controllers\WashCashMovementController::class, 'show'])->name('show');
+    });
+
+    // Wash Daily Closings
+    Route::prefix('wash/daily-closings')->name('wash.daily-closings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WashDailyClosingController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\WashDailyClosingController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WashDailyClosingController::class, 'store'])->name('store');
+        Route::get('/{closing}', [\App\Http\Controllers\WashDailyClosingController::class, 'show'])->name('show');
+        Route::post('/{closing}/approve', [\App\Http\Controllers\WashDailyClosingController::class, 'approve'])->name('approve');
+    });
+
     Route::permanentRedirect('wash/employees', 'employees');
     Route::any('wash/employees/{any}', fn () => redirect()->route('employees.index', [], 301))
         ->where('any', '.*');
