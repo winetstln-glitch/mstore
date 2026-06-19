@@ -1011,6 +1011,68 @@
     @elseif($servicePage['slug'] === 'atk-store')
         <section class="py-2">
             <div class="container py-2">
+                @if($atkFeeProfiles->count() > 0)
+                    <div class="section-header text-center mb-4 fade-up">
+                        <h2 class="display-6 fw-800">Layanan Jasa & Keuangan</h2>
+                        <p class="text-muted mb-0">Nikmati layanan keuangan cepat dan mudah di ATK Store kami.</p>
+                    </div>
+                    <div class="scroll-container fade-up mb-5">
+                        @foreach($atkFeeProfiles as $feeProfile)
+                            <div class="scroll-item">
+                                <div class="card">
+                                    <div class="product-img d-flex align-items-center justify-content-center bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                                        <i class="fas fa-hand-holding-usd fa-3x"></i>
+                                    </div>
+                                    <div class="product-body d-flex flex-column h-100">
+                                        <div class="chip mb-2 align-self-start bg-info text-white">
+                                            Jasa
+                                        </div>
+                                        <h5 class="product-title mb-1">{{ $feeProfile->name }}</h5>
+                                        <p class="small text-muted mb-3">
+                                            @if($feeProfile->fee_mode === 'fixed')
+                                                Biaya tetap untuk setiap transaksi
+                                            @elseif($feeProfile->fee_mode === 'percentage')
+                                                Biaya persentase dari nominal transaksi
+                                            @elseif($feeProfile->fee_mode === 'fixed_percentage')
+                                                Biaya tetap + persentase dari nominal transaksi
+                                            @else
+                                                Biaya sesuai tier nominal
+                                            @endif
+                                        </p>
+                                        @if($feeProfile->tiers->count() > 0)
+                                            <div class="mb-3">
+                                                <h6 class="fw-bold mb-2">Detail Biaya:</h6>
+                                                <ul class="list-unstyled small text-muted">
+                                                    @foreach($feeProfile->tiers as $tier)
+                                                        <li class="mb-1">
+                                                            <i class="fas fa-check text-primary me-2"></i>
+                                                            @if($tier->fee_type === 'fixed')
+                                                                Rp {{ number_format($tier->fee_value, 0, ',', '.') }}
+                                                            @elseif($tier->fee_type === 'percentage')
+                                                                {{ $tier->fee_value }}%
+                                                            @else
+                                                                Rp {{ number_format($tier->fixed_value, 0, ',', '.') }} + {{ $tier->fee_value }}%
+                                                            @endif
+                                                            @if($tier->max_amount)
+                                                                (Rp {{ number_format($tier->min_amount, 0, ',', '.') }} - Rp {{ number_format($tier->max_amount, 0, ',', '.') }})
+                                                            @else
+                                                                (Rp {{ number_format($tier->min_amount, 0, ',', '.') }}+)
+                                                            @endif
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endif
+                                        <a href="#service-lead" class="btn btn-primary w-100 mt-auto track-service-action" data-track-service="atk-store" data-track-action="service_cta" data-track-label="{{ $feeProfile->name }}">
+                                            Gunakan Layanan
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 <div class="section-header text-center mb-4 fade-up">
                     <h2 class="display-6 fw-800">Produk Unggulan & Promo</h2>
                     <p class="text-muted mb-0">Pilih produk, kirim kebutuhan Anda, lalu kami bantu proses pemesanan dengan cepat.</p>

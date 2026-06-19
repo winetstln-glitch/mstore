@@ -45,6 +45,85 @@ Route::get('locale/{lang}', function ($lang) {
     return redirect()->back();
 })->name('locale.switch');
 
+// DEBUG: Sync Missing Permissions
+if (app()->environment('local')) {
+    Route::get('/debug-sync-permissions', function () {
+        echo "<h1>🔄 Syncing Missing Permissions</h1>";
+        
+        $permissions = [
+            // Car Wash - Full List
+            ['name' => 'wash.view', 'label' => 'View Wash Dashboard', 'group' => 'Car Wash'],
+            ['name' => 'wash.pos', 'label' => 'Access Wash POS', 'group' => 'Car Wash'],
+            ['name' => 'wash.manage', 'label' => 'Manage Wash Services', 'group' => 'Car Wash'],
+            ['name' => 'wash.report', 'label' => 'View Wash Reports', 'group' => 'Car Wash'],
+            ['name' => 'wash.member.view', 'label' => 'View Wash Members', 'group' => 'Car Wash'],
+            ['name' => 'wash.member.manage', 'label' => 'Manage Wash Members', 'group' => 'Car Wash'],
+            ['name' => 'wash.loyalty.view', 'label' => 'View Wash Loyalty', 'group' => 'Car Wash'],
+            ['name' => 'wash.loyalty.manage', 'label' => 'Manage Wash Loyalty', 'group' => 'Car Wash'],
+            ['name' => 'wash.reward.view', 'label' => 'View Wash Reward Vouchers', 'group' => 'Car Wash'],
+            ['name' => 'wash.reward.manage', 'label' => 'Manage Wash Reward Vouchers', 'group' => 'Car Wash'],
+            ['name' => 'wash.transaction.view', 'label' => 'View Wash Transactions', 'group' => 'Car Wash'],
+            ['name' => 'wash.transaction.create', 'label' => 'Create Wash Transactions', 'group' => 'Car Wash'],
+            ['name' => 'wash.transaction.update', 'label' => 'Update Wash Transactions', 'group' => 'Car Wash'],
+            ['name' => 'wash.transaction.delete', 'label' => 'Delete Wash Transactions', 'group' => 'Car Wash'],
+            ['name' => 'wash.expense.view', 'label' => 'View Wash Expenses', 'group' => 'Car Wash'],
+            ['name' => 'wash.expense.create', 'label' => 'Create Wash Expenses', 'group' => 'Car Wash'],
+            ['name' => 'wash.expense.update', 'label' => 'Update Wash Expenses', 'group' => 'Car Wash'],
+            ['name' => 'wash.expense.delete', 'label' => 'Delete Wash Expenses', 'group' => 'Car Wash'],
+            ['name' => 'wash.expense.approve', 'label' => 'Approve Wash Expenses', 'group' => 'Car Wash'],
+            ['name' => 'wash.shift.view', 'label' => 'View Wash Shifts', 'group' => 'Car Wash'],
+            ['name' => 'wash.shift.open', 'label' => 'Open Wash Shift', 'group' => 'Car Wash'],
+            ['name' => 'wash.shift.close', 'label' => 'Close Wash Shift', 'group' => 'Car Wash'],
+            ['name' => 'wash.shift.manage', 'label' => 'Manage Wash Shifts', 'group' => 'Car Wash'],
+            ['name' => 'wash.cash.view', 'label' => 'View Wash Cash Registers', 'group' => 'Car Wash'],
+            ['name' => 'wash.cash.manage', 'label' => 'Manage Wash Cash Registers', 'group' => 'Car Wash'],
+            ['name' => 'wash.closing.view', 'label' => 'View Wash Daily Closings', 'group' => 'Car Wash'],
+            ['name' => 'wash.closing.create', 'label' => 'Create Wash Daily Closing', 'group' => 'Car Wash'],
+            ['name' => 'wash.closing.approve', 'label' => 'Approve Wash Daily Closing', 'group' => 'Car Wash'],
+            ['name' => 'wash.supplier.view', 'label' => 'View Wash Suppliers', 'group' => 'Car Wash'],
+            ['name' => 'wash.supplier.manage', 'label' => 'Manage Wash Suppliers', 'group' => 'Car Wash'],
+            ['name' => 'wash.stock.view', 'label' => 'View Wash Stock', 'group' => 'Car Wash'],
+            ['name' => 'wash.stock.manage', 'label' => 'Manage Wash Stock', 'group' => 'Car Wash'],
+            
+            // Wedding & Event
+            ['name' => 'wedding.view', 'label' => 'View Wedding & Event', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.manage', 'label' => 'Manage Wedding Packages', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.booking', 'label' => 'Manage Wedding Bookings', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.payment', 'label' => 'Manage Wedding Payments', 'group' => 'Wedding & Event'],
+            ['name' => 'wedding.report', 'label' => 'View Wedding Reports', 'group' => 'Wedding & Event'],
+            
+            // CCTV Installation
+            ['name' => 'cctv.view', 'label' => 'View CCTV Installation', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.manage', 'label' => 'Manage CCTV Packages', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.booking', 'label' => 'Manage CCTV Bookings', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.payment', 'label' => 'Manage CCTV Payments', 'group' => 'CCTV Installation'],
+            ['name' => 'cctv.report', 'label' => 'View CCTV Reports', 'group' => 'CCTV Installation'],
+        ];
+
+        $inserted = 0;
+        $updated = 0;
+        echo "<ul>";
+        foreach ($permissions as $p) {
+            $existing = \App\Models\Permission::where('name', $p['name'])->first();
+            if (!$existing) {
+                \App\Models\Permission::create($p);
+                $inserted++;
+                echo "<li style='color: green;'>✅ Inserted: " . htmlspecialchars($p['name']) . " (" . htmlspecialchars($p['group']) . "</li>";
+            } else {
+                $existing->update(['label' => $p['label'], 'group' => $p['group']]);
+                $updated++;
+            }
+        }
+        echo "</ul>";
+
+        echo "<h2>Results</h2>";
+        echo "<p>Inserted: <strong>" . $inserted . "</strong> permissions</p>";
+        echo "<p>Updated: <strong>" . $updated . "</strong> permissions</p>";
+        echo "<p>Total in DB: <strong>" . \App\Models\Permission::count() . "</strong></p>";
+        echo "<p><a href='/roles' style='font-size: 18px; color: blue;'>➡️ Go to Role Management</a></p>";
+    });
+}
+
 // Voucher Payment Routes (Public)
 Route::get('/voucher-payment', [\App\Http\Controllers\VoucherPaymentController::class, 'index'])->name('voucher.payment.index');
 Route::post('/voucher-payment/select-payment', [\App\Http\Controllers\VoucherPaymentController::class, 'selectPaymentMethod'])->name('voucher.payment.select_payment');

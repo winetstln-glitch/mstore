@@ -25,7 +25,8 @@ class Permission extends Model
             'Pelanggan & Layanan' => ['Customer Management', 'Ticket Management', 'Installation Management', 'Service Management'],
             'Jaringan' => [
                 'ODC Management', 'ODP Management', 'HTB Management', 'OLT Management', 'Router Management',
-                'Closure Management', 'PPPoE Management', 'Hotspot Management', 'Radius', 'Map', 'Network Monitor', 'Utilities'
+                'Closure Management', 'PPPoE Management', 'Hotspot Management', 'Radius', 'Map', 'Network Monitor', 'Utilities',
+                'NOC Center'
             ],
             'Keuangan' => ['Finance', 'Investor Management', 'Accounting'],
             'Operasional' => [
@@ -34,15 +35,19 @@ class Permission extends Model
             ],
             'Toko ATK' => ['ATK Store'],
             'Cuci Kendaraan' => ['Car Wash'],
+            'Wedding & Event' => ['Wedding & Event'],
+            'CCTV Installation' => ['CCTV Installation'],
             'Sistem' => [
                 'User Management', 'Role Management', 'Settings', 'Coordinator Management',
-                'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification', 'Integrasi'
+                'Region Management', 'Package Management', 'WhatsApp', 'Telegram', 'Notification', 'Integrasi',
+                'Security'
             ],
+            'Reporting' => ['Reporting'],
             'Umum' => ['Dashboard', 'Profile'],
         ];
 
         $grouped = [];
-        $tabsOrder = ['Pelanggan & Layanan', 'Jaringan', 'Keuangan', 'Operasional', 'Toko ATK', 'Cuci Kendaraan', 'Sistem', 'Umum', 'Lainnya'];
+        $tabsOrder = ['Pelanggan & Layanan', 'Jaringan', 'Keuangan', 'Operasional', 'Toko ATK', 'Cuci Kendaraan', 'Wedding & Event', 'CCTV Installation', 'Reporting', 'Sistem', 'Umum', 'Lainnya'];
 
         foreach ($allPermissions as $group => $perms) {
             $foundTab = 'Lainnya';

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AtkProduct;
 use App\Models\CctvPackage;
 use App\Models\CrmLead;
+use App\Models\FeeProfile;
 use App\Models\Odp;
 use App\Models\Package;
 use App\Models\Setting;
@@ -174,6 +175,21 @@ class LandingController extends Controller
             }
         } catch (\Exception $e) {
             $atkProducts = collect([]);
+        }
+
+        // Safely fetch ATK Fee Profiles (layanan jasa)
+        try {
+            if (class_exists(FeeProfile::class) && Schema::hasTable('fee_profiles')) {
+                $atkFeeProfiles = FeeProfile::with('tiers')
+                    ->where('module', 'atk')
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get();
+            } else {
+                $atkFeeProfiles = collect([]);
+            }
+        } catch (\Exception $e) {
+            $atkFeeProfiles = collect([]);
         }
 
         // Safely fetch Wash Services
@@ -370,6 +386,7 @@ class LandingController extends Controller
         return compact(
             'packages',
             'atkProducts',
+            'atkFeeProfiles',
             'washServices',
             'washMainServices',
             'washAddonServices',
