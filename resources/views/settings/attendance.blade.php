@@ -304,6 +304,7 @@
                                     <div class="card-body py-2">
                                         <label class="form-label fw-bold mb-1"><i class="fa-brands fa-whatsapp me-1 text-success"></i> WhatsApp (Fonnte)</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="whatsapp_attendance_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="whatsapp_attendance_notification_enabled" name="whatsapp_attendance_notification_enabled" value="1" {{ ($settings['whatsapp_attendance_notification_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="whatsapp_attendance_notification_enabled">Aktifkan Notifikasi WhatsApp</label>
                                         </div>
@@ -318,6 +319,7 @@
                                     <div class="card-body py-2">
                                         <label class="form-label fw-bold mb-1"><i class="fa-brands fa-telegram me-1 text-info"></i> Telegram</label>
                                         <div class="form-check form-switch mb-2">
+                                            <input type="hidden" name="telegram_attendance_notification_enabled" value="0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="telegram_attendance_notification_enabled" name="telegram_attendance_notification_enabled" value="1" {{ ($settings['telegram_attendance_notification_enabled'] ?? '1') == '1' ? 'checked' : '' }}>
                                             <label class="form-check-label" for="telegram_attendance_notification_enabled">Aktifkan Notifikasi Telegram</label>
                                         </div>

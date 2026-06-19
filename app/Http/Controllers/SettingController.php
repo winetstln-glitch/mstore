@@ -1193,6 +1193,34 @@ class SettingController extends Controller implements HasMiddleware
                 'type' => 'time',
                 'label' => 'Batas Absen Longshift Wash',
             ],
+            [
+                'key' => 'whatsapp_attendance_notification_enabled',
+                'value' => '1',
+                'group' => 'attendance',
+                'type' => 'boolean',
+                'label' => 'Aktifkan Notifikasi WhatsApp Absensi',
+            ],
+            [
+                'key' => 'whatsapp_attendance_group_id',
+                'value' => '',
+                'group' => 'attendance',
+                'type' => 'text',
+                'label' => 'ID Grup WhatsApp Notifikasi Absensi',
+            ],
+            [
+                'key' => 'telegram_attendance_notification_enabled',
+                'value' => '1',
+                'group' => 'attendance',
+                'type' => 'boolean',
+                'label' => 'Aktifkan Notifikasi Telegram Absensi',
+            ],
+            [
+                'key' => 'telegram_attendance_group_id',
+                'value' => '',
+                'group' => 'attendance',
+                'type' => 'text',
+                'label' => 'ID Grup Telegram Notifikasi Absensi',
+            ],
         ];
 
         foreach ($defaults as $setting) {

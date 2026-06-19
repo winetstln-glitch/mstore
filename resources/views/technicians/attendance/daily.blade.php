@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="row">
@@ -87,8 +87,8 @@
                             $attendances = $attendancesByDate->get($currentDate, collect());
                             
                             // Filter koleksi user sebelum looping render untuk mendeteksi empty state
-                            $filteredUsers = $users->filter(function($user) use ($attendances, $currentDate, $status) {
-                                $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+                            $filteredUsers = $users->filter(function($user) use ($attendances, $currentDate, $status, $isOffByUserAndDate) {
+                                $isOff = $isOffByUserAndDate[$user->id][$currentDate] ?? false;
                                 $attendance = $attendances->get($user->id);
                                 
                                 if ($status === '') return true;
@@ -136,7 +136,7 @@
                                                     @foreach($filteredUsers as $user)
                                                         @php
                                                             $attendance = $attendances->get($user->id);
-                                                            $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+                                                            $isOff = $isOffByUserAndDate[$user->id][$currentDate] ?? false;
                                                         @endphp
                                                         <tr>
                                                             <td class="ps-3">{{ $i++ }}</td>
@@ -248,8 +248,8 @@
 @foreach($dates as $index => $currentDate)
     @php
         $attendances = $attendancesByDate->get($currentDate, collect());
-        $filteredUsersForModal = $users->filter(function($user) use ($attendances, $currentDate, $status) {
-            $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+        $filteredUsersForModal = $users->filter(function($user) use ($attendances, $currentDate, $status, $isOffByUserAndDate) {
+            $isOff = $isOffByUserAndDate[$user->id][$currentDate] ?? false;
             $attendance = $attendances->get($user->id);
             if ($status === '') return true;
             if ($status === 'belum_absen') return ! $attendance && ! $isOff;
@@ -260,7 +260,7 @@
     @foreach($filteredUsersForModal as $user)
         @php
             $attendance = $attendances->get($user->id);
-            $isOff = app(\App\Http\Controllers\TechnicianAttendanceController::class)->isUserOffOnDate($user, $currentDate);
+            $isOff = $isOffByUserAndDate[$user->id][$currentDate] ?? false;
         @endphp
         @if($attendance)
             <!-- Edit Modal -->
