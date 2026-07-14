@@ -1,0 +1,166 @@
+@extends('layouts.app')
+
+@section('title', __('Laporan Keuangan Manajemen'))
+
+@section('content')
+<div class="container-fluid">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 mb-0 text-body">{{ __('Laporan Laba Rugi & Kas') }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('finance.index') }}">{{ __('Keuangan') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('Laporan Manajemen') }}</li>
+                </ol>
+            </nav>
+        </div>
+        
+        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <a href="{{ route('finance.index') }}" class="btn btn-secondary btn-lg w-100 w-md-auto">
+                <i class="fa-solid fa-arrow-left me-1"></i> {{ __('Kembali') }}
+            </a>
+            <a href="{{ route('finance.manager_report.excel', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-success btn-lg w-100 w-md-auto">
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Excel') }}
+            </a>
+            <a href="{{ route('finance.manager_report.pdf', ['month' => request('month'), 'coordinator_id' => request('coordinator_id')]) }}" class="btn btn-danger btn-lg w-100 w-md-auto">
+                <i class="fa-solid fa-file-pdf me-1"></i> {{ __('PDF') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Bagian Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-body py-3">
+            <form action="{{ route('finance.manager_report') }}" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted fw-bold">Pilih Koordinator</label>
+                    <select name="coordinator_id" class="form-select form-select-lg">
+                        <option value="">{{ __('Semua Pengurus (Global)') }}</option>
+                        @foreach($coordinators as $coordinator)
+                            <option value="{{ $coordinator->id }}" {{ request('coordinator_id') == $coordinator->id ? 'selected' : '' }}>
+                                {{ $coordinator->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted fw-bold">Periode Laporan</label>
+                    <input type="month" name="month" class="form-control form-control-lg" value="{{ request('month') ?? date('Y-m') }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fa-solid fa-filter me-1"></i> Tampilkan
+                    </button>
+                </div>
+                <div class="col-md-3 text-end">
+                    @if(request('month'))
+                    <span class="badge bg-secondary-subtle text-body border border-secondary">
+                        <i class="fa-regular fa-calendar me-1"></i> {{ \Carbon\Carbon::parse(request('month').'-01')->translatedFormat('F Y') }}
+                    </span>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabel Laporan Utama -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 border-bottom">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-table-list me-2"></i>Rekonsiliasi Keuangan</h6>
+        </div>
+        <div class="card-body">
+            
+            <!-- TABEL 1: PENDAPATAN -->
+            <h6 class="text-uppercase text-muted small fw-bold mb-2">{{ __('A. Pendapatan') }}</h6>
+            <table class="table table-bordered table-responsive-mobile mb-4">
+                <tbody>
+                    <tr>
+                        <td style="width: 70%">{{ __('Pendapatan Member') }}</td>
+                        <td class="text-end fw-bold">{{ number_format($memberIncome, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ __('Pendapatan Voucher') }}</td>
+                        <td class="text-end fw-bold">{{ number_format($voucherIncome, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="table-success">
+                        <td class="fw-bold">TOTAL PENDAPATAN KOTOR</td>
+                        <td class="text-end fw-bold fs-5 finance-kpi-value">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- TABEL 2: POTONGAN & PENGELUARAN -->
+            <h6 class="text-uppercase text-muted small fw-bold mb-2">B. Potongan & Beban Operasional</h6>
+            <table class="table table-bordered table-responsive-mobile mb-4">
+                <tbody>
+                    <!-- Komisi Otomatis -->
+                    <tr>
+                        <td style="width: 70%">
+                            <span class="badge bg-danger">AUTO</span> {{ __('Komisi Pengurus') }}
+                            <small class="text-muted">({{ $coordRate ?? 0 }}%)</small>
+                        </td>
+                        <td class="text-end text-danger">- {{ number_format($coordCommission, 0, ',', '.') }}</td>
+                    </tr>
+                    
+                    <!-- Rincian Pengeluaran Manual -->
+                    <tr>
+                        <td>{{ __('Transportasi') }}</td>
+                        <td class="text-end text-danger">- {{ number_format($transportExpenses, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ __('Konsumsi') }}</td>
+                        <td class="text-end text-danger">- {{ number_format($consumptionExpenses, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ __('Perbaikan & Maintenance') }}</td>
+                        <td class="text-end text-danger">- {{ number_format($repairExpenses, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ __('Biaya Operasional Lainnya') }}</td>
+                        <td class="text-end text-danger">- {{ number_format($otherOperatingExpenses, 0, ',', '.') }}</td>
+                    </tr>
+                    
+                    <!-- Total Pengeluaran -->
+                    <tr class="table-danger">
+                        <td class="fw-bold">TOTAL PENGELUARAN & POTONGAN</td>
+                        <td class="text-end fw-bold finance-total-value text-body">
+                            - {{ number_format($coordCommission + $operatingExpenses, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- TABEL 3: POSISI SALDO (NET INCOME & SETORAN) -->
+            <h6 class="text-uppercase text-muted small fw-bold mb-2">C. Posisi Saldo Akhir</h6>
+            <table class="table table-bordered mb-0 table-responsive-mobile">
+                <tbody>
+                    <tr>
+                        <td style="width: 70%" class="fw-bold ">{{ __('LABA BERSIH') }}</td>
+                        <td class="text-end fw-bold finance-kpi-value">
+                            {{ number_format($totalRevenue - ($coordCommission + $operatingExpenses), 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-danger">
+                            <i class="fa-solid fa-arrow-down me-1"></i> 
+                            {{ __('Sudah Disetor ke Kas Pusat') }}
+                        </td>
+                        <td class="text-end text-danger">- {{ number_format($deposited, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="table-warning border border-warning border-2">
+                        <td class="fw-bold fs-5">
+                            <i class="fa-solid fa-wallet me-2"></i> {{ __('SISA SALDO / WAJIB SETOR') }}
+                        </td>
+                        <td class="text-end fw-bold fs-5 finance-kpi-value">{{ number_format($netBalance, 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+        <div class="card-footer small text-muted text-center">
+            {{ __('Laporan ini dihasilkan secara otomatis oleh sistem. Potongan komisi dihitung berdasarkan persentase dari pendapatan kotor.') }}
+        </div>
+    </div>
+
+</div>
+@endsection

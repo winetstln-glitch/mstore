@@ -1,0 +1,831 @@
+@extends('layouts.app')
+
+@section('title', __('Network Monitor (GenieACS)'))
+
+@section('content')
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
+                    <h5 class="mb-0 fw-bold">{{ __('Network Monitor (GenieACS)') }}</h5>
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end align-items-center">
+                        @if(isset($modeAll) && $modeAll)
+                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                <i class="fa-solid fa-circle-nodes fa-xs me-1"></i> {{ __('Connected to: All Servers') }}
+                            </span>
+                        @elseif(isset($activeServer))
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="fa-solid fa-circle fa-xs me-1"></i> {{ __('Connected to:') }} {{ $activeServer->name }}
+                            </span>
+                        @else
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                {{ __('Using Default/Env Config') }}
+                            </span>
+                        @endif
+                        <a href="{{ route('genieacs.servers.index') }}" class="text-decoration-none ms-2 small fw-bold">
+                            {{ __('Manage Servers') }}
+                        </a>
+                    </div>
+                
+            </div>
+
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <h6 class="fw-bold mb-0">{{ __('Perangkat Terhubung (TR-069)') }}</h6>
+                        <span class="badge bg-primary rounded-pill">{{ $totalDevices ?? count($devices) }} {{ __('Total') }}</span>
+                    </div>
+                </div>
+                <form class="row g-2 g-md-3 mb-4">
+                    @php
+                        $currentPerPage = request('per_page', $perPage ?? 50);
+                        $selectedServerId = $currentServerId ?? request('server_id');
+                    @endphp
+                    <div class="col-12 col-md-3">
+                        @if(isset($servers) && $servers->count())
+                        <select id="serverSelect" class="form-select form-select-sm">
+                            <option value="all" {{ $selectedServerId === 'all' ? 'selected' : '' }}>{{ __('All Servers') }}</option>
+                            @foreach($servers as $server)
+                                <option value="{{ $server->id }}" {{ (string) $selectedServerId === (string) $server->id ? 'selected' : '' }}>
+                                    {{ $server->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @endif
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text  border-end-0">
+                                <i class="fa-solid fa-search text-body-secondary"></i>
+                            </span>
+                            <input type="text" id="deviceSearch" class="form-control border-start-0 ps-1" placeholder="{{ __('Search MAC, SN, IP, PPPoE...') }}">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select id="perPageSelect" class="form-select form-select-sm">
+                            <option value="20" {{ (string)$currentPerPage === '20' ? 'selected' : '' }}>20</option>
+                            <option value="50" {{ (string)$currentPerPage === '50' ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ (string)$currentPerPage === '100' ? 'selected' : '' }}>100</option>
+                            <option value="all" {{ (string)$currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 mobile-btns">
+                        <div class="d-flex gap-2">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-compact active" id="btnViewList" title="{{ __('List View') }}">
+                                    <i class="fa-solid fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-compact" id="btnViewGrid" title="{{ __('Grid View') }}">
+                                    <i class="fa-solid fa-grip"></i>
+                                </button>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-compact" id="refreshButton">
+                                <i class="fa-solid fa-rotate-right"></i> <span class="d-none d-sm-inline ms-1">{{ __('Refresh') }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                {{-- Alerts handled by SweetAlert in Layout --}}
+
+                <div class="table-responsive" id="listViewContainer">
+                    <table class="table table-hover table-sm align-middle small table-bordered border-secondary-subtle" id="genieacsDevicesTable" style="min-width: 760px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" class="text-center" width="1%">{{ __('Status') }}</th>
+                                <th scope="col" class="text-center">{{ __('Action') }}</th>
+                                <th scope="col">ID</th>
+                                <th scope="col">{{ __('SN ONT') }}</th>
+                                <th scope="col">ODP</th>
+                                <th scope="col">SSID</th>
+                                <th scope="col" class="text-center">IP Address</th>
+                                <th scope="col" class="text-center">Hotspot</th>
+                                <th scope="col" class="text-center">RX</th>
+                                <th scope="col" class="text-center">Temp</th>
+                                <th scope="col">{{ __('Uptime') }}</th>
+                                <th scope="col">IP PPPoE</th>
+                                <th scope="col">IP WAN/TR069</th>
+                                <th scope="col">PON</th>
+                                <th scope="col">Mac</th>
+                                <th scope="col">{{ __('Product Class') }}</th>
+                                <th scope="col">{{ __('Reg Time') }}</th>
+                                <th scope="col">Komunikasi Terakhir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $currentServerId = $activeServer ? $activeServer->id : null;
+                            @endphp
+                            @forelse ($devices as $device)
+                                @php
+                                    $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
+                                    $isOnline = (time() - $lastInform) < 300;
+                                    $id = $device['_id'];
+                                    $serverIdForDevice = $device['_mstore_server_id'] ?? $currentServerId;
+                                    
+                                    // Helper to get value safely
+                                    $get = function($key) use ($device) {
+                                        $val = data_get($device, $key . '._value');
+                                        if ($val === null) {
+                                            $val = data_get($device, $key);
+                                        }
+                                        
+                                        if (is_array($val)) {
+                                            return isset($val['_value']) && is_scalar($val['_value']) ? (string)$val['_value'] : '-';
+                                        }
+                                        
+                                        return $val !== null ? (string)$val : '-';
+                                    };
+
+                                    // Mapping fields
+                                    $pppoeUser = $get('VirtualParameters.pppoeUsername');
+                                    $sn = $get('VirtualParameters.getSerialNumber');
+                                    // Fallback for SN if VP missing
+                                    if ($sn === '-') $sn = data_get($device, '_deviceId._SerialNumber') ?? '-';
+
+                                    $ssid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID');
+                                    // $active = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                    
+                                    // Logic for Connected Devices (MACs)
+                                    $hosts = data_get($device, 'InternetGatewayDevice.LANDevice.1.Hosts.Host');
+                                    if (!$hosts) {
+                                        $hosts = data_get($device, 'Device.Hosts.Host');
+                                    }
+                                    $connectedMacs = [];
+                                    if ($hosts && is_array($hosts)) {
+                                        foreach ($hosts as $host) {
+                                            $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
+                                            // Check if active (handle string 'true', '1', or boolean)
+                                            if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
+                                                $macVal = data_get($host, 'MACAddress._value') ?? data_get($host, 'MACAddress') ?? data_get($host, 'PhysAddress._value') ?? data_get($host, 'PhysAddress');
+                                                if ($macVal) {
+                                                    $connectedMacs[] = $macVal;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // Fallback to TotalAssociations if no hosts found but count exists
+                                    $wifiCount = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                    $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
+
+                                    $hotspot = $get('VirtualParameters.activedevices');
+                                    if ($hotspot === '-') $hotspot = $get('VirtualParameters.getactivedevices');
+                                    
+                                    $rx = $get('VirtualParameters.RXPower');
+                                    if ($rx === '-') $rx = $get('VirtualParameters.redaman');
+                                    
+                                    $temp = $get('VirtualParameters.gettemp');
+                                    
+                                    $uptime = $get('VirtualParameters.getdeviceuptime');
+                                    $pppUptime = $get('VirtualParameters.getpppuptime');
+                                    
+                                    $ipPppoe = $get('VirtualParameters.AddressWanPPP');
+                                    if ($ipPppoe === '-') $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                    if ($ipPppoe === '-') $ipPppoe = $get('VirtualParameters.pppIP');
+                                    
+                                    $ipWan = $get('VirtualParameters.AddressWanIP');
+                                    if ($ipWan === '-') $ipWan = $get('VirtualParameters.WanIP');
+                                    if ($ipWan === '-') $ipWan = $get('VirtualParameters.IPTR069');
+                                    $displayIpAddress = $ipWan;
+                                    $ponMode = $get('VirtualParameters.getponmode');
+                                    $ponMac = $get('VirtualParameters.PonMac'); // Or pppoeMac as per list? User listed both.
+                                    
+                                    $productClass = $get('DeviceID.ProductClass');
+                                    if ($productClass === '-') $productClass = data_get($device, '_deviceId._ProductClass') ?? '-';
+
+                                    $regTime = $get('Events.Registered');
+                                    // Format Last Inform
+                                    $lastInformStr = $device['_lastInform'] ? \Carbon\Carbon::parse($device['_lastInform'])->format('Y-m-d H:i:s') : '-';
+                                @endphp
+                                <tr>
+                                    <td class="text-center">
+                                        <i class="fa-solid fa-circle {{ $isOnline ? 'text-success' : 'text-danger' }}" title="{{ $isOnline ? __('Online') : __('Offline') }}"></i>
+                                    </td>
+                                    <td class="text-center">
+                                        <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Summon (Refresh)">
+                                                <i class="fa-solid fa-bolt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="fw-bold text-decoration-none me-2">
+                                                @if(isset($aliases[$id]) && $aliases[$id])
+                                                    {{ $aliases[$id] }}
+                                                    <small class="text-muted d-block fw-normal" style="font-size: 0.7em">{{ $pppoeUser !== '-' ? $pppoeUser : $id }}</small>
+                                                @else
+                                                    {{ $pppoeUser !== '-' ? $pppoeUser : $id }}
+                                                @endif
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="modal" data-bs-target="#editAliasModal{{ md5($id) }}">
+                                                <i class="fa-solid fa-pen fa-xs"></i>
+                                            </button>
+                                            @if(isset($device['_mstore_server_name']))
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle ms-2">
+                                                    {{ $device['_mstore_server_name'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        
+                                        <div class="modal fade" id="editAliasModal{{ md5($id) }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <form action="{{ route('genieacs.updateAlias', $id) }}" method="POST">
+                                                    @csrf
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">{{ __('Edit Device Alias') }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">{{ __('Alias / Name') }}</label>
+                                                                <input type="text" name="alias" class="form-control" value="{{ $aliases[$id] ?? '' }}" placeholder="e.g. Rumah Pak Budi">
+                                                                <div class="form-text">{{ __('This name will be displayed instead of ID/PPPoE.') }}</div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label text-muted small">{{ __('Original ID') }}</label>
+                                                                <input type="text" class="form-control form-control-sm" value="{{ $id }}" readonly disabled>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                                                            <button type="submit" class="btn btn-primary">{{ __('Save changes') }}</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+        <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="text-decoration-none text-dark">
+                                            {{ $sn }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                @if(($device['odp_name'] ?? '-') !== '-')
+                                                    <span class="badge bg-info text-dark border border-info-subtle">{{ $device['odp_name'] }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </div>
+                                            <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-assign-odp" 
+                                                    data-sn="{{ $sn }}"
+                                                    data-pppoe="{{ $pppoeUser }}"
+                                                    data-device-id="{{ $id }}"
+                                                    data-odp-id="{{ $device['odp_id'] ?? '' }}"
+                                                    title="{{ __('Assign/Change ODP') }}">
+                                                <i class="fa-solid fa-pencil text-warning"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>{{ $ssid }}</td>
+                                    <td class="text-center">
+                                        @if($displayIpAddress !== '-' && filter_var($displayIpAddress, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $displayIpAddress }}" target="_blank" class="text-decoration-none">
+                                                {{ $displayIpAddress }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                            </a>
+                                        @else
+                                            {{ $displayIpAddress }}
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $hotspot }}</td>
+                                    <td class="text-center">
+                                        @if($rx !== '-')
+                                            <span class="badge {{ floatval($rx) < -27 ? 'text-bg-danger' : 'text-bg-success' }}">
+                                                {{ $rx }}
+                                            </span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $temp }}</td>
+                                    <td>{{ $uptime }}</td>
+                                    <td>
+                                        @if($ipPppoe !== '-' && filter_var($ipPppoe, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $ipPppoe }}" target="_blank" class="text-decoration-none">
+                                                {{ $ipPppoe }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                            </a>
+                                        @else
+                                            {{ $ipPppoe }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($ipWan !== '-' && filter_var($ipWan, FILTER_VALIDATE_IP))
+                                            <a href="http://{{ $ipWan }}" target="_blank" class="text-decoration-none">
+                                                {{ $ipWan }} <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                            </a>
+                                        @else
+                                            {{ $ipWan }}
+                                        @endif
+                                    </td>
+                                    <td>{{ $ponMode }}</td>
+                                    <td>{{ $ponMac }}</td>
+                                    <td>{{ $productClass }}</td>
+                                    <td>{{ $regTime }}</td>
+                                    <td>
+                                        <small>{{ $lastInformStr }}</small>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="17" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="fa-solid fa-network-wired fa-3x mb-3"></i>
+                                            <p class="mb-0">{{ __('No devices found.') }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Grid View Container -->
+                <div id="gridViewContainer" class="d-none">
+                    <div class="row g-3">
+                        @forelse ($devices as $device)
+                            @php
+                                $lastInform = isset($device['_lastInform']) ? strtotime($device['_lastInform']) : 0;
+                                $isOnline = (time() - $lastInform) < 300;
+                                $id = $device['_id'];
+                                $serverIdForDevice = $device['_mstore_server_id'] ?? $currentServerId;
+                                
+                                // Helper to get value safely
+                                $get = function($key) use ($device) {
+                                    $val = data_get($device, $key . '._value');
+                                    if ($val === null) {
+                                        $val = data_get($device, $key);
+                                    }
+                                    
+                                    if (is_array($val)) {
+                                        return isset($val['_value']) && is_scalar($val['_value']) ? (string)$val['_value'] : '-';
+                                    }
+                                    
+                                    return $val !== null ? (string)$val : '-';
+                                };
+
+                                // Mapping fields
+                                $pppoeUser = $get('VirtualParameters.pppoeUsername');
+                                $sn = $get('VirtualParameters.getSerialNumber');
+                                // Fallback for SN if VP missing
+                                if ($sn === '-') $sn = data_get($device, '_deviceId._SerialNumber') ?? '-';
+
+                                $ssid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID');
+                                
+                                // Logic for Connected Devices (MACs)
+                                $hosts = data_get($device, 'InternetGatewayDevice.LANDevice.1.Hosts.Host');
+                                if (!$hosts) {
+                                    $hosts = data_get($device, 'Device.Hosts.Host');
+                                }
+                                $connectedMacs = [];
+                                if ($hosts && is_array($hosts)) {
+                                    // Handle single host case (associative array)
+                                    if (isset($hosts['Active']) || isset($hosts['PhysAddress']) || isset($hosts['MACAddress']) || isset($hosts['HostName'])) {
+                                        $hosts = [$hosts];
+                                    }
+
+                                    foreach ($hosts as $host) {
+                                        $isActive = data_get($host, 'Active._value') ?? data_get($host, 'Active');
+                                        if ($isActive === 'true' || $isActive === true || $isActive === '1' || $isActive === 1) {
+                                            $macVal = data_get($host, 'MACAddress._value') ?? data_get($host, 'MACAddress') ?? data_get($host, 'PhysAddress._value') ?? data_get($host, 'PhysAddress');
+                                            if ($macVal) {
+                                                $connectedMacs[] = $macVal;
+                                            }
+                                        }
+                                    }
+                                }
+                                // Fallback to TotalAssociations if no hosts found but count exists
+                                $wifiCount = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations');
+                                $displayCount = count($connectedMacs) > 0 ? count($connectedMacs) : ($wifiCount !== '-' ? $wifiCount : 0);
+
+                                $hotspot = $get('VirtualParameters.activedevices');
+                                $rx = $get('VirtualParameters.RXPower');
+                                $temp = $get('VirtualParameters.gettemp');
+                                $uptime = $get('VirtualParameters.getdeviceuptime');
+                                $ipPppoe = $get('VirtualParameters.AddressWanPPP');
+                                if ($ipPppoe === '-') {
+                                    $ipPppoe = $get('VirtualParameters.pppoeIP');
+                                }
+                                $ipWan = $get('VirtualParameters.AddressWanIP');
+                                if ($ipWan === '-') {
+                                    $ipWan = $get('VirtualParameters.IPTR069');
+                                }
+                                $displayIpAddress = $ipWan;
+
+                                // Get Device MACs (ONU, WLAN/SSID)
+                                $macOnu = $get('VirtualParameters.PonMac');
+                                if ($macOnu === '-') $macOnu = $get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress');
+                                
+                                $macSsid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID');
+                                if ($macSsid === '-') $macSsid = $get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddress');
+
+                                $deviceMacs = [];
+                                if ($macOnu !== '-') $deviceMacs['ONU'] = $macOnu;
+                                if ($macSsid !== '-') $deviceMacs['SSID'] = $macSsid;
+                                
+                                $productClass = $get('DeviceID.ProductClass');
+                                if ($productClass === '-') $productClass = data_get($device, '_deviceId._ProductClass') ?? '-';
+
+                                // Format Last Inform
+                                $lastInformStr = $device['_lastInform'] ? \Carbon\Carbon::parse($device['_lastInform'])->format('Y-m-d H:i:s') : '-';
+                            @endphp
+                            <div class="col-md-6 col-lg-4 col-xxl-3">
+                                <div class="card h-100 border shadow-sm">
+                                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+                                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                            <i class="fa-solid fa-circle {{ $isOnline ? 'text-success' : 'text-danger' }} fa-xs" title="{{ $isOnline ? __('Online') : __('Offline') }}"></i>
+                                            <div class="d-flex flex-column overflow-hidden">
+                                                <a href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" class="fw-bold text-decoration-none text-truncate text-dark small">
+                                                    @if(isset($aliases[$id]) && $aliases[$id])
+                                                        {{ $aliases[$id] }}
+                                                    @else
+                                                        {{ $pppoeUser !== '-' ? $pppoeUser : $id }}
+                                                    @endif
+                                                </a>
+                                                <small class="text-muted text-truncate" style="font-size: 0.7em;">{{ $sn }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li>
+                                                    <a class="dropdown-item small" href="{{ route('genieacs.show', ['id' => $id, 'server_id' => $serverIdForDevice]) }}">
+                                                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> {{ __('Detail') }}
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ route('genieacs.refresh', ['id' => $id, 'server_id' => $serverIdForDevice]) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item small">
+                                                            <i class="fa-solid fa-bolt me-2 text-warning"></i> {{ __('Summon') }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item small" data-bs-toggle="modal" data-bs-target="#editAliasModal{{ md5($id) }}">
+                                                        <i class="fa-solid fa-pen me-2 text-secondary"></i> {{ __('Edit Alias') }}
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-body py-2 small">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">ODP</span>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    @if(($device['odp_name'] ?? '-') !== '-')
+                                                        <span class="badge bg-info text-dark border border-info-subtle text-truncate" style="max-width: 80px;">{{ $device['odp_name'] }}</span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                    <button type="button" class="btn btn-link btn-sm p-0 btn-assign-odp" 
+                                                            data-sn="{{ $sn }}"
+                                                            data-pppoe="{{ $pppoeUser }}"
+                                                            data-device-id="{{ $id }}"
+                                                            data-odp-id="{{ $device['odp_id'] ?? '' }}">
+                                                        <i class="fa-solid fa-pencil text-warning fa-xs"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">Signal (RX)</span>
+                                                @if($rx !== '-')
+                                                    <span class="badge {{ floatval($rx) < -27 ? 'text-bg-danger' : 'text-bg-success' }}">
+                                                        {{ $rx }}
+                                                    </span>
+                                                @else
+                                                    -
+                                                @endif
+                                            </div>
+                                            <div class="col-12">
+                                                <span class="text-muted d-block" style="font-size: 0.7em;">IP Address (WAN/TR069)</span>
+                                                @if($displayIpAddress !== '-' && filter_var($displayIpAddress, FILTER_VALIDATE_IP))
+                                                    <a href="http://{{ $displayIpAddress }}" target="_blank" class="text-decoration-none small d-inline-flex align-items-center gap-1">
+                                                        <span>{{ $displayIpAddress }}</span>
+                                                        <i class="fa-solid fa-external-link-alt fa-xs text-muted"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="small text-muted">{{ $displayIpAddress }}</span>
+                                                @endif
+
+                                                @if(isset($deviceMacs) && count($deviceMacs) > 0)
+                                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                                        @foreach($deviceMacs as $label => $mac)
+                                                            <span class="badge  text-dark border border-secondary-subtle" style="font-size: 0.65em; font-family: monospace;" title="{{ $label }}">
+                                                                {{ $mac }}
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer  py-2 d-flex justify-content-between align-items-center small text-muted">
+                                        <div title="IP Address">
+                                            <i class="fa-solid fa-globe me-1"></i> {{ $displayIpAddress }}
+                                        </div>
+                                        <div title="{{ __('Uptime') }}">
+                                            <i class="fa-solid fa-clock me-1"></i> {{ $uptime }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12 text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fa-solid fa-network-wired fa-3x mb-3"></i>
+                                    <p class="mb-0">{{ __('No devices found.') }}</p>
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $devices->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Assign ODP Modal -->
+    <div class="modal fade" id="assignOdpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('genieacs.assign_odp') }}" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('Assign/Change ODP') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="device_id" id="modalOdpDeviceId">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Device SN') }}</label>
+                            <input type="text" class="form-control" name="sn" id="modalOdpSn" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('PPPoE Username') }}</label>
+                            <input type="text" class="form-control" name="pppoe" id="modalOdpPppoe" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Select ODP') }}</label>
+                            <select class="form-select select2-modal" name="odp_id" id="modalOdpSelect" required style="width: 100%;">
+                                <option value="">{{ __('Select ODP...') }}</option>
+                                @foreach($odps as $odp)
+                                    <option value="{{ $odp->id }}">{{ $odp->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@push('styles')
+<style>
+    @media (min-width: 992px) {
+        #genieacsDevicesTable {
+            table-layout: fixed;
+            font-size: 0.78rem;
+        }
+
+        #genieacsDevicesTable th,
+        #genieacsDevicesTable td {
+            padding: 0.35rem 0.45rem;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.25;
+            vertical-align: middle;
+        }
+
+        #genieacsDevicesTable th {
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        #genieacsDevicesTable th:nth-child(1),
+        #genieacsDevicesTable td:nth-child(1) { width: 44px; }
+        #genieacsDevicesTable th:nth-child(2),
+        #genieacsDevicesTable td:nth-child(2) { width: 56px; }
+        #genieacsDevicesTable th:nth-child(3),
+        #genieacsDevicesTable td:nth-child(3) { width: 170px; }
+        #genieacsDevicesTable th:nth-child(4),
+        #genieacsDevicesTable td:nth-child(4) { width: 130px; }
+        #genieacsDevicesTable th:nth-child(5),
+        #genieacsDevicesTable td:nth-child(5) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(6),
+        #genieacsDevicesTable td:nth-child(6) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(7),
+        #genieacsDevicesTable td:nth-child(7) { width: 90px; }
+        #genieacsDevicesTable th:nth-child(8),
+        #genieacsDevicesTable td:nth-child(8) { width: 76px; }
+        #genieacsDevicesTable th:nth-child(9),
+        #genieacsDevicesTable td:nth-child(9) { width: 74px; }
+        #genieacsDevicesTable th:nth-child(10),
+        #genieacsDevicesTable td:nth-child(10) { width: 74px; }
+        #genieacsDevicesTable th:nth-child(11),
+        #genieacsDevicesTable td:nth-child(11) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(12),
+        #genieacsDevicesTable td:nth-child(12) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(13),
+        #genieacsDevicesTable td:nth-child(13) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(14),
+        #genieacsDevicesTable td:nth-child(14) { width: 82px; }
+        #genieacsDevicesTable th:nth-child(15),
+        #genieacsDevicesTable td:nth-child(15) { width: 130px; }
+        #genieacsDevicesTable th:nth-child(16),
+        #genieacsDevicesTable td:nth-child(16) { width: 120px; }
+        #genieacsDevicesTable th:nth-child(17),
+        #genieacsDevicesTable td:nth-child(17) { width: 125px; }
+        #genieacsDevicesTable th:nth-child(18),
+        #genieacsDevicesTable td:nth-child(18) { width: 145px; }
+
+        #genieacsDevicesTable th:nth-child(1),
+        #genieacsDevicesTable th:nth-child(2),
+        #genieacsDevicesTable th:nth-child(7),
+        #genieacsDevicesTable th:nth-child(8),
+        #genieacsDevicesTable th:nth-child(9),
+        #genieacsDevicesTable th:nth-child(10),
+        #genieacsDevicesTable td:nth-child(1),
+        #genieacsDevicesTable td:nth-child(2),
+        #genieacsDevicesTable td:nth-child(7),
+        #genieacsDevicesTable td:nth-child(8),
+        #genieacsDevicesTable td:nth-child(9),
+        #genieacsDevicesTable td:nth-child(10) {
+            text-align: center;
+        }
+
+        #genieacsDevicesTable td:nth-child(6),
+        #genieacsDevicesTable td:nth-child(11),
+        #genieacsDevicesTable td:nth-child(12),
+        #genieacsDevicesTable td:nth-child(13),
+        #genieacsDevicesTable td:nth-child(15),
+        #genieacsDevicesTable td:nth-child(16),
+        #genieacsDevicesTable td:nth-child(17),
+        #genieacsDevicesTable td:nth-child(18) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+</style>
+@endpush
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+            // CSRF Token Setup for AJAX
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            // Initialize Select2 for ODP inside Modal
+            $('.select2-modal').select2({
+                dropdownParent: $('#assignOdpModal'),
+                theme: 'bootstrap-5',
+                placeholder: 'Select ODP'
+            });
+
+            // Handle Assign ODP Click
+            $(document).on('click', '.btn-assign-odp', function() {
+                var sn = $(this).data('sn');
+                var pppoe = $(this).data('pppoe');
+                var deviceId = $(this).data('device-id');
+                var odpId = $(this).data('odp-id');
+                
+                $('#modalOdpSn').val(sn);
+                $('#modalOdpPppoe').val(pppoe);
+                $('#modalOdpDeviceId').val(deviceId);
+                
+                // Set ODP Select
+                var odpSelect = $('#modalOdpSelect');
+                odpSelect.val(odpId).trigger('change');
+                
+                var modalEl = document.getElementById('assignOdpModal');
+                // Use window.bootstrap if available, fallback to global bootstrap
+                var bs = window.bootstrap || bootstrap;
+                var modal = bs.Modal.getInstance(modalEl) || new bs.Modal(modalEl);
+                modal.show();
+            });
+
+            // View Mode Toggle Logic
+            const listViewBtn = $('#btnViewList');
+            const gridViewBtn = $('#btnViewGrid');
+            const listViewContainer = $('#listViewContainer');
+            const gridViewContainer = $('#gridViewContainer');
+            
+            // Function to set view mode
+            function setViewMode(mode) {
+                if (mode === 'grid') {
+                    listViewContainer.addClass('d-none');
+                    gridViewContainer.removeClass('d-none');
+                    listViewBtn.removeClass('active');
+                    gridViewBtn.addClass('active');
+                } else {
+                    gridViewContainer.addClass('d-none');
+                    listViewContainer.removeClass('d-none');
+                    gridViewBtn.removeClass('active');
+                    listViewBtn.addClass('active');
+                }
+                localStorage.setItem('genieacsViewMode', mode);
+            }
+
+            // Load saved preference
+            const savedMode = localStorage.getItem('genieacsViewMode');
+            if (savedMode) {
+                setViewMode(savedMode);
+            }
+
+            // Event Listeners
+            listViewBtn.on('click', function() {
+                setViewMode('list');
+            });
+
+            gridViewBtn.on('click', function() {
+                setViewMode('grid');
+            });
+        });
+    </script>
+    @endpush
+@endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('deviceSearch');
+        const table = document.getElementById('genieacsDevicesTable');
+        const refreshButton = document.getElementById('refreshButton');
+        const perPageSelect = document.getElementById('perPageSelect');
+        const serverSelect = document.getElementById('serverSelect');
+
+        if (searchInput && table) {
+            const tbody = table.querySelector('tbody');
+            const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+            const gridContainer = document.getElementById('gridViewContainer');
+
+            searchInput.addEventListener('input', function () {
+                const term = this.value.toLowerCase();
+
+                // Filter Table Rows
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = term === '' || text.includes(term) ? '' : 'none';
+                });
+
+                // Filter Grid Items
+                if (gridContainer) {
+                    const cards = Array.from(gridContainer.querySelectorAll('.row > div'));
+                    cards.forEach(card => {
+                        if (card.className.includes('col-')) {
+                            const text = card.textContent.toLowerCase();
+                            card.style.display = term === '' || text.includes(term) ? '' : 'none';
+                        }
+                    });
+                }
+            });
+        }
+
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function () {
+                window.location.reload();
+            });
+        }
+
+        if (perPageSelect) {
+            perPageSelect.addEventListener('change', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.set('per_page', this.value);
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            });
+        }
+
+        if (serverSelect) {
+            serverSelect.addEventListener('change', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.set('server_id', this.value);
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            });
+        }
+    });
+</script>
+@endpush

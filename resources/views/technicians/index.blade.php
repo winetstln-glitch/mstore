@@ -1,0 +1,107 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 border-top border-4 border-primary">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 fw-bold">{{ __('Manajemen Teknisi') }}</h5>
+                <a href="{{ route('technicians.create') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Teknisi') }}
+                </a>
+            </div>
+
+            <div class="card-body">
+                {{-- Notifikasi Sukses/Gagal global ditangani SweetAlert di Layout --}}
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-3">{{ __('Nama') }}</th>
+                                <th scope="col">{{ __('Kontak') }}</th>
+                                <th scope="col">{{ __('Gaji Bulanan') }}</th>
+                                <th scope="col">{{ __('Status') }}</th>
+                                <th scope="col">{{ __('Bergabung') }}</th>
+                                <th scope="col" class="text-end pe-3">{{ __('Aksi') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($technicians as $technician)
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="d-flex align-items-center">
+                                            {{-- Penanganan huruf inisial yang aman untuk UTF-8 & otomatis Uppercase --}}
+                                            <div class="avatar avatar-sm me-3 bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <span class="fw-bold">{{ \Illuminate\Support\Str::of($technician->name)->trim()->substr(0, 1)->upper() }}</span>
+                                            </div>
+                                            <div class="fw-medium">{{ $technician->name }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold text-dark">{{ $technician->email }}</div>
+                                        <div class="text-muted small">{{ $technician->phone ?? __('Tidak ada nomor') }}</div>
+                                        @if($technician->telegram_chat_id)
+                                            <div class="small text-info mt-1">
+                                                <i class="fa-brands fa-telegram me-1"></i>{{ $technician->telegram_chat_id }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium text-dark">
+                                            {{ 'Rp ' . number_format(($technician->employee->monthly_salary ?? $technician->monthly_salary) ?? 0, 0, ',', '.') }}
+                                        </div>
+                                        @if(($technician->employee->daily_salary ?? $technician->daily_salary) > 0)
+                                            <div class="text-muted small">
+                                                {{ 'Rp ' . number_format(($technician->employee->daily_salary ?? $technician->daily_salary) ?? 0, 0, ',', '.') . '/hari' }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ $technician->is_active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }}">
+                                            {{ $technician->is_active ? __('Aktif') : __('Tidak Aktif') }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">
+                                        {{ $technician->created_at->translatedFormat('d M Y') }}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="d-flex justify-content-end gap-1">
+                                            <a href="{{ route('technicians.show', $technician) }}" class="btn btn-sm btn-outline-info" title="{{ __('Lihat') }}">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <a href="{{ route('technicians.edit', $technician) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Ubah') }}">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            
+                                            {{-- Cukup tambahkan class 'form-delete'. Sisanya ditangani script global --}}
+                                            <form action="{{ route('technicians.destroy', $technician) }}" method="POST" class="d-inline form-delete">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fa-regular fa-folder-open d-block fs-2 mb-2 text-secondary"></i>
+                                        {{ __('Tidak ada teknisi.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4">
+                    {{ $technicians->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

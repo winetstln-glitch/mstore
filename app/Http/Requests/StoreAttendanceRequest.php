@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreAttendanceRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        // Use AttendanceService for photo rules
+        return [
+            'photo' => 'nullable|image',
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
+            'device_fingerprint' => 'nullable|string|min:8|max:128',
+            'notes' => 'nullable|string',
+        ];
+    }
+}

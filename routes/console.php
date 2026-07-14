@@ -1,0 +1,79 @@
+<?php
+
+use App\Console\Commands\MarkAbsentAsAlpha;
+use App\Jobs\RunDailyReconciliationJob;
+use App\Models\VpnServer;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schedule;
+
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote');
+
+// Schedule GenieACS Network Monitor
+Schedule::command('app:monitor-genie-devices')->everyFiveMinutes()->withoutOverlapping(10);
+
+// Schedule Router Mikrotik Status Check
+Schedule::command('router:check-status')->everyFiveMinutes()->withoutOverlapping(10);
+
+Schedule::command('noc:capture-metrics --queue')->everyMinute()->withoutOverlapping(2);
+
+Schedule::command('sla:evaluate --queue')->everyFifteenMinutes()->withoutOverlapping(10);
+
+Schedule::call(function () {
+    Cache::put('mstore.scheduler.heartbeat_at', now()->toDateTimeString(), now()->addMinutes(10));
+})->name('mstore:scheduler-heartbeat')->everyMinute()->withoutOverlapping(1);
+
+// Schedule Attendance: Mark Absent as Alpha (run every minute)
+Schedule::command('attendance:mark-alpha')
+    ->everyMinute()
+    ->withoutOverlapping(10);
+
+// Schedule Daily Ledger Reconciliation
+Schedule::job(new RunDailyReconciliationJob())
+    ->dailyAt('00:05')
+    ->name('ledger:daily-reconciliation')
+    ->withoutOverlapping(30);
+
+tap(
+    Schedule::command('logs:prune-sensitive')
+        ->dailyAt((string) config('log_retention.scheduler.run_at', '02:25'))
+        ->withoutOverlapping((int) config('log_retention.scheduler.without_overlapping_minutes', 30)),
+    function ($event) {
+        if ((bool) config('log_retention.scheduler.on_one_server', true)) {
+            $event->onOneServer();
+        }
+    }
+);
+
+// Register command manually
+Artisan::registerCommand(new MarkAbsentAsAlpha());
+
+Artisan::command('vpn:monitor', function () {
+    $count = VpnServer::count();
+    $bar = $this->output->createProgressBar($count);
+    $bar->start();
+    $updated = 0;
+    VpnServer::each(function (VpnServer $server) use (&$updated, $bar) {
+        $start = microtime(true);
+        $ok = false;
+        try {
+            $fp = @fsockopen($server->ip_public, $server->port, $errno, $errstr, 2.0);
+            if ($fp) {
+                fclose($fp);
+                $ok = true;
+            }
+        } catch (\Throwable $e) {
+        }
+        $lat = (int) round((microtime(true) - $start) * 1000);
+        $server->last_latency_ms = $ok ? $lat : null;
+        $server->save();
+        $updated++;
+        $bar->advance();
+    });
+    $bar->finish();
+    $this->newLine();
+    $this->info("Updated latency for {$updated} servers.");
+})->purpose('Measure latency to each VPN server and store it');

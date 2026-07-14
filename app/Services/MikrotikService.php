@@ -1,0 +1,469 @@
+<?php
+
+/**
+ * @deprecated Use Modules\Network\Adapters\MikroTikAdapter via Modules\Network\Services\MonitoringService, SynchronizationService, or ProvisioningService instead
+ */
+
+namespace App\Services;
+
+use App\Models\Router;
+use Exception;
+use Illuminate\Support\Facades\Log;
+use RouterOS\Client;
+use RouterOS\Query;
+
+class MikrotikService
+{
+    protected $client;
+
+    protected $router;
+
+    public function __construct(Router $router)
+    {
+        $this->router = $router;
+
+        try {
+            $host = $router->vpn_tunnel_ip ?: $router->host;
+            if (empty($host)) {
+                Log::error("Failed to connect to Mikrotik {$router->name}: Host address is empty/NULL");
+                $this->client = null;
+                return;
+            }
+            $this->client = new Client([
+                'host' => $host,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int) $router->port,
+            ]);
+        } catch (Exception $e) {
+            Log::error("Failed to connect to Mikrotik {$router->name}: ".$e->getMessage());
+            $this->client = null;
+        }
+    }
+
+    /**
+     * Check if client is connected
+     */
+    public function isConnected()
+    {
+        return $this->client !== null;
+    }
+
+    /**
+     * Get all PPPoE Secrets
+     */
+    public function getSecrets()
+    {
+        if (! $this->client) {
+            return [];
+        }
+
+        $query = new Query('/ppp/secret/print');
+
+        return $this->client->query($query)->read();
+    }
+
+    /**
+     * Create PPPoE Secret
+     */
+    public function createSecret($name, $password, $profile = 'default', $localAddress = null, $remoteAddress = null, $service = 'pppoe')
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ppp/secret/add');
+            $query->equal('name', $name);
+            $query->equal('password', $password);
+            $query->equal('profile', $profile);
+            $query->equal('service', $service);
+
+            if ($localAddress) {
+                $query->equal('local-address', $localAddress);
+            }
+            if ($remoteAddress) {
+                $query->equal('remote-address', $remoteAddress);
+            }
+
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Add Secret Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Update PPPoE Secret
+     */
+    public function updateSecret($oldName, $data)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            // Find ID first
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $oldName);
+            $secrets = $this->client->query($query)->read();
+
+            if (empty($secrets)) {
+                return false;
+            }
+
+            $id = $secrets[0]['.id'];
+
+            $query = new Query('/ppp/secret/set');
+            $query->equal('.id', $id);
+
+            foreach ($data as $key => $value) {
+                $query->equal($key, $value);
+            }
+
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Update Secret Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Enable/Disable Secret (Block/Unblock)
+     */
+    public function toggleSecret($name, $enable = true)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $name);
+            $secrets = $this->client->query($query)->read();
+
+            if (empty($secrets)) {
+                return false;
+            }
+            $id = $secrets[0]['.id'];
+
+            $action = $enable ? 'enable' : 'disable';
+            $query = new Query("/ppp/secret/$action");
+            $query->equal('.id', $id);
+
+            $this->client->query($query)->read();
+
+            // If disabling, also kill active connection
+            if (! $enable) {
+                $this->killActive($name);
+            }
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Toggle Secret Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Create Hotspot User
+     */
+    public function createHotspotUser($username, $password, $profile = 'default', $limitUptime = null, $limitBytesTotal = null)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ip/hotspot/user/add');
+            $query->equal('name', $username);
+            $query->equal('password', $password);
+            $query->equal('profile', $profile);
+
+            if ($limitUptime) {
+                $query->equal('limit-uptime', $limitUptime);
+            }
+            if ($limitBytesTotal) {
+                $query->equal('limit-bytes-total', $limitBytesTotal);
+            }
+
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Add Hotspot User Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Remove Hotspot User
+     */
+    public function removeHotspotUser($username)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ip/hotspot/user/print');
+            $query->where('name', $username);
+            $users = $this->client->query($query)->read();
+
+            if (empty($users)) {
+                return false;
+            }
+            $id = $users[0]['.id'];
+
+            $query = new Query('/ip/hotspot/user/remove');
+            $query->equal('.id', $id);
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Remove Hotspot User Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Kill Active Connection
+     */
+    public function killActive($name)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ppp/active/print');
+            $query->where('name', $name);
+            $active = $this->client->query($query)->read();
+
+            foreach ($active as $conn) {
+                $kill = new Query('/ppp/active/remove');
+                $kill->equal('.id', $conn['.id']);
+                $this->client->query($kill)->read();
+            }
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Kill Active Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Check if PPPoE user is active
+     */
+    public function isPppoeActive($username)
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ppp/active/print');
+            $query->where('name', $username);
+            $response = $this->client->query($query)->read();
+
+            return count($response) > 0;
+        } catch (Exception $e) {
+            Log::error('Mikrotik query error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Get Interface Traffic (Monitor)
+     */
+    public function getInterfaceTraffic($interfaceName)
+    {
+        if (! $this->client) {
+            return null;
+        }
+
+        try {
+            $query = new Query('/interface/monitor-traffic');
+            $query->equal('interface', $interfaceName);
+            $query->equal('once', 'true');
+
+            $response = $this->client->query($query)->read();
+
+            if (! empty($response)) {
+                return $response[0]; // rx-bits-per-second, tx-bits-per-second
+            }
+
+            return null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get Profiles
+     */
+    public function getProfiles()
+    {
+        if (! $this->client) {
+            return [];
+        }
+        $query = new Query('/ppp/profile/print');
+
+        return $this->client->query($query)->read();
+    }
+
+    /**
+     * Get System Resource
+     */
+    public function getSystemResource()
+    {
+        if (! $this->client) {
+            return null;
+        }
+        try {
+            $query = new Query('/system/resource/print');
+            $response = $this->client->query($query)->read();
+
+            return ! empty($response) ? $response[0] : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get PPPoE Active Count
+     */
+    public function getPppoeActiveCount()
+    {
+        if (! $this->client) {
+            return 0;
+        }
+        try {
+            $query = new Query('/ppp/active/print');
+            $query->where('service', 'pppoe');
+
+            return count($this->client->query($query)->read());
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function getPppoeActiveList()
+    {
+        if (! $this->client) {
+            return [];
+        }
+        try {
+            $query = new Query('/ppp/active/print');
+            $query->where('service', 'pppoe');
+
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get Hotspot Active Count
+     */
+    public function getHotspotActiveCount()
+    {
+        if (! $this->client) {
+            return 0;
+        }
+        try {
+            $query = new Query('/ip/hotspot/active/print');
+
+            return count($this->client->query($query)->read());
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    public function getHotspotActiveList()
+    {
+        if (! $this->client) {
+            return [];
+        }
+        try {
+            $query = new Query('/ip/hotspot/active/print');
+
+            return $this->client->query($query)->read();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    public function disconnectHotspotById(string $id): bool
+    {
+        if (! $this->client) {
+            return false;
+        }
+
+        try {
+            $query = new Query('/ip/hotspot/active/remove');
+            $query->equal('.id', $id);
+            $this->client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Mikrotik Hotspot Disconnect Error: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    public function getInterfacesTrafficSnapshot(int $limit = 4)
+    {
+        if (! $this->client) {
+            return [];
+        }
+
+        try {
+            $query = new Query('/interface/print');
+            $interfaces = $this->client->query($query)->read();
+
+            $result = [];
+            $count = 0;
+
+            foreach ($interfaces as $interface) {
+                if (! is_array($interface) || empty($interface['name'])) {
+                    continue;
+                }
+
+                if (isset($interface['disabled']) && $interface['disabled'] === 'true') {
+                    continue;
+                }
+
+                $traffic = $this->getInterfaceTraffic($interface['name']);
+
+                $result[] = [
+                    'name' => $interface['name'],
+                    'rx' => isset($traffic['rx-bits-per-second']) ? (int) $traffic['rx-bits-per-second'] : 0,
+                    'tx' => isset($traffic['tx-bits-per-second']) ? (int) $traffic['tx-bits-per-second'] : 0,
+                ];
+
+                $count++;
+                if ($count >= $limit) {
+                    break;
+                }
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+}

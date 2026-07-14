@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Setting extends Model
+{
+    use HasFactory;
+
+    protected static ?array $cachedValues = null;
+
+    protected $fillable = [
+        'key',
+        'value',
+        'group',
+        'type',
+        'label',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (): void {
+            self::forgetCache();
+        });
+
+        static::deleted(function (): void {
+            self::forgetCache();
+        });
+    }
+
+    /**
+     * Get a setting value by key.
+     *
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public static function getValue($key, $default = null)
+    {
+        $values = self::allValues();
+
+        return array_key_exists($key, $values) ? $values[$key] : $default;
+    }
+
+    public static function allValues(): array
+    {
+        if (self::$cachedValues === null) {
+            self::$cachedValues = \Illuminate\Support\Facades\Cache::rememberForever('settings_all', function () {
+                try {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                        return self::query()
+                            ->pluck('value', 'key')
+                            ->all();
+                    }
+                } catch (\Exception $e) {
+                    // Do nothing if table doesn't exist
+                }
+                return [];
+            });
+        }
+
+        return self::$cachedValues;
+    }
+
+    public static function forgetCache(): void
+    {
+        self::$cachedValues = null;
+        \Illuminate\Support\Facades\Cache::forget('settings_all');
+    }
+}

@@ -1,0 +1,53 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (for metadata only)
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BRANCH: main
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: DEPLOY_PATH,BRANCH
+          script_stop: true
+          script: |
+            set -e
+            if [ -z "${DEPLOY_PATH}" ]; then
+              DEPLOY_PATH="/var/www/mstore"
+            fi
+            cd "${DEPLOY_PATH}"
+            git fetch --all -p
+            git reset --hard "origin/${BRANCH}"
+            if [ -x "./deploy.sh" ]; then
+              bash ./deploy.sh
+            else
+              chmod +x ./deploy.sh
+              bash ./deploy.sh
+            fi
+
+      - name: Health Check (optional)
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsSL "$HEALTHCHECK_URL" >/dev/null
+          else
+            echo "No healthcheck URL configured. Skipping."
+          fi
