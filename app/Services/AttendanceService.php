@@ -30,7 +30,7 @@ class AttendanceService
             return false;
         }
 
-        return $user->hasAnyRole(['admin', Role::HRD_MANAGER]);
+        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'owner', 'owner pendiri', 'leader', Role::HRD_MANAGER]);
     }
 
     public function isUserCoordinator(?User $user): bool
