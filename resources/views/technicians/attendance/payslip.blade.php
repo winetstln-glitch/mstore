@@ -178,35 +178,101 @@
                             <!-- Ringkasan Kehadiran (Horizontal) -->
                             <div class="col-12 mb-2">
                                 <div class="d-flex justify-content-between p-2 px-3 bg-light rounded-3 border border-secondary-subtle">
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $presentDates = $data['dates']->where('status', 'present')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'present', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Hadir</p>
+                                            <p class="small fw-bold text-success mb-0">{{ $data['present_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Hadir</p>
                                         <p class="small fw-bold text-success mb-0">{{ $data['present_count'] }}</p>
                                     </div>
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $lateDates = $data['dates']->where('status', 'late')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'late', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Terlambat</p>
+                                            <p class="small fw-bold text-warning mb-0">{{ $data['late_count'] }}</p>
+                                            @if($data['total_late_minutes'] > 0)
+                                            <p class="xx-small text-muted mb-0">({{ $data['total_late_minutes'] }} menit)</p>
+                                            @endif
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Terlambat</p>
                                         <p class="small fw-bold text-warning mb-0">{{ $data['late_count'] }}</p>
                                         @if($data['total_late_minutes'] > 0)
                                         <p class="xx-small text-muted mb-0">({{ $data['total_late_minutes'] }} menit)</p>
                                         @endif
                                     </div>
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $leaveDates = $data['dates']->where('status', 'leave')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'leave', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Cuti</p>
+                                            <p class="small fw-bold text-info mb-0">{{ $data['leave_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Cuti</p>
                                         <p class="small fw-bold text-info mb-0">{{ $data['leave_count'] }}</p>
                                     </div>
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $permitDates = $data['dates']->where('status', 'permit')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'permit', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Izin</p>
+                                            <p class="small fw-bold text-info mb-0">{{ $data['permit_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Izin</p>
                                         <p class="small fw-bold text-info mb-0">{{ $data['permit_count'] }}</p>
                                     </div>
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $sickDates = $data['dates']->where('status', 'sick')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'sick', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Sakit</p>
+                                            <p class="small fw-bold text-info mb-0">{{ $data['sick_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Sakit</p>
                                         <p class="small fw-bold text-info mb-0">{{ $data['sick_count'] }}</p>
                                     </div>
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $alphaDates = $data['dates']->where('status', 'alpha')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'alpha', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Alpa</p>
+                                            <p class="small fw-bold text-danger mb-0">{{ $data['alpha_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Alpa</p>
                                         <p class="small fw-bold text-danger mb-0">{{ $data['alpha_count'] }}</p>
                                     </div>
                                     @if($data['off_count'] > 0)
-                                    <div class="text-center">
+                                    <div class="text-center print-none">
+                                        @php
+                                            $offDates = $data['dates']->where('status', 'off')->map(fn($d) => $d->work_date?->toDateString() ?? $d->clock_in?->toDateString())->unique()->implode(',');
+                                        @endphp
+                                        <a href="{{ route('attendance.index', ['user_id' => $data['user']->id, 'status' => 'off', 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'month' => request('month')]) }}" class="text-decoration-none">
+                                            <p class="xx-small fw-bold text-muted text-uppercase mb-0">Off</p>
+                                            <p class="small fw-bold text-muted mb-0">{{ $data['off_count'] }}</p>
+                                        </a>
+                                    </div>
+                                    <div class="text-center d-none d-print-block">
                                         <p class="xx-small fw-bold text-muted text-uppercase mb-0">Off</p>
                                         <p class="small fw-bold text-muted mb-0">{{ $data['off_count'] }}</p>
                                     </div>
