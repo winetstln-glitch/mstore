@@ -4,7 +4,7 @@
 namespace App\Livewire;
 
 use App\Models\OLT;
-use App\Services\OLT\OLTFactory;
+use App\Services\Olt\OLTFactory;
 use Livewire\Component;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;

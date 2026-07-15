@@ -7,9 +7,9 @@ use Modules\Network\Adapters\MikroTikAdapter;
 use App\Models\Customer;
 use App\Models\Router;
 use App\Models\OLT;
-use App\Services\OLT\OLTPollService;
+use App\Services\Olt\OLTPollService;
 use App\Services\Olt\OltService;
-use App\Services\OLT\OLTFactory;
+use App\Services\Olt\OLTFactory;
 use Illuminate\Support\Facades\Log;
 
 class MonitoringService
