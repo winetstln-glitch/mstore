@@ -51,20 +51,24 @@ class AttendanceService
         $shiftConfig = [
             'shift_1_start' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_start' : 'schedule_teknisi_shift_1_start', '08:00'),
             'shift_1_end' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_end' : 'schedule_teknisi_shift_1_end', '17:00'),
+            'shift_1_cutoff' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_1_cutoff' : 'schedule_teknisi_shift_1_cutoff', '10:00'),
             'shift_2_start' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_start' : 'schedule_teknisi_shift_2_start', '15:00'),
             'shift_2_end' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_end' : 'schedule_teknisi_shift_2_end', '00:00'),
+            'shift_2_cutoff' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_2_cutoff' : 'schedule_teknisi_shift_2_cutoff', '17:00'),
             'longshift_start' => Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_start' : 'schedule_teknisi_longshift_start', '08:00'),
             'longshift_end' => Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_end' : 'schedule_teknisi_longshift_end', '20:00'),
+            'longshift_cutoff' => Setting::getValue($group === 'wash' ? 'schedule_wash_longshift_cutoff' : 'schedule_teknisi_longshift_cutoff', '10:00'),
             'official_start' => Setting::getValue($group === 'wash' ? 'schedule_wash_official_start' : 'schedule_teknisi_official_start', '08:00'),
-            'shift_cutoff' => Setting::getValue($group === 'wash' ? 'schedule_wash_shift_cutoff' : 'schedule_teknisi_shift_cutoff', '10:00'),
         ];
 
         $shiftStart = $shiftConfig['shift_1_start'];
         $shiftEnd = $shiftConfig['shift_1_end'];
+        $shiftCutoff = $shiftConfig['shift_1_cutoff'];
 
         if ($status === 'longshift') {
             $shiftStart = $shiftConfig['longshift_start'];
             $shiftEnd = $shiftConfig['longshift_end'];
+            $shiftCutoff = $shiftConfig['longshift_cutoff'];
         } elseif ($status === 'piket') {
             $settingKey = $group === 'wash' ? 'weekly_schedule_wash' : 'weekly_schedule_teknisi';
             $scheduleRaw = (string) Setting::getValue($settingKey, '{}');
@@ -78,20 +82,23 @@ class AttendanceService
             if ($mappedShift === 'longshift') {
                 $shiftStart = $shiftConfig['longshift_start'];
                 $shiftEnd = $shiftConfig['longshift_end'];
+                $shiftCutoff = $shiftConfig['longshift_cutoff'];
             } elseif ($mappedShift === 'shift2') {
                 $shiftStart = $shiftConfig['shift_2_start'];
                 $shiftEnd = $shiftConfig['shift_2_end'];
+                $shiftCutoff = $shiftConfig['shift_2_cutoff'];
             }
         } elseif ($status === 'backup') {
             $shiftStart = $shiftConfig['shift_2_start'];
             $shiftEnd = $shiftConfig['shift_2_end'];
+            $shiftCutoff = $shiftConfig['shift_2_cutoff'];
         }
 
         return [
             'start' => $shiftStart,
             'end' => $shiftEnd,
             'official_start' => $shiftConfig['official_start'],
-            'shift_cutoff' => $shiftConfig['shift_cutoff'],
+            'shift_cutoff' => $shiftCutoff,
             'status' => $status,
         ];
     }

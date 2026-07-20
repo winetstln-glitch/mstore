@@ -107,7 +107,7 @@ class MarkAbsentAsAlphaAction
         $cutoff = $clockInWindow['shift_cutoff'];
 
         $now = Carbon::now();
-        if (!$this->attendanceService->isPastCutoffTime($cutoff, $now)) {
+        if (! $this->attendanceService->isPastCutoffTime($cutoff, $now)) {
             Log::info('MarkAbsentAsAlphaAction: Not past cutoff yet, skipping', [
                 'user_id' => $user->id,
                 'cutoff' => $cutoff,

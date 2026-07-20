@@ -243,8 +243,6 @@ class SidebarMenu
                     ], permissions: ['telegram.view']),
                     self::group('sys-integrations', 'Integrations & API', [
                         self::link('api-keys', 'API Keys', 'apikeys.index', permissions: ['apikey.view']),
-                        self::link('mixradius', 'MixRADIUS Config', 'mixradius.index', permissions: ['setting.view']),
-                        self::link('genieacs', 'GenieACS Config', 'genieacs.servers.index', permissions: ['genieacs.view']),
                     ], permissions: ['apikey.view', 'setting.view', 'genieacs.view']),
                     self::group('sys-users', 'Access Control', [
                         self::link('users', 'User Management', 'users.index', permissions: ['user.view']),
