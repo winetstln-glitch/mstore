@@ -765,6 +765,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('/voucher/generate', [VoucherController::class, 'generate'])->name('vouchers.generate');
     Route::post('/voucher/disconnect', [VoucherController::class, 'disconnect'])->name('vouchers.disconnect');
     Route::post('/voucher/template', [VoucherController::class, 'storeTemplate'])->name('vouchers.templates.store');
+    Route::get('/voucher/template/{voucherTemplate}/edit', [VoucherController::class, 'editTemplate'])->name('vouchers.templates.edit');
+    Route::put('/voucher/template/{voucherTemplate}', [VoucherController::class, 'updateTemplate'])->name('vouchers.templates.update');
     Route::delete('/voucher/template/{voucherTemplate}', [VoucherController::class, 'deleteTemplate'])->name('vouchers.templates.delete');
     Route::get('/voucher/export/csv', [VoucherController::class, 'exportCsv'])->name('vouchers.export.csv');
     Route::get('/voucher/export/excel', [VoucherController::class, 'exportExcel'])->name('vouchers.export.excel');

@@ -62,6 +62,11 @@
                             <td>Rp {{ number_format((float) $template->price, 0, ',', '.') }}</td>
                             <td>{!! $template->is_active ? '<span class="badge bg-success-subtle text-success">Aktif</span>' : '<span class="badge bg-secondary-subtle text-secondary">Nonaktif</span>' !!}</td>
                             <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" 
+                                        onclick="editTemplate({{ $template->id }})"
+                                        data-bs-toggle="modal" data-bs-target="#voucherTemplateEditModal">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
                                 <form action="{{ route('vouchers.templates.delete', $template) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus profile paket ini?')">
                                     @csrf
                                     @method('DELETE')
@@ -207,6 +212,83 @@
         </form>
     </div>
 </div>
+
+<div class="modal fade" id="voucherTemplateEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="voucherTemplateEditForm" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Profile Paket Voucher</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Nama Paket</label>
+                            <input type="text" name="name" id="edit_name" class="form-control" placeholder="Contoh: Voucher 1 Hari" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Rate Limit</label>
+                            <input type="text" name="rate_limit" id="edit_rate_limit" class="form-control" placeholder="1M/1M">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Durasi</label>
+                            <div class="input-group">
+                                <input type="number" min="0" name="duration_value" id="edit_duration_value" class="form-control" placeholder="1">
+                                <select name="duration_unit" id="edit_duration_unit" class="form-select">
+                                    <option value="menit">Menit</option>
+                                    <option value="jam" selected>Jam</option>
+                                    <option value="hari">Hari</option>
+                                    <option value="bulan">Bulan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Quota (MB)</label>
+                            <input type="number" min="0" name="quota_mb" id="edit_quota_mb" class="form-control" placeholder="1024">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Harga</label>
+                            <input type="number" min="0" step="0.01" name="price" id="edit_price" class="form-control" placeholder="5000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label d-block">Status</label>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" checked name="is_active" id="edit_is_active" value="1">
+                                <label class="form-check-label" for="edit_is_active">Aktif</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-save me-1"></i>Update</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editTemplate(templateId) {
+    fetch(`/voucher/template/${templateId}/edit`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('edit_name').value = data.name;
+            document.getElementById('edit_rate_limit').value = data.rate_limit || '';
+            document.getElementById('edit_duration_value').value = data.duration_value || '';
+            document.getElementById('edit_duration_unit').value = data.duration_unit || 'jam';
+            document.getElementById('edit_quota_mb').value = data.quota_mb || '';
+            document.getElementById('edit_price').value = data.price;
+            document.getElementById('edit_is_active').checked = data.is_active;
+            
+            const form = document.getElementById('voucherTemplateEditForm');
+            form.action = `/voucher/template/${templateId}`;
+        });
+}
+</script>
 
 <div class="modal fade" id="voucherGenerateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">

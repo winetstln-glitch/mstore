@@ -113,7 +113,74 @@ class VoucherController extends Controller implements HasMiddleware
 
         VoucherTemplate::query()->create($validated);
 
-        return back()->with('success', 'Profile paket voucher berhasil ditambahkan.');
+        return back()->with('success', 'Profile paket voucher berhasil ditambahkan!');
+    }
+
+    public function editTemplate(VoucherTemplate $voucherTemplate)
+    {
+        // Convert duration seconds back to value and unit
+        $durationValue = null;
+        $durationUnit = 'jam';
+        if ($voucherTemplate->duration_seconds) {
+            $seconds = $voucherTemplate->duration_seconds;
+            if ($seconds % 2592000 === 0) {
+                $durationValue = $seconds / 2592000;
+                $durationUnit = 'bulan';
+            } elseif ($seconds % 86400 === 0) {
+                $durationValue = $seconds / 86400;
+                $durationUnit = 'hari';
+            } elseif ($seconds % 3600 === 0) {
+                $durationValue = $seconds / 3600;
+                $durationUnit = 'jam';
+            } else {
+                $durationValue = $seconds / 60;
+                $durationUnit = 'menit';
+            }
+        }
+        
+        return response()->json([
+            'id' => $voucherTemplate->id,
+            'name' => $voucherTemplate->name,
+            'rate_limit' => $voucherTemplate->rate_limit,
+            'duration_value' => $durationValue,
+            'duration_unit' => $durationUnit,
+            'quota_mb' => $voucherTemplate->quota_mb,
+            'price' => $voucherTemplate->price,
+            'is_active' => $voucherTemplate->is_active
+        ]);
+    }
+
+    public function updateTemplate(Request $request, VoucherTemplate $voucherTemplate)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'rate_limit' => ['nullable', 'string', 'max:255'],
+            'duration_value' => ['nullable', 'integer', 'min:0'],
+            'duration_unit' => ['nullable', 'in:menit,jam,hari,bulan'],
+            'quota_mb' => ['nullable', 'integer', 'min:0'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'is_active' => ['boolean'],
+        ]);
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
+        
+        // Calculate duration in seconds
+        $durationSeconds = null;
+        if (isset($validated['duration_value']) && $validated['duration_value'] > 0) {
+            $unitMultipliers = [
+                'menit' => 60,
+                'jam' => 3600,
+                'hari' => 86400,
+                'bulan' => 2592000, // 30 days
+            ];
+            $durationSeconds = $validated['duration_value'] * $unitMultipliers[$validated['duration_unit'] ?? 'jam'];
+        }
+        
+        $validated['duration_seconds'] = $durationSeconds;
+        unset($validated['duration_value'], $validated['duration_unit']);
+
+        $voucherTemplate->update($validated);
+
+        return back()->with('success', 'Profile paket voucher berhasil diperbarui!');
     }
 
     public function deleteTemplate(VoucherTemplate $voucherTemplate)
