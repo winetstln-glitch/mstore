@@ -243,7 +243,7 @@
                                         <div class="price text-primary">Rp {{ number_format((float) $profile->price, 0, ',', '.') }}</div>
                                         <div class="small text-muted mb-2">Durasi: {{ format_duration($profile->duration_seconds) }}</div>
                                         <div class="small text-muted mb-3">Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</div>
-                                        <a href="{{ route('voucher.payment.index') }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto track-service-action" data-track-service="internet" data-track-action="voucher_qris">
+                                        <a href="https://buy.mstore.id/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto track-service-action" data-track-service="internet" data-track-action="voucher_qris">
                                             Beli Voucher (QRIS)
                                         </a>
                                     </div>

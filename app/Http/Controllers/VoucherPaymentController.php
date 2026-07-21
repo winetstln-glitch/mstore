@@ -27,40 +27,12 @@ class VoucherPaymentController extends Controller
 
     public function index()
     {
-        $templates = VoucherTemplate::where('is_active', true)->get();
-        
-        return view('voucher-payment.index', compact('templates'));
+        return redirect('https://buy.mstore.id/e-voucher');
     }
 
     public function selectPaymentMethod(Request $request)
     {
-        $request->validate([
-            'voucher_template_id' => 'required|exists:voucher_templates,id',
-            'customer_name' => 'required|string|max:255',
-            'phone_number' => 'required|string|max:20',
-            'email' => 'nullable|email|max:255',
-        ]);
-
-        $template = VoucherTemplate::findOrFail($request->voucher_template_id);
-        
-        // Initialize safe default structure
-        $paymentMethods = [
-            'paymentFee' => []
-        ];
-        
-        try {
-            // Get available payment methods using DuitkuGateway
-            $duitku = $this->paymentManager->gateway('duitku');
-            $duitkuResponse = $duitku->getPaymentMethods();
-            
-            if (is_array($duitkuResponse)) {
-                $paymentMethods['paymentFee'] = $duitkuResponse;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in selectPaymentMethod', ['exception' => $e->getMessage()]);
-        }
-        
-        return view('voucher-payment.select-payment', compact('template', 'paymentMethods', 'request'));
+        return redirect('https://buy.mstore.id/e-voucher');
     }
 
     public function createPayment(Request $request)

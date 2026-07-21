@@ -138,9 +138,9 @@
                                     </li>
                                 @endif
                             </ul>
-                            <button class="btn-buy" data-template-id="{{ $template->id }}" data-template-name="{{ $template->name }}" data-price="{{ (float)$template->price }}">
+                            <a href="https://buy.mstore.id/e-voucher" class="btn-buy">
                                 <i class="fas fa-shopping-cart me-2"></i> Beli Voucher
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -148,86 +148,6 @@
         </div>
     </div>
 
-    <!-- Modal Pembelian -->
-    <div class="modal fade" id="buyModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 16px; border: none;">
-                <form id="buyForm" action="{{ route('voucher.payment.select_payment') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="voucher_template_id" id="voucher_template_id">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-shopping-cart me-2"></i>Konfirmasi Pembelian
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Paket Voucher</label>
-                            <input type="text" id="template_name_display" class="form-control-plaintext fw-bold text-success" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Harga</label>
-                            <input type="text" id="price_display" class="form-control-plaintext fw-bold fs-4 text-primary" readonly>
-                        </div>
-                        <hr>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" for="customer_name">Nama Anda <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name" required placeholder="Masukkan nama Anda">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" for="phone_number">Nomor WhatsApp <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">+62</span>
-                                <input type="text" class="form-control" id="phone_number" name="phone_number" required placeholder="81234567890" maxlength="15">
-                            </div>
-                            <small class="text-muted">Voucher akan dikirim ke nomor ini</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" for="email">Email (Opsional)</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com">
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-success" style="padding: 12px 32px; border-radius: 12px;">
-                            <i class="fas fa-check-circle me-2"></i>Lanjutkan Pembayaran
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const buyModal = new bootstrap.Modal('#buyModal');
-        
-        document.querySelectorAll('.btn-buy').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const templateId = btn.dataset.templateId;
-                const templateName = btn.dataset.templateName;
-                const price = parseFloat(btn.dataset.price);
-                
-                document.getElementById('voucher_template_id').value = templateId;
-                document.getElementById('template_name_display').value = templateName;
-                document.getElementById('price_display').value = 'Rp ' + price.toLocaleString('id-ID');
-                document.getElementById('customer_name').value = '';
-                document.getElementById('phone_number').value = '';
-                document.getElementById('email').value = '';
-                
-                buyModal.show();
-            });
-        });
-
-        // Auto format phone number
-        document.getElementById('phone_number').addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.startsWith('0')) {
-                value = value.substring(1);
-            }
-            e.target.value = value;
-        });
-    </script>
 </body>
 </html>

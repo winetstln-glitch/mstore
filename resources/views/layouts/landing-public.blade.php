@@ -132,6 +132,9 @@
                     <button class="btn-icon" id="themeToggle" type="button" aria-label="Toggle tema">
                         <i class="fas fa-moon"></i>
                     </button>
+                    <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-full-mobile nav-desktop-action">
+                        <i class="fas fa-shopping-cart me-1"></i> Client Area
+                    </a>
                     <a href="{{ $primaryCtaHref }}" class="btn {{ $isWeddingPage ? 'wedding-btn-light' : 'btn-outline-primary' }} btn-full-mobile nav-desktop-action {{ !empty($servicePage) ? 'track-service-action' : '' }}" @if(!empty($servicePage)) data-track-service="{{ $servicePage['slug'] }}" data-track-action="hero_cta" @endif>
                         {{ $primaryCtaLabel }}
                     </a>
@@ -173,6 +176,9 @@
                         </div>
 
                         <div class="nav-mobile-actions">
+                            <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success">
+                                <i class="fas fa-shopping-cart me-1"></i> Client Area
+                            </a>
                             <a href="{{ $primaryCtaHref }}" class="btn {{ $isWeddingPage ? 'wedding-btn-light' : 'btn-primary' }} {{ !empty($servicePage) ? 'track-service-action' : '' }}" @if(!empty($servicePage)) data-track-service="{{ $servicePage['slug'] }}" data-track-action="hero_cta_mobile" @endif>
                                 {{ $primaryCtaLabel }}
                             </a>
