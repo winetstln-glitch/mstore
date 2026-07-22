@@ -552,17 +552,20 @@ class TelegramService
     }
 
     /**
-     * Send System Notification to Group (Attendance/Ticket)
+     * Send System Notification to Group (Attendance/Ticket/Router)
      */
     public function sendGroupNotification(string $message, string $category = 'ticket')
     {
         $enabledKey = "telegram_{$category}_notification_enabled";
         $groupIdKey = "telegram_{$category}_group_id";
 
-        $isEnabled = Setting::getValue($enabledKey, '0') == '1';
+        // Default enabled to '1' for router category
+        $defaultEnabled = $category === 'router' ? '1' : '0';
+        $isEnabled = Setting::getValue($enabledKey, $defaultEnabled) == '1';
         $target = Setting::getValue($groupIdKey, Setting::getValue('telegram_technician_group_chat_id'));
 
         if (! $isEnabled) {
+            Log::info("Telegram Group Notification for {$category} is disabled.");
             return false;
         }
 
@@ -571,6 +574,7 @@ class TelegramService
             return false;
         }
 
+        Log::info("Sending Telegram Group Notification for {$category} to {$target}");
         return $this->sendMessage($target, $message);
     }
 

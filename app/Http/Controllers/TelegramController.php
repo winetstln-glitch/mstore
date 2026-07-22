@@ -51,12 +51,14 @@ class TelegramController extends Controller implements HasMiddleware
         Setting::firstOrCreate(['key' => 'telegram_modem_up_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem UP Notification Enabled']);
         Setting::firstOrCreate(['key' => 'telegram_modem_down_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem DOWN Notification Enabled']);
         Setting::firstOrCreate(['key' => 'telegram_modem_recap_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Modem RECAP Notification Enabled']);
+        Setting::firstOrCreate(['key' => 'telegram_router_notification_enabled'], ['value' => '1', 'group' => 'telegram', 'type' => 'boolean', 'label' => 'Telegram Router Notification Enabled']);
         
         Setting::firstOrCreate(['key' => 'telegram_ticket_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Ticket Group ID']);
         Setting::firstOrCreate(['key' => 'telegram_attendance_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Attendance Group ID']);
         Setting::firstOrCreate(['key' => 'telegram_modem_up_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem UP Group ID']);
         Setting::firstOrCreate(['key' => 'telegram_modem_down_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem DOWN Group ID']);
         Setting::firstOrCreate(['key' => 'telegram_modem_recap_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Modem RECAP Group ID']);
+        Setting::firstOrCreate(['key' => 'telegram_router_group_id'], ['value' => $groupChatId->value, 'group' => 'telegram', 'type' => 'text', 'label' => 'Telegram Router Group ID']);
 
         // New ticket templates (from WhatsAppController)
         $templates = [
