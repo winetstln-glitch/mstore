@@ -35,10 +35,12 @@ class SidebarMenu
                 'items' => [
                     self::link('customers', 'Data Pelanggan', 'customers.index', permissions: ['customer.view']),
                     self::link('installations', 'Instalasi Baru', 'installations.index', permissions: ['installation.view']),
-                    self::link('packages', 'Paket Internet', 'packages.index', permissions: ['package.view']),
-                    self::link('pppoe', 'PPPoE', 'isp.pppoe-users.index', routePatterns: ['isp.pppoe-users.*'], permissions: ['pppoe.view']),
-                    self::link('hotspot-active', 'Hotspot Aktif', 'hotspot.index', routePatterns: ['hotspot.*'], permissions: ['hotspot.view', 'router.view']),
-                    self::link('voucher-hotspot', 'Voucher Hotspot', 'vouchers.index', permissions: ['voucher.view']),
+                    self::group('services', 'Layanan Internet', [
+                        self::link('packages', 'Paket Internet', 'packages.index', permissions: ['package.view']),
+                        self::link('pppoe-active', 'PPPoE Aktif', 'pppoe.index', routePatterns: ['pppoe.*'], permissions: ['pppoe.view', 'router.view']),
+                        self::link('hotspot-active', 'Hotspot Aktif', 'hotspot.index', routePatterns: ['hotspot.*'], permissions: ['hotspot.view', 'router.view']),
+                        self::link('voucher-hotspot', 'Voucher Hotspot', 'vouchers.index', permissions: ['voucher.view']),
+                    ], permissions: ['package.view', 'pppoe.view', 'hotspot.view', 'voucher.view']),
                 ],
             ],
             [

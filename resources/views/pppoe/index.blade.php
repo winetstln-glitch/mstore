@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('PPPoE Active Sessions'))
+@section('title', __('Sesi PPPoE Aktif'))
 
 @push('styles')
 <style>
@@ -194,10 +194,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h3 mb-1 fw-bold">
-                {{ __('PPPoE Active Sessions') }}
+                {{ __('Sesi PPPoE Aktif') }}
             </h1>
             <div class="text-muted small">
-                {{ __('Active PPPoE sessions from Mikrotik.') }}
+                {{ __('Pengguna PPPoE aktif dari Mikrotik.') }}
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -213,7 +213,7 @@
                 </form>
             @endif
             <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="window.location.reload()">
-                <i class="fa-solid fa-arrows-rotate me-1"></i> {{ __('Refresh') }}
+                <i class="fa-solid fa-arrows-rotate me-1"></i> {{ __('Muat Ulang') }}
             </button>
         </div>
     </div>
@@ -224,7 +224,7 @@
                 <div class="card session-summary-card h-100">
                     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         <div class="text-center text-md-start w-100">
-                            <div class="session-summary-label mb-1">{{ __('Router Info') }}</div>
+                            <div class="session-summary-label mb-1">{{ __('Info Router') }}</div>
                             <div class="h5 mb-1 fw-bold">{{ $router->name }}</div>
                             <div class="text-muted small"><i class="fa-solid fa-server me-1"></i>{{ $router->host }}:{{ $router->port }}</div>
                         </div>
@@ -246,7 +246,7 @@
             <div class="col-lg-4 col-md-5">
                 <div class="card session-summary-card bg-primary bg-opacity-10 border-primary border-opacity-25 h-100">
                     <div class="card-body text-center d-flex flex-column justify-content-center">
-                        <div class="session-summary-label mb-1">{{ __('PPPoE Aktif') }}</div>
+                        <div class="session-summary-label mb-1">{{ __('Total Aktif') }}</div>
                         <div class="session-summary-value text-primary mb-0">{{ count($pppoeActiveSessions) }}</div>
                     </div>
                 </div>
@@ -257,14 +257,14 @@
             <div class="card-header bg-body border-bottom-0 pt-3 pb-0 px-3">
                 <div class="row align-items-center">
                     <div class="col-md-6 mb-3 mb-md-0">
-                        <h5 class="fw-bold mb-0 text-dark">{{ __('PPPoE Active List') }}</h5>
+                        <h5 class="fw-bold mb-0 text-dark">{{ __('Daftar Pengguna') }}</h5>
                     </div>
                     <div class="col-md-6 text-md-end">
                         <div class="input-group">
                             <span class="input-group-text  border-0 rounded-start-pill">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
                             </span>
-                            <input type="text" class="form-control border-0  rounded-end-pill" id="pppoeSearch" placeholder="{{ __('Cari username atau IP...') }}">
+                            <input type="text" class="form-control border-0  rounded-end-pill" id="pppoeSearch" placeholder="{{ __('Cari user, IP, atau MAC...') }}">
                         </div>
                     </div>
                 </div>
@@ -276,56 +276,52 @@
                             <thead class="">
                                 <tr>
                                     <th class="session-index">#</th>
-                                    <th>{{ __('Username') }}</th>
-                                    <th>{{ __('IP Address') }}</th>
-                                    <th>{{ __('MAC Address') }}</th>
+                                    <th>{{ __('Pengguna') }}</th>
+                                    <th>{{ __('Alamat IP') }}</th>
+                                    <th>{{ __('Alamat MAC') }}</th>
                                     <th>{{ __('Service') }}</th>
-                                    <th>{{ __('Uptime') }}</th>
+                                    <th>{{ __('Durasi Aktif') }}</th>
                                     <th class="text-end">{{ __('Aksi') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($pppoeActiveSessions as $index => $session)
                                     @php
-                                        $username = $session['name'] ?? '';
-                                        $ip = $session['address'] ?? '';
-                                        $mac = $session['caller-id'] ?? '';
+                                        $user = $session['name'] ?? '-';
+                                        $ip = $session['address'] ?? '-';
+                                        $mac = $session['caller-id'] ?? '-';
                                     @endphp
                                     <tr>
                                         <td class="session-index" data-label="#">{{ $index + 1 }}</td>
                                         <td data-label="{{ __('Username') }}">
-                                            <span class="fw-semibold text-dark">{{ $username ?: '-' }}</span>
+                                            <span class="fw-semibold text-dark">{{ $user }}</span>
                                         </td>
-                                        <td data-label="{{ __('IP Address') }}">
-                                            @if($ip)
+                                        <td data-label="{{ __('Alamat IP') }}">
+                                            @if($ip != '-')
                                                 <a href="http://{{ $ip }}" target="_blank" class="session-chip session-chip-accent text-decoration-none">
                                                     {{ $ip }} <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7em;"></i>
                                                 </a>
                                             @else
-                                                <span class="text-muted small">-</span>
+                                                <span class="text-muted small">{{ $ip }}</span>
                                             @endif
                                         </td>
-                                        <td data-label="{{ __('MAC Address') }}">
-                                            @if($mac)
-                                                <span class="session-chip session-chip-muted text-break">
-                                                    {{ $mac }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted small">-</span>
-                                            @endif
+                                        <td data-label="{{ __('Alamat MAC') }}">
+                                            <span class="session-chip session-chip-muted text-break">
+                                                {{ $mac }}
+                                            </span>
                                         </td>
                                         <td data-label="{{ __('Service') }}">
-                                            {{ $session['service'] ?? '-' }}
+                                            <span class="small text-muted">{{ $session['service'] ?? '-' }}</span>
                                         </td>
-                                        <td data-label="{{ __('Uptime') }}" class="session-uptime">
-                                            {{ $session['uptime'] ?? '-' }}
+                                        <td data-label="{{ __('Durasi Aktif') }}">
+                                            <span class="session-uptime text-primary"><i class="fa-regular fa-clock me-1"></i>{{ $session['uptime'] ?? '-' }}</span>
                                         </td>
-                                        <td class="text-end">
-                                            @if($username)
+                                        <td class="text-end" data-label="{{ __('Aksi') }}">
+                                            @if(!empty($session['.id']))
                                                 <button type="button"
-                                                    class="btn btn-outline-danger btn-xs"
-                                                    onclick="disconnectPppoeSession('{{ route('routers.pppoe.disconnect', $router) }}', '{{ $username }}')">
-                                                    <i class="fa-solid fa-power-off me-1"></i> {{ __('Disconnect') }}
+                                                    class="btn btn-outline-danger btn-xs rounded-pill fw-semibold"
+                                                    onclick="disconnectPppoeSession('{{ route('pppoe.disconnect', $router) }}', '{{ $session['.id'] }}')">
+                                                    <i class="fa-solid fa-power-off me-1"></i> {{ __('Putuskan') }}
                                                 </button>
                                             @endif
                                         </td>
@@ -335,23 +331,28 @@
                         </table>
                     </div>
                 @else
-                    <div class="p-5 text-center text-muted">
-                        <div class="mb-3">
-                            <i class="fa-solid fa-network-wired fa-3x opacity-25"></i>
+                    <div class="p-5 text-center">
+                        <div class="mb-3 text-muted">
+                            <i class="fa-solid fa-wifi fa-3x opacity-25"></i>
                         </div>
-                        @if(!$mikrotikConnected)
-                            {{ __('Router tidak terhubung ke Mikrotik, tidak dapat membaca sesi PPPoE aktif.') }}
-                        @else
-                            {{ __('Tidak ada sesi PPPoE aktif saat ini.') }}
-                        @endif
+                        <div class="text-muted small fw-medium">
+                            @if(!$mikrotikConnected)
+                                {{ __('Router tidak terhubung. Cek koneksi Mikrotik.') }}
+                            @else
+                                {{ __('Tidak ada user PPPoE aktif saat ini.') }}
+                            @endif
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
     @else
-        <div class="alert alert-warning shadow-sm border-0">
-            <i class="fa-solid fa-triangle-exclamation me-2"></i>
-            {{ __('No active router found or assigned.') }}
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center">
+            <i class="fa-solid fa-triangle-exclamation me-3 fs-4"></i>
+            <div>
+                <strong>{{ __('Peringatan') }}</strong>
+                <div class="small">{{ __('Tidak ada router aktif yang ditemukan atau ditugaskan.') }}</div>
+            </div>
         </div>
     @endif
 @endsection
@@ -363,8 +364,8 @@
         return meta ? meta.getAttribute('content') : '';
     }
 
-    function disconnectPppoeSession(url, name) {
-        if (!confirm('{{ __('Disconnect PPPoE session for this user?') }}')) {
+    function disconnectPppoeSession(url, id) {
+        if (!confirm('{{ __('Putuskan sesi PPPoE untuk pengguna ini?') }}')) {
             return;
         }
 
@@ -375,7 +376,7 @@
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ id: id })
         })
             .then(function (response) {
                 return response.json();
@@ -385,7 +386,8 @@
                     Swal.fire({
                         icon: data.success ? 'success' : 'error',
                         title: data.success ? '{{ __('Berhasil') }}' : '{{ __('Gagal') }}',
-                        text: data.message || ''
+                        text: data.message || '',
+                        confirmButtonColor: '#0d6efd',
                     }).then(function () {
                         if (data.success) {
                             window.location.reload();
@@ -402,7 +404,7 @@
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'error',
-                        title: '{{ __('Error') }}',
+                        title: '{{ __('Kesalahan') }}',
                         text: '{{ __('Terjadi kesalahan saat memproses permintaan.') }}'
                     });
                 } else {
@@ -425,27 +427,28 @@
                 // Skip header row
                 for (let i = 1; i < rows.length; i++) {
                     const row = rows[i];
-                    const cells = row.getElementsByTagName('td');
-                    let found = false;
+                    // Get text content specifically for mobile card view or desktop table view
+                    const textContent = row.innerText.toLowerCase();
                     
-                    for (let j = 0; j < cells.length; j++) {
-                        if (cells[j]) {
-                            const textValue = cells[j].textContent || cells[j].innerText;
-                            if (textValue.toLowerCase().indexOf(value) > -1) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (found) {
-                        row.style.display = "";
+                    if (textContent.indexOf(value) > -1) {
+                        row.style.display = (window.innerWidth <= 768) ? 'block' : ''; // Handle display type based on view
                     } else {
-                        row.style.display = "none";
+                        row.style.display = 'none';
                     }
                 }
             });
         }
+        
+        // Handle resize to reset display property when switching between mobile/desktop
+        window.addEventListener('resize', function() {
+             const rows = document.querySelectorAll('#pppoeTable tbody tr');
+             const isMobile = window.innerWidth <= 768;
+             rows.forEach(row => {
+                 if(row.style.display !== 'none') {
+                     row.style.display = isMobile ? 'block' : '';
+                 }
+             });
+        });
     });
 </script>
 @endpush

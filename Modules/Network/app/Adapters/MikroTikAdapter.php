@@ -325,6 +325,26 @@ class MikroTikAdapter implements NetworkProviderInterface
         }
     }
 
+    public function disconnectPppoeById(Router $router, string $id): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/ppp/active/remove');
+            $query->equal('.id', $id);
+            $client->query($query)->read();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error disconnecting PPPoE by ID', [
+                'router_id' => $router->id,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
     public function createHotspotUser(Router $router, string $username, string $password, string $profile, ?string $limitUptime, ?int $limitBytesTotal): bool
     {
         try {

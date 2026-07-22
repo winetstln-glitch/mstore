@@ -14,4 +14,14 @@ class VoucherBatch extends Model
         'total_vouchers',
         'created_by',
     ];
+
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

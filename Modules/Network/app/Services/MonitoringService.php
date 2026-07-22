@@ -268,6 +268,21 @@ class MonitoringService
         }
     }
 
+    public function disconnectPppoeById(Router $router, string $id): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->disconnectPppoeById($router, $id);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to disconnect PPPoE by ID', [
+                'router_id' => $router->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
     public function testOltConnection(array $oltData): bool
     {
         try {

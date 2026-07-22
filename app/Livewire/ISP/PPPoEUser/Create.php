@@ -102,7 +102,7 @@ class Create extends Component
             DB::commit();
 
             session()->flash('success', 'Pelanggan PPPoE berhasil dibuat!');
-            return redirect()->route('pppoe-users.index');
+            return redirect()->route('isp.pppoe-users.index');
         } catch (\Exception $e) {
             DB::rollBack();
             session()->flash('error', 'Gagal membuat pelanggan: ' . $e->getMessage());
@@ -114,6 +114,8 @@ class Create extends Component
         return view('livewire.isp.pppoe-user.create', [
             'routers' => Router::where('is_active', true)->get(),
             'packages' => Package::where('is_active', true)->get(),
+        ])->layout('layouts.app', [
+            'title' => 'Tambah Pelanggan PPPoE'
         ]);
     }
 }

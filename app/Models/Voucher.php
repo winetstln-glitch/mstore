@@ -22,4 +22,9 @@ class Voucher extends Model
         'used_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
+
+    public function batch()
+    {
+        return $this->belongsTo(VoucherBatch::class);
+    }
 }

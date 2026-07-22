@@ -70,12 +70,17 @@ class AppServiceProvider extends ServiceProvider
             // View Composers for Sidebar / Layout Data
             \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
                 $authUser = Auth::user();
+                $isAdmin = false;
+                $permissionMap = [];
+                $sidebarMenu = [];
+                $unreadNotificationCount = 0;
+                $unreadNotifications = collect();
+                
                 if ($authUser) {
                     $isAdmin = $authUser->hasRole(Role::ADMIN);
                     $roleId = $authUser->role_id;
                     $runningUnitTests = app()->runningUnitTests();
 
-                    $permissionMap = [];
                     if (! $isAdmin) {
                         $computePermissionMap = function () use ($roleId): array {
                             $role = Role::query()
@@ -98,16 +103,16 @@ class AppServiceProvider extends ServiceProvider
                         });
                     $unreadNotificationCount = $authUser->unreadNotifications()->count();
                     $unreadNotifications = $authUser->unreadNotifications()->latest()->limit(10)->get();
-                    
-                    $view->with([
-                        'authUser' => $authUser,
-                        'isAdmin' => $isAdmin,
-                        'permissionMap' => $permissionMap,
-                        'sidebarMenu' => $sidebarMenu,
-                        'unreadNotificationCount' => $unreadNotificationCount,
-                        'unreadNotifications' => $unreadNotifications,
-                    ]);
                 }
+                
+                $view->with([
+                    'authUser' => $authUser,
+                    'isAdmin' => $isAdmin,
+                    'permissionMap' => $permissionMap,
+                    'sidebarMenu' => $sidebarMenu,
+                    'unreadNotificationCount' => $unreadNotificationCount,
+                    'unreadNotifications' => $unreadNotifications,
+                ]);
             });
         }
 

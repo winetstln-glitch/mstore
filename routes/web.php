@@ -10,6 +10,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GenieACSController;
 use App\Http\Controllers\GenieAcsServerController;
 use App\Http\Controllers\HotspotController;
+use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\InstallationWebController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\LandingController;
@@ -250,6 +251,13 @@ if (app()->environment('local')) {
     });
 }
 
+Route::get('/test', function () {
+    return view('test');
+});
+
+Route::get('/test-livewire', function () {
+    return \Livewire\Livewire::mount('isp.pppoe-user.index');
+});
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/internet', [LandingController::class, 'showService'])
     ->defaults('service', 'internet')
@@ -664,7 +672,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('routers/{router}/simple-queues/move', [RouterController::class, 'moveSimpleQueue'])->name('routers.simple-queues.move');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
-    Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->middleware('permission:pppoe.view')->name('pppoe.index');
+    Route::get('pppoe', [PppoeController::class, 'index'])->middleware('permission:pppoe.view')->name('pppoe.index');
+    Route::post('pppoe/{router}/disconnect', [PppoeController::class, 'disconnect'])->name('pppoe.disconnect');
     Route::resource('routers', RouterController::class);
 
     Route::prefix('vpn')->name('vpn.')->group(function () {

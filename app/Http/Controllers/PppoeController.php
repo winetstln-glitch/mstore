@@ -11,22 +11,17 @@ class PppoeController extends Controller
 {
     public function __construct(protected MonitoringService $monitoringService) {}
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
         $routers = Router::where('is_active', true)->get();
         $router = null;
 
-        // If user is coordinator, get their assigned router (unless they are admin)
         if ($user->coordinator && $user->coordinator->router_id && ! $user->hasRole('admin')) {
             $router = Router::find($user->coordinator->router_id);
         } elseif ($request->has('router_id')) {
             $router = Router::find($request->router_id);
         } else {
-            // Otherwise get the first active router
             $router = $routers->first();
         }
 
@@ -41,5 +36,19 @@ class PppoeController extends Controller
         }
 
         return view('pppoe.index', compact('router', 'routers', 'mikrotikConnected', 'pppoeActiveSessions'));
+    }
+
+    public function disconnect(Request $request, Router $router)
+    {
+        $request->validate([
+            'id' => 'required|string',
+        ]);
+
+        $success = $this->monitoringService->disconnectPppoeById($router, $request->id);
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success ? 'Sesi PPPoE berhasil diputus' : 'Gagal memutuskan sesi PPPoE',
+        ]);
     }
 }

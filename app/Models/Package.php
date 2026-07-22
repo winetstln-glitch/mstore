@@ -25,4 +25,9 @@ class Package extends Model
     {
         return $this->belongsTo(Bandwidth::class);
     }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
 }

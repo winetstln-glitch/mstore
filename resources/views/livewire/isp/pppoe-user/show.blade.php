@@ -1,5 +1,5 @@
 <div>
-    <div class="container-fluid">
+    <div class="container-fluid py-4">
         <div class="row justify-content-center">
             <div class="col-md-12">
                 <div class="card shadow-sm border-0">
@@ -20,10 +20,10 @@
                                     <i class="fa-solid fa-play me-1"></i> Aktifkan
                                 </button>
                             @endif
-                            <a href="{{ route('pppoe-users.edit', $customer) }}" class="btn btn-primary btn-sm">
+                            <a href="{{ route('isp.pppoe-users.edit', $customer) }}" class="btn btn-primary btn-sm">
                                 <i class="fa-solid fa-pen-to-square me-1"></i> Edit
                             </a>
-                            <a href="{{ route('pppoe-users.index') }}" class="btn btn-secondary btn-sm">
+                            <a href="{{ route('isp.pppoe-users.index') }}" class="btn btn-secondary btn-sm">
                                 <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                             </a>
                         </div>

@@ -77,7 +77,7 @@ class Index extends Component
 
     public function getCustomersProperty()
     {
-        return Customer::with(['router', 'package'])
+        return Customer::with(['router'])
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                       ->orWhere('pppoe_user', 'like', '%' . $this->search . '%')
@@ -97,7 +97,9 @@ class Index extends Component
     {
         return view('livewire.isp.pppoe-user.index', [
             'customers' => $this->customers,
-            'routers' => Router::where('is_active', true)->get(),
+            'routers' => \App\Models\Router::where('is_active', true)->get(),
+        ])->layout('layouts.app', [
+            'title' => 'PPPoE Users'
         ]);
     }
 }

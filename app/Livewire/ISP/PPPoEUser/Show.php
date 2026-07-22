@@ -34,6 +34,8 @@ class Show extends Component
 
     public function render()
     {
-        return view('livewire.isp.pppoe-user.show');
+        return view('livewire.isp.pppoe-user.show')->layout('layouts.app', [
+            'title' => 'Detail Pelanggan PPPoE'
+        ]);
     }
 }

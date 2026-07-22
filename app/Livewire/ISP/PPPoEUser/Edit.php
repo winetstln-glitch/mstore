@@ -132,7 +132,7 @@ class Edit extends Component
             DB::commit();
 
             session()->flash('success', 'Pelanggan PPPoE berhasil diperbarui!');
-            return redirect()->route('pppoe-users.index');
+            return redirect()->route('isp.pppoe-users.index');
         } catch (\Exception $e) {
             DB::rollBack();
             session()->flash('error', 'Gagal memperbarui pelanggan: ' . $e->getMessage());
@@ -144,6 +144,8 @@ class Edit extends Component
         return view('livewire.isp.pppoe-user.edit', [
             'routers' => Router::where('is_active', true)->get(),
             'packages' => Package::where('is_active', true)->get(),
+        ])->layout('layouts.app', [
+            'title' => 'Edit Pelanggan PPPoE'
         ]);
     }
 }
