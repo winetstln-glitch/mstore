@@ -94,6 +94,43 @@ class LeaveRequestService
 
         $this->updateLeaveQuota($leaveRequest);
 
+        // Create or update attendance records for the leave period
+        $attendanceStatus = match($leaveRequest->type) {
+            'sick' => 'sick',
+            'permission' => 'permit',
+            default => 'leave',
+        };
+
+        $start = $leaveRequest->start_date;
+        $end = $leaveRequest->end_date;
+
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $attendance = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                ->where(function ($q) use ($date) {
+                    $q->whereDate('clock_in', $date->toDateString())
+                      ->orWhereDate('work_date', $date->toDateString());
+                })
+                ->first();
+
+            if (! $attendance) {
+                \App\Models\TechnicianAttendance::create([
+                    'user_id' => $leaveRequest->user_id,
+                    'work_date' => $date->toDateString(),
+                    'clock_in' => $date->toDateString() . ' 08:00:00',
+                    'clock_out' => $date->toDateString() . ' 17:00:00',
+                    'status' => $attendanceStatus,
+                    'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id,
+                    'generated_type' => 'leave_request',
+                ]);
+            } elseif ($attendance->status === 'alpha') {
+                $attendance->update([
+                    'status' => $attendanceStatus,
+                    'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id . ' (dari alpha)',
+                    'generated_type' => 'leave_request',
+                ]);
+            }
+        }
+
         return $leaveRequest;
     }
 

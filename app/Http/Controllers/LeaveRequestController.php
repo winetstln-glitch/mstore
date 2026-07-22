@@ -276,14 +276,14 @@ class LeaveRequestController extends Controller implements HasMiddleware
             // Loop through each date from start to end
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                 // Check if attendance already exists for this user and date
-                $exists = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                $attendance = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
                     ->where(function ($q) use ($date) {
                         $q->whereDate('clock_in', $date->toDateString())
                           ->orWhereDate('work_date', $date->toDateString());
                     })
-                    ->exists();
+                    ->first();
 
-                if (! $exists) {
+                if (! $attendance) {
                     // Create attendance entry
                     \App\Models\TechnicianAttendance::create([
                         'user_id' => $leaveRequest->user_id,
@@ -292,6 +292,13 @@ class LeaveRequestController extends Controller implements HasMiddleware
                         'clock_out' => $date->toDateString() . ' 17:00:00',
                         'status' => $attendanceStatus,
                         'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id,
+                        'generated_type' => 'leave_request',
+                    ]);
+                } elseif ($attendance->status === 'alpha') {
+                    // Update existing alpha attendance to leave status
+                    $attendance->update([
+                        'status' => $attendanceStatus,
+                        'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id . ' (dari alpha)',
                         'generated_type' => 'leave_request',
                     ]);
                 }

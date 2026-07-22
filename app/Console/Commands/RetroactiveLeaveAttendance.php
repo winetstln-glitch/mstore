@@ -33,14 +33,14 @@ class RetroactiveLeaveAttendance extends Command
 
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                 // Check if attendance already exists for this user and date
-                $exists = TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                $attendance = TechnicianAttendance::where('user_id', $leaveRequest->user_id)
                     ->where(function ($q) use ($date) {
                         $q->whereDate('clock_in', $date->toDateString())
                           ->orWhereDate('work_date', $date->toDateString());
                     })
-                    ->exists();
+                    ->first();
 
-                if (! $exists) {
+                if (! $attendance) {
                     // Create attendance entry
                     TechnicianAttendance::create([
                         'user_id' => $leaveRequest->user_id,
@@ -53,8 +53,17 @@ class RetroactiveLeaveAttendance extends Command
                     ]);
                     $this->line("✅ Created attendance for user ID {$leaveRequest->user_id} on {$date->toDateString()}");
                     $createdCount++;
+                } elseif ($attendance->status === 'alpha') {
+                    // Update existing alpha attendance to leave status
+                    $attendance->update([
+                        'status' => $attendanceStatus,
+                        'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id . ' (retroaktif, dari alpha)',
+                        'generated_type' => 'leave_request',
+                    ]);
+                    $this->line("🔄 Updated alpha to {$attendanceStatus} for user ID {$leaveRequest->user_id} on {$date->toDateString()}");
+                    $createdCount++;
                 } else {
-                    $this->line("⏭️ Skipped user ID {$leaveRequest->user_id} on {$date->toDateString()} (already exists)");
+                    $this->line("⏭️ Skipped user ID {$leaveRequest->user_id} on {$date->toDateString()} (already exists and not alpha)");
                     $skippedCount++;
                 }
             }
