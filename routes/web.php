@@ -655,6 +655,13 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::get('routers/{router}/sessions', [RouterController::class, 'sessions'])->name('routers.sessions');
 
     Route::post('routers/{router}/hotspot/disconnect', [RouterController::class, 'disconnectHotspot'])->name('routers.hotspot.disconnect');
+
+    // Simple Queue Management Routes
+    Route::post('routers/{router}/simple-queues', [RouterController::class, 'createSimpleQueue'])->name('routers.simple-queues.store');
+    Route::put('routers/{router}/simple-queues', [RouterController::class, 'updateSimpleQueue'])->name('routers.simple-queues.update');
+    Route::delete('routers/{router}/simple-queues', [RouterController::class, 'deleteSimpleQueue'])->name('routers.simple-queues.destroy');
+    Route::post('routers/{router}/simple-queues/toggle', [RouterController::class, 'toggleSimpleQueue'])->name('routers.simple-queues.toggle');
+    Route::post('routers/{router}/simple-queues/move', [RouterController::class, 'moveSimpleQueue'])->name('routers.simple-queues.move');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
     Route::get('pppoe', [App\Http\Controllers\PppoeController::class, 'index'])->middleware('permission:pppoe.view')->name('pppoe.index');

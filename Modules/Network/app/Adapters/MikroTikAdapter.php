@@ -748,4 +748,156 @@ class MikroTikAdapter implements NetworkProviderInterface
 
         return $count;
     }
+
+    // ==================== Simple Queue Management ====================
+    public function getSimpleQueues(Router $router): array
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return [];
+
+            $query = new Query('/queue/simple/print');
+            return $client->query($query)->read();
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error getting simple queues', [
+                'router_id' => $router->id,
+                'message' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    public function createSimpleQueue(Router $router, array $data): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/add');
+            foreach ($data as $key => $value) {
+                if ($value !== null && $value !== '') {
+                    $query->equal($key, $value);
+                }
+            }
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error creating simple queue', [
+                'router_id' => $router->id,
+                'data' => $data,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function updateSimpleQueue(Router $router, string $id, array $data): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/set');
+            $query->equal('.id', $id);
+            foreach ($data as $key => $value) {
+                if ($value !== null && $value !== '') {
+                    $query->equal($key, $value);
+                }
+            }
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error updating simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'data' => $data,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function deleteSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/remove');
+            $query->equal('.id', $id);
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error deleting simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function enableSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/enable');
+            $query->equal('.id', $id);
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error enabling simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function disableSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/disable');
+            $query->equal('.id', $id);
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error disabling simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    public function moveSimpleQueue(Router $router, string $id, ?string $destinationId = null): bool
+    {
+        try {
+            $client = $this->getClient($router);
+            if (!$client) return false;
+
+            $query = new Query('/queue/simple/move');
+            $query->equal('.id', $id);
+            if ($destinationId) {
+                $query->equal('destination', $destinationId);
+            }
+            $client->query($query)->read();
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikroTikAdapter: Error moving simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'destination_id' => $destinationId,
+                'message' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
 }

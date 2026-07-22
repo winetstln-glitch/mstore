@@ -403,5 +403,119 @@ class MonitoringService
             return false;
         }
     }
+
+    // ==================== Simple Queue Management ====================
+    public function getSimpleQueues(Router $router): array
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->getSimpleQueues($router);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to get simple queues', [
+                'router_id' => $router->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return [];
+        }
+    }
+
+    public function createSimpleQueue(Router $router, array $data): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->createSimpleQueue($router, $data);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to create simple queue', [
+                'router_id' => $router->id,
+                'data' => $data,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    public function updateSimpleQueue(Router $router, string $id, array $data): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->updateSimpleQueue($router, $id, $data);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to update simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'data' => $data,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    public function deleteSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->deleteSimpleQueue($router, $id);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to delete simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    public function enableSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->enableSimpleQueue($router, $id);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to enable simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    public function disableSimpleQueue(Router $router, string $id): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->disableSimpleQueue($router, $id);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to disable simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    public function moveSimpleQueue(Router $router, string $id, ?string $destinationId = null): bool
+    {
+        try {
+            $adapter = new MikroTikAdapter();
+            return $adapter->moveSimpleQueue($router, $id, $destinationId);
+        } catch (\Exception $e) {
+            Log::channel('network')->error('[MonitoringService] Failed to move simple queue', [
+                'router_id' => $router->id,
+                'id' => $id,
+                'destination_id' => $destinationId,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
 }
 

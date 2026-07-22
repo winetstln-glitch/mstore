@@ -129,6 +129,7 @@ class RouterController extends Controller implements HasMiddleware
         $pppoeActiveSessions = [];
         $hotspotActiveSessions = [];
         $interfacesTraffic = [];
+        $simpleQueues = [];
 
         if ($mikrotikConnected) {
             $systemResource = $this->monitoringService->getSystemResource($router);
@@ -136,6 +137,7 @@ class RouterController extends Controller implements HasMiddleware
             $hotspotActiveCount = $this->monitoringService->getHotspotActiveCount($router);
             $pppoeActiveSessions = $this->monitoringService->getPppoeActiveList($router);
             $hotspotActiveSessions = $this->monitoringService->getHotspotActiveList($router);
+            $simpleQueues = $this->monitoringService->getSimpleQueues($router);
 
             $rawSecrets = $this->monitoringService->getSecrets($router);
             foreach ($rawSecrets as $secret) {
@@ -174,7 +176,151 @@ class RouterController extends Controller implements HasMiddleware
             'pppoeActiveSessions' => $pppoeActiveSessions,
             'hotspotActiveSessions' => $hotspotActiveSessions,
             'interfacesTraffic' => $interfacesTraffic,
+            'simpleQueues' => $simpleQueues,
         ]);
+    }
+
+    // ==================== Simple Queue Management ====================
+    public function createSimpleQueue(Request $request, Router $router)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'target' => 'nullable|string|max:255',
+            'dst' => 'nullable|string|max:255',
+            'max-limit' => 'nullable|string|max:255', // e.g., 10M/10M
+            'limit-at' => 'nullable|string|max:255',
+            'priority' => 'nullable|integer|min:1|max:8',
+            'burst-limit' => 'nullable|string|max:255',
+            'burst-threshold' => 'nullable|string|max:255',
+            'burst-time' => 'nullable|string|max:255',
+            'comment' => 'nullable|string',
+        ]);
+
+        if (! $this->monitoringService->isRouterConnected($router)) {
+            return redirect()->back()->with('error', __('Router is offline or cannot connect to Mikrotik.'));
+        }
+
+        if ($this->monitoringService->createSimpleQueue($router, $data)) {
+            return redirect()->back()->with('success', __('Simple Queue created successfully.'));
+        }
+
+        return redirect()->back()->with('error', __('Failed to create Simple Queue.'));
+    }
+
+    public function updateSimpleQueue(Request $request, Router $router)
+    {
+        $data = $request->validate([
+            '.id' => 'required|string',
+            'name' => 'nullable|string|max:255',
+            'target' => 'nullable|string|max:255',
+            'dst' => 'nullable|string|max:255',
+            'max-limit' => 'nullable|string|max:255',
+            'limit-at' => 'nullable|string|max:255',
+            'priority' => 'nullable|integer|min:1|max:8',
+            'burst-limit' => 'nullable|string|max:255',
+            'burst-threshold' => 'nullable|string|max:255',
+            'burst-time' => 'nullable|string|max:255',
+            'comment' => 'nullable|string',
+        ]);
+
+        $id = $data['.id'];
+        unset($data['.id']);
+
+        if (! $this->monitoringService->isRouterConnected($router)) {
+            return redirect()->back()->with('error', __('Router is offline or cannot connect to Mikrotik.'));
+        }
+
+        if ($this->monitoringService->updateSimpleQueue($router, $id, $data)) {
+            return redirect()->back()->with('success', __('Simple Queue updated successfully.'));
+        }
+
+        return redirect()->back()->with('error', __('Failed to update Simple Queue.'));
+    }
+
+    public function deleteSimpleQueue(Request $request, Router $router)
+    {
+        $data = $request->validate([
+            '.id' => 'required|string',
+        ]);
+
+        if (! $this->monitoringService->isRouterConnected($router)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Router is offline or cannot connect to Mikrotik.'),
+            ], 500);
+        }
+
+        if ($this->monitoringService->deleteSimpleQueue($router, $data['.id'])) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Simple Queue deleted successfully.'),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => __('Failed to delete Simple Queue.'),
+        ], 500);
+    }
+
+    public function toggleSimpleQueue(Request $request, Router $router)
+    {
+        $data = $request->validate([
+            '.id' => 'required|string',
+            'enable' => 'required|boolean',
+        ]);
+
+        if (! $this->monitoringService->isRouterConnected($router)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Router is offline or cannot connect to Mikrotik.'),
+            ], 500);
+        }
+
+        $result = $data['enable']
+            ? $this->monitoringService->enableSimpleQueue($router, $data['.id'])
+            : $this->monitoringService->disableSimpleQueue($router, $data['.id']);
+
+        if ($result) {
+            return response()->json([
+                'success' => true,
+                'message' => $data['enable']
+                    ? __('Simple Queue enabled successfully.')
+                    : __('Simple Queue disabled successfully.'),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => __('Failed to update Simple Queue status.'),
+        ], 500);
+    }
+
+    public function moveSimpleQueue(Request $request, Router $router)
+    {
+        $data = $request->validate([
+            '.id' => 'required|string',
+            'destination' => 'nullable|string',
+        ]);
+
+        if (! $this->monitoringService->isRouterConnected($router)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Router is offline or cannot connect to Mikrotik.'),
+            ], 500);
+        }
+
+        if ($this->monitoringService->moveSimpleQueue($router, $data['.id'], $data['destination'] ?? null)) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Simple Queue moved successfully.'),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => __('Failed to move Simple Queue.'),
+        ], 500);
     }
 
     public function sessions(Router $router)

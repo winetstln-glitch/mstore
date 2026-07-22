@@ -279,6 +279,128 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm border-0 router-stat-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">{{ __('Simple Queues') }}</span>
+                    @if($mikrotikConnected)
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createQueueModal">
+                            <i class="fa-solid fa-plus"></i> {{ __('Buat Queue Baru') }}
+                        </button>
+                    @endif
+                </div>
+                <div class="card-body">
+                    @if($mikrotikConnected)
+                        @if(!empty($simpleQueues))
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>{{ __('Nama') }}</th>
+                                            <th>{{ __('Target') }}</th>
+                                            <th>{{ __('Max Limit') }}</th>
+                                            <th>{{ __('Limit At') }}</th>
+                                            <th>{{ __('Priority') }}</th>
+                                            <th>{{ __('Status') }}</th>
+                                            <th class="text-end">{{ __('Aksi') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($simpleQueues as $queue)
+                                            <tr>
+                                                <td>{{ $queue['name'] ?? '-' }}</td>
+                                                <td>{{ $queue['target'] ?? '-' }}</td>
+                                                <td>{{ $queue['max-limit'] ?? '-' }}</td>
+                                                <td>{{ $queue['limit-at'] ?? '-' }}</td>
+                                                <td>{{ $queue['priority'] ?? '-' }}</td>
+                                                <td>
+                                                    @if(($queue['disabled'] ?? 'false') === 'true')
+                                                        <span class="badge bg-danger-subtle text-danger">{{ __('Disabled') }}</span>
+                                                    @else
+                                                        <span class="badge bg-success-subtle text-success">{{ __('Enabled') }}</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="toggleQueue('{{ route('routers.simple-queues.toggle', $router) }}', '{{ $queue['.id'] }}', {{ ($queue['disabled'] ?? 'false') === 'true' ? 'true' : 'false' }})">
+                                                            {{ ($queue['disabled'] ?? 'false') === 'true' ? __('Enable') : __('Disable') }}
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger" onclick="deleteQueue('{{ route('routers.simple-queues.destroy', $router) }}', '{{ $queue['.id'] }}')">
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-muted small text-center py-3">
+                                {{ __('Tidak ada simple queue yang ditemukan.') }}
+                            </div>
+                        @endif
+                    @else
+                        <div class="text-muted small">
+                            {{ __('Router tidak terhubung ke Mikrotik, tidak dapat membaca simple queues.') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Queue Modal -->
+    <div class="modal fade" id="createQueueModal" tabindex="-1" aria-labelledby="createQueueModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('routers.simple-queues.store', $router) }}" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="createQueueModalLabel">{{ __('Buat Simple Queue Baru') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="queueName" class="form-label">{{ __('Nama Queue') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="queueName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queueTarget" class="form-label">{{ __('Target') }}</label>
+                            <input type="text" class="form-control" id="queueTarget" name="target">
+                            <div class="form-text">{{ __('Contoh: 192.168.1.0/24 atau nama PPPoE secret') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queueMaxLimit" class="form-label">{{ __('Max Limit') }}</label>
+                            <input type="text" class="form-control" id="queueMaxLimit" name="max-limit" placeholder="10M/20M">
+                            <div class="form-text">{{ __('Format: TX/RX, satuan: k, M, G') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queueLimitAt" class="form-label">{{ __('Limit At') }}</label>
+                            <input type="text" class="form-control" id="queueLimitAt" name="limit-at" placeholder="5M/10M">
+                        </div>
+                        <div class="mb-3">
+                            <label for="queuePriority" class="form-label">{{ __('Priority') }}</label>
+                            <select class="form-select" id="queuePriority" name="priority">
+                                <option value="">{{ __('Pilih') }}</option>
+                                @for($i=1; $i<=8; $i++)
+                                    <option value="{{ $i }}">{{ $i }} - {{ $i === 1 ? __('Tertinggi') : ($i === 8 ? __('Terendah') : '') }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queueComment" class="form-label">{{ __('Komentar') }}</label>
+                            <input type="text" class="form-control" id="queueComment" name="comment">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Simpan') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -386,6 +508,107 @@
                     });
                 } else {
                     alert('{{ __('Failed to update PPPoE user status.') }}');
+                }
+            });
+    }
+
+    function toggleQueue(url, id, isDisabled) {
+        var enable = isDisabled ? true : false;
+        var confirmText = enable
+            ? '{{ __('Enable this queue?') }}'
+            : '{{ __('Disable this queue?') }}';
+
+        if (!confirm(confirmText)) {
+            return;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ '.id': id, enable: enable })
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? '{{ __('Berhasil') }}' : '{{ __('Gagal') }}',
+                        text: data.message || ''
+                    }).then(function () {
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    alert(data.message || '');
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(function () {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Error') }}',
+                        text: '{{ __('Failed to update queue status.') }}'
+                    });
+                } else {
+                    alert('{{ __('Failed to update queue status.') }}');
+                }
+            });
+    }
+
+    function deleteQueue(url, id) {
+        if (!confirm('{{ __('Delete this queue?') }}')) {
+            return;
+        }
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ '.id': id })
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? '{{ __('Berhasil') }}' : '{{ __('Gagal') }}',
+                        text: data.message || ''
+                    }).then(function () {
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    alert(data.message || '');
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(function () {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Error') }}',
+                        text: '{{ __('Failed to delete queue.') }}'
+                    });
+                } else {
+                    alert('{{ __('Failed to delete queue.') }}');
                 }
             });
     }
