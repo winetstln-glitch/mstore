@@ -1229,9 +1229,10 @@ class WashTransactionController extends Controller implements HasMiddleware
         
         // Hitung SEMUA transaksi lunas dengan plat tersebut sampai dan termasuk transaksi ini
         $transactionsUntil = WashTransaction::query()
-            ->where(function($query) use ($plateRaw) {
-                $this->applyVehiclePlateFilter($query, $plateRaw);
-            })
+            ->whereRaw(
+                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                [$plate]
+            )
             ->whereIn('status', ['lunas', 'posted'])
             ->where('total_amount', '>', 0)
             ->whereHas('items', function($q) {
