@@ -201,7 +201,8 @@ class WashMembershipService
             return ['member' => null, 'level_upgraded' => false, 'old_level' => null, 'new_level' => null];
         }
 
-        if (strtolower((string) $transaction->status) !== 'lunas') {
+        $status = strtolower((string) $transaction->status);
+        if (! in_array($status, ['lunas', 'posted'])) {
             return ['member' => $member, 'level_upgraded' => false, 'old_level' => null, 'new_level' => null];
         }
 

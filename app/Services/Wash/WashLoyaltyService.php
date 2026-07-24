@@ -117,7 +117,8 @@ class WashLoyaltyService
             return ['created_voucher' => null, 'progress' => null];
         }
 
-        if (strtolower((string) $transaction->status) !== 'lunas') {
+        $status = strtolower((string) $transaction->status);
+        if (! in_array($status, ['lunas', 'posted'])) {
             return ['created_voucher' => null, 'progress' => null];
         }
 

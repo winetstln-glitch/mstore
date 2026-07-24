@@ -24,7 +24,7 @@ class SyncWashLoyalty extends Command
         $loyaltyService = app(WashLoyaltyService::class);
 
         $query = WashTransaction::query()
-            ->where('status', 'lunas')
+            ->whereIn('status', ['lunas', 'posted'])
             ->where('total_amount', '>', 0)
             ->whereHas('items', function ($q) {
                 $q->whereHas('service', function ($sq) {
