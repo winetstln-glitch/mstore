@@ -802,10 +802,14 @@ class WashTransactionController extends Controller implements HasMiddleware
 
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function ($q) use ($search) {
+            $normalizedSearch = $this->normalizePlate($search);
+            $query->where(function ($q) use ($search, $normalizedSearch) {
                 $q->where('transaction_number', 'like', "%{$search}%")
                   ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('vehicle_plate', 'like', "%{$search}%")
+                  ->orWhereRaw(
+                      "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) LIKE ?",
+                      ['%' . $normalizedSearch . '%']
+                  )
                   ->orWhereHas('items', function ($qi) use ($search) {
                       $qi->where('service_name', 'like', "%{$search}%");
                   })
