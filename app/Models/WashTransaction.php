@@ -30,7 +30,8 @@ class WashTransaction extends Model
         'wash_shift_session_id',
         'wash_cash_register_id',
         'posted_at',
-        'reversed_at'
+        'reversed_at',
+        'loyalty_counted_at'
     ];
 
     protected $appends = [

@@ -900,6 +900,7 @@ class WashTransactionController extends Controller implements HasMiddleware
             'kasbon_type' => 'nullable|in:employee,outsider',
             'kasbon_user_id' => 'nullable|integer|exists:users,id',
             'kasbon_name' => 'nullable|string|max:255',
+            'status' => 'nullable|in:draft,lunas,posted',
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
@@ -943,6 +944,10 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'total_amount' => $finalTotal,
             ];
 
+            if (isset($validated['status'])) {
+                $updateData['status'] = $validated['status'];
+            }
+
             if ($paymentMethod === 'kasbon') {
                 $updateData['kasbon_type'] = $validated['kasbon_type'] ?? null;
                 $updateData['kasbon_user_id'] = $validated['kasbon_user_id'] ?? null;
@@ -972,6 +977,12 @@ class WashTransactionController extends Controller implements HasMiddleware
                 }
             }
         });
+
+        // If status is now lunas/posted and not yet counted, count it
+        if (in_array($transaction->status, ['lunas', 'posted'])) {
+            $loyaltyService = app(\App\Services\Wash\WashLoyaltyService::class);
+            $loyaltyService->incrementOnPaidTransaction($transaction);
+        }
 
         return redirect()
             ->route('wash.transactions.index', request()->query())

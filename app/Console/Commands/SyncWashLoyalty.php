@@ -8,7 +8,7 @@ use App\Models\WashTransaction;
 use App\Services\Wash\WashLoyaltyService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class SyncWashLoyalty extends Command
 {
@@ -57,7 +57,9 @@ class SyncWashLoyalty extends Command
 
         foreach ($grouped as $plate => $trans) {
             $this->info("\nProcessing plate: {$plate} (" . count($trans) . " transactions)");
-            $counter = WashLoyaltyCounter::query()->firstOrCreate(
+
+            // Reset counter for accurate sync (since we're reprocessing all transactions)
+            $counter = WashLoyaltyCounter::query()->updateOrCreate(
                 ['vehicle_plate' => $plate],
                 [
                     'wash_customer_id' => $trans[0]->wash_customer_id,
@@ -67,75 +69,19 @@ class SyncWashLoyalty extends Command
                 ]
             );
 
-            $currentCycle = 0;
-            $totalLifetime = 0;
-            $vouchersCreated = 0;
+            // Process each transaction using the existing service method to stay consistent
             foreach ($trans as $trx) {
-                $currentCycle++;
-                $totalLifetime++;
-                $this->line("  - Trx #{$trx->id}: Cycle count = {$currentCycle}");
+                $this->line("  - Trx #{$trx->id}");
 
-                if ($currentCycle >= $loyaltyService->target()) {
-                    $currentCycle = 0;
-                    $this->line("    → Reached target, cycle reset");
+                // Use incrementOnPaidTransaction to handle the logic
+                $result = $loyaltyService->incrementOnPaidTransaction($trx);
 
-                    // Cek apakah voucher untuk transaksi ini sudah ada?
-                    $existingVoucher = WashRewardVoucher::query()
-                        ->where('vehicle_plate', $plate)
-                        ->where('meta->issued_from_transaction_id', $trx->id)
-                        ->first();
-
-                    if (!$existingVoucher) {
-                        // Buat voucher baru!
-                        $code = strtoupper(Str::random(8));
-                        $rewardType = 'free_wash';
-                        $firstWashItem = $trx->items()
-                            ->whereHas('service', function ($q) {
-                                $q->where('vehicle_type', '!=', 'coffee');
-                            })
-                            ->orderBy('id')
-                            ->first();
-
-                        if ($firstWashItem instanceof \App\Models\WashTransactionItem) {
-                            $vt = strtolower((string) ($firstWashItem->service?->vehicle_type ?? ''));
-                            if ($vt === 'car') {
-                                $rewardType = 'free_wash_car';
-                            } elseif ($vt === 'motor') {
-                                $rewardType = 'free_wash_motor';
-                            }
-                        }
-
-                        $voucher = WashRewardVoucher::create([
-                            'code' => $code,
-                            'wash_loyalty_counter_id' => $counter->id,
-                            'wash_customer_id' => $trx->wash_customer_id,
-                            'wash_member_id' => $trx->wash_member_id,
-                            'vehicle_plate' => $plate,
-                            'reward_type' => $rewardType,
-                            'status' => 'available',
-                            'issued_at' => $trx->created_at,
-                            'expires_at' => $trx->created_at->addDays($loyaltyService->voucherExpiryDays()),
-                            'meta' => [
-                                'issued_from_transaction_id' => $trx->id,
-                                'target' => $loyaltyService->target(),
-                            ],
-                        ]);
-                        $vouchersCreated++;
-                        $this->line("    → ✅ Created voucher: {$voucher->code}");
-                    } else {
-                        $this->line("    → ℹ️ Voucher already exists: {$existingVoucher->code}");
-                    }
+                if ($result['created_voucher']) {
+                    $this->line("    → ✅ Created voucher: {$result['created_voucher']->code}");
                 }
             }
 
-            $counter->update([
-                'cycle_paid_count' => $currentCycle,
-                'lifetime_paid_count' => $totalLifetime,
-                'last_paid_transaction_id' => end($trans)->id,
-                'last_paid_at' => end($trans)->created_at,
-            ]);
-
-            $this->info("  → Updated: Cycle count = {$currentCycle}, Lifetime = {$totalLifetime}, Vouchers created: {$vouchersCreated}");
+            $this->info("  → Updated counter: Cycle count = {$counter->fresh()->cycle_paid_count}, Lifetime = {$counter->fresh()->lifetime_paid_count}");
         }
 
         $this->info("\n✅ Sync wash loyalty completed!");

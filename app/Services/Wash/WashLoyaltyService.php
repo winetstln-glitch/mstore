@@ -135,6 +135,16 @@ class WashLoyaltyService
             return ['created_voucher' => null, 'progress' => null];
         }
 
+        // Check if transaction has already been counted
+        if (Schema::hasColumn('wash_transactions', 'loyalty_counted_at') && $transaction->loyalty_counted_at) {
+            // Already counted, just return current progress
+            $counter = $this->getOrCreateCounter($transaction->washCustomer, $plate);
+            return [
+                'created_voucher' => null,
+                'progress' => $this->progress($counter),
+            ];
+        }
+
         $target = $this->target();
 
         return DB::transaction(function () use ($transaction, $plate, $target) {
@@ -163,6 +173,11 @@ class WashLoyaltyService
             $counter->last_paid_transaction_id = $transaction->id;
             $counter->last_paid_at = now();
             $counter->save();
+
+            // Mark transaction as counted
+            if (Schema::hasColumn('wash_transactions', 'loyalty_counted_at')) {
+                $transaction->update(['loyalty_counted_at' => now()]);
+            }
 
             $this->auditLog->logAction('wash_loyalty.counter_incremented', $counter, [
                 'transaction_id' => $transaction->id,
