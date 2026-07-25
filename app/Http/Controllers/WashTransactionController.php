@@ -1237,23 +1237,57 @@ class WashTransactionController extends Controller implements HasMiddleware
         }
 
         $target = $loyalty->target();
-        
-        // Hitung SEMUA transaksi lunas dengan plat tersebut sampai dan termasuk transaksi ini
-        $transactionsUntil = WashTransaction::query()
-            ->whereRaw(
-                "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) LIKE ?",
-                ['%' . $plate . '%']
-            )
+
+        // Get all transactions for the same customer (by plate) up to this transaction
+        $allTransactionsUntil = WashTransaction::query()
+            ->with('items.service')
             ->whereIn('status', ['lunas', 'posted'])
             ->where('total_amount', '>', 0)
-            ->whereHas('items', function($q) {
-                $q->whereHas('service', function($sq) {
-                    $sq->where('vehicle_type', '!=', 'coffee');
-                });
-            })
             ->where('created_at', '<=', $transaction->created_at)
             ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
+
+        // Filter in PHP for ACCURATE results (avoids issues with missing services and plate formatting)
+        $transactionsUntil = collect();
+        foreach ($allTransactionsUntil as $t) {
+            // 1. Check exact plate match using normalizePlate
+            $tPlate = $loyalty->normalizePlate((string) ($t->vehicle_plate ?? ''));
+            if ($tPlate !== $plate) {
+                continue;
+            }
+
+            // 2. Check if transaction has any non-coffee items (use relationship, fall back to service_name)
+            $hasNonCoffee = false;
+            foreach ($t->items as $item) {
+                $isCoffee = false;
+                $service = $item->service;
+                if ($service && strtolower((string) ($service->vehicle_type ?? '')) === 'coffee') {
+                    $isCoffee = true;
+                } else {
+                    $serviceName = strtolower(trim((string) ($item->service_name ?? '')));
+                    if (
+                        $serviceName === 'kopi' ||
+                        $serviceName === 'caffe' ||
+                        $serviceName === 'warkop' ||
+                        str_contains($serviceName, 'kopi') ||
+                        str_contains($serviceName, 'caffe') ||
+                        str_contains($serviceName, 'warkop')
+                    ) {
+                        $isCoffee = true;
+                    }
+                }
+                if (!$isCoffee) {
+                    $hasNonCoffee = true;
+                    break;
+                }
+            }
+            if (!$hasNonCoffee) {
+                continue;
+            }
+
+            $transactionsUntil->push($t);
+        }
 
         $totalCount = $transactionsUntil->count();
         $cycleCount = 0;
