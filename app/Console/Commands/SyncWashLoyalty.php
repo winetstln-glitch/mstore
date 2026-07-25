@@ -37,7 +37,10 @@ class SyncWashLoyalty extends Command
             $normalizedPlate = $loyaltyService->normalizePlate($plateFilter);
             $query->where(function ($q) use ($normalizedPlate, $plateFilter) {
                 $q->where('vehicle_plate', 'like', "%{$plateFilter}%")
-                    ->orWhere(DB::raw("UPPER(REGEXP_REPLACE(vehicle_plate, '[^A-Za-z0-9]', ''))"), $normalizedPlate);
+                    ->orWhereRaw(
+                        "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) LIKE ?",
+                        ['%' . $normalizedPlate . '%']
+                    );
             });
         }
 
@@ -66,15 +69,27 @@ class SyncWashLoyalty extends Command
                     'wash_member_id' => $trans[0]->wash_member_id,
                     'cycle_paid_count' => 0,
                     'lifetime_paid_count' => 0,
+                    'last_paid_transaction_id' => null,
+                    'last_paid_at' => null,
                 ]
             );
 
-            // Process each transaction using the existing service method to stay consistent
-            foreach ($trans as $trx) {
-                $this->line("  - Trx #{$trx->id}");
+            // Also delete any vouchers that were issued from these transactions, since we're re-syncing
+            $trxIds = collect($trans)->pluck('id');
+            WashRewardVoucher::query()
+                ->where('vehicle_plate', $plate)
+                ->where(function ($q) use ($trxIds) {
+                    $q->whereIn('meta->issued_from_transaction_id', $trxIds);
+                })
+                ->delete();
 
-                // Use incrementOnPaidTransaction to handle the logic
-                $result = $loyaltyService->incrementOnPaidTransaction($trx);
+            // Process each transaction using the existing service method to stay consistent
+            // Force recount since we've reset everything
+            foreach ($trans as $trx) {
+                $this->line("  - Trx #{$trx->id} ({$trx->transaction_number})");
+
+                // Use incrementOnPaidTransaction with forceCount=true to ensure it's counted
+                $result = $loyaltyService->incrementOnPaidTransaction($trx, true);
 
                 if ($result['created_voucher']) {
                     $this->line("    → ✅ Created voucher: {$result['created_voucher']->code}");

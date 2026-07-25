@@ -106,7 +106,7 @@ class WashLoyaltyService
             ->get();
     }
 
-    public function incrementOnPaidTransaction(WashTransaction $transaction): array
+    public function incrementOnPaidTransaction(WashTransaction $transaction, bool $forceCount = false): array
     {
         if (! Schema::hasTable('wash_loyalty_counters')) {
             return ['created_voucher' => null, 'progress' => null];
@@ -136,7 +136,7 @@ class WashLoyaltyService
         }
 
         // Check if transaction has already been counted
-        if (Schema::hasColumn('wash_transactions', 'loyalty_counted_at') && $transaction->loyalty_counted_at) {
+        if (! $forceCount && Schema::hasColumn('wash_transactions', 'loyalty_counted_at') && $transaction->loyalty_counted_at) {
             // Already counted, just return current progress
             $counter = $this->getOrCreateCounter($transaction->washCustomer, $plate);
             return [
