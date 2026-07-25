@@ -1257,7 +1257,12 @@ class WashTransactionController extends Controller implements HasMiddleware
                 continue;
             }
 
-            // 2. Check if transaction has any non-coffee items (use relationship, fall back to service_name)
+            // 2. FIRST: EXCLUDE ANY REDEMPTIONS (free/bonus washes)
+            if ($loyalty->isRedemptionTransaction($t)) {
+                continue;
+            }
+
+            // 3. Check if transaction has any non-coffee items (use relationship, fall back to service_name)
             $hasNonCoffee = false;
             foreach ($t->items as $item) {
                 $isCoffee = false;

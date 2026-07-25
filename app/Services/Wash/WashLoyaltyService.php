@@ -106,6 +106,38 @@ class WashLoyaltyService
             ->get();
     }
 
+    /**
+     * Check if a transaction is a reward/bonus redemption (should NOT count toward loyalty)
+     */
+    public function isRedemptionTransaction(WashTransaction $transaction): bool
+    {
+        $notes = strtolower(trim((string) ($transaction->notes ?? '')));
+        $paymentMethod = strtolower(trim((string) ($transaction->payment_method ?? '')));
+
+        // 1. Transaction notes indicate reward voucher / bonus wash
+        if (str_starts_with($notes, 'reward_voucher')) {
+            return true;
+        }
+        if ($notes === 'bonus_cuci_10x' || $notes === 'voucher_free_wash') {
+            return true;
+        }
+
+        // 2. Paid using "voucher" payment method (and total = 0, indicating free wash)
+        if ($paymentMethod === 'voucher') {
+            return true;
+        }
+
+        // 3. Has a corresponding WashRewardRedemption record
+        if (Schema::hasTable('wash_reward_redemptions')) {
+            $hasRedemption = $transaction->redemption()->exists();
+            if ($hasRedemption) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function incrementOnPaidTransaction(WashTransaction $transaction, bool $forceCount = false): array
     {
         if (! Schema::hasTable('wash_loyalty_counters')) {
@@ -124,6 +156,16 @@ class WashLoyaltyService
 
         if (((float) $transaction->total_amount) <= 0) {
             return ['created_voucher' => null, 'progress' => null];
+        }
+
+        // Never count redemptions/bonus transactions toward the bonus!
+        // This applies even when $forceCount = true (they are NOT visits!)
+        if ($this->isRedemptionTransaction($transaction)) {
+            $counter = $this->getOrCreateCounter($transaction->washCustomer, $plate);
+            return [
+                'created_voucher' => null,
+                'progress' => $this->progress($counter),
+            ];
         }
 
         // Check if this transaction has any NON-coffee items

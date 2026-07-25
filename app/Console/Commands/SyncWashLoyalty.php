@@ -53,6 +53,11 @@ class SyncWashLoyalty extends Command
                 }
             }
 
+            // FIRST: EXCLUDE ANY REDEMPTIONS (free/bonus washes)
+            if ($loyaltyService->isRedemptionTransaction($transaction)) {
+                continue;
+            }
+
             // Check if this transaction has any NON-coffee items
             // We check both: 1) the service relationship if it exists, OR 2) the stored service name
             $hasNonCoffee = false;
