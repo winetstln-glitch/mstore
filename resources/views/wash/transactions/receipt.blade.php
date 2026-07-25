@@ -38,6 +38,7 @@
         $discountLabel = 'Voucher Cuci Gratis';
     }
     $isLoyaltyBonus = str_starts_with($trxNotes, 'bonus_cuci');
+    $isRedemption = $isLoyaltyBonus || (str_starts_with($trxNotes, 'reward_voucher')) || (str_starts_with($trxNotes, 'voucher_free'));
     $holidayAdjustmentTotal = (float) $transaction->items->sum(function ($item) {
         return ((float) ($item->holiday_adjustment ?? 0)) * ((float) ($item->quantity ?? 0));
     });
@@ -326,8 +327,12 @@
             <tr><td class="label">Pelanggan/Plat</td><td>: {{ $customerName }} / {{ $vehiclePlate }}</td></tr>
             <tr><td class="label">Priority</td><td>: {{ $queuePriorityLabel }}</td></tr>
             <tr><td class="label">Urutan Layanan</td><td>: #{{ $queueServiceOrder }}</td></tr>
-            <tr><td class="label">Cuci Ke</td><td>: {{ (int) ($washVisitCount ?? 0) > 0 ? ('ke-'.(int) ($washVisitCount ?? 0)) : '-' }}</td></tr>
-            <tr><td class="label">Menuju Bonus</td><td>: {{ is_null($washVisitsToNextBonus ?? null) ? '-' : ((int) $washVisitsToNextBonus === 0 ? 'Bonus tercapai di transaksi ini' : ((int) $washVisitsToNextBonus.'x lagi')) }}</td></tr>
+            @if($isRedemption)
+                <tr><td class="label" colspan="2" style="text-align:center; font-weight: bold; color: green;">★ Ini adalah Bonus Cuci Gratis ★</td></tr>
+            @else
+                <tr><td class="label">Cuci Ke</td><td>: {{ (int) ($washVisitCount ?? 0) > 0 ? ('ke-'.(int) ($washVisitCount ?? 0)) : '-' }}</td></tr>
+                <tr><td class="label">Menuju Bonus</td><td>: {{ is_null($washVisitsToNextBonus ?? null) ? '-' : ((int) $washVisitsToNextBonus === 0 ? 'Bonus tercapai di transaksi ini' : ((int) $washVisitsToNextBonus.'x lagi')) }}</td></tr>
+            @endif
         </table>
 
         @if(!empty($transaction->queue_number))
@@ -596,8 +601,12 @@ function buildEscPosText(data){
     txt+="[L]Waktu: "+data.date+"\n";
     txt+="[L]Kasir: "+data.cashier+"\n";
     txt+="[L]Pelanggan : "+data.customer+"\n";
-    txt+="[L]Cuci Ke : "+(data.visit_count>0?('ke-'+data.visit_count):'-')+"\n";
-    txt+="[L]Menuju Bonus : "+(data.visits_to_next_bonus===null?'-':(data.visits_to_next_bonus===0?'Bonus tercapai di transaksi ini':(data.visits_to_next_bonus+'x lagi')))+"\n";
+    if(data.is_redemption || data.is_loyalty_bonus){
+        txt+="[C]<b><font color='green'>★ Ini adalah Bonus Cuci Gratis ★</font></b>\n";
+    } else {
+        txt+="[L]Cuci Ke : "+(data.visit_count>0?('ke-'+data.visit_count):'-')+"\n";
+        txt+="[L]Menuju Bonus : "+(data.visits_to_next_bonus===null?'-':(data.visits_to_next_bonus===0?'Bonus tercapai di transaksi ini':(data.visits_to_next_bonus+'x lagi')))+"\n";
+    }
     if(data.queue){txt+="\n[C]<font size='big'>ANTRIAN #"+data.queue+"</font>\n\n";}
     txt+="[L]--------------------------------\n";
     data.items.forEach(item=>{txt+="[L]"+item.n+"\n[R]"+item.s+"\n[L]"+item.q+" x "+item.p+"\n";});

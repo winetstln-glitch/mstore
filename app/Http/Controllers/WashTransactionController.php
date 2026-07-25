@@ -1230,6 +1230,13 @@ class WashTransactionController extends Controller implements HasMiddleware
     private function calculateLoyaltyProgressUntilTransaction(WashTransaction $transaction): array
     {
         $loyalty = app(WashLoyaltyService::class);
+
+        // 🔥 If THIS TRANSACTION is a redemption/bonus wash, do NOT count it as a visit!
+        // Return special values: [null, null] to indicate "this is a bonus transaction itself"
+        if ($loyalty->isRedemptionTransaction($transaction)) {
+            return [null, null];
+        }
+
         $plateRaw = (string) ($transaction->vehicle_plate ?? '');
         $plate = $loyalty->normalizePlate($plateRaw);
         if ($plate === '') {
