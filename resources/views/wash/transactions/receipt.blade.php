@@ -30,13 +30,14 @@
     $cashierName = $cashierName !== '' ? $cashierName : '-';
     $printedAt = date('d/m/Y H:i:s');
     $loyaltyTarget = (int) \App\Models\Setting::getValue('wash_loyalty_target', 11);
+    $trxNotes = strtolower(trim((string) ($transaction->notes ?? '')));
     $discountLabel = 'Diskon';
-    if (($transaction->notes ?? null) === 'bonus_cuci_10x') {
+    if (str_starts_with($trxNotes, 'bonus_cuci')) {
         $discountLabel = 'Bonus Cuci ' . $loyaltyTarget . 'x';
-    } elseif (($transaction->notes ?? null) === 'voucher_free_wash') {
+    } elseif ($trxNotes === 'voucher_free_wash' || str_starts_with($trxNotes, 'voucher_free')) {
         $discountLabel = 'Voucher Cuci Gratis';
     }
-    $isLoyaltyBonus = ($transaction->notes ?? null) === 'bonus_cuci_10x';
+    $isLoyaltyBonus = str_starts_with($trxNotes, 'bonus_cuci');
     $holidayAdjustmentTotal = (float) $transaction->items->sum(function ($item) {
         return ((float) ($item->holiday_adjustment ?? 0)) * ((float) ($item->quantity ?? 0));
     });

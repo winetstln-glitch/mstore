@@ -140,7 +140,10 @@
                                             | Urutan #{{ $transaction->queue_service_order_today }}
                                         @endif
                                     </div>
-                                    @if(($transaction->notes ?? null) === 'bonus_cuci_10x')
+                                    @php
+                                        $trxNotesIndex = strtolower(trim((string) ($transaction->notes ?? '')));
+                                    @endphp
+                                    @if(str_starts_with($trxNotesIndex, 'bonus_cuci'))
                                         <span class="badge bg-success ms-1">Bonus Gratis</span>
                                     @endif
                                     @if($transaction->issued_reward_voucher)
@@ -155,7 +158,7 @@
                                 <td data-label="No. Plat">{{ $transaction->vehicle_plate ?? '-' }}</td>
                                 <td data-label="Total">
                                     Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}
-                                    @if(($transaction->notes ?? null) === 'bonus_cuci_10x' && ($transaction->discount_amount ?? 0) > 0)
+                                    @if(str_starts_with($trxNotesIndex, 'bonus_cuci') && ($transaction->discount_amount ?? 0) > 0)
                                         <br><small class="text-success">(Diskon bonus: Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }})</small>
                                     @endif
                                 </td>

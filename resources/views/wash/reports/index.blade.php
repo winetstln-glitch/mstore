@@ -168,27 +168,31 @@
                     </thead>
                     <tbody>
                         @forelse($dailyIncomeRows as $index => $r)
-                        <tr @if(($r->notes ?? null) === 'bonus_cuci_10x') class="table-success" @endif>
+                        @php
+                            $rNotes = strtolower(trim((string) ($r->notes ?? '')));
+                            $isBonusRow = str_starts_with($rNotes, 'bonus_cuci');
+                        @endphp
+                        <tr @if($isBonusRow) class="table-success" @endif>
                             <td class="text-center" data-label="No">{{ $index + 1 }}</td>
                             <td data-label="Tanggal">{{ $r->created_at->format('Y-m-d') }}</td>
                             <td data-label="Waktu">{{ $r->created_at->format('H:i') }}</td>
                             <td data-label="No. Antri">
                                 {{ $r->queue_number ?? '-' }}
-                                @if(($r->notes ?? null) === 'bonus_cuci_10x')
+                                @if($isBonusRow)
                                     <br><span class="badge bg-success ms-1 mt-1"><i class="fa-solid fa-gift me-1"></i>Bonus Gratis</span>
                                 @endif
                             </td>
                             <td class="font-monospace" data-label="No. Transaksi">{{ $r->transaction_number }}</td>
                             <td data-label="Kasir">{{ $r->user->name ?? '-' }}</td>
                             <td data-label="Metode Pembayaran">
-                                @if(($r->notes ?? null) === 'bonus_cuci_10x')
+                                @if($isBonusRow)
                                     <span class="badge bg-success mb-1"><i class="fa-solid fa-gift me-1"></i>BONUS</span><br>
                                 @endif
                                 <span class="badge bg-secondary">{{ strtoupper($r->payment_method) }}</span>
                             </td>
                             <td class="text-end" data-label="Nominal (Rp)">
                                 {{ number_format($r->total_amount,0,',','.') }}
-                                @if(($r->notes ?? null) === 'bonus_cuci_10x' && ($r->discount_amount ?? 0) > 0)
+                                @if($isBonusRow && ($r->discount_amount ?? 0) > 0)
                                     <br><small class="text-success fw-bold"><i class="fa-solid fa-percent me-1"></i>Diskon Bonus: Rp {{ number_format($r->discount_amount,0,',','.') }}</small>
                                 @endif
                             </td>
@@ -264,7 +268,7 @@
                                 $dailyQris = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
                                 $dailyTransfer = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
                                 $dailySetoranCash = $dailyCash - (float) $dailyExpense;
-                                $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => ($r->notes ?? null) === 'bonus_cuci_10x')->count();
+                                $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => str_starts_with(strtolower(trim((string) ($r->notes ?? ''))), 'bonus_cuci'))->count();
                             @endphp
                             @forelse($dailyByPayment as $r)
                             <tr><td data-label="Metode">{{ strtoupper($r->payment_method) }}</td><td class="text-end" data-label="Total">Rp {{ number_format($r->amount,0,',','.') }}</td></tr>
