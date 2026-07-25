@@ -113,9 +113,15 @@ class WashLoyaltyService
     {
         $notes = strtolower(trim((string) ($transaction->notes ?? '')));
         $paymentMethod = strtolower(trim((string) ($transaction->payment_method ?? '')));
+        $totalAmount = (float) ($transaction->total_amount ?? 0);
+        $discountAmount = (float) ($transaction->discount_amount ?? 0);
 
         // 1. Transaction notes indicate reward voucher / bonus wash
         if (str_starts_with($notes, 'reward_voucher')) {
+            return true;
+        }
+        // More flexible: match ANY bonus_cuci or voucher_free pattern (not just exact 10x)
+        if (str_starts_with($notes, 'bonus_cuci') || str_starts_with($notes, 'voucher_free')) {
             return true;
         }
         if ($notes === 'bonus_cuci_10x' || $notes === 'voucher_free_wash') {
@@ -136,6 +142,21 @@ class WashLoyaltyService
                 }
             } catch (\Throwable $e) {
                 // ignore relationship errors
+            }
+        }
+
+        // 4. 100% DISCOUNT FREE WASH SAFETY NET:
+        // If discount is >= total amount AND we already detect a discount pattern in notes
+        if ($totalAmount <= 0 && $discountAmount > 0 && $notes !== '') {
+            // If notes contain any of the keywords:
+            if (
+                str_contains($notes, 'bonus') ||
+                str_contains($notes, 'cuci') ||
+                str_contains($notes, 'voucher') ||
+                str_contains($notes, 'reward') ||
+                str_contains($notes, 'gratis')
+            ) {
+                return true;
             }
         }
 

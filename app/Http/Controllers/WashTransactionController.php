@@ -1296,12 +1296,15 @@ class WashTransactionController extends Controller implements HasMiddleware
 
         $totalCount = $transactionsUntil->count();
         $cycleCount = 0;
+        $currentCycleVisit = 0; // 1-based cycle visit count (1..target)
 
         foreach ($transactionsUntil as $t) {
             // SIMULATE LOGIC DI WashLoyaltyService::incrementOnPaidTransaction!
             $cycleCount++;
+            $currentCycleVisit++;
             if ($cycleCount >= $target) {
                 $cycleCount = 0;
+                $currentCycleVisit = 0; // reset after a full cycle / bonus issued
             }
         }
 
@@ -1312,8 +1315,9 @@ class WashTransactionController extends Controller implements HasMiddleware
             $remaining = $target;
         }
 
+        // Return: [cycle-based visit count (1..target, 0 if not started), remaining]
         return [
-            $totalCount,
+            $currentCycleVisit,
             $remaining
         ];
     }
