@@ -23,36 +23,80 @@ class SyncWashLoyalty extends Command
         $plateFilter = $this->option('plate');
         $loyaltyService = app(WashLoyaltyService::class);
 
+        // Build looser initial query; we'll do more accurate filtering in PHP
         $query = WashTransaction::query()
+            ->with('items.service')
             ->whereIn('status', ['lunas', 'posted'])
             ->where('total_amount', '>', 0)
-            ->whereHas('items', function ($q) {
-                $q->whereHas('service', function ($sq) {
-                    $sq->where('vehicle_type', '!=', 'coffee');
-                });
-            })
             ->orderBy('id');
 
-        if ($plateFilter) {
-            $normalizedPlate = $loyaltyService->normalizePlate($plateFilter);
-            $query->where(function ($q) use ($normalizedPlate, $plateFilter) {
-                $q->where('vehicle_plate', 'like', "%{$plateFilter}%")
-                    ->orWhereRaw(
-                        "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) LIKE ?",
-                        ['%' . $normalizedPlate . '%']
-                    );
-            });
-        }
+        // NOTE: We intentionally do NOT filter by plate in the SQL query!
+        // SQL filtering with LIKE can miss transactions due to formatting/separator differences
+        // (e.g. "A 1806 QA" vs "A1806QA"). We do 100% accurate filtering in PHP below instead.
 
-        $transactions = $query->get();
-        $this->info("Found {$transactions->count()} valid transactions to process.");
+        $allTransactions = $query->get();
+        $this->info("Found {$allTransactions->count()} raw transactions (before PHP filtering).");
 
-        $grouped = [];
-        foreach ($transactions as $transaction) {
+        // PHP-level filtering: more accurate and handles missing/deleted services
+        $validTransactions = collect();
+        foreach ($allTransactions as $transaction) {
             $plate = $loyaltyService->normalizePlate($transaction->vehicle_plate);
             if ($plate === '') {
                 continue;
             }
+
+            // If user filtered by plate, double-check exact normalized match in PHP
+            if ($plateFilter) {
+                $targetPlate = $loyaltyService->normalizePlate($plateFilter);
+                if ($plate !== $targetPlate) {
+                    continue;
+                }
+            }
+
+            // Check if this transaction has any NON-coffee items
+            // We check both: 1) the service relationship if it exists, OR 2) the stored service name
+            $hasNonCoffee = false;
+            foreach ($transaction->items as $item) {
+                $vehicleType = null;
+                $service = $item->service;
+                if ($service) {
+                    $vehicleType = strtolower((string) ($service->vehicle_type ?? ''));
+                }
+
+                $serviceName = strtolower(trim((string) ($item->service_name ?? '')));
+
+                // Determine if this item counts as "non coffee"
+                $isCoffee = false;
+                if ($vehicleType === 'coffee') {
+                    $isCoffee = true;
+                } elseif (
+                    $serviceName === 'kopi' ||
+                    $serviceName === 'caffe' ||
+                    $serviceName === 'warkop' ||
+                    str_contains($serviceName, 'kopi') ||
+                    str_contains($serviceName, 'caffe') ||
+                    str_contains($serviceName, 'warkop')
+                ) {
+                    $isCoffee = true;
+                }
+
+                if (!$isCoffee) {
+                    $hasNonCoffee = true;
+                    break;
+                }
+            }
+            if (!$hasNonCoffee) {
+                continue;
+            }
+
+            $validTransactions->push($transaction);
+        }
+
+        $this->info("After filtering, found {$validTransactions->count()} VALID transactions to process.");
+
+        $grouped = [];
+        foreach ($validTransactions as $transaction) {
+            $plate = $loyaltyService->normalizePlate($transaction->vehicle_plate);
             $grouped[$plate][] = $transaction;
         }
 

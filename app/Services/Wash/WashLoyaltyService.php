@@ -126,11 +126,43 @@ class WashLoyaltyService
             return ['created_voucher' => null, 'progress' => null];
         }
 
+        // Check if this transaction has any NON-coffee items
+        // Use the relationship first, but fall back to checking the stored service name
+        // (in case the service has been deleted or wash_service_id is missing)
         $hasNonCoffee = $transaction->items()
             ->whereHas('service', function ($q) {
                 $q->where('vehicle_type', '!=', 'coffee');
             })
             ->exists();
+
+        if (! $hasNonCoffee) {
+            // Fallback: check each item's stored service name
+            $items = $transaction->items;
+            foreach ($items as $item) {
+                $isCoffee = false;
+                $service = $item->service;
+                if ($service && strtolower((string) ($service->vehicle_type ?? '')) === 'coffee') {
+                    $isCoffee = true;
+                } else {
+                    $serviceName = strtolower(trim((string) ($item->service_name ?? '')));
+                    if (
+                        $serviceName === 'kopi' ||
+                        $serviceName === 'caffe' ||
+                        $serviceName === 'warkop' ||
+                        str_contains($serviceName, 'kopi') ||
+                        str_contains($serviceName, 'caffe') ||
+                        str_contains($serviceName, 'warkop')
+                    ) {
+                        $isCoffee = true;
+                    }
+                }
+                if (! $isCoffee) {
+                    $hasNonCoffee = true;
+                    break;
+                }
+            }
+        }
+
         if (! $hasNonCoffee) {
             return ['created_voucher' => null, 'progress' => null];
         }
