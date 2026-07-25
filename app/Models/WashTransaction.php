@@ -94,6 +94,11 @@ class WashTransaction extends Model
         return $this->hasMany(WashPointTransaction::class);
     }
 
+    public function redemption()
+    {
+        return $this->hasOne(WashRewardRedemption::class);
+    }
+
     public function generalTransactions()
     {
         return $this->morphMany(GeneralTransaction::class, 'reference');

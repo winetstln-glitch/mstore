@@ -128,10 +128,14 @@ class WashLoyaltyService
         }
 
         // 3. Has a corresponding WashRewardRedemption record
-        if (Schema::hasTable('wash_reward_redemptions')) {
-            $hasRedemption = $transaction->redemption()->exists();
-            if ($hasRedemption) {
-                return true;
+        if (Schema::hasTable('wash_reward_redemptions') && method_exists($transaction, 'redemption')) {
+            try {
+                $hasRedemption = $transaction->redemption()->exists();
+                if ($hasRedemption) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // ignore relationship errors
             }
         }
 
