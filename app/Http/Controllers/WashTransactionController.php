@@ -1304,15 +1304,35 @@ class WashTransactionController extends Controller implements HasMiddleware
         $totalCount = $transactionsUntil->count();
         $cycleCount = 0;
         $currentCycleVisit = 0; // 1-based cycle visit count (1..target)
+        $lastTransactionWasBonus = false;
 
-        foreach ($transactionsUntil as $t) {
+        foreach ($transactionsUntil as $index => $t) {
+            $isLastTransaction = ($index === ($totalCount - 1));
+
             // SIMULATE LOGIC DI WashLoyaltyService::incrementOnPaidTransaction!
             $cycleCount++;
             $currentCycleVisit++;
+
             if ($cycleCount >= $target) {
-                $cycleCount = 0;
-                $currentCycleVisit = 0; // reset after a full cycle / bonus issued
+                if ($isLastTransaction) {
+                    // 🔥 THIS TRANSACTION (current one being viewed) IS THE ONE THAT EARNS BONUS!
+                    // Do NOT reset yet! Show "ke-11, bonus tercapai"!
+                    $lastTransactionWasBonus = true;
+                    break;
+                } else {
+                    // This bonus was earned in a PAST transaction, reset normally
+                    $cycleCount = 0;
+                    $currentCycleVisit = 0; // reset after a full cycle / bonus issued
+                }
             }
+        }
+
+        if ($lastTransactionWasBonus) {
+            // Current transaction: exactly hits target → display "ke-target, bonus tercapai"
+            return [
+                $target,
+                0
+            ];
         }
 
         // Hitung remaining sesuai logic di WashLoyaltyService::progress()
