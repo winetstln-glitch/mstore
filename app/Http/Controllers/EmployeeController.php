@@ -80,8 +80,14 @@ class EmployeeController extends Controller implements HasMiddleware
         $washEmployees = $this->washEmployees();
         $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
         $roles = \App\Models\Role::query()->orderBy('label')->get();
+        $positions = \App\Services\EmployeeSyncService::allPositions();
+        $departments = \App\Services\EmployeeSyncService::allDepartments();
+        $positionDeptMap = collect(\App\Services\EmployeeSyncService::positionRoleDepartmentMap())
+            ->mapWithKeys(fn ($item) => [$item['position'] => $item['department']])
+            ->unique()
+            ->all();
 
-        return view('employees.create', compact('users', 'washEmployees', 'roleLabels', 'roles'));
+        return view('employees.create', compact('users', 'washEmployees', 'roleLabels', 'roles', 'positions', 'departments', 'positionDeptMap'));
     }
 
     public function store(Request $request)
@@ -118,6 +124,9 @@ class EmployeeController extends Controller implements HasMiddleware
                     'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
 
+                // Sync Employee.position → User.role (reverse direction, if position matches a role)
+                $this->employeeSyncService->syncFromEmployee($employee->fresh());
+
                 // Then sync to ensure other fields are correct
                 $this->employeeSyncService->syncFromUser($user->load('role'));
             }
@@ -132,8 +141,14 @@ class EmployeeController extends Controller implements HasMiddleware
         $washEmployees = $this->washEmployees($employee->id);
         $roleLabels = \App\Models\Role::query()->orderBy('label')->pluck('label')->unique()->toArray();
         $roles = \App\Models\Role::query()->orderBy('label')->get();
+        $positions = \App\Services\EmployeeSyncService::allPositions();
+        $departments = \App\Services\EmployeeSyncService::allDepartments();
+        $positionDeptMap = collect(\App\Services\EmployeeSyncService::positionRoleDepartmentMap())
+            ->mapWithKeys(fn ($item) => [$item['position'] => $item['department']])
+            ->unique()
+            ->all();
 
-        return view('employees.edit', compact('employee', 'users', 'washEmployees', 'roleLabels', 'roles'));
+        return view('employees.edit', compact('employee', 'users', 'washEmployees', 'roleLabels', 'roles', 'positions', 'departments', 'positionDeptMap'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -184,6 +199,12 @@ class EmployeeController extends Controller implements HasMiddleware
                     'monthly_salary' => $validated['monthly_salary'] ?? 0,
                     'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
+
+                // Sync Employee.position → User.role (reverse direction, 2-way sync)
+                $this->employeeSyncService->syncFromEmployee($employee->fresh());
+
+                // Then sync user → employee to ensure consistency
+                $this->employeeSyncService->syncFromUser($user->load('role'));
             }
         }
 

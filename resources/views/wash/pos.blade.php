@@ -262,18 +262,30 @@
 
                             <div class="mb-3" id="voucherSection" style="display:none;">
                                 <div class="wash-voucher-box">
-                                    <div>
-                                        <i class="fas fa-ticket-alt me-1"></i> Bonus cuci tersedia
-                                        (<span id="voucherCount">0</span>)
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <select id="voucher_code" class="form-select form-select-sm wash-input" style="min-width: 160px;">
-                                            <option value="">Pilih voucher</option>
-                                        </select>
-                                        <input type="checkbox" id="use_voucher" name="use_voucher">
+                                    <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-2">
+                                        <div>
+                                            <div>
+                                                <i class="fas fa-ticket-alt me-1"></i> Bonus cuci tersedia
+                                                (<span id="voucherCount">0</span>)
+                                            </div>
+                                            <small id="voucherInfoText" class="text-success opacity-75" style="font-weight:500;">
+                                                Pilih voucher di bawah untuk GRATIS 1x cuci.
+                                            </small>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <select id="voucher_code" class="form-select form-select-sm wash-input" style="min-width: 180px;">
+                                                <option value="">Pilih kode voucher</option>
+                                            </select>
+                                            <label class="form-check-label wash-use-voucher-label" for="use_voucher">
+                                                <input class="form-check-input me-1" type="checkbox" id="use_voucher" name="use_voucher" style="width:1.1em;height:1.1em;vertical-align:-2px;">
+                                                <span class="fw-bold ms-1">PAKAI VOUCHER</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="small text-muted mt-1">Gunakan voucher akan membuat total Rp0 (1 transaksi, 1 layanan, qty 1).</div>
+                                <div class="small text-muted mt-1">
+                                    ⚠️ Syarat: <b>1 transaksi hanya 1 layanan (qty 1)</b>, voucher sesuai plat & tipe kendaraan, tidak bisa digabung diskon member.
+                                </div>
                             </div>
 
                             <div id="cartItems" class="mb-3 custom-scrollbar">
@@ -291,6 +303,10 @@
                             <div class="wash-summary-row" id="voucherDiscountRow" style="display:none;">
                                 <span>Diskon Voucher</span>
                                 <span id="voucherDiscountAmount">Rp 0</span>
+                            </div>
+                            <div class="wash-summary-row bg-success bg-opacity-10 text-success fw-bold" id="instantBonusRow" style="display:none;">
+                                <span>🎁 Bonus Loyalty (GRATIS)</span>
+                                <span id="instantBonusAmount">Rp 0</span>
                             </div>
                             <div class="wash-summary-row wash-summary-total">
                                 <span>Total Akhir</span>
@@ -558,80 +574,155 @@ document.addEventListener('DOMContentLoaded', function () {
 @endpush
 
 <script>
-    document.getElementById('btnCheckCustomer').addEventListener('click', function() {
+    window.__washLoyalty = {
+        instantBonusEligible: false,
+        instantBonusTarget: null,
+        instantBonusNote: null,
+        loyaltyMode: 'voucher'
+    };
+
+    function applyCustomerCheckData(data) {
+        const info = document.getElementById('customerInfo');
+        const voucherSection = document.getElementById('voucherSection');
+        const nameInput = document.getElementById('customer_name');
+        const voucherCount = document.getElementById('voucherCount');
+        const voucherSelect = document.getElementById('voucher_code');
+        const useVoucherEl = document.getElementById('use_voucher');
+        const voucherInfoText = document.getElementById('voucherInfoText');
+        const basisMap = {
+            plate: 'plat kendaraan'
+        };
+        const basis = basisMap[data.loyalty_basis] || 'data pelanggan';
+        window.__washLoyalty.instantBonusEligible = !!(data.instant_bonus_eligible);
+        window.__washLoyalty.instantBonusTarget = data.target || null;
+        window.__washLoyalty.instantBonusNote = data.instant_bonus_note || null;
+        window.__washLoyalty.loyaltyMode = data.loyalty_mode || 'voucher';
+        setMemberInfo(data);
+
+        // SELALU isi dropdown voucher & tampilkan section jika ADA voucher (meskipun data.found = false)
+        const codes = Array.isArray(data.voucher_codes) ? data.voucher_codes : [];
+        const hasVouchers = ((data.voucher_count || 0) > 0) && codes.length > 0;
+        if (voucherSelect) {
+            const prevValue = voucherSelect.value;
+            voucherSelect.innerHTML = '<option value="">Pilih kode voucher</option>';
+            codes.forEach((code) => {
+                const opt = document.createElement('option');
+                opt.value = code;
+                opt.textContent = code;
+                if (code === prevValue) opt.selected = true;
+                voucherSelect.appendChild(opt);
+            });
+        }
+        if (hasVouchers) {
+            voucherSection.style.display = 'block';
+            voucherCount.textContent = data.voucher_count;
+            if (voucherInfoText) {
+                const vb = (data.voucher_count || 0) > 1 ? 'voucher' : 'voucher';
+                voucherInfoText.textContent = `${data.voucher_count} ${vb} tersedia. Pilih di bawah, lalu klik PAKAI VOUCHER.`;
+            }
+        } else {
+            voucherSection.style.display = 'none';
+            if (useVoucherEl) useVoucherEl.checked = false;
+            if (voucherInfoText) voucherInfoText.textContent = 'Pilih voucher di bawah untuk GRATIS 1x cuci.';
+        }
+
+        if (data.found) {
+            if (data.name && !nameInput.value) {
+                nameInput.value = data.name;
+            }
+            let memberLine = '';
+            if (data.member_found) {
+                memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
+            }
+            let progressLine;
+            const mode = data.loyalty_mode || 'voucher';
+            if (window.__washLoyalty.instantBonusEligible) {
+                if (mode === 'instant_discount') {
+                    progressLine = `<span class="fw-bold text-success">🎉 <u>TRANSAKSI INI GRATIS!</u><br>Progress ${basis}: ${data.progress} / ${data.target}. Bonus ${data.target}x cuci (mode: instant discount) otomatis diterapkan saat checkout untuk 1 layanan kendaraan qty 1.</span>`;
+                } else {
+                    progressLine = `<span class="fw-bold text-success">🎉 <u>TRANSAKSI INI GRATIS!</u><br>Progress ${basis}: ${data.progress} / ${data.target}. Bonus ${data.target}x cuci otomatis: <b>VOUCHER DITERBITKAN & LANGSUNG DIPAKAI</b> (1 layanan kendaraan qty 1).</span>`;
+                }
+            } else if (mode === 'instant_discount') {
+                progressLine = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk <b>CUCI GRATIS LANGSUNG</b> di transaksi ini (tanpa voucher).</span>`;
+            } else {
+                progressLine = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk <b>VOUCHER GRATIS</b> (diterbitkan & langsung dipakai di transaksi ke-${data.target}).</span>`;
+            }
+            info.innerHTML = `${progressLine}${memberLine}`;
+        } else {
+            let memberLine = '';
+            if (data.member_found) {
+                memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
+            } else {
+                resetMemberInfo();
+            }
+            const mode = data.loyalty_mode || 'voucher';
+            let kind;
+            if (mode === 'instant_discount') {
+                kind = `<b>CUCI GRATIS LANGSUNG</b> (tanpa voucher, di transaksi ke-${data.target})`;
+            } else {
+                kind = `<b>VOUCHER GRATIS</b> (diterbitkan & langsung dipakai di transaksi ke-${data.target})`;
+            }
+            info.innerHTML = `<span class="text-warning">Belum ada riwayat ${basis}. Mulai kumpulkan ${data.target} transaksi berbayar untuk dapat ${kind}.</span>${memberLine}`;
+        }
+        updateCartUI();
+    }
+
+    function checkCustomerByFields(options = {}) {
+        const opts = Object.assign({ silent: false }, options || {});
         const phone = document.getElementById('customer_phone').value;
         const vehiclePlate = document.getElementById('vehicle_plate').value;
         const customerName = document.getElementById('customer_name').value;
         if (!vehiclePlate) {
-            alert('Isi plat kendaraan untuk cek bonus cuci');
-            return;
+            if (!opts.silent) alert('Isi plat kendaraan untuk cek bonus cuci');
+            return Promise.resolve(null);
         }
         const params = new URLSearchParams({
             phone: phone || '',
             vehicle_plate: vehiclePlate || '',
             customer_name: customerName || ''
         });
-        fetch(`{{ route('wash.customer.check') }}?${params.toString()}`)
+        return fetch(`{{ route('wash.customer.check') }}?${params.toString()}`)
             .then(response => response.json())
             .then(data => {
-                const info = document.getElementById('customerInfo');
-                const voucherSection = document.getElementById('voucherSection');
-                const nameInput = document.getElementById('customer_name');
-                const voucherCount = document.getElementById('voucherCount');
-                const voucherSelect = document.getElementById('voucher_code');
-                const basisMap = {
-                    plate: 'plat kendaraan'
-                };
-                const basis = basisMap[data.loyalty_basis] || 'data pelanggan';
-                setMemberInfo(data);
-
-                if (data.found) {
-                    if (data.name && !nameInput.value) {
-                        nameInput.value = data.name;
-                    }
-                    let memberLine = '';
-                    if (data.member_found) {
-                        memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
-                    }
-                    info.innerHTML = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk dapat voucher gratis.</span>${memberLine}`;
-                    const codes = Array.isArray(data.voucher_codes) ? data.voucher_codes : [];
-                    if (voucherSelect) {
-                        voucherSelect.innerHTML = '<option value=\"\">Pilih voucher</option>';
-                        codes.forEach((code) => {
-                            const opt = document.createElement('option');
-                            opt.value = code;
-                            opt.textContent = code;
-                            voucherSelect.appendChild(opt);
-                        });
-                    }
-                    if ((data.voucher_count || 0) > 0) {
-                        voucherSection.style.display = 'block';
-                        voucherCount.textContent = data.voucher_count;
-                    } else {
-                        voucherSection.style.display = 'none';
-                        const useVoucherEl = document.getElementById('use_voucher');
-                        if (useVoucherEl) useVoucherEl.checked = false;
-                    }
-                } else {
-                    let memberLine = '';
-                    if (data.member_found) {
-                        memberLine = `<br><span class="text-primary">Member ${data.member_level_name || 'Bronze Member'} | Diskon ${data.member_discount_percent || 0}% | Kunjungan ${data.member_total_visits || 0}</span>`;
-                    } else {
-                        resetMemberInfo();
-                    }
-                    info.innerHTML = `<span class="text-warning">Belum ada riwayat ${basis}. Mulai kumpulkan ${data.target} transaksi berbayar untuk dapat voucher gratis.</span>${memberLine}`;
-                    voucherSection.style.display = 'none';
-                    if (voucherSelect) {
-                        voucherSelect.innerHTML = '<option value=\"\">Pilih voucher</option>';
-                    }
-                }
-                updateCartUI();
+                applyCustomerCheckData(data);
+                return data;
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Gagal cek riwayat pelanggan');
+                console.error('Error checkCustomer:', error);
+                if (!opts.silent) alert('Gagal cek riwayat pelanggan');
+                return null;
             });
+    }
+
+    document.getElementById('btnCheckCustomer').addEventListener('click', function() {
+        checkCustomerByFields({ silent: false });
     });
+
+    // Auto-check plat setelah user selesai input (blur) atau tekan Enter
+    ['vehicle_plate', 'customer_phone'].forEach(function (fid) {
+        const el = document.getElementById(fid);
+        if (!el) return;
+        el.addEventListener('blur', function () {
+            const plate = (document.getElementById('vehicle_plate').value || '').trim();
+            if (plate !== '') checkCustomerByFields({ silent: true });
+        });
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const plate = (document.getElementById('vehicle_plate').value || '').trim();
+                if (plate !== '') checkCustomerByFields({ silent: true });
+            }
+        });
+    });
+
+    // Saat user pilih voucher dari dropdown → auto centang "PAKAI VOUCHER"
+    const voucherCodeSelect = document.getElementById('voucher_code');
+    const useVoucherCheckbox = document.getElementById('use_voucher');
+    if (voucherCodeSelect) {
+        voucherCodeSelect.addEventListener('change', function () {
+            if (this.value && useVoucherCheckbox) useVoucherCheckbox.checked = true;
+            updateCartUI();
+        });
+    }
 
     const knownPlateSelect = document.getElementById('known_plate');
     const knownPlateSearchInput = document.getElementById('known_plate_search');
@@ -1133,6 +1224,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('use_voucher').checked = false;
         const voucherCodeEl = document.getElementById('voucher_code');
         if (voucherCodeEl) voucherCodeEl.innerHTML = '<option value="">Pilih voucher</option>';
+        window.__washLoyalty = { instantBonusEligible: false, instantBonusTarget: null, instantBonusNote: null, loyaltyMode: 'voucher' };
         resetMemberInfo();
         
         resetServiceSelection();
@@ -1151,6 +1243,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const memberDiscountAmountEl = document.getElementById('memberDiscountAmount');
         const voucherDiscountRow = document.getElementById('voucherDiscountRow');
         const voucherDiscountAmountEl = document.getElementById('voucherDiscountAmount');
+        const instantBonusRow = document.getElementById('instantBonusRow');
+        const instantBonusAmountEl = document.getElementById('instantBonusAmount');
         const useVoucher = voucherEl ? !!voucherEl.checked : false;
         
         cartContainer.innerHTML = '';
@@ -1158,6 +1252,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let discount = 0;
         let memberDiscount = 0;
         let voucherDiscount = 0;
+        let instantBonusDiscount = 0;
+        const loyalty = window.__washLoyalty || {};
+        const canApplyInstantBonus = !!(
+            loyalty.instantBonusEligible && !useVoucher &&
+            cart.length === 1 && (cart[0]?.quantity || 0) === 1
+        );
 
         if (cart.length === 0) {
             if (emptyMsg) emptyMsg.style.display = 'block';
@@ -1202,7 +1302,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cartContainer.appendChild(div);
             });
 
-            if (currentMember && !useVoucher) {
+            if (currentMember && !useVoucher && !canApplyInstantBonus) {
                 const memberPct = parseFloat(currentMember.discountPercent || 0) || 0;
                 if (memberPct > 0) {
                     memberDiscount = Math.round((total * memberPct) * 100 / 100) / 100;
@@ -1223,7 +1323,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     voucherDiscount = total;
                     discount = total;
                     memberDiscount = 0;
+                    instantBonusDiscount = 0;
                 }
+            } else if (canApplyInstantBonus) {
+                // Preview: Instant Bonus (FREE wash) applied, confirmed in backend
+                instantBonusDiscount = total;
+                discount = total;
+                memberDiscount = 0;
             }
         }
 
@@ -1233,6 +1339,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (memberDiscountAmountEl) memberDiscountAmountEl.textContent = '- Rp ' + memberDiscount.toLocaleString('id-ID');
         if (voucherDiscountRow) voucherDiscountRow.style.display = voucherDiscount > 0 ? '' : 'none';
         if (voucherDiscountAmountEl) voucherDiscountAmountEl.textContent = '- Rp ' + voucherDiscount.toLocaleString('id-ID');
+        if (instantBonusRow) {
+            instantBonusRow.style.display = instantBonusDiscount > 0 ? '' : 'none';
+        }
+        if (instantBonusAmountEl) instantBonusAmountEl.textContent = '- Rp ' + instantBonusDiscount.toLocaleString('id-ID');
         
         if (discount > 0) {
              totalEl.innerHTML = `<small class="text-decoration-line-through text-muted">Rp ${total.toLocaleString('id-ID')}</small> <span class="text-success fw-bold">Rp ${finalTotal.toLocaleString('id-ID')}</span>`;
@@ -1430,9 +1540,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 };
                 if (data.reward_voucher_created_code) {
-                    await showLoyaltyBonusPopup('Voucher reward dibuat: ' + data.reward_voucher_created_code);
+                    await showLoyaltyBonusPopup('🎁 Voucher reward berhasil dibuat: ' + data.reward_voucher_created_code + '\n\nVoucher bisa langsung dipakai di transaksi BERIKUTNYA (1 layanan kendaraan qty 1).');
+                    // Setelah voucher dibuat, background refresh riwayat & list voucher agar siap dipakai transaksi berikutnya
+                    if ((document.getElementById('vehicle_plate').value || '').trim() !== '') {
+                        setTimeout(() => { checkCustomerByFields({ silent: true }); }, 400);
+                    }
                 } else if (data.discount_type === 'reward_voucher') {
-                    await showLoyaltyBonusPopup('Voucher reward berhasil digunakan. Total transaksi menjadi Rp0.');
+                    await showLoyaltyBonusPopup('✅ Voucher reward berhasil digunakan. Total transaksi menjadi Rp0.');
+                    // Voucher sudah dipakai → refresh agar status hilang dari list
+                    if ((document.getElementById('vehicle_plate').value || '').trim() !== '') {
+                        setTimeout(() => { checkCustomerByFields({ silent: true }); }, 400);
+                    }
+                } else if (data.instant_bonus_applied) {
+                    const target = data.instant_bonus_target || window.__washLoyalty?.instantBonusTarget || '';
+                    await showLoyaltyBonusPopup('🎉 BONUS CUCI ke-' + target + ' DITERAPKAN! Total transaksi menjadi GRATIS (Rp0).');
                 }
                 openReceipt();
                 const resolvedPhone = data.customer_phone || phone;
@@ -1866,13 +1987,34 @@ document.addEventListener('DOMContentLoaded', function () {
         align-items: center;
         justify-content: space-between;
         gap: 0.6rem;
-        padding: 0.65rem 0.75rem;
+        padding: 0.85rem 1rem;
         background: #f0fdf4;
         border: 1px solid #bbf7d0;
-        border-radius: 0.75rem;
+        border-radius: 0.85rem;
         color: #166534;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         font-weight: 600;
+    }
+
+    .wash-use-voucher-label {
+        cursor: pointer;
+        user-select: none;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.5rem;
+        background: #16a34a;
+        color: #fff !important;
+        font-weight: 700;
+        font-size: 0.82rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+    .wash-use-voucher-label:hover {
+        background: #15803d;
+    }
+    .wash-use-voucher-label input:checked + span::after {
+        content: " ✔";
+        color: #fff;
     }
 
     #cartItems {

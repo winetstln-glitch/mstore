@@ -981,6 +981,15 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::post('/transactions', [\App\Http\Controllers\WashTransactionController::class, 'store'])
             ->middleware('permission:wash.pos')
             ->name('transactions.store');
+        Route::post('/transactions/{transaction}/loyalty/rollback', [\App\Http\Controllers\WashTransactionController::class, 'loyaltyRollback'])
+            ->middleware('permission:wash.manage')
+            ->name('transactions.loyalty.rollback');
+        Route::post('/transactions/{transaction}/loyalty/manual-voucher', [\App\Http\Controllers\WashTransactionController::class, 'loyaltyManualVoucher'])
+            ->middleware('permission:wash.manage')
+            ->name('transactions.loyalty.manual_voucher');
+        Route::post('/transactions/{transaction}/loyalty/retroactive', [\App\Http\Controllers\WashTransactionController::class, 'loyaltyRetroactive'])
+            ->middleware('permission:wash.manage')
+            ->name('transactions.loyalty.retroactive');
         Route::get('/transactions/{transaction}/receipt', [\App\Http\Controllers\WashTransactionController::class, 'receipt'])
             ->middleware('permission:wash.report')
             ->name('transactions.receipt');

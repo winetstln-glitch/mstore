@@ -164,6 +164,110 @@ $showDiscountType = !empty($transaction->notes) || (($transaction->discount_amou
             </div>
         </div>
     </div>
+    @if(Auth::user() && Auth::user()->hasPermission('wash.manage'))
+    <div class="receipt-shell mx-auto mt-4" id="washLoyaltyCorrectionPanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-gradient-to-r from-amber-50 to-orange-50 border-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
+                 style="background: linear-gradient(135deg, #fffbeb, #fff7ed);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-screwdriver-wrench text-orange-600 fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-orange-900">Koreksi Loyalty & Voucher</div>
+                        <div class="small text-orange-700 opacity-80">
+                            Gunakan jika transaksi {{ $loyaltyTarget }}x <strong>tidak terpotong</strong> / lupa pakai voucher / salah hitung.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card border border-danger-subtle h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-rotate-left me-1"></i> #1 Rollback Loyalty Counter</h6>
+                                <p class="small text-muted mb-3">
+                                    Kurangi counter 1 (undo). Jika transaksi ini baru saja membuat voucher (cycle baru saja ke-{{ $loyaltyTarget }} & di-reset), voucher otomatis di-revoke & counter dikembalikan ke {{ $loyaltyTarget - 1 }}.
+                                </p>
+                                <form method="POST" action="{{ route('wash.transactions.loyalty.rollback', $transaction) }}" onsubmit="return confirm('Yakin ROLLBACK counter loyalty untuk transaksi ini?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-danger w-100">Rollback 1 Counter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border border-primary-subtle h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-ticket me-1"></i> #2 Buat Voucher Manual</h6>
+                                <p class="small text-muted mb-3">
+                                    Berikan voucher GRATIS untuk plat <strong>{{ $vehiclePlate }}</strong>. Gunakan ini bila pelanggan seharusnya sudah dapat voucher tapi sistem error / lupa.
+                                </p>
+                                <form method="POST" action="{{ route('wash.transactions.loyalty.manual_voucher', $transaction) }}">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label small">Tipe Reward</label>
+                                        <select name="reward_type" class="form-select form-select-sm">
+                                            <option value="">Auto-deteksi dari transaksi</option>
+                                            <option value="free_wash">Gratis 1x Cuci (umum)</option>
+                                            <option value="free_wash_car">Gratis Cuci Mobil</option>
+                                            <option value="free_wash_motor">Gratis Cuci Motor</option>
+                                        </select>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">Berlaku (hari)</label>
+                                            <input type="number" name="expires_days" min="1" max="3650" value="90" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small">Alasan</label>
+                                            <input type="text" name="reason" maxlength="180" placeholder="Misal: Kompensasi lupa potong 11x" class="form-control form-control-sm">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-1">Buat Voucher</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border border-success-subtle h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> #3 Jadikan Transaksi Ini = Gratis</h6>
+                                <p class="small text-muted mb-3">
+                                    Buat total transaksi INI = Rp 0 (potong 100%). Cocok jika <strong>transaksi ke-{{ $loyaltyTarget }} lupa dipotong</strong> & pelanggan sudah terlanjur bayar (nanti bisa direfund / jadi deposit).
+                                </p>
+                                <form method="POST" action="{{ route('wash.transactions.loyalty.retroactive', $transaction) }}" onsubmit="return confirm('Yakin ubah total transaksi INI menjadi Rp 0? Ini akan menandai sebagai bonus/redeem.');">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold">Mode Penerapan</label>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="radio" name="mode" id="rm_settle" value="retro_settle" checked>
+                                            <label class="form-check-label small" for="rm_settle">
+                                                <strong>Mode A:</strong> Hanya set diskon = 100% (REKOMENDASI). Counter loyalty TIDAK diubah (asumsi sudah benar / transaksi ini memang target ke-{{ $loyaltyTarget }}).
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="mode" id="rm_voucher" value="retro_voucher">
+                                            <label class="form-check-label small" for="rm_voucher">
+                                                <strong>Mode B:</strong> Buat voucher manual & auto-redeem ke transaksi ini. Counter loyalty di-rollback dahulu. Digunakan jika ingin audit trail voucher-nya jelas.
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100 mt-1">Terapkan Gratis Sekarang</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-4 mb-0 small" role="alert">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    <strong>Alur yang disarankan jika transaksi {{ $loyaltyTarget }}x lupa dipotong voucher:</strong><br>
+                    <strong class="text-success">Klik tombol #3 "Jadikan Transaksi Ini = Gratis" - Mode A (retro_settle).</strong>
+                    Total otomatis Rp 0, voucher seharusnya sudah didapat di transaksi ini. Selanjutnya di POS transaksi berikutnya, pelanggan tinggal pakai voucher seperti biasa (karena cycle sudah di-reset ke 0 saat transaksi ke-{{ $loyaltyTarget }} ini tercatat).
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 <style>
     .wash-transaction-show-page .receipt-shell {

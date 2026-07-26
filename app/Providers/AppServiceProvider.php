@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\Installation;
 use App\Models\Permission;
 use App\Models\Role;
@@ -10,6 +11,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WashEmployee;
 use App\Observers\CustomerObserver;
+use App\Observers\EmployeeObserver;
 use App\Observers\InstallationObserver;
 use App\Observers\TicketObserver;
 use App\Observers\UserObserver;
@@ -132,6 +134,13 @@ class AppServiceProvider extends ServiceProvider
             if ($hasUsersTable) {
                 User::observe(UserObserver::class);
                 Customer::observe(CustomerObserver::class);
+            }
+
+            $hasEmployeesTable = Cache::rememberForever('has_employees_table', function () {
+                return Schema::hasTable('employees');
+            });
+            if ($hasEmployeesTable) {
+                Employee::observe(EmployeeObserver::class);
             }
 
             $hasInstallationsTable = Cache::rememberForever('has_installations_table', function () {

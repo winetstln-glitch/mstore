@@ -9,6 +9,88 @@ use App\Models\WashEmployee;
 
 class EmployeeSyncService
 {
+    public static function positionRoleDepartmentMap(): array
+    {
+        return [
+            ['role' => Role::ADMIN,              'position' => 'Administrasi',     'department' => 'Administrasi', 'role_label' => 'Administrator'],
+            ['role' => Role::DIREKTUR,           'position' => 'Direktur',         'department' => 'Administrasi', 'role_label' => 'Direktur'],
+            ['role' => Role::HRD_MANAGER,        'position' => 'HRD Manager',      'department' => 'Administrasi', 'role_label' => 'HRD Manager'],
+            ['role' => Role::LEADER,             'position' => 'Leader',           'department' => 'Operasional',  'role_label' => 'Leader'],
+            ['role' => Role::CUSTOMER_SERVICE,   'position' => 'Customer Service', 'department' => 'Administrasi', 'role_label' => 'Customer Service'],
+            ['role' => Role::NOC,                'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
+            ['role' => Role::NOC_LEGACY,         'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
+            ['role' => Role::TECHNICIAN,         'position' => 'Teknisi',          'department' => 'Teknis',      'role_label' => 'Technician'],
+            ['role' => Role::COORDINATOR,        'position' => 'Koordinator',      'department' => 'Operasional',  'role_label' => 'Coordinator'],
+            ['role' => Role::FINANCE,            'position' => 'Keuangan',         'department' => 'Keuangan',     'role_label' => 'Finance Staff'],
+            ['role' => Role::KASIR_ATK,          'position' => 'Kasir ATK',        'department' => 'ATK',         'role_label' => 'Kasir ATK'],
+            ['role' => Role::KASIR_WASH,         'position' => 'Kasir Wash',       'department' => 'Wash',        'role_label' => 'Kasir Wash'],
+            ['role' => Role::KARYAWAN_WASH,      'position' => 'Operator Wash',    'department' => 'Wash',        'role_label' => 'Karyawan Wash'],
+            ['role' => Role::STAFF_GUDANG,       'position' => 'Staff Gudang',     'department' => 'Operasional',  'role_label' => 'Staff Gudang'],
+        ];
+    }
+
+    public static function allPositions(): array
+    {
+        $extras = ['Kasir'];
+        $fromMap = collect(self::positionRoleDepartmentMap())
+            ->pluck('position')
+            ->unique()
+            ->values()
+            ->all();
+
+        return array_values(array_unique(array_merge($fromMap, $extras)));
+    }
+
+    public static function allDepartments(): array
+    {
+        return ['Administrasi', 'Keuangan', 'Teknis', 'Wash', 'ATK', 'Operasional'];
+    }
+
+    public function positionFromRole(?string $roleName): ?string
+    {
+        if ($roleName === null) {
+            return null;
+        }
+        $roleNameLower = strtolower(trim($roleName));
+        foreach (self::positionRoleDepartmentMap() as $item) {
+            if (strtolower($item['role']) === $roleNameLower) {
+                return $item['position'];
+            }
+        }
+
+        return null;
+    }
+
+    public function roleNameFromPosition(?string $position): ?string
+    {
+        if ($position === null || trim($position) === '') {
+            return null;
+        }
+        $posLower = strtolower(trim($position));
+        foreach (self::positionRoleDepartmentMap() as $item) {
+            if (strtolower($item['position']) === $posLower) {
+                return $item['role'];
+            }
+        }
+
+        return null;
+    }
+
+    public function departmentFromPosition(?string $position): string
+    {
+        if ($position === null || trim($position) === '') {
+            return 'Operasional';
+        }
+        $posLower = strtolower(trim($position));
+        foreach (self::positionRoleDepartmentMap() as $item) {
+            if (strtolower($item['position']) === $posLower) {
+                return $item['department'];
+            }
+        }
+
+        return 'Operasional';
+    }
+
     public function syncFromUser(User $user): void
     {
         if (! $this->shouldSyncUser($user)) {
@@ -21,7 +103,8 @@ class EmployeeSyncService
         $employee->full_name = $user->name;
         $employee->phone = $user->phone ?: ($employee->phone ?: '-');
         $employee->email = $user->email ?: ($employee->email ?: 'user-'.$user->id.'@mstore.local');
-        $employee->position = $user->role?->label ?: ($employee->position ?: 'Karyawan');
+        $mappedPosition = $this->positionFromRole($user->role?->name);
+        $employee->position = $mappedPosition ?: ($user->role?->label ?: ($employee->position ?: 'Karyawan'));
         $employee->department = $this->departmentFromRole($user->role?->name);
         
         // Sync salary fields from User to Employee, only if Employee fields are empty
@@ -165,17 +248,41 @@ class EmployeeSyncService
 
     public function departmentFromRole(?string $roleName): string
     {
-        return match ($roleName) {
-            'technician', 'noc', 'network-operations-center' => 'Teknis',
-            'admin', 'owner-pendiri' => 'Administrasi',
-            'finance' => 'Keuangan',
-            'kasir-wash', 'karyawan-wash' => 'Wash',
-            'kasir-atk' => 'ATK',
-            'coordinator' => 'Operasional',
-            'leader' => 'Operasional',
-            'reseller' => 'Operasional',
+        if ($roleName === null) {
+            return 'Operasional';
+        }
+        $roleNameLower = strtolower(trim($roleName));
+        foreach (self::positionRoleDepartmentMap() as $item) {
+            if (strtolower($item['role']) === $roleNameLower) {
+                return $item['department'];
+            }
+        }
+
+        return match ($roleNameLower) {
+            'reseller', 'owner-pendiri' => 'Operasional',
             default => 'Operasional',
         };
+    }
+
+    public function syncFromEmployee(Employee $employee): void
+    {
+        if (empty($employee->user_id)) {
+            return;
+        }
+
+        $user = User::query()->find($employee->user_id);
+        if (! $user) {
+            return;
+        }
+
+        $roleName = $this->roleNameFromPosition($employee->position);
+        if ($roleName !== null) {
+            $role = \App\Models\Role::query()->where('name', $roleName)->first();
+            if ($role && (string) $user->role_id !== (string) $role->id) {
+                $user->role_id = $role->id;
+                $user->save();
+            }
+        }
     }
 
     private function findEmployeeForUser(User $user): ?Employee
@@ -359,13 +466,14 @@ class EmployeeSyncService
         if ($employee->address && trim((string) $employee->address) !== '' && trim((string) $employee->address) !== '-') {
             $score += 15;
         }
-        if ($employee->nik && ! str_starts_with((string) $employee->nik, 'AUTO-')) {
+        if ($employee->nik && ! str_starts_with((string) $employee->nik, 'AUTO-') && ! str_starts_with((string) $employee->nik, 'WASH-')) {
             $score += 20;
         }
         if ($employee->email && ! str_ends_with(strtolower((string) $employee->email), '@mstore.local')) {
             $score += 10;
         }
-        if ($employee->position && ! in_array(strtolower((string) $employee->position), ['karyawan', 'technician'], true)) {
+        $badPositions = ['karyawan', '', null];
+        if ($employee->position && ! in_array(strtolower(trim((string) $employee->position)), $badPositions, true)) {
             $score += 5;
         }
         $score += (int) $employee->id / 1000;

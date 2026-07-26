@@ -111,15 +111,19 @@
                 <h6 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-briefcase me-2"></i>Informasi Pekerjaan</h6>
             </div>
             <div class="card-body pt-0">
+                @php
+                    $positionOptions = $positions ?? \App\Services\EmployeeSyncService::allPositions();
+                    $deptOptions = $departments ?? \App\Services\EmployeeSyncService::allDepartments();
+                @endphp
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label x-small fw-bold text-uppercase text-muted">Jabatan *</label>
                         <select name="position" id="position" class="form-select" required>
                             @php $pos = old('position', $employee->position ?? ''); @endphp
-                            @foreach(['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan'] as $p)
+                            @foreach($positionOptions as $p)
                                 <option value="{{ $p }}" {{ $pos === $p ? 'selected' : '' }}>{{ $p }}</option>
                             @endforeach
-                            @if($pos && !in_array($pos, ['Administrasi', 'Kasir', 'Teknisi', 'Operator Wash', 'NOC', 'Keuangan']))
+                            @if($pos && !in_array($pos, $positionOptions))
                                 <option value="{{ $pos }}" selected>{{ $pos }}</option>
                             @endif
                         </select>
@@ -128,9 +132,12 @@
                         <label class="form-label x-small fw-bold text-uppercase text-muted">Departemen *</label>
                         <select name="department" id="department" class="form-select" required>
                             @php $dep = old('department', $employee->department ?? ''); @endphp
-                            @foreach(['Administrasi', 'Keuangan', 'Teknis', 'Wash', 'ATK', 'Operasional'] as $d)
-                                <option value="{{ $d }}" {{ $dep === $d ? 'selected' : '' }}>{{ $dep }}</option>
+                            @foreach($deptOptions as $d)
+                                <option value="{{ $d }}" {{ $dep === $d ? 'selected' : '' }}>{{ $d }}</option>
                             @endforeach
+                            @if($dep && !in_array($dep, $deptOptions))
+                                <option value="{{ $dep }}" selected>{{ $dep }}</option>
+                            @endif
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -248,6 +255,15 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
+@php
+    $rolePosMap = collect(\App\Services\EmployeeSyncService::positionRoleDepartmentMap())
+        ->mapWithKeys(fn ($item) => [strtolower($item['role']) => ['position' => $item['position'], 'department' => $item['department']]])
+        ->all();
+    $posDeptMap = $positionDeptMap ?? collect(\App\Services\EmployeeSyncService::positionRoleDepartmentMap())
+        ->mapWithKeys(fn ($item) => [$item['position'] => $item['department']])
+        ->unique()
+        ->all();
+@endphp
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const createUserCheck = document.getElementById('create_user_account');
@@ -262,6 +278,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const monthlySalaryInput = document.getElementById('monthly_salary');
     const dailySalaryInput = document.getElementById('daily_salary');
     const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
+
+    const ROLE_TO_POS_DEPT = @json($rolePosMap);
+    const POS_TO_DEPT = @json($posDeptMap);
+
+    function setSelectValue(selectEl, value) {
+        if (!selectEl || !value) return;
+        for (let i = 0; i < selectEl.options.length; i++) {
+            if (selectEl.options[i].value === value) {
+                selectEl.selectedIndex = i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function setDepartmentByPosition(position) {
+        if (!depSelect || !position) return;
+        const dept = POS_TO_DEPT[position] || 'Operasional';
+        if (!setSelectValue(depSelect, dept)) {
+            const opt = new Option(dept, dept, true, true);
+            depSelect.add(opt);
+        }
+    }
 
     // Toggle user account fields
     if (createUserCheck) {
@@ -282,6 +321,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (createUserCheck.checked && !usernameInput.value) {
                 usernameInput.value = this.value.toLowerCase().replace(/\s+/g, '').substring(0, 20);
             }
+        });
+    }
+
+    // Handle Position Change -> Auto Department (new 2-way sync helper)
+    if (posSelect) {
+        posSelect.addEventListener('change', function() {
+            setDepartmentByPosition(this.value);
         });
     }
 
@@ -310,31 +356,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function autoFillJobDept(label, role) {
-        if (label) {
-            let found = false;
-            for (let i = 0; i < posSelect.options.length; i++) {
-                if (posSelect.options[i].value === label) {
-                    posSelect.selectedIndex = i;
-                    found = true; break;
-                }
-            }
-            if (!found) {
-                posSelect.add(new Option(label, label, true, true));
+        let targetPosition = label;
+        let targetDept = 'Operasional';
+
+        // Use centralized mapping if available
+        if (role && ROLE_TO_POS_DEPT[role]) {
+            targetPosition = ROLE_TO_POS_DEPT[role].position;
+            targetDept = ROLE_TO_POS_DEPT[role].department;
+        }
+
+        if (targetPosition) {
+            if (!setSelectValue(posSelect, targetPosition)) {
+                posSelect.add(new Option(targetPosition, targetPosition, true, true));
             }
         }
 
-        let d = 'Operasional';
-        if (['technician', 'noc', 'network-operations-center'].includes(role)) d = 'Teknis';
-        else if (['admin', 'owner-pendiri'].includes(role)) d = 'Administrasi';
-        else if (role === 'finance') d = 'Keuangan';
-        else if (['kasir-wash', 'karyawan-wash'].includes(role)) d = 'Wash';
-        else if (role === 'kasir-atk') d = 'ATK';
-
-        for (let i = 0; i < depSelect.options.length; i++) {
-            if (depSelect.options[i].value === d) {
-                depSelect.selectedIndex = i; break;
-            }
-        }
+        setDepartmentByPosition(targetPosition);
     }
 
     const idPhotoInput = document.getElementById('employee_id_card_photo');

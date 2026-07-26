@@ -303,6 +303,9 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'voucher_count' => 0,
                 'voucher_codes' => [],
                 'loyalty_basis' => 'plate',
+                'loyalty_mode' => $loyalty->bonusMode(),
+                'instant_bonus_eligible' => false,
+                'instant_bonus_note' => null,
                 'member_found' => (bool) $member,
                 'member_number' => $member?->member_number,
                 'member_name' => $member?->name,
@@ -321,6 +324,8 @@ class WashTransactionController extends Controller implements HasMiddleware
 
         $voucherCodes = $vouchers->pluck('code')->take(10)->values()->all();
 
+        $instantBonus = $loyalty->checkInstantBonusEligibility($plate);
+
         $found = (bool) $customer || ((int) $counter->lifetime_paid_count) > 0;
 
         return response()->json([
@@ -332,6 +337,9 @@ class WashTransactionController extends Controller implements HasMiddleware
             'voucher_count' => (int) $vouchers->count(),
             'voucher_codes' => $voucherCodes,
             'loyalty_basis' => 'plate',
+            'loyalty_mode' => $instantBonus['mode'],
+            'instant_bonus_eligible' => (bool) ($instantBonus['eligible'] ?? false),
+            'instant_bonus_note' => $instantBonus['note'] ?? null,
             'member_found' => (bool) $member,
             'member_number' => $member?->member_number,
             'member_name' => $member?->name,
@@ -454,6 +462,9 @@ class WashTransactionController extends Controller implements HasMiddleware
             $memberDiscountAmount = 0;
             $discountType = null;
             $discountNote = null;
+            $instantBonusApplied = false;
+            $autoRedeemVoucher = false; // 🔥 Baru: voucher terbit + langsung dipakai di transaksi INI
+            $loyaltyService = app(WashLoyaltyService::class);
             $voucherCode = trim((string) $request->input('voucher_code', ''));
             $useRewardVoucher = (bool) $request->input('use_voucher') || $voucherCode !== '';
 
@@ -461,8 +472,50 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $customer->increment('visit_count');
             }
 
+            // CHECK ELIGIBILITY: remaining = 1 → transaksi INI = target
+            // - mode instant_discount: instant_bonus_applied = true
+            // - mode voucher: autoRedeemVoucher = true (voucher dibuat + langsung dipakai)
+            $isWashOnly = false;
+            foreach ($items as $item) {
+                $svc = WashService::find($item['wash_service_id']);
+                if ($svc && $svc->vehicle_type !== 'coffee') { $isWashOnly = true; break; }
+                $svcName = strtolower(trim((string) ($item['service_name'] ?? '')));
+                if ($svcName !== '' && $svcName !== 'kopi' && $svcName !== 'caffe' && $svcName !== 'warkop'
+                    && !str_contains($svcName, 'kopi') && !str_contains($svcName, 'caffe') && !str_contains($svcName, 'warkop')) {
+                    $isWashOnly = true; break;
+                }
+            }
+            $bonusCheck = $loyaltyService->checkInstantBonusEligibility($normalizedPlateInput);
+            $loyaltyMode = $bonusCheck['mode'] ?? 'voucher';
+            if ($isWashOnly && !$useRewardVoucher && ($bonusCheck['eligible'] ?? false) && $normalizedPlateInput !== '') {
+                if (count($items) !== 1 || ((int) ($items[0]['quantity'] ?? 0)) !== 1) {
+                    throw new \RuntimeException('Bonus cuci ke-'.$bonusCheck['target'].' (gratis) hanya berlaku untuk 1 transaksi dengan 1 layanan (qty 1). Silakan pisahkan transaksi.');
+                }
+                $serviceFirst = WashService::find($items[0]['wash_service_id']);
+                if ($serviceFirst && $serviceFirst->vehicle_type === 'coffee') {
+                    throw new \RuntimeException('Bonus cuci gratis tidak berlaku untuk layanan caffe.');
+                }
+                if ($loyaltyMode === 'instant_discount') {
+                    $instantBonusApplied = true;
+                    $discountAmount = $total;
+                    $discountType = 'instant_bonus_'.$bonusCheck['target'].'x';
+                    $discountNote = 'instant_bonus_'.$bonusCheck['target'].'x:gratis_cuci';
+                } else {
+                    // 🔥 MODE VOUCHER + AUTO-REDEEM
+                    // Transaksi ke-target (ke-11) = BONUS. Kita treat sebagai voucher, tapi
+                    // kode voucher TIDAK di-input user, melainkan DITERBITKAN & LANGSUNG DIPAKAI
+                    // di transaksi INI (nanti di bagian incrementOnPaidTransaction).
+                    $autoRedeemVoucher = true;
+                    $discountAmount = $total;
+                    $discountType = 'reward_voucher';
+                    // Temp note (nanti diupdate setelah increment, pakai prefix khusus agar
+                    // transaksi TIDAK dianggap sebagai redemption oleh isRedemptionTransaction)
+                    $discountNote = 'auto_reward_voucher:pending_code_'.uniqid();
+                }
+            }
+
             $memberDiscountPercent = 0;
-            if (! $useRewardVoucher && $member) {
+            if (! $useRewardVoucher && ! $instantBonusApplied && ! $autoRedeemVoucher && $member) {
                 $membership = app(WashMembershipService::class);
                 // Membership level is upgraded after a successful paid transaction,
                 // so the discount applied here always reflects the member's level
@@ -478,6 +531,9 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             if ($useRewardVoucher) {
+                if ($instantBonusApplied || $autoRedeemVoucher) {
+                    throw new \RuntimeException('Tidak bisa pakai voucher di transaksi bonus gratis. Batalkan salah satu.');
+                }
                 if ($request->payment_method === 'kasbon') {
                     throw new \RuntimeException('Voucher tidak bisa digunakan untuk transaksi kasbon.');
                 }
@@ -490,6 +546,13 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $service = WashService::find($items[0]['wash_service_id']);
                 if ($service && $service->vehicle_type === 'coffee') {
                     throw new \RuntimeException('Voucher tidak berlaku untuk layanan caffe.');
+                }
+                // PRE-VALIDATE reward type vs vehicle_type BEFORE commit. (final validation inside redeemVoucher again)
+                if (Schema::hasTable('wash_reward_vouchers')) {
+                    $preCheckVoucher = \App\Models\WashRewardVoucher::query()->where('code', strtoupper($voucherCode))->first();
+                    if ($preCheckVoucher && $service && !$loyaltyService->vehicleTypeMatchesReward($service->vehicle_type, $preCheckVoucher->reward_type)) {
+                        throw new \RuntimeException('Voucher hanya berlaku untuk '.$loyaltyService->rewardTypeLabel($preCheckVoucher->reward_type).'.');
+                    }
                 }
                 $discountAmount = $total;
                 $discountType = 'reward_voucher';
@@ -633,9 +696,13 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
 
             $redeemedVoucher = null;
-            if ($discountType === 'reward_voucher') {
-                $redeemedVoucher = app(WashLoyaltyService::class)->redeemVoucher($voucherCode, $transaction, $total);
+            if ($discountType === 'reward_voucher' && ! $autoRedeemVoucher) {
+                // Redeem voucher jika user MEMILIH voucher manual (dari input)
+                $redeemedVoucher = $loyaltyService->redeemVoucher($voucherCode, $transaction, $total, $items);
             }
+            // 🔥 Jika autoRedeemVoucher: TIDAK panggil redeemVoucher di sini.
+            // Voucher akan di-issue + langsung di-redeem di dalam incrementOnPaidTransaction (di bawah),
+            // karena kita butuh counter dulu bertambah menjadi >= target agar voucher terbit.
 
             // Update default cash balance only if payment is not kasbon
             if ($request->payment_method !== 'kasbon') {
@@ -708,14 +775,25 @@ class WashTransactionController extends Controller implements HasMiddleware
                 }
             }
 
-            if ($discountType !== 'reward_voucher') {
+            // Increment loyalty + buat voucher (jika mencapai target)
+            // - reward_voucher (user pilih manual): skip (sudah di-redeem di atas)
+            // - autoRedeemVoucher: JALAN (buat voucher + langsung redeem via parameter $autoRedeemCreatedVoucher)
+            // - lainnya (instant / member / tanpa diskon): JALAN
+            if (! ($discountType === 'reward_voucher' && ! $autoRedeemVoucher)) {
                 try {
                     $loyalty = app(WashLoyaltyService::class);
-                    $result = $loyalty->incrementOnPaidTransaction($transaction);
+                    $result = $loyalty->incrementOnPaidTransaction($transaction, false, $autoRedeemVoucher);
                     $created = $result['created_voucher'] ?? null;
                     $loyaltyProgress = $result['progress'] ?? null;
+                    $autoRedeemedCode = $result['redeemed_voucher_code'] ?? null;
                     if ($created instanceof \App\Models\WashRewardVoucher) {
                         $rewardVoucherCreatedCode = $created->code;
+                    }
+                    if ($autoRedeemVoucher && $autoRedeemedCode) {
+                        // Update notes agar menampilkan voucher yang benar-benar diterbitkan + terpakai
+                        $finalNote = 'auto_reward_voucher:'.$autoRedeemedCode;
+                        $transaction->update(['notes' => $finalNote]);
+                        $redeemedVoucher = $created;
                     }
 
                     if ($memberFresh) {
@@ -727,6 +805,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                             'loyalty_target' => $target,
                             'loyalty_remaining' => $remaining,
                             'reward_voucher_code' => $rewardVoucherCreatedCode,
+                            'auto_redeemed_voucher_code' => $autoRedeemedCode,
                         ]);
                     }
                 } catch (\Throwable) {
@@ -765,6 +844,8 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'queue_priority_sort' => $transaction->queue_priority_sort,
                 'queue_service_order_today' => $transaction->queue_service_order_today,
                 'discount_type' => $discountType,
+                'instant_bonus_applied' => $instantBonusApplied,
+                'instant_bonus_target' => $instantBonusApplied ? ($bonusCheck['target'] ?? null) : null,
                 'redeemed_voucher_code' => $redeemedVoucher?->code,
                 'reward_voucher_created_code' => $rewardVoucherCreatedCode,
                 'loyalty_progress' => $loyaltyProgress,
@@ -776,7 +857,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'membership_new_level' => $membershipNewLevel?->code,
                 'membership_new_level_effective_from' => $membershipLevelUpgraded ? 'next_transaction' : null,
                 'receipt_url' => route('wash.transactions.receipt', $transaction),
-                'message' => 'Transaction successful',
+                'message' => $instantBonusApplied ? 'Bonus cuci ke-'.($bonusCheck['target'] ?? '').' GRATIS diterapkan.' : 'Transaction successful',
             ]);
 
         } catch (\Exception $e) {
@@ -901,12 +982,30 @@ class WashTransactionController extends Controller implements HasMiddleware
             'kasbon_user_id' => 'nullable|integer|exists:users,id',
             'kasbon_name' => 'nullable|string|max:255',
             'status' => 'nullable|in:draft,lunas,posted',
+            'notes' => 'nullable|string|max:1000',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'discount_type' => ['nullable','string','max:60','regex:/^(none|member_discount|reward_voucher|manual_bonus|instant_bonus(_\d+x)?)$/'],
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($validated, $transaction) {
+        $notesUpdatedByUser = array_key_exists('notes', $validated);
+        $oldNotes = (string) ($transaction->notes ?? '');
+        $oldNotesLower = strtolower(trim($oldNotes));
+        // Daftar prefix yang KRITIS (tidak boleh dihapus karena untuk deteksi isRedemptionTransaction / auto-redeem)
+        $criticalPrefixes = ['auto_reward_voucher:', 'reward_voucher:', 'instant_bonus_', 'bonus_cuci_', 'voucher_free:'];
+        $hasCriticalPrefixOld = false;
+        $criticalPrefixOld = '';
+        foreach ($criticalPrefixes as $pfx) {
+            if (str_starts_with($oldNotesLower, $pfx)) {
+                $hasCriticalPrefixOld = true;
+                $criticalPrefixOld = $pfx;
+                break;
+            }
+        }
+
+        DB::transaction(function () use ($validated, $transaction, $notesUpdatedByUser, $hasCriticalPrefixOld, $criticalPrefixOld, $oldNotes) {
             $paymentMethod = strtolower((string) $validated['payment_method']);
             $cashAmount = $paymentMethod === 'cash' ? (float) ($validated['cash_amount'] ?? 0) : null;
 
@@ -928,7 +1027,13 @@ class WashTransactionController extends Controller implements HasMiddleware
                 $grossTotal += $subtotal;
             }
 
-            $discountAmount = min((float) ($transaction->discount_amount ?? 0), $grossTotal);
+            // Use user-specified discount_amount (if any) for corrections
+            $userDiscount = (float) ($validated['discount_amount'] ?? 0);
+            if ($userDiscount > 0) {
+                $discountAmount = min($userDiscount, $grossTotal);
+            } else {
+                $discountAmount = min((float) ($transaction->discount_amount ?? 0), $grossTotal);
+            }
             $finalTotal = max(0, $grossTotal - $discountAmount);
             $changeAmount = $paymentMethod === 'cash'
                 ? max(0, $cashAmount - $finalTotal)
@@ -942,7 +1047,30 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'cash_amount' => $cashAmount,
                 'change_amount' => $changeAmount,
                 'total_amount' => $finalTotal,
+                'discount_amount' => $discountAmount,
             ];
+
+            if (isset($validated['discount_type']) && $validated['discount_type'] !== '') {
+                $updateData['discount_type'] = $validated['discount_type'] === 'none' ? null : $validated['discount_type'];
+            }
+            if ($notesUpdatedByUser) {
+                $newNotes = (string) ($validated['notes'] ?? '');
+                $newNotesLower = strtolower(trim($newNotes));
+                // 🔥 PROTEKSI PREFIX KRITIS: Jika notes lama punya prefix kritis, tapi notes baru TIDAK punya prefix apapun
+                // → user kemungkinan tidak sengaja menghapus → TETAPKAN prefix lama di awal.
+                if ($hasCriticalPrefixOld && $newNotesLower !== '' && !str_starts_with($newNotesLower, $criticalPrefixOld)) {
+                    // Jika user menambahkan notes lain, prefix lama dipertahankan + user notes dipisah |
+                    if (str_starts_with($oldNotesLower, $criticalPrefixOld)) {
+                        $oldPrefixPart = explode('|', $oldNotes, 2)[0] ?? $oldNotes;
+                        $newNotes = trim($oldPrefixPart) . ' | ' . trim($newNotes);
+                    }
+                }
+                // Jika user menghapus notes (empty string) tapi ada prefix kritis → tetap simpan prefix saja
+                if ($hasCriticalPrefixOld && trim($newNotes) === '') {
+                    $newNotes = explode('|', $oldNotes, 2)[0] ?? $oldNotes;
+                }
+                $updateData['notes'] = $newNotes;
+            }
 
             if (isset($validated['status'])) {
                 $updateData['status'] = $validated['status'];
@@ -979,6 +1107,9 @@ class WashTransactionController extends Controller implements HasMiddleware
         });
 
         // If status is now lunas/posted and not yet counted, count it
+        // PENTING: Hanya count jika loyalty_counted_at BELUM ADA (mencegah double counting).
+        // loyalty_counted_at sudah dicek di dalam incrementOnPaidTransaction, jadi di sini cukup panggil saja.
+        // JIKA user mengubah plat nomor transaksi yang sudah di-count: harus manual rollback dulu.
         if (in_array($transaction->status, ['lunas', 'posted'])) {
             $loyaltyService = app(\App\Services\Wash\WashLoyaltyService::class);
             $loyaltyService->incrementOnPaidTransaction($transaction);
@@ -987,6 +1118,62 @@ class WashTransactionController extends Controller implements HasMiddleware
         return redirect()
             ->route('wash.transactions.index', request()->query())
             ->with('success', __('Transaction updated successfully.'));
+    }
+
+    public function loyaltyRollback(Request $request, WashTransaction $transaction)
+    {
+        if (! Auth::user()->hasPermission('wash.manage')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $loyalty = app(WashLoyaltyService::class);
+        $result = $loyalty->rollbackLastIncrement($transaction);
+
+        return back()->with(
+            ($result['success'] ?? false) ? 'success' : 'error',
+            $result['message'] ?? 'Gagal rollback counter loyalty.'
+        );
+    }
+
+    public function loyaltyManualVoucher(Request $request, WashTransaction $transaction)
+    {
+        if (! Auth::user()->hasPermission('wash.manage')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:200',
+            'expires_days' => 'nullable|integer|min:1|max:3650',
+            'reward_type' => 'nullable|string|in:free_wash,free_wash_car,free_wash_motor',
+        ]);
+        $loyalty = app(WashLoyaltyService::class);
+        $transaction->loadMissing(['items.service']);
+        $expires = isset($validated['expires_days']) ? (int) $validated['expires_days'] : 90;
+        $voucher = $loyalty->issueManualVoucher(
+            (string) $transaction->vehicle_plate,
+            $validated['reason'] ?? null,
+            $transaction,
+            $validated['reward_type'] ?? null,
+            $expires
+        );
+
+        return back()->with('success', 'Voucher manual berhasil dibuat: ' . $voucher->code . ' (berlaku ' . $expires . ' hari, tipe: ' . $loyalty->rewardTypeLabel($voucher->reward_type) . ')');
+    }
+
+    public function loyaltyRetroactive(Request $request, WashTransaction $transaction)
+    {
+        if (! Auth::user()->hasPermission('wash.manage')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $validated = $request->validate([
+            'mode' => 'required|string|in:retro_voucher,retro_settle',
+        ]);
+        $loyalty = app(WashLoyaltyService::class);
+        $transaction->loadMissing(['items']);
+        $result = $loyalty->retroactivelyApplyAsBonus($transaction, $validated['mode']);
+
+        return back()->with(
+            ($result['success'] ?? false) ? 'success' : 'error',
+            $result['message'] ?? 'Gagal retroactive bonus.'
+        );
     }
 
     public function destroy(WashTransaction $transaction)
