@@ -237,6 +237,21 @@ class LandingController extends Controller
             $washAddonServices = collect([]);
         }
 
+        // Safely fetch Wash Member Packages (paket member wifi/wash+wifi) - untuk landing page internet
+        $washMemberPackages = collect([]);
+        try {
+            if (class_exists(WashMemberPackage::class) && Schema::hasTable('wash_member_packages')) {
+                $washMemberPackages = WashMemberPackage::query()
+                    ->active()
+                    ->hasWifiBenefit()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->get();
+            }
+        } catch (\Exception $e) {
+            $washMemberPackages = collect([]);
+        }
+
         // Get Store Identity from settings or default
         try {
             $waNumber = Setting::getValue('whatsapp_number', '6281234567890');
@@ -406,6 +421,7 @@ class LandingController extends Controller
             'washServices',
             'washMainServices',
             'washAddonServices',
+            'washMemberPackages',
             'waNumber',
             'odps',
             'voucherTemplates',
@@ -430,6 +446,7 @@ class LandingController extends Controller
     {
         $internetCount = (int) $data['packages']->count();
         $voucherCount = (int) $data['voucherTemplates']->count();
+        $washMemberCount = (int) (isset($data['washMemberPackages']) ? $data['washMemberPackages']->count() : 0);
         $weddingCount = (int) $data['weddingPackages']->count();
         $cctvCount = (int) $data['cctvPackages']->count();
         $washCount = (int) $data['washServices']->count();
@@ -468,7 +485,7 @@ class LandingController extends Controller
                 ],
                 'secondary_label' => 'Cek Coverage',
                 'secondary_href' => '#coverage-area',
-                'secondary_note' => $voucherCount > 0 ? $voucherCount.' voucher hotspot aktif' : 'Voucher hotspot tersedia',
+                'secondary_note' => ($voucherCount > 0 ? $voucherCount.' voucher' : 'Voucher').($washMemberCount > 0 ? ' · '.$washMemberCount.' paket member' : ''),
             ],
             'wedding-event' => [
                 'slug' => 'wedding-event',

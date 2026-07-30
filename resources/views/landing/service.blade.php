@@ -273,16 +273,37 @@
                     <h5 class="fw-bold mb-2">Voucher Hotspot</h5>
                     <div class="scroll-container">
                         @forelse($voucherProfiles->take(6) as $profile)
+                            @php
+                                $voucherSpeed = $formatInternetSpeedFromRateLimit($profile->rate_limit_mbps);
+                                $voucherQuotaMb = (int) ($profile->quota_mb ?? 0);
+                                if ($voucherQuotaMb > 0) {
+                                    if ($voucherQuotaMb >= 1024) {
+                                        $voucherQuotaGb = $voucherQuotaMb / 1024;
+                                        $voucherQuotaLabel = 'Kuota ' . (fmod($voucherQuotaGb, 1) === 0.0 ? (int) $voucherQuotaGb : number_format($voucherQuotaGb, 1)) . ' GB';
+                                    } else {
+                                        $voucherQuotaLabel = 'Kuota ' . $voucherQuotaMb . ' MB';
+                                    }
+                                } else {
+                                    $voucherQuotaLabel = 'Kuota Unlimited';
+                                }
+                                $voucherDuration = $profile->formatted_uptime ?: ($profile->duration_seconds ? format_duration((int) $profile->duration_seconds) : 'Unlimited');
+                                $voucherCode = 'VOUCHER-' . $profile->id;
+                            @endphp
                             <div class="scroll-item">
                                 <div class="card">
                                     <div class="pricing-header">
                                         <div class="speed">{{ $profile->name }}</div>
-                                        <div class="text-muted">{{ $profile->rate_limit ?: 'Voucher Hotspot' }}</div>
+                                        <div class="small text-muted" style="letter-spacing:.5px;">Kode paket: <span class="fw-semibold">{{ $voucherCode }}</span></div>
                                     </div>
                                     <div class="pricing-body d-flex flex-column">
                                         <div class="price text-primary">Rp {{ number_format((float) $profile->price, 0, ',', '.') }}</div>
-                                        <div class="small text-muted mb-2">Durasi: {{ format_duration($profile->duration_seconds) }}</div>
-                                        <div class="small text-muted mb-3">Quota: {{ $profile->quota_mb ? ((int) $profile->quota_mb.' MB') : 'Unlimited' }}</div>
+                                        @if($voucherSpeed !== '-')
+                                            <h5 class="mb-2">{{ $voucherSpeed }}</h5>
+                                        @else
+                                            <div class="mb-2"></div>
+                                        @endif
+                                        <div class="small text-muted mb-2">Durasi: {{ $voucherDuration }}</div>
+                                        <div class="small text-muted mb-3">{{ $voucherQuotaLabel }}</div>
                                         <a href="https://buy.mstore.id/e-voucher" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-auto track-service-action" data-track-service="internet" data-track-action="voucher_qris">
                                             Beli Voucher (QRIS)
                                         </a>
@@ -294,6 +315,104 @@
                         @endforelse
                     </div>
                 </div>
+
+                @php
+                    $wifiMemberPackages = isset($washMemberPackages) ? $washMemberPackages : collect([]);
+                @endphp
+                @if($wifiMemberPackages->count() > 0)
+                <div class="fade-up mt-5">
+                    <h5 class="fw-bold mb-2">Paket Member WiFi / Cuci+WiFi</h5>
+                    <div class="scroll-container">
+                        @foreach($wifiMemberPackages as $memberPkg)
+                            @php
+                                $memberTypeLower = strtolower(trim((string) ($memberPkg->type ?? 'both')));
+                                if ($memberTypeLower === 'wifi') {
+                                    $memberBadge = 'Member WiFi';
+                                    $memberIcon = 'fa-wifi';
+                                } elseif ($memberTypeLower === 'wash') {
+                                    $memberBadge = 'Member Wash';
+                                    $memberIcon = 'fa-car';
+                                } else {
+                                    $memberBadge = 'Member Wash+WiFi';
+                                    $memberIcon = 'fa-layer-group';
+                                }
+
+                                $memberDurationDays = (int) ($memberPkg->duration_days ?? 0);
+                                if ($memberDurationDays >= 330) {
+                                    $memberDurationLabel = number_format($memberDurationDays / 365, 1) . ' Tahun';
+                                } elseif ($memberDurationDays >= 28) {
+                                    $months = (int) round($memberDurationDays / 30);
+                                    $memberDurationLabel = $months . ' Bulan';
+                                } else {
+                                    $memberDurationLabel = $memberDurationDays . ' Hari';
+                                }
+                                $memberDurationHint = $memberDurationDays > 0 ? ('Berlaku ' . $memberDurationDays . ' hari') : 'Durasi menyesuaikan';
+
+                                $memberSpeed = $formatInternetSpeedFromRateLimit($memberPkg->rate_limit_mbps);
+
+                                $memberWifiMinutes = (int) ($memberPkg->daily_wifi_minutes ?? 0);
+                                if ($memberWifiMinutes <= 0) {
+                                    $memberWifiLabel = 'WiFi Unlimited';
+                                } elseif ($memberWifiMinutes >= 1440) {
+                                    $memberWifiLabel = 'WiFi Unlimited / hari';
+                                } else {
+                                    if ($memberWifiMinutes >= 60) {
+                                        $h = (int) floor($memberWifiMinutes / 60);
+                                        $m = $memberWifiMinutes % 60;
+                                        $memberWifiLabel = 'WiFi ' . $h . ' jam' . ($m > 0 ? (' ' . $m . ' menit') : '') . ' / hari';
+                                    } else {
+                                        $memberWifiLabel = 'WiFi ' . $memberWifiMinutes . ' menit / hari';
+                                    }
+                                }
+
+                                $memberBenefits = is_array($memberPkg->benefits) ? $memberPkg->benefits : [];
+                                if (is_string($memberPkg->benefits) && trim($memberPkg->benefits) !== '') {
+                                    $maybe = json_decode($memberPkg->benefits, true);
+                                    if (is_array($maybe)) {
+                                        $memberBenefits = $maybe;
+                                    } else {
+                                        $memberBenefits = preg_split('/\r\n|\r|\n/', (string) $memberPkg->benefits);
+                                    }
+                                }
+                                $memberBenefits = collect($memberBenefits)->map(fn ($b) => trim((string) $b))->filter()->values();
+                            @endphp
+                            <div class="scroll-item">
+                                <div class="card">
+                                    <div class="pricing-header">
+                                        <div class="speed">{{ $memberPkg->name }}</div>
+                                        <div class="small text-muted" style="letter-spacing:.5px;">
+                                            {{ $memberBadge }}
+                                            @if(!empty($memberPkg->code))
+                                                · <span class="fw-semibold">Kode: {{ $memberPkg->code }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="pricing-body d-flex flex-column">
+                                        <div class="price text-primary">Rp {{ number_format((float) $memberPkg->price, 0, ',', '.') }} <span class="fs-6 text-muted">/ {{ $memberDurationLabel }}</span></div>
+                                        @if($memberSpeed !== '-')
+                                            <h5 class="mb-2">{{ $memberSpeed }}</h5>
+                                        @else
+                                            <div class="mb-2"></div>
+                                        @endif
+                                        <div class="small text-muted mb-2">{{ $memberDurationHint }}</div>
+                                        <div class="small text-muted mb-3"><i class="fas {{ $memberIcon }} text-primary me-1"></i> {{ $memberWifiLabel }}</div>
+                                        @if($memberBenefits->count() > 0)
+                                            <ul class="features mb-3">
+                                                @foreach($memberBenefits->take(5) as $benefit)
+                                                    <li><i class="fas fa-check-circle text-primary"></i> {{ $benefit }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                        <a href="#service-lead" class="btn btn-primary w-100 mt-auto track-service-action" data-track-service="internet" data-track-action="member_cta" data-track-label="{{ $memberPkg->name }}">
+                                            Pilih Member
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
         </section>
 
