@@ -40,7 +40,8 @@ class SidebarMenu
                         self::link('pppoe-active', 'PPPoE Aktif', 'pppoe.index', routePatterns: ['pppoe.*'], permissions: ['pppoe.view', 'router.view']),
                         self::link('hotspot-active', 'Hotspot Aktif', 'hotspot.index', routePatterns: ['hotspot.index', 'hotspot.online', 'hotspot.profiles.*'], permissions: ['hotspot.view', 'router.view']),
                         self::link('voucher-hotspot', 'Voucher Hotspot', 'vouchers.index', permissions: ['voucher.view']),
-                    ], permissions: ['package.view', 'pppoe.view', 'hotspot.view', 'voucher.view', 'hotspot.profile.view', 'hotspot.profile.manage']),
+                        self::link('hotspot-banners', 'Banner Hotspot', 'hotspot.banners.index', routePatterns: ['hotspot.banners.*'], permissions: ['hotspot.view', 'hotspot.create', 'hotspot.edit', 'hotspot.delete']),
+                    ], permissions: ['package.view', 'pppoe.view', 'hotspot.view', 'voucher.view', 'hotspot.profile.view', 'hotspot.profile.manage', 'hotspot.create', 'hotspot.edit', 'hotspot.delete']),
                 ],
             ],
             [
@@ -383,6 +384,7 @@ class SidebarMenu
             'profil' => 'fa-solid fa-address-card',
             'profile' => 'fa-solid fa-address-card',
             'network' => 'fa-solid fa-signal',
+            'banner' => 'fa-solid fa-bullhorn',
         ];
 
         foreach ($map as $keyword => $icon) {

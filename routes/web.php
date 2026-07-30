@@ -676,6 +676,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     // Hotspot Profiles (Voucher & Rumahan packages)
     Route::prefix('hotspot')->name('hotspot.')->group(function () {
         Route::resource('profiles', \App\Http\Controllers\HotspotProfileController::class)->except(['show']);
+        Route::resource('banners', \App\Http\Controllers\HotspotBannerController::class)->except(['show']);
+        Route::post('banners/{banner}/toggle', [\App\Http\Controllers\HotspotBannerController::class, 'toggle'])->name('banners.toggle');
     });
 
     // Wash Member Packages (Member subscriptions)

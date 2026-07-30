@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AtkProduct;
+use App\Models\HotspotBanner;
 use App\Models\HotspotProfile;
 use App\Models\Invoice;
 use App\Models\Router;
@@ -792,6 +793,41 @@ class HotspotPortalController extends Controller
             'data' => [
                 'items' => $items,
                 'landing_url' => url('/'),
+            ],
+        ]);
+    }
+
+    public function banners(Request $request)
+    {
+        $page = strtolower(trim((string) $request->query('page', 'all')));
+        $limit = max(1, min((int) $request->query('limit', 10), 50));
+
+        $banners = HotspotBanner::query()
+            ->active()
+            ->forPage($page)
+            ->ordered()
+            ->limit($limit)
+            ->get()
+            ->map(function (HotspotBanner $banner) {
+                return [
+                    'id' => $banner->id,
+                    'title' => $banner->title,
+                    'subtitle' => $banner->subtitle,
+                    'image_url' => $banner->image_url,
+                    'mobile_image_url' => $banner->mobile_image_url,
+                    'cta_text' => $banner->cta_text,
+                    'url_cta' => $banner->url_cta,
+                    'open_new_tab' => (bool) $banner->open_new_tab,
+                    'sort_order' => (int) $banner->sort_order,
+                    'page_target' => $banner->page_target,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ok',
+            'data' => [
+                'banners' => $banners,
             ],
         ]);
     }

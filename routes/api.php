@@ -19,6 +19,7 @@ Route::post('/payment/callback', [HotspotPortalController::class, 'paymentCallba
 Route::get('/voucher/status', [HotspotPortalController::class, 'voucherStatus'])->middleware('throttle:30,1');
 Route::get('/billing/monthly', [HotspotPortalController::class, 'billingMonthly'])->middleware('throttle:30,1');
 Route::get('/products/ads', [HotspotPortalController::class, 'productAds'])->middleware('throttle:60,1');
+Route::get('/hotspot/banners', [HotspotPortalController::class, 'banners'])->middleware('throttle:60,1');
 Route::get('/hotspot/health', [HotspotPortalController::class, 'health'])->middleware('throttle:60,1');
 
 Route::middleware('auth:sanctum')->group(function () {
