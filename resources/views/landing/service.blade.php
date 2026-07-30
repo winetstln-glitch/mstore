@@ -163,24 +163,26 @@
                     return $explicitType;
                 }
 
-                $haystack = \Illuminate\Support\Str::lower(trim($package->name.' '.$package->speed.' '.($package->description ?? '')));
+                $haystack = \Illuminate\Support\Str::lower(trim($package->name.' '.$package->rate_limit_mbps.' '.$package->package_type.' '.($package->description ?? '')));
 
                 return \Illuminate\Support\Str::contains($haystack, ['hotspot', 'member', 'voucher']) ? 'hotspot' : 'pppoe';
             };
             $hotspotInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'hotspot')->values();
             $pppoeInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'pppoe')->values();
             $voucherProfiles = collect($voucherTemplates ?? [])->values();
-            $formatInternetSpeed = function ($speedValue) {
-                $speedText = trim((string) $speedValue);
-                if ($speedText === '') {
+            $formatInternetSpeedFromRateLimit = function ($rateLimitValue) {
+                $speedText = trim((string) $rateLimitValue);
+                if ($speedText === '' || $speedText === '0') {
                     return '-';
                 }
-
-                if (preg_match('/^\d+$/', $speedText) === 1) {
-                    return $speedText.' Mbps';
+                $num = (float) $speedText;
+                if ($num <= 0) {
+                    return '-';
                 }
-
-                return $speedText;
+                if (fmod($num, 1) === 0.0) {
+                    return ((int) $num).' Mbps';
+                }
+                return number_format($num, 2).' Mbps';
             };
         @endphp
         <section class="py-2">
@@ -202,17 +204,55 @@
                                 if ($packageFeatures->isEmpty()) {
                                     $packageFeatures = collect(['100% Fiber Optic', 'Cocok untuk rumah dan bisnis']);
                                 }
+
+                                $pkgTypeLower = strtolower(trim((string) ($package->package_type ?? 'home')));
+                                if (in_array($pkgTypeLower, ['home', 'residential', 'rumahan'], true)) {
+                                    $packageCode = 'HOME-' . $package->id;
+                                } elseif ($pkgTypeLower === 'pppoe') {
+                                    $packageCode = 'PPPOE-' . $package->id;
+                                } elseif ($pkgTypeLower === 'voucher') {
+                                    $packageCode = 'VOUCHER-' . $package->id;
+                                } else {
+                                    $packageCode = 'PKT-' . $package->id;
+                                }
+
+                                $sharedUsers = (int) ($package->shared_users ?? 0);
+                                if ($sharedUsers > 1) {
+                                    $devicesLabel = 'Hingga ' . $sharedUsers . ' perangkat bersamaan';
+                                    $devicesIcon = 'fa-users';
+                                } else {
+                                    $devicesLabel = 'Unlimited perangkat';
+                                    $devicesIcon = 'fa-wifi';
+                                }
+
+                                $quotaMb = (int) ($package->quota_mb ?? 0);
+                                if ($quotaMb > 0) {
+                                    if ($quotaMb >= 1024) {
+                                        $quotaGb = $quotaMb / 1024;
+                                        $quotaLabel = 'Kuota ' . (fmod($quotaGb, 1) === 0.0 ? (int) $quotaGb : number_format($quotaGb, 1)) . ' GB';
+                                    } else {
+                                        $quotaLabel = 'Kuota ' . $quotaMb . ' MB';
+                                    }
+                                    $quotaIcon = 'fa-database';
+                                } else {
+                                    $quotaLabel = 'Kuota Unlimited';
+                                    $quotaIcon = 'fa-database';
+                                }
+
+                                $speedLabel = $formatInternetSpeedFromRateLimit($package->rate_limit_mbps);
                             @endphp
                             <div class="scroll-item">
                                 <div class="card">
                                     <div class="pricing-header">
                                         <div class="speed">{{ $package->name }}</div>
-                                        <div class="fw-bold">{{ is_null($package->devices_limit) ? 'Unlimited Devices' : ((int) $package->devices_limit.' Devices') }}</div>
+                                        <div class="fw-bold small text-muted" style="letter-spacing:.5px;">Kode paket: <span class="fw-semibold">{{ $packageCode }}</span></div>
                                     </div>
                                     <div class="pricing-body d-flex flex-column">
-                                        <div class="price text-primary">Rp {{ number_format((int) $package->price, 0, ',', '.') }} <span class="fs-6 text-muted">/ bln</span></div>
-                                        <h5 class="mb-3">{{ $formatInternetSpeed($package->speed) }}</h5>
+                                        <div class="price text-primary">Rp {{ number_format((int) $package->price, 0, ',', '.') }} <span class="fs-6 text-muted">/ Bulan</span></div>
+                                        <h5 class="mb-3">{{ $speedLabel }}</h5>
                                         <ul class="features">
+                                            <li><i class="fas {{ $devicesIcon }} text-primary"></i> {{ $devicesLabel }}</li>
+                                            <li><i class="fas {{ $quotaIcon }} text-primary"></i> {{ $quotaLabel }}</li>
                                             @foreach($packageFeatures as $feature)
                                                 <li><i class="fas fa-check-circle text-primary"></i> {{ $feature }}</li>
                                             @endforeach
