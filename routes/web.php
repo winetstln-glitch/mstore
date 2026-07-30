@@ -770,7 +770,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('/network/analyzer/speed/upload', [NetworkAnalyzerController::class, 'speedUpload'])
         ->middleware('permission:router.view')
         ->name('network.analyzer.speed.upload');
-    Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
+    // [DEPRECATED] Ganti Paket Internet (HotspotProfile) — route packages lama dinonaktifkan
+    // Route::resource('packages', \App\Http\Controllers\PackageController::class)->except(['show']);
     Route::get('odps/next-sequence/{odc}', [\App\Http\Controllers\OdpController::class, 'getNextSequence'])->name('odps.next_sequence');
     Route::get('odps/export/excel', [\App\Http\Controllers\OdpController::class, 'exportExcel'])->name('odps.export.excel');
     Route::resource('odps', \App\Http\Controllers\OdpController::class);
@@ -791,10 +792,11 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::get('/voucher/list', [VoucherController::class, 'index'])->name('vouchers.index');
     Route::post('/voucher/generate', [VoucherController::class, 'generate'])->name('vouchers.generate');
     Route::post('/voucher/disconnect', [VoucherController::class, 'disconnect'])->name('vouchers.disconnect');
-    Route::post('/voucher/template', [VoucherController::class, 'storeTemplate'])->name('vouchers.templates.store');
-    Route::get('/voucher/template/{voucherTemplate}/edit', [VoucherController::class, 'editTemplate'])->name('vouchers.templates.edit');
-    Route::put('/voucher/template/{voucherTemplate}', [VoucherController::class, 'updateTemplate'])->name('vouchers.templates.update');
-    Route::delete('/voucher/template/{voucherTemplate}', [VoucherController::class, 'deleteTemplate'])->name('vouchers.templates.delete');
+    // [DEPRECATED] Master Paket Voucher pindah ke HotspotProfile Paket Internet tab Voucher
+    // Route::post('/voucher/template', [VoucherController::class, 'storeTemplate'])->name('vouchers.templates.store');
+    // Route::get('/voucher/template/{voucherTemplate}/edit', [VoucherController::class, 'editTemplate'])->name('vouchers.templates.edit');
+    // Route::put('/voucher/template/{voucherTemplate}', [VoucherController::class, 'updateTemplate'])->name('vouchers.templates.update');
+    // Route::delete('/voucher/template/{voucherTemplate}', [VoucherController::class, 'deleteTemplate'])->name('vouchers.templates.delete');
     Route::get('/voucher/export/csv', [VoucherController::class, 'exportCsv'])->name('vouchers.export.csv');
     Route::get('/voucher/export/excel', [VoucherController::class, 'exportExcel'])->name('vouchers.export.excel');
     Route::get('/voucher/export/pdf', [VoucherController::class, 'exportPdf'])->name('vouchers.export.pdf');

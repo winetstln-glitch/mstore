@@ -6,7 +6,7 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
     <div>
         <h4 class="mb-1 fw-bold text-primary">Voucher Hotspot</h4>
-        <div class="small text-muted">Bulk generate voucher terintegrasi FreeRADIUS & MikroTik.</div>
+        <div class="small text-muted">Bulk generate voucher terintegrasi FreeRADIUS &amp; MikroTik.</div>
     </div>
     <div class="btn-group">
         <a href="{{ route('vouchers.export.pdf', request()->query()) }}" class="btn btn-outline-danger"><i class="fa-regular fa-file-pdf me-1"></i>PDF</a>
@@ -31,51 +31,70 @@
     </div>
 @endif
 
+<div class="alert alert-info shadow-sm border-0 d-flex gap-2 align-items-start">
+    <i class="fa-solid fa-circle-info text-info fs-4 mt-1"></i>
+    <div>
+        <div class="fw-semibold">Master Paket Voucher dipindah!</div>
+        <div class="small text-muted">
+            Data paket voucher sekarang dikelola terpusat di menu
+            <a href="{{ route('hotspot.profiles.index', ['type' => 'voucher']) }}" class="alert-link fw-semibold">Paket Internet &rarr; Tab Voucher</a>.
+            Gunakan fitur Generate Voucher di bawah ini untuk mencetak stok voucher berdasarkan paket yang sudah dibuat di sana.
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0 mb-3">
     <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
-        <span>Profile Paket Voucher</span>
-        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#voucherTemplateModal">
-            <i class="fa-solid fa-plus me-1"></i>Tambah Paket
-        </button>
+        <span>Daftar Paket Voucher (Aktif)</span>
+        <a href="{{ route('hotspot.profiles.index', ['type' => 'voucher']) }}" class="btn btn-sm btn-outline-primary">
+            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Kelola Paket
+        </a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-sm align-middle">
+            <table class="table table-sm align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>Nama Paket</th>
-                        <th>Rate Limit</th>
+                        <th>MikroTik Profile</th>
+                        <th>Speed</th>
                         <th>Durasi</th>
                         <th>Quota</th>
+                        <th>User/Device</th>
                         <th>Harga</th>
-                        <th>Status</th>
-                        <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($templates as $template)
+                    @forelse($hotspotProfiles as $p)
                         <tr>
-                            <td>{{ $template->name }}</td>
-                            <td>{{ $template->rate_limit ?: '-' }}</td>
-                            <td>{{ $template->duration_seconds ? format_duration($template->duration_seconds) : '-' }}</td>
-                            <td>{{ $template->quota_mb ? $template->quota_mb.' MB' : '-' }}</td>
-                            <td>Rp {{ number_format((float) $template->price, 0, ',', '.') }}</td>
-                            <td>{!! $template->is_active ? '<span class="badge bg-success-subtle text-success">Aktif</span>' : '<span class="badge bg-secondary-subtle text-secondary">Nonaktif</span>' !!}</td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-primary me-1" 
-                                        onclick="editTemplate({{ $template->id }})"
-                                        data-bs-toggle="modal" data-bs-target="#voucherTemplateEditModal">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <form action="{{ route('vouchers.templates.delete', $template) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus profile paket ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fa-solid fa-trash"></i></button>
-                                </form>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if($p->color_badge)
+                                        <span class="d-inline-block rounded" style="width:12px;height:12px;background:{{ in_array($p->color_badge,['green','lime']) ? '#28a745' : ($p->color_badge==='blue' ? '#007bff' : ($p->color_badge==='orange' ? '#fd7e14' : ($p->color_badge==='gold' ? '#d4a017' : ($p->color_badge==='purple' ? '#6f42c1' : ($p->color_badge==='gray'||$p->color_badge==='silver'?'#adb5bd':'#6c757d'))))) }};"></span>
+                                    @endif
+                                    <span class="fw-semibold">{{ $p->name }}</span>
+                                    @if($p->sort_order)<small class="text-muted ms-1">#{{ $p->sort_order }}</small>@endif
+                                </div>
                             </td>
+                            <td><code class="small">{{ $p->mikrotik_profile_name }}</code></td>
+                            <td>@if($p->rate_limit_mbps)<b>{{ $p->rate_limit_mbps }} Mbps</b>@else<span class="text-muted">-</span>@endif</td>
+                            <td>{{ $p->formatted_uptime }}</td>
+                            <td>
+                                @if($p->quota_mb)
+                                    {{ $p->quota_mb >= 1024 ? round($p->quota_mb/1024,1).' GB' : $p->quota_mb.' MB' }}
+                                @else
+                                    <span class="badge bg-info text-white">Unlimited</span>
+                                @endif
+                            </td>
+                            <td><span class="badge {{ $p->shared_users > 1 ? 'bg-primary' : 'bg-secondary' }}">{{ $p->shared_users ?? 1 }} device</span></td>
+                            <td><b class="text-primary">{{ $p->formatted_price }}</b></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="text-center text-muted py-3">Belum ada profile paket voucher.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">
+                            <i class="fa-solid fa-inbox d-block mb-2" style="font-size:2rem;opacity:.3"></i>
+                            Belum ada paket voucher aktif.
+                            <div class="mt-2"><a href="{{ route('hotspot.profiles.create') }}" class="btn btn-sm btn-primary">Buat Paket Voucher Pertama</a></div>
+                        </td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -92,7 +111,7 @@
     </div>
     <div class="card-body">
         <div class="text-muted small">
-            Klik tombol <strong>Generate Voucher</strong> untuk membuat voucher massal berdasarkan profile paket atau custom manual.
+            Klik tombol <strong>Generate Voucher</strong> untuk membuat voucher massal berdasarkan paket dari master Paket Internet (Voucher) atau custom manual.
         </div>
     </div>
 </div>
@@ -106,7 +125,7 @@
             <div class="col-md-3">
                 <select name="status" class="form-select">
                     <option value="">Semua status</option>
-                    @foreach(['unused','used','expired'] as $st)
+                    @foreach(['unused','used','expired','sold'] as $st)
                         <option value="{{ $st }}" {{ $status === $st ? 'selected' : '' }}>{{ strtoupper($st) }}</option>
                     @endforeach
                 </select>
@@ -137,7 +156,18 @@
                             <td>{{ $voucher->profile ?: '-' }}</td>
                             <td>{{ $voucher->duration_seconds ? format_duration($voucher->duration_seconds) : '-' }}</td>
                             <td>{{ $voucher->quota_mb ? $voucher->quota_mb.' MB' : '-' }}</td>
-                            <td><span class="badge bg-secondary-subtle text-secondary">{{ strtoupper($voucher->status) }}</span></td>
+                            <td>
+                                @php
+                                    $statusBadge = [
+                                        'unused'    => 'bg-success-subtle text-success',
+                                        'sold'      => 'bg-info-subtle text-info',
+                                        'used'      => 'bg-warning-subtle text-warning',
+                                        'expired'   => 'bg-secondary-subtle text-secondary',
+                                    ];
+                                    $badgeClass = $statusBadge[$voucher->status] ?? 'bg-secondary-subtle text-secondary';
+                                @endphp
+                                <span class="badge {{ $badgeClass }}">{{ strtoupper($voucher->status) }}</span>
+                            </td>
                             <td class="text-end">
                                 <form action="{{ route('vouchers.disconnect') }}" method="POST" class="d-inline">
                                     @csrf
@@ -156,140 +186,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="voucherTemplateModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <form action="{{ route('vouchers.templates.store') }}" method="POST">
-            @csrf
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Tambah Profile Paket Voucher</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Nama Paket</label>
-                            <input type="text" name="name" class="form-control" placeholder="Contoh: Voucher 1 Hari" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Rate Limit</label>
-                            <input type="text" name="rate_limit" class="form-control" placeholder="1M/1M">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Durasi</label>
-                            <div class="input-group">
-                                <input type="number" min="0" name="duration_value" class="form-control" placeholder="1">
-                                <select name="duration_unit" class="form-select">
-                                    <option value="menit">Menit</option>
-                                    <option value="jam" selected>Jam</option>
-                                    <option value="hari">Hari</option>
-                                    <option value="bulan">Bulan</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Quota (MB)</label>
-                            <input type="number" min="0" name="quota_mb" class="form-control" placeholder="1024">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Harga</label>
-                            <input type="number" min="0" step="0.01" name="price" class="form-control" placeholder="5000">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label d-block">Status</label>
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" checked name="is_active" id="template_is_active" value="1">
-                                <label class="form-check-label" for="template_is_active">Aktif</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-save me-1"></i>Simpan</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal fade" id="voucherTemplateEditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <form id="voucherTemplateEditForm" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Profile Paket Voucher</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Nama Paket</label>
-                            <input type="text" name="name" id="edit_name" class="form-control" placeholder="Contoh: Voucher 1 Hari" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Rate Limit</label>
-                            <input type="text" name="rate_limit" id="edit_rate_limit" class="form-control" placeholder="1M/1M">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Durasi</label>
-                            <div class="input-group">
-                                <input type="number" min="0" name="duration_value" id="edit_duration_value" class="form-control" placeholder="1">
-                                <select name="duration_unit" id="edit_duration_unit" class="form-select">
-                                    <option value="menit">Menit</option>
-                                    <option value="jam" selected>Jam</option>
-                                    <option value="hari">Hari</option>
-                                    <option value="bulan">Bulan</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Quota (MB)</label>
-                            <input type="number" min="0" name="quota_mb" id="edit_quota_mb" class="form-control" placeholder="1024">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Harga</label>
-                            <input type="number" min="0" step="0.01" name="price" id="edit_price" class="form-control" placeholder="5000">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label d-block">Status</label>
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" checked name="is_active" id="edit_is_active" value="1">
-                                <label class="form-check-label" for="edit_is_active">Aktif</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-save me-1"></i>Update</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function editTemplate(templateId) {
-    fetch(`/voucher/template/${templateId}/edit`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('edit_name').value = data.name;
-            document.getElementById('edit_rate_limit').value = data.rate_limit || '';
-            document.getElementById('edit_duration_value').value = data.duration_value || '';
-            document.getElementById('edit_duration_unit').value = data.duration_unit || 'jam';
-            document.getElementById('edit_quota_mb').value = data.quota_mb || '';
-            document.getElementById('edit_price').value = data.price;
-            document.getElementById('edit_is_active').checked = data.is_active;
-            
-            const form = document.getElementById('voucherTemplateEditForm');
-            form.action = `/voucher/template/${templateId}`;
-        });
-}
-</script>
-
 <div class="modal fade" id="voucherGenerateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form action="{{ route('vouchers.generate') }}" method="POST">
@@ -302,33 +198,39 @@ function editTemplate(templateId) {
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Profile Paket Voucher</label>
-                            <select name="voucher_template_id" class="form-select">
+                            <label class="form-label">Paket Voucher (dari Master Paket Internet)</label>
+                            <select name="hotspot_profile_id" id="gen_hotspot_profile" class="form-select" onchange="autoFillFromProfile(this.value)">
                                 <option value="">Custom Manual</option>
-                                @foreach($templates as $template)
-                                    <option value="{{ $template->id }}">
-                                        {{ $template->name }} @if($template->rate_limit) - {{ $template->rate_limit }} @endif
+                                @foreach($hotspotProfiles as $p)
+                                    <option value="{{ $p->id }}"
+                                        data-profile="{{ $p->mikrotik_profile_name }}"
+                                        data-duration="{{ $p->formatted_uptime }}"
+                                        data-quota="{{ $p->quota_mb }}"
+                                        data-rate="{{ $p->rate_limit_mbps }}">
+                                        {{ $p->name }} — {{ $p->formatted_price }}
+                                        @if($p->rate_limit_mbps) — {{ $p->rate_limit_mbps }} Mbps @endif
                                     </option>
                                 @endforeach
                             </select>
+                            <div class="form-text small">Pilih paket untuk otomatis mengisi Rate Limit, Durasi, dan Quota di bawah ini.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Profile Rate Limit</label>
-                            <input type="text" name="profile" class="form-control" placeholder="1M/1M 2M/2M" value="{{ old('profile','1M/1M') }}">
+                            <label class="form-label">MikroTik Rate Limit / Profile Name</label>
+                            <input type="text" name="profile" id="gen_profile" class="form-control" placeholder="Contoh: 1M/1M  atau nama profile">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Durasi</label>
-                            <input type="text" name="duration" class="form-control" placeholder="1 jam / 1 hari" value="{{ old('duration','1 hari') }}">
+                            <input type="text" name="duration" id="gen_duration" class="form-control" placeholder="1 jam / 1 hari / 30 menit">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Quota MB</label>
-                            <input type="number" name="quota_mb" min="0" class="form-control" value="{{ old('quota_mb') }}">
+                            <input type="number" name="quota_mb" id="gen_quota_mb" min="0" class="form-control">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Jumlah Voucher</label>
-                            <select name="count" class="form-select">
-                                @foreach([100,500,1000] as $num)
-                                    <option value="{{ $num }}">{{ $num }}</option>
+                            <select name="count" class="form-select" required>
+                                @foreach([1,10,25,50,100,250,500,1000,2000] as $num)
+                                    <option value="{{ $num }}" {{ $num === 100 ? 'selected' : '' }}>{{ $num }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -349,4 +251,21 @@ function editTemplate(templateId) {
         </form>
     </div>
 </div>
+
+<script>
+const profileData = {!! $profileDataJson !!};
+
+function autoFillFromProfile(val) {
+    if (!val || !profileData || !profileData[val]) {
+        document.getElementById('gen_profile').value = '';
+        document.getElementById('gen_duration').value = '';
+        document.getElementById('gen_quota_mb').value = '';
+        return;
+    }
+    const d = profileData[val];
+    document.getElementById('gen_profile').value = d.mikrotik_profile_name || '';
+    document.getElementById('gen_duration').value = d.formatted_uptime && d.formatted_uptime !== 'Unlimited' ? d.formatted_uptime : '';
+    document.getElementById('gen_quota_mb').value = d.quota_mb !== null && d.quota_mb !== undefined ? d.quota_mb : '';
+}
+</script>
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Livewire\ISP\PPPoEUser;
 
 use App\Models\Customer;
+use App\Models\HotspotProfile;
 use App\Models\Package;
 use App\Models\Router;
 use App\Models\User;
@@ -12,30 +13,24 @@ use Illuminate\Support\Str;
 
 class Create extends Component
 {
-    // Identitas Pelanggan
     public $name;
     public $phone;
     public $email;
     public $address;
 
-    // Login Internet
     public $pppoeUser;
     public $pppoePassword;
 
-    // Login Portal
     public $customerId;
     public $portalPassword;
     public $createPortalUser = false;
 
-    // Paket
     public $routerId;
     public $packageId;
 
-    // Aktivasi
     public $status = 'active';
     public $activationDate;
 
-    // Notes
     public $notes;
 
     public function mount()
@@ -55,7 +50,7 @@ class Create extends Component
             'pppoePassword' => 'required|string|max:255',
             'customerId' => 'required|string|max:255',
             'routerId' => 'required|exists:routers,id',
-            'packageId' => 'required|exists:packages,id',
+            'packageId' => 'required|exists:hotspot_profiles,id',
             'status' => 'required|in:active,suspend,terminated',
             'activationDate' => 'required|date',
         ]);
@@ -70,7 +65,7 @@ class Create extends Component
         DB::beginTransaction();
 
         try {
-            $package = Package::findOrFail($this->packageId);
+            $profile = HotspotProfile::query()->pppoe()->findOrFail($this->packageId);
 
             $customer = Customer::create([
                 'name' => $this->name,
@@ -81,7 +76,8 @@ class Create extends Component
                 'pppoe_password' => $this->pppoePassword,
                 'router_id' => $this->routerId,
                 'package_id' => $this->packageId,
-                'package' => $package->name,
+                'hotspot_profile_id' => $this->packageId,
+                'package' => $profile->name,
                 'status' => $this->status,
                 'created_at' => $this->activationDate,
             ]);
@@ -101,7 +97,7 @@ class Create extends Component
 
             DB::commit();
 
-            session()->flash('success', 'Pelanggan PPPoE berhasil dibuat!');
+            session()->flash('success', 'Pelanggan PPPoE berhasil dibuat (Paket Internet: ' . $profile->name . ').');
             return redirect()->route('isp.pppoe-users.index');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -111,9 +107,20 @@ class Create extends Component
 
     public function render()
     {
+        $packages = HotspotProfile::query()
+            ->pppoe()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
+
+        if ($packages->count() === 0 && class_exists(Package::class)) {
+            $packages = Package::where('is_active', true)->where('package_type', 'pppoe')->get();
+        }
+
         return view('livewire.isp.pppoe-user.create', [
             'routers' => Router::where('is_active', true)->get(),
-            'packages' => Package::where('is_active', true)->get(),
+            'packages' => $packages,
         ])->layout('layouts.app', [
             'title' => 'Tambah Pelanggan PPPoE'
         ]);

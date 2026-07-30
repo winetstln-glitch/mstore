@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HotspotProfile;
 use App\Models\Setting;
 use App\Models\Voucher;
 use App\Models\VoucherPayment;
@@ -563,34 +564,54 @@ class WhatsAppWebhookController extends Controller
      */
     private function handleVoucherRequest(string $phone, string $message): string
     {
-        $templates = VoucherTemplate::where('is_active', true)->orderBy('price')->get();
+        $packages = HotspotProfile::query()->active()->vouchers()->orderBy('sort_order')->orderBy('price')->get();
 
-        if ($templates->isEmpty()) {
+        if ($packages->isEmpty() && class_exists(VoucherTemplate::class)) {
+            $packages = VoucherTemplate::where('is_active', true)->orderBy('price')->get();
+        }
+
+        if ($packages->isEmpty()) {
             return "Maaf, saat ini tidak ada paket voucher yang tersedia.";
         }
 
-        // Check if user selected a template
-        foreach ($templates as $template) {
-            if (Str::contains($message, (string) $template->id)) {
-                return $this->createPayment($phone, $template);
+        $normalize = strtolower(trim($message));
+        $byNumber = null;
+        if (preg_match('/^\s*#?(\d+)\s*$/', $normalize, $m)) {
+            $numChoosen = (int) $m[1];
+            if ($numChoosen >= 1 && $numChoosen <= $packages->count()) {
+                $byNumber = $packages->values()[$numChoosen - 1] ?? null;
             }
         }
 
-        // Show list of templates
+        foreach ($packages as $package) {
+            $pid = (string) $package->id;
+            if ($byNumber && $byNumber->is($package)) {
+                return $this->createPayment($phone, $package);
+            }
+            if ($pid !== '' && Str::contains($message, $pid)) {
+                return $this->createPayment($phone, $package);
+            }
+            if (Str::contains($normalize, Str::slug($package->name, ' '))) {
+                return $this->createPayment($phone, $package);
+            }
+        }
+
         $response = "*Daftar Paket Voucher Hotspot:*\n\n";
-        foreach ($templates as $index => $template) {
-            $response .= ($index + 1) . ". *{$template->name}*\n";
-            $response .= "   💰 Harga: Rp " . number_format($template->price, 0, ',', '.') . "\n";
-            if ($template->duration_seconds) {
-                $response .= "   ⏱ Durasi: " . $this->formatDuration($template->duration_seconds) . "\n";
+        foreach ($packages as $index => $pkg) {
+            $response .= ($index + 1) . ". *{$pkg->name}*\n";
+            $price = $pkg instanceof HotspotProfile ? (float) $pkg->price : (float) ($pkg->price ?? 0);
+            $response .= "   💰 Harga: Rp " . number_format($price, 0, ',', '.') . "\n";
+            if ($pkg->duration_seconds) {
+                $response .= "   ⏱ Durasi: " . $this->formatDuration($pkg->duration_seconds) . "\n";
             }
-            if ($template->quota_mb) {
-                $response .= "   📊 Kuota: " . number_format($template->quota_mb, 0, ',', '.') . " MB\n";
+            if (! empty($pkg->quota_mb)) {
+                $response .= "   📊 Kuota: " . number_format($pkg->quota_mb, 0, ',', '.') . " MB\n";
             }
-            if ($template->rate_limit) {
-                $response .= "   🚀 Kecepatan: {$template->rate_limit}\n";
+            $rate = $pkg instanceof HotspotProfile ? ($pkg->rate_limit_mbps ? $pkg->rate_limit_mbps . ' Mbps' : ($pkg->mikrotik_profile_name ?? null)) : ($pkg->rate_limit ?? null);
+            if ($rate) {
+                $response .= "   🚀 Kecepatan: {$rate}\n";
             }
-            $response .= "   👉 Balas dengan *{$template->id}* untuk beli paket ini!\n\n";
+            $response .= "   👉 Balas dengan *" . ($index + 1) . "* atau ID *{$pkg->id}* untuk beli paket ini!\n\n";
         }
 
         return $response;
@@ -599,38 +620,44 @@ class WhatsAppWebhookController extends Controller
     /**
      * Create payment and return QR code
      */
-    private function createPayment(string $phone, VoucherTemplate $template): string
+    private function createPayment(string $phone, object $package): string
     {
-        // Check if already has pending payment
+        $isHotspot = $package instanceof HotspotProfile;
+        $price = $isHotspot ? (float) $package->price : (float) ($package->price ?? 0);
+        $name = $package->name;
+
         $existingPending = VoucherPayment::where('phone_number', $phone)->where('status', 'pending')->first();
         if ($existingPending) {
             return "Anda masih memiliki pembayaran yang belum selesai!\n\n" .
                    "Silakan selesaikan pembayaran terlebih dahulu atau cek status dengan mengetik *cek*.";
         }
 
-        // Create payment record
-        $payment = VoucherPayment::create([
+        $createPayload = [
             'phone_number' => $phone,
-            'voucher_template_id' => $template->id,
-            'amount' => $template->price,
+            'amount' => $price,
             'status' => 'pending',
             'payment_method' => 'QRIS',
-        ]);
+        ];
+        if ($isHotspot) {
+            $createPayload['hotspot_profile_id'] = $package->id;
+        } else {
+            $createPayload['voucher_template_id'] = $package->id;
+        }
 
-        // Create transaction with Duitku
+        $payment = VoucherPayment::create($createPayload);
+
         $duitku = $this->paymentManager->gateway('duitku');
         $duitkuResponse = $duitku->createTransaction([
             'reference_id' => $payment->reference_id,
-            'amount' => $template->price,
+            'amount' => $price,
             'payment_method' => 'QR',
-            'description' => 'Voucher Hotspot: '.$template->name,
-            'customer_name' => 'WA-'.$phone,
+            'description' => 'Voucher Hotspot: ' . $name,
+            'customer_name' => 'WA-' . $phone,
             'customer_email' => 'customer@mstore.id',
             'customer_phone' => $phone,
         ]);
 
         if (isset($duitkuResponse['statusCode']) && $duitkuResponse['statusCode'] == '00') {
-            // Success
             $payment->update([
                 'payment_reference' => $duitkuResponse['reference'],
                 'qr_url' => $duitkuResponse['paymentUrl'],
@@ -641,17 +668,16 @@ class WhatsAppWebhookController extends Controller
             $expiresAt = $payment->expires_at->format('d M Y H:i');
 
             $response = "*🛒 Pembayaran Voucher Hotspot:*\n\n";
-            $response .= "*Paket:* {$template->name}\n";
-            $response .= "*Total:* Rp " . number_format($template->price, 0, ',', '.') . "\n";
+            $response .= "*Paket:* {$name}\n";
+            $response .= "*Total:* Rp " . number_format($price, 0, ',', '.') . "\n";
             $response .= "*Metode:* QRIS\n\n";
             $response .= "Silakan scan QR code atau buka link di bawah:\n";
             $response .= "*{$paymentUrl}*\n\n";
             $response .= "Kadaluarsa: {$expiresAt}\n\n";
             $response .= "Setelah pembayaran berhasil, voucher akan dikirim otomatis!";
-            
+
             return $response;
         } else {
-            // Failed
             $payment->update(['status' => 'failed']);
             $error = $duitkuResponse['statusMessage'] ?? 'Gagal membuat pembayaran';
             return "Maaf, {$error}. Silakan coba lagi nanti.";
@@ -663,20 +689,16 @@ class WhatsAppWebhookController extends Controller
      */
     private function checkPaymentStatus(VoucherPayment $payment): string
     {
-        // Check with Duitku
         $duitku = $this->paymentManager->gateway('duitku');
         $duitkuResponse = $duitku->checkStatus($payment->reference_id);
 
         if (isset($duitkuResponse['statusCode']) && $duitkuResponse['statusCode'] == '00') {
-            // Already paid
             if ($payment->status !== 'paid') {
-                // Mark as paid if not already
                 $payment->update([
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
-                
-                // Generate voucher
+
                 $this->generateVoucherAndSendToUser($payment);
             }
         }
@@ -688,10 +710,17 @@ class WhatsAppWebhookController extends Controller
             'expired' => 'Kadaluarsa',
         ];
 
+        $packageName = 'Voucher Hotspot';
+        if ($payment->hotspotProfile) {
+            $packageName = $payment->hotspotProfile->name;
+        } elseif ($payment->voucherTemplate) {
+            $packageName = $payment->voucherTemplate->name;
+        }
+
         $response = "*📊 Status Pembayaran:*\n\n";
         $response .= "*ID:* {$payment->reference_id}\n";
         $response .= "*Status:* {$statusText[$payment->status]}\n";
-        $response .= "*Paket:* {$payment->voucherTemplate->name}\n";
+        $response .= "*Paket:* {$packageName}\n";
         $response .= "*Total:* Rp " . number_format($payment->amount, 0, ',', '.') . "\n";
 
         if ($payment->status === 'pending' && $payment->qr_url) {
@@ -702,40 +731,58 @@ class WhatsAppWebhookController extends Controller
         return $response;
     }
 
-    /**
-     * Generate voucher and send to user
-     */
     private function generateVoucherAndSendToUser(VoucherPayment $payment)
     {
         try {
-            // Already has voucher?
             if ($payment->voucher_id) {
                 return;
             }
 
             $template = $payment->voucherTemplate;
+            $profile = $payment->hotspotProfile;
+
+            $rateLimit = null;
+            $durationSeconds = null;
+            $quotaMb = null;
+            $packageName = 'Voucher Hotspot';
+            $hotspotProfileId = null;
+
+            if ($profile) {
+                $rateLimit = $profile->mikrotik_profile_name ?? ($profile->rate_limit_mbps ? $profile->rate_limit_mbps . 'M/' . $profile->rate_limit_mbps . 'M' : null);
+                $durationSeconds = $profile->duration_seconds;
+                $quotaMb = $profile->quota_mb;
+                $packageName = $profile->name;
+                $hotspotProfileId = $profile->id;
+            } elseif ($template) {
+                $rateLimit = $template->rate_limit;
+                $durationSeconds = $template->duration_seconds;
+                $quotaMb = $template->quota_mb;
+                $packageName = $template->name;
+            }
+
             $batch = $this->voucherService->generateBatch(
-                $template->rate_limit,
-                $template->duration_seconds,
-                $template->quota_mb,
+                $rateLimit,
+                $durationSeconds,
+                $quotaMb,
                 1,
-                true
+                true,
+                null,
+                $hotspotProfileId
             );
 
             $voucher = Voucher::where('batch_id', $batch->id)->first();
-            
+
             $payment->update([
                 'voucher_id' => $voucher->id,
             ]);
 
-            // Send to WhatsApp
             $message = "*🎉 Pembayaran Berhasil!*\n\n";
-            $message .= "*Paket:* {$template->name}\n";
-            if ($template->duration_seconds) {
-                $message .= "*Durasi:* " . $this->formatDuration($template->duration_seconds) . "\n";
+            $message .= "*Paket:* {$packageName}\n";
+            if ($durationSeconds) {
+                $message .= "*Durasi:* " . $this->formatDuration($durationSeconds) . "\n";
             }
-            if ($template->quota_mb) {
-                $message .= "*Kuota:* " . number_format($template->quota_mb, 0, ',', '.') . " MB\n";
+            if ($quotaMb) {
+                $message .= "*Kuota:* " . number_format($quotaMb, 0, ',', '.') . " MB\n";
             }
             $message .= "\n";
             $message .= "*Username:* `{$voucher->username}`\n";
@@ -744,7 +791,6 @@ class WhatsAppWebhookController extends Controller
             $message .= "Gunakan username dan password di atas untuk login ke hotspot!";
 
             $this->whatsappService->sendMessage($payment->phone_number, $message);
-
         } catch (\Exception $e) {
             Log::error('Failed to generate and send voucher', ['error' => $e->getMessage(), 'payment_id' => $payment->id]);
         }

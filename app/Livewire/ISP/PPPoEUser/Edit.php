@@ -3,6 +3,7 @@
 namespace App\Livewire\ISP\PPPoEUser;
 
 use App\Models\Customer;
+use App\Models\HotspotProfile;
 use App\Models\Package;
 use App\Models\Router;
 use App\Models\User;
@@ -13,31 +14,26 @@ class Edit extends Component
 {
     public Customer $customer;
 
-    // Identitas Pelanggan
     public $name;
     public $phone;
     public $email;
     public $address;
 
-    // Login Internet
     public $pppoeUser;
     public $pppoePassword;
 
-    // Login Portal
     public $customerId;
     public $portalPassword;
     public $createPortalUser = false;
 
-    // Paket
     public $routerId;
     public $packageId;
 
-    // Aktivasi
     public $status;
     public $activationDate;
 
-    // Notes
     public $notes;
+    public $packageLegacyName = null;
 
     public function mount(Customer $customer)
     {
@@ -51,14 +47,35 @@ class Edit extends Component
         $this->customerId = $customer->user?->username ?? '';
         $this->createPortalUser = $customer->user !== null;
         $this->routerId = $customer->router_id;
-        $this->packageId = $customer->package_id;
         $this->status = $customer->status;
         $this->activationDate = $customer->created_at->format('Y-m-d');
+
+        // Backward compatibility: prefer hotspot_profile_id, fallback package_id
+        $resolved = null;
+        if (! empty($customer->hotspot_profile_id)) {
+            $resolved = HotspotProfile::query()->pppoe()->find($customer->hotspot_profile_id);
+            if ($resolved) {
+                $this->packageId = $customer->hotspot_profile_id;
+            }
+        }
+        if ($resolved === null && ! empty($customer->package_id)) {
+            $resolved = HotspotProfile::query()->pppoe()->find($customer->package_id);
+            if ($resolved) {
+                $this->packageId = $customer->package_id;
+            } else {
+                // Legacy Package mode: attach info label
+                $legacy = Package::find($customer->package_id);
+                if ($legacy) {
+                    $this->packageLegacyName = $legacy->name;
+                    $this->packageId = null; // force user reselect from HotspotProfile PPPoE
+                }
+            }
+        }
     }
 
     public function save()
     {
-        $this->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
@@ -66,10 +83,11 @@ class Edit extends Component
             'pppoeUser' => 'required|string|unique:customers,pppoe_user,' . $this->customer->id . '|max:255',
             'pppoePassword' => 'required|string|max:255',
             'routerId' => 'required|exists:routers,id',
-            'packageId' => 'required|exists:packages,id',
+            'packageId' => 'required|exists:hotspot_profiles,id',
             'status' => 'required|in:active,suspend,terminated',
             'activationDate' => 'required|date',
-        ]);
+        ];
+        $this->validate($rules);
 
         if ($this->createPortalUser) {
             $this->validate([
@@ -83,7 +101,7 @@ class Edit extends Component
         DB::beginTransaction();
 
         try {
-            $package = Package::findOrFail($this->packageId);
+            $profile = HotspotProfile::query()->pppoe()->findOrFail($this->packageId);
 
             $this->customer->update([
                 'name' => $this->name,
@@ -94,7 +112,8 @@ class Edit extends Component
                 'pppoe_password' => $this->pppoePassword,
                 'router_id' => $this->routerId,
                 'package_id' => $this->packageId,
-                'package' => $package->name,
+                'hotspot_profile_id' => $this->packageId,
+                'package' => $profile->name,
                 'status' => $this->status,
             ]);
 
@@ -131,7 +150,7 @@ class Edit extends Component
 
             DB::commit();
 
-            session()->flash('success', 'Pelanggan PPPoE berhasil diperbarui!');
+            session()->flash('success', 'Pelanggan PPPoE berhasil diperbarui (Paket: ' . $profile->name . ').');
             return redirect()->route('isp.pppoe-users.index');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -141,9 +160,20 @@ class Edit extends Component
 
     public function render()
     {
+        $packages = HotspotProfile::query()
+            ->pppoe()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
+
+        if ($packages->count() === 0 && class_exists(Package::class)) {
+            $packages = Package::where('is_active', true)->where('package_type', 'pppoe')->get();
+        }
+
         return view('livewire.isp.pppoe-user.edit', [
             'routers' => Router::where('is_active', true)->get(),
-            'packages' => Package::where('is_active', true)->get(),
+            'packages' => $packages,
         ])->layout('layouts.app', [
             'title' => 'Edit Pelanggan PPPoE'
         ]);

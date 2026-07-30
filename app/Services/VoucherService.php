@@ -18,10 +18,10 @@ class VoucherService
     {
     }
 
-    public function generateBatch(string $profile, ?int $durationSeconds, ?int $quotaMb, int $count, bool $passwordSameAsUsername = true, ?int $userId = null): VoucherBatch
+    public function generateBatch(string|null $profile, ?int $durationSeconds, ?int $quotaMb, int $count, bool $passwordSameAsUsername = true, ?int $userId = null, ?int $hotspotProfileId = null): VoucherBatch
     {
         $useRadius = Setting::getValue('use_radius_for_vouchers', '1') === '1';
-        
+
         $limitUptime = $this->secondsToMikrotikUptime($durationSeconds);
         $limitBytesTotal = $quotaMb ? $quotaMb * 1024 * 1024 : null; // MB to bytes
 
@@ -34,9 +34,9 @@ class VoucherService
             'created_by' => $userId,
         ]);
 
-        DB::transaction(function () use ($batch, $profile, $durationSeconds, $quotaMb, $count, $passwordSameAsUsername, $useRadius, $limitUptime, $limitBytesTotal) {
+        DB::transaction(function () use ($batch, $profile, $durationSeconds, $quotaMb, $count, $passwordSameAsUsername, $useRadius, $limitUptime, $limitBytesTotal, $hotspotProfileId) {
             $routers = Router::where('is_active', true)->get();
-            
+
             for ($i = 0; $i < $count; $i++) {
                 $username = strtoupper(Str::random(9));
                 $password = $passwordSameAsUsername ? $username : strtoupper(Str::random(9));
@@ -49,6 +49,7 @@ class VoucherService
                     'duration_seconds' => $durationSeconds,
                     'quota_mb' => $quotaMb,
                     'status' => 'unused',
+                    'hotspot_profile_id' => $hotspotProfileId,
                 ]);
 
                 if ($useRadius) {

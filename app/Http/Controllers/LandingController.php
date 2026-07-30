@@ -6,11 +6,12 @@ use App\Models\AtkProduct;
 use App\Models\CctvPackage;
 use App\Models\CrmLead;
 use App\Models\FeeProfile;
+use App\Models\HotspotProfile;
 use App\Models\Odp;
 use App\Models\Package;
 use App\Models\Setting;
 use App\Models\TechnicianAttendance;
-use App\Models\VoucherTemplate;
+use App\Models\WashMemberPackage;
 use App\Models\WashService;
 use App\Models\WeddingGalleryItem;
 use App\Models\WeddingPackage;
@@ -159,9 +160,17 @@ class LandingController extends Controller
                 ->first();
         }
 
-        // Safely fetch Packages
         try {
-            $packages = Package::where('is_active', true)->orderBy('price')->get();
+            if (class_exists(HotspotProfile::class) && Schema::hasTable('hotspot_profiles')) {
+                $packages = HotspotProfile::query()
+                    ->active()
+                    ->whereIn('package_type', ['pppoe', 'voucher', 'residential', 'rumahan', 'membership', 'member', 'home'])
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->get();
+            } else {
+                $packages = Package::where('is_active', true)->orderBy('price')->get();
+            }
         } catch (\Exception $e) {
             $packages = collect([]);
         }
@@ -287,9 +296,16 @@ class LandingController extends Controller
             $odps = collect([]);
         }
 
-        // Safely fetch Voucher Profiles
         try {
-            if (class_exists(VoucherTemplate::class) && Schema::hasTable('voucher_templates')) {
+            if (class_exists(HotspotProfile::class) && Schema::hasTable('hotspot_profiles')) {
+                $voucherTemplates = HotspotProfile::query()
+                    ->active()
+                    ->vouchers()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->orderBy('name')
+                    ->get();
+            } elseif (class_exists(VoucherTemplate::class) && Schema::hasTable('voucher_templates')) {
                 $voucherTemplates = VoucherTemplate::query()
                     ->where('is_active', true)
                     ->orderBy('price')

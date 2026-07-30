@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HotspotProfile;
 use App\Models\Voucher;
-use App\Models\VoucherBatch;
-use App\Models\VoucherTemplate;
 use App\Services\VoucherService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -21,8 +20,7 @@ class VoucherController extends Controller implements HasMiddleware
             new Middleware('auth'),
             new Middleware('permission:voucher.view', only: ['index', 'exportCsv', 'exportExcel', 'exportPdf']),
             new Middleware('permission:voucher.create', only: ['generate']),
-            new Middleware('permission:voucher.edit', only: ['disconnect', 'storeTemplate']),
-            new Middleware('permission:voucher.delete', only: ['deleteTemplate']),
+            new Middleware('permission:voucher.edit', only: ['disconnect']),
         ];
     }
 
@@ -36,16 +34,31 @@ class VoucherController extends Controller implements HasMiddleware
             ->latest('id')
             ->paginate(25)
             ->withQueryString();
-        $batches = VoucherBatch::query()->latest('id')->limit(10)->get();
-        $templates = VoucherTemplate::query()->orderByDesc('is_active')->orderBy('name')->get();
 
-        return view('vouchers.index', compact('vouchers', 'batches', 'search', 'status', 'templates'));
+        $hotspotProfiles = HotspotProfile::query()
+            ->active()
+            ->vouchers()
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
+
+        $profileDataJson = $hotspotProfiles->mapWithKeys(function ($p) {
+            return [
+                (string) $p->id => [
+                    'mikrotik_profile_name' => $p->mikrotik_profile_name,
+                    'formatted_uptime'      => $p->formatted_uptime,
+                    'quota_mb'              => $p->quota_mb,
+                ],
+            ];
+        })->toJson();
+
+        return view('vouchers.index', compact('vouchers', 'search', 'status', 'hotspotProfiles', 'profileDataJson'));
     }
 
     public function generate(Request $request, VoucherService $service)
     {
         $validated = $request->validate([
-            'voucher_template_id' => ['nullable', 'exists:voucher_templates,id'],
+            'hotspot_profile_id' => ['nullable', 'exists:hotspot_profiles,id'],
             'profile' => ['nullable', 'string', 'max:255'],
             'duration' => ['nullable', 'string', 'max:20'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
@@ -53,21 +66,38 @@ class VoucherController extends Controller implements HasMiddleware
             'password_same' => ['boolean'],
         ]);
 
-        $template = null;
-        if (! empty($validated['voucher_template_id'])) {
-            $template = VoucherTemplate::query()->find($validated['voucher_template_id']);
+        $profile = null;
+        $durationSeconds = null;
+        $quotaMb = null;
+
+        if (! empty($validated['hotspot_profile_id'])) {
+            $hp = HotspotProfile::find($validated['hotspot_profile_id']);
+            if ($hp) {
+                $profile = $hp->mikrotik_profile_name ?? $validated['profile'];
+                $durationSeconds = $hp->duration_seconds;
+                $quotaMb = $hp->quota_mb;
+            }
         }
 
-        $durationSeconds = $template?->duration_seconds ?? $this->parseDurationToSeconds($validated['duration'] ?? null);
-        $profile = $template?->rate_limit ?? ($validated['profile'] ?? null);
-        $quotaMb = $template?->quota_mb ?? ($validated['quota_mb'] ?? null);
+        if (empty($durationSeconds)) {
+            $durationSeconds = $this->parseDurationToSeconds($validated['duration'] ?? null);
+        }
+        if (empty($quotaMb) && isset($validated['quota_mb'])) {
+            $quotaMb = $validated['quota_mb'];
+        }
+        if (empty($profile)) {
+            $profile = $validated['profile'] ?? null;
+        }
+
+        $hotspotProfileId = $validated['hotspot_profile_id'] ?? null;
         $batch = $service->generateBatch(
             $profile,
             $durationSeconds,
             $quotaMb,
             (int) $validated['count'],
             (bool) ($validated['password_same'] ?? true),
-            auth()->id()
+            auth()->id(),
+            $hotspotProfileId
         );
 
         return redirect()->route('vouchers.index')->with('success', 'Voucher batch '.$batch->batch_code.' dibuat.');
@@ -83,120 +113,13 @@ class VoucherController extends Controller implements HasMiddleware
         return back()->with($ok ? 'success' : 'error', $ok ? 'User disconnected.' : 'Disconnect gagal.');
     }
 
-    public function storeTemplate(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'rate_limit' => ['nullable', 'string', 'max:255'],
-            'duration_value' => ['nullable', 'integer', 'min:0'],
-            'duration_unit' => ['nullable', 'in:menit,jam,hari,bulan'],
-            'quota_mb' => ['nullable', 'integer', 'min:0'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'is_active' => ['boolean'],
-        ]);
-        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
-        
-        // Calculate duration in seconds
-        $durationSeconds = null;
-        if (isset($validated['duration_value']) && $validated['duration_value'] > 0) {
-            $unitMultipliers = [
-                'menit' => 60,
-                'jam' => 3600,
-                'hari' => 86400,
-                'bulan' => 2592000, // 30 days
-            ];
-            $durationSeconds = $validated['duration_value'] * $unitMultipliers[$validated['duration_unit'] ?? 'jam'];
-        }
-        
-        $validated['duration_seconds'] = $durationSeconds;
-        unset($validated['duration_value'], $validated['duration_unit']);
-
-        VoucherTemplate::query()->create($validated);
-
-        return back()->with('success', 'Profile paket voucher berhasil ditambahkan!');
-    }
-
-    public function editTemplate(VoucherTemplate $voucherTemplate)
-    {
-        // Convert duration seconds back to value and unit
-        $durationValue = null;
-        $durationUnit = 'jam';
-        if ($voucherTemplate->duration_seconds) {
-            $seconds = $voucherTemplate->duration_seconds;
-            if ($seconds % 2592000 === 0) {
-                $durationValue = $seconds / 2592000;
-                $durationUnit = 'bulan';
-            } elseif ($seconds % 86400 === 0) {
-                $durationValue = $seconds / 86400;
-                $durationUnit = 'hari';
-            } elseif ($seconds % 3600 === 0) {
-                $durationValue = $seconds / 3600;
-                $durationUnit = 'jam';
-            } else {
-                $durationValue = $seconds / 60;
-                $durationUnit = 'menit';
-            }
-        }
-        
-        return response()->json([
-            'id' => $voucherTemplate->id,
-            'name' => $voucherTemplate->name,
-            'rate_limit' => $voucherTemplate->rate_limit,
-            'duration_value' => $durationValue,
-            'duration_unit' => $durationUnit,
-            'quota_mb' => $voucherTemplate->quota_mb,
-            'price' => $voucherTemplate->price,
-            'is_active' => $voucherTemplate->is_active
-        ]);
-    }
-
-    public function updateTemplate(Request $request, VoucherTemplate $voucherTemplate)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'rate_limit' => ['nullable', 'string', 'max:255'],
-            'duration_value' => ['nullable', 'integer', 'min:0'],
-            'duration_unit' => ['nullable', 'in:menit,jam,hari,bulan'],
-            'quota_mb' => ['nullable', 'integer', 'min:0'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'is_active' => ['boolean'],
-        ]);
-        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
-        
-        // Calculate duration in seconds
-        $durationSeconds = null;
-        if (isset($validated['duration_value']) && $validated['duration_value'] > 0) {
-            $unitMultipliers = [
-                'menit' => 60,
-                'jam' => 3600,
-                'hari' => 86400,
-                'bulan' => 2592000, // 30 days
-            ];
-            $durationSeconds = $validated['duration_value'] * $unitMultipliers[$validated['duration_unit'] ?? 'jam'];
-        }
-        
-        $validated['duration_seconds'] = $durationSeconds;
-        unset($validated['duration_value'], $validated['duration_unit']);
-
-        $voucherTemplate->update($validated);
-
-        return back()->with('success', 'Profile paket voucher berhasil diperbarui!');
-    }
-
-    public function deleteTemplate(VoucherTemplate $voucherTemplate)
-    {
-        $voucherTemplate->delete();
-
-        return back()->with('success', 'Profile paket voucher berhasil dihapus.');
-    }
-
     public function exportCsv(Request $request)
     {
         $vouchers = $this->filtered($request)->orderBy('id', 'desc')->get();
 
         return response()->streamDownload(function () use ($vouchers) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Username', 'Password', 'Profile', 'Duration', 'Quota(MB)', 'Status', 'Batch']);
+            fputcsv($out, ['Username', 'Password', 'Profile', 'Duration', 'Quota(MB)', 'Status', 'Batch', 'Paket']);
             foreach ($vouchers as $v) {
                 fputcsv($out, [
                     $v->username,
@@ -206,6 +129,7 @@ class VoucherController extends Controller implements HasMiddleware
                     $v->quota_mb,
                     $v->status,
                     $v->batch_id,
+                    $v->hotspot_profile_id,
                 ]);
             }
             fclose($out);
@@ -219,7 +143,7 @@ class VoucherController extends Controller implements HasMiddleware
         return response()->streamDownload(function () use ($vouchers) {
             $writer = new Writer;
             $writer->openToFile('php://output');
-            $writer->addRow(Row::fromValues(['Username', 'Password', 'Profile', 'Duration', 'Quota(MB)', 'Status', 'Batch']));
+            $writer->addRow(Row::fromValues(['Username', 'Password', 'Profile', 'Duration', 'Quota(MB)', 'Status', 'Batch', 'Paket']));
             foreach ($vouchers as $v) {
                 $writer->addRow(Row::fromValues([
                     $v->username,
@@ -229,6 +153,7 @@ class VoucherController extends Controller implements HasMiddleware
                     $v->quota_mb,
                     $v->status,
                     $v->batch_id,
+                    $v->hotspot_profile_id,
                 ]));
             }
             $writer->close();

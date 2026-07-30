@@ -12,6 +12,7 @@ class VoucherPayment extends Model
         'customer_name',
         'phone_number',
         'voucher_template_id',
+        'hotspot_profile_id',
         'amount',
         'status',
         'payment_method',
@@ -40,7 +41,7 @@ class VoucherPayment extends Model
                 $payment->reference_id = 'VPAY-' . date('YmdHis') . '-' . strtoupper(Str::random(6));
             }
             if (empty($payment->expires_at)) {
-                $payment->expires_at = now()->addHours(24); // Expire after 24 hours
+                $payment->expires_at = now()->addHours(24);
             }
         });
     }
@@ -50,8 +51,18 @@ class VoucherPayment extends Model
         return $this->belongsTo(VoucherTemplate::class);
     }
 
+    public function hotspotProfile()
+    {
+        return $this->belongsTo(HotspotProfile::class);
+    }
+
     public function voucher()
     {
         return $this->belongsTo(Voucher::class);
+    }
+
+    public function getHotspotProfileIdAttribute()
+    {
+        return $this->attributes['hotspot_profile_id'] ?? null;
     }
 }
