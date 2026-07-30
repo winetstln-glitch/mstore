@@ -1,0 +1,138 @@
+@extends('layouts.app')
+
+@section('title', __('Edit Paket Hotspot: ' . $package->name))
+
+@section('content')
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fa-solid fa-pen-to-square text-warning me-2"></i>Edit Paket Hotspot</h4>
+        <a href="{{ route('hotspot.profiles.index') }}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <h6 class="mb-2">Data ada yang salah:</h6>
+            <ul class="mb-0">
+                @foreach($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="card border-0 shadow-sm border-top border-4 border-warning">
+        <div class="card-body">
+            <form method="POST" action="{{ route('hotspot.profiles.update', $package) }}">
+                @csrf
+                @method('PUT')
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nama Paket <span class="text-danger">*</span></label>
+                        <input name="name" class="form-control"
+                               value="{{ old('name', $package->name) }}" required maxlength="100">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tipe Paket <span class="text-danger">*</span></label>
+                        <select name="package_type" class="form-select" required>
+                            <option value="voucher" @selected(old('package_type', $package->package_type)==='voucher')>Voucher Harian</option>
+                            <option value="member" @selected(in_array(old('package_type', $package->package_type), ['member','membership'], true))>Member WiFi</option>
+                            <option value="residential" @selected(in_array(old('package_type', $package->package_type), ['residential','home','rumahan'], true))>Rumahan Unlimited</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Router</label>
+                        <select name="router_id" class="form-select">
+                            <option value="">-- Default (router aktif pertama) --</option>
+                            @foreach($routers as $r)
+                                <option value="{{ $r->id }}" @selected(old('router_id', $package->router_id)==$r->id)>{{ $r->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Nama Profile di RouterOS <span class="text-danger">*</span></label>
+                        <input name="mikrotik_profile_name" class="form-control" maxlength="64" required
+                               value="{{ old('mikrotik_profile_name', $package->mikrotik_profile_name) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Harga (Rp) <span class="text-danger">*</span></label>
+                        <input name="price" type="number" class="form-control" min="0" step="1" required
+                               value="{{ old('price', (int) $package->price) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Warna Badge</label>
+                        <select name="color_badge" class="form-select">
+                            <option value="">Tidak Ada</option>
+                            <option value="green" @selected(old('color_badge', $package->color_badge)==='green')>Hijau</option>
+                            <option value="blue" @selected(old('color_badge', $package->color_badge)==='blue')>Biru</option>
+                            <option value="orange" @selected(old('color_badge', $package->color_badge)==='orange')>Oranye</option>
+                            <option value="purple" @selected(old('color_badge', $package->color_badge)==='purple')>Ungu</option>
+                            <option value="gold" @selected(old('color_badge', $package->color_badge)==='gold')>Emas</option>
+                            <option value="yellow" @selected(old('color_badge', $package->color_badge)==='yellow')>Kuning</option>
+                            <option value="gray" @selected(in_array(old('color_badge', $package->color_badge), ['gray','silver'], true))>Abu-Abu / Silver</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Kecepatan (Mbps)</label>
+                        <input name="rate_limit_mbps" type="number" step="0.01" min="0" class="form-control"
+                               value="{{ old('rate_limit_mbps', $package->rate_limit_mbps) }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Durasi (detik)</label>
+                        <input name="duration_seconds" type="number" min="0" class="form-control"
+                               value="{{ old('duration_seconds', $package->duration_seconds) }}">
+                        <small class="text-muted">3 jam = 10800, 7 hari = 604800</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Limit Uptime RouterOS</label>
+                        <input name="limit_uptime" class="form-control" maxlength="32"
+                               value="{{ old('limit_uptime', $package->limit_uptime) }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Kuota (MB)</label>
+                        <input name="quota_mb" type="number" min="0" class="form-control"
+                               value="{{ old('quota_mb', $package->quota_mb) }}">
+                        <small class="text-muted">Kosongkan = Unlimited</small>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Shared Users (perangkat)</label>
+                        <input name="shared_users" type="number" min="1" class="form-control" required
+                               value="{{ old('shared_users', (int) ($package->shared_users ?? 1)) }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Urutan Tampil</label>
+                        <input name="sort_order" type="number" min="0" class="form-control"
+                               value="{{ old('sort_order', (int) ($package->sort_order ?? 0)) }}">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" value="1" id="is_active" name="is_active"
+                                   @checked(old('is_active', $package->is_active))>
+                            <label class="form-check-label" for="is_active">
+                                <b>Aktif / Tampil di halaman paket captive portal</b>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Deskripsi (tampil di captive portal)</label>
+                        <textarea name="description" rows="2" class="form-control"
+                                  placeholder="Contoh: Kuota Unlimited. Speed 5 Mbps. Berlaku 3 jam setelah login.">{{ old('description', $package->description) }}</textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fa-solid fa-save me-1"></i>Simpan Perubahan
+                    </button>
+                    <a href="{{ route('hotspot.profiles.index') }}" class="btn btn-outline-secondary">Batal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection

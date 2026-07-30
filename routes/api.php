@@ -11,8 +11,11 @@ use App\Http\Controllers\Api\OLTController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::get('/hotspot/packages', [HotspotPortalController::class, 'packageList'])->middleware('throttle:60,1');
+Route::post('/hotspot/signup', [HotspotPortalController::class, 'signupMember'])->middleware('throttle:10,1');
 Route::post('/payment/create', [HotspotPortalController::class, 'createPayment'])->middleware('throttle:10,1');
 Route::get('/payment/status', [HotspotPortalController::class, 'paymentStatus'])->middleware('throttle:30,1');
+Route::post('/payment/callback', [HotspotPortalController::class, 'paymentCallback'])->middleware('throttle:60,1');
 Route::get('/voucher/status', [HotspotPortalController::class, 'voucherStatus'])->middleware('throttle:30,1');
 Route::get('/billing/monthly', [HotspotPortalController::class, 'billingMonthly'])->middleware('throttle:30,1');
 Route::get('/products/ads', [HotspotPortalController::class, 'productAds'])->middleware('throttle:60,1');

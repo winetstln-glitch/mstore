@@ -36,11 +36,11 @@ class SidebarMenu
                     self::link('customers', 'Data Pelanggan', 'customers.index', permissions: ['customer.view']),
                     self::link('installations', 'Instalasi Baru', 'installations.index', permissions: ['installation.view']),
                     self::group('services', 'Layanan Internet', [
-                        self::link('packages', 'Paket Internet', 'packages.index', permissions: ['package.view']),
+                        self::link('hotspot-profiles', 'Paket Internet', 'hotspot.profiles.index', routePatterns: ['hotspot.profiles.*', 'packages.*'], permissions: ['hotspot.profile.view', 'hotspot.profile.manage', 'package.view']),
                         self::link('pppoe-active', 'PPPoE Aktif', 'pppoe.index', routePatterns: ['pppoe.*'], permissions: ['pppoe.view', 'router.view']),
-                        self::link('hotspot-active', 'Hotspot Aktif', 'hotspot.index', routePatterns: ['hotspot.*'], permissions: ['hotspot.view', 'router.view']),
+                        self::link('hotspot-active', 'Hotspot Aktif', 'hotspot.index', routePatterns: ['hotspot.index', 'hotspot.online', 'hotspot.profiles.*'], permissions: ['hotspot.view', 'router.view']),
                         self::link('voucher-hotspot', 'Voucher Hotspot', 'vouchers.index', permissions: ['voucher.view']),
-                    ], permissions: ['package.view', 'pppoe.view', 'hotspot.view', 'voucher.view']),
+                    ], permissions: ['package.view', 'pppoe.view', 'hotspot.view', 'voucher.view', 'hotspot.profile.view', 'hotspot.profile.manage']),
                 ],
             ],
             [
@@ -182,6 +182,7 @@ class SidebarMenu
                     self::group('bu-wash', 'GT Wash', [
                         self::link('wash-dashboard', 'Dashboard', 'wash.dashboard', permissions: ['wash.view']),
                         self::link('wash-pos', 'POS Wash', 'wash.pos', permissions: ['wash.pos']),
+                        self::link('wash-member-packages', 'Paket Member (Berlangganan)', 'wash.member-packages.index', routePatterns: ['wash.member-packages.*'], permissions: ['wash.package.view', 'wash.package.manage']),
                         self::link('wash-transactions', 'Transaksi', 'wash.transactions.index', permissions: ['wash.report']),
                         self::link('wash-expenses', 'Pengeluaran', 'wash.expenses.index', permissions: ['wash.report']),
                         self::link('wash-stock', 'Stok Wash', 'wash.stock.index', permissions: ['wash.view']),
@@ -198,7 +199,7 @@ class SidebarMenu
                         self::link('wash-membership-levels', 'Membership Level', 'wash.members.levels', permissions: ['wash.member.view']),
                         self::link('wash-reward-history', 'Riwayat Reward', 'wash.loyalty.redemptions', permissions: ['wash.reward.view']),
                         self::link('wash-report', 'Laporan Wash', 'wash.reports.index', permissions: ['wash.report']),
-                    ], permissions: ['wash.view', 'wash.pos', 'wash.manage', 'wash.report', 'wash.member.view', 'wash.loyalty.view', 'wash.reward.view']),
+                    ], permissions: ['wash.view', 'wash.pos', 'wash.manage', 'wash.report', 'wash.member.view', 'wash.loyalty.view', 'wash.reward.view', 'wash.package.view', 'wash.package.manage']),
                     self::group('bu-wedding', 'Wedding & Event', [
                         self::link('wedding-dashboard', 'Dashboard', 'wedding.dashboard', permissions: ['wedding.view']),
                         self::link('wedding-packages', 'Paket', 'wedding.packages.index', permissions: ['wedding.view']),

@@ -672,6 +672,17 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('routers/{router}/simple-queues/move', [RouterController::class, 'moveSimpleQueue'])->name('routers.simple-queues.move');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
     Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
+
+    // Hotspot Profiles (Voucher & Rumahan packages)
+    Route::prefix('hotspot')->name('hotspot.')->group(function () {
+        Route::resource('profiles', \App\Http\Controllers\HotspotProfileController::class)->except(['show']);
+    });
+
+    // Wash Member Packages (Member subscriptions)
+    Route::prefix('wash')->name('wash.')->group(function () {
+        Route::resource('member-packages', \App\Http\Controllers\WashMemberPackageController::class)->except(['show']);
+    });
+
     Route::get('pppoe', [PppoeController::class, 'index'])->middleware('permission:pppoe.view')->name('pppoe.index');
     Route::post('pppoe/{router}/disconnect', [PppoeController::class, 'disconnect'])->name('pppoe.disconnect');
     Route::resource('routers', RouterController::class);
