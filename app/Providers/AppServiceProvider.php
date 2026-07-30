@@ -100,7 +100,7 @@ class AppServiceProvider extends ServiceProvider
 
                     $sidebarMenu = $runningUnitTests
                         ? \App\Support\Sidebar\SidebarMenu::tree()
-                        : Cache::rememberForever('sidebar.menu.tree.v12', function () {
+                        : Cache::rememberForever('sidebar.menu.tree.v13', function () {
                             return \App\Support\Sidebar\SidebarMenu::tree();
                         });
                     $unreadNotificationCount = $authUser->unreadNotifications()->count();

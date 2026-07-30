@@ -362,14 +362,16 @@
                 $hasPermission('hotspot.view') ||
                 $hasPermission('router.view') ||
                 $hasPermission('pppoe.view') ||
-                $hasPermission('package.view')
+                $hasPermission('package.view') ||
+                $hasPermission('hotspot.profile.view') ||
+                $hasPermission('hotspot.profile.manage')
             )
             <div class="sidebar-header mt-3">
                 <i class="fa-solid fa-network-wired me-2"></i>{{ __('Pelanggan & Layanan') }}
             </div>
             @php
                 $customerDataActive = $routeIs('customers.*') || $routeIs('installations.*');
-                $customerServiceActive = $routeIs('hotspot.index') || $routeIs('pppoe.index') || $routeIs('packages.*');
+                $customerServiceActive = $routeIs('hotspot.index') || $routeIs('pppoe.index') || $routeIs('packages.*') || $routeIs('hotspot.profiles.*');
                 $customerAnyActive = $customerDataActive || $customerServiceActive;
             @endphp
 
@@ -398,7 +400,7 @@
                     </div>
                     @endif
 
-                    @if($hasPermission('hotspot.view') || $hasPermission('router.view') || $hasPermission('pppoe.view') || $hasPermission('package.view'))
+                    @if($hasPermission('hotspot.view') || $hasPermission('router.view') || $hasPermission('pppoe.view') || $hasPermission('package.view') || $hasPermission('hotspot.profile.view') || $hasPermission('hotspot.profile.manage'))
                     <a class="sidebar-item {{ $customerServiceActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#customerServiceCollapse" role="button" aria-expanded="{{ $customerServiceActive ? 'true' : 'false' }}" aria-controls="customerServiceCollapse">
                         <i class="fa fa-wifi"></i> {{ __('Layanan Aktif') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
                     </a>
@@ -414,8 +416,8 @@
                                 <i class="fa-solid fa-globe"></i> {{ __('PPPoE Aktif') }}
                             </a>
                             @endif
-                            @if($hasPermission('package.view'))
-                            <a href="{{ route('packages.index') }}" class="sidebar-item {{ $routeIs('packages.*') ? 'active' : '' }}">
+                            @if($hasPermission('hotspot.profile.view') || $hasPermission('hotspot.profile.manage') || $hasPermission('package.view'))
+                            <a href="{{ route('hotspot.profiles.index') }}" class="sidebar-item {{ $routeIs('hotspot.profiles.*') || $routeIs('packages.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-cube"></i> {{ __('Paket Internet') }}
                             </a>
                             @endif

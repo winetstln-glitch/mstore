@@ -239,6 +239,8 @@ class PermissionSeeder extends Seeder
             // Hotspot & PPPoE (Services)
             ['name' => 'hotspot.view', 'label' => 'View Hotspot', 'group' => 'Service Management'],
             ['name' => 'hotspot.manage', 'label' => 'Manage Hotspot', 'group' => 'Service Management'],
+            ['name' => 'hotspot.profile.view', 'label' => 'View Hotspot Profiles (Paket Internet)', 'group' => 'Service Management'],
+            ['name' => 'hotspot.profile.manage', 'label' => 'Manage Hotspot Profiles (Paket Internet)', 'group' => 'Service Management'],
             ['name' => 'pppoe.view', 'label' => 'View PPPoE', 'group' => 'Service Management'],
             ['name' => 'pppoe.manage', 'label' => 'Manage PPPoE', 'group' => 'Service Management'],
 
