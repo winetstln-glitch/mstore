@@ -699,12 +699,20 @@
             <div class="modal-body">
                 <form id="createOdpForm">
                     <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
+                        <label class="form-label">ODC (Optical Distribution Cabinet) <span class="text-danger">*</span></label>
+                        <select class="form-select" name="odc_id" id="create_odp_odc_id" required>
+                            <option value="">-- Pilih ODC --</option>
+                            @if(isset($odcs))
+                                @foreach($odcs as $odc)
+                                    <option value="{{ $odc->id }}">{{ $odc->name }} (Area: {{ $odc->area ?? '-' }}, Cable: {{ $odc->cable_no ?? '-' }})</option>
+                                @endforeach
+                            @endif
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Region</label>
-                        <select class="form-select" name="region_id" required>
+                        <label class="form-label">Region <span class="text-danger">*</span></label>
+                        <select class="form-select" name="region_id" id="create_odp_region_id" required>
+                            <option value="">-- Pilih Region --</option>
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}">{{ $region->name }}</option>
                             @endforeach
@@ -712,33 +720,64 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Nama ODP (Kosong = auto generate)</label>
+                            <input type="text" class="form-control" name="name" id="create_odp_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kampung / Kelurahan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="kampung" id="create_odp_kampung" required placeholder="Contoh: Sukamaju">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kode Area (Contoh: CISARUA → CSR)</label>
+                            <input type="text" class="form-control" name="odp_area" id="create_odp_area" maxlength="10" placeholder="3-10 huruf">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. Kabel (Contoh: 01)</label>
+                            <input type="text" class="form-control" name="odp_cable" id="create_odp_cable" maxlength="10" placeholder="Contoh: 01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Latitude</label>
-                            <input type="text" class="form-control" name="latitude">
+                            <input type="text" class="form-control" name="latitude" id="create_odp_latitude">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Longitude</label>
-                            <input type="text" class="form-control" name="longitude">
+                            <input type="text" class="form-control" name="longitude" id="create_odp_longitude">
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Capacity</label>
-                            <input type="number" class="form-control" name="capacity" value="8">
+                            <input type="number" class="form-control" name="capacity" value="8" min="1">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Filled</label>
-                            <input type="number" class="form-control" name="filled" value="0">
+                            <label class="form-label">Color <span class="text-danger">*</span></label>
+                            <select class="form-select" name="color" id="create_odp_color" required>
+                                <option value="Hijau">Hijau</option>
+                                <option value="Merah">Merah</option>
+                                <option value="Biru">Biru</option>
+                                <option value="Kuning">Kuning</option>
+                                <option value="Ungu">Ungu</option>
+                                <option value="Abu">Abu</option>
+                                <option value="Oren">Oren</option>
+                                <option value="Pink">Pink</option>
+                                <option value="Putih">Putih</option>
+                                <option value="Hitam">Hitam</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description"></textarea>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveNewOdp()">Create ODP</button>
+                <button type="button" class="btn btn-primary" onclick="saveNewOdp()"><i class="fa-solid fa-save me-1"></i> Create ODP</button>
             </div>
         </div>
     </div>
@@ -756,16 +795,33 @@
                 <form id="editOdpForm">
                     <input type="hidden" name="id" id="edit_odp_id">
                     <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" id="edit_odp_name" required>
+                        <label class="form-label">ODC (Optical Distribution Cabinet)</label>
+                        <select class="form-select" name="odc_id" id="edit_odp_odc_id">
+                            <option value="">-- Pilih ODC --</option>
+                            @if(isset($odcs))
+                                @foreach($odcs as $odc)
+                                    <option value="{{ $odc->id }}">{{ $odc->name }} (Area: {{ $odc->area ?? '-' }}, Cable: {{ $odc->cable_no ?? '-' }})</option>
+                                @endforeach
+                            @endif
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Region</label>
+                        <label class="form-label">Region <span class="text-danger">*</span></label>
                         <select class="form-select" name="region_id" id="edit_odp_region_id" required>
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}">{{ $region->name }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" id="edit_odp_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kampung / Kelurahan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="kampung" id="edit_odp_kampung" required>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -780,22 +836,33 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Capacity</label>
-                            <input type="number" class="form-control" name="capacity" id="edit_odp_capacity">
+                            <input type="number" class="form-control" name="capacity" id="edit_odp_capacity" min="1">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Filled</label>
-                            <input type="number" class="form-control" name="filled" id="edit_odp_filled">
+                            <label class="form-label">Color <span class="text-danger">*</span></label>
+                            <select class="form-select" name="color" id="edit_odp_color" required>
+                                <option value="Hijau">Hijau</option>
+                                <option value="Merah">Merah</option>
+                                <option value="Biru">Biru</option>
+                                <option value="Kuning">Kuning</option>
+                                <option value="Ungu">Ungu</option>
+                                <option value="Abu">Abu</option>
+                                <option value="Oren">Oren</option>
+                                <option value="Pink">Pink</option>
+                                <option value="Putih">Putih</option>
+                                <option value="Hitam">Hitam</option>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" id="edit_odp_description"></textarea>
+                        <textarea class="form-control" name="description" id="edit_odp_description" rows="2"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="updateOdp()">Update ODP</button>
+                <button type="button" class="btn btn-primary" onclick="updateOdp()"><i class="fa-solid fa-save me-1"></i> Update ODP</button>
             </div>
         </div>
     </div>
@@ -860,35 +927,338 @@
     // Kode Logic ODP dan Fetch lainnya...
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    function showJsonErrorAlert(prefix, data) {
+        let msg = prefix || 'Error';
+        if (data) {
+            if (typeof data === 'string') {
+                msg += ': ' + data;
+            } else if (data.message) {
+                msg += ': ' + data.message;
+            }
+            if (data.errors) {
+                const first = Object.values(data.errors)[0];
+                if (first && Array.isArray(first) && first[0]) {
+                    msg += ' - ' + first[0];
+                } else if (first && typeof first === 'string') {
+                    msg += ' - ' + first;
+                }
+            }
+        }
+        alert(msg);
+    }
+
     function saveCustomerOdp() {
         const odpId = document.getElementById('customer_odp_id').value;
         const customerId = {{ $customer->id ?? 'null' }};
-        
-        if (!customerId) return;
-        
-        fetch(`/customers/${customerId}`, {
+
+        if (!customerId) {
+            alert('Data customer tidak valid.');
+            return;
+        }
+
+        const btn = event ? event.currentTarget : null;
+        const oldBtnHtml = btn ? btn.innerHTML : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+        }
+
+        fetch(`/customers/${encodeURIComponent(customerId)}/update-odp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ odp_id: odpId || null })
+        })
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            let data = {};
+            if (contentType.indexOf('application/json') !== -1) {
+                try { data = await response.json(); } catch(e) {}
+            } else {
+                try { data = { message: await response.text() }; } catch(e) {}
+            }
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+            return { ok: true, data: data };
+        })
+        .then(result => {
+            if (result.data && result.data.success) {
+                if (btn) { btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Tersimpan!'; }
+                setTimeout(() => { location.reload(); }, 600);
+            } else {
+                showJsonErrorAlert('Gagal simpan koneksi ODP', result.data || {});
+                if (btn) { btn.disabled = false; btn.innerHTML = oldBtnHtml; }
+            }
+        })
+        .catch(err => {
+            console.error('saveCustomerOdp error:', err);
+            const msg = err && err.data ? err.data : (err && err.message ? err.message : 'Network error');
+            showJsonErrorAlert('Gagal simpan koneksi ODP', typeof msg === 'object' ? msg : { message: String(msg) });
+            if (btn) { btn.disabled = false; btn.innerHTML = oldBtnHtml; }
+        });
+    }
+
+    function saveNewOdp() {
+        const form = document.getElementById('createOdpForm');
+        if (!form) {
+            alert('Form buat ODP tidak ditemukan.');
+            return;
+        }
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((val, key) => { payload[key] = val; });
+
+        const submitBtn = document.querySelector('#createOdpModal button[onclick="saveNewOdp()"], #createOdpModal .btn-primary[type="button"], #createOdpModal .btn-primary[type="submit"]');
+        const oldBtnHtml = submitBtn ? submitBtn.innerHTML : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+        }
+
+        fetch('/odps', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            let data = {};
+            if (contentType.indexOf('application/json') !== -1) {
+                try { data = await response.json(); } catch(e) {}
+            } else {
+                try { data = { message: await response.text() }; } catch(e) {}
+            }
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+            return { ok: true, data: data };
+        })
+        .then(result => {
+            if (result.data && result.data.success) {
+                if (submitBtn) { submitBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Berhasil!'; }
+                const createModalEl = document.getElementById('createOdpModal');
+                if (createModalEl) {
+                    try { const m = bootstrap.Modal.getInstance(createModalEl); if (m) m.hide(); } catch(e) {}
+                }
+                alert('ODP baru berhasil dibuat!');
+                location.reload();
+            } else {
+                showJsonErrorAlert('Gagal buat ODP', result.data || {});
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = oldBtnHtml; }
+            }
+        })
+        .catch(err => {
+            console.error('saveNewOdp error:', err);
+            const msg = err && err.data ? err.data : (err && err.message ? err.message : 'Network error');
+            showJsonErrorAlert('Gagal buat ODP', typeof msg === 'object' ? msg : { message: String(msg) });
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = oldBtnHtml; }
+        });
+    }
+
+    function editSelectedOdp() {
+        const odpIdRaw = document.getElementById('customer_odp_id').value;
+        if (!odpIdRaw) {
+            alert('Silakan pilih ODP yang akan diedit terlebih dahulu.');
+            return;
+        }
+        const odpId = parseInt(odpIdRaw, 10);
+        if (!odpId) {
+            alert('ODP tidak valid.');
+            return;
+        }
+
+        let odpData = null;
+        @foreach($odps as $o)
+            if (parseInt("{{ $o->id }}", 10) === odpId) {
+                odpData = {
+                    id: odpId,
+                    name: @json($o->name),
+                    latitude: @json($o->latitude),
+                    longitude: @json($o->longitude),
+                    capacity: @json($o->capacity),
+                    description: @json($o->description ?? ''),
+                    region_id: @json($o->region_id),
+                    odc_id: @json($o->odc_id),
+                    color: @json($o->color ?? 'Hijau'),
+                    kampung: @json($o->kampung ?? ''),
+                };
+            }
+        @endforeach
+
+        if (!odpData) {
+            alert('Data ODP tidak ditemukan di pilihan.');
+            return;
+        }
+
+        document.getElementById('edit_odp_id').value = odpData.id;
+        document.getElementById('edit_odp_name').value = odpData.name || '';
+        document.getElementById('edit_odp_latitude').value = odpData.latitude ?? '';
+        document.getElementById('edit_odp_longitude').value = odpData.longitude ?? '';
+        document.getElementById('edit_odp_capacity').value = odpData.capacity ?? '';
+        document.getElementById('edit_odp_description').value = odpData.description ?? '';
+        document.getElementById('edit_odp_kampung').value = odpData.kampung ?? '';
+        document.getElementById('edit_odp_color').value = odpData.color || 'Hijau';
+        if (odpData.region_id) {
+            const regSel = document.getElementById('edit_odp_region_id');
+            if (regSel) { for (let i = 0; i < regSel.options.length; i++) { if (String(regSel.options[i].value) === String(odpData.region_id)) { regSel.selectedIndex = i; break; } } }
+        }
+        if (odpData.odc_id) {
+            const odcSel = document.getElementById('edit_odp_odc_id');
+            if (odcSel) { for (let i = 0; i < odcSel.options.length; i++) { if (String(odcSel.options[i].value) === String(odpData.odc_id)) { odcSel.selectedIndex = i; break; } } }
+        }
+
+        const editModalEl = document.getElementById('editOdpModal');
+        if (editModalEl) {
+            try {
+                let m = bootstrap.Modal.getInstance(editModalEl);
+                if (!m) { m = new bootstrap.Modal(editModalEl); }
+                m.show();
+            } catch(e) {}
+        }
+    }
+
+    function updateOdp() {
+        const form = document.getElementById('editOdpForm');
+        if (!form) {
+            alert('Form edit ODP tidak ditemukan.');
+            return;
+        }
+        const odpId = document.getElementById('edit_odp_id').value;
+        if (!odpId) return;
+
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((val, key) => { payload[key] = val; });
+        delete payload['id'];
+
+        const submitBtn = document.querySelector('#editOdpModal button[onclick="updateOdp()"], #editOdpModal .btn-primary[type="button"], #editOdpModal .btn-primary[type="submit"]');
+        const oldBtnHtml = submitBtn ? submitBtn.innerHTML : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+        }
+
+        fetch(`/odps/${encodeURIComponent(odpId)}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ odp_id: odpId })
+            body: JSON.stringify(payload)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Gunakan toast/alert yang lebih bagus jika ada, ini native alert
-                alert('Connection saved!');
-                location.reload(); 
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            let data = {};
+            if (contentType.indexOf('application/json') !== -1) {
+                try { data = await response.json(); } catch(e) {}
             } else {
-                alert('Failed to save connection.');
+                try { data = { message: await response.text() }; } catch(e) {}
             }
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+            return { ok: true, data: data };
+        })
+        .then(result => {
+            if (result.data && result.data.success) {
+                if (submitBtn) { submitBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Tersimpan!'; }
+                const editModalEl = document.getElementById('editOdpModal');
+                if (editModalEl) {
+                    try { const m = bootstrap.Modal.getInstance(editModalEl); if (m) m.hide(); } catch(e) {}
+                }
+                alert('ODP berhasil diperbarui!');
+                location.reload();
+            } else {
+                showJsonErrorAlert('Gagal perbarui ODP', result.data || {});
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = oldBtnHtml; }
+            }
+        })
+        .catch(err => {
+            console.error('updateOdp error:', err);
+            const msg = err && err.data ? err.data : (err && err.message ? err.message : 'Network error');
+            showJsonErrorAlert('Gagal perbarui ODP', typeof msg === 'object' ? msg : { message: String(msg) });
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = oldBtnHtml; }
         });
     }
 
-    // ... (fungsi saveNewOdp, editSelectedOdp, updateOdp, deleteSelectedOdp tetap sama seperti kode Anda) ...
-    
-    // Pastikan copy sisa fungsi fetch Anda di sini
+    function deleteSelectedOdp() {
+        const odpIdRaw = document.getElementById('customer_odp_id').value;
+        if (!odpIdRaw) {
+            alert('Silakan pilih ODP yang akan dihapus terlebih dahulu.');
+            return;
+        }
+        const odpId = parseInt(odpIdRaw, 10);
+        if (!odpId) {
+            alert('ODP tidak valid.');
+            return;
+        }
+        if (!confirm(`PERINGATAN: Semua customer yang terhubung ke ODP ini akan menjadi tidak terhubung di Network Map.\n\nYakin HAPUS ODP ini?\n(Operasi TIDAK BISA dibatalkan!)`)) {
+            return;
+        }
+
+        fetch(`/odps/${encodeURIComponent(odpId)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        })
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            let data = {};
+            if (contentType.indexOf('application/json') !== -1) {
+                try { data = await response.json(); } catch(e) {}
+            } else {
+                try { data = { message: await response.text() }; } catch(e) {}
+            }
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+            return { ok: true, data: data };
+        })
+        .then(result => {
+            if (result.data && result.data.success) {
+                alert('ODP berhasil dihapus!');
+                location.reload();
+            } else {
+                showJsonErrorAlert('Gagal hapus ODP', result.data || {});
+            }
+        })
+        .catch(err => {
+            console.error('deleteSelectedOdp error:', err);
+            const msg = err && err.data ? err.data : (err && err.message ? err.message : 'Network error');
+            showJsonErrorAlert('Gagal hapus ODP', typeof msg === 'object' ? msg : { message: String(msg) });
+        });
+    }
+
+    // Auto-wire form submit pada modal ODP jika menggunakan type=submit
+    document.addEventListener('DOMContentLoaded', function() {
+        const createForm = document.getElementById('createOdpForm');
+        if (createForm) {
+            createForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveNewOdp();
+                return false;
+            });
+        }
+        const editForm = document.getElementById('editOdpForm');
+        if (editForm) {
+            editForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                updateOdp();
+                return false;
+            });
+        }
+    });
 </script>
 @endsection

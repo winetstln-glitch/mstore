@@ -16,10 +16,13 @@ use App\Observers\InstallationObserver;
 use App\Observers\TicketObserver;
 use App\Observers\UserObserver;
 use App\Observers\WashEmployeeObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -67,6 +70,16 @@ class AppServiceProvider extends ServiceProvider
                 URL::forceRootUrl($root);
             }
         }
+
+        RateLimiter::for('ganti-wifi-otp', function (Request $request) {
+            $userId = Auth::id() ?? $request->ip();
+            return Limit::perMinute(10)->by('onu-wifi-otp-' . $userId);
+        });
+
+        RateLimiter::for('ganti-wifi-update', function (Request $request) {
+            $userId = Auth::id() ?? $request->ip();
+            return Limit::perHour(3)->by('onu-wifi-update-' . $userId);
+        });
 
         if (! $this->app->runningInConsole()) {
             // View Composers for Sidebar / Layout Data

@@ -43,7 +43,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:customer.view', only: ['index', 'show', 'import', 'export']),
             new Middleware('permission:customer.create', only: ['create', 'store', 'importFile']),
-            new Middleware('permission:customer.edit', only: ['edit', 'update', 'notifyStatus', 'settings', 'updateWan', 'updateWlan']),
+            new Middleware('permission:customer.edit', only: ['edit', 'update', 'notifyStatus', 'settings', 'updateWan', 'updateWlan', 'updateOdp']),
             new Middleware('permission:customer.delete', only: ['destroy', 'bulkDestroy']),
             new Middleware('permission:customer.view', only: ['getGenieDevice']),
         ];
@@ -634,9 +634,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             'user_id' => 'nullable|exists:users,id|unique:customers,user_id',
             // User account creation fields
             'create_user' => 'nullable|boolean',
-            'username' => 'nullable|string|max:255|unique:users,username',
-            'email' => 'nullable|string|email|max:255|unique:users,email',
-            'password' => 'nullable|string|min:8|confirmed',
+            'username' => 'nullable|required_if:create_user,1|string|max:255|unique:users,username',
+            'email' => 'nullable|required_if:create_user,1|string|email|max:255|unique:users,email',
+            'password' => 'nullable|required_if:create_user,1|string|min:6|confirmed',
             'ip_address' => 'nullable|ip',
             'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
@@ -654,6 +654,12 @@ class CustomerWebController extends Controller implements HasMiddleware
             'ssid_password' => 'nullable|string|max:100',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+        ], [
+            'username.required_if' => 'Username wajib diisi jika Buat User Portal dicentang.',
+            'email.required_if' => 'Email wajib diisi jika Buat User Portal dicentang.',
+            'password.required_if' => 'Password wajib diisi jika Buat User Portal dicentang.',
+            'password.min' => 'Password portal pelanggan minimal :min karakter (sekarang 6).',
+            'password.confirmed' => 'Konfirmasi Password tidak cocok dengan Password.',
         ]);
 
         if (! empty($validated['package_id'])) {
@@ -893,7 +899,7 @@ class CustomerWebController extends Controller implements HasMiddleware
             'create_user' => 'nullable|boolean',
             'username' => 'nullable|string|max:255|unique:users,username,'.($customer->user_id ?? 'NULL'),
             'email' => 'nullable|string|email|max:255|unique:users,email,'.($customer->user_id ?? 'NULL'),
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|string|min:6|confirmed',
             'ip_address' => 'nullable|ip',
             'genieacs_device_id' => 'nullable|string|max:255',
             'vlan' => 'nullable|string|max:20',
@@ -911,6 +917,9 @@ class CustomerWebController extends Controller implements HasMiddleware
             'ssid_password' => 'nullable|string|max:100',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+        ], [
+            'password.min' => 'Password portal pelanggan minimal :min karakter (sekarang 6).',
+            'password.confirmed' => 'Konfirmasi Password tidak cocok dengan Password.',
         ]);
 
         if (! empty($validated['package_id'])) {
@@ -930,6 +939,13 @@ class CustomerWebController extends Controller implements HasMiddleware
         if (! empty($newHtbId)) {
             $newHtb = Htb::with('odp')->find($newHtbId);
             if ($newHtb && $newHtb->isFull() && $newHtb->id !== $oldHtbId) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('Selected HTB is full.'),
+                        'errors' => ['htb_id' => [__('Selected HTB is full.')]],
+                    ], 422);
+                }
                 return back()->withInput()->withErrors(['htb_id' => __('Selected HTB is full.')]);
             }
             if ($newHtb) {
@@ -940,6 +956,13 @@ class CustomerWebController extends Controller implements HasMiddleware
             $validated['htb_id'] = null;
             $newOdp = Odp::find($newOdpId);
             if ($newOdp && $newOdp->isFull() && $newOdp->id !== $oldOdpId) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('Selected ODP is full.'),
+                        'errors' => ['odp_id' => [__('Selected ODP is full.')]],
+                    ], 422);
+                }
                 return back()->withInput()->withErrors(['odp_id' => __('Selected ODP is full.')]);
             }
             if ($newOdp) {
@@ -994,6 +1017,13 @@ class CustomerWebController extends Controller implements HasMiddleware
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Error updating customer: '.$e->getMessage());
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Failed to update customer: :message', ['message' => $e->getMessage()]),
+                    'errors' => ['error' => [$e->getMessage()]],
+                ], 500);
+            }
             return back()->withInput()->withErrors(['error' => __('Failed to update customer: :message', ['message' => $e->getMessage()])]);
         }
 
@@ -1016,6 +1046,65 @@ class CustomerWebController extends Controller implements HasMiddleware
         }
 
         return $redirect;
+    }
+
+    /**
+     * Update ODP assignment for Customer (JSON endpoint from GenieACS view).
+     * Dedicated endpoint to avoid full customer.update() validation + permission mismatch.
+     */
+    public function updateOdp(Request $request, Customer $customer)
+    {
+        $request->validate([
+            'odp_id' => 'nullable|exists:odps,id',
+        ]);
+
+        $newOdpId = $request->input('odp_id');
+        if (empty($newOdpId)) {
+            $newOdpId = null;
+        }
+
+        $newHtbId = null;
+        $newOdpName = null;
+
+        if ($newOdpId !== null) {
+            $newOdp = Odp::find($newOdpId);
+            if ($newOdp && $newOdp->isFull() && (int) $newOdp->id !== (int) $customer->odp_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Selected ODP is full.'),
+                    'errors' => ['odp_id' => [__('Selected ODP is full.')]],
+                ], 422);
+            }
+            if ($newOdp) {
+                $newOdpName = $newOdp->name;
+            }
+        }
+
+        try {
+            $customer->timestamps = false;
+            $customer->update([
+                'htb_id' => $newHtbId,
+                'odp_id' => $newOdpId,
+                'odp' => $newOdpName,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Customer updateOdp error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to update ODP: :message', ['message' => $e->getMessage()]),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Customer ODP updated successfully.'),
+            'data' => [
+                'id' => $customer->id,
+                'odp_id' => $customer->odp_id,
+                'odp' => $customer->odp,
+            ],
+        ]);
     }
 
     /**

@@ -33,6 +33,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\VpnServerController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ConsolidationController;
+use App\Http\Controllers\Client\OnuWifiController;
 use App\Models\Router as RouterModel;
 use App\Models\VpnAccount;
 use App\Services\VpnBridgeService;
@@ -288,6 +289,7 @@ Route::post('/ai-public/chat', [\App\Http\Controllers\AiController::class, 'publ
     ->name('ai.public.chat');
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
+Route::get('/login/pelanggan', [LoginController::class, 'createCustomer'])->name('login.customer');
 Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/forgot-password', [\App\Http\Controllers\PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
@@ -464,22 +466,9 @@ Route::middleware('auth')->group(function () {
 
     // Client Portal
     Route::prefix('client')->name('client.')->group(function () {
-        Route::get('/dashboard', \App\Http\Controllers\Client\DashboardController::class)->name('dashboard');
-        Route::get('/portal', [\App\Http\Controllers\Client\MixradiusPortalController::class, 'index'])->name('portal');
-        Route::get('/mixradius', function () {
-            $url = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', ''));
-            abort_if(empty($url), 404);
-            // Normalize url to base (no trailing slash)
-            $url = rtrim((string) $url, '/');
-
-            return view('client.mixradius_embed', ['mixradiusUrl' => $url]);
-        })->name('mixradius');
-        Route::get('/connection', [\App\Http\Controllers\Client\ConnectionController::class, 'index'])->name('connection');
-        Route::get('/invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices.index');
-        Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\InvoiceController::class, 'show'])->name('invoices.show');
-        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\InvoiceController::class, 'pay'])->name('invoices.pay');
-        Route::get('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'show'])->name('credentials.show');
-        Route::post('/credentials', [\App\Http\Controllers\Client\CredentialsController::class, 'update'])->name('credentials.update');
+        Route::get('/onu-wifi', [OnuWifiController::class, 'show'])->name('onu-wifi.show');
+        Route::post('/onu-wifi/send-otp', [OnuWifiController::class, 'sendOtp'])->middleware('throttle:ganti-wifi-otp')->name('onu-wifi.send_otp');
+        Route::post('/onu-wifi', [OnuWifiController::class, 'update'])->middleware('throttle:ganti-wifi-update')->name('onu-wifi.update');
     });
 
     // WhatsApp Webhook
@@ -550,6 +539,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('customers/{customer}/settings/wan', [CustomerWebController::class, 'updateWan'])->name('customers.settings.wan');
     Route::post('customers/{customer}/settings/wlan', [CustomerWebController::class, 'updateWlan'])->name('customers.settings.wlan');
     Route::delete('customers/bulk-destroy', [CustomerWebController::class, 'bulkDestroy'])->name('customers.bulkDestroy');
+    Route::post('customers/{customer}/update-odp', [CustomerWebController::class, 'updateOdp'])->name('customers.update_odp');
     Route::resource('companies', CompanyController::class);
     Route::get('consolidation', [ConsolidationController::class, 'index'])->name('consolidation.index');
     Route::post('consolidation/generate', [ConsolidationController::class, 'generate'])->name('consolidation.generate');

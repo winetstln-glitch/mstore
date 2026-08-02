@@ -24,21 +24,25 @@ use Modules\Network\Services\TopologyService;
 class MapController extends Controller implements HasMiddleware
 {
     protected $genieService;
-    protected $topologyService;
-    protected $capacityService;
-    protected $opticalMonitoringService;
 
-    public function __construct(
-        GenieACSService $genieService,
-        TopologyService $topologyService,
-        CapacityService $capacityService,
-        OpticalMonitoringService $opticalMonitoringService
-    )
+    public function __construct(GenieACSService $genieService)
     {
         $this->genieService = $genieService;
-        $this->topologyService = $topologyService;
-        $this->capacityService = $capacityService;
-        $this->opticalMonitoringService = $opticalMonitoringService;
+    }
+
+    protected function topologyService(): TopologyService
+    {
+        return app(TopologyService::class);
+    }
+
+    protected function capacityService(): CapacityService
+    {
+        return app(CapacityService::class);
+    }
+
+    protected function opticalMonitoringService(): OpticalMonitoringService
+    {
+        return app(OpticalMonitoringService::class);
     }
 
     public static function middleware(): array
@@ -63,129 +67,173 @@ class MapController extends Controller implements HasMiddleware
         $regionId = null;
 
         if ($isAdmin) {
-            $coordinators = \App\Models\Coordinator::with('region')->get();
+            try {
+                $coordinators = \App\Models\Coordinator::with('region')->get();
+            } catch (\Throwable $e) {
+                $coordinators = [];
+                report($e);
+            }
         } else {
-            $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
-            if ($coordinator) {
-                $regionId = $coordinator->region_id;
+            try {
+                $coordinator = \App\Models\Coordinator::where('user_id', $user->id)->first();
+                if ($coordinator) {
+                    $regionId = $coordinator->region_id;
+                }
+            } catch (\Throwable $e) {
+                report($e);
             }
         }
 
-        // Fetch OLTs
-        $olts = OLT::all();
+        $olts = collect();
+        try {
+            $olts = OLT::all();
+        } catch (\Throwable $e) { report($e); }
 
-        // Fetch ODCs
-        $odcQuery = Odc::query();
-        if ($regionId) {
-            $odcQuery->where('region_id', $regionId);
-        }
-        $odcs = $odcQuery->get();
+        $odcs = collect();
+        try {
+            $odcQuery = Odc::query();
+            if ($regionId) {
+                $odcQuery->where('region_id', $regionId);
+            }
+            $odcs = $odcQuery->get();
+        } catch (\Throwable $e) { report($e); }
 
-        // Fetch ODPs
-        $odpQuery = Odp::query();
-        if ($regionId) {
-            $odpQuery->where('region_id', $regionId);
-        }
-        $odps = $odpQuery->get();
+        $odps = collect();
+        try {
+            $odpQuery = Odp::query();
+            if ($regionId) {
+                $odpQuery->where('region_id', $regionId);
+            }
+            $odps = $odpQuery->get();
+        } catch (\Throwable $e) { report($e); }
 
-        // Fetch HTBs
-        $htbQuery = Htb::with(['parent', 'odp']);
-        if ($regionId) {
-            $htbQuery->whereHas('odp', function ($q) use ($regionId) {
-                $q->where('region_id', $regionId);
+        $htbs = collect();
+        try {
+            $htbQuery = Htb::with(['parent', 'odp']);
+            if ($regionId) {
+                $htbQuery->whereHas('odp', function ($q) use ($regionId) {
+                    $q->where('region_id', $regionId);
+                });
+            }
+            $htbs = $htbQuery->get();
+        } catch (\Throwable $e) { report($e); }
+
+        $closures = collect();
+        try {
+            $closureQuery = Closure::query();
+            if ($regionId) {
+                $closureQuery->where('region_id', $regionId);
+            }
+            $closures = $closureQuery->get();
+        } catch (\Throwable $e) { report($e); }
+
+        $regions = collect();
+        try {
+            $regions = Region::orderBy('name')->get();
+        } catch (\Throwable $e) { report($e); }
+
+        $customers = collect();
+        try {
+            $customerQuery = Customer::whereNotNull('latitude')
+                ->whereNotNull('longitude');
+
+            if ($regionId) {
+                $customerQuery->whereHas('odp', function ($q) use ($regionId) {
+                    $q->where('region_id', $regionId);
+                });
+            }
+
+            $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package', 'path', 'ssid_name', 'ssid_password', 'genieacs_device_id'])
+                ->with('odp:id,region_id')
+                ->get();
+
+            $customerIds = $customers->pluck('id')->all();
+            $serials = $customers->pluck('onu_serial')->filter()->values()->all();
+            $statusesByCustomer = collect();
+            $statusesBySerial = collect();
+
+            try {
+                $statusesByCustomer = GenieDeviceStatus::query()
+                    ->whereIn('customer_id', $customerIds)
+                    ->get()
+                    ->keyBy('customer_id');
+            } catch (\Throwable $e) { report($e); }
+
+            try {
+                $statusesBySerial = GenieDeviceStatus::query()
+                    ->whereNull('customer_id')
+                    ->whereIn('onu_serial', $serials)
+                    ->get()
+                    ->keyBy('onu_serial');
+            } catch (\Throwable $e) { report($e); }
+
+            $customers->transform(function ($customer) use ($statusesByCustomer, $statusesBySerial) {
+                try {
+                    $status = $statusesByCustomer->get($customer->id);
+                    if (! $status && $customer->onu_serial) {
+                        $status = $statusesBySerial->get($customer->onu_serial);
+                    }
+
+                    if ($status) {
+                        $customer->is_online = (bool) $status->is_online;
+                        $customer->tr069_ip = $status->tr069_ip;
+                        $customer->last_inform = $status->last_inform?->toIso8601String();
+                        $customer->last_reason = $status->last_reason;
+                        $customer->connection_request_url = $status->connection_request_url;
+                        $customer->has_genie_status = true;
+                        $customer->rx_power = $status->rx_power;
+                        $customer->tx_power = $status->tx_power;
+                        $customer->rdm_power = $status->rdm_power;
+                        $customer->genie_name = null;
+                    } else {
+                        $customer->is_online = false;
+                        $customer->tr069_ip = null;
+                        $customer->last_inform = null;
+                        $customer->last_reason = null;
+                        $customer->connection_request_url = null;
+                        $customer->has_genie_status = false;
+                        $customer->rx_power = null;
+                        $customer->tx_power = null;
+                        $customer->rdm_power = null;
+                        $customer->genie_name = null;
+                    }
+                } catch (\Throwable $e) {
+                    $customer->is_online = false;
+                    $customer->has_genie_status = false;
+                    report($e);
+                }
+
+                return $customer;
             });
+        } catch (\Throwable $e) { report($e); }
+
+        $assets = collect();
+        try {
+            $assets = Asset::with(['item', 'holder'])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->get();
+        } catch (\Throwable $e) { report($e); }
+
+        $modemDataRecords = collect();
+        try {
+            $modemDataRecords = DB::table('modem_data_records')
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->whereNotNull('customer_id')
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('customers')
+                        ->whereColumn('customers.id', 'modem_data_records.customer_id');
+                })
+                ->select(['id', 'customer_id', 'customer_name', 'modem_type', 'mac_address', 'serial_number', 'latitude', 'longitude', 'created_at'])
+                ->orderByDesc('id')
+                ->limit(500)
+                ->get();
+        } catch (\Throwable $e) {
+            $modemDataRecords = collect();
+            report($e);
         }
-        $htbs = $htbQuery->get();
-
-        // Fetch Closures
-        $closureQuery = Closure::query();
-        if ($regionId) {
-            $closureQuery->where('region_id', $regionId);
-        }
-        $closures = $closureQuery->get();
-
-        // Fetch Regions
-        $regions = Region::orderBy('name')->get();
-
-        // Fetch Customers with coordinates
-        $customerQuery = Customer::whereNotNull('latitude')
-            ->whereNotNull('longitude');
-
-        if ($regionId) {
-            $customerQuery->whereHas('odp', function ($q) use ($regionId) {
-                $q->where('region_id', $regionId);
-            });
-        }
-
-        $customers = $customerQuery->select(['id', 'name', 'address', 'latitude', 'longitude', 'status', 'phone', 'onu_serial', 'odp', 'odp_id', 'package', 'path', 'ssid_name', 'ssid_password', 'genieacs_device_id'])
-            ->with('odp:id,region_id')
-            ->get();
-
-        $customerIds = $customers->pluck('id')->all();
-        $serials = $customers->pluck('onu_serial')->filter()->values()->all();
-        $statusesByCustomer = GenieDeviceStatus::query()
-            ->whereIn('customer_id', $customerIds)
-            ->get()
-            ->keyBy('customer_id');
-        $statusesBySerial = GenieDeviceStatus::query()
-            ->whereNull('customer_id')
-            ->whereIn('onu_serial', $serials)
-            ->get()
-            ->keyBy('onu_serial');
-
-        // Attach status terintegrasi dari tabel monitoring GenieACS
-        $customers->transform(function ($customer) use ($statusesByCustomer, $statusesBySerial) {
-            $status = $statusesByCustomer->get($customer->id);
-            if (! $status && $customer->onu_serial) {
-                $status = $statusesBySerial->get($customer->onu_serial);
-            }
-
-            if ($status) {
-                $customer->is_online = (bool) $status->is_online;
-                $customer->tr069_ip = $status->tr069_ip;
-                $customer->last_inform = $status->last_inform?->toIso8601String();
-                $customer->last_reason = $status->last_reason;
-                $customer->connection_request_url = $status->connection_request_url;
-                $customer->has_genie_status = true;
-                $customer->rx_power = $status->rx_power;
-                $customer->tx_power = $status->tx_power;
-                $customer->rdm_power = $status->rdm_power;
-                $customer->genie_name = null;
-            } else {
-                $customer->is_online = false;
-                $customer->tr069_ip = null;
-                $customer->last_inform = null;
-                $customer->last_reason = null;
-                $customer->connection_request_url = null;
-                $customer->has_genie_status = false;
-                $customer->rx_power = null;
-                $customer->tx_power = null;
-                $customer->rdm_power = null;
-                $customer->genie_name = null;
-            }
-
-            return $customer;
-        });
-
-        // Fetch Assets (Tools) with location
-        $assets = Asset::with(['item', 'holder'])
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->get();
-
-        $modemDataRecords = DB::table('modem_data_records')
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->whereNotNull('customer_id')
-            ->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('customers')
-                    ->whereColumn('customers.id', 'modem_data_records.customer_id');
-            })
-            ->select(['id', 'customer_id', 'customer_name', 'modem_type', 'mac_address', 'serial_number', 'latitude', 'longitude', 'created_at'])
-            ->orderByDesc('id')
-            ->limit(500)
-            ->get();
 
         return view('map.index', compact('customers', 'odps', 'htbs', 'odcs', 'olts', 'regions', 'assets', 'modemDataRecords', 'coordinators', 'isAdmin', 'closures', 'canManageMap', 'canEditCustomer'));
     }
@@ -609,46 +657,77 @@ class MapController extends Controller implements HasMiddleware
         $id = $validated['id'];
         $data = [];
 
-        switch ($type) {
-            case 'olt':
-                $olt = OLT::findOrFail($id);
-                $data['topology'] = $this->topologyService->getOltTopologyTree($olt);
-                $data['capacity'] = $this->capacityService->getOltCapacity($olt);
-                break;
+        try {
+            switch ($type) {
+                case 'olt':
+                    $olt = OLT::findOrFail($id);
+                    try {
+                        $data['topology'] = $this->topologyService()->getOltTopologyTree($olt);
+                    } catch (\Throwable $e) { $data['topology'] = null; report($e); }
+                    try {
+                        $data['capacity'] = $this->capacityService()->getOltCapacity($olt);
+                    } catch (\Throwable $e) { $data['capacity'] = null; report($e); }
+                    break;
 
-            case 'odc':
-                $odc = Odc::findOrFail($id);
-                $data['topology'] = $this->topologyService->getOdcTopology($odc);
-                $data['capacity'] = $this->capacityService->getOdcCapacity($odc);
-                break;
+                case 'odc':
+                    $odc = Odc::findOrFail($id);
+                    try {
+                        $data['topology'] = $this->topologyService()->getOdcTopology($odc);
+                    } catch (\Throwable $e) { $data['topology'] = null; report($e); }
+                    try {
+                        $data['capacity'] = $this->capacityService()->getOdcCapacity($odc);
+                    } catch (\Throwable $e) { $data['capacity'] = null; report($e); }
+                    break;
 
-            case 'odp':
-                $odp = Odp::findOrFail($id);
-                $data['topology'] = $this->topologyService->getOdpTopology($odp);
-                $data['capacity'] = $this->capacityService->getOdpCapacity($odp);
-                break;
+                case 'odp':
+                    $odp = Odp::findOrFail($id);
+                    try {
+                        $data['topology'] = $this->topologyService()->getOdpTopology($odp);
+                    } catch (\Throwable $e) { $data['topology'] = null; report($e); }
+                    try {
+                        $data['capacity'] = $this->capacityService()->getOdpCapacity($odp);
+                    } catch (\Throwable $e) { $data['capacity'] = null; report($e); }
+                    break;
 
-            case 'htb':
-                $htb = Htb::findOrFail($id);
-                $data['topology'] = $this->topologyService->getHtbTopology($htb);
-                $data['capacity'] = $this->capacityService->getHtbCapacity($htb);
-                break;
+                case 'htb':
+                    $htb = Htb::findOrFail($id);
+                    try {
+                        $data['topology'] = $this->topologyService()->getHtbTopology($htb);
+                    } catch (\Throwable $e) { $data['topology'] = null; report($e); }
+                    try {
+                        $data['capacity'] = $this->capacityService()->getHtbCapacity($htb);
+                    } catch (\Throwable $e) { $data['capacity'] = null; report($e); }
+                    break;
 
-            case 'customer':
-                $customer = Customer::findOrFail($id);
-                $data['topology'] = $this->topologyService->getCustomerTopology($customer);
-                if ($customer->onu_serial) {
-                    $ont = ONT::where('serial_number', $customer->onu_serial)->first();
-                    if ($ont) {
-                        $data['optical'] = $this->opticalMonitoringService->getOntOpticalStatus($ont);
+                case 'customer':
+                    $customer = Customer::findOrFail($id);
+                    try {
+                        $data['topology'] = $this->topologyService()->getCustomerTopology($customer);
+                    } catch (\Throwable $e) { $data['topology'] = null; report($e); }
+                    if ($customer->onu_serial) {
+                        $ont = ONT::where('serial_number', $customer->onu_serial)->first();
+                        if ($ont) {
+                            try {
+                                $data['optical'] = $this->opticalMonitoringService()->getOntOpticalStatus($ont);
+                            } catch (\Throwable $e) { $data['optical'] = null; report($e); }
+                        }
                     }
-                }
-                break;
+                    break;
 
-            case 'ont':
-                $ont = ONT::findOrFail($id);
-                $data['optical'] = $this->opticalMonitoringService->getOntOpticalStatus($ont);
-                break;
+                case 'ont':
+                    $ont = ONT::findOrFail($id);
+                    try {
+                        $data['optical'] = $this->opticalMonitoringService()->getOntOpticalStatus($ont);
+                    } catch (\Throwable $e) { $data['optical'] = null; report($e); }
+                    break;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => $data,
+            ], 500);
         }
 
         return response()->json(['success' => true, 'data' => $data]);

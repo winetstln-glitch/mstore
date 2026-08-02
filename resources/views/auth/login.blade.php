@@ -38,18 +38,30 @@
             <a href="{{ url('/') }}" class="back-home-btn">
                 <i class="fa-solid fa-arrow-left me-2"></i> Kembali
             </a>
-            <button type="button" class="theme-toggle-btn" id="themeToggleLogin">
-                <i class="fa-solid fa-moon"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('login.customer') }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" style="border-radius:999px; padding:6px 14px; font-size:12px; font-weight:600;">
+                    <i class="fa-solid fa-house-user"></i>
+                    <span>Portal Pelanggan</span>
+                    <i class="fa-solid fa-arrow-right" style="font-size:10px"></i>
+                </a>
+                <button type="button" class="theme-toggle-btn" id="themeToggleLogin">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
         </div>
         <div class="auth-card">
             <div class="auth-left">
                 <div>
-                    <div class="auth-left-title"> 
+                    <div class="auth-left-title">
                         <img src="{{ app()->environment('production') ? secure_asset('img/logo.png') : asset('img/logo.png') }}" alt="MSTORE.NET">
                     </div>
                     <div class="auth-left-sub">
-                        Platform monitoring jaringan fiber optic tercanggih. Kelola infrastruktur Anda dengan mudah.
+                        Platform monitoring jaringan fiber optic tercan ggih. Kelola infrastruktur Anda dengan mudah.
+                    </div>
+                    <div class="mt-4 small opacity-75">
+                        <div class="mb-2"><i class="fa-solid fa-users-gear me-2"></i> Admin, NOC, Teknisi, Keuangan</div>
+                        <div class="mb-2"><i class="fa-solid fa-chart-line me-2"></i> Dashboard &amp; Laporan Jaringan</div>
+                        <div><i class="fa-solid fa-user-shield me-2"></i> Kelola Data Pelanggan &amp; Billing</div>
                     </div>
                 </div>
             </div>
@@ -60,8 +72,15 @@
                     </div>
                 @endif
 
+                @if (session('warning'))
+                    <div class="alert alert-warning mb-3 w-100" role="alert">
+                        {{ session('warning') }}
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('login', [], false) }}" class="w-100">
                     @csrf
+                    <input type="hidden" name="mode" value="admin">
 
                     <div class="mb-3">
                         <label for="login" class="auth-form-label">Username | Email</label>

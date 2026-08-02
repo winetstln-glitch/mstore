@@ -20,61 +20,17 @@ class InvoiceController extends Controller
 
     public function index()
     {
-        $user = Auth::user();
-        $invoices = $user->invoices()->latest()->get();
-        
-        $midtrans = $this->paymentManager->gateway('midtrans');
-        $clientKey = Setting::getValue('midtrans_client_key');
-        $isProd = Setting::getValue('midtrans_sandbox') == '0';
-        $snapJs = $isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-        return view('client.invoices.index', compact('invoices', 'clientKey', 'snapJs'));
+        return redirect()->route('client.onu-wifi.show');
     }
 
     public function pay(Invoice $invoice)
     {
-        $this->authorizeInvoice($invoice);
-        if ($invoice->status === 'paid') {
-            return redirect()->route('client.invoices.index')->with('success', 'Invoice sudah dibayar.');
-        }
-        if (empty($invoice->code)) {
-            $invoice->code = 'INV-'.str_pad($invoice->id, 6, '0', STR_PAD_LEFT).'-'.Str::random(4);
-            $invoice->save();
-        }
-
-        $midtrans = $this->paymentManager->gateway('midtrans');
-        $payload = [
-            'amount' => $invoice->amount,
-            'reference_id' => $invoice->code,
-            'description' => 'Invoice ' . $invoice->code,
-            'customer_name' => Auth::user()->name,
-            'customer_email' => Auth::user()->email,
-            'customer_phone' => Auth::user()->phone,
-        ];
-
-        $transaction = $midtrans->createTransaction($payload);
-        $token = $transaction['token'] ?? '';
-        
-        $clientKey = Setting::getValue('midtrans_client_key');
-        $isProd = Setting::getValue('midtrans_sandbox') == '0';
-        $snapJs = $isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-        $invoice->update([
-            'midtrans_order_id' => $invoice->code,
-            'snap_token' => $token,
-        ]);
-
-        return view('client.invoices.pay', compact('invoice', 'token', 'clientKey', 'snapJs'));
+        return redirect()->route('client.onu-wifi.show');
     }
 
     public function show(Invoice $invoice)
     {
-        $this->authorizeInvoice($invoice);
-        $user = Auth::user();
-        $customer = $user->customer ?? null;
-        $devicesCount = $customer ? $customer->devices()->count() : 0;
-
-        return view('client.invoices.show', compact('invoice', 'user', 'customer', 'devicesCount'));
+        return redirect()->route('client.onu-wifi.show');
     }
 
     protected function authorizeInvoice(Invoice $invoice): void

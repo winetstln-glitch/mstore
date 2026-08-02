@@ -62,7 +62,7 @@ class HotspotPortalController extends Controller
 
         $memberPackages = collect();
         if ($type === 'all' || $type === 'member' || $type === 'membership') {
-            $memberPackages = WashMemberPackage::query()
+            $washMemberPkgs = WashMemberPackage::query()
                 ->active()
                 ->hasWifiBenefit()
                 ->orderBy('sort_order')
@@ -79,7 +79,7 @@ class HotspotPortalController extends Controller
                         'price' => (int) round($p->price),
                         'price_formatted' => $p->formatted_price,
                         'duration_days' => $p->duration_days,
-                        'duration_label' => $p->duration_days . ' hari',
+                        'duration_label' => $p->duration_days ? ($p->duration_days . ' hari') : null,
                         'discount_percent' => (float) $p->discount_percent,
                         'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
                         'daily_wifi_minutes' => $p->daily_wifi_minutes,
@@ -87,8 +87,50 @@ class HotspotPortalController extends Controller
                         'pppoe_profile' => $p->pppoe_profile,
                         'description' => $p->description,
                         'benefits' => $p->benefits,
+                        'color_badge' => null,
                     ];
                 });
+
+            $hotspotMemberPkgs = HotspotProfile::query()
+                ->active()
+                ->memberships()
+                ->orderBy('sort_order')
+                ->orderBy('price')
+                ->limit($limit)
+                ->get()
+                ->map(function (HotspotProfile $p) {
+                    $durHari = null;
+                    if ($p->duration_seconds && $p->duration_seconds > 0) {
+                        $durHari = (int) round($p->duration_seconds / 86400);
+                        if ($durHari < 1) $durHari = 1;
+                    }
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'code' => 'MBR-' . $p->id,
+                        'type' => 'wifi',
+                        'package_type' => 'member',
+                        'price' => (int) round($p->price),
+                        'price_formatted' => $p->formatted_price,
+                        'duration_days' => $durHari,
+                        'duration_label' => $p->formatted_uptime,
+                        'discount_percent' => 0,
+                        'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
+                        'daily_wifi_minutes' => null,
+                        'network_type' => 'hotspot',
+                        'pppoe_profile' => $p->mikrotik_profile_name,
+                        'description' => $p->description,
+                        'benefits' => null,
+                        'color_badge' => $p->color_badge,
+                    ];
+                });
+
+            $memberPackages = $washMemberPkgs->merge($hotspotMemberPkgs)
+                ->sortBy(function ($item) { return [$item['price'] ?? 0, $item['name'] ?? '']; })
+                ->values();
+            if ($memberPackages->count() > $limit) {
+                $memberPackages = $memberPackages->take($limit)->values();
+            }
         }
 
         $residential = collect();

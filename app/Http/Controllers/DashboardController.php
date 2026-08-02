@@ -80,7 +80,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         if ($user && $user->hasRole('customer')) {
-            return redirect()->route('client.dashboard');
+            return redirect()->route('client.onu-wifi.show');
         }
         if ($user && $user->hasRole('kasir-atk') && $user->hasPermission('atk.view')) {
             return redirect()->route('atk.dashboard');

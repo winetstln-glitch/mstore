@@ -353,6 +353,171 @@ class GenieACSService
     }
 
     /**
+     * Cari device di GenieACS berdasarkan PPPoE Username.
+     * Berguna ketika ont_sn Customer tidak diisi tapi pppoe_user ada
+     * (fallback pencarian device untuk auto-create GenieDeviceStatus).
+     */
+    public function findDeviceByPppoeUsername(string $pppoeUser): ?array
+    {
+        $pppoeUser = trim((string) $pppoeUser);
+        if ($pppoeUser === '') {
+            return null;
+        }
+        $needle = strtolower($pppoeUser);
+
+        try {
+            $query = sprintf(
+                "VirtualParameters.pppoeUsername._value ILIKE %%22%s%%22 OR InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username ILIKE %%22%s%%22 OR Device.PPP.Interface.1.Username ILIKE %%22%s%%22",
+                urlencode($pppoeUser),
+                urlencode($pppoeUser),
+                urlencode($pppoeUser)
+            );
+            $result = $this->apiRequest('GET', '/devices/?query=' . $query . '&limit=10');
+            if (is_array($result) && ! empty($result)) {
+                foreach ($result as $dev) {
+                    $vp = strtolower(trim((string) data_get($dev, 'VirtualParameters.pppoeUsername._value', '')));
+                    $ig = strtolower(trim((string) data_get($dev, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username._value', '')));
+                    $dv = strtolower(trim((string) data_get($dev, 'Device.PPP.Interface.1.Username._value', '')));
+                    if ($vp === $needle || $ig === $needle || $dv === $needle) {
+                        return $dev;
+                    }
+                }
+                return $result[0] ?? null;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('GenieACS findDeviceByPppoeUsername fallback scan: ' . $e->getMessage());
+        }
+
+        try {
+            $devices = $this->getDevices(500, 0);
+            if (is_array($devices)) {
+                foreach ($devices as $dev) {
+                    $vp = strtolower(trim((string) data_get($dev, 'VirtualParameters.pppoeUsername._value', '')));
+                    $ig = strtolower(trim((string) data_get($dev, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username._value', '')));
+                    $dv = strtolower(trim((string) data_get($dev, 'Device.PPP.Interface.1.Username._value', '')));
+                    if ($vp === $needle || $ig === $needle || $dv === $needle) {
+                        return $dev;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('GenieACS findDeviceByPppoeUsername fullscan fallback: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * VERIFIKASI KEPEMILIKAN DEVICE (4 LAPIS VALIDASI):
+     * - L1: Cocokkan Serial Number device di GenieACS
+     * - L2: Cocokkan PPPoE Username di device (VirtualParameters.pppoeUsername / WANPPPConnection.Username) dengan record Customer
+     * - L3: Cocokkan WAN MAC Address di device dengan record Customer (jika ada)
+     * - L4: Cocokkan _tags customer_id / provisioning tag custom jika ada
+     *
+     * Return: [
+     *   'verified' => true/false,
+     *   'level' => int (jumlah lapisan terverifikasi, min 2 agar dianggap aman),
+     *   'checks' => [nama_check => bool|string],
+     *   'device_pppoe_username' => string|null,
+     *   'device_serial' => string|null,
+     *   'device_mac' => string|null,
+     * ]
+     */
+    public function verifyDeviceOwnership($deviceSerial, $expectedCustomerData = []): array
+    {
+        $expectedPppoeUser = $expectedCustomerData['pppoe_user'] ?? null;
+        $expectedCustomerId = $expectedCustomerData['customer_id'] ?? null;
+        $expectedWanMac = $expectedCustomerData['wan_mac'] ?? null;
+
+        $checks = [
+            'serial_exists' => false,
+            'pppoe_username_match' => null,
+            'wan_mac_match' => null,
+            'tag_customer_id_match' => null,
+        ];
+
+        $device = $this->findDeviceBySerial($deviceSerial);
+        if (! $device) {
+            return [
+                'verified' => false,
+                'level' => 0,
+                'checks' => $checks,
+                'error' => 'Device dengan serial number tersebut tidak ditemukan di GenieACS.',
+                'device_pppoe_username' => null,
+                'device_serial' => null,
+                'device_mac' => null,
+            ];
+        }
+        $checks['serial_exists'] = true;
+
+        $deviceSerial = data_get($device, '_deviceId._SerialNumber');
+
+        $devicePppoeUser = null;
+        if ($vp = data_get($device, 'VirtualParameters.pppoeUsername._value')) {
+            $devicePppoeUser = trim((string) $vp);
+        }
+        if (! $devicePppoeUser) {
+            $devicePppoeUser = data_get($device, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username._value');
+        }
+        if (! $devicePppoeUser) {
+            $devicePppoeUser = data_get($device, 'Device.PPP.Interface.1.Username._value');
+        }
+
+        $deviceWanMac = null;
+        if ($m = data_get($device, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress._value')) {
+            $deviceWanMac = strtolower(trim((string) $m));
+        }
+        if (! $deviceWanMac) {
+            $deviceWanMac = strtolower(trim((string) data_get($device, 'Device.Ethernet.Interface.1.MACAddress._value', '')));
+        }
+
+        if ($expectedPppoeUser !== null && $expectedPppoeUser !== '') {
+            $checks['pppoe_username_match'] = ($devicePppoeUser !== null && strcasecmp($devicePppoeUser, (string) $expectedPppoeUser) === 0);
+        }
+
+        if ($expectedWanMac !== null && $expectedWanMac !== '' && $deviceWanMac !== null && $deviceWanMac !== '') {
+            $exp = strtolower(trim((string) $expectedWanMac));
+            $checks['wan_mac_match'] = ($exp === $deviceWanMac);
+        }
+
+        $tags = data_get($device, '_tags', []);
+        if (is_array($tags) && $expectedCustomerId !== null) {
+            $expectedTag = 'customer_' . $expectedCustomerId;
+            $found = false;
+            foreach ($tags as $t) {
+                if (is_array($t) && isset($t['tag'])) {
+                    if (strcasecmp((string)$t['tag'], $expectedTag) === 0 || strcasecmp((string)$t['tag'], 'cid_' . $expectedCustomerId) === 0) {
+                        $found = true;
+                        break;
+                    }
+                } elseif (is_string($t) && (strcasecmp($t, $expectedTag) === 0 || strcasecmp($t, 'cid_' . $expectedCustomerId) === 0)) {
+                    $found = true;
+                    break;
+                }
+            }
+            $checks['tag_customer_id_match'] = $found;
+        }
+
+        $level = 0;
+        foreach ($checks as $val) {
+            if ($val === true) {
+                $level++;
+            }
+        }
+
+        $verified = ($level >= 2) || ($checks['pppoe_username_match'] === true) || ($checks['tag_customer_id_match'] === true);
+
+        return [
+            'verified' => $verified,
+            'level' => $level,
+            'checks' => $checks,
+            'device_pppoe_username' => $devicePppoeUser,
+            'device_serial' => $deviceSerial,
+            'device_mac' => $deviceWanMac,
+        ];
+    }
+
+    /**
      * Get WLAN Settings for Advanced View
      */
     public function getWlanSettings($deviceId, $index = 1, $device = null)

@@ -47,9 +47,9 @@ class TopologyService
 
         return [
             'id' => $port->id,
-            'type' => 'olt_port',
+            'node_type' => 'olt_port',
             'name' => $port->name,
-            'type' => $port->type,
+            'port_type' => $port->type,
             'admin_status' => $port->admin_status,
             'oper_status' => $port->oper_status,
             'max_onts' => $port->max_onts,

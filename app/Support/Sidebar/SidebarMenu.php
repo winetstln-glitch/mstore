@@ -264,11 +264,7 @@ class SidebarMenu
                 'label' => 'Portal Pelanggan',
                 'roles' => [Role::CUSTOMER],
                 'items' => [
-                    self::link('portal-dashboard', 'Dashboard', 'client.dashboard', roles: [Role::CUSTOMER]),
-                    self::link('portal-invoices', 'Tagihan', 'client.invoices.index', roles: [Role::CUSTOMER]),
-                    self::link('portal-credentials', 'Kredensial', 'client.credentials.show', roles: [Role::CUSTOMER]),
-                    self::link('portal-profile', 'Profil', 'profile.edit', roles: [Role::CUSTOMER]),
-                    self::link('portal-network', 'Status Jaringan', 'client.connection', roles: [Role::CUSTOMER]),
+                    self::link('portal-onu-wifi', 'Ganti Password WiFi', 'client.onu-wifi.show', roles: [Role::CUSTOMER]),
                 ],
             ],
         ];

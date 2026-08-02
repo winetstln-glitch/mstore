@@ -88,12 +88,12 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label for="password" class="form-label small text-muted fw-bold">{{ __('Password Portal') }} {{ $customer->user_id ? __('(Kosongkan jika tidak diubah)') : '' }}</label>
-                                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('minimal 8 karakter') }}">
+                                            <input type="password" name="password" id="password" minlength="6" class="form-control @error('password') is-invalid @enderror" placeholder="{{ __('minimal 6 karakter') }}" oninput="syncPasswordConfirmation()">
                                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="password_confirmation" class="form-label small text-muted fw-bold">{{ __('Konfirmasi Password') }}</label>
-                                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="{{ __('ulangi password') }}">
+                                            <label for="password_confirmation" class="form-label small text-muted fw-bold">{{ __('Konfirmasi Password') }} {{ $customer->user_id ? __('(Hanya jika password diisi)') : '' }}</label>
+                                            <input type="password" name="password_confirmation" id="password_confirmation" minlength="6" class="form-control" placeholder="{{ __('ulangi password') }}">
                                         </div>
                                     </div>
                                 </div>
@@ -101,6 +101,14 @@
                         </div>
 
                         <script>
+                            function syncPasswordConfirmation() {
+                                const passInput = document.getElementById('password');
+                                const confInput = document.getElementById('password_confirmation');
+                                if (!passInput || !confInput) return;
+                                if (confInput.value && passInput.value === '') {
+                                    confInput.value = '';
+                                }
+                            }
                             function togglePortalFields() {
                                 const createChecked = document.getElementById('create_user')?.checked;
                                 const hasUser = {{ $customer->user_id ? 'true' : 'false' }};
@@ -111,6 +119,7 @@
                                     const portalInputs = document.querySelectorAll('#portal_fields input');
                                     portalInputs.forEach(input => {
                                         input.disabled = !createChecked;
+                                        if (!createChecked) { input.value = ''; }
                                     });
                                 }
                             }

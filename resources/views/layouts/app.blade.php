@@ -319,40 +319,9 @@
             {{-- Client Portal (Grouped) --}}
             @if($hasRole('customer'))
             <div class="sidebar-header mt-2">{{ __('Portal Pelanggan') }}</div>
-            @php
-                $clientRoutesActive = $routeIs('client.*') || $routeIs('profile.edit') || $routeIs('profile.id_card');
-            @endphp
-            <a class="sidebar-item {{ $clientRoutesActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#clientPortalCollapse" role="button" aria-expanded="{{ $clientRoutesActive ? 'true' : 'false' }}" aria-controls="clientPortalCollapse">
-                <i class="fa-solid fa-user-circle"></i> {{ __('Portal Pelanggan') }} <i class="fa-solid fa-chevron-down ms-auto" style="font-size: 0.8em;"></i>
+            <a href="{{ route('client.onu-wifi.show') }}" class="sidebar-item {{ $routeIs('client.onu-wifi.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-wifi"></i> {{ __('Ganti Password WiFi') }}
             </a>
-            <div class="collapse {{ $clientRoutesActive ? 'show' : '' }}" id="clientPortalCollapse">
-                <div class="ps-2">
-                    <a href="{{ route('client.portal') }}" class="sidebar-item {{ $routeIs('client.portal') ? 'active' : '' }}">
-                        <i class="fa-solid fa-house-user"></i> {{ __('Beranda Portal') }}
-                    </a>
-                    <a href="{{ route('client.connection') }}" class="sidebar-item {{ $routeIs('client.connection') ? 'active' : '' }}">
-                        <i class="fa fa-random"></i> {{ __('Info Koneksi') }}
-                    </a>
-                    <a href="{{ route('client.invoices.index') }}" class="sidebar-item {{ $routeIs('client.invoices.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-receipt"></i> {{ __('Tagihan Saya') }}
-                    </a>
-                    <a href="{{ route('client.credentials.show') }}" class="sidebar-item {{ $routeIs('client.credentials.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-key"></i> {{ __('Kredensial Internet') }}
-                    </a>
-                    <a href="{{ route('profile.edit') }}" class="sidebar-item {{ $routeIs('profile.edit') ? 'active' : '' }}">
-                        <i class="fa-regular fa-user"></i> {{ __('Profil Saya') }}
-                    </a>
-                    <a href="{{ route('profile.id_card') }}" class="sidebar-item {{ $routeIs('profile.id_card') ? 'active' : '' }}">
-                        <i class="fa-regular fa-id-card"></i> {{ __('Kartu Identitas') }}
-                    </a>
-                    @php $mixUrl = \App\Models\Setting::getValue('mixradius_base_url', env('MIXRADIUS_BASE_URL', '')); @endphp
-                    @if(!empty($mixUrl))
-                    <a href="{{ route('client.mixradius') }}" class="sidebar-item {{ $routeIs('client.mixradius') ? 'active' : '' }}">
-                        <i class="fa-solid fa-up-right-from-square"></i> {{ __('Portal MixRADIUS') }}
-                    </a>
-                    @endif
-                </div>
-            </div>
             @endif
 
             {{-- NETWORK & PELANGGAN --}}

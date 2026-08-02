@@ -85,6 +85,9 @@
         $primaryCtaLabel = !empty($servicePage) ? ($servicePage['form']['title'] ?? 'Konsultasi') : 'Pilih Layanan';
         $authHref = auth()->check() ? route('dashboard') : route('login');
         $authLabel = auth()->check() ? 'Dashboard' : 'Masuk';
+        $customerAuthHref = auth()->check()
+            ? route('client.onu-wifi.show')
+            : route('login.customer');
         $navLinks = $isWeddingPage
             ? [
                 ['href' => '#beranda', 'label' => 'Beranda'],
@@ -132,17 +135,20 @@
                     <button class="btn-icon" id="themeToggle" type="button" aria-label="Toggle tema">
                         <i class="fas fa-moon"></i>
                     </button>
-                    <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-full-mobile nav-desktop-action">
+                    <a href="{{ $customerAuthHref }}" class="btn btn-primary btn-full-mobile nav-desktop-action" title="Portal Pelanggan FTTH / Rumahan">
+                        <i class="fas fa-house-user me-1"></i> Portal Pelanggan
+                    </a>
+                    <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-full-mobile nav-desktop-action" title="Client Area Hotspot / Voucher">
                         <i class="fas fa-shopping-cart me-1"></i> Client Area
                     </a>
                     <a href="{{ $primaryCtaHref }}" class="btn {{ $isWeddingPage ? 'wedding-btn-light' : 'btn-outline-primary' }} btn-full-mobile nav-desktop-action {{ !empty($servicePage) ? 'track-service-action' : '' }}" @if(!empty($servicePage)) data-track-service="{{ $servicePage['slug'] }}" data-track-action="hero_cta" @endif>
                         {{ $primaryCtaLabel }}
                     </a>
-                    <a href="{{ $authHref }}" class="btn {{ auth()->check() ? 'btn-primary' : 'btn-outline-primary' }} btn-full-mobile nav-desktop-action">
-                        {{ $authLabel }}
+                    <a href="{{ $authHref }}" class="btn {{ auth()->check() ? 'btn-dark' : 'btn-outline-secondary' }} btn-full-mobile nav-desktop-action" title="Login Admin / Karyawan">
+                        <i class="fas fa-building me-1 d-none d-md-inline"></i>{{ $authLabel }}
                     </a>
-                    <a href="{{ $authHref }}" class="btn-icon d-lg-none" aria-label="Login">
-                        <i class="fas fa-user"></i>
+                    <a href="{{ $customerAuthHref }}" class="btn-icon d-lg-none" aria-label="Portal Pelanggan">
+                        <i class="fas fa-house-user"></i>
                     </a>
                     <button class="btn-icon nav-toggle" type="button" id="navToggle" aria-controls="navMenu" aria-expanded="false" aria-label="Buka menu">
                         <i class="fas fa-bars"></i>
@@ -176,14 +182,17 @@
                         </div>
 
                         <div class="nav-mobile-actions">
-                            <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success">
+                            <a href="{{ $customerAuthHref }}" class="btn btn-primary" title="Portal Pelanggan FTTH / Rumahan">
+                                <i class="fas fa-house-user me-1"></i> Portal Pelanggan
+                            </a>
+                            <a href="https://buy.mstore.id" target="_blank" rel="noopener noreferrer" class="btn btn-success" title="Client Area Hotspot / Voucher">
                                 <i class="fas fa-shopping-cart me-1"></i> Client Area
                             </a>
-                            <a href="{{ $primaryCtaHref }}" class="btn {{ $isWeddingPage ? 'wedding-btn-light' : 'btn-primary' }} {{ !empty($servicePage) ? 'track-service-action' : '' }}" @if(!empty($servicePage)) data-track-service="{{ $servicePage['slug'] }}" data-track-action="hero_cta_mobile" @endif>
+                            <a href="{{ $primaryCtaHref }}" class="btn {{ $isWeddingPage ? 'wedding-btn-light' : 'btn-info' }} {{ !empty($servicePage) ? 'track-service-action' : '' }}" @if(!empty($servicePage)) data-track-service="{{ $servicePage['slug'] }}" data-track-action="hero_cta_mobile" @endif>
                                 {{ $primaryCtaLabel }}
                             </a>
-                            <a href="{{ $authHref }}" class="btn btn-outline-primary">
-                                {{ $authLabel }}
+                            <a href="{{ $authHref }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-building me-1"></i>{{ $authLabel }} Admin
                             </a>
                             <a href="{{ $waUrlBase }}?text={{ urlencode('Halo, saya ingin konsultasi layanan.') }}" class="btn btn-green">
                                 WhatsApp

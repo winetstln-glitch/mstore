@@ -30,7 +30,7 @@ class LoginUsernameOnlyTest extends TestCase
             ['role' => 'kasir-wash', 'redirect' => route('attendance.create')],
             ['role' => 'karyawan-wash', 'redirect' => route('attendance.create')],
             ['role' => 'staff', 'redirect' => route('dashboard')],
-            ['role' => 'customer', 'redirect' => route('client.dashboard')],
+            ['role' => 'customer', 'redirect' => route('client.onu-wifi.show')],
         ];
 
         foreach ($cases as $index => $case) {
@@ -156,7 +156,7 @@ class LoginUsernameOnlyTest extends TestCase
             'password' => 'rahasia123',
         ]);
 
-        $response->assertRedirect(route('client.dashboard'));
+        $response->assertRedirect(route('client.onu-wifi.show'));
         $this->assertAuthenticated();
         $customer->refresh();
         $this->assertNotNull($customer->user_id);

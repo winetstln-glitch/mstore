@@ -20,6 +20,25 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
+    public function createCustomer()
+    {
+        $waNumber = config('services.whatsapp.admin_number', null);
+        if (! $waNumber) {
+            $waNumber = Setting::getValue('whatsapp_number', '6281234567890');
+        }
+        $waNumber = preg_replace('/[^0-9]/', '', (string) $waNumber);
+        if ($waNumber === '') {
+            $waNumber = '6281234567890';
+        }
+        if (str_starts_with($waNumber, '0')) {
+            $waNumber = '62'.substr($waNumber, 1);
+        }
+
+        return view('auth.login-customer', [
+            'waNumber' => $waNumber,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -33,8 +52,10 @@ class LoginController extends Controller
         $login = trim($data['login']);
         $password = $data['password'];
         $remember = $request->boolean('remember');
+        $mode = $request->input('mode') === 'customer' ? 'customer' : 'admin';
         $isEmailInput = (bool) filter_var($login, FILTER_VALIDATE_EMAIL);
         $legacyEmailUser = null;
+        $backRoute = $mode === 'customer' ? route('login.customer') : route('login');
 
         if ($isEmailInput) {
             $legacyEmailUser = User::query()
@@ -42,11 +63,11 @@ class LoginController extends Controller
                 ->first();
 
             if (! $legacyEmailUser) {
-                throw ValidationException::withMessages(['login' => 'Email tidak ditemukan.']);
+                throw ValidationException::withMessages(['login' => 'Email tidak ditemukan.'])->redirectTo($backRoute);
             }
 
             if (trim((string) $legacyEmailUser->username) !== '') {
-                throw ValidationException::withMessages(['login' => 'Gunakan username untuk login.']);
+                throw ValidationException::withMessages(['login' => 'Gunakan username untuk login.'])->redirectTo($backRoute);
             }
         }
 
@@ -73,6 +94,9 @@ class LoginController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
             $fallback = $user ? $this->defaultRedirectForUser($user) : route('dashboard');
+            if ($mode === 'customer' && $user && ! $user->hasRole('customer')) {
+                $request->session()->flash('warning', 'Akun Anda bukan akun pelanggan. Diarahkan ke dashboard Admin.');
+            }
             return redirect()->intended($fallback);
         }
 
@@ -81,7 +105,7 @@ class LoginController extends Controller
             return $customerPortalRedirect;
         }
 
-        throw ValidationException::withMessages(['login' => $this->buildInvalidLoginMessage($localUser)]);
+        throw ValidationException::withMessages(['login' => $this->buildInvalidLoginMessage($localUser)])->redirectTo($backRoute);
     }
 
     public function destroy(Request $request)
@@ -125,7 +149,7 @@ class LoginController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('client.dashboard'));
+        return redirect()->intended(route('client.onu-wifi.show'));
     }
 
     protected function resolveCustomerPortalIdentity(string $login): ?Customer
@@ -212,7 +236,7 @@ class LoginController extends Controller
     protected function defaultRedirectForUser(User $user): string
     {
         if ($user->hasRole('customer')) {
-            return route('client.dashboard');
+            return route('client.onu-wifi.show');
         }
 
         if ($user->hasRole('karyawan-wash') || $user->hasRole('kasir-wash')) {

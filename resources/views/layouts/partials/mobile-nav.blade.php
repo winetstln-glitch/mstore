@@ -1,21 +1,9 @@
 <div class="mobile-bottom-nav d-lg-none d-print-none">
     {{-- Dashboard / Home --}}
     @if(Auth::user()->hasRole('customer'))
-        <a href="{{ route('client.portal') }}" class="mbn-item {{ request()->routeIs('client.portal') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-house"></i></div>
-            <span class="mbn-label">{{ __('Beranda') }}</span>
-        </a>
-        <a href="{{ route('client.invoices.index') }}" class="mbn-item {{ request()->routeIs('client.invoices.*') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-            <span class="mbn-label">{{ __('Tagihan') }}</span>
-        </a>
-        <a href="{{ route('client.connection') }}" class="mbn-item {{ request()->routeIs('client.connection') ? 'active' : '' }}">
+        <a href="{{ route('client.onu-wifi.show') }}" class="mbn-item {{ request()->routeIs('client.onu-wifi.*') ? 'active' : '' }}">
             <div class="mbn-icon"><i class="fa-solid fa-wifi"></i></div>
-            <span class="mbn-label">{{ __('Koneksi') }}</span>
-        </a>
-        <a href="{{ route('profile.edit') }}" class="mbn-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-            <div class="mbn-icon"><i class="fa-solid fa-user"></i></div>
-            <span class="mbn-label">{{ __('Profil') }}</span>
+            <span class="mbn-label">{{ __('Ganti WiFi') }}</span>
         </a>
     @else
         <a href="{{ route('dashboard') }}" class="mbn-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
