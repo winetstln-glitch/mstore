@@ -46,6 +46,24 @@
     --nav-height: 56px;
     --nav-max-width: 1200px;
     --appbar-height: 56px;
+    --nav-padding-y: 0.85rem;
+    --nav-inner-padding-y: 0.55rem;
+    --nav-total-height: calc(var(--nav-height) + (var(--nav-inner-padding-y) * 2) + (var(--nav-padding-y) * 2) + 0.5rem);
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-total-height) + 1rem);
+}
+
+body.landing-scope {
+    padding-top: 0;
+    position: relative;
+}
+
+body.landing-scope > section:first-of-type,
+body.landing-scope > main > section:first-of-type {
+    padding-top: calc(var(--nav-total-height) + 1rem);
 }
 
 @media (min-width: 600px) and (max-width: 991px) {
@@ -866,8 +884,15 @@ body.landing-scope .navbar {
     left: 0;
     width: 100%;
     background: transparent;
-    z-index: 1000;
+    z-index: 1030;
     padding: 0.85rem 0;
+    pointer-events: none;
+}
+
+body.landing-scope .nav-container,
+body.landing-scope .nav-inner,
+body.landing-scope .nav-menu {
+    pointer-events: auto;
 }
 
 body.landing-scope .nav-container {
@@ -888,6 +913,10 @@ body.landing-scope .nav-inner {
     border-radius: 9999px;
     min-height: var(--nav-height);
     padding: 0.55rem 0.9rem;
+    max-width: 100%;
+    overflow: visible;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
 }
 
 body.landing-scope .nav-brand {
@@ -919,13 +948,18 @@ body.landing-scope .nav-actions {
     align-items: center;
     gap: 0.65rem;
     justify-content: flex-end;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 body.landing-scope .nav-primary {
     display: none;
     align-items: center;
     min-width: 0;
+    max-width: 100%;
     margin: 0 1rem;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 body.landing-scope .nav-toggle {
@@ -1091,6 +1125,8 @@ body.landing-scope .nav-desktop-action {
         border: none;
         box-shadow: none;
         padding: 0;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     body.landing-scope .nav-link {
         justify-content: center;
@@ -1100,6 +1136,7 @@ body.landing-scope .nav-desktop-action {
         background: transparent;
         font-size: 0.92rem;
         white-space: nowrap;
+        flex-shrink: 0;
     }
     body.landing-scope .nav-link i {
         display: none;
@@ -1112,6 +1149,55 @@ body.landing-scope .nav-desktop-action {
     }
     body.landing-scope .nav-brand { font-size: 1.05rem; }
     body.landing-scope .nav-logo { height: 26px; }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    body.landing-scope .nav-inner {
+        grid-template-columns: auto 1fr auto;
+        gap: 0.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    body.landing-scope .nav-actions {
+        gap: 0.45rem;
+    }
+    body.landing-scope .nav-desktop-action {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    body.landing-scope .nav-desktop-action i {
+        margin-right: 0.35rem !important;
+    }
+    body.landing-scope .nav-desktop-action .d-md-inline {
+        display: none !important;
+    }
+    body.landing-scope .nav-menu-panel {
+        gap: 0.25rem;
+    }
+    body.landing-scope .nav-link {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.86rem;
+    }
+    body.landing-scope .nav-primary {
+        margin: 0 0.25rem;
+    }
+    body.landing-scope .nav-brand {
+        font-size: 0.98rem;
+        max-width: 8.5rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    body.landing-scope .nav-desktop-action {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    body.landing-scope .nav-menu-panel {
+        gap: 0.4rem;
+    }
+    body.landing-scope .nav-link {
+        padding: 0.55rem 0.95rem;
+    }
 }
 
 body.landing-scope .btn, body.landing-scope .nav-link, body.landing-scope .bottom-item, body.landing-scope .btn-icon {
@@ -1192,7 +1278,14 @@ body.landing-scope .bottom-item:hover {
 }
 
 @media (max-width: 991px) {
-    .hero { padding-top: calc(var(--appbar-height) + 2rem); }
+    body.landing-scope {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    .hero,
+    .home-hero,
+    .service-hero {
+        padding-top: calc(var(--nav-total-height) + 1rem) !important;
+    }
     .hero-title { font-size: 1.6rem; }
     .hero-desc { font-size: 0.98rem; }
     .section-title { font-size: 1.25rem; margin-top: 2rem; }
@@ -1213,6 +1306,15 @@ body.landing-scope .bottom-item:hover {
     }
     body.landing-scope .nav-actions .btn-icon {
         flex-shrink: 0;
+    }
+    body.landing-scope .nav-actions {
+        gap: 0.35rem;
+    }
+    html {
+        scroll-padding-top: calc(var(--nav-total-height) + 0.5rem);
+    }
+    .wedding-topbar {
+        margin-top: var(--nav-total-height);
     }
 }
 
@@ -1290,12 +1392,17 @@ body.landing-scope .btn .ti { margin-right: 0.5rem; }
 
 /* Hero Section - Clean & Modern */
 .hero {
-    padding-top: calc(var(--nav-height) + 3.5rem);
+    padding-top: calc(var(--nav-total-height) + 1.5rem);
     padding-bottom: clamp(4rem, 8vw, 6rem);
     background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 45%),
                 radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 40%);
     position: relative;
     overflow: hidden;
+}
+
+.home-hero,
+.service-hero {
+    padding-top: calc(var(--nav-total-height) + 1.5rem) !important;
 }
 
 .hero-title {
@@ -1484,7 +1591,7 @@ body.landing-scope .btn .ti { margin-right: 0.5rem; }
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 0.7rem 0;
-    margin-top: calc(var(--nav-height) + 0.5rem);
+    margin-top: var(--nav-total-height);
 }
 
 .wedding-page-body .floating-wa {
@@ -1534,7 +1641,8 @@ body.landing-scope .btn .ti { margin-right: 0.5rem; }
 .wedding-hero {
     position: relative;
     overflow: hidden;
-    padding: 4rem 0 5rem;
+    padding-top: calc(var(--nav-total-height) + 3rem);
+    padding-bottom: 5rem;
     background: linear-gradient(135deg, rgba(253, 247, 237, 0.95), rgba(255, 255, 255, 1) 55%, rgba(255, 244, 230, 0.85));
 }
 

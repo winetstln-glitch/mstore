@@ -30,8 +30,8 @@
                             }
                         @endphp
                         <select name="package_type" id="package_type" class="form-select @error('package_type') is-invalid @enderror" required>
-                            <option value="pppoe" {{ $packageTypeValue === 'pppoe' ? 'selected' : '' }}>PPPoE / Rumahan</option>
-                            <option value="hotspot" {{ $packageTypeValue === 'hotspot' ? 'selected' : '' }}>Hotspot / Member</option>
+                            <option value="pppoe" {{ $packageTypeValue === 'pppoe' ? 'selected' : '' }}>Rumahan</option>
+                            <option value="hotspot" {{ $packageTypeValue === 'hotspot' ? 'selected' : '' }}>Member</option>
                         </select>
                         @error('package_type')
                             <div class="invalid-feedback">{{ $message }}</div>

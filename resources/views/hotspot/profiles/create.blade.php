@@ -26,8 +26,8 @@
                         <label class="form-label">Tipe Paket <span class="text-danger">*</span></label>
                         <select name="package_type" class="form-select @error('package_type') is-invalid @enderror" required>
                             <option value="voucher" @selected(old('package_type','voucher')==='voucher')>Voucher Harian</option>
-                            <option value="member" @selected(old('package_type')==='member')>Member WiFi</option>
-                            <option value="residential" @selected(old('package_type')==='residential')>Rumahan Unlimited</option>
+                            <option value="member" @selected(in_array(old('package_type'), ['member','membership','hotspot'], true))>Member Hotspot</option>
+                            <option value="pppoe" @selected(in_array(old('package_type'), ['pppoe','residential','home','rumahan'], true))>PPPoE Rumahan/Bisnis</option>
                         </select>
                         @error('package_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
@@ -73,16 +73,55 @@
                         <input name="rate_limit_mbps" type="number" step="0.01" min="0" class="form-control"
                                value="{{ old('rate_limit_mbps', 5) }}" placeholder="5">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Durasi (detik)</label>
-                        <input name="duration_seconds" type="number" min="0" class="form-control"
-                               value="{{ old('duration_seconds') }}" placeholder="10800 = 3 jam">
-                        <small class="text-muted">Kosongkan = tanpa batas durasi.</small>
+                    <div class="col-md-9">
+                        <label class="form-label">Durasi Sesi (lama penggunaan per sesi login)</label>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <input name="duration_hours" type="number" min="0" class="form-control"
+                                           value="{{ old('duration_hours', 3) }}" placeholder="0">
+                                    <span class="input-group-text">Jam</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <input name="duration_days" type="number" min="0" class="form-control"
+                                           value="{{ old('duration_days', 0) }}" placeholder="0">
+                                    <span class="input-group-text">Hari</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <small class="text-muted d-block mt-2">Durasi = batas waktu penggunaan per sesi login. Kosongkan keduanya = tanpa batas durasi.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Masa Aktif Paket (masa berlaku voucher setelah didistribusikan)</label>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <input name="validity_hours" type="number" min="0" class="form-control"
+                                           value="{{ old('validity_hours', 0) }}" placeholder="0">
+                                    <span class="input-group-text">Jam</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <input name="validity_days" type="number" min="0" class="form-control"
+                                           value="{{ old('validity_days', 30) }}" placeholder="0">
+                                    <span class="input-group-text">Hari</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <small class="text-muted d-block mt-2">Masa Aktif = waktu berlaku paket sejak dibuat/dijual. Kosongkan keduanya = tanpa batas masa aktif.</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Limit Uptime RouterOS</label>
+                        <label class="form-label">Limit Uptime RouterOS (opsional)</label>
                         <input name="limit_uptime" class="form-control" maxlength="32"
                                value="{{ old('limit_uptime') }}" placeholder="contoh: 3h, 7d, 30d">
+                        <small class="text-muted">Kosongkan agar otomatis dari Durasi di atas.</small>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Kuota (MB)</label>

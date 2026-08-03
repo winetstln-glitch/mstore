@@ -31,12 +31,10 @@ class HotspotProfileController extends Controller implements HasMiddleware
             $type = $request->input('type');
             if ($type === 'voucher') {
                 $query->where('package_type', 'voucher');
-            } elseif (in_array($type, ['rumahan', 'residential', 'home'], true)) {
-                $query->whereIn('package_type', ['residential', 'home', 'rumahan']);
-            } elseif (in_array($type, ['member', 'membership'], true)) {
-                $query->whereIn('package_type', ['member', 'membership']);
-            } elseif ($type === 'pppoe') {
-                $query->where('package_type', 'pppoe');
+            } elseif (in_array($type, ['member', 'membership', 'hotspot'], true)) {
+                $query->whereIn('package_type', ['member', 'membership', 'hotspot']);
+            } elseif (in_array($type, ['pppoe', 'paketb', 'rumahan', 'residential', 'home', 'bisnis'], true)) {
+                $query->whereIn('package_type', ['pppoe', 'residential', 'home', 'rumahan']);
             }
         }
 
@@ -58,11 +56,14 @@ class HotspotProfileController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'mikrotik_profile_name' => ['required', 'string', 'max:64'],
-            'package_type' => ['required', 'in:voucher,member,membership,residential,home,rumahan,pppoe'],
+            'package_type' => ['required', 'in:voucher,member,membership,hotspot,residential,home,rumahan,pppoe'],
             'rate_limit_mbps' => ['nullable', 'numeric', 'min:0', 'max:10000'],
             'shared_users' => ['nullable', 'integer', 'min:1'],
             'limit_uptime' => ['nullable', 'string', 'max:32'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'duration_hours' => ['nullable', 'integer', 'min:0', 'max:87600'],
+            'duration_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'validity_hours' => ['nullable', 'integer', 'min:0', 'max:87600'],
+            'validity_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:65535'],
@@ -71,6 +72,17 @@ class HotspotProfileController extends Controller implements HasMiddleware
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        $validated['duration_seconds'] = HotspotProfile::convertToSeconds(
+            $validated['duration_hours'] ?? 0,
+            $validated['duration_days'] ?? 0
+        );
+        $validated['validity_seconds'] = HotspotProfile::convertToSeconds(
+            $validated['validity_hours'] ?? 0,
+            $validated['validity_days'] ?? 0
+        );
+        unset($validated['duration_hours'], $validated['duration_days']);
+        unset($validated['validity_hours'], $validated['validity_days']);
 
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
         $validated['shared_users'] = (int) ($validated['shared_users'] ?? 1);
@@ -95,11 +107,14 @@ class HotspotProfileController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'mikrotik_profile_name' => ['required', 'string', 'max:64'],
-            'package_type' => ['required', 'in:voucher,member,membership,residential,home,rumahan,pppoe'],
+            'package_type' => ['required', 'in:voucher,member,membership,hotspot,residential,home,rumahan,pppoe'],
             'rate_limit_mbps' => ['nullable', 'numeric', 'min:0', 'max:10000'],
             'shared_users' => ['nullable', 'integer', 'min:1'],
             'limit_uptime' => ['nullable', 'string', 'max:32'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'duration_hours' => ['nullable', 'integer', 'min:0', 'max:87600'],
+            'duration_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'validity_hours' => ['nullable', 'integer', 'min:0', 'max:87600'],
+            'validity_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'quota_mb' => ['nullable', 'integer', 'min:0'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:65535'],
@@ -108,6 +123,17 @@ class HotspotProfileController extends Controller implements HasMiddleware
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        $validated['duration_seconds'] = HotspotProfile::convertToSeconds(
+            $validated['duration_hours'] ?? 0,
+            $validated['duration_days'] ?? 0
+        );
+        $validated['validity_seconds'] = HotspotProfile::convertToSeconds(
+            $validated['validity_hours'] ?? 0,
+            $validated['validity_days'] ?? 0
+        );
+        unset($validated['duration_hours'], $validated['duration_days']);
+        unset($validated['validity_hours'], $validated['validity_days']);
 
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $validated['shared_users'] = (int) ($validated['shared_users'] ?? 1);

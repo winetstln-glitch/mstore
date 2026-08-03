@@ -13,10 +13,9 @@
             <form method="GET" action="{{ route('hotspot.profiles.index') }}" class="d-flex gap-2 align-items-center">
                 <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Semua Tipe</option>
-                    <option value="pppoe" @selected(request('type')==='pppoe')>PPPoE (Pelanggan Tetap)</option>
-                    <option value="voucher" @selected(request('type')==='voucher')>Voucher Harian</option>
-                    <option value="rumahan" @selected(in_array(request('type'), ['rumahan','residential','home'], true))>Paket Rumahan</option>
-                    <option value="member" @selected(in_array(request('type'), ['member','membership'], true))>Member WiFi</option>
+                    <option value="pppoe" @selected(in_array(request('type'), ['pppoe','paketb','rumahan','residential','home','bisnis'], true))>PPPoE Rumahan/Bisnis</option>
+                    <option value="voucher" @selected(request('type')==='voucher')>Voucher</option>
+                    <option value="member" @selected(in_array(request('type'), ['member','membership','hotspot'], true))>Member Hotspot</option>
                 </select>
             </form>
             <a href="{{ route('hotspot.profiles.create') }}" class="btn btn-primary">
@@ -27,11 +26,10 @@
 
     @php
         $activeFilter = request('type');
-        $countPppoe = \App\Models\HotspotProfile::query()->pppoe()->count();
+        $countPppoe = \App\Models\HotspotProfile::query()->paketb()->count();
         $countVoucher = \App\Models\HotspotProfile::query()->vouchers()->count();
-        $countRumahan = \App\Models\HotspotProfile::query()->residential()->count();
         $countMember = \App\Models\HotspotProfile::query()->memberships()->count();
-        $countAll = $countPppoe + $countVoucher + $countRumahan + $countMember;
+        $countAll = $countPppoe + $countVoucher  + $countMember;
     @endphp
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body p-2">
@@ -39,16 +37,20 @@
                 @php
                     $tabs = [
                         ['val' => '',          'label' => 'Semua',       'count' => $countAll,    'icon' => 'fa-solid fa-layer-group',   'badge' => 'bg-secondary'],
-                        ['val' => 'pppoe',     'label' => 'PPPoE',       'count' => $countPppoe,  'icon' => 'fa-solid fa-network-wired', 'badge' => 'bg-primary'],
+                        ['val' => 'pppoe',     'label' => 'PPPoE Rumahan/Bisnis', 'count' => $countPppoe,  'icon' => 'fa-solid fa-network-wired', 'badge' => 'bg-primary'],
                         ['val' => 'voucher',   'label' => 'Voucher',     'count' => $countVoucher,'icon' => 'fa-solid fa-ticket',        'badge' => 'bg-success'],
-                        ['val' => 'rumahan',   'label' => 'Rumahan',     'count' => $countRumahan,'icon' => 'fa-solid fa-house',         'badge' => 'bg-warning text-dark'],
-                        ['val' => 'member',    'label' => 'Member',      'count' => $countMember, 'icon' => 'fa-solid fa-id-badge',      'badge' => 'bg-purple text-white'],
+                        ['val' => 'member',    'label' => 'Member Hotspot', 'count' => $countMember, 'icon' => 'fa-solid fa-id-badge',      'badge' => 'bg-purple text-white'],
                     ];
                     $baseUrl = route('hotspot.profiles.index');
                 @endphp
                 @foreach($tabs as $tab)
                     @php
                         $isActive = $activeFilter === $tab['val'] || ($tab['val'] === '' && !$activeFilter);
+                        if ($tab['val'] === 'pppoe') {
+                            $isActive = in_array($activeFilter, ['pppoe','paketb','rumahan','residential','home','bisnis'], true);
+                        } elseif ($tab['val'] === 'member') {
+                            $isActive = in_array($activeFilter, ['member','membership','hotspot'], true);
+                        }
                         $href = $tab['val'] === '' ? $baseUrl : $baseUrl . '?type=' . $tab['val'];
                     @endphp
                     <a href="{{ $href }}" class="btn btn-sm {{ $isActive ? 'btn-dark' : 'btn-outline-secondary' }} d-flex align-items-center gap-2 border-0">
@@ -81,6 +83,7 @@
                             <th>Harga</th>
                             <th>Speed</th>
                             <th>Durasi</th>
+                            <th>Masa Aktif</th>
                             <th>Quota</th>
                             <th>User</th>
                             <th>Router</th>
@@ -112,13 +115,14 @@
                                 <td>
                                     @php
                                         $typeMap = [
-                                            'pppoe' => ['label' => 'PPPoE', 'bg' => 'bg-primary'],
+                                            'pppoe' => ['label' => 'PPPoE Rumahan/Bisnis', 'bg' => 'bg-primary'],
                                             'voucher' => ['label' => 'Voucher', 'bg' => 'bg-success'],
                                             'member' => ['label' => 'Member', 'bg' => 'bg-purple text-white'],
                                             'membership' => ['label' => 'Member', 'bg' => 'bg-purple text-white'],
-                                            'residential' => ['label' => 'Rumahan', 'bg' => 'bg-warning text-dark'],
-                                            'home' => ['label' => 'Rumahan', 'bg' => 'bg-warning text-dark'],
-                                            'rumahan' => ['label' => 'Rumahan', 'bg' => 'bg-warning text-dark'],
+                                            'hotspot' => ['label' => 'Member', 'bg' => 'bg-purple text-white'],
+                                            'residential' => ['label' => 'PPPoE Rumahan/Bisnis', 'bg' => 'bg-primary'],
+                                            'home' => ['label' => 'PPPoE Rumahan/Bisnis', 'bg' => 'bg-primary'],
+                                            'rumahan' => ['label' => 'PPPoE Rumahan/Bisnis', 'bg' => 'bg-primary'],
                                         ];
                                         $t = $typeMap[$p->package_type] ?? ['label' => $p->package_type, 'bg' => 'bg-secondary'];
                                     @endphp
@@ -148,6 +152,16 @@
                                         </span>
                                     @else
                                         -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($p->validity_seconds)
+                                        <span class="text-muted">
+                                            @if($p->validity_seconds >= 86400) {{ floor($p->validity_seconds/86400) }} hari @endif
+                                            @if(($p->validity_seconds % 86400) >= 3600) {{ floor(($p->validity_seconds % 86400)/3600) }} jam @endif
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">Unlimited</span>
                                     @endif
                                 </td>
                                 <td>
@@ -191,7 +205,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="text-center py-5 text-muted">
+                                <td colspan="13" class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-inbox d-block mb-2" style="font-size:2rem;opacity:.3"></i>
                                     Belum ada paket.
                                     <div class="mt-2">
@@ -217,10 +231,9 @@
             <i class="fa-solid fa-circle-info me-1"></i>
             Perubahan pada halaman ini langsung tercermin di:
             <ol class="mb-0 mt-1">
-                <li><b>PPPoE</b> → Data Master Pelanggan Tetap & Billing.</li>
-                <li><b>Voucher</b> → Halaman captive portal <code>paketc.html</code> (untuk login).</li>
-                <li><b>Rumahan</b> → Halaman captive portal <code>paketb.html</code>.</li>
-                <li><b>Member (Wash+WiFi)</b> → Halaman captive portal <code>paketa.html</code> (pakai tabel WashMemberPackage terpisah di menu GT Wash).</li>
+                <li><b>PPPoE Rumahan/Bisnis</b> → Halaman captive portal <code>paketb.html</code>.</li>
+                <li><b>Voucher Harian</b> → Halaman captive portal <code>paketc.html</code> (untuk login).</li>
+                <li><b>Member Hotspot</b> → Halaman captive portal <code>paketa.html</code>.</li>
             </ol>
         </div>
     </div>

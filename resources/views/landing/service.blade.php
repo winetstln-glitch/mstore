@@ -157,19 +157,58 @@
 
     @if($servicePage['slug'] === 'internet')
         @php
-            $inferInternetPackageType = function ($package) {
-                $explicitType = \Illuminate\Support\Str::lower((string) ($package->package_type ?? ''));
-                if (in_array($explicitType, ['pppoe', 'hotspot'], true)) {
-                    return $explicitType;
+            $isMemberType = fn($pt) => in_array(strtolower((string)$pt), ['member', 'membership', 'hotspot'], true);
+            $isResidentialType = fn($pt) => in_array(strtolower((string)$pt), ['pppoe', 'home', 'residential', 'rumahan'], true);
+            $isVoucherType = fn($pt) => strtolower((string)$pt) === 'voucher';
+
+            $pppoeInternetPackages = $packages->filter(fn($p) => $isResidentialType($p->package_type ?? ''))->values();
+
+            $voucherFromPackages = $packages->filter(fn($p) => $isVoucherType($p->package_type ?? ''))->values();
+            $voucherTemplatesBase = isset($voucherTemplates) ? collect($voucherTemplates) : collect([]);
+            $voucherProfiles = $voucherTemplatesBase->merge($voucherFromPackages)->unique(fn($p) => is_object($p) ? ($p->id ?? spl_object_id($p)) : $p)->values();
+
+            $hotspotMemberPackages = $packages->filter(fn($p) => $isMemberType($p->package_type ?? ''))->values();
+            $washMemberPkgList = collect([]);
+            if (isset($washMemberPackages)) {
+                if ($washMemberPackages instanceof \Illuminate\Database\Eloquent\Collection) {
+                    $washMemberPkgList = $washMemberPackages->toBase();
+                } else {
+                    $washMemberPkgList = collect($washMemberPackages);
                 }
+            }
 
-                $haystack = \Illuminate\Support\Str::lower(trim($package->name.' '.$package->rate_limit_mbps.' '.$package->package_type.' '.($package->description ?? '')));
+            $convertedFromHotspotProfile = ($hotspotMemberPackages instanceof \Illuminate\Database\Eloquent\Collection
+                ? $hotspotMemberPackages->toBase()
+                : collect($hotspotMemberPackages)
+            )->map(function ($hp) {
+                $seconds = (int)($hp->duration_seconds ?? 0);
+                $durHari = 0;
+                if ($seconds > 0) {
+                    $durHari = (int)round($seconds / 86400);
+                    if ($durHari < 1) $durHari = 1;
+                }
+                $benefitList = [];
+                if (!empty($hp->description)) {
+                    $benefitList = preg_split('/\r\n|\r|\n/', (string)$hp->description);
+                }
+                return (object)[
+                    'id' => $hp->id,
+                    'name' => $hp->name,
+                    'code' => 'MBR-' . $hp->id,
+                    'type' => 'wifi',
+                    'duration_days' => $durHari > 0 ? $durHari : 30,
+                    'rate_limit_mbps' => $hp->rate_limit_mbps ?? null,
+                    'daily_wifi_minutes' => null,
+                    'price' => (float)($hp->price ?? 0),
+                    'benefits' => $benefitList,
+                    'from_hotspot_profile' => true,
+                ];
+            });
 
-                return \Illuminate\Support\Str::contains($haystack, ['hotspot', 'member', 'voucher']) ? 'hotspot' : 'pppoe';
-            };
-            $hotspotInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'hotspot')->values();
-            $pppoeInternetPackages = $packages->filter(fn ($package) => $inferInternetPackageType($package) === 'pppoe')->values();
-            $voucherProfiles = collect($voucherTemplates ?? [])->values();
+            $wifiMemberPackages = $washMemberPkgList->merge($convertedFromHotspotProfile)
+                ->sortBy(fn($item) => [ (float)(is_array($item) ? ($item['price'] ?? 0) : ($item->price ?? 0)), (string)(is_array($item) ? ($item['name'] ?? '') : ($item->name ?? '')) ])
+                ->values();
+
             $formatInternetSpeedFromRateLimit = function ($rateLimitValue) {
                 $speedText = trim((string) $rateLimitValue);
                 if ($speedText === '' || $speedText === '0') {
@@ -316,12 +355,9 @@
                     </div>
                 </div>
 
-                @php
-                    $wifiMemberPackages = isset($washMemberPackages) ? $washMemberPackages : collect([]);
-                @endphp
                 @if($wifiMemberPackages->count() > 0)
                 <div class="fade-up mt-5">
-                    <h5 class="fw-bold mb-2">Paket Member WiFi / Cuci+WiFi</h5>
+                    <h5 class="fw-bold mb-2">Paket Member Hotspot</h5>
                     <div class="scroll-container">
                         @foreach($wifiMemberPackages as $memberPkg)
                             @php
