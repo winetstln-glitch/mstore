@@ -27,6 +27,25 @@ class HotspotPortalController extends Controller
 {
     public function packageList(Request $request)
     {
+        try {
+            return $this->packageListInternal($request);
+        } catch (\Throwable $e) {
+            Log::error('FATAL packageList error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => true,
+                'message' => 'partial',
+                'data' => [
+                    'vouchers' => [],
+                    'member_packages' => [],
+                    'residential' => [],
+                    'pppoe' => [],
+                ],
+            ]);
+        }
+    }
+
+    protected function packageListInternal(Request $request)
+    {
         $type = strtolower(trim((string) $request->query('type', 'all')));
         $limit = max(1, min((int) $request->query('limit', 50), 100));
 
@@ -64,144 +83,165 @@ class HotspotPortalController extends Controller
 
         $memberPackages = collect();
         if ($type === 'all' || $type === 'member' || $type === 'membership') {
-            $washMemberPkgs = WashMemberPackage::query()
-                ->active()
-                ->hasWifiBenefit()
-                ->orderBy('sort_order')
-                ->orderBy('price')
-                ->limit($limit)
-                ->get()
-                ->map(function (WashMemberPackage $p) {
-                    $typeRaw = strtolower((string) $p->type);
-                    $typeLabel = match(true) {
-                        $typeRaw === 'both' => 'Paket Member Wash + WiFi',
-                        $typeRaw === 'wash' => 'Paket Member Wash',
-                        $typeRaw === 'wifi' => 'Paket Member WiFi',
-                        default => 'Paket Member',
-                    };
-                    return [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'code' => $p->code,
-                        'type' => $p->type,
-                        'type_label' => $typeLabel,
-                        'package_type' => 'member',
-                        'price' => (int) round($p->price),
-                        'price_formatted' => $p->formatted_price,
-                        'duration_days' => $p->duration_days,
-                        'duration_label' => $p->duration_days ? ($p->duration_days . ' hari') : null,
-                        'discount_percent' => (float) $p->discount_percent,
-                        'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
-                        'daily_wifi_minutes' => $p->daily_wifi_minutes,
-                        'network_type' => $p->network_type,
-                        'pppoe_profile' => $p->pppoe_profile,
-                        'description' => $p->description,
-                        'benefits' => $p->benefits,
-                        'color_badge' => null,
-                    ];
-                });
+            try {
+                $washMemberPkgs = WashMemberPackage::query()
+                    ->active()
+                    ->hasWifiBenefit()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->limit($limit)
+                    ->get()
+                    ->map(function (WashMemberPackage $p) {
+                        $typeRaw = strtolower((string) ($p->type ?? ''));
+                        $typeLabel = match(true) {
+                            $typeRaw === 'both' => 'Paket Member Wash + WiFi',
+                            $typeRaw === 'wash' => 'Paket Member Wash',
+                            $typeRaw === 'wifi' => 'Paket Member WiFi',
+                            default => 'Paket Member',
+                        };
+                        $benefitsVal = $p->benefits;
+                        if (is_string($benefitsVal)) {
+                            try { $benefitsVal = json_decode($benefitsVal, true) ?: []; } catch (\Throwable $_) { $benefitsVal = []; }
+                        } elseif (!is_array($benefitsVal)) {
+                            $benefitsVal = [];
+                        }
+                        return [
+                            'id' => $p->id,
+                            'name' => (string) ($p->name ?? 'Paket Member'),
+                            'code' => (string) ($p->code ?? ('WM-'.$p->id)),
+                            'type' => $typeRaw !== '' ? $typeRaw : 'member',
+                            'type_label' => $typeLabel,
+                            'package_type' => 'member',
+                            'price' => (int) round((float) ($p->price ?? 0)),
+                            'price_formatted' => (string) ($p->formatted_price ?? 'Rp 0'),
+                            'duration_days' => $p->duration_days ? (int) $p->duration_days : null,
+                            'duration_label' => $p->duration_days ? ((int) $p->duration_days . ' hari') : null,
+                            'discount_percent' => (float) ($p->discount_percent ?? 0),
+                            'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
+                            'daily_wifi_minutes' => $p->daily_wifi_minutes ? (int) $p->daily_wifi_minutes : null,
+                            'network_type' => $p->network_type,
+                            'pppoe_profile' => $p->pppoe_profile,
+                            'description' => $p->description,
+                            'benefits' => $benefitsVal,
+                            'color_badge' => null,
+                        ];
+                    });
 
-            $hotspotMemberPkgs = HotspotProfile::query()
-                ->active()
-                ->memberships()
-                ->orderBy('sort_order')
-                ->orderBy('price')
-                ->limit($limit)
-                ->get()
-                ->map(function (HotspotProfile $p) {
-                    $durHari = null;
-                    if ($p->duration_seconds && $p->duration_seconds > 0) {
-                        $durHari = (int) round($p->duration_seconds / 86400);
-                        if ($durHari < 1) $durHari = 1;
-                    }
-                    return [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'code' => 'MBR-' . $p->id,
-                        'type' => 'wifi',
-                        'type_label' => 'Paket Member WiFi',
-                        'package_type' => 'member',
-                        'price' => (int) round($p->price),
-                        'price_formatted' => $p->formatted_price,
-                        'duration_days' => $durHari,
-                        'duration_label' => $p->formatted_uptime,
-                        'discount_percent' => 0,
-                        'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
-                        'daily_wifi_minutes' => null,
-                        'network_type' => 'hotspot',
-                        'pppoe_profile' => $p->mikrotik_profile_name,
-                        'description' => $p->description,
-                        'benefits' => null,
-                        'color_badge' => $p->color_badge,
-                    ];
-                });
+                $hotspotMemberPkgs = HotspotProfile::query()
+                    ->active()
+                    ->memberships()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->limit($limit)
+                    ->get()
+                    ->map(function (HotspotProfile $p) {
+                        $durHari = null;
+                        if ($p->duration_seconds && (int) $p->duration_seconds > 0) {
+                            $durHari = (int) round((int) $p->duration_seconds / 86400);
+                            if ($durHari < 1) $durHari = 1;
+                        }
+                        return [
+                            'id' => $p->id,
+                            'name' => (string) ($p->name ?? 'Paket Member WiFi'),
+                            'code' => 'MBR-' . $p->id,
+                            'type' => 'wifi',
+                            'type_label' => 'Paket Member WiFi',
+                            'package_type' => 'member',
+                            'price' => (int) round((float) ($p->price ?? 0)),
+                            'price_formatted' => (string) ($p->formatted_price ?? 'Rp 0'),
+                            'duration_days' => $durHari,
+                            'duration_label' => (string) ($p->formatted_uptime ?? 'Unlimited'),
+                            'discount_percent' => 0,
+                            'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
+                            'daily_wifi_minutes' => null,
+                            'network_type' => 'hotspot',
+                            'pppoe_profile' => $p->mikrotik_profile_name,
+                            'description' => $p->description,
+                            'benefits' => null,
+                            'color_badge' => $p->color_badge,
+                        ];
+                    });
 
-            $memberPackages = $washMemberPkgs->merge($hotspotMemberPkgs)
-                ->sortBy(function ($item) { return [$item['price'] ?? 0, $item['name'] ?? '']; })
-                ->values();
-            if ($memberPackages->count() > $limit) {
-                $memberPackages = $memberPackages->take($limit)->values();
+                $memberPackages = $washMemberPkgs->merge($hotspotMemberPkgs)
+                    ->sortBy(function ($item) { return [($item['price'] ?? 0), ($item['name'] ?? '')]; })
+                    ->values();
+                if ($memberPackages->count() > $limit) {
+                    $memberPackages = $memberPackages->take($limit)->values();
+                }
+            } catch (\Throwable $e) {
+                Log::error('packageList memberPackages block error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+                $memberPackages = collect();
             }
         }
 
         $residential = collect();
         if ($type === 'all' || $type === 'rumah' || $type === 'residential' || $type === 'home') {
-            $residential = HotspotProfile::query()
-                ->active()
-                ->residential()
-                ->orderBy('sort_order')
-                ->orderBy('price')
-                ->limit($limit)
-                ->get()
-                ->map(function (HotspotProfile $p) {
-                    return [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'code' => 'HOME-'.$p->id,
-                        'type' => 'home',
-                        'type_label' => 'Paket Rumah Fiber',
-                        'package_type' => $p->package_type,
-                        'price' => (int) round($p->price),
-                        'price_formatted' => $p->formatted_price,
-                        'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
-                        'quota_mb' => $p->quota_mb,
-                        'shared_users' => $p->shared_users,
-                        'network_type' => 'hotspot',
-                        'mikrotik_profile' => $p->mikrotik_profile_name,
-                        'description' => $p->description,
-                        'color_badge' => $p->color_badge,
-                    ];
-                });
+            try {
+                $residential = HotspotProfile::query()
+                    ->active()
+                    ->residential()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->limit($limit)
+                    ->get()
+                    ->map(function (HotspotProfile $p) {
+                        return [
+                            'id' => $p->id,
+                            'name' => (string) ($p->name ?? 'Paket Rumah'),
+                            'code' => 'HOME-'.$p->id,
+                            'type' => 'home',
+                            'type_label' => 'Paket Rumah Fiber',
+                            'package_type' => $p->package_type,
+                            'price' => (int) round((float) ($p->price ?? 0)),
+                            'price_formatted' => (string) ($p->formatted_price ?? 'Rp 0'),
+                            'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
+                            'quota_mb' => $p->quota_mb ? (int) $p->quota_mb : null,
+                            'shared_users' => $p->shared_users ? (int) $p->shared_users : null,
+                            'network_type' => 'hotspot',
+                            'mikrotik_profile' => $p->mikrotik_profile_name,
+                            'description' => $p->description,
+                            'color_badge' => $p->color_badge,
+                        ];
+                    });
+            } catch (\Throwable $e) {
+                Log::error('packageList residential block error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+                $residential = collect();
+            }
         }
 
         $pppoe = collect();
         if ($type === 'all' || $type === 'pppoe') {
-            $pppoe = HotspotProfile::query()
-                ->active()
-                ->pppoe()
-                ->orderBy('sort_order')
-                ->orderBy('price')
-                ->limit($limit)
-                ->get()
-                ->map(function (HotspotProfile $p) {
-                    return [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'code' => 'PPPOE-'.$p->id,
-                        'type' => 'pppoe',
-                        'type_label' => 'Paket PPPoE / Bisnis',
-                        'package_type' => $p->package_type,
-                        'price' => (int) round($p->price),
-                        'price_formatted' => $p->formatted_price,
-                        'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
-                        'quota_mb' => $p->quota_mb,
-                        'shared_users' => $p->shared_users,
-                        'network_type' => 'pppoe',
-                        'mikrotik_profile' => $p->mikrotik_profile_name,
-                        'description' => $p->description,
-                        'color_badge' => $p->color_badge,
-                    ];
-                });
+            try {
+                $pppoe = HotspotProfile::query()
+                    ->active()
+                    ->pppoe()
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->limit($limit)
+                    ->get()
+                    ->map(function (HotspotProfile $p) {
+                        return [
+                            'id' => $p->id,
+                            'name' => (string) ($p->name ?? 'Paket PPPoE'),
+                            'code' => 'PPPOE-'.$p->id,
+                            'type' => 'pppoe',
+                            'type_label' => 'Paket PPPoE / Bisnis',
+                            'package_type' => $p->package_type,
+                            'price' => (int) round((float) ($p->price ?? 0)),
+                            'price_formatted' => (string) ($p->formatted_price ?? 'Rp 0'),
+                            'rate_limit_mbps' => $p->rate_limit_mbps ? (float) $p->rate_limit_mbps : null,
+                            'quota_mb' => $p->quota_mb ? (int) $p->quota_mb : null,
+                            'shared_users' => $p->shared_users ? (int) $p->shared_users : null,
+                            'network_type' => 'pppoe',
+                            'mikrotik_profile' => $p->mikrotik_profile_name,
+                            'description' => $p->description,
+                            'color_badge' => $p->color_badge,
+                        ];
+                    });
+            } catch (\Throwable $e) {
+                Log::error('packageList pppoe block error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+                $pppoe = collect();
+            }
         }
 
         return response()->json([
