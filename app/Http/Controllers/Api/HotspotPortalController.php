@@ -162,7 +162,7 @@ class HotspotPortalController extends Controller
                         ];
                     });
 
-                $memberPackages = $washMemberPkgs->merge($hotspotMemberPkgs)
+                $memberPackages = $washMemberPkgs->toBase()->merge($hotspotMemberPkgs->toBase())
                     ->sortBy(function ($item) { return [($item['price'] ?? 0), ($item['name'] ?? '')]; })
                     ->values();
                 if ($memberPackages->count() > $limit) {
