@@ -308,6 +308,22 @@
                                 <span>🎁 Bonus Loyalty (GRATIS)</span>
                                 <span id="instantBonusAmount">Rp 0</span>
                             </div>
+                            <div id="bonusChoiceRow" class="card card-body bg-warning bg-opacity-10 mt-2 p-2 d-none">
+                                <div class="fw-bold text-warning mb-2 small">⚡ Anda BERHAK BONUS! Pilih salah satu:</div>
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="radio" name="bonus_apply_mode" id="bonusApplyNow" value="now">
+                                    <label class="form-check-label small fw-bold text-success" for="bonusApplyNow">
+                                        ✅ PAKAI BONUS SEKARANG — Transaksi ini GRATIS Rp0 (voucher diterbitkan + langsung dipakai)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="bonus_apply_mode" id="bonusSaveForLater" value="save">
+                                    <label class="form-check-label small fw-bold text-primary" for="bonusSaveForLater">
+                                        💾 SIMPAN VOUCHER — Bayar transaksi ini NORMAL, voucher tersedia untuk KUNJUNGAN BERIKUTNYA
+                                    </label>
+                                </div>
+                                <input type="hidden" name="skip_auto_redeem_voucher" id="skip_auto_redeem_voucher" value="0">
+                            </div>
                             <div class="wash-summary-row wash-summary-total">
                                 <span>Total Akhir</span>
                                 <span id="totalAmount">Rp 0</span>
@@ -393,6 +409,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const applyNowRadio = document.getElementById('bonusApplyNow');
+    const saveLaterRadio = document.getElementById('bonusSaveForLater');
+    if (applyNowRadio) applyNowRadio.addEventListener('change', updateCartUI);
+    if (saveLaterRadio) saveLaterRadio.addEventListener('change', updateCartUI);
+
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         // Focus search with /
@@ -578,7 +599,8 @@ document.addEventListener('DOMContentLoaded', function () {
         instantBonusEligible: false,
         instantBonusTarget: null,
         instantBonusNote: null,
-        loyaltyMode: 'voucher'
+        loyaltyMode: 'voucher',
+        applyBonusNow: true
     };
 
     function applyCustomerCheckData(data) {
@@ -1224,7 +1246,15 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('use_voucher').checked = false;
         const voucherCodeEl = document.getElementById('voucher_code');
         if (voucherCodeEl) voucherCodeEl.innerHTML = '<option value="">Pilih voucher</option>';
-        window.__washLoyalty = { instantBonusEligible: false, instantBonusTarget: null, instantBonusNote: null, loyaltyMode: 'voucher' };
+        window.__washLoyalty = { instantBonusEligible: false, instantBonusTarget: null, instantBonusNote: null, loyaltyMode: 'voucher', applyBonusNow: true };
+        const bonusChoiceRow = document.getElementById('bonusChoiceRow');
+        const applyNowRadio = document.getElementById('bonusApplyNow');
+        const saveLaterRadio = document.getElementById('bonusSaveForLater');
+        const skipAutoRedeemInput = document.getElementById('skip_auto_redeem_voucher');
+        if (bonusChoiceRow) bonusChoiceRow.classList.add('d-none');
+        if (applyNowRadio) applyNowRadio.checked = false;
+        if (saveLaterRadio) saveLaterRadio.checked = false;
+        if (skipAutoRedeemInput) skipAutoRedeemInput.value = '0';
         resetMemberInfo();
         
         resetServiceSelection();
@@ -1245,6 +1275,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const voucherDiscountAmountEl = document.getElementById('voucherDiscountAmount');
         const instantBonusRow = document.getElementById('instantBonusRow');
         const instantBonusAmountEl = document.getElementById('instantBonusAmount');
+        const bonusChoiceRow = document.getElementById('bonusChoiceRow');
+        const applyNowRadio = document.getElementById('bonusApplyNow');
+        const saveLaterRadio = document.getElementById('bonusSaveForLater');
+        const skipAutoRedeemInput = document.getElementById('skip_auto_redeem_voucher');
         const useVoucher = voucherEl ? !!voucherEl.checked : false;
         
         cartContainer.innerHTML = '';
@@ -1258,6 +1292,18 @@ document.addEventListener('DOMContentLoaded', function () {
             loyalty.instantBonusEligible && !useVoucher &&
             cart.length === 1 && (cart[0]?.quantity || 0) === 1
         );
+
+        if (canApplyInstantBonus) {
+            if (bonusChoiceRow) bonusChoiceRow.classList.remove('d-none');
+            if (!applyNowRadio.checked && !saveLaterRadio.checked) {
+                if (applyNowRadio) applyNowRadio.checked = true;
+            }
+            if (skipAutoRedeemInput) skipAutoRedeemInput.value = saveLaterRadio?.checked ? '1' : '0';
+        } else {
+            if (bonusChoiceRow) bonusChoiceRow.classList.add('d-none');
+            if (skipAutoRedeemInput) skipAutoRedeemInput.value = '0';
+        }
+        const userAppliedBonus = canApplyInstantBonus && applyNowRadio?.checked;
 
         if (cart.length === 0) {
             if (emptyMsg) emptyMsg.style.display = 'block';
@@ -1325,8 +1371,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     memberDiscount = 0;
                     instantBonusDiscount = 0;
                 }
-            } else if (canApplyInstantBonus) {
-                // Preview: Instant Bonus (FREE wash) applied, confirmed in backend
+            } else if (userAppliedBonus) {
                 instantBonusDiscount = total;
                 discount = total;
                 memberDiscount = 0;
@@ -1554,6 +1599,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (data.instant_bonus_applied) {
                     const target = data.instant_bonus_target || window.__washLoyalty?.instantBonusTarget || '';
                     await showLoyaltyBonusPopup('🎉 BONUS CUCI ke-' + target + ' DITERAPKAN! Total transaksi menjadi GRATIS (Rp0).');
+                } else if (data.voucher_saved_for_later && data.saved_voucher_code) {
+                    await showLoyaltyBonusPopup('💾 VOUCHER BONUS DISIMPAN!\n\nKode: ' + data.saved_voucher_code + '\nVoucher bisa dipakai di KUNJUNGAN BERIKUTNYA.\n\nTransaksi ini dibayar normal.');
+                    if ((document.getElementById('vehicle_plate').value || '').trim() !== '') {
+                        setTimeout(() => { checkCustomerByFields({ silent: true }); }, 400);
+                    }
                 }
                 openReceipt();
                 const resolvedPhone = data.customer_phone || phone;

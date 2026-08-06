@@ -371,6 +371,8 @@ class WashTransactionController extends Controller implements HasMiddleware
             'kasbon_type' => 'nullable|string',
             'kasbon_user_id' => 'nullable|exists:users,id',
             'kasbon_name' => 'nullable|string',
+            'skip_auto_redeem_voucher' => 'nullable|boolean',
+            'bonus_apply_mode' => 'nullable|string|in:now,save',
         ]);
 
         try {
@@ -487,6 +489,13 @@ class WashTransactionController extends Controller implements HasMiddleware
             }
             $bonusCheck = $loyaltyService->checkInstantBonusEligibility($normalizedPlateInput);
             $loyaltyMode = $bonusCheck['mode'] ?? 'voucher';
+
+            $skipAutoRedeem = (bool) $request->input('skip_auto_redeem_voucher', false);
+            $bonusApplyMode = (string) $request->input('bonus_apply_mode', 'now');
+            if ($bonusApplyMode === 'save') {
+                $skipAutoRedeem = true;
+            }
+
             if ($isWashOnly && !$useRewardVoucher && ($bonusCheck['eligible'] ?? false) && $normalizedPlateInput !== '') {
                 if (count($items) !== 1 || ((int) ($items[0]['quantity'] ?? 0)) !== 1) {
                     throw new \RuntimeException('Bonus cuci ke-'.$bonusCheck['target'].' (gratis) hanya berlaku untuk 1 transaksi dengan 1 layanan (qty 1). Silakan pisahkan transaksi.');
@@ -500,16 +509,15 @@ class WashTransactionController extends Controller implements HasMiddleware
                     $discountAmount = $total;
                     $discountType = 'instant_bonus_'.$bonusCheck['target'].'x';
                     $discountNote = 'instant_bonus_'.$bonusCheck['target'].'x:gratis_cuci';
+                } elseif ($skipAutoRedeem) {
+                    $autoRedeemVoucher = false;
+                    $discountAmount = 0;
+                    $discountType = null;
+                    $discountNote = 'reward_voucher_saved_for_later:eligible_'.$bonusCheck['target'].'x';
                 } else {
-                    // 🔥 MODE VOUCHER + AUTO-REDEEM
-                    // Transaksi ke-target (ke-11) = BONUS. Kita treat sebagai voucher, tapi
-                    // kode voucher TIDAK di-input user, melainkan DITERBITKAN & LANGSUNG DIPAKAI
-                    // di transaksi INI (nanti di bagian incrementOnPaidTransaction).
                     $autoRedeemVoucher = true;
                     $discountAmount = $total;
                     $discountType = 'reward_voucher';
-                    // Temp note (nanti diupdate setelah increment, pakai prefix khusus agar
-                    // transaksi TIDAK dianggap sebagai redemption oleh isRedemptionTransaction)
                     $discountNote = 'auto_reward_voucher:pending_code_'.uniqid();
                 }
             }
@@ -744,6 +752,8 @@ class WashTransactionController extends Controller implements HasMiddleware
 
             $rewardVoucherCreatedCode = null;
             $loyaltyProgress = null;
+            $voucherSavedForLater = false;
+            $savedVoucherCode = null;
             $membershipLevelUpgraded = false;
             $membershipOldLevel = null;
             $membershipNewLevel = null;
@@ -788,12 +798,19 @@ class WashTransactionController extends Controller implements HasMiddleware
                     $autoRedeemedCode = $result['redeemed_voucher_code'] ?? null;
                     if ($created instanceof \App\Models\WashRewardVoucher) {
                         $rewardVoucherCreatedCode = $created->code;
+                        if (! $autoRedeemVoucher) {
+                            $voucherSavedForLater = true;
+                            $savedVoucherCode = $created->code;
+                        }
                     }
                     if ($autoRedeemVoucher && $autoRedeemedCode) {
-                        // Update notes agar menampilkan voucher yang benar-benar diterbitkan + terpakai
                         $finalNote = 'auto_reward_voucher:'.$autoRedeemedCode;
                         $transaction->update(['notes' => $finalNote]);
                         $redeemedVoucher = $created;
+                    }
+                    if ($voucherSavedForLater && $savedVoucherCode) {
+                        $finalNote = 'reward_voucher_saved:'.$savedVoucherCode;
+                        $transaction->update(['notes' => $finalNote]);
                     }
 
                     if ($memberFresh) {
@@ -806,6 +823,8 @@ class WashTransactionController extends Controller implements HasMiddleware
                             'loyalty_remaining' => $remaining,
                             'reward_voucher_code' => $rewardVoucherCreatedCode,
                             'auto_redeemed_voucher_code' => $autoRedeemedCode,
+                            'voucher_saved_for_later' => $voucherSavedForLater,
+                            'saved_voucher_code' => $savedVoucherCode,
                         ]);
                     }
                 } catch (\Throwable) {
@@ -846,6 +865,8 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'discount_type' => $discountType,
                 'instant_bonus_applied' => $instantBonusApplied,
                 'instant_bonus_target' => $instantBonusApplied ? ($bonusCheck['target'] ?? null) : null,
+                'voucher_saved_for_later' => $voucherSavedForLater,
+                'saved_voucher_code' => $savedVoucherCode,
                 'redeemed_voucher_code' => $redeemedVoucher?->code,
                 'reward_voucher_created_code' => $rewardVoucherCreatedCode,
                 'loyalty_progress' => $loyaltyProgress,
@@ -857,7 +878,7 @@ class WashTransactionController extends Controller implements HasMiddleware
                 'membership_new_level' => $membershipNewLevel?->code,
                 'membership_new_level_effective_from' => $membershipLevelUpgraded ? 'next_transaction' : null,
                 'receipt_url' => route('wash.transactions.receipt', $transaction),
-                'message' => $instantBonusApplied ? 'Bonus cuci ke-'.($bonusCheck['target'] ?? '').' GRATIS diterapkan.' : 'Transaction successful',
+                'message' => $instantBonusApplied ? 'Bonus cuci ke-'.($bonusCheck['target'] ?? '').' GRATIS diterapkan.' : ($voucherSavedForLater ? 'Voucher bonus disimpan untuk kunjungan berikutnya.' : 'Transaction successful'),
             ]);
 
         } catch (\Exception $e) {
