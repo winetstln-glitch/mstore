@@ -309,17 +309,17 @@
                                 <span id="instantBonusAmount">Rp 0</span>
                             </div>
                             <div id="bonusChoiceRow" class="card card-body bg-warning bg-opacity-10 mt-2 p-2 d-none">
-                                <div class="fw-bold text-warning mb-2 small">⚡ Anda BERHAK BONUS! Pilih salah satu:</div>
+                                <div class="fw-bold text-warning mb-2 small">⚡ Anda dapat BONUS CUCI GRATIS!</div>
                                 <div class="form-check mb-1">
                                     <input class="form-check-input" type="radio" name="bonus_apply_mode" id="bonusApplyNow" value="now">
                                     <label class="form-check-label small fw-bold text-success" for="bonusApplyNow">
-                                        ✅ PAKAI BONUS SEKARANG — Transaksi ini GRATIS Rp0 (voucher diterbitkan + langsung dipakai)
+                                        ✅ PAKAI BONUS INI — Gratis Rp0
                                     </label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="bonus_apply_mode" id="bonusSaveForLater" value="save">
                                     <label class="form-check-label small fw-bold text-primary" for="bonusSaveForLater">
-                                        💾 SIMPAN VOUCHER — Bayar transaksi ini NORMAL, voucher tersedia untuk KUNJUNGAN BERIKUTNYA
+                                        💾 SIMPAN UNTUK NANTI — Bayar biasa dulu
                                     </label>
                                 </div>
                                 <input type="hidden" name="skip_auto_redeem_voucher" id="skip_auto_redeem_voucher" value="0">
