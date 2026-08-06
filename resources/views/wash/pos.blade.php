@@ -660,14 +660,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const mode = data.loyalty_mode || 'voucher';
             if (window.__washLoyalty.instantBonusEligible) {
                 if (mode === 'instant_discount') {
-                    progressLine = `<span class="fw-bold text-success">🎉 <u>TRANSAKSI INI GRATIS!</u><br>Progress ${basis}: ${data.progress} / ${data.target}. Bonus ${data.target}x cuci (mode: instant discount) otomatis diterapkan saat checkout untuk 1 layanan kendaraan qty 1.</span>`;
+                    progressLine = `<span class="fw-bold text-success">🎉 <u>GRATIS!</u> ${basis}: ${data.progress}/${data.target}. Bonus ${data.target}x cuci otomatis (1 layanan qty 1).</span>`;
                 } else {
-                    progressLine = `<span class="fw-bold text-success">🎉 <u>TRANSAKSI INI GRATIS!</u><br>Progress ${basis}: ${data.progress} / ${data.target}. Bonus ${data.target}x cuci otomatis: <b>VOUCHER DITERBITKAN & LANGSUNG DIPAKAI</b> (1 layanan kendaraan qty 1).</span>`;
+                    progressLine = `<span class="fw-bold text-success">🎉 <u>GRATIS!</u> ${basis}: ${data.progress}/${data.target}. Bonus ${data.target}x cuci: <b>VOUCHER</b> (1 layanan qty 1).</span>`;
                 }
             } else if (mode === 'instant_discount') {
-                progressLine = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk <b>CUCI GRATIS LANGSUNG</b> di transaksi ini (tanpa voucher).</span>`;
+                progressLine = `<span class="text-success">${basis}: ${data.progress}/${data.target}. Sisa ${data.remaining}x <b>GRATIS LANGSUNG</b>.</span>`;
             } else {
-                progressLine = `<span class="text-success">Progress ${basis}: ${data.progress} / ${data.target}. Sisa ${data.remaining}x lagi untuk <b>VOUCHER GRATIS</b> (diterbitkan & langsung dipakai di transaksi ke-${data.target}).</span>`;
+                progressLine = `<span class="text-success">${basis}: ${data.progress}/${data.target}. Sisa ${data.remaining}x <b>VOUCHER GRATIS</b>.</span>`;
             }
             info.innerHTML = `${progressLine}${memberLine}`;
         } else {
