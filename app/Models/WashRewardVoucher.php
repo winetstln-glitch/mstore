@@ -15,11 +15,15 @@ class WashRewardVoucher extends Model
         'wash_member_id',
         'vehicle_plate',
         'reward_type',
+        'source',
+        'source_reason',
         'status',
         'issued_at',
         'expires_at',
         'used_at',
         'used_wash_transaction_id',
+        'revoked_at',
+        'revoked_reason',
         'meta',
     ];
 
@@ -27,6 +31,7 @@ class WashRewardVoucher extends Model
         'issued_at' => 'datetime',
         'expires_at' => 'datetime',
         'used_at' => 'datetime',
+        'revoked_at' => 'datetime',
         'meta' => 'array',
     ];
 

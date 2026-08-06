@@ -505,10 +505,17 @@ class WashTransactionController extends Controller implements HasMiddleware
                     throw new \RuntimeException('Bonus cuci gratis tidak berlaku untuk layanan caffe.');
                 }
                 if ($loyaltyMode === 'instant_discount') {
-                    $instantBonusApplied = true;
-                    $discountAmount = $total;
-                    $discountType = 'instant_bonus_'.$bonusCheck['target'].'x';
-                    $discountNote = 'instant_bonus_'.$bonusCheck['target'].'x:gratis_cuci';
+                    if ($skipAutoRedeem) {
+                        $instantBonusApplied = false;
+                        $discountAmount = 0;
+                        $discountType = null;
+                        $discountNote = 'instant_bonus_saved_for_later:eligible_'.$bonusCheck['target'].'x';
+                    } else {
+                        $instantBonusApplied = true;
+                        $discountAmount = $total;
+                        $discountType = 'instant_bonus_'.$bonusCheck['target'].'x';
+                        $discountNote = 'instant_bonus_'.$bonusCheck['target'].'x:gratis_cuci';
+                    }
                 } elseif ($skipAutoRedeem) {
                     $autoRedeemVoucher = false;
                     $discountAmount = 0;

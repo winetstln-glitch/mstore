@@ -1295,6 +1295,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (canApplyInstantBonus) {
             if (bonusChoiceRow) bonusChoiceRow.classList.remove('d-none');
+            const isVoucherMode = (loyalty.loyaltyMode || 'voucher') !== 'instant_discount';
+            if (saveLaterRadio) {
+                const wrapper = saveLaterRadio.closest('.form-check') || saveLaterRadio.parentElement;
+                if (wrapper) {
+                    if (isVoucherMode) {
+                        wrapper.style.display = '';
+                    } else {
+                        wrapper.style.display = 'none';
+                        if (saveLaterRadio.checked && applyNowRadio) {
+                            saveLaterRadio.checked = false;
+                            applyNowRadio.checked = true;
+                        }
+                    }
+                }
+            }
             if (!applyNowRadio.checked && !saveLaterRadio.checked) {
                 if (applyNowRadio) applyNowRadio.checked = true;
             }
@@ -1523,7 +1538,9 @@ document.addEventListener('DOMContentLoaded', function () {
             use_voucher: document.getElementById('use_voucher').checked,
             voucher_code: document.getElementById('voucher_code')?.value || null,
             vehicle_plate: document.getElementById('vehicle_plate').value,
-            vehicle_brand: document.getElementById('vehicle_brand').value
+            vehicle_brand: document.getElementById('vehicle_brand').value,
+            bonus_apply_mode: document.querySelector('input[name="bonus_apply_mode"]:checked')?.value || 'now',
+            skip_auto_redeem_voucher: document.getElementById('skip_auto_redeem_voucher')?.value === '1' ? '1' : '0',
         };
 
         if (method === 'kasbon') {

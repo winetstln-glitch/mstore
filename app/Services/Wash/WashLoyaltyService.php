@@ -212,19 +212,25 @@ class WashLoyaltyService
             $code = 'GW-MANUAL-' . strtoupper(substr(md5(uniqid((string) $plate . mt_rand(), true)), 0, 10));
             $expires = $expiresDays && $expiresDays > 0 ? $now->copy()->addDays($expiresDays) : null;
 
-            $voucher = WashRewardVoucher::create([
+            $voucherData = [
                 'code' => $code,
                 'wash_loyalty_counter_id' => $counter->id,
                 'wash_customer_id' => $counter->wash_customer_id,
                 'wash_member_id' => $counter->wash_member_id,
                 'vehicle_plate' => $plate,
                 'reward_type' => $rt,
-                'source' => 'manual',
-                'source_reason' => $reason,
                 'status' => 'available',
                 'expires_at' => $expires,
                 'issued_at' => $now,
-            ]);
+            ];
+            if (Schema::hasColumn('wash_reward_vouchers', 'source')) {
+                $voucherData['source'] = 'manual';
+            }
+            if (Schema::hasColumn('wash_reward_vouchers', 'source_reason')) {
+                $voucherData['source_reason'] = $reason;
+            }
+
+            $voucher = WashRewardVoucher::create($voucherData);
 
             $this->auditLog->logAction('wash_loyalty.manual_voucher_issued', $voucher, [
                 'vehicle_plate' => $plate,
@@ -256,44 +262,78 @@ class WashLoyaltyService
                 return ['success' => false, 'message' => 'Counter tidak ditemukan untuk plat ini'];
             }
 
-            if ((int) $counter->last_paid_transaction_id !== (int) $transaction->id) {
-                // Bukan increment terakhir, tapi masih boleh rollback jika user memaksa (tetap kurangi 1, cuma tidak "last")
+            $prevCycle = (int) $counter->cycle_paid_count;
+            $prevLifetime = (int) $counter->lifetime_paid_count;
+            $target = $this->target();
+
+            $newCycle = max(0, $prevCycle - 1);
+            $newLifetime = max(0, $prevLifetime - 1);
+
+            $hasSource = Schema::hasColumn('wash_reward_vouchers', 'source');
+            $hasRevokedAt = Schema::hasColumn('wash_reward_vouchers', 'revoked_at');
+            $hasRevokedReason = Schema::hasColumn('wash_reward_vouchers', 'revoked_reason');
+
+            $undoVoucher = null;
+            $voucherFound = null;
+
+            if (Schema::hasTable('wash_reward_vouchers')) {
+                $txId = $transaction->id;
+                $voucherQuery = WashRewardVoucher::query()->where('vehicle_plate', $plate);
+
+                if ($hasSource) {
+                    $voucherQuery->where(function ($q) {
+                        $q->where('source', '!=', 'manual')->orWhereNull('source');
+                    });
+                }
+
+                $voucherQuery->where(function ($q) use ($txId, $transaction) {
+                    $q->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(meta, "$.issued_from_transaction_id")) = ?', [(string) $txId])
+                        ->orWhere('used_wash_transaction_id', $txId)
+                        ->orWhereBetween('issued_at', [
+                            $transaction->created_at->copy()->subSeconds(30),
+                            $transaction->created_at->copy()->addMinutes(2),
+                        ]);
+                });
+
+                $voucherQuery->orderByDesc('id')->limit(1);
+                $voucherFound = $voucherQuery->first();
             }
 
-            $newCycle = max(0, ((int) $counter->cycle_paid_count) - 1);
-            $newLifetime = max(0, ((int) $counter->lifetime_paid_count) - 1);
+            if ($voucherFound instanceof WashRewardVoucher) {
+                $issuedFromTx = (int) ($voucherFound->meta['issued_from_transaction_id'] ?? 0);
+                $usedInTx = (int) ($voucherFound->used_wash_transaction_id ?? 0);
+                $isCycleReset = ($prevCycle === 0 && $target > 0)
+                    || $issuedFromTx === (int) $transaction->id
+                    || $usedInTx === (int) $transaction->id;
 
-            // Jika rollback menyebabkan target tercapai ter-UNDO, hapus voucher terakhir yang status=available dari plat ini (created_at <= transaction_created + 2 menit)
-            $undoVoucher = null;
-            $issuedVouchers = WashRewardVoucher::query()
-                ->where('vehicle_plate', $plate)
-                ->where('status', 'available')
-                ->where('source', '!=', 'manual')
-                ->where('issued_at', '>=', $transaction->created_at->copy()->subSecond(30))
-                ->where('issued_at', '<=', $transaction->created_at->copy()->addMinutes(2))
-                ->orderByDesc('id')
-                ->limit(1)
-                ->get();
+                if ($isCycleReset) {
+                    $updateData = ['status' => 'revoked'];
+                    if ($hasRevokedAt) {
+                        $updateData['revoked_at'] = now();
+                    }
+                    if ($hasRevokedReason) {
+                        $updateData['revoked_reason'] = 'rollback_transaction:' . $transaction->id;
+                    }
+                    $voucherFound->update($updateData);
+                    $undoVoucher = $voucherFound->code;
 
-            foreach ($issuedVouchers as $vc) {
-                // Hanya revoke jika target baru (cycle_paid_count SEBELUM rollback = target). Setelah rollback cycle = target-1
-                $prevCycle = (int) $counter->cycle_paid_count;
-                $target = $this->target();
-                if ($prevCycle === 0 && $target > 0) {
-                    // Cycle baru saja di-reset → berarti voucher baru saja dibuat di transaksi INI. Revoke.
-                    $vc->update([
-                        'status' => 'revoked',
-                        'revoked_at' => now(),
-                        'revoked_reason' => 'rollback_transaction:' . $transaction->id,
-                    ]);
-                    $undoVoucher = $vc->code;
-                    $this->auditLog->logAction('wash_loyalty.voucher_revoked', $vc, [
-                        'reason' => 'rollback_transaction',
-                        'transaction_id' => $transaction->id,
-                    ]);
-                    // Karena cycle sebelumnya = 0 (baru di-reset), kembalikan jadi target-1
+                    try {
+                        $this->auditLog->logAction('wash_loyalty.voucher_revoked', $voucherFound, [
+                            'reason' => 'rollback_transaction',
+                            'transaction_id' => $transaction->id,
+                        ]);
+                    } catch (\Throwable) {}
+
+                    if (Schema::hasTable('wash_reward_redemptions')) {
+                        try {
+                            \App\Models\WashRewardRedemption::query()
+                                ->where('wash_reward_voucher_id', $voucherFound->id)
+                                ->where('wash_transaction_id', $transaction->id)
+                                ->delete();
+                        } catch (\Throwable) {}
+                    }
+
                     $newCycle = max(0, $target - 1);
-                    break;
                 }
             }
 
@@ -305,17 +345,18 @@ class WashLoyaltyService
             }
             $counter->save();
 
-            // Jika transaction punya loyalty_counted_at, tandai sebagai tidak dihitung
             if (Schema::hasColumn('wash_transactions', 'loyalty_counted_at')) {
                 $transaction->update(['loyalty_counted_at' => null]);
             }
 
-            $this->auditLog->logAction('wash_loyalty.counter_rollback', $counter, [
-                'transaction_id' => $transaction->id,
-                'new_cycle' => $newCycle,
-                'new_lifetime' => $newLifetime,
-                'revoked_voucher' => $undoVoucher,
-            ]);
+            try {
+                $this->auditLog->logAction('wash_loyalty.counter_rollback', $counter, [
+                    'transaction_id' => $transaction->id,
+                    'new_cycle' => $newCycle,
+                    'new_lifetime' => $newLifetime,
+                    'revoked_voucher' => $undoVoucher,
+                ]);
+            } catch (\Throwable) {}
 
             return [
                 'success' => true,
@@ -874,7 +915,7 @@ class WashLoyaltyService
             }
         }
 
-        $voucher = WashRewardVoucher::create([
+        $voucherData = [
             'code' => $code,
             'wash_loyalty_counter_id' => $counter->id,
             'wash_customer_id' => $counter->wash_customer_id,
@@ -888,7 +929,12 @@ class WashLoyaltyService
                 'issued_from_transaction_id' => $transaction->id,
                 'target' => $this->target(),
             ],
-        ]);
+        ];
+        if (Schema::hasColumn('wash_reward_vouchers', 'source')) {
+            $voucherData['source'] = 'auto';
+        }
+
+        $voucher = WashRewardVoucher::create($voucherData);
 
         $this->auditLog->logAction('wash_loyalty.voucher_created', $voucher, [
             'counter_id' => $counter->id,
